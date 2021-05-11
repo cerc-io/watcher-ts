@@ -1,17 +1,43 @@
-const authors = [
-  { id: 1, firstName: 'Tom', lastName: 'Coleman' },
-  { id: 2, firstName: 'Sashko', lastName: 'Stubailo' },
-  { id: 3, firstName: 'Mikhail', lastName: 'Novikov' },
-];
+// TODO: Pull mock data for 5 tokens from rinkeby.
 
-const posts = [
-  { id: 1, authorId: 1, title: 'Introduction to GraphQL', votes: 2 },
-  { id: 2, authorId: 2, title: 'Welcome to Meteor', votes: 3 },
-  { id: 3, authorId: 2, title: 'Advanced GraphQL', votes: 1 },
-  { id: 4, authorId: 3, title: 'Launchpad is Cool', votes: 7 },
-];
+export const tokens = {
+  '0xd87fea54f506972e3267239ec8e159548892074a': {
+    name: 'ChainLink Token',
+    symbol: 'LINK',
+    decimals: 18,
+    totalSupply: '1000000'
+  }
+};
 
-export default {
-  posts,
-  authors
+export const blocks = {
+  // Block hash.
+  '0x77b5479a5856dd8ec63df6aabf9ce0913071a6dda3a3d54f3c9c940574bcb8ab': {
+
+    // ERC20 token address.
+    '0xd87fea54f506972e3267239ec8e159548892074a': {
+      balanceOf: {
+        '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': 10000,
+        '0xCA6D29232D1435D8198E3E5302495417dD073d61': 500
+      },
+      allowance: {
+        '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': {
+          '0xCA6D29232D1435D8198E3E5302495417dD073d61': 100
+        }
+      },
+      events: [
+        {
+          name: 'Transfer',
+          from: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
+          to: '0xCA6D29232D1435D8198E3E5302495417dD073d61',
+          value: 500
+        },
+        {
+          name: 'Approval',
+          owner: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
+          spender: '0xCA6D29232D1435D8198E3E5302495417dD073d61',
+          value: 100
+        }
+      ]
+    }
+  }
 };

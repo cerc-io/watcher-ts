@@ -943,6 +943,11 @@ anymatch@~3.1.1:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
+apollo-type-bigint@^0.1.3:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/apollo-type-bigint/-/apollo-type-bigint-0.1.3.tgz#9242115ca909b9467ba5c4bc6493a56a06984c0b"
+  integrity sha512-nyfwEWRZ+kon3Nnot20DufGm2EHZrkJoryYzw3soD+USdxhkcW434w1c/n+mjMLQDl86Z6EvlkvMX5Lordf2Wg==
+
 apollo-upload-client@14.1.3:
   version "14.1.3"
   resolved "https://registry.yarnpkg.com/apollo-upload-client/-/apollo-upload-client-14.1.3.tgz#91f39011897bd08e99c0de0164e77ad2f3402247"

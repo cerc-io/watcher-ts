@@ -1,29 +1,100 @@
-type Author {
-  id: Int!
-  firstName: String
-  lastName: String
-  """
-  the list of Posts by this author
-  """
-  posts: [Post]
+#
+# ERC20 GQL schema
+#
+
+# Types
+
+# Support uint256 values.
+scalar BigInt
+
+# Proof for returned data. Serialized blob for now.
+# Will be converted into a well defined structure later.
+type Proof {
+  data: String!
 }
 
-type Post {
-  id: Int!
-  title: String
-  author: Author
-  votes: Int
+# Result type, with proof, for uint256 method return values.
+type ResultUInt256 {
+  value: BigInt!
+
+  # Proof from state/storage trie.
+  proof: Proof
 }
 
-# the schema allows the following query:
+# ERC20 Token https://eips.ethereum.org/EIPS/eip-20
+# ABI: https://ethereumdev.io/abi-for-erc20-contract-on-ethereum/
+type Token {
+  name: String!
+  symbol: String!
+  decimals: Int!
+  totalSupply: BigInt!
+}
+
+# Transfer Event
+# Emitted by: `function transfer(address _to, uint256 _value) public returns (bool success)`
+# Emitted by: `function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)`
+type TransferEvent {
+  from: String!
+  to: String!
+  value: BigInt!
+}
+
+# Approval Event
+# Emittted by: `function approve(address _spender, uint256 _value) public returns (bool success)`
+type ApprovalEvent {
+  owner: String!
+  spender: String!
+  value: BigInt!
+}
+
+# All possible event types fired by an ERC20 contract.
+union TokenEvent = TransferEvent | ApprovalEvent
+
+# Result type, with proof, for event return values.
+type ResultEvent {
+  event: TokenEvent!
+
+  # Proof from receipts trie.
+  proof: Proof
+}
+
+
+#
+# Queries
+#
+
 type Query {
-  posts: [Post]
-  author(id: Int!): Author
+
+  # `function balanceOf(address _owner) public view returns (uint256 balance)`
+  balanceOf(
+    blockHash: String!
+    token: String!
+
+    owner: String!
+  ): ResultUInt256!
+
+  # `function allowance(address _owner, address _spender) public view returns (uint256 remaining)`
+  allowance(
+    blockHash: String!
+    token: String!
+
+    owner: String!
+    spender: String!
+  ): ResultUInt256!
+
+  # Get token events at a certain block, optionally filter by event name.
+  events(
+    blockHash: String!
+    token: String!
+    name: String
+  ): [ResultEvent!]
 }
 
-# this schema allows the following mutation:
-type Mutation {
-  upvotePost (
-    postId: Int!
-  ): Post
+#
+# Subscriptions
+#
+type Subscription {
+
+  # Watch for token events (at head of chain).
+  onTokenEvent(token: String!): ResultEvent!
 }

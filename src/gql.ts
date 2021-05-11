@@ -1,36 +1,51 @@
+import 'lodash';
 import 'graphql-import-node';
-import { find, filter } from 'lodash';
 import { makeExecutableSchema } from '@graphql-tools/schema';
+import BigInt from 'apollo-type-bigint';
 
 import * as typeDefs from './erc20.graphql';
-import data from './mock-data';
-
-const { posts, authors } = data;
+import { blocks } from './mock-data';
 
 const resolvers = {
-  Query: {
-    posts: () => posts,
-    author: (_, { id }) => find(authors, { id }),
-  },
+  BigInt: new BigInt('bigInt'),
 
-  Mutation: {
-    upvotePost: (_, { postId }) => {
-      const post = find(posts, { id: postId });
-      if (!post) {
-        throw new Error(`Couldn't find post with id ${postId}`);
+  TokenEvent: {
+    __resolveType: (obj) => {
+      if (obj.owner) {
+        return 'ApprovalEvent';
       }
-      post.votes += 1;
-      return post;
+
+      return 'TransferEvent';
+    }
+  },
+
+  Query: {
+
+    balanceOf: (_, { blockHash, token, owner }) => {
+      console.log('balanceOf', blockHash, token, owner);
+
+      return {
+        value: blocks[blockHash][token].balanceOf[owner],
+        proof: { data: '' }
+      }
     },
-  },
 
-  Author: {
-    posts: author => filter(posts, { authorId: author.id }),
-  },
+    allowance: (_, { blockHash, token, owner, spender }) => {
+      console.log('allowance', blockHash, token, owner, spender);
 
-  Post: {
-    author: post => find(authors, { id: post.authorId }),
-  },
+      return {
+        value: blocks[blockHash][token].allowance[owner][spender],
+        proof: { data: '' }
+      }
+    },
+
+    events: (_, { blockHash, token, name }) => {
+      console.log('events', blockHash, token, name);
+      return blocks[blockHash][token].events
+        .filter(e => !name || name === e.name)
+        .map(e => ({ 'event': e }));
+    }
+  }
 };
 
 export const schema = makeExecutableSchema({
