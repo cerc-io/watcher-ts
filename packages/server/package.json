@@ -4,7 +4,7 @@
   "description": "ERC20 Watcher",
   "private": true,
   "scripts": {
-    "server": "nodemon src/server.ts",
+    "server": "MOCK=1 nodemon src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
