@@ -18,6 +18,8 @@
 
 ## Setup
 
+This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
+
 Install packages:
 
 ```bash
@@ -27,6 +29,7 @@ yarn
 Run the GQL server:
 
 ```bash
+cd packages/server
 yarn run server
 ```
 
