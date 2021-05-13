@@ -16,12 +16,13 @@ export const blocks = {
     // ERC20 token address.
     '0xd87fea54f506972e3267239ec8e159548892074a': {
       balanceOf: {
-        '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': 10000,
-        '0xCA6D29232D1435D8198E3E5302495417dD073d61': 500
+        '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': '10000',
+        '0xCA6D29232D1435D8198E3E5302495417dD073d61': '500'
       },
       allowance: {
         '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': {
-          '0xCA6D29232D1435D8198E3E5302495417dD073d61': 100
+          '0xCA6D29232D1435D8198E3E5302495417dD073d61': '100',
+          '0x9273D9437B0bf2F1b7999d8dB72960d6379564d1': '200'
         }
       },
       events: [
@@ -29,13 +30,13 @@ export const blocks = {
           name: 'Transfer',
           from: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
           to: '0xCA6D29232D1435D8198E3E5302495417dD073d61',
-          value: 500
+          value: '500'
         },
         {
           name: 'Approval',
           owner: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
           spender: '0xCA6D29232D1435D8198E3E5302495417dD073d61',
-          value: 100
+          value: '100'
         }
       ]
     }
