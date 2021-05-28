@@ -20,25 +20,30 @@
 
 This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
 
-Install packages:
+Install packages (Node.JS v15.11.0):
 
 ```bash
 yarn
 ```
 
-Run the GQL server:
+Run the watcher:
 
 ```bash
-cd packages/server
+cd packages/watcher
 yarn run server
 ```
 
 GQL console: http://localhost:3001/graphql
 
-To run tests (GQL queries) against the server (currently mock data):
+To run tests (GQL queries) against the mock server:
+
+```
+cd packages/watcher
+yarn run server:mock
+```
 
 ```bash
-cd packages/server
+cd packages/watcher
 yarn test
 ```
 
@@ -46,21 +51,21 @@ yarn test
 
 ```text
 {
-  balanceOf(blockHash: "0x77b5479a5856dd8ec63df6aabf9ce0913071a6dda3a3d54f3c9c940574bcb8ab", token: "0xd87fea54f506972e3267239ec8e159548892074a", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc") {
+  balanceOf(blockHash: "0x671e693ec3dccc948606db8d7e65ac3e16baea80a0dd6d56a126e07ccf85231f", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc") {
     value
     proof {
       data
     }
   }
 
-  allowance(blockHash: "0x77b5479a5856dd8ec63df6aabf9ce0913071a6dda3a3d54f3c9c940574bcb8ab", token: "0xd87fea54f506972e3267239ec8e159548892074a", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc", spender: "0xCA6D29232D1435D8198E3E5302495417dD073d61") {
+  allowance(blockHash: "0x671e693ec3dccc948606db8d7e65ac3e16baea80a0dd6d56a126e07ccf85231f", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc", spender: "0xCA6D29232D1435D8198E3E5302495417dD073d61") {
     value
     proof {
       data
     }
   }
 
-  events(blockHash: "0x77b5479a5856dd8ec63df6aabf9ce0913071a6dda3a3d54f3c9c940574bcb8ab", token: "0xd87fea54f506972e3267239ec8e159548892074a") {
+  events(blockHash: "0x671e693ec3dccc948606db8d7e65ac3e16baea80a0dd6d56a126e07ccf85231f", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
     event {
       ... on TransferEvent {
         from

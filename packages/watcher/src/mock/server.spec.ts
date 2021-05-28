@@ -57,8 +57,6 @@ blockHashes.forEach(blockHash => {
   });
 });
 
-// console.log(JSON.stringify(testCases, null, 2));
-
 describe('server', () => {
 
   const client = new GraphQLClient("http://localhost:3001/graphql");
