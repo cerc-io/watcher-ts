@@ -22,11 +22,17 @@ export class EthClient {
   }
 
   async getStorageAt(vars) {
-    return this._getCachedOrFetch('getStorageAt', vars);
+    const result = await this._getCachedOrFetch('getStorageAt', vars);
+    const { getStorageAt: { value, cid, ipldBlock } } = result;
+
+    return { value, cid, ipldBlock };
   }
 
   async getLogs(vars) {
-    return this._getCachedOrFetch('getLogs', vars);
+    const result = await this._getCachedOrFetch('getLogs', vars);
+    const { getLogs: logs } = result;
+
+    return logs;
   }
 
   async _getCachedOrFetch(queryName, vars) {
