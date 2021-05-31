@@ -1,22 +1,49 @@
 import { utils, BigNumber } from 'ethers';
 
+interface Storage {
+  slot: string;
+  offset: number;
+  type: string;
+  label: string;
+}
+
+interface Type {
+  encoding: string;
+  numberOfBytes: string;
+  label: string;
+}
+
 export interface StorageLayout {
-  storage: [{
-    slot: string;
-    offset: number;
-    type: string;
-    label: string;
-  }];
-  types: {
-    [type: string]: {
-      encoding: string;
-      numberOfBytes: string;
-      label: string;
-    }
-  };
+  storage: Storage[];
+  types: { [type: string]: Type; }
+}
+
+export interface StorageInfo extends Storage {
+  types: { [type: string]: Type; }
 }
 
 export type GetStorageAt = (address: string, position: string) => Promise<string>
+
+/**
+ * Function to get storage information of variable from storage layout.
+ * @param storageLayout
+ * @param variableName
+ */
+export const getStorageInfo = (storageLayout: StorageLayout, variableName: string): StorageInfo => {
+  const { storage, types } = storageLayout;
+  const targetState = storage.find((state) => state.label === variableName)
+
+  // Throw if state variable could not be found in storage layout.
+  if (!targetState) {
+    throw new Error('Variable not present in storage layout.');
+  }
+
+  return {
+    ...targetState,
+    slot: utils.hexlify(BigNumber.from(targetState.slot)),
+    types
+  }
+}
 
 /**
  * Function to get the value from storage for a contract variable.
@@ -26,15 +53,7 @@ export type GetStorageAt = (address: string, position: string) => Promise<string
  * @param variableName
  */
 export const getStorageValue = async (address: string, storageLayout: StorageLayout, getStorageAt: GetStorageAt, variableName: string): Promise<number | string | boolean | undefined> => {
-  const { storage, types } = storageLayout;
-  const targetState = storage.find((state) => state.label === variableName)
-
-  // Return if state variable could not be found in storage layout.
-  if (!targetState) {
-    return;
-  }
-
-  const { slot, offset, type } = targetState;
+  const { slot, offset, type, types } = getStorageInfo(storageLayout, variableName);
   const { encoding, numberOfBytes, label } = types[type]
 
   // Get value according to encoding i.e. how the data is encoded in storage.
@@ -79,7 +98,7 @@ export const getStorageValue = async (address: string, storageLayout: StorageLay
  * @param getStorageAt
  */
 const getInplaceArray = async (address: string, slot: string, offset: number, numberOfBytes: string, getStorageAt: GetStorageAt) => {
-  const value = await getStorageAt(address, BigNumber.from(slot).toHexString());
+  const value = await getStorageAt(address, slot);
   const uintArray = utils.arrayify(value);
 
   // Get value according to offset.
@@ -97,7 +116,7 @@ const getInplaceArray = async (address: string, slot: string, offset: number, nu
  * @param getStorageAt
  */
 const getBytesArray = async (address: string, slot: string, getStorageAt: GetStorageAt) => {
-  let value = await getStorageAt(address, BigNumber.from(slot).toHexString());
+  let value = await getStorageAt(address, slot);
   const uintArray = utils.arrayify(value);
   let length = 0;
 
@@ -122,8 +141,8 @@ const getBytesArray = async (address: string, slot: string, getStorageAt: GetSto
 
   // Compute zero padded hexstring to calculate hashed position of storage.
   // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
-  const slotHex = utils.hexZeroPad(BigNumber.from(slot).toHexString(), 32);
-  const position = utils.keccak256(slotHex);
+  const paddedSlotHex = utils.hexZeroPad(slot, 32);
+  const position = utils.keccak256(paddedSlotHex);
 
   // Get value from consecutive storage slots for longer data.
   for(let i = 0; i < length / 32; i++) {

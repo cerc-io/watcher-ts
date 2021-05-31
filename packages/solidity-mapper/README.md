@@ -17,17 +17,17 @@ $ yarn test
 
 ## Different Types
 
-* Booleans
-* Integers
-* Fixed Point Numbers
-* Address
-* Contract Types
-* Fixed-size byte arrays
-* Enums
-* Function Types
-* Arrays
-* Structs
-* Mapping Types
+* [x] Booleans
+* [x] Integers
+* [ ] Fixed Point Numbers
+* [x] Address
+* [ ] Contract Types
+* [ ] Fixed-size byte arrays
+* [ ] Enums
+* [ ] Function Types
+* [ ] Arrays
+* [ ] Structs
+* [ ] Mapping Types
 
 ## Observations
 

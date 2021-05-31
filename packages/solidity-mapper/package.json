@@ -1,8 +1,7 @@
 {
   "name": "@vulcanize/solidity-mapper",
   "version": "0.1.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
   "license": "UNLICENSED",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -10,7 +9,16 @@
     "@types/chai": "^4.2.18",
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.6.1",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
     "chai": "^4.3.4",
+    "eslint": "^7.27.0",
+    "eslint-config-semistandard": "^15.0.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "eslint-plugin-standard": "^5.0.0",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.2.0",
     "hardhat": "^2.3.0",
@@ -19,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "lint": "eslint ."
   }
 }

@@ -4,11 +4,9 @@ import debug from 'debug';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient, getMappingSlot, topictoAddress } from '@vulcanize/ipld-eth-client';
+import { getStorageInfo } from '@vulcanize/solidity-mapper';
 
-// Event slots.
-// TODO: Read from storage layout file.
-const ERC20_BALANCE_OF_SLOT = "0x00";
-const ERC20_ALLOWANCE_SLOT = "0x01";
+import { storageLayout } from './artifacts/ERC20.json';
 
 // Event signatures.
 // TODO: Generate from ABI.
@@ -55,7 +53,8 @@ export const createResolvers = async (config) => {
       balanceOf: async (_, { blockHash, token, owner }) => {
         log('balanceOf', blockHash, token, owner);
 
-        const slot = getMappingSlot(ERC20_BALANCE_OF_SLOT, owner);
+        const { slot: balancesSlot } = getStorageInfo(storageLayout, '_balances')
+        const slot = getMappingSlot(balancesSlot, owner);
 
         const vars = {
           blockHash,
@@ -89,7 +88,8 @@ export const createResolvers = async (config) => {
       allowance: async (_, { blockHash, token, owner, spender }) => {
         log('allowance', blockHash, token, owner, spender);
 
-        const slot = getMappingSlot(getMappingSlot(ERC20_ALLOWANCE_SLOT, owner), spender);
+        const { slot: allowancesSlot } = getStorageInfo(storageLayout, '_allowances')
+        const slot = getMappingSlot(getMappingSlot(allowancesSlot, owner), spender);
 
         const vars = {
           blockHash,
