@@ -1,25 +1,11 @@
 import assert from "assert";
 import debug from 'debug';
-import { EthClient, getMappingSlot, topictoAddress } from "@vulcanize/ipld-eth-client";
 import { Connection } from "typeorm";
+import { invert } from "lodash";
+import { EthClient, getMappingSlot, topictoAddress } from "@vulcanize/ipld-eth-client";
+import { getStorageInfo, getEventNameTopics } from '@vulcanize/solidity-mapper';
 
-import { getStorageInfo } from '@vulcanize/solidity-mapper';
-
-import { storageLayout } from './artifacts/ERC20.json';
-
-// Event signatures.
-// TODO: Generate from ABI.
-const ERC20_EVENT_NAME_TOPICS = {
-  "Transfer": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-  "Approval": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
-};
-
-// Topic to GQL event name.
-// TODO: Generate from ABI.
-const GQL_EVENT_TYPE = {
-  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": "TransferEvent",
-  "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925": "ApprovalEvent"
-};
+import { storageLayout, abi } from './artifacts/ERC20.json';
 
 const log = debug('vulcanize:indexer');
 
@@ -111,12 +97,15 @@ export class Indexer {
     const logs = await this._ethClient.getLogs(vars);
     log(JSON.stringify(logs, null, 2));
 
+    const erc20EventNameTopics = getEventNameTopics(abi);
+    const gqlEventType = invert(erc20EventNameTopics);
+
     return logs
-      .filter(e => !name || ERC20_EVENT_NAME_TOPICS[name] === e.topics[0])
+      .filter(e => !name || erc20EventNameTopics[name] === e.topics[0])
       .map(e => {
         const [topic0, topic1, topic2] = e.topics;
 
-        const eventName = GQL_EVENT_TYPE[topic0];
+        const eventName = gqlEventType[topic0];
         const address1 = topictoAddress(topic1);
         const address2 = topictoAddress(topic2);
 
@@ -124,12 +113,12 @@ export class Indexer {
 
 
         switch (eventName) {
-          case 'TransferEvent': {
+          case 'Transfer': {
             eventFields['from'] = address1;
             eventFields['to'] = address2;
             break;
           };
-          case 'ApprovalEvent': {
+          case 'Approval': {
             eventFields['owner'] = address1;
             eventFields['spender'] = address2;
             break;
@@ -138,7 +127,7 @@ export class Indexer {
 
         return {
           event: {
-            __typename: eventName,
+            __typename: `${eventName}Event`,
             ...eventFields
           },
           proof: {
