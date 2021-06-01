@@ -44,6 +44,11 @@ export const createResolvers = async (config) => {
 
     Query: {
 
+      totalSupply: (_, { blockHash, token }) => {
+        log('totalSupply', blockHash, token);
+        return indexer.totalSupply(blockHash, token);
+      },
+
       balanceOf: async (_, { blockHash, token, owner }) => {
         log('balanceOf', blockHash, token, owner);
         return indexer.getBalanceOf(blockHash, token, owner);
@@ -52,6 +57,21 @@ export const createResolvers = async (config) => {
       allowance: async (_, { blockHash, token, owner, spender }) => {
         log('allowance', blockHash, token, owner, spender);
         return indexer.getAllowance(blockHash, token, owner, spender);
+      },
+
+      name: (_, { blockHash, token }) => {
+        log('name', blockHash, token);
+        return indexer.name(blockHash, token);
+      },
+
+      symbol: (_, { blockHash, token }) => {
+        log('symbol', blockHash, token);
+        return indexer.symbol(blockHash, token);
+      },
+
+      decimals: (_, { blockHash, token }) => {
+        log('decimals', blockHash, token);
+        return indexer.decimals(blockHash, token);
       },
 
       events: async (_, { blockHash, token, name }) => {

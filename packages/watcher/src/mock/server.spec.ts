@@ -4,14 +4,23 @@ import _ from 'lodash';
 
 import { GraphQLClient } from 'graphql-request';
 
-import { queryBalanceOf, queryAllowance, queryEvents } from '../queries';
+import {
+  queryName,
+  querySymbol,
+  queryDecimals,
+  queryTotalSupply,
+  queryBalanceOf,
+  queryAllowance,
+  queryEvents
+} from '../queries';
 
-import { blocks } from './data';
+import { blocks, tokens as tokenInfo } from './data';
 
 const testCases = {
   'balanceOf': [],
   'allowance': [],
-  'events': []
+  'events': [],
+  'tokens': []
 };
 
 const blockHashes = _.keys(blocks);
@@ -21,7 +30,14 @@ blockHashes.forEach(blockHash => {
   tokens.forEach(token => {
     const tokenObj = block[token];
 
-    // Event tests cases.
+    // Token info test cases.
+    testCases.tokens.push({
+      blockHash,
+      token,
+      info: tokenInfo[token]
+    });
+
+    // Event test cases.
     testCases.events.push({
       blockHash,
       token,
@@ -60,6 +76,35 @@ blockHashes.forEach(blockHash => {
 describe('server', () => {
 
   const client = new GraphQLClient("http://localhost:3001/graphql");
+
+  it('query token info', async () => {
+    const tests = testCases.tokens;
+    expect(tests.length).to.be.greaterThan(0);
+
+    for (let i = 0; i < tests.length; i++) {
+      const testCase = tests[i];
+
+      // Token totalSupply.
+      let result = await client.request(queryTotalSupply, testCase);
+      expect(result.totalSupply.value).to.equal(testCase.info.totalSupply);
+      expect(result.totalSupply.proof.data).to.equal('');
+
+      // Token name.
+      result = await client.request(queryName, testCase);
+      expect(result.name.value).to.equal(testCase.info.name);
+      expect(result.name.proof.data).to.equal('');
+
+      // Token symbol.
+      result = await client.request(querySymbol, testCase);
+      expect(result.symbol.value).to.equal(testCase.info.symbol);
+      expect(result.symbol.proof.data).to.equal('');
+
+      // Token decimals.
+      result = await client.request(queryDecimals, testCase);
+      expect(result.decimals.value).to.equal(testCase.info.decimals);
+      expect(result.decimals.proof.data).to.equal('');
+    }
+  });
 
   it('query balanceOf', async () => {
     const tests = testCases.balanceOf;

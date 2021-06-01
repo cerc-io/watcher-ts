@@ -4,6 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { Cache } from '@vulcanize/cache';
 
 import ethQueries from './eth-queries';
+import { padKey } from './utils';
 
 export class EthClient {
 
@@ -21,11 +22,28 @@ export class EthClient {
     this._cache = cache;
   }
 
-  async getStorageAt(vars) {
-    const result = await this._getCachedOrFetch('getStorageAt', vars);
+  async getStorageAt({ blockHash, contract, slot }) {
+    slot = `0x${padKey(slot)}`;
+
+    const result = await this._getCachedOrFetch('getStorageAt', { blockHash, contract, slot });
     const { getStorageAt: { value, cid, ipldBlock } } = result;
 
-    return { value, cid, ipldBlock };
+    return {
+      value,
+      proof: {
+        // TODO: Return proof only if requested.
+        data: JSON.stringify({
+          blockHash,
+          account: {
+            address: contract,
+            storage: {
+              cid,
+              ipldBlock
+            }
+          }
+        })
+      }
+    };
   }
 
   async getLogs(vars) {

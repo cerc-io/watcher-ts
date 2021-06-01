@@ -22,6 +22,15 @@ export const createResolvers = async (config) => {
 
     Query: {
 
+      totalSupply: (_, { blockHash, token }) => {
+        log('totalSupply', blockHash, token);
+
+        return {
+          value: blocks[blockHash][token].totalSupply,
+          proof: { data: '' }
+        }
+      },
+
       balanceOf: (_, { blockHash, token, owner }) => {
         log('balanceOf', blockHash, token, owner);
 
@@ -36,6 +45,33 @@ export const createResolvers = async (config) => {
 
         return {
           value: blocks[blockHash][token].allowance[owner][spender],
+          proof: { data: '' }
+        }
+      },
+
+      name: (_, { blockHash, token }) => {
+        log('name', blockHash, token);
+
+        return {
+          value: blocks[blockHash][token].name,
+          proof: { data: '' }
+        }
+      },
+
+      symbol: (_, { blockHash, token }) => {
+        log('symbol', blockHash, token);
+
+        return {
+          value: blocks[blockHash][token].symbol,
+          proof: { data: '' }
+        }
+      },
+
+      decimals: (_, { blockHash, token }) => {
+        log('decimals', blockHash, token);
+
+        return {
+          value: blocks[blockHash][token].decimals,
           proof: { data: '' }
         }
       },

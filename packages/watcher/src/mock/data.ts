@@ -4,7 +4,7 @@ export const tokens = {
   '0xd87fea54f506972e3267239ec8e159548892074a': {
     name: 'ChainLink Token',
     symbol: 'LINK',
-    decimals: 18,
+    decimals: '18',
     totalSupply: '1000000'
   }
 };
@@ -15,6 +15,8 @@ export const blocks = {
 
     // ERC20 token address.
     '0xd87fea54f506972e3267239ec8e159548892074a': {
+      ...tokens['0xd87fea54f506972e3267239ec8e159548892074a'],
+
       balanceOf: {
         '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc': '10000',
         '0xCA6D29232D1435D8198E3E5302495417dD073d61': '500'
