@@ -21,11 +21,14 @@ $ yarn test
 * [x] Integers
 * [ ] Fixed Point Numbers
 * [x] Address
-* [ ] Contract Types
-* [ ] Fixed-size byte arrays
-* [ ] Enums
+* [x] Contract Types
+* [x] Fixed-size byte arrays
+* [x] Enums
 * [ ] Function Types
 * [ ] Arrays
+* [ ] Dynamically-sized byte array
+  * [ ] Bytes
+  * [x] String
 * [ ] Structs
 * [ ] Mapping Types
 

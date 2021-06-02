@@ -2,14 +2,14 @@
 pragma solidity ^0.7.0;
 
 contract TestIntegers {
-    // Following variables are packed together in a single slot since the combined size is less than 32 bytes.
+    // Following integer type variables are packed together in a single slot since the combined size is less than 32 bytes.
     int8 int1;
     int16 int2;
 
-    // Variable is stored in the next slot as it needs 32 bytes of storage.
+    // Integer type variable is stored in the next slot as it needs 32 bytes of storage.
     int256 int3;
 
-    // Variable is stored in the next slot as there is not enough space for it in the previous slot.
+    // Integer type variable is stored in the next slot as there is not enough space for it in the previous slot.
     int32 int4;
 
     // Set variable int1.

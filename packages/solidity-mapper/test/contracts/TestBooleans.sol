@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 contract TestBooleans {
-    // Variables are packed together in a slot as they occupy less than 32 bytes together.
+    // Boolean type variables are packed together in a slot as they occupy less than 32 bytes together.
     bool bool1;
     bool bool2;
 

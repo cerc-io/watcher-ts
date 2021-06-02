@@ -1,7 +1,7 @@
-import { JsonFragment } from "@ethersproject/abi"
-import { utils } from "ethers";
+import { JsonFragment } from '@ethersproject/abi';
+import { utils } from 'ethers';
 
-interface EventNameTopic {
+interface EventNameTopics {
   [eventName: string]: string
 }
 
@@ -9,10 +9,10 @@ interface EventNameTopic {
  * Function to get event name topics from abi.
  * @param abi
  */
-export const getEventNameTopics = (abi: JsonFragment[]): EventNameTopic => {
+export const getEventNameTopics = (abi: JsonFragment[]): EventNameTopics => {
   const eventFragments = abi.filter(({ type }) => type === 'event');
 
-  return eventFragments.reduce((acc: EventNameTopic, { name, inputs }) => {
+  return eventFragments.reduce((acc: EventNameTopics, { name, inputs }) => {
     if (inputs && name) {
       const inputParamsString = inputs.map(({ type }) => type)
         .join(',');
@@ -22,5 +22,5 @@ export const getEventNameTopics = (abi: JsonFragment[]): EventNameTopic => {
     }
 
     return acc;
-  }, {})
-}
+  }, {});
+};
