@@ -4,21 +4,43 @@ import debug from 'debug';
 import fs from 'fs-extra';
 import path from 'path';
 import "reflect-metadata";
-import { createConnection } from "typeorm";
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
+import artifacts from './artifacts/ERC20.json';
 import { Indexer } from './indexer';
+import { Database } from './database';
 
 const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (config) => {
 
-  const ormConfig = JSON.parse(await fs.readFile(path.join(process.cwd(), "ormconfig.json")));
-  const db = await createConnection(ormConfig);
+  const { upstream, database } = config;
 
-  const { upstream } = config;
+  assert(database, 'Missing database config');
+
+  const ormConfig = {
+    ...database,
+    entities: [
+      "src/entity/**/*.ts"
+    ],
+    migrations: [
+      "src/migration/**/*.ts"
+    ],
+    subscribers: [
+      "src/subscriber/**/*.ts"
+    ],
+    cli: {
+      entitiesDir: "src/entity",
+      migrationsDir: "src/migration",
+      subscribersDir: "src/subscriber"
+    }
+  };
+
+  const db = new Database(ormConfig);
+  await db.init();
+
   assert(upstream, 'Missing upstream config');
 
   const { gqlEndpoint, cache: cacheConfig } = upstream;
@@ -27,7 +49,7 @@ export const createResolvers = async (config) => {
   const cache = await getCache(cacheConfig);
   const ethClient = new EthClient({ gqlEndpoint, cache });
 
-  const indexer = new Indexer(db, ethClient);
+  const indexer = new Indexer(db, ethClient, artifacts);
 
   return {
     BigInt: new BigInt('bigInt'),
@@ -51,12 +73,12 @@ export const createResolvers = async (config) => {
 
       balanceOf: async (_, { blockHash, token, owner }) => {
         log('balanceOf', blockHash, token, owner);
-        return indexer.getBalanceOf(blockHash, token, owner);
+        return indexer.balanceOf(blockHash, token, owner);
       },
 
       allowance: async (_, { blockHash, token, owner, spender }) => {
         log('allowance', blockHash, token, owner, spender);
-        return indexer.getAllowance(blockHash, token, owner, spender);
+        return indexer.allowance(blockHash, token, owner, spender);
       },
 
       name: (_, { blockHash, token }) => {
