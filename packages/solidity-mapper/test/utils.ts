@@ -55,7 +55,7 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
   // TODO: Fix use of blockHash as hex string in getStorageAt.
   // Using blockHash in getStorageAt throws error.
   // https://github.com/ethers-io/ethers.js/pull/1550#issuecomment-841746994
-  // Using latest tag for temporary fix.
+  // Using latest tag for temporary fix in test scenario.
   blockHash = 'latest';
   const value = await ethers.provider.getStorageAt(contract, slot, blockHash);
 

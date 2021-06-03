@@ -17,20 +17,49 @@ $ yarn test
 
 ## Different Types
 
-* [x] Booleans
-* [x] Integers
-* [ ] Fixed Point Numbers
-* [x] Address
-* [x] Contract Types
-* [x] Fixed-size byte arrays
-* [x] Enums
-* [ ] Function Types
-* [ ] Arrays
-* [ ] Dynamically-sized byte array
-  * [ ] Bytes
-  * [x] String
-* [ ] Structs
-* [ ] Mapping Types
+* [ ] Value Types
+  * [x] Booleans
+  * [x] Integers
+  * [ ] Fixed Point Numbers
+  * [x] Address
+  * [x] Contract Types
+  * [x] Fixed-size byte arrays
+  * [x] Enums
+  * [ ] Function Types
+* [ ] Reference Types
+  * [ ] Arrays
+    * [ ] Fixed size arrays
+      * [x] Integer Type
+      * [x] Boolean Type
+      * [ ] Address Type
+      * [ ] Fixed-size byte arrays
+      * [ ] Enum type
+      * [ ] Dynamically-sized byte array
+      * [ ] Struct Type
+      * [ ] Mapping Type
+    * [ ] Dynamically-sized arrays
+      * [ ] Integer Type
+      * [ ] Boolean Type
+      * [ ] Address Type
+      * [ ] Fixed-size byte arrays
+      * [ ] Enum Type
+      * [ ] Dynamically-sized byte array
+      * [ ] Struct Type
+      * [ ] Mapping Type
+    * [ ] Nested Arrays
+      * [ ] Fixed size arrays
+      * [ ] Dynamically-sized arrays
+  * [ ] Dynamically-sized byte array
+    * [ ] Bytes
+    * [x] String
+  * [ ] Structs
+    * [ ] Value Types
+    * [ ] Reference Types
+  * [ ] Mapping Types
+    * [ ] Value Type keys
+    * [ ] Dynamically-sized byte array keys
+    * [ ] Reference Type Mapping values
+    * [ ] Nested Mapping
 
 ## Observations
 

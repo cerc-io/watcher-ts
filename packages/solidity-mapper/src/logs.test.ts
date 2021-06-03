@@ -18,7 +18,7 @@ const TEST_DATA = [
   }
 ];
 
-it('get event name topics', async function () {
+it('get event name topics', async () => {
   const testPromises = TEST_DATA.map(async ({ name, output }) => {
     const Contract = await ethers.getContractFactory(name);
     const contract = await Contract.deploy();

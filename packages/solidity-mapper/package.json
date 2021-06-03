@@ -29,5 +29,6 @@
     "build": "tsc",
     "test": "hardhat test",
     "lint": "eslint ."
-  }
+  },
+  "dependencies": {}
 }
