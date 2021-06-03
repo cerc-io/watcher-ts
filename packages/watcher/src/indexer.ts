@@ -3,7 +3,7 @@ import debug from 'debug';
 import { Connection } from "typeorm";
 import { invert } from "lodash";
 import { EthClient, getMappingSlot, topictoAddress } from "@vulcanize/ipld-eth-client";
-import { getStorageInfo, getEventNameTopics } from '@vulcanize/solidity-mapper';
+import { getStorageInfo, getEventNameTopics, getStorageValue } from '@vulcanize/solidity-mapper';
 
 import { storageLayout, abi } from './artifacts/ERC20.json';
 
@@ -70,32 +70,28 @@ export class Indexer {
   }
 
   async name(blockHash, token) {
-    const { slot } = getStorageInfo(storageLayout, '_name');
-
-    const vars = {
+    const result = await getStorageValue(
+      storageLayout,
+      this._ethClient.getStorageAt.bind(this._ethClient),
       blockHash,
-      contract: token,
-      slot
-    };
+      token,
+      '_name'
+    )
 
-    // TODO: Integrate with storage-mapper to get string value (currently hex encoded).
-    const result = await this._ethClient.getStorageAt(vars);
     log(JSON.stringify(result, null, 2));
 
     return result;
   }
 
   async symbol(blockHash, token) {
-    const { slot } = getStorageInfo(storageLayout, '_symbol');
-
-    const vars = {
+    const result = await getStorageValue(
+      storageLayout,
+      this._ethClient.getStorageAt.bind(this._ethClient),
       blockHash,
-      contract: token,
-      slot
-    };
+      token,
+      '_symbol'
+    )
 
-    // TODO: Integrate with storage-mapper to get string value (currently hex encoded).
-    const result = await this._ethClient.getStorageAt(vars);
     log(JSON.stringify(result, null, 2));
 
     return result;

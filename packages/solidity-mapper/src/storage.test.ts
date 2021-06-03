@@ -74,21 +74,29 @@ it('get storage information', async function () {
 });
 
 describe('Get value from storage', function () {
+  const getBlockHash = async () => {
+    const blockNumber = await ethers.provider.getBlockNumber();
+    const { hash } = await ethers.provider.getBlock(blockNumber);
+    return hash;
+  };
+
   it('get value for integer type variables packed together', async function () {
     const Integers = await ethers.getContractFactory('TestIntegers');
     const integers = await Integers.deploy();
     await integers.deployed();
     const storageLayout = await getStorageLayout('TestIntegers');
 
-    let value = 12;
-    await integers.setInt1(value);
-    let storageValue = await getStorageValue(integers.address, storageLayout, getStorageAt, 'int1');
-    expect(storageValue).to.equal(value);
+    let expectedValue = 12;
+    await integers.setInt1(expectedValue);
+    let blockHash = await getBlockHash();
+    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int1');
+    expect(value).to.equal(expectedValue);
 
-    value = 34;
-    await integers.setInt2(value);
-    storageValue = await getStorageValue(integers.address, storageLayout, getStorageAt, 'int2');
-    expect(storageValue).to.equal(value);
+    expectedValue = 34;
+    await integers.setInt2(expectedValue);
+    blockHash = await getBlockHash();
+    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int2'));
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for integer type variables using single slot', async function () {
@@ -97,10 +105,11 @@ describe('Get value from storage', function () {
     await integers.deployed();
     const storageLayout = await getStorageLayout('TestIntegers');
 
-    const value = 123;
-    await integers.setInt3(value);
-    const storageValue = await getStorageValue(integers.address, storageLayout, getStorageAt, 'int3');
-    expect(storageValue).to.equal(value);
+    const expectedValue = 123;
+    await integers.setInt3(expectedValue);
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int3');
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for unsigned integer type variables packed together', async function () {
@@ -109,15 +118,17 @@ describe('Get value from storage', function () {
     await unsignedIntegers.deployed();
     const storageLayout = await getStorageLayout('TestUnsignedIntegers');
 
-    let value = 12;
-    await unsignedIntegers.setUint1(value);
-    let storageValue = await getStorageValue(unsignedIntegers.address, storageLayout, getStorageAt, 'uint1');
-    expect(storageValue).to.equal(value);
+    let expectedValue = 12;
+    await unsignedIntegers.setUint1(expectedValue);
+    let blockHash = await getBlockHash();
+    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint1');
+    expect(value).to.equal(expectedValue);
 
-    value = 34;
-    await unsignedIntegers.setUint2(value);
-    storageValue = await getStorageValue(unsignedIntegers.address, storageLayout, getStorageAt, 'uint2');
-    expect(storageValue).to.equal(value);
+    expectedValue = 34;
+    await unsignedIntegers.setUint2(expectedValue);
+    blockHash = await getBlockHash();
+    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint2'));
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for unsigned integer type variables using single slot', async function () {
@@ -126,10 +137,11 @@ describe('Get value from storage', function () {
     await unsignedIntegers.deployed();
     const storageLayout = await getStorageLayout('TestUnsignedIntegers');
 
-    const value = 123;
-    await unsignedIntegers.setUint3(value);
-    const storageValue = await getStorageValue(unsignedIntegers.address, storageLayout, getStorageAt, 'uint3');
-    expect(storageValue).to.equal(value);
+    const expectedValue = 123;
+    await unsignedIntegers.setUint3(expectedValue);
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint3');
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for boolean type', async function () {
@@ -138,15 +150,17 @@ describe('Get value from storage', function () {
     await booleans.deployed();
     const storageLayout = await getStorageLayout('TestBooleans');
 
-    let value = true;
-    await booleans.setBool1(value);
-    let storageValue = await getStorageValue(booleans.address, storageLayout, getStorageAt, 'bool1');
-    expect(storageValue).to.equal(value);
+    let expectedValue = true;
+    await booleans.setBool1(expectedValue);
+    let blockHash = await getBlockHash();
+    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, booleans.address, 'bool1');
+    expect(value).to.equal(expectedValue);
 
-    value = false;
-    await booleans.setBool2(value);
-    storageValue = await getStorageValue(booleans.address, storageLayout, getStorageAt, 'bool2');
-    expect(storageValue).to.equal(value);
+    expectedValue = false;
+    await booleans.setBool2(expectedValue);
+    blockHash = await getBlockHash();
+    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, booleans.address, 'bool2'));
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for address type', async function () {
@@ -157,9 +171,10 @@ describe('Get value from storage', function () {
 
     const [signer] = await ethers.getSigners();
     await address.setAddress1(signer.address);
-    const storageValue = await getStorageValue(address.address, storageLayout, getStorageAt, 'address1');
-    expect(storageValue).to.be.a('string');
-    expect(String(storageValue).toLowerCase()).to.equal(signer.address.toLowerCase());
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, address.address, 'address1');
+    expect(value).to.be.a('string');
+    expect(String(value).toLowerCase()).to.equal(signer.address.toLowerCase());
   });
 
   it('get value for contract type', async function () {
@@ -175,8 +190,9 @@ describe('Get value from storage', function () {
     const storageLayout = await getStorageLayout('TestContractTypes');
 
     await testContractTypes.setAddressContract1(testAddress.address);
-    const storageValue = await getStorageValue(testContractTypes.address, storageLayout, getStorageAt, 'addressContract1');
-    expect(storageValue).to.equal(testAddress.address.toLowerCase());
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testContractTypes.address, 'addressContract1');
+    expect(value).to.equal(testAddress.address.toLowerCase());
   });
 
   it('get value for fixed size byte arrays packed together', async function () {
@@ -185,15 +201,17 @@ describe('Get value from storage', function () {
     await testBytes.deployed();
     const storageLayout = await getStorageLayout('TestBytes');
 
-    let value = ethers.utils.hexlify(ethers.utils.randomBytes(10));
-    await testBytes.setBytesTen(value);
-    let storageValue = await getStorageValue(testBytes.address, storageLayout, getStorageAt, 'bytesTen');
-    expect(storageValue).to.equal(value);
+    let expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(10));
+    await testBytes.setBytesTen(expectedValue);
+    let blockHash = await getBlockHash();
+    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTen');
+    expect(value).to.equal(expectedValue);
 
-    value = ethers.utils.hexlify(ethers.utils.randomBytes(20));
-    await testBytes.setBytesTwenty(value);
-    storageValue = await getStorageValue(testBytes.address, storageLayout, getStorageAt, 'bytesTwenty');
-    expect(storageValue).to.equal(value);
+    expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(20));
+    await testBytes.setBytesTwenty(expectedValue);
+    blockHash = await getBlockHash();
+    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTwenty'));
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for fixed size byte arrays using single slot', async function () {
@@ -202,10 +220,11 @@ describe('Get value from storage', function () {
     await testBytes.deployed();
     const storageLayout = await getStorageLayout('TestBytes');
 
-    const value = ethers.utils.hexlify(ethers.utils.randomBytes(30));
-    await testBytes.setBytesThirty(value);
-    const storageValue = await getStorageValue(testBytes.address, storageLayout, getStorageAt, 'bytesThirty');
-    expect(storageValue).to.equal(value);
+    const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(30));
+    await testBytes.setBytesThirty(expectedValue);
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesThirty');
+    expect(value).to.equal(expectedValue);
   });
 
   it('get value for enum types', async function () {
@@ -214,10 +233,11 @@ describe('Get value from storage', function () {
     await testEnums.deployed();
     const storageLayout = await getStorageLayout('TestEnums');
 
-    const value = 1;
-    await testEnums.setChoicesEnum1(value);
-    const storageValue = await getStorageValue(testEnums.address, storageLayout, getStorageAt, 'choicesEnum1');
-    expect(storageValue).to.equal(value);
+    const expectedValue = 1;
+    await testEnums.setChoicesEnum1(expectedValue);
+    const blockHash = await getBlockHash();
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testEnums.address, 'choicesEnum1');
+    expect(value).to.equal(expectedValue);
   });
 
   describe('string type', function () {
@@ -231,17 +251,19 @@ describe('Get value from storage', function () {
     });
 
     it('get value for string length less than 32 bytes', async function () {
-      const value = 'Hello world.';
-      await strings.setString1(value);
-      const storageValue = await getStorageValue(strings.address, storageLayout, getStorageAt, 'string1');
-      expect(storageValue).to.equal(value);
+      const expectedValue = 'Hello world.';
+      await strings.setString1(expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, strings.address, 'string1');
+      expect(value).to.equal(expectedValue);
     });
 
     it('get value for string length more than 32 bytes', async function () {
-      const value = 'This sentence is more than 32 bytes long.';
-      await strings.setString2(value);
-      const storageValue = await getStorageValue(strings.address, storageLayout, getStorageAt, 'string2');
-      expect(storageValue).to.equal(value);
+      const expectedValue = 'This sentence is more than 32 bytes long.';
+      await strings.setString2(expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, strings.address, 'string2');
+      expect(value).to.equal(expectedValue);
     });
   });
 });
