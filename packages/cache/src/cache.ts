@@ -8,7 +8,7 @@ import debug from 'debug';
 
 const log = debug('vulcanize:cache');
 
-interface Config {
+export interface Config {
   name: string;
   enabled: boolean;
   deleteOnStart: boolean;

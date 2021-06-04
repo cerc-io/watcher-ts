@@ -1,24 +1,50 @@
-import assert from "assert";
+import assert from 'assert';
 import debug from 'debug';
-import { invert } from "lodash";
+import { invert } from 'lodash';
+import { JsonFragment } from '@ethersproject/abi';
+import { DeepPartial } from 'typeorm';
 
-import { EthClient, getMappingSlot, topictoAddress } from "@vulcanize/ipld-eth-client";
-import { getStorageInfo, getEventNameTopics, getStorageValue, GetStorageAt } from '@vulcanize/solidity-mapper';
+import { EthClient, getMappingSlot, topictoAddress } from '@vulcanize/ipld-eth-client';
+import { getStorageInfo, getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
 
 import { Database } from './database';
+import { Event } from './entity/Event';
 
 const log = debug('vulcanize:indexer');
 
-export class Indexer {
+interface Artifacts {
+  abi: JsonFragment[];
+  storageLayout: StorageLayout;
+}
 
+export interface ValueResult {
+  value: string | BigInt;
+  proof: {
+    data: string;
+  }
+}
+
+type EventsResult = Array<{
+  event: {
+    from?: string;
+    to?: string;
+    owner?: string;
+    spender?: string;
+    value?: BigInt;
+    __typename: string;
+  }
+  proof: string;
+}>
+
+export class Indexer {
   _db: Database
   _ethClient: EthClient
   _getStorageAt: GetStorageAt
 
-  _abi: any
-  _storageLayout: any
+  _abi: JsonFragment[]
+  _storageLayout: StorageLayout
 
-  constructor(db, ethClient, artifacts) {
+  constructor (db: Database, ethClient: EthClient, artifacts: Artifacts) {
     assert(db);
     assert(ethClient);
     assert(artifacts);
@@ -36,7 +62,7 @@ export class Indexer {
     this._storageLayout = storageLayout;
   }
 
-  async totalSupply(blockHash, token) {
+  async totalSupply (blockHash: string, token: string): Promise<ValueResult> {
     // TODO: Use getStorageValue when it supports uint256 values.
     const { slot } = getStorageInfo(this._storageLayout, '_totalSupply');
 
@@ -52,13 +78,13 @@ export class Indexer {
     return result;
   }
 
-  async balanceOf(blockHash, token, owner) {
+  async balanceOf (blockHash: string, token: string, owner: string): Promise<ValueResult> {
     const entity = await this._db.getBalance({ blockHash, token, owner });
     if (entity) {
       return {
         value: entity.value,
         proof: JSON.parse(entity.proof)
-      }
+      };
     }
 
     // TODO: Use getStorageValue when it supports mappings.
@@ -80,13 +106,13 @@ export class Indexer {
     return result;
   }
 
-  async allowance(blockHash, token, owner, spender) {
+  async allowance (blockHash: string, token: string, owner: string, spender: string): Promise<ValueResult> {
     const entity = await this._db.getAllowance({ blockHash, token, owner, spender });
     if (entity) {
       return {
         value: entity.value,
         proof: JSON.parse(entity.proof)
-      }
+      };
     }
 
     // TODO: Use getStorageValue when it supports nested mappings.
@@ -108,7 +134,7 @@ export class Indexer {
     return result;
   }
 
-  async name(blockHash, token) {
+  async name (blockHash: string, token: string): Promise<ValueResult> {
     const result = await this._getStorageValue(blockHash, token, '_name');
 
     log(JSON.stringify(result, null, 2));
@@ -116,7 +142,7 @@ export class Indexer {
     return result;
   }
 
-  async symbol(blockHash, token) {
+  async symbol (blockHash: string, token: string): Promise<ValueResult> {
     const result = await this._getStorageValue(blockHash, token, '_symbol');
 
     log(JSON.stringify(result, null, 2));
@@ -124,14 +150,14 @@ export class Indexer {
     return result;
   }
 
-  async decimals(blockHash, token) {
+  async decimals (): Promise<void> {
     // Not a state variable, uses hardcoded return value in contract function.
     // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol#L86
 
     throw new Error('Not implemented.');
   }
 
-  async getEvents(blockHash, token, name) {
+  async getEvents (blockHash: string, token: string, name: string): Promise<EventsResult> {
     const didSyncEvents = await this._db.didSyncEvents({ blockHash, token });
     if (!didSyncEvents) {
       // Fetch and save events first and make a note in the event sync progress table.
@@ -147,21 +173,27 @@ export class Indexer {
       // TODO: Filter using db WHERE condition when name is not empty.
       .filter(event => !name || name === event.eventName)
       .map(e => {
-        const eventFields = {};
+        const eventFields: {
+          from?: string,
+          to?: string,
+          value?: BigInt,
+          owner?: string,
+          spender?: string,
+        } = {};
 
         switch (e.eventName) {
           case 'Transfer': {
-            eventFields['from'] = e.transferFrom;
-            eventFields['to'] = e.transferTo;
-            eventFields['value'] = e.transferValue;
+            eventFields.from = e.transferFrom;
+            eventFields.to = e.transferTo;
+            eventFields.value = e.transferValue;
             break;
-          };
+          }
           case 'Approval': {
-            eventFields['owner'] = e.approvalOwner;
-            eventFields['spender'] = e.approvalSpender;
-            eventFields['value'] = e.approvalValue;
+            eventFields.owner = e.approvalOwner;
+            eventFields.spender = e.approvalSpender;
+            eventFields.value = e.approvalValue;
             break;
-          };
+          }
         }
 
         return {
@@ -171,7 +203,7 @@ export class Indexer {
           },
           // TODO: Return proof only if requested.
           proof: JSON.parse(e.proof)
-        }
+        };
       });
 
     log(JSON.stringify(result, null, 2));
@@ -180,7 +212,7 @@ export class Indexer {
   }
 
   // TODO: Move into base/class or framework package.
-  async _getStorageValue(blockHash, token, variable) {
+  async _getStorageValue (blockHash: string, token: string, variable: string): Promise<ValueResult> {
     return getStorageValue(
       this._storageLayout,
       this._getStorageAt,
@@ -190,14 +222,14 @@ export class Indexer {
     );
   }
 
-  async _fetchAndSaveEvents({ blockHash, token }) {
+  async _fetchAndSaveEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<void> {
     const logs = await this._ethClient.getLogs({ blockHash, contract: token });
     log(JSON.stringify(logs, null, 2));
 
     const eventNameToTopic = getEventNameTopics(this._abi);
     const logTopicToEventName = invert(eventNameToTopic);
 
-    const dbEvents = logs.map(log => {
+    const dbEvents = logs.map((log: any) => {
       const { topics, data: value, cid, ipldBlock } = log;
 
       const [topic0, topic1, topic2] = topics;
@@ -206,7 +238,7 @@ export class Indexer {
       const address1 = topictoAddress(topic1);
       const address2 = topictoAddress(topic2);
 
-      const event = {
+      const event: DeepPartial<Event> = {
         blockHash,
         token,
         eventName,
@@ -219,22 +251,22 @@ export class Indexer {
               ipldBlock
             }
           })
-        }),
+        })
       };
 
       switch (eventName) {
         case 'Transfer': {
-          event['transferFrom'] = address1;
-          event['transferTo'] = address2;
-          event['transferValue'] = BigInt(value);
+          event.transferFrom = address1;
+          event.transferTo = address2;
+          event.transferValue = BigInt(value);
           break;
-        };
+        }
         case 'Approval': {
-          event['approvalOwner'] = address1;
-          event['approvalSpender'] = address2;
-          event['approvalValue'] = BigInt(value);
+          event.approvalOwner = address1;
+          event.approvalSpender = address2;
+          event.approvalValue = BigInt(value);
           break;
-        };
+        }
       }
 
       return event;

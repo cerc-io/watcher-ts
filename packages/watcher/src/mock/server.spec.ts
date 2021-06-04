@@ -16,11 +16,16 @@ import {
 
 import { blocks, tokens as tokenInfo } from './data';
 
-const testCases = {
-  'balanceOf': [],
-  'allowance': [],
-  'events': [],
-  'tokens': []
+const testCases: {
+  balanceOf: any[],
+  allowance: any[],
+  events: any[],
+  tokens: any[]
+} = {
+  balanceOf: [],
+  allowance: [],
+  events: [],
+  tokens: []
 };
 
 const blockHashes = _.keys(blocks);
@@ -45,7 +50,7 @@ blockHashes.forEach(blockHash => {
     });
 
     // Balance test cases.
-    const balanceOfOwners = _.keys(tokenObj['balanceOf']);
+    const balanceOfOwners = _.keys(tokenObj.balanceOf);
     balanceOfOwners.forEach(owner => {
       testCases.balanceOf.push({
         blockHash,
@@ -56,7 +61,7 @@ blockHashes.forEach(blockHash => {
     });
 
     // Allowance test cases.
-    const allowanceOwners = _.keys(tokenObj['allowance']);
+    const allowanceOwners = _.keys(tokenObj.allowance);
     allowanceOwners.forEach(owner => {
       const allowanceObj = tokenObj.allowance[owner];
       const spenders = _.keys(allowanceObj);
@@ -74,8 +79,7 @@ blockHashes.forEach(blockHash => {
 });
 
 describe('server', () => {
-
-  const client = new GraphQLClient("http://localhost:3001/graphql");
+  const client = new GraphQLClient('http://localhost:3001/graphql');
 
   it('query token info', async () => {
     const tests = testCases.tokens;
@@ -144,10 +148,10 @@ describe('server', () => {
       const testCase = tests[i];
       const result = await client.request(queryEvents, testCase);
 
-      const resultEvents = result.events.map(record => record.event);
+      const resultEvents = result.events.map((record: any) => record.event);
       expect(resultEvents.length).to.equal(testCase.events.length);
 
-      resultEvents.forEach((resultEvent, index) => {
+      resultEvents.forEach((resultEvent: any, index: number) => {
         const { name, ...testCaseEvent } = testCase.events[index];
 
         if (name === 'Transfer') {

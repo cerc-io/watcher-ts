@@ -1,6 +1,6 @@
 // TODO: Pull mock data for 5 tokens from rinkeby.
 
-export const tokens = {
+export const tokens: {[address: string]: {[variable: string]: string}} = {
   '0xd87fea54f506972e3267239ec8e159548892074a': {
     name: 'ChainLink Token',
     symbol: 'LINK',
@@ -9,7 +9,7 @@ export const tokens = {
   }
 };
 
-export const blocks = {
+export const blocks: {[blockHash: string]: {[address: string]: any}} = {
   // Block hash.
   '0x77b5479a5856dd8ec63df6aabf9ce0913071a6dda3a3d54f3c9c940574bcb8ab': {
 

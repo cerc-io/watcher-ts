@@ -6,7 +6,9 @@
   "scripts": {
     "server": "DEBUG=vulcanize:* nodemon src/server.ts -f environments/local.toml",
     "server:mock": "MOCK=1 nodemon src/server.ts -f environments/local.toml",
-    "test": "mocha -r ts-node/register src/**/*.spec.ts"
+    "test": "mocha -r ts-node/register src/**/*.spec.ts",
+    "lint": "eslint .",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -50,6 +52,15 @@
     "@types/fs-extra": "^9.0.11",
     "@types/yargs": "^17.0.0",
     "nodemon": "^2.0.7",
-    "ts-node": "^10.0.0"
+    "ts-node": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-semistandard": "^15.0.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "eslint-plugin-standard": "^5.0.0"
   }
 }

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 // Stores a row if events for a (block, token) combination have already been fetched.
 //
@@ -7,15 +7,14 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from "typeorm";
 // yet been synced from upstream.
 //
 @Entity()
-@Index(["blockHash", "token"], { unique: true })
+@Index(['blockHash', 'token'], { unique: true })
 export class EventSyncProgress {
-
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @Column("varchar", { length: 66 })
-  blockHash: string;
+  @Column('varchar', { length: 66 })
+  blockHash!: string;
 
-  @Column("varchar", { length: 42 })
-  token: string;
+  @Column('varchar', { length: 42 })
+  token!: string;
 }

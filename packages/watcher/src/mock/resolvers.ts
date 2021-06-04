@@ -5,13 +5,12 @@ import { blocks } from './data';
 
 const log = debug('test');
 
-export const createResolvers = async (config) => {
-
+export const createResolvers = async (): Promise<any> => {
   return {
     BigInt: new BigInt('bigInt'),
 
     TokenEvent: {
-      __resolveType: (obj) => {
+      __resolveType: (obj: any) => {
         if (obj.owner) {
           return 'ApprovalEvent';
         }
@@ -22,65 +21,65 @@ export const createResolvers = async (config) => {
 
     Query: {
 
-      totalSupply: (_, { blockHash, token }) => {
+      totalSupply: (_: any, { blockHash, token }: { blockHash: string, token: string }) => {
         log('totalSupply', blockHash, token);
 
         return {
           value: blocks[blockHash][token].totalSupply,
           proof: { data: '' }
-        }
+        };
       },
 
-      balanceOf: (_, { blockHash, token, owner }) => {
+      balanceOf: (_: any, { blockHash, token, owner }: { blockHash: string, token: string, owner: string }) => {
         log('balanceOf', blockHash, token, owner);
 
         return {
           value: blocks[blockHash][token].balanceOf[owner],
           proof: { data: '' }
-        }
+        };
       },
 
-      allowance: (_, { blockHash, token, owner, spender }) => {
+      allowance: (_: any, { blockHash, token, owner, spender }: { blockHash: string, token: string, owner: string, spender: string }) => {
         log('allowance', blockHash, token, owner, spender);
 
         return {
           value: blocks[blockHash][token].allowance[owner][spender],
           proof: { data: '' }
-        }
+        };
       },
 
-      name: (_, { blockHash, token }) => {
+      name: (_: any, { blockHash, token }: { blockHash: string, token: string }) => {
         log('name', blockHash, token);
 
         return {
           value: blocks[blockHash][token].name,
           proof: { data: '' }
-        }
+        };
       },
 
-      symbol: (_, { blockHash, token }) => {
+      symbol: (_: any, { blockHash, token }: { blockHash: string, token: string }) => {
         log('symbol', blockHash, token);
 
         return {
           value: blocks[blockHash][token].symbol,
           proof: { data: '' }
-        }
+        };
       },
 
-      decimals: (_, { blockHash, token }) => {
+      decimals: (_: any, { blockHash, token }: { blockHash: string, token: string }) => {
         log('decimals', blockHash, token);
 
         return {
           value: blocks[blockHash][token].decimals,
           proof: { data: '' }
-        }
+        };
       },
 
-      events: (_, { blockHash, token, name }) => {
+      events: (_: any, { blockHash, token, name }: { blockHash: string, token: string, name: string }) => {
         log('events', blockHash, token, name);
         return blocks[blockHash][token].events
-          .filter(e => !name || name === e.name)
-          .map(e => ({ 'event': e }));
+          .filter((e: any) => !name || name === e.name)
+          .map((e: any) => ({ event: e }));
       }
     }
   };

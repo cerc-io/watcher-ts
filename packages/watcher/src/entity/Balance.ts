@@ -1,24 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 @Entity()
-@Index(["blockHash", "token", "owner"], { unique: true })
+@Index(['blockHash', 'token', 'owner'], { unique: true })
 export class Balance {
-
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @Column("varchar", { length: 66 })
-  blockHash: string;
+  @Column('varchar', { length: 66 })
+  blockHash!: string;
 
-  @Column("varchar", { length: 42 })
-  token: string;
+  @Column('varchar', { length: 42 })
+  token!: string;
 
-  @Column("varchar", { length: 42 })
-  owner: string;
+  @Column('varchar', { length: 42 })
+  owner!: string;
 
-  @Column("numeric")
-  value: number;
+  @Column('numeric')
+  value!: BigInt;
 
-  @Column("text")
-  proof: string;
+  @Column('text')
+  proof!: string;
 }
