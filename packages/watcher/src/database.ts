@@ -1,5 +1,6 @@
 import assert from "assert";
 import { Connection, createConnection } from "typeorm";
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { Allowance } from "./entity/Allowance";
 import { Balance } from "./entity/Balance";
@@ -18,13 +19,17 @@ export class Database {
 
   async init() {
     assert(!this._conn);
-    this._conn = await createConnection(this._config);
+
+    this._conn = await createConnection({
+      ...this._config,
+      namingStrategy: new SnakeNamingStrategy()
+    });
   }
 
   async getBalance({ blockHash, token, owner }) {
     return this._conn.getRepository(Balance)
       .createQueryBuilder("balance")
-      .where("blockHash = :blockHash AND token = :token AND owner = :owner", {
+      .where("block_hash = :blockHash AND token = :token AND owner = :owner", {
         blockHash,
         token,
         owner
@@ -35,7 +40,7 @@ export class Database {
   async getAllowance({ blockHash, token, owner, spender }) {
     return this._conn.getRepository(Allowance)
       .createQueryBuilder("allowance")
-      .where("blockHash = :blockHash AND token = :token AND owner = :owner AND spender = :spender", {
+      .where("block_hash = :blockHash AND token = :token AND owner = :owner AND spender = :spender", {
         blockHash,
         token,
         owner,
@@ -60,7 +65,7 @@ export class Database {
   async didSyncEvents({ blockHash, token }) {
     const numRows = await this._conn.getRepository(EventSyncProgress)
       .createQueryBuilder()
-      .where("blockHash = :blockHash AND token = :token", {
+      .where("block_hash = :blockHash AND token = :token", {
         blockHash,
         token,
       })
@@ -72,7 +77,7 @@ export class Database {
   async getEvents({ blockHash, token }) {
     return this._conn.getRepository(Event)
       .createQueryBuilder("event")
-      .where("blockHash = :blockHash AND token = :token", {
+      .where("block_hash = :blockHash AND token = :token", {
         blockHash,
         token,
       })
@@ -82,7 +87,7 @@ export class Database {
   async getEventsByName({ blockHash, token, eventName }) {
     return this._conn.getRepository(Event)
       .createQueryBuilder("event")
-      .where("blockHash = :blockHash AND token = :token AND :eventName = :eventName", {
+      .where("block_hash = :blockHash AND token = :token AND :eventName = :eventName", {
         blockHash,
         token,
         eventName

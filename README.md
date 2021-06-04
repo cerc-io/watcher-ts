@@ -26,6 +26,15 @@ Install packages (Node.JS v15.11.0):
 yarn
 ```
 
+Create a postgres12 database and provide connection settings in `environments/local.toml`.
+
+For example:
+
+```
+sudo su - postgres
+createdb erc20-watcher
+```
+
 Run the watcher:
 
 ```bash

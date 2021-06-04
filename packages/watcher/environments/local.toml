@@ -3,10 +3,14 @@
   port = 3001
 
 [database]
-  type = "sqlite"
-  database = "out/indexer.db"
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "erc20-watcher"
+  username = "postgres"
+  password = "postgres"
   synchronize = true
-  logging = false
+  logging = true
 
 [upstream]
   gqlEndpoint = "http://127.0.0.1:8083/graphql"

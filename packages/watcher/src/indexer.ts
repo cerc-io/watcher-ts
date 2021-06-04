@@ -75,7 +75,7 @@ export class Indexer {
     log(JSON.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveBalance({ blockHash, token, owner, value, proof: JSON.stringify(proof) });
+    await this._db.saveBalance({ blockHash, token, owner, value: BigInt(value), proof: JSON.stringify(proof) });
 
     return result;
   }
@@ -103,7 +103,7 @@ export class Indexer {
     log(JSON.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveAllowance({ blockHash, token, owner, spender, value, proof: JSON.stringify(proof) });
+    await this._db.saveAllowance({ blockHash, token, owner, spender, value: BigInt(value), proof: JSON.stringify(proof) });
 
     return result;
   }
@@ -226,13 +226,13 @@ export class Indexer {
         case 'Transfer': {
           event['transferFrom'] = address1;
           event['transferTo'] = address2;
-          event['transferValue'] = value;
+          event['transferValue'] = BigInt(value);
           break;
         };
         case 'Approval': {
           event['approvalOwner'] = address1;
           event['approvalSpender'] = address2;
-          event['approvalValue'] = value;
+          event['approvalValue'] = BigInt(value);
           break;
         };
       }
