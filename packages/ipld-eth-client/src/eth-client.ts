@@ -6,13 +6,23 @@ import { Cache } from '@vulcanize/cache';
 import ethQueries from './eth-queries';
 import { padKey } from './utils';
 
-export class EthClient {
+interface Config {
+  gqlEndpoint: string;
+  cache: Cache;
+}
 
-  _config: any;
-  _client: any;
+interface Vars {
+  blockHash: string;
+  contract: string;
+  slot?: string;
+}
+
+export class EthClient {
+  _config: Config;
+  _client: GraphQLClient;
   _cache: Cache;
 
-  constructor(config) {
+  constructor (config: Config) {
     this._config = config;
 
     const { gqlEndpoint, cache } = config;
@@ -22,7 +32,7 @@ export class EthClient {
     this._cache = cache;
   }
 
-  async getStorageAt({ blockHash, contract, slot }) {
+  async getStorageAt ({ blockHash, contract, slot }: { blockHash: string, contract: string, slot: string }): Promise<{ value: string, proof: { data: string } }> {
     slot = `0x${padKey(slot)}`;
 
     const result = await this._getCachedOrFetch('getStorageAt', { blockHash, contract, slot });
@@ -46,14 +56,14 @@ export class EthClient {
     };
   }
 
-  async getLogs(vars) {
+  async getLogs (vars: Vars): Promise<any> {
     const result = await this._getCachedOrFetch('getLogs', vars);
     const { getLogs: logs } = result;
 
     return logs;
   }
 
-  async _getCachedOrFetch(queryName, vars) {
+  async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {
     const keyObj = {
       queryName,
       vars
@@ -61,7 +71,7 @@ export class EthClient {
 
     // Check if request cached in db, if cache is enabled.
     if (this._cache) {
-      const [value, found] = await this._cache.get(keyObj);
+      const [value, found] = await this._cache.get(keyObj) || [undefined, false];
       if (found) {
         return value;
       }

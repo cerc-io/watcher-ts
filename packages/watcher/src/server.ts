@@ -24,12 +24,12 @@ export const createServer = async () => {
 
   const configFile = argv['configFile'];
   const configFilePath = path.resolve(configFile);
-  const fileExists = await fs.exists(configFilePath);
+  const fileExists = await fs.pathExists(configFilePath);
   if (!fileExists) {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  var config = toml.parse(await fs.readFile(configFilePath));
+  var config = toml.parse(await fs.readFile(configFilePath, 'utf8'));
   log("config", JSON.stringify(config, null, 2));
 
   assert(config.server, 'Missing server config');

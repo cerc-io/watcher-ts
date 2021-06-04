@@ -8,12 +8,18 @@ import debug from 'debug';
 
 const log = debug('vulcanize:cache');
 
-export const getCache = async (config) => {
+interface Config {
+  name: string;
+  enabled: boolean;
+  deleteOnStart: boolean;
+}
+
+export const getCache = async (config: Config): Promise<undefined | Cache> => {
   let cache;
 
   // Cache is optional.
   if (config) {
-    log("config", JSON.stringify(config, null, 2));
+    log('config', JSON.stringify(config, null, 2));
 
     const { name, enabled, deleteOnStart } = config;
 
@@ -37,23 +43,22 @@ export const getCache = async (config) => {
 };
 
 export class Cache {
-
   _db: any;
   _name: string;
 
-  constructor(name, dirPath) {
+  constructor (name: string, dirPath: string) {
     assert(name);
     assert(dirPath);
 
     this._name = name;
-    this._db = level(dirPath, { valueEncoding: 'json' });;
+    this._db = level(dirPath, { valueEncoding: 'json' });
   }
 
-  key(obj) {
+  key (obj: any): string {
     return this._cacheKey(obj);
   }
 
-  async get(obj) {
+  async get (obj: any): Promise<[any, boolean] | undefined> {
     const key = this._cacheKey(obj);
 
     try {
@@ -66,16 +71,16 @@ export class Cache {
       log(`${this._name}: cache miss ${key}`);
 
       if (err.notFound) {
-        return [undefined, false]
+        return [undefined, false];
       }
     }
   }
 
-  async put(obj, value) {
+  async put (obj: any, value: any): Promise<void> {
     await this._db.put(this._cacheKey(obj), value);
   }
 
-  _cacheKey(obj) {
+  _cacheKey (obj: any): string {
     return ethers.utils.keccak256(Buffer.from(canonicalStringify(obj)));
   }
 }
