@@ -1,4 +1,4 @@
-import { gql } from 'graphql-request';
+import { gql } from '@apollo/client/core';
 
 export const getStorageAt = gql`
 query getStorageAt($blockHash: Bytes32!, $contract: Address!, $slot: Bytes32!) {
@@ -24,7 +24,31 @@ query getLogs($blockHash: Bytes32!, $contract: Address!) {
 }
 `;
 
+export const subscribeLogs = gql`
+subscription SubscriptionReceipt {
+  listen(topic: "receipt_cids") {
+    relatedNode {
+      ... on ReceiptCid {
+        logContracts
+        topic0S
+        topic1S
+        topic2S
+        topic3S
+        contract
+        ethTransactionCidByTxId {
+          ethHeaderCidByHeaderId {
+            blockHash
+            blockNumber
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
 export default {
   getStorageAt,
-  getLogs
+  getLogs,
+  subscribeLogs
 };

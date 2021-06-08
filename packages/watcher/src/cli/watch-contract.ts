@@ -1,0 +1,45 @@
+import assert from 'assert';
+import yargs from 'yargs';
+import 'reflect-metadata';
+import { ethers } from 'ethers';
+
+import { Config, getConfig } from '../config';
+import { Database } from '../database';
+
+(async () => {
+  const argv = await yargs.parserConfiguration({
+    'parse-numbers': false
+  }).options({
+    configFile: {
+      type: 'string',
+      require: true,
+      demandOption: true,
+      describe: 'configuration file path (toml)'
+    },
+    address: {
+      type: 'string',
+      require: true,
+      demandOption: true,
+      describe: 'Address of the deployed contract'
+    },
+    startingBlock: {
+      type: 'number',
+      default: 1,
+      describe: 'Starting block'
+    }
+  }).argv;
+
+  const config: Config = await getConfig(argv.configFile);
+  const { database: dbConfig } = config;
+
+  assert(dbConfig);
+
+  const db = new Database(dbConfig);
+  await db.init();
+
+  // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
+  const address = ethers.utils.getAddress(argv.address);
+
+  await db.saveContract(address, argv.startingBlock);
+  await db.close();
+})();

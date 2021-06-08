@@ -4,6 +4,7 @@ import { invert } from 'lodash';
 import { JsonFragment } from '@ethersproject/abi';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
+import { ethers } from 'ethers';
 
 import { EthClient, getMappingSlot, topictoAddress } from '@vulcanize/ipld-eth-client';
 import { getStorageInfo, getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
@@ -44,6 +45,7 @@ export class Indexer {
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
+  _contract: ethers.utils.Interface
 
   constructor (db: Database, ethClient: EthClient, artifacts: Artifacts) {
     assert(db);
@@ -61,6 +63,8 @@ export class Indexer {
 
     this._abi = abi;
     this._storageLayout = storageLayout;
+
+    this._contract = new ethers.utils.Interface(this._abi);
   }
 
   async totalSupply (blockHash: string, token: string): Promise<ValueResult> {
@@ -151,7 +155,41 @@ export class Indexer {
     throw new Error('Not implemented.');
   }
 
-  async getEvents (blockHash: string, token: string, name: string): Promise<EventsResult> {
+  async processEvent (blockHash: string, token: string, receipt: any, logIndex: number): Promise<void> {
+    const topics = [];
+
+    // We only care about the event type for now.
+    const data = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+    topics.push(receipt.topic0S[logIndex]);
+    topics.push(receipt.topic1S[logIndex]);
+    topics.push(receipt.topic2S[logIndex]);
+
+    const { name: eventName, args } = this._contract.parseLog({ topics, data });
+    log(`process event ${eventName} ${args}`);
+
+    switch (eventName) {
+      case 'Transfer': {
+        const [from, to] = args;
+
+        // Update balance for sender and receiver.
+        await this.balanceOf(blockHash, token, from);
+        await this.balanceOf(blockHash, token, to);
+
+        break;
+      }
+      case 'Approval': {
+        const [owner, spender] = args;
+
+        // Update allowance.
+        await this.allowance(blockHash, token, owner, spender);
+
+        break;
+      }
+    }
+  }
+
+  async getEvents (blockHash: string, token: string, name: string | null): Promise<EventsResult> {
     const didSyncEvents = await this._db.didSyncEvents({ blockHash, token });
     if (!didSyncEvents) {
       // Fetch and save events first and make a note in the event sync progress table.
@@ -203,6 +241,12 @@ export class Indexer {
     log(JSONbig.stringify(result, null, 2));
 
     return result;
+  }
+
+  async isWatchedContract (address : string): Promise<boolean> {
+    assert(address);
+
+    return this._db.isWatchedContract(address);
   }
 
   // TODO: Move into base/class or framework package.

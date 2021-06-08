@@ -1,67 +1,13 @@
 import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
-import 'reflect-metadata';
-import { ConnectionOptions } from 'typeorm';
 
-import { getCache, Config as CacheConfig } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-
-import artifacts from './artifacts/ERC20.json';
 import { Indexer, ValueResult } from './indexer';
-import { Database } from './database';
-
-export interface Config {
-  server: {
-    host: string;
-    port: string;
-  };
-  database: ConnectionOptions;
-  upstream: {
-    gqlEndpoint: string;
-    cache: CacheConfig
-  }
-}
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (config: Config): Promise<any> => {
-  const { upstream, database } = config;
-
-  assert(database, 'Missing database config');
-
-  const ormConfig: ConnectionOptions = {
-    ...database,
-    entities: [
-      'src/entity/**/*.ts'
-    ],
-    migrations: [
-      'src/migration/**/*.ts'
-    ],
-    subscribers: [
-      'src/subscriber/**/*.ts'
-    ],
-    cli: {
-      entitiesDir: 'src/entity',
-      migrationsDir: 'src/migration',
-      subscribersDir: 'src/subscriber'
-    }
-  };
-
-  const db = new Database(ormConfig);
-  await db.init();
-
-  assert(upstream, 'Missing upstream config');
-
-  const { gqlEndpoint, cache: cacheConfig } = upstream;
-  assert(upstream, 'Missing upstream gqlEndpoint');
-
-  const cache = await getCache(cacheConfig);
-  assert(cache, 'Missing cache');
-
-  const ethClient = new EthClient({ gqlEndpoint, cache });
-
-  const indexer = new Indexer(db, ethClient, artifacts);
+export const createResolvers = async (indexer: Indexer): Promise<any> => {
+  assert(indexer);
 
   return {
     BigInt: new BigInt('bigInt'),
