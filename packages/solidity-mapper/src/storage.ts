@@ -68,7 +68,7 @@ export const getStorageValue = async (storageLayout: StorageLayout, getStorageAt
  * @param storageValue
  * @param typeLabel
  */
-export const getValueByType = (storageValue: string, typeLabel: string): number | string | boolean => {
+export const getValueByType = (storageValue: string, typeLabel: string): bigint | string | boolean => {
   // Parse value for boolean type.
   if (typeLabel === 'bool') {
     return !BigNumber.from(storageValue).isZero();
@@ -76,7 +76,7 @@ export const getValueByType = (storageValue: string, typeLabel: string): number 
 
   // Parse value for uint/int type or enum type.
   if (typeLabel.match(/^enum|u?int[0-9]+/)) {
-    return BigNumber.from(storageValue).toNumber();
+    return BigInt(storageValue);
   }
 
   // Parse value for string type.

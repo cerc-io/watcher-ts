@@ -7,6 +7,7 @@ import toml from 'toml';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import JSONbig from 'json-bigint';
 
 import { createSchema } from './gql';
 
@@ -30,7 +31,7 @@ export const createServer = async (): Promise<Application> => {
   }
 
   const config = toml.parse(await fs.readFile(configFilePath, 'utf8'));
-  log('config', JSON.stringify(config, null, 2));
+  log('config', JSONbig.stringify(config, null, 2));
 
   assert(config.server, 'Missing server config');
 

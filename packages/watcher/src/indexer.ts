@@ -3,6 +3,7 @@ import debug from 'debug';
 import { invert } from 'lodash';
 import { JsonFragment } from '@ethersproject/abi';
 import { DeepPartial } from 'typeorm';
+import JSONbig from 'json-bigint';
 
 import { EthClient, getMappingSlot, topictoAddress } from '@vulcanize/ipld-eth-client';
 import { getStorageInfo, getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
@@ -63,17 +64,10 @@ export class Indexer {
   }
 
   async totalSupply (blockHash: string, token: string): Promise<ValueResult> {
-    // TODO: Use getStorageValue when it supports uint256 values.
-    const { slot } = getStorageInfo(this._storageLayout, '_totalSupply');
+    const result = await this._getStorageValue(blockHash, token, '_totalSupply');
 
-    const vars = {
-      blockHash,
-      contract: token,
-      slot
-    };
-
-    const result = await this._getStorageAt(vars);
-    log(JSON.stringify(result, null, 2));
+    // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-521460510
+    log(JSONbig.stringify(result, null, 2));
 
     return result;
   }
@@ -98,10 +92,10 @@ export class Indexer {
     };
 
     const result = await this._getStorageAt(vars);
-    log(JSON.stringify(result, null, 2));
+    log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveBalance({ blockHash, token, owner, value: BigInt(value), proof: JSON.stringify(proof) });
+    await this._db.saveBalance({ blockHash, token, owner, value: BigInt(value), proof: JSONbig.stringify(proof) });
 
     return result;
   }
@@ -126,10 +120,10 @@ export class Indexer {
     };
 
     const result = await this._getStorageAt(vars);
-    log(JSON.stringify(result, null, 2));
+    log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveAllowance({ blockHash, token, owner, spender, value: BigInt(value), proof: JSON.stringify(proof) });
+    await this._db.saveAllowance({ blockHash, token, owner, spender, value: BigInt(value), proof: JSONbig.stringify(proof) });
 
     return result;
   }
@@ -137,7 +131,7 @@ export class Indexer {
   async name (blockHash: string, token: string): Promise<ValueResult> {
     const result = await this._getStorageValue(blockHash, token, '_name');
 
-    log(JSON.stringify(result, null, 2));
+    log(JSONbig.stringify(result, null, 2));
 
     return result;
   }
@@ -145,7 +139,7 @@ export class Indexer {
   async symbol (blockHash: string, token: string): Promise<ValueResult> {
     const result = await this._getStorageValue(blockHash, token, '_symbol');
 
-    log(JSON.stringify(result, null, 2));
+    log(JSONbig.stringify(result, null, 2));
 
     return result;
   }
@@ -206,7 +200,7 @@ export class Indexer {
         };
       });
 
-    log(JSON.stringify(result, null, 2));
+    log(JSONbig.stringify(result, null, 2));
 
     return result;
   }
@@ -224,7 +218,7 @@ export class Indexer {
 
   async _fetchAndSaveEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<void> {
     const logs = await this._ethClient.getLogs({ blockHash, contract: token });
-    log(JSON.stringify(logs, null, 2));
+    log(JSONbig.stringify(logs, null, 2));
 
     const eventNameToTopic = getEventNameTopics(this._abi);
     const logTopicToEventName = invert(eventNameToTopic);
@@ -243,8 +237,8 @@ export class Indexer {
         token,
         eventName,
 
-        proof: JSON.stringify({
-          data: JSON.stringify({
+        proof: JSONbig.stringify({
+          data: JSONbig.stringify({
             blockHash,
             receipt: {
               cid,

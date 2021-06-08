@@ -90,13 +90,13 @@ describe('Get value from storage', () => {
     await integers.setInt1(expectedValue);
     let blockHash = await getBlockHash();
     let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int1');
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
 
     expectedValue = 34;
     await integers.setInt2(expectedValue);
     blockHash = await getBlockHash();
     ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int2'));
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
   });
 
   it('get value for integer type variables using single slot', async () => {
@@ -109,7 +109,7 @@ describe('Get value from storage', () => {
     await integers.setInt3(expectedValue);
     const blockHash = await getBlockHash();
     const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int3');
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
   });
 
   it('get value for unsigned integer type variables packed together', async () => {
@@ -122,13 +122,13 @@ describe('Get value from storage', () => {
     await unsignedIntegers.setUint1(expectedValue);
     let blockHash = await getBlockHash();
     let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint1');
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
 
     expectedValue = 34;
     await unsignedIntegers.setUint2(expectedValue);
     blockHash = await getBlockHash();
     ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint2'));
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
   });
 
   it('get value for unsigned integer type variables using single slot', async () => {
@@ -141,7 +141,7 @@ describe('Get value from storage', () => {
     await unsignedIntegers.setUint3(expectedValue);
     const blockHash = await getBlockHash();
     const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, unsignedIntegers.address, 'uint3');
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
   });
 
   it('get value for boolean type', async () => {
@@ -237,7 +237,7 @@ describe('Get value from storage', () => {
     await testEnums.setChoicesEnum1(expectedValue);
     const blockHash = await getBlockHash();
     const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testEnums.address, 'choicesEnum1');
-    expect(value).to.equal(expectedValue);
+    expect(value).to.equal(BigInt(expectedValue));
   });
 
   describe('string type', () => {
@@ -287,7 +287,7 @@ describe('Get value from storage', () => {
     await testFixedArrays.setUint16Array(expectedValue);
     blockHash = await getBlockHash();
     ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'uint16Array'));
-    expect(value).to.eql(expectedValue);
+    expect(value).to.eql(expectedValue.map(el => BigInt(el)));
   });
 
   // Test for array variables which are more than 32 bytes and use multiple slots.
@@ -302,11 +302,11 @@ describe('Get value from storage', () => {
     await testFixedArrays.setInt128Array(expectedValue);
     let blockHash = await getBlockHash();
     let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'int128Array');
-    expect(value).to.eql(expectedValue);
+    expect(value).to.eql(expectedValue.map(el => BigInt(el)));
 
     await testFixedArrays.setUintArray(expectedValue);
     blockHash = await getBlockHash();
     ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'uintArray'));
-    expect(value).to.eql(expectedValue);
+    expect(value).to.eql(expectedValue.map(el => BigInt(el)));
   });
 });
