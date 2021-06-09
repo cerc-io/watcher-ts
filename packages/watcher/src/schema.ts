@@ -1,3 +1,6 @@
+import { gql } from '@apollo/client/core';
+
+export default gql`
 #
 # ERC20 GQL schema
 #
@@ -33,8 +36,6 @@ type ResultUInt256 {
 }
 
 # Transfer Event
-# Emitted by: `function transfer(address _to, uint256 _value) public returns (bool success)`
-# Emitted by: `function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)`
 type TransferEvent {
   from: String!
   to: String!
@@ -42,7 +43,6 @@ type TransferEvent {
 }
 
 # Approval Event
-# Emittted by: `function approve(address _spender, uint256 _value) public returns (bool success)`
 type ApprovalEvent {
   owner: String!
   spender: String!
@@ -60,6 +60,13 @@ type ResultEvent {
   proof: Proof
 }
 
+# Watched event, include additional context over and above the event data.
+type WatchedEvent {
+  blockHash: String!
+  token: String!
+
+  event: ResultEvent!
+}
 
 #
 # Queries
@@ -72,13 +79,11 @@ type Query {
   # https://docs.openzeppelin.com/contracts/2.x/api/token/erc20#IERC20
   #
 
-  # `function totalSupply() public view returns (uint256)`
   totalSupply(
     blockHash: String!
     token: String!
   ): ResultUInt256!
 
-  # `function balanceOf(address _owner) public view returns (uint256 balance)`
   balanceOf(
     blockHash: String!
     token: String!
@@ -86,7 +91,6 @@ type Query {
     owner: String!
   ): ResultUInt256!
 
-  # `function allowance(address _owner, address _spender) public view returns (uint256 remaining)`
   allowance(
     blockHash: String!
     token: String!
@@ -133,5 +137,6 @@ type Query {
 type Subscription {
 
   # Watch for token events (at head of chain).
-  onTokenEvent(token: String!): ResultEvent!
+  onTokenEvent: WatchedEvent!
 }
+`;

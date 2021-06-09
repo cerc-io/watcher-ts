@@ -19,8 +19,6 @@ export const getCache = async (config: Config): Promise<undefined | Cache> => {
 
   // Cache is optional.
   if (config) {
-    log('config', JSON.stringify(config, null, 2));
-
     const { name, enabled, deleteOnStart } = config;
 
     assert(name);

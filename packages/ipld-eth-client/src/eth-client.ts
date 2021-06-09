@@ -44,13 +44,15 @@ export class EthClient {
       reconnect: true,
       connectionCallback: (error: Error[]) => {
         if (error) {
-          log('subscription client connection', error[0].message);
+          log('Subscription client connection error', error[0].message);
+        } else {
+          log('Subscription client connected successfully');
         }
       }
     }, ws);
 
     subscriptionClient.onError(error => {
-      log('subscription client error', error.message);
+      log('Subscription client error', error.message);
     });
 
     const httpLink = new HttpLink({

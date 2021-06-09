@@ -14,11 +14,15 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
     TokenEvent: {
       __resolveType: (obj: any) => {
-        if (obj.owner) {
-          return 'ApprovalEvent';
-        }
+        assert(obj.__typename);
 
-        return 'TransferEvent';
+        return obj.__typename;
+      }
+    },
+
+    Subscription: {
+      onTokenEvent: {
+        subscribe: () => indexer.getEventIterator()
       }
     },
 
@@ -55,7 +59,7 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       },
 
       events: async (_: any, { blockHash, token, name }: { blockHash: string, token: string, name: string }) => {
-        log('events', blockHash, token, name);
+        log('events', blockHash, token, name || '');
         return indexer.getEvents(blockHash, token, name);
       }
     }

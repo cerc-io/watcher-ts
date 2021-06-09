@@ -85,6 +85,7 @@ export class Database {
         blockHash,
         token
       })
+      .addOrderBy('id', 'ASC')
       .getMany();
   }
 
