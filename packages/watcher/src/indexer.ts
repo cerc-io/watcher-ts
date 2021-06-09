@@ -268,7 +268,14 @@ export class Indexer {
   async isWatchedContract (address : string): Promise<boolean> {
     assert(address);
 
-    return this._db.isWatchedContract(address);
+    return this._db.isWatchedContract(ethers.utils.getAddress(address));
+  }
+
+  async watchContract (address: string, startingBlock: number): Promise<boolean> {
+    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
+    await this._db.saveContract(ethers.utils.getAddress(address), startingBlock);
+
+    return true;
   }
 
   // TODO: Move into base/class or framework package.

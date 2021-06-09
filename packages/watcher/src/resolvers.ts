@@ -26,6 +26,13 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       }
     },
 
+    Mutation: {
+      watchToken: (_: any, { token, startingBlock = 1 }: { token: string, startingBlock: number }): Promise<boolean> => {
+        log('watchToken', token, startingBlock);
+        return indexer.watchContract(token, startingBlock);
+      }
+    },
+
     Query: {
 
       totalSupply: (_: any, { blockHash, token }: { blockHash: string, token: string }): Promise<ValueResult> => {

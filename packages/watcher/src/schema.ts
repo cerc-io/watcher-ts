@@ -139,4 +139,16 @@ type Subscription {
   # Watch for token events (at head of chain).
   onTokenEvent: WatchedEvent!
 }
+
+#
+# Mutations
+#
+type Mutation {
+
+  # Actively watch and index data for the token.
+  watchToken(
+    token: String!
+    startingBlock: Int
+  ): Boolean!
+}
 `;
