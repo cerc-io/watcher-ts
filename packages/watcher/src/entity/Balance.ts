@@ -16,7 +16,7 @@ export class Balance {
   owner!: string;
 
   @Column('numeric')
-  value!: BigInt;
+  value!: bigint;
 
   @Column('text')
   proof!: string;

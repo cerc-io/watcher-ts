@@ -4,7 +4,9 @@
   "workspaces": [
     "packages/*"
   ],
-  "devDependencies": {},
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  },
   "scripts": {
     "test": "lerna run test --stream --no-bail",
     "lint": "lerna run lint --stream"

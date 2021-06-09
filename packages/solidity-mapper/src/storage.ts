@@ -13,6 +13,7 @@ interface Types {
     numberOfBytes: string;
     label: string;
     base?: string;
+    value?: string;
   };
 }
 
@@ -57,10 +58,10 @@ export const getStorageInfo = (storageLayout: StorageLayout, variableName: strin
  * @param variableName
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const getStorageValue = async (storageLayout: StorageLayout, getStorageAt: GetStorageAt, blockHash: string, address: string, variableName: string): Promise<{ value: any, proof: { data: string } }> => {
+export const getStorageValue = async (storageLayout: StorageLayout, getStorageAt: GetStorageAt, blockHash: string, address: string, variableName: string, ...mappingKeys: Array<string>): Promise<{ value: any, proof: { data: string } }> => {
   const { slot, offset, type, types } = getStorageInfo(storageLayout, variableName);
 
-  return getDecodedValue(getStorageAt, blockHash, address, types, { slot, offset, type });
+  return getDecodedValue(getStorageAt, blockHash, address, types, { slot, offset, type }, mappingKeys);
 };
 
 /**
@@ -96,9 +97,9 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
  * @param storageInfo
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, storageInfo: { slot: string, offset: number, type: string }): Promise<{ value: any, proof: { data: string } }> => {
+const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, storageInfo: { slot: string, offset: number, type: string }, mappingKeys: Array<string>): Promise<{ value: any, proof: { data: string } }> => {
   const { slot, offset, type } = storageInfo;
-  const { encoding, numberOfBytes, label: typeLabel, base } = types[type];
+  const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType } = types[type];
 
   const [isArray, arraySize] = typeLabel.match(/\[([0-9]*)\]/) || [false];
   let value: string, proof: { data: string };
@@ -114,7 +115,7 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
     for (let i = 0; i < Number(baseNumberOfBytes) * Number(arraySize); i = i + Number(baseNumberOfBytes)) {
       const arraySlot = BigNumber.from(slot).add(Math.floor(i / 32)).toHexString();
       const slotOffset = i % 32;
-      const { value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: slotOffset, type: base });
+      ({ value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: slotOffset, type: base }, []));
       resultArray.push(value);
       proofs.push(JSON.parse(proof.data));
     }
@@ -140,6 +141,18 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
       ({ value, proof } = await getBytesValue(blockHash, address, slot, getStorageAt));
       break;
 
+    case 'mapping': {
+      const mappingSlot = await getMappingSlot(slot, mappingKeys[0]);
+
+      if (mappingValueType) {
+        ({ value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1)));
+      } else {
+        throw new Error(`Mapping value type not specified for ${mappingKeys[0]}`);
+      }
+
+      break;
+    }
+
     default:
       throw new Error(`Encoding ${encoding} not implemented.`);
   }
@@ -148,6 +161,25 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
     value: getValueByType(value, typeLabel),
     proof
   };
+};
+
+/**
+ * Function to get slot for mapping types.
+ * @param mappingSlot
+ * @param key
+ */
+export const getMappingSlot = (mappingSlot: string, key: string): string => {
+  // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
+  const mappingSlotPadded = utils.hexZeroPad(BigNumber.from(mappingSlot).toHexString(), 32);
+  const keyPadded = utils.hexZeroPad(key, 32);
+
+  const fullKey = utils.concat([
+    keyPadded,
+    mappingSlotPadded
+  ]);
+
+  const slot = utils.keccak256(fullKey);
+  return slot;
 };
 
 /**

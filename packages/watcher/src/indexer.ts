@@ -6,8 +6,8 @@ import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 
-import { EthClient, getMappingSlot, topictoAddress } from '@vulcanize/ipld-eth-client';
-import { getStorageInfo, getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EthClient, topictoAddress } from '@vulcanize/ipld-eth-client';
+import { getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -20,7 +20,7 @@ interface Artifacts {
 }
 
 export interface ValueResult {
-  value: string | BigInt;
+  value: string | bigint;
   proof: {
     data: string;
   }
@@ -85,17 +85,8 @@ export class Indexer {
       };
     }
 
-    // TODO: Use getStorageValue when it supports mappings.
-    const { slot: balancesSlot } = getStorageInfo(this._storageLayout, '_balances');
-    const slot = getMappingSlot(balancesSlot, owner);
+    const result = await this._getStorageValue(blockHash, token, '_balances', owner);
 
-    const vars = {
-      blockHash,
-      contract: token,
-      slot
-    };
-
-    const result = await this._getStorageAt(vars);
     log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
@@ -113,17 +104,8 @@ export class Indexer {
       };
     }
 
-    // TODO: Use getStorageValue when it supports nested mappings.
-    const { slot: allowancesSlot } = getStorageInfo(this._storageLayout, '_allowances');
-    const slot = getMappingSlot(getMappingSlot(allowancesSlot, owner), spender);
+    const result = await this._getStorageValue(blockHash, token, '_allowances', owner, spender);
 
-    const vars = {
-      blockHash,
-      contract: token,
-      slot
-    };
-
-    const result = await this._getStorageAt(vars);
     log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
@@ -250,13 +232,14 @@ export class Indexer {
   }
 
   // TODO: Move into base/class or framework package.
-  async _getStorageValue (blockHash: string, token: string, variable: string): Promise<ValueResult> {
+  async _getStorageValue (blockHash: string, token: string, variable: string, ...mappingKeys: string[]): Promise<ValueResult> {
     return getStorageValue(
       this._storageLayout,
       this._getStorageAt,
       blockHash,
       token,
-      variable
+      variable,
+      ...mappingKeys
     );
   }
 

@@ -10,5 +10,5 @@ export class Contract {
   address!: string;
 
   @Column('numeric')
-  startingBlock!: BigInt;
+  startingBlock!: bigint;
 }

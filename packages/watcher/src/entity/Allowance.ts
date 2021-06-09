@@ -19,7 +19,7 @@ export class Allowance {
   spender!: string;
 
   @Column('numeric')
-  value!: BigInt;
+  value!: bigint;
 
   @Column('text')
   proof!: string;

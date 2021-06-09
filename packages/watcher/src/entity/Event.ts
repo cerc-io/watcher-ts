@@ -31,7 +31,7 @@ export class Event {
   transferTo!: string;
 
   @Column('numeric', { nullable: true })
-  transferValue!: BigInt;
+  transferValue!: bigint;
 
   // Approval event columns.
   @Column('varchar', { length: 42, nullable: true })
@@ -41,5 +41,5 @@ export class Event {
   approvalSpender!: string;
 
   @Column('numeric', { nullable: true })
-  approvalValue!: BigInt;
+  approvalValue!: bigint;
 }
