@@ -14,8 +14,11 @@ interface Types {
     label: string;
     base?: string;
     value?: string;
+    key?: string;
   };
 }
+
+type MappingKey = string | boolean | number;
 
 export interface StorageLayout {
   storage: Storage[];
@@ -58,7 +61,7 @@ export const getStorageInfo = (storageLayout: StorageLayout, variableName: strin
  * @param variableName
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const getStorageValue = async (storageLayout: StorageLayout, getStorageAt: GetStorageAt, blockHash: string, address: string, variableName: string, ...mappingKeys: Array<string>): Promise<{ value: any, proof: { data: string } }> => {
+export const getStorageValue = async (storageLayout: StorageLayout, getStorageAt: GetStorageAt, blockHash: string, address: string, variableName: string, ...mappingKeys: Array<MappingKey>): Promise<{ value: any, proof: { data: string } }> => {
   const { slot, offset, type, types } = getStorageInfo(storageLayout, variableName);
 
   return getDecodedValue(getStorageAt, blockHash, address, types, { slot, offset, type }, mappingKeys);
@@ -97,9 +100,9 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
  * @param storageInfo
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, storageInfo: { slot: string, offset: number, type: string }, mappingKeys: Array<string>): Promise<{ value: any, proof: { data: string } }> => {
+const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, storageInfo: { slot: string, offset: number, type: string }, mappingKeys: Array<MappingKey>): Promise<{ value: any, proof: { data: string } }> => {
   const { slot, offset, type } = storageInfo;
-  const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType } = types[type];
+  const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType, key: mappingKeyType } = types[type];
 
   const [isArray, arraySize] = typeLabel.match(/\[([0-9]*)\]/) || [false];
   let value: string, proof: { data: string };
@@ -142,10 +145,10 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
       break;
 
     case 'mapping': {
-      const mappingSlot = await getMappingSlot(slot, mappingKeys[0]);
+      if (mappingValueType && mappingKeyType) {
+        const mappingSlot = await getMappingSlot(slot, types, mappingKeyType, mappingKeys[0]);
 
-      if (mappingValueType) {
-        ({ value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1)));
+        return getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1));
       } else {
         throw new Error(`Mapping value type not specified for ${mappingKeys[0]}`);
       }
@@ -168,11 +171,32 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
  * @param mappingSlot
  * @param key
  */
-export const getMappingSlot = (mappingSlot: string, key: string): string => {
-  // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
-  const mappingSlotPadded = utils.hexZeroPad(BigNumber.from(mappingSlot).toHexString(), 32);
-  const keyPadded = utils.hexZeroPad(key, 32);
+export const getMappingSlot = (mappingSlot: string, types: Types, keyType: string, key: MappingKey): string => {
+  const { encoding, label: typeLabel } = types[keyType];
 
+  // If key is boolean type convert to 1 or 0 which is the way value is stored in memory.
+  if (typeLabel === 'bool') {
+    key = key ? 1 : 0;
+  }
+
+  // If key is string convert to hex string representation.
+  if (typeLabel.includes('string') && typeof key === 'string') {
+    key = utils.hexlify(utils.toUtf8Bytes(key));
+  }
+
+  // If key is still boolean type the argument passed as key is invalid.
+  if (typeof key === 'boolean') {
+    throw new Error('Invalid key.');
+  }
+
+  // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
+  const mappingSlotPadded = utils.hexZeroPad(mappingSlot, 32);
+
+  const keyPadded = encoding === 'bytes'
+    ? utils.hexlify(key)
+    : utils.hexZeroPad(utils.hexlify(key), 32);
+
+  // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#mappings-and-dynamic-arrays
   const fullKey = utils.concat([
     keyPadded,
     mappingSlotPadded
