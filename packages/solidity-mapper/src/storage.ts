@@ -119,12 +119,24 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
       baseNumberOfBytes = '32';
     }
 
+    const getArrayElement = async (index: number, mappingKeys: MappingKey[]) => {
+      const arrayOffset = index * Number(baseNumberOfBytes);
+      const arraySlot = BigNumber.from(slot).add(Math.floor(arrayOffset / 32)).toHexString();
+      const arraySlotOffset = arrayOffset % 32;
+
+      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: arraySlotOffset, type: base }, mappingKeys);
+    };
+
+    const [arrayIndex, ...remainingKeys] = mappingKeys;
+
+    if (typeof arrayIndex === 'number') {
+      return getArrayElement(arrayIndex, remainingKeys);
+    }
+
     // TODO: Get values in single call and parse according to type.
     // Loop over elements of array and get value.
-    for (let i = 0; i < Number(baseNumberOfBytes) * Number(arraySize); i = i + Number(baseNumberOfBytes)) {
-      const arraySlot = BigNumber.from(slot).add(Math.floor(i / 32)).toHexString();
-      const slotOffset = i % 32;
-      ({ value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: slotOffset, type: base }, []));
+    for (let i = 0; i < Number(arraySize); i++) {
+      ({ value, proof } = await getArrayElement(i, mappingKeys));
       resultArray.push(value);
 
       // Each element in array gets its own proof even if it is packed.

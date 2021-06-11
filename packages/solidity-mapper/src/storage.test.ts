@@ -271,64 +271,64 @@ describe('Get value from storage', () => {
 
   describe('fixed size arrays', () => {
     let testFixedArrays: Contract, storageLayout: StorageLayout;
+    const int128Array = [100, 200, 300, 400, 500];
+    const uint16Array = [10, 20, 30, 40, 50];
+    const boolArray = [true, false];
+    let addressArray: string[] = [];
 
     before(async () => {
       const TestFixedArrays = await ethers.getContractFactory('TestFixedArrays');
       testFixedArrays = await TestFixedArrays.deploy();
       await testFixedArrays.deployed();
       storageLayout = await getStorageLayout('TestFixedArrays');
+
+      const signers = await ethers.getSigners();
+      addressArray = signers.map(signer => signer.address.toLowerCase())
+        .slice(0, 4);
     });
 
+    // Get all elements of array.
     // Test for array variables which are 32 bytes or less and packed into a single slot.
     it('get value for fixed size arrays using single slot', async () => {
-      let expectedValue: Array<number|boolean> = [true, false];
-
-      await testFixedArrays.setBoolArray(expectedValue);
+      await testFixedArrays.setBoolArray(boolArray);
       let blockHash = await getBlockHash();
       let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'boolArray');
-      expect(value).to.eql(expectedValue);
+      expect(value).to.eql(boolArray);
       let proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(expectedValue.length);
+      expect(proofData.length).to.equal(boolArray.length);
 
-      expectedValue = [1, 2, 3, 4, 5];
-      await testFixedArrays.setUint16Array(expectedValue);
+      await testFixedArrays.setUint16Array(uint16Array);
       blockHash = await getBlockHash();
       ({ value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'uint16Array'));
-      expect(value).to.eql(expectedValue.map(el => BigInt(el)));
+      expect(value).to.eql(uint16Array.map(el => BigInt(el)));
       proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(expectedValue.length);
+      expect(proofData.length).to.equal(uint16Array.length);
     });
 
     // Test for array variables which are more than 32 bytes and use multiple slots.
     it('get value for fixed size arrays using multiple slots', async () => {
-      const expectedValue = [1, 2, 3, 4, 5];
-
-      await testFixedArrays.setInt128Array(expectedValue);
+      await testFixedArrays.setInt128Array(int128Array);
       let blockHash = await getBlockHash();
       let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'int128Array');
-      expect(value).to.eql(expectedValue.map(el => BigInt(el)));
+      expect(value).to.eql(int128Array.map(el => BigInt(el)));
       let proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(expectedValue.length);
+      expect(proofData.length).to.equal(int128Array.length);
 
-      await testFixedArrays.setUintArray(expectedValue);
+      await testFixedArrays.setUintArray(uint16Array);
       blockHash = await getBlockHash();
       ({ value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'uintArray'));
-      expect(value).to.eql(expectedValue.map(el => BigInt(el)));
+      expect(value).to.eql(uint16Array.map(el => BigInt(el)));
       proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(expectedValue.length);
+      expect(proofData.length).to.equal(uint16Array.length);
     });
 
     it('get value for fixed size arrays of address type', async () => {
-      const signers = await ethers.getSigners();
-      const expectedValue = signers.map(signer => signer.address.toLowerCase())
-        .slice(0, 4);
-
-      await testFixedArrays.setAddressArray(expectedValue);
+      await testFixedArrays.setAddressArray(addressArray);
       const blockHash = await getBlockHash();
       const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'addressArray');
-      expect(value).to.eql(expectedValue);
+      expect(value).to.eql(addressArray);
       const proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(expectedValue.length);
+      expect(proofData.length).to.equal(addressArray.length);
     });
 
     it.skip('get value for fixed size arrays of fixed size bytes type', async () => {
@@ -340,6 +340,39 @@ describe('Get value from storage', () => {
       expect(value).to.eql(expectedValue);
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(expectedValue.length);
+    });
+
+    // Get element of array by index.
+    it('get value of signed integer type array by index', async () => {
+      const arrayIndex = 2;
+      await testFixedArrays.setInt128Array(int128Array);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'int128Array', arrayIndex);
+      expect(value).to.equal(BigInt(int128Array[arrayIndex]));
+    });
+
+    it('get value of unsigned integer type array by index', async () => {
+      const arrayIndex = 3;
+      await testFixedArrays.setUint16Array(uint16Array);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'uint16Array', arrayIndex);
+      expect(value).to.equal(BigInt(uint16Array[arrayIndex]));
+    });
+
+    it('get value of boolean type array by index', async () => {
+      const arrayIndex = 0;
+      await testFixedArrays.setBoolArray(boolArray);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'boolArray', arrayIndex);
+      expect(value).to.equal(boolArray[arrayIndex]);
+    });
+
+    it('get value of address type array by index', async () => {
+      const arrayIndex = 1;
+      await testFixedArrays.setAddressArray(addressArray);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'addressArray', arrayIndex);
+      expect(value).to.equal(addressArray[arrayIndex]);
     });
   });
 
