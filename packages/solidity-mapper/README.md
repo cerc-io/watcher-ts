@@ -55,7 +55,9 @@ $ yarn test
     * [ ] Bytes
     * [x] String
   * [ ] Structs
+    * [ ] Get struct value with all members
     * [ ] Value Types
+    * [ ] Get value of a single member in struct
     * [ ] Reference Types
   * [ ] Mapping Types
     * [x] Value Type keys

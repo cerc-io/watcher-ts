@@ -15,6 +15,7 @@ interface Types {
     base?: string;
     value?: string;
     key?: string;
+    members?: Storage[];
   };
 }
 
@@ -102,7 +103,7 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, storageInfo: { slot: string, offset: number, type: string }, mappingKeys: Array<MappingKey>): Promise<{ value: any, proof: { data: string } }> => {
   const { slot, offset, type } = storageInfo;
-  const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType, key: mappingKeyType } = types[type];
+  const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType, key: mappingKeyType, members } = types[type];
 
   const [isArray, arraySize] = typeLabel.match(/\[([0-9]*)\]/) || [false];
   let value: string, proof: { data: string };
@@ -138,6 +139,38 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
     };
   }
 
+  const isStruct = /^struct .+/.test(typeLabel);
+
+  // If variable is struct type.
+  if (isStruct && members) {
+    // TODO: Get values in single call and parse according to type.
+    // Get member values specified for the struct in storage layout.
+    const resultPromises = members.map(async member => {
+      const structSlot = BigNumber.from(slot).add(member.slot).toHexString();
+
+      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: structSlot, offset: member.offset, type: member.type }, []);
+    });
+
+    const results = await Promise.all(resultPromises);
+
+    const initialValue: {
+      value: {[key: string]: any},
+      proof: { data: string }
+    } = {
+      value: {},
+      proof: { data: JSON.stringify({}) }
+    };
+
+    // Return struct type value as an object with keys as the struct member labels.
+    return members.reduce((acc, member, index) => {
+      acc.value[member.label] = results[index].value;
+      const proofData = JSON.parse(acc.proof.data);
+      proofData[member.label] = results[index].proof;
+      acc.proof.data = JSON.stringify(proofData);
+      return acc;
+    }, initialValue);
+  }
+
   // Get value according to encoding i.e. how the data is encoded in storage.
   // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#json-output
   switch (encoding) {
@@ -153,7 +186,7 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
 
     case 'mapping': {
       if (mappingValueType && mappingKeyType) {
-        const mappingSlot = await getMappingSlot(slot, types, mappingKeyType, mappingKeys[0]);
+        const mappingSlot = getMappingSlot(slot, types, mappingKeyType, mappingKeys[0]);
 
         return getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1));
       } else {
