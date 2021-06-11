@@ -28,10 +28,12 @@ $ yarn test
   * [ ] Function Types
 * [ ] Reference Types
   * [ ] Arrays
+    * [x] Get all elements in array
+    * [ ] Get element in array by index
     * [ ] Fixed size arrays
       * [x] Integer Type
       * [x] Boolean Type
-      * [ ] Address Type
+      * [x] Address Type
       * [ ] Fixed-size byte arrays
       * [ ] Enum type
       * [ ] Dynamically-sized byte array

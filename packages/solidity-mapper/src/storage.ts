@@ -111,7 +111,12 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
   if (isArray && base) {
     const resultArray = [];
     const proofs = [];
-    const { numberOfBytes: baseNumberOfBytes } = types[base];
+    let { numberOfBytes: baseNumberOfBytes, label: baseTypeLabel } = types[base];
+
+    // Address type elements use an entire single slot i.e. 32 bytes.
+    if (baseTypeLabel === 'address' || baseTypeLabel.includes('contract')) {
+      baseNumberOfBytes = '32';
+    }
 
     // TODO: Get values in single call and parse according to type.
     // Loop over elements of array and get value.
@@ -120,6 +125,8 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
       const slotOffset = i % 32;
       ({ value, proof } = await getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: slotOffset, type: base }, []));
       resultArray.push(value);
+
+      // Each element in array gets its own proof even if it is packed.
       proofs.push(JSON.parse(proof.data));
     }
 
