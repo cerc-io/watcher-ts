@@ -155,12 +155,25 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
 
   // If variable is struct type.
   if (isStruct && members) {
+    // Get value of specified member in struct.
+    const getStructMember = async (member: Storage, mappingKeys: MappingKey[]) => {
+      const structSlot = BigNumber.from(slot).add(member.slot).toHexString();
+
+      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: structSlot, offset: member.offset, type: member.type }, mappingKeys);
+    };
+
+    const [memberName, ...remainingKeys] = mappingKeys;
+    const member = members.find(member => member.label === memberName);
+
+    // If member name passed in argument is present.
+    if (member) {
+      return getStructMember(member, remainingKeys);
+    }
+
     // TODO: Get values in single call and parse according to type.
     // Get member values specified for the struct in storage layout.
     const resultPromises = members.map(async member => {
-      const structSlot = BigNumber.from(slot).add(member.slot).toHexString();
-
-      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: structSlot, offset: member.offset, type: member.type }, []);
+      return getStructMember(member, mappingKeys);
     });
 
     const results = await Promise.all(resultPromises);
