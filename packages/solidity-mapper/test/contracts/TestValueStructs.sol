@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 import "./TestContractTypes.sol";
 
-contract TestStructs {
+contract TestValueStructs {
     struct SingleSlotStruct {
         int16 int1;
         uint8 uint1;

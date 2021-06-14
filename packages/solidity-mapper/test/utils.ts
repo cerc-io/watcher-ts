@@ -62,6 +62,8 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
   return {
     value,
     proof: {
+      // Returning null value as proof, since ethers library getStorageAt method doesnt return proof.
+      // This function is used in tests to mock the getStorageAt method of ipld-eth-client which returns proof along with value.
       data: JSON.stringify(null)
     }
   };

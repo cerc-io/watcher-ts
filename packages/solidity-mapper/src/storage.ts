@@ -110,90 +110,14 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
 
   // If variable is array type.
   if (isArray && base) {
-    const resultArray = [];
-    const proofs = [];
-    let { numberOfBytes: baseNumberOfBytes, label: baseTypeLabel } = types[base];
-
-    // Address type elements use an entire single slot i.e. 32 bytes.
-    if (baseTypeLabel === 'address' || baseTypeLabel.includes('contract')) {
-      baseNumberOfBytes = '32';
-    }
-
-    const getArrayElement = async (index: number, mappingKeys: MappingKey[]) => {
-      const arrayOffset = index * Number(baseNumberOfBytes);
-      const arraySlot = BigNumber.from(slot).add(Math.floor(arrayOffset / 32)).toHexString();
-      const arraySlotOffset = arrayOffset % 32;
-
-      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: arraySlotOffset, type: base }, mappingKeys);
-    };
-
-    const [arrayIndex, ...remainingKeys] = mappingKeys;
-
-    if (typeof arrayIndex === 'number') {
-      return getArrayElement(arrayIndex, remainingKeys);
-    }
-
-    // TODO: Get values in single call and parse according to type.
-    // Loop over elements of array and get value.
-    for (let i = 0; i < Number(arraySize); i++) {
-      ({ value, proof } = await getArrayElement(i, mappingKeys));
-      resultArray.push(value);
-
-      // Each element in array gets its own proof even if it is packed.
-      proofs.push(JSON.parse(proof.data));
-    }
-
-    return {
-      value: resultArray,
-      proof: {
-        data: JSON.stringify(proofs)
-      }
-    };
+    return getArrayValue(getStorageAt, blockHash, address, types, mappingKeys, slot, base, Number(arraySize));
   }
 
   const isStruct = /^struct .+/.test(typeLabel);
 
   // If variable is struct type.
   if (isStruct && members) {
-    // Get value of specified member in struct.
-    const getStructMember = async (member: Storage, mappingKeys: MappingKey[]) => {
-      const structSlot = BigNumber.from(slot).add(member.slot).toHexString();
-
-      return getDecodedValue(getStorageAt, blockHash, address, types, { slot: structSlot, offset: member.offset, type: member.type }, mappingKeys);
-    };
-
-    const [memberName, ...remainingKeys] = mappingKeys;
-    const member = members.find(member => member.label === memberName);
-
-    // If member name passed in argument is present.
-    if (member) {
-      return getStructMember(member, remainingKeys);
-    }
-
-    // TODO: Get values in single call and parse according to type.
-    // Get member values specified for the struct in storage layout.
-    const resultPromises = members.map(async member => {
-      return getStructMember(member, mappingKeys);
-    });
-
-    const results = await Promise.all(resultPromises);
-
-    const initialValue: {
-      value: {[key: string]: any},
-      proof: { data: string }
-    } = {
-      value: {},
-      proof: { data: JSON.stringify({}) }
-    };
-
-    // Return struct type value as an object with keys as the struct member labels.
-    return members.reduce((acc, member, index) => {
-      acc.value[member.label] = results[index].value;
-      const proofData = JSON.parse(acc.proof.data);
-      proofData[member.label] = results[index].proof;
-      acc.proof.data = JSON.stringify(proofData);
-      return acc;
-    }, initialValue);
+    return getStructureValue(getStorageAt, blockHash, address, types, mappingKeys, slot, members);
   }
 
   // Get value according to encoding i.e. how the data is encoded in storage.
@@ -201,17 +125,17 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
   switch (encoding) {
     // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#layout-of-state-variables-in-storage
     case 'inplace':
-      ({ value, proof } = await getInplaceValue(blockHash, address, slot, offset, numberOfBytes, getStorageAt));
+      ({ value, proof } = await getInplaceValue(getStorageAt, blockHash, address, slot, offset, numberOfBytes));
       break;
 
     // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#bytes-and-string
     case 'bytes':
-      ({ value, proof } = await getBytesValue(blockHash, address, slot, getStorageAt));
+      ({ value, proof } = await getBytesValue(getStorageAt, blockHash, address, slot));
       break;
 
     case 'mapping': {
       if (mappingValueType && mappingKeyType) {
-        const mappingSlot = getMappingSlot(slot, types, mappingKeyType, mappingKeys[0]);
+        const mappingSlot = getMappingSlot(types, slot, mappingKeyType, mappingKeys[0]);
 
         return getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1));
       } else {
@@ -236,7 +160,7 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
  * @param mappingSlot
  * @param key
  */
-export const getMappingSlot = (mappingSlot: string, types: Types, keyType: string, key: MappingKey): string => {
+export const getMappingSlot = (types: Types, mappingSlot: string, keyType: string, key: MappingKey): string => {
   const { encoding, label: typeLabel } = types[keyType];
 
   // If key is boolean type convert to 1 or 0 which is the way value is stored in memory.
@@ -245,7 +169,7 @@ export const getMappingSlot = (mappingSlot: string, types: Types, keyType: strin
   }
 
   // If key is string convert to hex string representation.
-  if (typeLabel.includes('string') && typeof key === 'string') {
+  if (typeLabel === 'string' && typeof key === 'string') {
     key = utils.hexlify(utils.toUtf8Bytes(key));
   }
 
@@ -271,6 +195,90 @@ export const getMappingSlot = (mappingSlot: string, types: Types, keyType: strin
   return slot;
 };
 
+const getArrayValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, mappingKeys: MappingKey[], slot: string, base: string, arraySize: number) => {
+  const resultArray = [];
+  const proofs = [];
+  let { numberOfBytes: baseNumberOfBytes, label: baseTypeLabel } = types[base];
+
+  // Address type elements use an entire single slot i.e. 32 bytes.
+  if (baseTypeLabel === 'address' || baseTypeLabel.includes('contract')) {
+    baseNumberOfBytes = '32';
+  }
+
+  const getArrayElement = async (mappingKeys: MappingKey[], index: number) => {
+    const arrayOffset = index * Number(baseNumberOfBytes);
+    const arraySlot = BigNumber.from(slot).add(Math.floor(arrayOffset / 32)).toHexString();
+    const arraySlotOffset = arrayOffset % 32;
+
+    return getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: arraySlotOffset, type: base }, mappingKeys);
+  };
+
+  const [arrayIndex, ...remainingKeys] = mappingKeys;
+
+  if (typeof arrayIndex === 'number') {
+    return getArrayElement(remainingKeys, arrayIndex);
+  }
+
+  // TODO: Get values in single call and parse according to type.
+  // Loop over elements of array and get value.
+  for (let i = 0; i < arraySize; i++) {
+    const { value, proof } = await getArrayElement(mappingKeys, i);
+    resultArray.push(value);
+
+    // Each element in array gets its own proof even if it is packed.
+    proofs.push(JSON.parse(proof.data));
+  }
+
+  return {
+    value: resultArray,
+    proof: {
+      data: JSON.stringify(proofs)
+    }
+  };
+};
+
+const getStructureValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, mappingKeys: MappingKey[], slot: string, members: Storage[]) => {
+  // Get value of specified member in struct.
+  const getStructMember = async (mappingKeys: MappingKey[], member: Storage) => {
+    const structSlot = BigNumber.from(slot).add(member.slot).toHexString();
+
+    return getDecodedValue(getStorageAt, blockHash, address, types, { slot: structSlot, offset: member.offset, type: member.type }, mappingKeys);
+  };
+
+  const [memberName, ...remainingKeys] = mappingKeys;
+  const member = members.find(member => member.label === memberName);
+
+  // If member name passed in argument is present.
+  if (member) {
+    return getStructMember(remainingKeys, member);
+  }
+
+  // TODO: Get values in single call and parse according to type.
+  // Get member values specified for the struct in storage layout.
+  const resultPromises = members.map(async member => {
+    return getStructMember(mappingKeys, member);
+  });
+
+  const results = await Promise.all(resultPromises);
+
+  const initialValue: {
+    value: {[key: string]: any},
+    proof: { data: string }
+  } = {
+    value: {},
+    proof: { data: JSON.stringify({}) }
+  };
+
+  // Return struct type value as an object with keys as the struct member labels.
+  return members.reduce((acc, member, index) => {
+    acc.value[member.label] = results[index].value;
+    const proofData = JSON.parse(acc.proof.data);
+    proofData[member.label] = results[index].proof;
+    acc.proof.data = JSON.stringify(proofData);
+    return acc;
+  }, initialValue);
+};
+
 /**
  * Function to get value for inplace encoding.
  * @param address
@@ -279,7 +287,7 @@ export const getMappingSlot = (mappingSlot: string, types: Types, keyType: strin
  * @param numberOfBytes
  * @param getStorageAt
  */
-const getInplaceValue = async (blockHash: string, address: string, slot: string, offset: number, numberOfBytes: string, getStorageAt: GetStorageAt) => {
+const getInplaceValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string, offset: number, numberOfBytes: string) => {
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
   const valueLength = utils.hexDataLength(value);
 
@@ -299,7 +307,7 @@ const getInplaceValue = async (blockHash: string, address: string, slot: string,
  * @param slot
  * @param getStorageAt
  */
-const getBytesValue = async (blockHash: string, address: string, slot: string, getStorageAt: GetStorageAt) => {
+const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string) => {
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
   let length = 0;
 
