@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 contract TestReferenceStructs {
     struct FixedArrayStruct {
@@ -10,10 +11,21 @@ contract TestReferenceStructs {
 
     FixedArrayStruct fixedArrayStruct;
 
+    struct BytesStruct {
+        bytes byteArray;
+        address address1;
+        uint256 uint1;
+    }
+
+    BytesStruct bytesStruct;
+
     struct StringStruct {
         string string1;
-        uint8 uint1;
+        uint24 uint1;
         string string2;
+        address address1;
+        bool bool1;
+        int24 int1;
     }
 
     StringStruct stringStruct;
@@ -33,6 +45,13 @@ contract TestReferenceStructs {
 
     ReferenceMappingStruct referenceMappingStruct;
 
+    struct NestedStruct {
+        BytesStruct bytesStruct;
+        address address1;
+    }
+
+    NestedStruct nestedStruct;
+
     // Set variable fixedArrayStruct.
     function setFixedArrayStruct(int8 int1Value, uint16[4] calldata uintArrayValue, address[3] calldata addressArrayValue) external {
         fixedArrayStruct.int1 = int1Value;
@@ -40,11 +59,14 @@ contract TestReferenceStructs {
         fixedArrayStruct.addressArray = addressArrayValue;
     }
 
+    // Set variable bytesStruct.
+    function setBytesStruct(BytesStruct calldata value) external {
+        bytesStruct = value;
+    }
+
     // Set variable stringStruct.
-    function setStringStruct(string calldata string1Value, uint8 uint1Value, string calldata string2Value) external {
-        stringStruct.string1 = string1Value;
-        stringStruct.uint1 = uint1Value;
-        stringStruct.string2 = string2Value;
+    function setStringStruct(StringStruct calldata value) external {
+        stringStruct = value;
     }
 
     // Set variable valueMappingStruct.
@@ -58,5 +80,10 @@ contract TestReferenceStructs {
     function setReferenceMappingStruct(bytes calldata bytesAddressKey, address bytesAddressValue, string calldata stringUintKey, uint stringUintValue) external {
         referenceMappingStruct.bytesAddressMap[bytesAddressKey] = bytesAddressValue;
         referenceMappingStruct.stringUintMap[stringUintKey] = stringUintValue;
+    }
+
+    // Set variable nestedStruct.
+    function setNestedStruct(NestedStruct calldata value) external {
+        nestedStruct = value;
     }
 }

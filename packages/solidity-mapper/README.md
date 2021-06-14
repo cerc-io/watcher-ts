@@ -59,6 +59,10 @@ $ yarn test
     * [x] Value Types
     * [x] Get value of a single member in struct
     * [ ] Reference Types
+      * [x] Struct type members (nested)
+      * [ ] Array type members
+      * [ ] Bytes and string type members
+      * [ ] Mapping type members
   * [ ] Mapping Types
     * [x] Value Type keys
     * [ ] Fixed-size byte array keys

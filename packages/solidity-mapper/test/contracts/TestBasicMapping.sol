@@ -35,6 +35,7 @@ contract TestBasicMapping {
         uint128 uint1;
         int56 int1;
         bool bool1;
+        address address1;
     }
 
     // Mapping with signed integer as keys and struct type values.
