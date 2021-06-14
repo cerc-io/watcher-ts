@@ -14,6 +14,8 @@ contract TestNestedMapping {
 
     mapping (string => mapping (address => int)) private stringAddressIntMap;
 
+    mapping (address => mapping (address => mapping (uint24 => address))) public doubleNestedAddressMap;
+
     // Set variable nestedAddressUintMap.
     function setNestedAddressUintMap(address nestedKey, uint value) external {
         nestedAddressUintMap[msg.sender][nestedKey] = value;
@@ -37,5 +39,10 @@ contract TestNestedMapping {
     // Set variable stringAddressIntMap.
     function setStringAddressIntMap(string calldata key, address nestedKey, int value) external {
         stringAddressIntMap[key][nestedKey] = value;
+    }
+
+    // Set variable doubleNestedAddressMap.
+    function setDoubleNestedAddressMap(address key, address nestedKey, uint24 doubleNestedKey, address value) external {
+        doubleNestedAddressMap[key][nestedKey][doubleNestedKey] = value;
     }
 }

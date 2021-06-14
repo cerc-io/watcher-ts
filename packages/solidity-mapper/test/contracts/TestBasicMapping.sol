@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 contract TestBasicMapping {
     // Mapping type variable occupies one single slot but the actual elements are stored at a different storage slot that is computed using a Keccak-256 hash.
@@ -29,6 +30,18 @@ contract TestBasicMapping {
 
     // Mapping with dynamically-sized byte array as keys and unsigned integer type values.
     mapping(bytes => uint) public bytesUintMap;
+
+    struct TestStruct {
+        uint128 uint1;
+        int56 int1;
+        bool bool1;
+    }
+
+    // Mapping with signed integer as keys and struct type values.
+    mapping(int24 => TestStruct) public intStructMap;
+
+    // Mapping with signed integer as keys and struct type values.
+    mapping(bytes32 => TestStruct) public fixedBytesStructMap;
 
     // Set variable addressUintMap.
     function setAddressUintMap(uint value) external {
@@ -68,5 +81,15 @@ contract TestBasicMapping {
     // Set variable bytesUintMap.
     function setBytesUintMap(bytes calldata key, uint value) external {
         bytesUintMap[key] = value;
+    }
+
+    // Set variable intStruct.
+    function setIntStructMap(int24 key, TestStruct calldata value) external {
+        intStructMap[key] = value;
+    }
+
+    // Set variable fixedBytesStructMap.
+    function setFixedBytesStructMap(bytes32 key, TestStruct calldata value) external {
+        fixedBytesStructMap[key] = value;
     }
 }

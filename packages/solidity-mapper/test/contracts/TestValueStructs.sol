@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import "./TestContractTypes.sol";
 
@@ -69,11 +70,8 @@ contract TestValueStructs {
     }
 
     // Set variable addressStruct.
-    function setAddressStruct(int8 int1Value, address address1Value, address address2Value, uint16 uint1Value) external {
-        addressStruct.int1 = int1Value;
-        addressStruct.address1 = address1Value;
-        addressStruct.address2 = address2Value;
-        addressStruct.uint1 = uint1Value;
+    function setAddressStruct(AddressStruct calldata value) external {
+        addressStruct = value;
     }
 
     // Set variable contractStruct.

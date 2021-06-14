@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 contract TestFixedArrays {
     // Fixed size array variable will use 5 consecutive slots as size of 1 element is 32 bytes.
@@ -18,6 +19,14 @@ contract TestFixedArrays {
     address[4] addressArray;
 
     bytes10[5] bytesArray;
+
+    struct TestStruct {
+        uint32 uint1;
+        int56 int1;
+        bool bool1;
+    }
+
+    TestStruct[5] structArray;
 
     // Set variable boolArray.
     function setBoolArray(bool[2] calldata value) external {
@@ -47,5 +56,10 @@ contract TestFixedArrays {
     // Set variable bytesArray.
     function setBytesArray(bytes10[5] calldata value) external {
         bytesArray = value;
+    }
+
+    // Set variable structArray.
+    function setStructArray(TestStruct calldata value, uint index) external {
+        structArray[index] = value;
     }
 }

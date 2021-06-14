@@ -37,7 +37,7 @@ $ yarn test
       * [ ] Fixed-size byte arrays
       * [ ] Enum type
       * [ ] Dynamically-sized byte array
-      * [ ] Struct Type
+      * [x] Struct Type
       * [ ] Mapping Type
     * [ ] Dynamically-sized arrays
       * [ ] Integer Type
@@ -64,6 +64,9 @@ $ yarn test
     * [ ] Fixed-size byte array keys
     * [x] Dynamically-sized byte array keys
     * [ ] Reference Type Mapping values
+      * [x] Struct type values
+      * [ ] Array type values
+      * [ ] Dynamically sized Bytes and string type values
     * [x] Nested Mapping
 
 ## Observations
