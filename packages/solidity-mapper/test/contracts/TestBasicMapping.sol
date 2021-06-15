@@ -44,6 +44,9 @@ contract TestBasicMapping {
     // Mapping with signed integer as keys and struct type values.
     mapping(bytes32 => TestStruct) public fixedBytesStructMap;
 
+    // Mapping with address as keys and struct type values.
+    mapping(address => TestStruct) public addressStructMap;
+
     // Set variable addressUintMap.
     function setAddressUintMap(uint value) external {
         addressUintMap[msg.sender] = value;
@@ -92,5 +95,10 @@ contract TestBasicMapping {
     // Set variable fixedBytesStructMap.
     function setFixedBytesStructMap(bytes32 key, TestStruct calldata value) external {
         fixedBytesStructMap[key] = value;
+    }
+
+    // Set variable fixedBytesStructMap.
+    function setAddressStructMap(address key, TestStruct calldata value) external {
+        addressStructMap[key] = value;
     }
 }

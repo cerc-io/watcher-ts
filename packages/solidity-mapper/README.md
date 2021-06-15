@@ -49,7 +49,7 @@ $ yarn test
       * [ ] Struct Type
       * [ ] Mapping Type
     * [ ] Nested Arrays
-      * [ ] Fixed size arrays
+      * [x] Fixed size arrays
       * [ ] Dynamically-sized arrays
   * [ ] Dynamically-sized byte array
     * [ ] Bytes

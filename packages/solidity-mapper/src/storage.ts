@@ -105,11 +105,13 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
   const { slot, offset, type } = storageInfo;
   const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType, key: mappingKeyType, members } = types[type];
 
-  const [isArray, arraySize] = typeLabel.match(/\[([0-9]*)\]/) || [false];
   let value: string, proof: { data: string };
+  const arrayMatch = [...typeLabel.matchAll(/\[([0-9]*)\]/g)];
 
   // If variable is array type.
-  if (isArray && base) {
+  if (arrayMatch.length && base) {
+    const arraySize = arrayMatch[arrayMatch.length - 1][1];
+
     return getArrayValue(getStorageAt, blockHash, address, types, mappingKeys, slot, base, Number(arraySize));
   }
 
