@@ -106,12 +106,10 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
   const { encoding, numberOfBytes, label: typeLabel, base, value: mappingValueType, key: mappingKeyType, members } = types[type];
 
   let value: string, proof: { data: string };
-  const arrayMatch = [...typeLabel.matchAll(/\[([0-9]*)\]/g)];
+  const [isArray, arraySize] = typeLabel.match(/\[([0-9]+)\]$/) || [false];
 
   // If variable is array type.
-  if (arrayMatch.length && base) {
-    const arraySize = arrayMatch[arrayMatch.length - 1][1];
-
+  if (Boolean(isArray) && base) {
     return getArrayValue(getStorageAt, blockHash, address, types, mappingKeys, slot, base, Number(arraySize));
   }
 
@@ -142,6 +140,18 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
         return getDecodedValue(getStorageAt, blockHash, address, types, { slot: mappingSlot, offset: 0, type: mappingValueType }, mappingKeys.slice(1));
       } else {
         throw new Error(`Mapping value type not specified for ${mappingKeys[0]}`);
+      }
+
+      break;
+    }
+
+    case 'dynamic_array': {
+      if (base) {
+        const { slot: dynamicArraySlot, size } = await getDynamicArrayInfo(getStorageAt, blockHash, address, slot, offset, numberOfBytes);
+
+        return getArrayValue(getStorageAt, blockHash, address, types, mappingKeys, dynamicArraySlot, base, size);
+      } else {
+        throw new Error('Missing base type for dynamic array.');
       }
 
       break;
@@ -195,6 +205,15 @@ export const getMappingSlot = (types: Types, mappingSlot: string, keyType: strin
 
   const slot = utils.keccak256(fullKey);
   return slot;
+};
+
+const getDynamicArrayInfo = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string, offset: number, numberOfBytes: string) => {
+  const { value } = await getInplaceValue(getStorageAt, blockHash, address, slot, offset, numberOfBytes);
+  const size = Number(getValueByType(value, 'uint'));
+  const paddedSlot = utils.hexZeroPad(slot, 32);
+  slot = utils.keccak256(paddedSlot);
+
+  return { size, slot };
 };
 
 const getArrayValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, mappingKeys: MappingKey[], slot: string, base: string, arraySize: number) => {

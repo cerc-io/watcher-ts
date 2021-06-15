@@ -417,6 +417,109 @@ describe('Get value from storage', () => {
     });
   });
 
+  describe('dynamic sized arrays', () => {
+    let testDynamicArrays: Contract, storageLayout: StorageLayout;
+
+    before(async () => {
+      const TestFixedArrays = await ethers.getContractFactory('TestDynamicArrays');
+      testDynamicArrays = await TestFixedArrays.deploy();
+      await testDynamicArrays.deployed();
+      storageLayout = await getStorageLayout('TestDynamicArrays');
+    });
+
+    // Get all elements of array.
+    it('get value for dynamic sized array of boolean type', async () => {
+      const boolArray = [true, false, false, true, false];
+      await testDynamicArrays.setBoolArray(boolArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'boolArray');
+      expect(value).to.eql(boolArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(boolArray.length);
+
+      // Get value by index
+      const arrayIndex = 2;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'boolArray', arrayIndex));
+      expect(value).to.equal(boolArray[arrayIndex]);
+    });
+
+    it('get value for dynamic sized array of unsigned integer type', async () => {
+      const uint128Array = [100, 200, 300, 400, 500];
+      await testDynamicArrays.setUintArray(uint128Array);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'uintArray');
+      expect(value).to.eql(uint128Array.map(el => BigInt(el)));
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(uint128Array.length);
+
+      // Get value by index
+      const arrayIndex = 3;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'uintArray', arrayIndex));
+      expect(value).to.equal(BigInt(uint128Array[arrayIndex]));
+    });
+
+    it('get value for dynamic sized array of signed integer type', async () => {
+      const intArray = [10, 20, 30, 40, 50];
+      await testDynamicArrays.setIntArray(intArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'intArray');
+      expect(value).to.eql(intArray.map(el => BigInt(el)));
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(intArray.length);
+
+      // Get value by index
+      const arrayIndex = 1;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'intArray', arrayIndex));
+      expect(value).to.equal(BigInt(intArray[arrayIndex]));
+    });
+
+    it('get value for dynamic sized array of address type', async () => {
+      const signers = await ethers.getSigners();
+      const addressArray = signers.map(signer => signer.address.toLowerCase());
+      await testDynamicArrays.setAddressArray(addressArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'addressArray');
+      expect(value).to.eql(addressArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(addressArray.length);
+
+      // Get value by index
+      const arrayIndex = 4;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'addressArray', arrayIndex));
+      expect(value).to.equal(addressArray[arrayIndex]);
+    });
+
+    it.skip('get value for dynamic sized array of fixed size byte array', async () => {
+      const fixedBytesArray = Array.from({ length: 4 }, () => ethers.utils.hexlify(ethers.utils.randomBytes(10)));
+      await testDynamicArrays.setFixedBytesArray(fixedBytesArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'fixedBytesArray');
+      expect(value).to.eql(fixedBytesArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(fixedBytesArray.length);
+
+      // Get value by index
+      const arrayIndex = 2;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'fixedBytesArray', arrayIndex));
+      expect(value).to.equal(fixedBytesArray[arrayIndex]);
+    });
+
+    it('get value for dynamic sized array of enum type', async () => {
+      const enumArray = [0, 1, 2, 3];
+      await testDynamicArrays.setEnumArray(enumArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'enumArray');
+      expect(value).to.eql(enumArray.map(el => BigInt(el)));
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(enumArray.length);
+
+      // Get value by index
+      const arrayIndex = 2;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'enumArray', arrayIndex));
+      expect(value).to.equal(BigInt(enumArray[arrayIndex]));
+    });
+  });
+
   describe('nested arrays', () => {
     let testNestedArrays: Contract, storageLayout: StorageLayout;
     const nestedStructArray: Array<Array<{[key: string]: any}>> = [];
