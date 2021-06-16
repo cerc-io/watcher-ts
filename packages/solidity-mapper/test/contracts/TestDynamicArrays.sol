@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
+
+// https://docs.soliditylang.org/en/v0.8.5/layout-of-source-files.html#abi-coder-pragma
 pragma abicoder v2;
 
 contract TestDynamicArrays {

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
+
+// https://docs.soliditylang.org/en/v0.8.5/layout-of-source-files.html#abi-coder-pragma
 pragma abicoder v2;
 
 contract TestFixedArrays {
@@ -18,7 +20,15 @@ contract TestFixedArrays {
 
     address[4] addressArray;
 
-    bytes10[5] bytesArray;
+    bytes10[5] fixedBytesArray;
+
+    enum Choices { Choice0, Choice1, Choice2, Choice3 }
+
+    Choices[6] enumArray;
+
+    bytes[4] bytesArray;
+
+    string[3] stringArray;
 
     struct TestStruct {
         uint32 uint1;
@@ -27,6 +37,8 @@ contract TestFixedArrays {
     }
 
     TestStruct[5] structArray;
+
+    mapping(address => uint)[3] mapArray;
 
     // Set variable boolArray.
     function setBoolArray(bool[2] calldata value) external {
@@ -53,13 +65,33 @@ contract TestFixedArrays {
         addressArray = value;
     }
 
-    // Set variable bytesArray.
-    function setBytesArray(bytes10[5] calldata value) external {
-        bytesArray = value;
+    // Set variable fixedBytesArray.
+    function setFixedBytesArray(bytes10[5] calldata value) external {
+        fixedBytesArray = value;
     }
 
     // Set variable structArray.
     function setStructArray(TestStruct calldata value, uint index) external {
         structArray[index] = value;
+    }
+
+    // Set variable enumArray.
+    function setEnumArray(Choices[6] calldata value) external {
+        enumArray = value;
+    }
+
+    // Set variable bytesArray.
+    function setBytesArray(bytes[4] memory value) external {
+        bytesArray = value;
+    }
+
+    // Set variable stringArray.
+    function setStringArray(string[3] memory value) external {
+        stringArray = value;
+    }
+
+    // Set variable mapArray.
+    function setMapArray(address key, uint value, uint index) external {
+        mapArray[index][key] = value;
     }
 }

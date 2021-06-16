@@ -275,7 +275,15 @@ describe('Get value from storage', () => {
     const int128Array = [100, 200, 300, 400, 500];
     const uint16Array = [10, 20, 30, 40, 50];
     const boolArray = [true, false];
-    let addressArray: string[] = [];
+    const enumArray = [1, 0, 2, 1, 3, 2];
+    const stringArray = ['abcde', 'fg', 'hijklmn'];
+
+    const bytesArray = Array.from({ length: 4 }, () => {
+      const bytesLength = Math.floor(Math.random() * 64);
+      return ethers.utils.hexlify(ethers.utils.randomBytes(bytesLength));
+    });
+
+    let addressArray: string[];
 
     before(async () => {
       const TestFixedArrays = await ethers.getContractFactory('TestFixedArrays');
@@ -284,8 +292,8 @@ describe('Get value from storage', () => {
       storageLayout = await getStorageLayout('TestFixedArrays');
 
       const signers = await ethers.getSigners();
-      addressArray = signers.map(signer => signer.address.toLowerCase())
-        .slice(0, 4);
+      addressArray = signers.slice(0, 4)
+        .map(signer => signer.address.toLowerCase());
     });
 
     // Get all elements of array.
@@ -335,12 +343,39 @@ describe('Get value from storage', () => {
     it.skip('get value for fixed size arrays of fixed size bytes type', async () => {
       const expectedValue = Array.from({ length: 5 }, () => ethers.utils.hexlify(ethers.utils.randomBytes(10)));
 
-      await testFixedArrays.setBytesArray(expectedValue);
+      await testFixedArrays.setFixedBytesArray(expectedValue);
       const blockHash = await getBlockHash();
-      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'bytesArray');
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'fixedBytesArray');
       expect(value).to.eql(expectedValue);
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(expectedValue.length);
+    });
+
+    it('get value for fixed size arrays of enum type', async () => {
+      await testFixedArrays.setEnumArray(enumArray);
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'enumArray');
+      expect(value).to.eql(enumArray.map(el => BigInt(el)));
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(enumArray.length);
+    });
+
+    it('get value for fixed size arrays of dynamic byte array type', async () => {
+      await testFixedArrays.setBytesArray(bytesArray);
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'bytesArray');
+      expect(value).to.eql(bytesArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(bytesArray.length);
+    });
+
+    it('get value for fixed size arrays of string type', async () => {
+      await testFixedArrays.setStringArray(stringArray);
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'stringArray');
+      expect(value).to.eql(stringArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(stringArray.length);
     });
 
     it('get value for fixed size array of struct type', async () => {
@@ -397,6 +432,13 @@ describe('Get value from storage', () => {
       expect(value).to.equal(addressArray[arrayIndex]);
     });
 
+    it('get value of enum type array by index', async () => {
+      const arrayIndex = 3;
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'enumArray', arrayIndex);
+      expect(value).to.eql(BigInt(enumArray[arrayIndex]));
+    });
+
     it('get value of struct type array by index', async () => {
       const expectedValue = {
         int1: BigInt(123),
@@ -414,6 +456,40 @@ describe('Get value from storage', () => {
       const structMember = 'uint1';
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'structArray', arrayIndex, structMember));
       expect(value).to.eql(expectedValue[structMember]);
+    });
+
+    it('get value of dynamic bytes type array by index', async () => {
+      const arrayIndex = 2;
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'bytesArray', arrayIndex);
+      expect(value).to.eql(bytesArray[arrayIndex]);
+    });
+
+    it('get value of string type array by index', async () => {
+      const arrayIndex = 1;
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'stringArray', arrayIndex);
+      expect(value).to.eql(stringArray[arrayIndex]);
+    });
+
+    it('get value of map type array by index', async () => {
+      // Set map array values.
+      const signers = await ethers.getSigners();
+
+      const mapArrayPromises = signers.slice(0, 3)
+        .map(async (signer, index) => {
+          const map = new Map();
+          map.set(signer.address, BigInt(index * 10));
+          await testFixedArrays.setMapArray(signer.address, map.get(signer.address), index);
+          return map;
+        });
+
+      const arrayIndex = 2;
+      const mapKey = signers[2].address;
+      const mapArray = await Promise.all(mapArrayPromises);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'mapArray', arrayIndex, mapKey);
+      expect(value).to.equal(mapArray[arrayIndex].get(mapKey));
     });
   });
 
