@@ -1213,6 +1213,53 @@ describe('Get value from storage', () => {
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testMappingTypes.address, 'addressStructMap', mapKey);
       expect(value).to.eql(expectedValue);
     });
+
+    it('get value for mapping of unsigned integer keys and fixed-size array values', async () => {
+      const mapKey = 123;
+      const signers = await ethers.getSigners();
+
+      const expectedValue = signers.slice(0, 3)
+        .map(signer => signer.address.toLowerCase());
+
+      await testMappingTypes.setUintFixedArrayMap(mapKey, expectedValue);
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testMappingTypes.address, 'uintFixedArrayMap', mapKey);
+      expect(value).to.eql(expectedValue);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(expectedValue.length);
+    });
+
+    it('get value for mapping of signed integer keys and dynamically-sized array values', async () => {
+      const mapKey = 123;
+      const expectedValue = [1, 2, 3, 4, 5, 6, 7, 8];
+
+      await testMappingTypes.setIntDynamicArrayMap(mapKey, expectedValue);
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testMappingTypes.address, 'intDynamicArrayMap', mapKey);
+      expect(value).to.eql(expectedValue.map(BigInt));
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(expectedValue.length);
+    });
+
+    it('get value for mapping of address keys and dynamic byte array values', async () => {
+      const [signer1] = await ethers.getSigners();
+      const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(42));
+
+      await testMappingTypes.setAddressBytesMap(signer1.address, expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testMappingTypes.address, 'addressBytesMap', signer1.address);
+      expect(value).to.eql(expectedValue);
+    });
+
+    it('get value for mapping of fixed size byte array keys and string type values', async () => {
+      const mapKey = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+      const expectedValue = 'Hello world.';
+
+      await testMappingTypes.setBytesStringMap(mapKey, expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testMappingTypes.address, 'bytesStringMap', mapKey);
+      expect(value).to.eql(expectedValue);
+    });
   });
 
   describe('nested mapping type', () => {

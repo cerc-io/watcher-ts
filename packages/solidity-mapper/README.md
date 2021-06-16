@@ -68,10 +68,10 @@ $ yarn test
     * [x] Value Type keys
     * [ ] Fixed-size byte array keys
     * [x] Dynamically-sized byte array keys
-    * [ ] Reference Type Mapping values
+    * [x] Reference Type Mapping values
       * [x] Struct type values
-      * [ ] Array type values
-      * [ ] Dynamically sized Bytes and string type values
+      * [x] Array type values
+      * [x] Dynamically sized Bytes and string type values
     * [x] Nested Mapping
 
 ## Observations

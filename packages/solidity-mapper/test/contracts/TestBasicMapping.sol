@@ -49,6 +49,14 @@ contract TestBasicMapping {
     // Mapping with address as keys and struct type values.
     mapping(address => TestStruct) public addressStructMap;
 
+    mapping(uint24 => address[3]) public uintFixedArrayMap;
+
+    mapping(int16 => uint128[]) public intDynamicArrayMap;
+
+    mapping(address => bytes) public addressBytesMap;
+
+    mapping(bytes32 => string) public bytesStringMap;
+
     // Set variable addressUintMap.
     function setAddressUintMap(uint value) external {
         addressUintMap[msg.sender] = value;
@@ -102,5 +110,25 @@ contract TestBasicMapping {
     // Set variable fixedBytesStructMap.
     function setAddressStructMap(address key, TestStruct calldata value) external {
         addressStructMap[key] = value;
+    }
+
+    // Set variable uintFixedArrayMap.
+    function setUintFixedArrayMap(uint24 key, address[3] calldata value) external {
+        uintFixedArrayMap[key] = value;
+    }
+
+    // Set variable intDynamicArrayMap.
+    function setIntDynamicArrayMap(int16 key, uint128[] calldata value) external {
+        intDynamicArrayMap[key] = value;
+    }
+
+    // Set variable addressBytesMap.
+    function setAddressBytesMap(address key, bytes calldata value) external {
+        addressBytesMap[key] = value;
+    }
+
+    // Set variable bytesStringMap.
+    function setBytesStringMap(bytes32 key, string calldata value) external {
+        bytesStringMap[key] = value;
     }
 }
