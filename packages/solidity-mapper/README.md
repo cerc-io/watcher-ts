@@ -51,8 +51,8 @@ $ yarn test
     * [ ] Nested Arrays
       * [x] Fixed size arrays
       * [ ] Dynamically-sized arrays
-  * [ ] Dynamically-sized byte array
-    * [ ] Bytes
+  * [x] Dynamically-sized byte array
+    * [x] Bytes
     * [x] String
   * [ ] Structs
     * [x] Get struct value with all members

@@ -270,6 +270,33 @@ describe('Get value from storage', () => {
     });
   });
 
+  describe('dynamically sized byte array', () => {
+    let testBytes: Contract, storageLayout: StorageLayout;
+
+    before(async () => {
+      const TestBytes = await ethers.getContractFactory('TestBytes');
+      testBytes = await TestBytes.deploy();
+      await testBytes.deployed();
+      storageLayout = await getStorageLayout('TestBytes');
+    });
+
+    it('get value for byte array length less than 32 bytes', async () => {
+      const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(24));
+      await testBytes.setBytesArray(expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray');
+      expect(value).to.equal(expectedValue);
+    });
+
+    it('get value for byte array length more than 32 bytes', async () => {
+      const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(100));
+      await testBytes.setBytesArray(expectedValue);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray');
+      expect(value).to.equal(expectedValue);
+    });
+  });
+
   describe('fixed size arrays', () => {
     let testFixedArrays: Contract, storageLayout: StorageLayout;
     const int128Array = [100, 200, 300, 400, 500];
