@@ -437,7 +437,7 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(boolArray.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 2;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'boolArray', arrayIndex));
       expect(value).to.equal(boolArray[arrayIndex]);
@@ -452,7 +452,7 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(uint128Array.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 3;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'uintArray', arrayIndex));
       expect(value).to.equal(BigInt(uint128Array[arrayIndex]));
@@ -467,7 +467,7 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(intArray.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 1;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'intArray', arrayIndex));
       expect(value).to.equal(BigInt(intArray[arrayIndex]));
@@ -483,7 +483,7 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(addressArray.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 4;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'addressArray', arrayIndex));
       expect(value).to.equal(addressArray[arrayIndex]);
@@ -498,7 +498,7 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(fixedBytesArray.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 2;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'fixedBytesArray', arrayIndex));
       expect(value).to.equal(fixedBytesArray[arrayIndex]);
@@ -513,10 +513,94 @@ describe('Get value from storage', () => {
       const proofData = JSON.parse(proof.data);
       expect(proofData.length).to.equal(enumArray.length);
 
-      // Get value by index
+      // Get value by index.
       const arrayIndex = 2;
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'enumArray', arrayIndex));
       expect(value).to.equal(BigInt(enumArray[arrayIndex]));
+    });
+
+    it('get value for dynamic sized array of bytes', async () => {
+      const bytesArray = Array.from({ length: 4 }, () => {
+        const bytesLength = Math.floor(Math.random() * 64);
+        return ethers.utils.hexlify(ethers.utils.randomBytes(bytesLength));
+      });
+
+      await testDynamicArrays.setBytesArray(bytesArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'bytesArray');
+      expect(value).to.eql(bytesArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(bytesArray.length);
+
+      // Get value by index.
+      const arrayIndex = 2;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'bytesArray', arrayIndex));
+      expect(value).to.equal(bytesArray[arrayIndex]);
+    });
+
+    it('get value for dynamic sized array of string type', async () => {
+      const stringArray = ['abc', 'defgh', 'ij', 'k'];
+
+      await testDynamicArrays.setStringArray(stringArray);
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'stringArray');
+      expect(value).to.eql(stringArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(stringArray.length);
+
+      // Get value by index.
+      const arrayIndex = 1;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'stringArray', arrayIndex));
+      expect(value).to.equal(stringArray[arrayIndex]);
+    });
+
+    it('get value for dynamic sized array of struct type', async () => {
+      const structArray = [];
+
+      for (let i = 0; i < 5; i++) {
+        const structElement = {
+          int1: BigInt(i + 1),
+          uint1: BigInt(i + 2),
+          bool1: Boolean(i % 2)
+        };
+
+        structArray[i] = structElement;
+        await testDynamicArrays.addStructArrayElement(structElement);
+      }
+
+      const blockHash = await getBlockHash();
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'structArray');
+      expect(value).to.eql(structArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(structArray.length);
+
+      // Get value by index.
+      const arrayIndex = 3;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'structArray', arrayIndex));
+      expect(value).to.eql(structArray[arrayIndex]);
+
+      // Get struct member value.
+      const structMember = 'uint1';
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'structArray', arrayIndex, structMember));
+      expect(value).to.eql(structArray[arrayIndex][structMember]);
+    });
+
+    it('get value for dynamic sized array of mapping type', async () => {
+      const signers = await ethers.getSigners();
+
+      const mapArrayPromises = signers.map(async (signer, index) => {
+        const map = new Map();
+        map.set(signer.address, BigInt(index * 10));
+        await testDynamicArrays.addMapArrayElement(signer.address, map.get(signer.address));
+        return map;
+      });
+
+      const mapArray = await Promise.all(mapArrayPromises);
+      const blockHash = await getBlockHash();
+      const arrayIndex = 2;
+      const mapKey = signers[2].address;
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'mapArray', arrayIndex, mapKey);
+      expect(value).to.equal(mapArray[arrayIndex].get(mapKey));
     });
   });
 

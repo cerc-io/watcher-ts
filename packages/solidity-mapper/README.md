@@ -45,9 +45,9 @@ $ yarn test
       * [x] Address Type
       * [ ] Fixed-size byte arrays
       * [x] Enum Type
-      * [ ] Dynamically-sized byte array
-      * [ ] Struct Type
-      * [ ] Mapping Type
+      * [x] Dynamically-sized byte array
+      * [x] Struct Type
+      * [x] Mapping Type
     * [ ] Nested Arrays
       * [x] Fixed size arrays
       * [ ] Dynamically-sized arrays
