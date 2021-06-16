@@ -1,0 +1,40 @@
+{
+  "name": "@vulcanize/tracing-client",
+  "version": "0.1.0",
+  "description": "ETH VM tracing client",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "test": "mocha -r ts-node/register src/**/*.spec.ts",
+    "build": "tsc",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vulcanize/erc20-watcher.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/vulcanize/erc20-watcher/issues"
+  },
+  "homepage": "https://github.com/vulcanize/erc20-watcher#readme",
+  "dependencies": {
+    "canonical-json": "^0.0.4",
+    "debug": "^4.3.1",
+    "ethers": "^5.3.1",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.5",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-semistandard": "^15.0.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "eslint-plugin-standard": "^5.0.0"
+  }
+}
