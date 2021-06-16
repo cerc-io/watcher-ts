@@ -48,9 +48,9 @@ $ yarn test
       * [x] Dynamically-sized byte array
       * [x] Struct Type
       * [x] Mapping Type
-    * [ ] Nested Arrays
+    * [x] Nested Arrays
       * [x] Fixed size arrays
-      * [ ] Dynamically-sized arrays
+      * [x] Dynamically-sized arrays
   * [x] Dynamically-sized byte array
     * [x] Bytes
     * [x] String

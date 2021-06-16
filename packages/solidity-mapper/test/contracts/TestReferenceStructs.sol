@@ -32,6 +32,13 @@ contract TestReferenceStructs {
 
     StringStruct stringStruct;
 
+    struct DynamicArrayStruct {
+        address address1;
+        uint160[] uintArray;
+    }
+
+    DynamicArrayStruct dynamicArrayStruct;
+
     struct ValueMappingStruct {
         mapping(uint => address) uintAddressMap;
         uint32 uint1;
@@ -87,5 +94,10 @@ contract TestReferenceStructs {
     // Set variable nestedStruct.
     function setNestedStruct(NestedStruct calldata value) external {
         nestedStruct = value;
+    }
+
+    // Set variable dynamicArrayStruct.
+    function setDynamicArrayStruct(DynamicArrayStruct calldata value) external {
+        dynamicArrayStruct = value;
     }
 }

@@ -710,6 +710,19 @@ describe('Get value from storage', () => {
   describe('nested arrays', () => {
     let testNestedArrays: Contract, storageLayout: StorageLayout;
     const nestedStructArray: Array<Array<{[key: string]: any}>> = [];
+    const nestedAddressArray: Array<Array<string>> = [];
+
+    const nestedFixedDynamicArray = [
+      [1, 2, 3].map(BigInt),
+      [4, 5, 6].map(BigInt)
+    ];
+
+    const nestedDynamicArray = [
+      [1, 2, 3, 4].map(BigInt),
+      [5, 6].map(BigInt),
+      [7, 8, 9, 10, 11, 12].map(BigInt),
+      [13, 14, 15].map(BigInt)
+    ];
 
     before(async () => {
       const TestNestedArrays = await ethers.getContractFactory('TestNestedArrays');
@@ -735,6 +748,18 @@ describe('Get value from storage', () => {
           await testNestedArrays.setNestedStructArray(i, j, value);
         }
       }
+
+      // Set value for nestedAddressArray.
+      for (let i = 0; i < 3; i++) {
+        nestedAddressArray[i] = signers.slice(i, i + 4).map(signer => signer.address.toLowerCase());
+      }
+
+      await testNestedArrays.setNestedAddressArray(nestedAddressArray);
+
+      // Set value for nested dynamic arrays
+      await testNestedArrays.setNestedFixedDynamicArray(nestedFixedDynamicArray);
+      await testNestedArrays.setNestedDynamicFixedArray(nestedDynamicArray);
+      await testNestedArrays.setNestedDynamicArray(nestedDynamicArray);
     });
 
     // Get all elements of array.
@@ -748,6 +773,40 @@ describe('Get value from storage', () => {
       expect(proofData[0]).to.have.all.keys(Object.keys(nestedStructArray[0]));
     });
 
+    it('get value for fixed size nested array of address type', async () => {
+      const blockHash = await getBlockHash();
+      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedAddressArray');
+      expect(value).to.eql(nestedAddressArray);
+      const proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(nestedAddressArray.length);
+      expect(proofData[0].length).to.equal(nestedAddressArray[0].length);
+    });
+
+    it('get value for nested dynamic array of integer type', async () => {
+      const blockHash = await getBlockHash();
+
+      // Test for variable nestedFixedDynamicArray.
+      let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedFixedDynamicArray');
+      expect(value).to.eql(nestedFixedDynamicArray);
+      let proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(nestedFixedDynamicArray.length);
+      expect(proofData[0].length).to.equal(nestedFixedDynamicArray[0].length);
+
+      // Test for variable nestedFixedDynamicArray.
+      ({ value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedDynamicFixedArray'));
+      expect(value).to.eql(nestedDynamicArray);
+      proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(nestedDynamicArray.length);
+      expect(proofData[0].length).to.equal(nestedDynamicArray[0].length);
+
+      // Test for variable nestedDynamicArray.
+      ({ value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedDynamicArray'));
+      expect(value).to.eql(nestedDynamicArray);
+      proofData = JSON.parse(proof.data);
+      expect(proofData.length).to.equal(nestedDynamicArray.length);
+      expect(proofData[0].length).to.equal(nestedDynamicArray[0].length);
+    });
+
     // Get element of array by index.
     it('get value of fixed size struct type nested array by index', async () => {
       const arrayIndex = 2;
@@ -759,6 +818,36 @@ describe('Get value from storage', () => {
       const structMember = 'address1';
       ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedStructArray', arrayIndex, nestedArrayIndex, structMember));
       expect(value).to.equal(nestedStructArray[arrayIndex][nestedArrayIndex][structMember]);
+    });
+
+    it('get value of fixed size address type nested array by index', async () => {
+      const arrayIndex = 2;
+      const nestedArrayIndex = 1;
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedAddressArray', arrayIndex, nestedArrayIndex);
+      expect(value).to.eql(nestedAddressArray[arrayIndex][nestedArrayIndex]);
+    });
+
+    it('get value of dynamically sized nested array by index', async () => {
+      const blockHash = await getBlockHash();
+
+      // Test for variable nestedFixedDynamicArray.
+      let arrayIndex = 1;
+      let nestedArrayIndex = 2;
+      let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedFixedDynamicArray', arrayIndex, nestedArrayIndex);
+      expect(value).to.eql(nestedFixedDynamicArray[arrayIndex][nestedArrayIndex]);
+
+      // Test for variable nestedDynamicFixedArray.
+      arrayIndex = 2;
+      nestedArrayIndex = 3;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedDynamicFixedArray', arrayIndex, nestedArrayIndex));
+      expect(value).to.eql(nestedDynamicArray[arrayIndex][nestedArrayIndex]);
+
+      // Test for variable nestedDynamicArray.
+      arrayIndex = 3;
+      nestedArrayIndex = 2;
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testNestedArrays.address, 'nestedDynamicArray', arrayIndex, nestedArrayIndex));
+      expect(value).to.eql(nestedDynamicArray[arrayIndex][nestedArrayIndex]);
     });
   });
 
@@ -945,7 +1034,8 @@ describe('Get value from storage', () => {
     let fixedArrayStruct: {[key: string]: any},
       bytesStruct: {[key: string]: any},
       stringStruct: {[key: string]: any},
-      nestedStruct: {[key: string]: any};
+      nestedStruct: {[key: string]: any},
+      dynamicArrayStruct: {[key: string]: any};
 
     before(async () => {
       const TestReferenceStructs = await ethers.getContractFactory('TestReferenceStructs');
@@ -980,6 +1070,11 @@ describe('Get value from storage', () => {
         bytesStruct,
         address1: signers[3].address.toLowerCase()
       };
+
+      dynamicArrayStruct = {
+        address1: signers[4].address,
+        uintArray: [1, 2, 3, 4, 5].map(BigInt)
+      };
     });
 
     // Get all members of a struct.
@@ -1002,6 +1097,13 @@ describe('Get value from storage', () => {
       const blockHash = await getBlockHash();
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'stringStruct');
       expect(value).to.eql(stringStruct);
+    });
+
+    it.skip('get value for struct with dynamic array members', async () => {
+      await testReferenceStructs.setDynamicArrayStruct(dynamicArrayStruct);
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'dynamicArrayStruct');
+      expect(value).to.eql(dynamicArrayStruct);
     });
 
     it('get value for nested struct with struct type members', async () => {
@@ -1034,6 +1136,13 @@ describe('Get value from storage', () => {
       const blockHash = await getBlockHash();
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'stringStruct', member);
       expect(value).to.eql(stringStruct[member]);
+    });
+
+    it.skip('get value of dynamic array member in a struct', async () => {
+      const member = 'uintArray';
+      const blockHash = await getBlockHash();
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'dynamicArrayStruct', member);
+      expect(value).to.eql(dynamicArrayStruct[member]);
     });
 
     it('get value of mapping type member in a struct', async () => {
