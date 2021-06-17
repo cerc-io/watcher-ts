@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/erc20-watcher.git"
+    "url": "git+https://github.com/vulcanize/watcher-ts.git"
   },
   "author": "",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/vulcanize/erc20-watcher/issues"
+    "url": "https://github.com/vulcanize/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/erc20-watcher#readme",
+  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
   "dependencies": {
     "@graphql-tools/schema": "^7.1.5",
     "@types/lodash": "^4.14.168",

@@ -1,5 +1,5 @@
 {
-  "name": "erc20-watcher",
+  "name": "watcher-ts",
   "private": true,
   "workspaces": [
     "packages/*"

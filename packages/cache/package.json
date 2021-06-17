@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/erc20-watcher.git"
+    "url": "git+https://github.com/vulcanize/watcher-ts.git"
   },
   "author": "",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/vulcanize/erc20-watcher/issues"
+    "url": "https://github.com/vulcanize/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/erc20-watcher#readme",
+  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
   "dependencies": {
     "canonical-json": "^0.0.4",
     "debug": "^4.3.1",
