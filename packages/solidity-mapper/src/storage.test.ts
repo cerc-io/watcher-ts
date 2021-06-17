@@ -367,7 +367,7 @@ describe('Get value from storage', () => {
       expect(proofData.length).to.equal(addressArray.length);
     });
 
-    it.skip('get value for fixed size arrays of fixed size bytes type', async () => {
+    it('get value for fixed size arrays of fixed size bytes type', async () => {
       const expectedValue = Array.from({ length: 5 }, () => ethers.utils.hexlify(ethers.utils.randomBytes(10)));
 
       await testFixedArrays.setFixedBytesArray(expectedValue);
@@ -592,7 +592,7 @@ describe('Get value from storage', () => {
       expect(value).to.equal(addressArray[arrayIndex]);
     });
 
-    it.skip('get value for dynamic sized array of fixed size byte array', async () => {
+    it('get value for dynamic sized array of fixed size byte array', async () => {
       const fixedBytesArray = Array.from({ length: 4 }, () => ethers.utils.hexlify(ethers.utils.randomBytes(10)));
       await testDynamicArrays.setFixedBytesArray(fixedBytesArray);
       const blockHash = await getBlockHash();
@@ -1072,7 +1072,7 @@ describe('Get value from storage', () => {
       };
 
       dynamicArrayStruct = {
-        address1: signers[4].address,
+        address1: signers[4].address.toLowerCase(),
         uintArray: [1, 2, 3, 4, 5].map(BigInt)
       };
     });
@@ -1099,7 +1099,7 @@ describe('Get value from storage', () => {
       expect(value).to.eql(stringStruct);
     });
 
-    it.skip('get value for struct with dynamic array members', async () => {
+    it('get value for struct with dynamic array members', async () => {
       await testReferenceStructs.setDynamicArrayStruct(dynamicArrayStruct);
       const blockHash = await getBlockHash();
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'dynamicArrayStruct');
@@ -1138,7 +1138,7 @@ describe('Get value from storage', () => {
       expect(value).to.eql(stringStruct[member]);
     });
 
-    it.skip('get value of dynamic array member in a struct', async () => {
+    it('get value of dynamic array member in a struct', async () => {
       const member = 'uintArray';
       const blockHash = await getBlockHash();
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testReferenceStructs.address, 'dynamicArrayStruct', member);
@@ -1247,6 +1247,9 @@ describe('Get value from storage', () => {
       expect(value).to.equal(expectedValue);
     });
 
+    // TODO: Fix getting value for mapping with keys as fixed-size byte array
+    // Zero value is returned if using fixed-sized byte array keys of length less than 32 bytes
+    // Type Bytes32 works whereas types like bytes16, bytes24 do not work.
     it.skip('get value for mapping with fixed-size byte array keys', async () => {
       const mapKey = ethers.utils.hexlify(ethers.utils.randomBytes(8));
       const [, signer1] = await ethers.getSigners();

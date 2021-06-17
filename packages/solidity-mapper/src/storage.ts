@@ -219,17 +219,22 @@ const getDynamicArrayInfo = async (getStorageAt: GetStorageAt, blockHash: string
 const getArrayValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, types: Types, mappingKeys: MappingKey[], slot: string, base: string, arraySize: number) => {
   const resultArray = [];
   const proofs = [];
-  let { numberOfBytes: baseNumberOfBytes, label: baseTypeLabel } = types[base];
-
-  // Address type elements use an entire single slot i.e. 32 bytes.
-  if (baseTypeLabel === 'address' || baseTypeLabel.includes('contract')) {
-    baseNumberOfBytes = '32';
-  }
+  const { numberOfBytes: baseNumberOfBytes } = types[base];
 
   const getArrayElement = async (mappingKeys: MappingKey[], index: number) => {
-    const arrayOffset = index * Number(baseNumberOfBytes);
-    const arraySlot = BigNumber.from(slot).add(Math.floor(arrayOffset / 32)).toHexString();
-    const arraySlotOffset = arrayOffset % 32;
+    let arraySlotOffset = 0;
+    let slotIndex;
+
+    if (Number(baseNumberOfBytes) <= 32) {
+      const elementsInSlot = Math.floor(32 / Number(baseNumberOfBytes));
+      slotIndex = Math.floor(index / elementsInSlot);
+      arraySlotOffset = (index % elementsInSlot) * Number(baseNumberOfBytes);
+    } else {
+      const slotsUsedByElement = Math.ceil(Number(baseNumberOfBytes) / 32);
+      slotIndex = slotsUsedByElement * index;
+    }
+
+    const arraySlot = BigNumber.from(slot).add(slotIndex).toHexString();
 
     return getDecodedValue(getStorageAt, blockHash, address, types, { slot: arraySlot, offset: arraySlotOffset, type: base }, mappingKeys);
   };
@@ -240,7 +245,6 @@ const getArrayValue = async (getStorageAt: GetStorageAt, blockHash: string, addr
     return getArrayElement(remainingKeys, arrayIndex);
   }
 
-  // TODO: Get values in single call and parse according to type.
   // Loop over elements of array and get value.
   for (let i = 0; i < arraySize; i++) {
     const { value, proof } = await getArrayElement(mappingKeys, i);
@@ -309,6 +313,7 @@ const getStructureValue = async (getStorageAt: GetStorageAt, blockHash: string, 
  * @param getStorageAt
  */
 const getInplaceValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string, offset: number, numberOfBytes: string) => {
+  // TODO: Memoize getStorageAt function for duplicate multiple calls.
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
   const valueLength = utils.hexDataLength(value);
 

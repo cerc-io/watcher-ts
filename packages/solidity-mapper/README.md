@@ -26,24 +26,24 @@ $ yarn test
   * [x] Fixed-size byte arrays
   * [x] Enums
   * [ ] Function Types
-* [ ] Reference Types
-  * [ ] Arrays
+* [x] Reference Types
+  * [x] Arrays
     * [x] Get all elements in array
     * [x] Get element in array by index
-    * [ ] Fixed size arrays
+    * [x] Fixed size arrays
       * [x] Integer Type
       * [x] Boolean Type
       * [x] Address Type
-      * [ ] Fixed-size byte arrays
+      * [x] Fixed-size byte arrays
       * [x] Enum type
       * [x] Dynamically-sized byte array
       * [x] Struct Type
       * [x] Mapping Type
-    * [ ] Dynamically-sized arrays
+    * [x] Dynamically-sized arrays
       * [x] Integer Type
       * [x] Boolean Type
       * [x] Address Type
-      * [ ] Fixed-size byte arrays
+      * [x] Fixed-size byte arrays
       * [x] Enum Type
       * [x] Dynamically-sized byte array
       * [x] Struct Type
@@ -54,14 +54,14 @@ $ yarn test
   * [x] Dynamically-sized byte array
     * [x] Bytes
     * [x] String
-  * [ ] Structs
+  * [x] Structs
     * [x] Get struct value with all members
     * [x] Value Types
     * [x] Get value of a single member in struct
-    * [ ] Reference Types
+    * [x] Reference Types
       * [x] Struct type members (nested)
       * [x] Fixed size Array members
-      * [ ] Dynamically sized Array members
+      * [x] Dynamically sized Array members
       * [x] Bytes and string type members
       * [x] Mapping type members
   * [ ] Mapping Types
