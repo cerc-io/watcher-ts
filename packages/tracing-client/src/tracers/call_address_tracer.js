@@ -26,20 +26,25 @@
 	minVanityAddressLength: 35,
 
 	excludedAddresses: [
-	  "0x0000000000000000000000000000000000000000",
-	  "0xffffffffffffffffffffffffffffffffffffffff"
+		"0x0000000000000000000000000000000000000000",
+		"0xffffffffffffffffffffffffffffffffffffffff"
 	],
 
 	// Known vanity addresses. Empty by default, but can replace this object when making dynamic requests.
 	// Burner addresses go here too.
 	knownVanityAddresses: {
-	  // "0x000026b86Ac8B3c08ADDEeacd7ee19e807D94742": true
+		// "0x000026b86Ac8B3c08ADDEeacd7ee19e807D94742": true
 	},
+
+	prevStepOp: '',
+
+	// Cache of values known to be an address in the global state/db.
+	cacheExistingAccounts: {},
 
 	isAddress: function(log, db, value) {
 		// More than 40 chars or too small in length, so not an address.
 		if (value.length > 40 || value.length < this.minVanityAddressLength) {
-		  return { isAddress: false };
+			return { isAddress: false };
 		}
 
 		var address = toAddress(value);
@@ -47,12 +52,13 @@
 
 		// Check list of known exclusions.
 		if (this.excludedAddresses.indexOf(addressAsHex) != -1) {
-		  return { isAddress: false };
+			return { isAddress: false };
 		}
 
 		// Address exists in db, so definitely an address.
-		if (db.exists(address)) {
-		  return { isAddress: true, address: addressAsHex, confidence: 1 };
+		if (this.cacheExistingAccounts[addressAsHex] || db.exists(address)) {
+			this.cacheExistingAccounts[addressAsHex] = true;
+			return { isAddress: true, address: addressAsHex, confidence: 1 };
 		}
 
 		// May still be a valid address (e.g. for ERC20 transfer).
@@ -68,7 +74,7 @@
 		// But we use a min length of addresses, otherwise there are too many false positives.
 		// Also use a known vanity address list to override the normal logic.
 		if (this.knownVanityAddresses[addressAsHex] || (log.op.isPush() && value.length > this.minVanityAddressLength)) {
-		  return { isAddress: true, address: addressAsHex, confidence: 0.60 };
+			return { isAddress: true, address: addressAsHex, confidence: 0.60 };
 		}
 
 		return { isAddress: false };
@@ -87,6 +93,9 @@
 		var error = log.getError();
 		if (error !== undefined) {
 			this.fault(log, db);
+
+			this.prevStepOp = log.op.toString();
+
 			return;
 		}
 		// We only care about system opcodes, faster if we pre-check once
@@ -109,7 +118,10 @@
 				value:   '0x' + log.stack.peek(0).toString(16)
 			};
 			this.callstack.push(call);
-			this.descended = true
+			this.descended = true;
+
+			this.prevStepOp = log.op.toString();
+
 			return;
 		}
 		// If a contract is being self destructed, gather that as a subcall too
@@ -126,6 +138,9 @@
 				gasCost: log.getCost(),
 				value:   '0x' + db.getBalance(log.contract.getAddress()).toString(16)
 			});
+
+			this.prevStepOp = log.op.toString();
+
 			return
 		}
 		// If a new method invocation is being done, add to the call stack
@@ -133,6 +148,8 @@
 			// Skip any pre-compile invocations, those are just fancy opcodes
 			var to = toAddress(log.stack.peek(1).toString(16));
 			if (isPrecompiled(to)) {
+				this.prevStepOp = log.op.toString();
+
 				return
 			}
 			var off = (op == 'DELEGATECALL' || op == 'STATICCALL' ? 0 : 1);
@@ -155,7 +172,10 @@
 				call.value = '0x' + log.stack.peek(2).toString(16);
 			}
 			this.callstack.push(call);
-			this.descended = true
+			this.descended = true;
+
+			this.prevStepOp = log.op.toString();
+
 			return;
 		}
 		// If we've just descended into an inner call, retrieve it's true allowance. We
@@ -174,6 +194,9 @@
 		// If an existing call is returning, pop off the call stack
 		if (syscall && op == 'REVERT') {
 			this.callstack[this.callstack.length - 1].error = "execution reverted";
+
+			this.prevStepOp = log.op.toString();
+
 			return;
 		}
 		if (log.getDepth() == this.callstack.length - 1) {
@@ -224,8 +247,15 @@
 			if (!call.addresses) {
 				call.addresses = {};
 			}
-			call.addresses[result.address] = result.confidence;
+
+			if (!call.addresses[result.address]) {
+				call.addresses[result.address] = { confidence: result.confidence, opcodes: [] };
+			}
+
+			call.addresses[result.address].opcodes.push(this.prevStepOp);
 		}
+
+		this.prevStepOp = log.op.toString();
 	},
 
 	// fault is invoked when the actual execution of an opcode fails.

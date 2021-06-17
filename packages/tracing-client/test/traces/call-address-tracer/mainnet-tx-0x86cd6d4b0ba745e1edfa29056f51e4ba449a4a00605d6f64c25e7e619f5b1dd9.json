@@ -1,0 +1,3396 @@
+{
+  "type": "CALL",
+  "from": "0x9544a9249d8fc6b28faf211f5e616aaf8ac13e62",
+  "to": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+  "value": "0x0",
+  "gas": "0x98b61",
+  "gasUsed": "0x98b61",
+  "input": "0xfdb5a03e",
+  "output": "0x",
+  "time": "12.576277308s",
+  "calls": [
+    {
+      "type": "CALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+      "value": "0x0",
+      "gas": "0x93597",
+      "gasUsed": "0x1ac75",
+      "input": "0x441a3e7000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000",
+      "output": "0x",
+      "calls": [
+        {
+          "type": "STATICCALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "gas": "0x8e25a",
+          "gasUsed": "0x9bc",
+          "input": "0x70a08231000000000000000000000000c2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "output": "0x00000000000000000000000000000000000000000001783a0901091cfbcedca9",
+          "addresses": {
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "MSTORE",
+                "SWAP1"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "value": "0x0",
+          "gas": "0x89850",
+          "gasUsed": "0x42ad",
+          "input": "0x40c10f19000000000000000000000000e94b5eec1fa96ceecbd33ef5baa8d00e4493f4f300000000000000000000000000000000000000000000000219e48616068db9f9",
+          "output": "0x",
+          "addresses": {
+            "0xe94b5eec1fa96ceecbd33ef5baa8d00e4493f4f3": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP3",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP3",
+                "AND",
+                "SWAP1",
+                "DUP4",
+                "AND",
+                "DUP2",
+                "SWAP3",
+                "POP",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "POP"
+              ]
+            },
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "DIV",
+                "SWAP1",
+                "AND",
+                "SWAP2",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "value": "0x0",
+          "gas": "0x854b7",
+          "gasUsed": "0x281d",
+          "input": "0x40c10f19000000000000000000000000c2edad668740f1aa35e4d8f227fb8e17dca888cd00000000000000000000000000000000000000000000001502ed3cdc418943c0",
+          "output": "0x",
+          "addresses": {
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "DIV",
+                "SWAP1",
+                "AND",
+                "SWAP2",
+                "AND",
+                "DUP3",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP3",
+                "AND",
+                "SWAP1",
+                "DUP4",
+                "AND",
+                "DUP2",
+                "SWAP3",
+                "POP",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "STATICCALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "gas": "0x80029",
+          "gasUsed": "0x242",
+          "input": "0x70a08231000000000000000000000000c2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "output": "0x00000000000000000000000000000000000000000001d4bcb01e7520ac38ab49",
+          "addresses": {
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "AND",
+                "SWAP1"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "value": "0x0",
+          "gas": "0x7fbab",
+          "gasUsed": "0x6289",
+          "input": "0xa9059cbb000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d180330000000000000000000000000000000000000000000000002a67b0658cbbad843",
+          "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "SWAP2"
+              ]
+            },
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "DUP4",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP7",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "value": "0x0",
+          "gas": "0x7873f",
+          "gasUsed": "0x1438",
+          "input": "0xa9059cbb000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d1803300000000000000000000000000000000000000000000000000000000000000000",
+          "output": "0x",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "SWAP2"
+              ]
+            },
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP"
+              ]
+            }
+          }
+        }
+      ],
+      "addresses": {
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLER",
+            "CALLER",
+            "DUP7",
+            "AND",
+            "POP",
+            "CALLER",
+            "DUP5",
+            "AND",
+            "POP",
+            "CALLER"
+          ]
+        },
+        "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "SLOAD",
+            "SWAP1",
+            "AND",
+            "DUP5",
+            "DUP6",
+            "AND",
+            "SWAP1",
+            "DUP5",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP2",
+            "SWAP2",
+            "DUP7",
+            "AND",
+            "DUP8",
+            "SWAP3",
+            "SWAP4",
+            "SWAP4",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+          "confidence": 1,
+          "opcodes": [
+            "ADDRESS",
+            "ADDRESS",
+            "ADDRESS"
+          ]
+        },
+        "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "POP",
+            "SWAP1",
+            "AND",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "SWAP4",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP",
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xe94b5eec1fa96ceecbd33ef5baa8d00e4493f4f3": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP2",
+            "AND",
+            "DUP4",
+            "AND",
+            "SWAP3"
+          ]
+        }
+      }
+    },
+    {
+      "type": "STATICCALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+      "gas": "0x785fa",
+      "gasUsed": "0x242",
+      "input": "0x70a08231000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d180330",
+      "output": "0x000000000000000000000000000000000000000000000002a67b0658cbbad843",
+      "addresses": {
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLDATALOAD",
+            "AND",
+            "JUMP",
+            "JUMPDEST",
+            "AND",
+            "SWAP1"
+          ]
+        }
+      }
+    },
+    {
+      "type": "CALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+      "value": "0x0",
+      "gas": "0x77749",
+      "gasUsed": "0x1fbd",
+      "input": "0xa9059cbb0000000000000000000000009544a9249d8fc6b28faf211f5e616aaf8ac13e62000000000000000000000000000000000000000000000000145abb12061ca535",
+      "output": "0x",
+      "addresses": {
+        "0x9544a9249d8fc6b28faf211f5e616aaf8ac13e62": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLDATALOAD",
+            "AND",
+            "DUP5",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "POP",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP2",
+            "SWAP2",
+            "POP",
+            "SWAP2"
+          ]
+        },
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLER",
+            "JUMP",
+            "JUMPDEST",
+            "DUP4",
+            "AND",
+            "DUP4",
+            "POP",
+            "DUP7",
+            "AND",
+            "SWAP1",
+            "DUP6",
+            "AND",
+            "SWAP1",
+            "DUP8",
+            "AND",
+            "POP"
+          ]
+        }
+      }
+    },
+    {
+      "type": "CALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+      "value": "0x0",
+      "gas": "0x738a8",
+      "gasUsed": "0x1b2d2",
+      "input": "0x18cbafe500000000000000000000000000000000000000000000000292204b46c59e330e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d1803300000000000000000000000000000000000000000000000000000000060caf97500000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b3595068778dd592e39a122f4f5a5cf09c90fe2000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "output": "0x",
+      "calls": [
+        {
+          "type": "STATICCALL",
+          "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "to": "0x795065dcc9f64b5614c407a6efdc400da6221fb0",
+          "gas": "0x70864",
+          "gasUsed": "0x9d5",
+          "input": "0x0902f1ac",
+          "output": "0x0000000000000000000000000000000000000000001118de9b8a77927b11e03300000000000000000000000000000000000000000000103058e717cceb0f59080000000000000000000000000000000000000000000000000000000060caf8d2"
+        },
+        {
+          "type": "CALL",
+          "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "value": "0x0",
+          "gas": "0x6f354",
+          "gasUsed": "0x3d40",
+          "input": "0x23b872dd000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d180330000000000000000000000000795065dcc9f64b5614c407a6efdc400da6221fb000000000000000000000000000000000000000000000000292204b46c59e330e",
+          "output": "0x",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP4",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP7",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP",
+                "DUP5",
+                "DUP11",
+                "AND",
+                "SWAP1",
+                "DUP4",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "POP",
+                "SWAP3"
+              ]
+            },
+            "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "POP"
+              ]
+            },
+            "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP8",
+                "AND",
+                "DUP1",
+                "MSTORE",
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "to": "0x795065dcc9f64b5614c407a6efdc400da6221fb0",
+          "value": "0x0",
+          "gas": "0x6adc7",
+          "gasUsed": "0xfef6",
+          "input": "0x022c0d9f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000026d4ac890e1dee5000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000",
+          "output": "0x",
+          "calls": [
+            {
+              "type": "CALL",
+              "from": "0x795065dcc9f64b5614c407a6efdc400da6221fb0",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "value": "0x0",
+              "gas": "0x65f19",
+              "gasUsed": "0x750a",
+              "input": "0xa9059cbb000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000026d4ac890e1dee5",
+              "output": "0x",
+              "addresses": {
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "DUP5",
+                    "DUP6",
+                    "AND",
+                    "AND",
+                    "DUP3",
+                    "AND",
+                    "POP",
+                    "SWAP2"
+                  ]
+                },
+                "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "CALLER",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "SWAP3"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "STATICCALL",
+              "from": "0x795065dcc9f64b5614c407a6efdc400da6221fb0",
+              "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+              "gas": "0x5e978",
+              "gasUsed": "0x242",
+              "input": "0x70a08231000000000000000000000000795065dcc9f64b5614c407a6efdc400da6221fb0",
+              "output": "0x0000000000000000000000000000000000000000001118e12daac2d940b01341",
+              "addresses": {
+                "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "JUMP",
+                    "JUMPDEST",
+                    "AND",
+                    "SWAP1"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "STATICCALL",
+              "from": "0x795065dcc9f64b5614c407a6efdc400da6221fb0",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "gas": "0x5e597",
+              "gasUsed": "0x216",
+              "input": "0x70a08231000000000000000000000000795065dcc9f64b5614c407a6efdc400da6221fb0",
+              "output": "0x0000000000000000000000000000000000000000000010305679cd045a2d7a23",
+              "addresses": {
+                "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "POP",
+                    "JUMP",
+                    "JUMPDEST",
+                    "MSTORE",
+                    "DUP1",
+                    "MSTORE",
+                    "SWAP2"
+                  ]
+                }
+              }
+            }
+          ],
+          "addresses": {
+            "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP10",
+                "AND",
+                "DUP10",
+                "AND",
+                "DUP11",
+                "DUP6",
+                "AND",
+                "POP",
+                "DUP12",
+                "AND",
+                "CALLER",
+                "POP"
+              ]
+            },
+            "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2": {
+              "confidence": 1,
+              "opcodes": [
+                "SLOAD",
+                "SWAP2",
+                "SWAP2",
+                "AND",
+                "DUP3",
+                "DUP5",
+                "AND",
+                "DUP7",
+                "DUP1",
+                "POP",
+                "POP",
+                "SWAP2"
+              ]
+            },
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+              "confidence": 1,
+              "opcodes": [
+                "SLOAD",
+                "SWAP2",
+                "SWAP1",
+                "AND",
+                "POP",
+                "DUP1",
+                "AND",
+                "JUMPI",
+                "JUMPDEST",
+                "JUMPI",
+                "JUMPDEST",
+                "JUMPI",
+                "DUP2",
+                "DUP10",
+                "AND",
+                "DUP7",
+                "SWAP2",
+                "POP",
+                "JUMP",
+                "JUMPDEST",
+                "JUMPI",
+                "JUMPDEST",
+                "POP",
+                "DUP4",
+                "AND",
+                "DUP7",
+                "DUP1",
+                "POP",
+                "POP",
+                "POP",
+                "POP",
+                "POP"
+              ]
+            },
+            "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+              "confidence": 1,
+              "opcodes": [
+                "ADDRESS",
+                "ADDRESS"
+              ]
+            },
+            "0x00017995080613f0c5d2d6f7b6d71963b4bbbd3b": {
+              "confidence": 0.6,
+              "opcodes": [
+                "SLOAD"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "value": "0x0",
+          "gas": "0x5b0c6",
+          "gasUsed": "0x2413",
+          "input": "0x2e1a7d4d000000000000000000000000000000000000000000000000026d4ac890e1dee5",
+          "output": "0x",
+          "calls": [
+            {
+              "type": "CALL",
+              "from": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "to": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "value": "0x26d4ac890e1dee5",
+              "gas": "0x8fc",
+              "gasUsed": "0x5f",
+              "input": "0x",
+              "output": "0x",
+              "addresses": {
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "PUSH32",
+                    "AND"
+                  ]
+                }
+              }
+            }
+          ],
+          "addresses": {
+            "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "AND",
+                "AND",
+                "CALLER",
+                "AND",
+                "AND",
+                "CALLER",
+                "AND",
+                "DUP9",
+                "SWAP4",
+                "CALLER",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "to": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+          "value": "0x26d4ac890e1dee5",
+          "gas": "0x571a6",
+          "gasUsed": "0x28",
+          "input": "0x",
+          "output": "0x"
+        }
+      ],
+      "addresses": {
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLDATALOAD",
+            "AND",
+            "CALLER",
+            "DUP6",
+            "AND",
+            "POP",
+            "DUP5",
+            "DUP5",
+            "AND",
+            "DUP8",
+            "SWAP3",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+          "confidence": 1,
+          "opcodes": [
+            "PUSH32",
+            "AND",
+            "CALLDATALOAD",
+            "AND",
+            "AND",
+            "MLOAD",
+            "JUMP",
+            "JUMPDEST",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP3",
+            "AND",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "JUMPDEST",
+            "POP",
+            "POP",
+            "JUMPI",
+            "JUMPDEST",
+            "SWAP1",
+            "JUMP",
+            "JUMPDEST",
+            "DUP9",
+            "JUMP",
+            "JUMPDEST",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP3",
+            "AND",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "JUMPDEST",
+            "POP",
+            "POP",
+            "JUMPI",
+            "JUMPDEST",
+            "SWAP1",
+            "JUMP",
+            "JUMPDEST",
+            "SWAP4",
+            "POP",
+            "POP",
+            "CALLDATALOAD",
+            "AND",
+            "JUMP",
+            "JUMPDEST",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP3",
+            "AND",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "JUMPDEST",
+            "POP",
+            "POP",
+            "JUMPI",
+            "JUMPDEST",
+            "SWAP1",
+            "JUMP",
+            "JUMPDEST",
+            "SWAP4",
+            "POP",
+            "MLOAD",
+            "POP",
+            "DUP4",
+            "JUMP",
+            "JUMPDEST",
+            "DUP3",
+            "AND",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "JUMPDEST",
+            "POP",
+            "POP",
+            "JUMPI",
+            "JUMPDEST",
+            "SWAP1",
+            "JUMP",
+            "JUMPDEST",
+            "DUP9",
+            "JUMP",
+            "JUMPDEST",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP3",
+            "AND",
+            "DUP3",
+            "AND",
+            "DUP4",
+            "JUMPDEST",
+            "POP",
+            "POP",
+            "JUMPI",
+            "JUMPDEST",
+            "SWAP1",
+            "JUMP",
+            "JUMPDEST",
+            "SWAP4",
+            "POP",
+            "POP",
+            "PUSH32",
+            "AND",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac": {
+          "confidence": 1,
+          "opcodes": [
+            "PUSH32",
+            "DUP8",
+            "DUP9",
+            "SWAP11",
+            "SWAP9",
+            "SWAP3",
+            "PUSH32",
+            "SWAP11",
+            "PUSH32",
+            "SWAP11"
+          ]
+        },
+        "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2": {
+          "confidence": 1,
+          "opcodes": [
+            "MLOAD",
+            "DUP6",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP4",
+            "SWAP1",
+            "DUP3",
+            "AND",
+            "SWAP3",
+            "POP",
+            "POP",
+            "POP",
+            "DUP9",
+            "DUP6",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP4",
+            "SWAP1",
+            "DUP3",
+            "AND",
+            "SWAP3",
+            "POP",
+            "SWAP5",
+            "POP",
+            "DUP8",
+            "AND",
+            "DUP5",
+            "AND",
+            "SWAP7",
+            "POP",
+            "CALLDATALOAD",
+            "AND",
+            "CALLDATALOAD",
+            "AND",
+            "DUP6",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP4",
+            "SWAP1",
+            "DUP3",
+            "AND",
+            "SWAP3",
+            "POP",
+            "SWAP5",
+            "POP",
+            "DUP11",
+            "AND",
+            "DUP7",
+            "SWAP2",
+            "POP",
+            "MLOAD",
+            "POP",
+            "DUP4",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP4",
+            "SWAP1",
+            "DUP3",
+            "AND",
+            "SWAP3",
+            "POP",
+            "POP",
+            "POP",
+            "DUP4",
+            "AND",
+            "DUP7",
+            "AND",
+            "DUP9",
+            "DUP6",
+            "DUP5",
+            "AND",
+            "DUP5",
+            "AND",
+            "DUP4",
+            "SWAP1",
+            "DUP3",
+            "AND",
+            "SWAP3",
+            "POP",
+            "SWAP5",
+            "POP",
+            "SWAP8",
+            "POP"
+          ]
+        },
+        "0x795065dcc9f64b5614c407a6efdc400da6221fb0": {
+          "confidence": 1,
+          "opcodes": [
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "AND",
+            "AND",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP",
+            "POP"
+          ]
+        },
+        "0x00a2158ae1867c5b709ac843084ded7a93fc4230": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP"
+          ]
+        },
+        "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+          "confidence": 1,
+          "opcodes": [
+            "ADDRESS",
+            "JUMP",
+            "JUMPDEST",
+            "DUP9",
+            "JUMP",
+            "JUMPDEST",
+            "POP",
+            "DUP5",
+            "DUP4",
+            "AND",
+            "POP",
+            "POP",
+            "POP"
+          ]
+        }
+      }
+    },
+    {
+      "type": "CALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0x737aad349312f36b43041737d648051a39f146e8",
+      "value": "0x26d4ac890e1dee5",
+      "gas": "0x553f3",
+      "gasUsed": "0x4fc5a",
+      "input": "0xb61d27f600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000400000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000000000000000000000000000000000000000000000",
+      "output": "0x",
+      "calls": [
+        {
+          "type": "STATICCALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac",
+          "gas": "0x5059d",
+          "gasUsed": "0xa54",
+          "input": "0xe6a439050000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "output": "0x000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "addresses": {
+            "0x6b175474e89094c44da98b954eedeac495271d0f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "SWAP3"
+              ]
+            },
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP1"
+              ]
+            },
+            "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+              "confidence": 1,
+              "opcodes": [
+                "SLOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP3",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "STATICCALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "gas": "0x4f9c8",
+          "gasUsed": "0x9d5",
+          "input": "0x0902f1ac",
+          "output": "0x0000000000000000000000000000000000000000005ee7fd4f63bea2fcaa9acf0000000000000000000000000000000000000000000009ed54fb2429a71b73470000000000000000000000000000000000000000000000000000000060caf8ef"
+        },
+        {
+          "type": "STATICCALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "gas": "0x4ede8",
+          "gasUsed": "0x991",
+          "input": "0x0dfe1681",
+          "output": "0x0000000000000000000000006b175474e89094c44da98b954eedeac495271d0f",
+          "addresses": {
+            "0x6b175474e89094c44da98b954eedeac495271d0f": {
+              "confidence": 1,
+              "opcodes": [
+                "SLOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP3",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "value": "0x1371cc8eda3f522",
+          "gas": "0x49432",
+          "gasUsed": "0x1a95a",
+          "input": "0x7ff36ab500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000737aad349312f36b43041737d648051a39f146e80000000000000000000000000000000000000000000000000000000060caf9750000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f",
+          "output": "0x",
+          "calls": [
+            {
+              "type": "STATICCALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+              "gas": "0x4780c",
+              "gasUsed": "0x205",
+              "input": "0x0902f1ac",
+              "output": "0x0000000000000000000000000000000000000000005ee7fd4f63bea2fcaa9acf0000000000000000000000000000000000000000000009ed54fb2429a71b73470000000000000000000000000000000000000000000000000000000060caf8ef"
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "value": "0x1371cc8eda3f522",
+              "gas": "0x45680",
+              "gasUsed": "0x55d6",
+              "input": "0xd0e30db0",
+              "output": "0x",
+              "addresses": {
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "AND",
+                    "AND",
+                    "CALLER",
+                    "AND"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "value": "0x0",
+              "gas": "0x3fcd0",
+              "gasUsed": "0x1f7e",
+              "input": "0xa9059cbb000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f00000000000000000000000000000000000000000000000001371cc8eda3f522",
+              "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+              "addresses": {
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "DUP5",
+                    "DUP6",
+                    "AND",
+                    "AND",
+                    "DUP3",
+                    "AND",
+                    "POP",
+                    "SWAP2"
+                  ]
+                },
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "CALLER",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "SWAP3"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+              "value": "0x0",
+              "gas": "0x3d520",
+              "gasUsed": "0xf812",
+              "input": "0x022c0d9f00000000000000000000000000000000000000000000000b956943533134654d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000737aad349312f36b43041737d648051a39f146e800000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000",
+              "output": "0x",
+              "calls": [
+                {
+                  "type": "CALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                  "value": "0x0",
+                  "gas": "0x399a3",
+                  "gasUsed": "0x75de",
+                  "input": "0xa9059cbb000000000000000000000000737aad349312f36b43041737d648051a39f146e800000000000000000000000000000000000000000000000b956943533134654d",
+                  "output": "0x",
+                  "addresses": {
+                    "0x737aad349312f36b43041737d648051a39f146e8": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLDATALOAD",
+                        "AND",
+                        "SWAP1",
+                        "DUP5",
+                        "DUP6",
+                        "AND",
+                        "AND",
+                        "DUP6",
+                        "AND",
+                        "AND",
+                        "DUP3",
+                        "AND",
+                        "POP",
+                        "SWAP2"
+                      ]
+                    },
+                    "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLER",
+                        "DUP7",
+                        "AND",
+                        "AND",
+                        "CALLER",
+                        "AND",
+                        "DUP5",
+                        "AND",
+                        "DUP7",
+                        "AND",
+                        "AND",
+                        "DUP7",
+                        "AND",
+                        "AND",
+                        "DUP5",
+                        "AND",
+                        "SWAP3"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "STATICCALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                  "gas": "0x3231e",
+                  "gasUsed": "0x25a",
+                  "input": "0x70a08231000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "output": "0x0000000000000000000000000000000000000000005ee7f1b9fa7b4fcb763582",
+                  "addresses": {
+                    "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLDATALOAD",
+                        "AND",
+                        "SWAP1",
+                        "POP",
+                        "JUMP",
+                        "JUMPDEST",
+                        "MSTORE",
+                        "DUP1",
+                        "MSTORE",
+                        "SWAP2"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "STATICCALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                  "gas": "0x31f26",
+                  "gasUsed": "0x216",
+                  "input": "0x70a08231000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "output": "0x0000000000000000000000000000000000000000000009ed563240f294bf6869",
+                  "addresses": {
+                    "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLDATALOAD",
+                        "AND",
+                        "SWAP1",
+                        "POP",
+                        "JUMP",
+                        "JUMPDEST",
+                        "MSTORE",
+                        "DUP1",
+                        "MSTORE",
+                        "SWAP2"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "addresses": {
+                "0x737aad349312f36b43041737d648051a39f146e8": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "DUP10",
+                    "AND",
+                    "DUP10",
+                    "AND",
+                    "DUP11",
+                    "DUP6",
+                    "AND",
+                    "POP",
+                    "DUP12",
+                    "AND",
+                    "POP"
+                  ]
+                },
+                "0x6b175474e89094c44da98b954eedeac495271d0f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "SWAP2",
+                    "SWAP2",
+                    "AND",
+                    "DUP3",
+                    "DUP3",
+                    "DUP10",
+                    "AND",
+                    "DUP7",
+                    "SWAP2",
+                    "POP",
+                    "DUP5",
+                    "AND",
+                    "DUP7",
+                    "DUP1",
+                    "POP",
+                    "POP",
+                    "SWAP2"
+                  ]
+                },
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "SWAP2",
+                    "SWAP1",
+                    "AND",
+                    "POP",
+                    "DUP1",
+                    "AND",
+                    "JUMPI",
+                    "JUMPDEST",
+                    "JUMPI",
+                    "JUMP",
+                    "JUMPDEST",
+                    "JUMPI",
+                    "JUMPDEST",
+                    "JUMPI",
+                    "JUMPDEST",
+                    "POP",
+                    "DUP4",
+                    "AND",
+                    "DUP7",
+                    "DUP1",
+                    "POP",
+                    "POP",
+                    "POP",
+                    "POP",
+                    "POP"
+                  ]
+                },
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "ADDRESS",
+                    "ADDRESS"
+                  ]
+                },
+                "0x0007ffd8159ce1e76a71d84cf937e101131a1891": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "SLOAD"
+                  ]
+                },
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER"
+                  ]
+                }
+              }
+            }
+          ],
+          "addresses": {
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP10",
+                "JUMP",
+                "JUMPDEST",
+                "DUP9",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "DUP5",
+                "DUP4",
+                "AND",
+                "POP",
+                "POP",
+                "POP",
+                "POP"
+              ]
+            },
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+              "confidence": 1,
+              "opcodes": [
+                "PUSH32",
+                "AND",
+                "CALLDATALOAD",
+                "AND",
+                "AND",
+                "MLOAD",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP3",
+                "JUMP",
+                "JUMPDEST",
+                "DUP9",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP3",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP4",
+                "POP",
+                "DUP8",
+                "AND",
+                "SWAP7",
+                "PUSH32",
+                "AND",
+                "DUP9",
+                "DUP1",
+                "POP",
+                "POP",
+                "PUSH32",
+                "AND",
+                "CALLDATALOAD",
+                "AND",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP3",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP4",
+                "POP",
+                "DUP8",
+                "DUP1",
+                "POP",
+                "POP",
+                "MLOAD",
+                "POP",
+                "DUP4",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP3",
+                "JUMP",
+                "JUMPDEST",
+                "DUP7",
+                "AND",
+                "DUP9",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "JUMP",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP3",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP4",
+                "POP",
+                "SWAP8"
+              ]
+            },
+            "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac": {
+              "confidence": 1,
+              "opcodes": [
+                "PUSH32",
+                "DUP8",
+                "DUP9",
+                "SWAP11",
+                "SWAP9",
+                "SWAP3",
+                "PUSH32",
+                "SWAP11",
+                "PUSH32",
+                "SWAP11"
+              ]
+            },
+            "0x6b175474e89094c44da98b954eedeac495271d0f": {
+              "confidence": 1,
+              "opcodes": [
+                "MLOAD",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "POP",
+                "SWAP1",
+                "POP",
+                "POP",
+                "DUP9",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "POP",
+                "SWAP1",
+                "SWAP5",
+                "POP",
+                "DUP5",
+                "AND",
+                "POP",
+                "POP",
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "POP",
+                "SWAP1",
+                "SWAP5",
+                "POP",
+                "MLOAD",
+                "POP",
+                "DUP4",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "POP",
+                "SWAP1",
+                "POP",
+                "POP",
+                "DUP4",
+                "AND",
+                "DUP9",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "POP",
+                "SWAP1",
+                "SWAP5",
+                "POP",
+                "POP",
+                "POP"
+              ]
+            },
+            "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+              "confidence": 1,
+              "opcodes": [
+                "AND",
+                "DUP7",
+                "DUP1",
+                "POP",
+                "POP",
+                "AND",
+                "AND",
+                "DUP8",
+                "DUP1",
+                "POP",
+                "POP",
+                "POP"
+              ]
+            },
+            "0x01c12fe2d1e3ec1ade34b8c586db61e07308fcb6": {
+              "confidence": 0.6,
+              "opcodes": [
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+          "value": "0x0",
+          "gas": "0x2ebdd",
+          "gasUsed": "0x1cf6",
+          "input": "0x095ea7b3000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f0000000000000000000000000000000000000000000000000000000000000000",
+          "output": "0x",
+          "addresses": {
+            "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "AND",
+                "DUP3",
+                "AND",
+                "SWAP2"
+              ]
+            },
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "AND",
+                "AND",
+                "CALLER",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+          "value": "0x0",
+          "gas": "0x2cb04",
+          "gasUsed": "0x9d2",
+          "input": "0x095ea7b3000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "output": "0x",
+          "addresses": {
+            "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "AND",
+                "DUP3",
+                "AND",
+                "SWAP2"
+              ]
+            },
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "AND",
+                "AND",
+                "CALLER",
+                "AND"
+              ]
+            }
+          }
+        },
+        {
+          "type": "STATICCALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+          "gas": "0x2be48",
+          "gasUsed": "0x25a",
+          "input": "0x70a08231000000000000000000000000737aad349312f36b43041737d648051a39f146e8",
+          "output": "0x00000000000000000000000000000000000000000000000b956943533134654d",
+          "addresses": {
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "SWAP1",
+                "POP",
+                "JUMP",
+                "JUMPDEST",
+                "MSTORE",
+                "DUP1",
+                "MSTORE",
+                "SWAP2"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+          "value": "0x1362dffb4b86ff2",
+          "gas": "0x2a039",
+          "gasUsed": "0x1f284",
+          "input": "0xf305d7190000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000000000000000000000000000b956943533134654d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000737aad349312f36b43041737d648051a39f146e80000000000000000000000000000000000000000000000000000000060caf975",
+          "output": "0x00000000000000000000000000000000000000000000000b956943533134654d00000000000000000000000000000000000000000000000001362dffb4b86ff00000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+          "calls": [
+            {
+              "type": "STATICCALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac",
+              "gas": "0x29265",
+              "gasUsed": "0x284",
+              "input": "0xe6a439050000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "output": "0x000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+              "addresses": {
+                "0x6b175474e89094c44da98b954eedeac495271d0f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP3"
+                  ]
+                },
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "JUMP",
+                    "JUMPDEST",
+                    "SWAP1"
+                  ]
+                },
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "AND",
+                    "JUMP",
+                    "JUMPDEST",
+                    "SWAP3",
+                    "AND"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "STATICCALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+              "gas": "0x28a81",
+              "gasUsed": "0x205",
+              "input": "0x0902f1ac",
+              "output": "0x0000000000000000000000000000000000000000005ee7f1b9fa7b4fcb7635820000000000000000000000000000000000000000000009ed563240f294bf68690000000000000000000000000000000000000000000000000000000060caf975"
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+              "value": "0x0",
+              "gas": "0x27fdd",
+              "gasUsed": "0xeea",
+              "input": "0x23b872dd000000000000000000000000737aad349312f36b43041737d648051a39f146e8000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f00000000000000000000000000000000000000000000000b956943533134654d",
+              "output": "0x",
+              "addresses": {
+                "0x737aad349312f36b43041737d648051a39f146e8": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "SWAP3"
+                  ]
+                },
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "DUP6",
+                    "AND",
+                    "AND",
+                    "DUP6",
+                    "AND",
+                    "AND",
+                    "DUP3",
+                    "AND",
+                    "POP"
+                  ]
+                },
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "AND",
+                    "CALLER",
+                    "AND",
+                    "AND"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "value": "0x1362dffb4b86ff0",
+              "gas": "0x25556",
+              "gasUsed": "0x55d6",
+              "input": "0xd0e30db0",
+              "output": "0x",
+              "addresses": {
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "AND",
+                    "AND",
+                    "CALLER",
+                    "AND"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+              "value": "0x0",
+              "gas": "0x1ff1a",
+              "gasUsed": "0xcbe",
+              "input": "0xa9059cbb000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f00000000000000000000000000000000000000000000000001362dffb4b86ff0",
+              "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+              "addresses": {
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "SWAP1",
+                    "DUP5",
+                    "DUP6",
+                    "AND",
+                    "AND",
+                    "DUP3",
+                    "AND",
+                    "POP",
+                    "SWAP2"
+                  ]
+                },
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "CALLER",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "DUP7",
+                    "AND",
+                    "AND",
+                    "DUP5",
+                    "AND",
+                    "SWAP3"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+              "value": "0x0",
+              "gas": "0x1f0da",
+              "gasUsed": "0x12dd5",
+              "input": "0x6a627842000000000000000000000000737aad349312f36b43041737d648051a39f146e8",
+              "output": "0x0000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+              "calls": [
+                {
+                  "type": "STATICCALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                  "gas": "0x1d9ca",
+                  "gasUsed": "0x25a",
+                  "input": "0x70a08231000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "output": "0x0000000000000000000000000000000000000000005ee7fd4f63bea2fcaa9acf",
+                  "addresses": {
+                    "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLDATALOAD",
+                        "AND",
+                        "SWAP1",
+                        "POP",
+                        "JUMP",
+                        "JUMPDEST",
+                        "MSTORE",
+                        "DUP1",
+                        "MSTORE",
+                        "SWAP2"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "STATICCALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                  "gas": "0x1d564",
+                  "gasUsed": "0x216",
+                  "input": "0x70a08231000000000000000000000000c3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "output": "0x0000000000000000000000000000000000000000000009ed57686ef24977d859",
+                  "addresses": {
+                    "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "CALLDATALOAD",
+                        "AND",
+                        "SWAP1",
+                        "POP",
+                        "JUMP",
+                        "JUMPDEST",
+                        "MSTORE",
+                        "DUP1",
+                        "MSTORE",
+                        "SWAP2"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "STATICCALL",
+                  "from": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+                  "to": "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac",
+                  "gas": "0x1c8b4",
+                  "gasUsed": "0x922",
+                  "input": "0x017e7e58",
+                  "output": "0x000000000000000000000000e11fc0b43ab98eb91e9836129d1ee7c3bc95df50",
+                  "addresses": {
+                    "0xe11fc0b43ab98eb91e9836129d1ee7c3bc95df50": {
+                      "confidence": 1,
+                      "opcodes": [
+                        "SLOAD",
+                        "AND",
+                        "JUMP",
+                        "JUMPDEST",
+                        "SWAP3",
+                        "AND"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "addresses": {
+                "0x737aad349312f36b43041737d648051a39f146e8": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLDATALOAD",
+                    "AND",
+                    "JUMP",
+                    "JUMPDEST",
+                    "DUP11",
+                    "DUP4",
+                    "AND",
+                    "DUP4",
+                    "AND",
+                    "DUP2",
+                    "SWAP3",
+                    "POP",
+                    "SWAP6"
+                  ]
+                },
+                "0x6b175474e89094c44da98b954eedeac495271d0f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "POP",
+                    "SWAP2",
+                    "AND",
+                    "DUP7",
+                    "DUP1",
+                    "POP",
+                    "POP"
+                  ]
+                },
+                "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "ADDRESS",
+                    "ADDRESS"
+                  ]
+                },
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "SWAP3",
+                    "AND",
+                    "DUP7",
+                    "DUP1",
+                    "POP",
+                    "POP"
+                  ]
+                },
+                "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "SLOAD",
+                    "SWAP1",
+                    "DIV",
+                    "AND",
+                    "AND",
+                    "DUP7",
+                    "DUP1",
+                    "POP",
+                    "POP"
+                  ]
+                },
+                "0xe11fc0b43ab98eb91e9836129d1ee7c3bc95df50": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "MLOAD",
+                    "DUP3",
+                    "AND",
+                    "SWAP2",
+                    "DUP8",
+                    "DUP4",
+                    "AND",
+                    "DUP4",
+                    "AND",
+                    "DUP2",
+                    "SWAP3",
+                    "POP",
+                    "POP"
+                  ]
+                },
+                "0xeb890bb7e435515b55f8be654ba04dd9e34db095": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x75c485dbf21aa8adaafc5f32a5d026ecf1a6d84c": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x3ae242edf90d5456d57e2f9952e8137678d36c29": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x1d712176fc86aa2b6abf17cca97409bb3c69b61c": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0eb890bb7e435515b55f8be654ba04dd9e34db1d": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x075c485dbf21aa8adaafc5f32a5d026ecf1a6dae": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x03ae242edf90d5456d57e2f9952e8137678d3716": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x01d712176fc86aa2b6abf17cca97409bb3c69c0a": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00eb890bb7e435515b55f8be654ba04dd9e34f04": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0075c485dbf21aa8adaafc5f32a5d026ecf1a981": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x003ae242edf90d5456d57e2f9952e8137678d8c0": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x001d712176fc86aa2b6abf17cca97409bb3c745f": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x000eb890bb7e435515b55f8be654ba04dd9e4a2f": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00075c485dbf21aa8adaafc5f32a5d026ecf4517": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0003ae242edf90d5456d57e2f9952e813767e28b": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0001d712176fc86aa2b6abf17cca97409bb47145": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0000eb890bb7e435515b55f8be654ba04ddb38a2": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x000075c485dbf21aa8adaafc5f32a5d026ef9c50": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00003ae242edf90d5456d57e2f9952e8137bce27": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00001d712176fc86aa2b6abf17cca97409c5e713": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0xeb88a01f7c68474262723475231dc0edbb1d39a2": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x75c4500fbe3423a131391a3a918ee076dd8e9cd2": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x3ae22807df1a11d0989c8d1d48c7703b6ec74e6c": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x1d711403ef8d08e84c4e468ea463b81db763a73d": {
+                  "confidence": 0.75,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0eb88a01f7c68474262723475231dc0edbb1d3ae": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x075c4500fbe3423a131391a3a918ee076dd8e9f6": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x03ae22807df1a11d0989c8d1d48c7703b6ec753a": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x01d711403ef8d08e84c4e468ea463b81db763b1c": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00eb88a01f7c68474262723475231dc0edbb1e8d": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0075c4500fbe3423a131391a3a918ee076dd9146": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x003ae22807df1a11d0989c8d1d48c7703b6ecca2": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x001d711403ef8d08e84c4e468ea463b81db76e50": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x000eb88a01f7c68474262723475231dc0edbc727": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00075c4500fbe3423a131391a3a918ee076e0393": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0003ae22807df1a11d0989c8d1d48c7703b741c9": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0001d711403ef8d08e84c4e468ea463b81dc20e4": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0000eb88a01f7c68474262723475231dc0ef1071": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x000075c4500fbe3423a131391a3a918ee0798838": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00003ae22807df1a11d0989c8d1d48c77040c41b": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x00001d711403ef8d08e84c4e468ea463b828620d": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP",
+                    "POP",
+                    "DUP2"
+                  ]
+                },
+                "0x0000a5cfe35b563df213e841c194289c8fe26cae": {
+                  "confidence": 0.6,
+                  "opcodes": [
+                    "POP"
+                  ]
+                },
+                "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+                  "confidence": 1,
+                  "opcodes": [
+                    "CALLER"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "CALL",
+              "from": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+              "to": "0x737aad349312f36b43041737d648051a39f146e8",
+              "value": "0x2",
+              "gas": "0xac11",
+              "gasUsed": "0x28",
+              "input": "0x",
+              "output": "0x"
+            }
+          ],
+          "addresses": {
+            "0x6b175474e89094c44da98b954eedeac495271d0f": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP11",
+                "DUP11",
+                "DUP4",
+                "AND",
+                "SWAP3",
+                "DUP12",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP4",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "SWAP3",
+                "POP",
+                "POP",
+                "POP",
+                "DUP9",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP4",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "SWAP3",
+                "POP",
+                "SWAP5",
+                "POP",
+                "DUP8",
+                "AND",
+                "DUP5",
+                "AND",
+                "SWAP7",
+                "POP",
+                "SWAP7",
+                "DUP13",
+                "DUP6",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP4",
+                "SWAP1",
+                "DUP3",
+                "AND",
+                "SWAP3",
+                "POP",
+                "SWAP5",
+                "POP",
+                "DUP12",
+                "DUP11",
+                "AND",
+                "DUP7",
+                "SWAP2",
+                "POP",
+                "SWAP7"
+              ]
+            },
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "CALLER",
+                "DUP6",
+                "AND",
+                "POP",
+                "DUP9",
+                "DUP3",
+                "AND",
+                "SWAP2",
+                "CALLER",
+                "DUP5",
+                "AND",
+                "DUP8",
+                "SWAP3",
+                "POP",
+                "POP"
+              ]
+            },
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+              "confidence": 1,
+              "opcodes": [
+                "PUSH32",
+                "DUP11",
+                "DUP3",
+                "AND",
+                "POP",
+                "DUP12",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP1",
+                "JUMP",
+                "JUMPDEST",
+                "DUP9",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP1",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP4",
+                "POP",
+                "POP",
+                "SWAP5",
+                "PUSH32",
+                "JUMP",
+                "JUMPDEST",
+                "DUP6",
+                "JUMP",
+                "JUMPDEST",
+                "DUP3",
+                "AND",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "JUMPDEST",
+                "POP",
+                "POP",
+                "JUMPI",
+                "JUMPDEST",
+                "SWAP1",
+                "JUMP",
+                "JUMPDEST",
+                "SWAP4",
+                "POP",
+                "PUSH32",
+                "AND",
+                "DUP9",
+                "DUP1",
+                "POP",
+                "POP",
+                "PUSH32",
+                "AND",
+                "DUP8",
+                "DUP1",
+                "POP",
+                "POP"
+              ]
+            },
+            "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac": {
+              "confidence": 1,
+              "opcodes": [
+                "PUSH32",
+                "AND",
+                "DUP7",
+                "DUP1",
+                "POP",
+                "POP",
+                "PUSH32",
+                "DUP9",
+                "SWAP11",
+                "SWAP9",
+                "PUSH32",
+                "SWAP11"
+              ]
+            },
+            "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+              "confidence": 1,
+              "opcodes": [
+                "MLOAD",
+                "AND",
+                "AND",
+                "DUP7",
+                "DUP1",
+                "POP",
+                "POP",
+                "AND",
+                "AND",
+                "AND",
+                "DUP8",
+                "DUP1",
+                "POP",
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "STATICCALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "gas": "0xb385",
+          "gasUsed": "0x1ec",
+          "input": "0x70a08231000000000000000000000000737aad349312f36b43041737d648051a39f146e8",
+          "output": "0x0000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+          "addresses": {
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "MSTORE",
+                "SWAP1"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0x737aad349312f36b43041737d648051a39f146e8",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "value": "0x0",
+          "gas": "0xafe0",
+          "gasUsed": "0x5a24",
+          "input": "0xa9059cbb000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d1803300000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+          "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "SWAP2"
+              ]
+            },
+            "0x737aad349312f36b43041737d648051a39f146e8": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP"
+              ]
+            }
+          }
+        }
+      ],
+      "addresses": {
+        "0x6b175474e89094c44da98b954eedeac495271d0f": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLDATALOAD",
+            "AND",
+            "DUP2",
+            "SWAP2",
+            "DUP8",
+            "AND",
+            "SWAP5",
+            "MLOAD",
+            "AND",
+            "DUP9",
+            "SWAP3",
+            "AND",
+            "SWAP1",
+            "SWAP2",
+            "MLOAD",
+            "DUP14",
+            "AND",
+            "DUP10",
+            "AND",
+            "DUP7",
+            "SWAP2",
+            "POP",
+            "DUP12",
+            "AND",
+            "DUP10",
+            "AND",
+            "DUP7",
+            "SWAP2",
+            "POP",
+            "DUP14",
+            "DUP3",
+            "AND",
+            "JUMP",
+            "JUMPDEST",
+            "DUP5",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "SWAP2",
+            "SWAP4",
+            "AND",
+            "SWAP10"
+          ]
+        },
+        "0xc0aee478e3658e2610c5f7a4a2e1777ce9e4f2ac": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP4",
+            "SWAP3",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP2",
+            "AND",
+            "SLOAD",
+            "POP",
+            "SWAP2",
+            "AND",
+            "POP",
+            "SLOAD",
+            "POP",
+            "AND",
+            "SWAP1",
+            "AND",
+            "DUP2",
+            "AND",
+            "POP",
+            "MLOAD"
+          ]
+        },
+        "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+          "confidence": 1,
+          "opcodes": [
+            "MLOAD",
+            "SWAP2",
+            "DUP7",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "DUP11",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "DUP11",
+            "AND",
+            "DUP5",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xbb66860c76511903758dee49a5f77f3900c718f9": {
+          "confidence": 0.75,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x5db343063b288c81bac6f724d2fbbf9c80639c7c": {
+          "confidence": 0.75,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x2ed9a1831d944640dd637b92697ddfce4031ee3d": {
+          "confidence": 0.75,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x176cd0c18eca23206eb1bdc934beefe72019371e": {
+          "confidence": 0.75,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0bb66860c76511903758dee49a5f77f3900d1b8e": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x05db343063b288c81bac6f724d2fbbf9c8078dc6": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x02ed9a1831d944640dd637b92697ddfce405c6e2": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0176cd0c18eca23206eb1bdc934beefe7206e370": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x00bb66860c76511903758dee49a5f77f390b71b7": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x005db343063b288c81bac6f724d2fbbf9c95b8db": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x002ed9a1831d944640dd637b92697ddfce6adc6d": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x00176cd0c18eca23206eb1bdc934beefe7756e36": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x000bb66860c76511903758dee49a5f77f43ab71a": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0005db343063b288c81bac6f724d2fbbfb1d5b8c": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0002ed9a1831d944640dd637b92697ddff8eadc5": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x000176cd0c18eca23206eb1bdc934bef03c756e2": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0000bb66860c76511903758dee49a5f789e3ab70": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x00005db343063b288c81bac6f724d2fbd4f1d5b7": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x00002ed9a1831d944640dd637b92697e0a78eadb": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0x0000176cd0c18eca23206eb1bdc934bf453c756d": {
+          "confidence": 0.6,
+          "opcodes": [
+            "POP",
+            "POP",
+            "DUP2"
+          ]
+        },
+        "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP7",
+            "AND",
+            "DUP9",
+            "DUP1",
+            "POP",
+            "POP",
+            "SLOAD",
+            "POP",
+            "AND",
+            "POP",
+            "DUP5",
+            "AND",
+            "POP",
+            "SLOAD",
+            "SWAP1",
+            "SWAP2",
+            "AND",
+            "DUP5",
+            "AND",
+            "POP",
+            "SLOAD",
+            "SWAP1",
+            "SWAP1",
+            "AND",
+            "DUP9",
+            "DUP1",
+            "POP",
+            "POP"
+          ]
+        },
+        "0x737aad349312f36b43041737d648051a39f146e8": {
+          "confidence": 1,
+          "opcodes": [
+            "ADDRESS",
+            "DUP2",
+            "MSTORE",
+            "SWAP5",
+            "POP",
+            "ADDRESS",
+            "ADDRESS",
+            "ADDRESS"
+          ]
+        },
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLER",
+            "POP",
+            "SWAP4",
+            "AND"
+          ]
+        }
+      }
+    },
+    {
+      "type": "STATICCALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+      "gas": "0x60f6",
+      "gasUsed": "0x1ec",
+      "input": "0x70a08231000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d180330",
+      "output": "0x0000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+      "addresses": {
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLDATALOAD",
+            "AND",
+            "JUMP",
+            "JUMPDEST",
+            "MSTORE",
+            "SWAP1"
+          ]
+        }
+      }
+    },
+    {
+      "type": "CALL",
+      "from": "0xd6419fd982a7651a12a757ca7cd96b969d180330",
+      "to": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+      "value": "0x0",
+      "gas": "0x5d5f",
+      "gasUsed": "0x577c",
+      "input": "0xe2bbb15800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+      "output": "0x",
+      "calls": [
+        {
+          "type": "STATICCALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "gas": "0x5282",
+          "gasUsed": "0x242",
+          "input": "0x70a08231000000000000000000000000c2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "output": "0x00000000000000000000000000000000000000000001d4ba09a36ec7e07dd306",
+          "addresses": {
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "JUMP",
+                "JUMPDEST",
+                "AND",
+                "SWAP1"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+          "value": "0x0",
+          "gas": "0x4e04",
+          "gasUsed": "0xcfd",
+          "input": "0xa9059cbb000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d1803300000000000000000000000000000000000000000000000000000000000000000",
+          "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP5",
+                "DUP3",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "SWAP2"
+              ]
+            },
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLER",
+                "JUMP",
+                "JUMPDEST",
+                "DUP4",
+                "AND",
+                "DUP4",
+                "POP",
+                "DUP7",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP"
+              ]
+            }
+          }
+        },
+        {
+          "type": "CALL",
+          "from": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd",
+          "to": "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f",
+          "value": "0x0",
+          "gas": "0x3bbc",
+          "gasUsed": "0x201d",
+          "input": "0x23b872dd000000000000000000000000d6419fd982a7651a12a757ca7cd96b969d180330000000000000000000000000c2edad668740f1aa35e4d8f227fb8e17dca888cd0000000000000000000000000000000000000000000000002e2fea42b4f9d112",
+          "output": "0x",
+          "addresses": {
+            "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "DUP5",
+                "DUP4",
+                "AND",
+                "SWAP1",
+                "DUP6",
+                "AND",
+                "SWAP1",
+                "DUP8",
+                "AND",
+                "POP",
+                "SWAP3"
+              ]
+            },
+            "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+              "confidence": 1,
+              "opcodes": [
+                "CALLDATALOAD",
+                "AND",
+                "CALLER",
+                "DUP5",
+                "DUP5",
+                "AND",
+                "DUP5",
+                "AND",
+                "DUP2",
+                "SWAP2",
+                "POP",
+                "POP"
+              ]
+            }
+          }
+        }
+      ],
+      "addresses": {
+        "0xd6419fd982a7651a12a757ca7cd96b969d180330": {
+          "confidence": 1,
+          "opcodes": [
+            "CALLER",
+            "CALLER",
+            "DUP7",
+            "AND",
+            "POP",
+            "CALLER",
+            "DUP7",
+            "AND",
+            "POP",
+            "CALLER"
+          ]
+        },
+        "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "DUP7",
+            "DUP1",
+            "POP",
+            "POP",
+            "SLOAD",
+            "SWAP3",
+            "AND",
+            "DUP8",
+            "DUP1",
+            "POP",
+            "POP"
+          ]
+        },
+        "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd": {
+          "confidence": 1,
+          "opcodes": [
+            "ADDRESS",
+            "ADDRESS",
+            "DUP5",
+            "AND",
+            "POP"
+          ]
+        },
+        "0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f": {
+          "confidence": 1,
+          "opcodes": [
+            "SLOAD",
+            "SWAP1",
+            "AND",
+            "DUP6",
+            "DUP6",
+            "AND",
+            "SWAP1",
+            "DUP5",
+            "DUP6",
+            "JUMP",
+            "JUMPDEST",
+            "DUP2",
+            "SWAP2",
+            "DUP7",
+            "AND",
+            "DUP8",
+            "SWAP3",
+            "SWAP4",
+            "SWAP4",
+            "POP",
+            "POP"
+          ]
+        }
+      }
+    }
+  ]
+}
