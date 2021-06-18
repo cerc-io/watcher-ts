@@ -22,6 +22,11 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       }
     },
 
-    Query: {}
+    Query: {
+      traceTx: async (_: any, { txHash }: { txHash: string }): Promise<any> => {
+        log('traceTx', txHash);
+        return indexer.traceTx(txHash);
+      }
+    }
   };
 };

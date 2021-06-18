@@ -3,11 +3,17 @@ import { gql } from '@apollo/client/core';
 export default gql`
 # Types
 
-# Watched event, include additional context over and above the event data.
-type WatchedEvent {
-  blockHash: String!
+type TxTrace {
   txHash: String!
+  blockNumber: Int!
+  blockHash: String!
+  trace: String!
+}
+
+# Watched address event, include additional context over and above the event data.
+type WatchedAddressEvent {
   address: String!
+  txTrace: TxTrace!
 }
 
 #
@@ -16,10 +22,23 @@ type WatchedEvent {
 
 type Query {
 
-  queryAppearances(
+  #
+  # Developer API methods
+  #
+
+  appearances(
     address: String!
+    fromBlockNumber: Int!
+    toBlockNumber: Int!
+  ): [TxTrace!]
+
+  #
+  # Low level utility methods
+  #
+
+  traceTx(
     txHash: String!
-  ): [String!]
+  ): TxTrace
 }
 
 #
@@ -28,7 +47,7 @@ type Query {
 type Subscription {
 
   # Watch for token events (at head of chain).
-  onAddressEvent: WatchedEvent!
+  onAddressEvent: WatchedAddressEvent!
 }
 
 #

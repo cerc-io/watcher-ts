@@ -17,6 +17,7 @@ export interface Config {
   upstream: {
     gqlEndpoint: string;
     gqlSubscriptionEndpoint: string;
+    traceProviderEndpoint: string;
     cache: CacheConfig
   }
 }

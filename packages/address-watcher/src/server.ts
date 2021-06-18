@@ -10,6 +10,7 @@ import { createServer } from 'http';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { TracingClient } from '@vulcanize/tracing-client';
 
 import typeDefs from './schema';
 
@@ -44,18 +45,21 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { gqlEndpoint, gqlSubscriptionEndpoint, cache: cacheConfig } = upstream;
+  const { gqlEndpoint, gqlSubscriptionEndpoint, traceProviderEndpoint, cache: cacheConfig } = upstream;
   assert(gqlEndpoint, 'Missing upstream gqlEndpoint');
   assert(gqlSubscriptionEndpoint, 'Missing upstream gqlSubscriptionEndpoint');
+  assert(traceProviderEndpoint, 'Missing upstream traceProviderEndpoint');
 
   const cache = await getCache(cacheConfig);
 
   const ethClient = new EthClient({ gqlEndpoint, gqlSubscriptionEndpoint, cache });
 
+  const tracingClient = new TracingClient(traceProviderEndpoint);
+
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, ethClient, pubsub);
+  const indexer = new Indexer(db, ethClient, pubsub, tracingClient);
 
   const resolvers = await createResolvers(indexer);
 

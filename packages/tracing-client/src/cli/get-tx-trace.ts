@@ -1,7 +1,7 @@
 import fs from 'fs';
 import yargs from 'yargs';
 
-import { getTxTrace } from '../tracing';
+import { TracingClient } from '../tracing';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -42,7 +42,8 @@ import { getTxTrace } from '../tracing';
     tracer = fs.readFileSync(tracerFile).toString("utf-8");
   }
 
-  const result = await getTxTrace(argv.providerUrl, argv.txHash, tracer, argv.timeout);
+  const tracingClient = new TracingClient(argv.providerUrl);
+  const result = await tracingClient.getTxTrace(argv.txHash, tracer, argv.timeout);
 
   console.log(JSON.stringify(result, null, 2));
 })();

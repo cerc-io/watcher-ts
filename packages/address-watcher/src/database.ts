@@ -1,8 +1,9 @@
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection } from 'typeorm';
+import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { Address } from './entity/Address';
+import { Trace } from './entity/Trace';
 
 export class Database {
   _config: ConnectionOptions
@@ -49,5 +50,18 @@ export class Database {
         await repo.save(entity);
       }
     });
+  }
+
+  async getTrace (txHash: string): Promise<Trace | undefined> {
+    return this._conn.getRepository(Trace)
+      .createQueryBuilder('trace')
+      .where('tx_hash = :txHash', { txHash })
+      .getOne();
+  }
+
+  async saveTrace ({ txHash, blockNumber, blockHash, trace }: DeepPartial<Trace>): Promise<Trace> {
+    const repo = this._conn.getRepository(Trace);
+    const entity = repo.create({ txHash, blockNumber, blockHash, trace });
+    return repo.save(entity);
   }
 }

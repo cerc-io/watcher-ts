@@ -1,7 +1,7 @@
 import fs from 'fs';
 import yargs from 'yargs';
 
-import { getCallTrace } from '../tracing';
+import { TracingClient } from '../tracing';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -45,7 +45,8 @@ import { getCallTrace } from '../tracing';
 
   const txData = JSON.parse(fs.readFileSync(argv.txFile).toString("utf-8"));
 
-  const result = await getCallTrace(argv.providerUrl, argv.block, txData, tracer);
+  const tracingClient = new TracingClient(argv.providerUrl);
+  const result = await tracingClient.getCallTrace(argv.block, txData, tracer);
 
   console.log(JSON.stringify(result, null, 2));
 })();

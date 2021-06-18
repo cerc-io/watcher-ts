@@ -1,11 +1,35 @@
+import assert from 'assert';
+import path from 'path';
+import fs from 'fs';
 import { ethers } from 'ethers';
 
-export const getTxTrace = async (providerUrl: string, txHash: string, tracer: string | undefined, timeout: string | undefined): Promise<any> => {
-  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-  return provider.send('debug_traceTransaction', [txHash, { tracer, timeout }]);
-};
+const callTracerWithAddresses = fs.readFileSync(path.join(__dirname, 'tracers', 'call_address_tracer.js')).toString("utf-8");
 
-export const getCallTrace = async (providerUrl: string, block: string, txData: any, tracer: string | undefined): Promise<any> => {
-  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-  return provider.send('debug_traceCall', [ txData, block, { tracer }]);
-};
+export class TracingClient {
+
+  _providerUrl: string;
+  _provider: ethers.providers.JsonRpcProvider;
+
+  constructor(providerUrl: string) {
+    assert(providerUrl);
+
+    this._providerUrl = providerUrl;
+    this._provider = new ethers.providers.JsonRpcProvider(providerUrl);
+  }
+
+  async getTx (txHash: string): Promise<ethers.providers.TransactionResponse> {
+    return this._provider.getTransaction(txHash);
+  }
+
+  async getTxTrace (txHash: string, tracer: string | undefined, timeout: string | undefined): Promise<any> {
+    if (tracer === 'callTraceWithAddresses') {
+      tracer = callTracerWithAddresses;
+    }
+
+    return this._provider.send('debug_traceTransaction', [txHash, { tracer, timeout }]);
+  };
+
+  async getCallTrace (block: string, txData: any, tracer: string | undefined): Promise<any> {
+    return this._provider.send('debug_traceCall', [ txData, block, { tracer }]);
+  };
+}
