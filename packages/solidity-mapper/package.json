@@ -12,6 +12,7 @@
     "@types/mocha": "^8.2.2",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
+    "@vulcanize/ipld-eth-client": "^0.1.0",
     "chai": "^4.3.4",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
@@ -29,7 +30,11 @@
   "scripts": {
     "build": "tsc",
     "test": "hardhat test",
+    "test:geth-rpc": "hardhat --network private test",
+    "test:ipld-gql": "IPLD_GQL=true hardhat --network private test",
     "lint": "eslint ."
   },
-  "dependencies": {}
+  "dependencies": {
+    "dotenv": "^10.0.0"
+  }
 }

@@ -10,10 +10,23 @@ Get value of state variable from storage for a solidity contract.
 
 ## Instructions
 
-Run the tests using the following command
-```bash
-$ yarn test
-```
+* Create environment variable file
+  ```bash
+  $ cp .env.example .env
+  ```
+
+* Run the tests using the following command
+  ```bash
+  $ yarn test
+
+  # For testing on private network using RPC getStorageAt.
+  # Set ETH_RPC_URL in .env
+  $ yarn test:geth-rpc
+
+  # For testing on private network using ipld-eth-client getStorageAt.
+  # Set GQL_ENDPOINT in .env
+  $ yarn test:ipld-gql
+  ```
 
 ## Different Types
 
@@ -26,7 +39,7 @@ $ yarn test
   * [x] Fixed-size byte arrays
   * [x] Enums
   * [ ] Function Types
-* [x] Reference Types
+* [ ] Reference Types
   * [x] Arrays
     * [x] Get all elements in array
     * [x] Get element in array by index

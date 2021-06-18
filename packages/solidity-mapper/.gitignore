@@ -6,3 +6,6 @@ artifacts
 
 #yarn
 yarn-error.log
+
+#Environment variables
+.env

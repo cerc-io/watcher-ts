@@ -1,4 +1,5 @@
 import { ContractInterface } from '@ethersproject/contracts';
+import '@nomiclabs/hardhat-ethers';
 import { artifacts, ethers } from 'hardhat';
 import { CompilerOutput, CompilerOutputBytecode } from 'hardhat/types';
 
@@ -67,4 +68,14 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
       data: JSON.stringify(null)
     }
   };
+};
+
+/**
+ * Generate array of dummy addresses of specified length.
+ * @param length
+ */
+export const generateDummyAddresses = (length: number): Array<string> => {
+  return Array.from({ length }, () => {
+    return ethers.utils.hexlify(ethers.utils.randomBytes(20));
+  });
 };

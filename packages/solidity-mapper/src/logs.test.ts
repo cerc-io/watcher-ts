@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import '@nomiclabs/hardhat-ethers';
 import { artifacts, ethers } from 'hardhat';
 
 import { getEventNameTopics } from './logs';

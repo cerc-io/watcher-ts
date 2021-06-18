@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { task, HardhatUserConfig } from 'hardhat/config';
 import '@nomiclabs/hardhat-waffle';
 
@@ -35,6 +36,14 @@ const config: HardhatUserConfig = {
   paths: {
     sources: './test/contracts',
     tests: './src'
+  },
+  networks: {
+    private: {
+      url: process.env.ETH_RPC_URL
+    }
+  },
+  mocha: {
+    timeout: 50000
   }
 };
 
