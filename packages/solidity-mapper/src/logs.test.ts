@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import '@nomiclabs/hardhat-ethers';
-import { artifacts, ethers } from 'hardhat';
+import { artifacts } from 'hardhat';
 
 import { getEventNameTopics } from './logs';
 
@@ -21,9 +21,6 @@ const TEST_DATA = [
 
 it('get event name topics', async () => {
   const testPromises = TEST_DATA.map(async ({ name, output }) => {
-    const Contract = await ethers.getContractFactory(name);
-    const contract = await Contract.deploy();
-    await contract.deployed();
     const { abi } = await artifacts.readArtifact(name);
 
     const eventNameTopics = getEventNameTopics(abi);
