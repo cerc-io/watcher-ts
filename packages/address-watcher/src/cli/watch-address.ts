@@ -40,6 +40,6 @@ import { Database } from '../database';
   // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
   const address = ethers.utils.getAddress(argv.address);
 
-  await db.saveAddress(address, argv.startingBlock);
+  await db.saveAccount(address, argv.startingBlock);
   await db.close();
 })();

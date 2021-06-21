@@ -1,12 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Index, ManyToMany } from 'typeorm';
+
+import { Account } from './Account';
 
 @Entity()
 @Index(['txHash'], { unique: true })
+@Index(['blockNumber'])
 export class Trace {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  @Column('varchar', { length: 66 })
+  @PrimaryColumn('varchar', { length: 66 })
   txHash!: string;
 
   @Column('numeric')
@@ -17,4 +17,7 @@ export class Trace {
 
   @Column('text')
   trace!: string;
+
+  @ManyToMany(() => Account, account => account.appearances, { cascade: ['insert'] })
+  accounts: Account[]
 }

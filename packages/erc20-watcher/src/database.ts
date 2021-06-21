@@ -151,7 +151,7 @@ export class Database {
         .getCount();
 
       if (numRows === 0) {
-        const entity = repo.create({ address, startingBlock: BigInt(startingBlock) });
+        const entity = repo.create({ address, startingBlock });
         await repo.save(entity);
       }
     });
