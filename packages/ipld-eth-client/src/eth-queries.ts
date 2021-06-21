@@ -47,8 +47,25 @@ subscription SubscriptionReceipt {
 }
 `;
 
+export const subscribeTransactions = gql`
+subscription SubscriptionHeader {
+  listen(topic: "transaction_cids") {
+    relatedNode {
+      ... on EthTransactionCid {
+        txHash
+        ethHeaderCidByHeaderId {
+          blockHash
+          blockNumber
+        }
+      }
+    }
+  }
+}
+`;
+
 export default {
   getStorageAt,
   getLogs,
-  subscribeLogs
+  subscribeLogs,
+  subscribeTransactions
 };

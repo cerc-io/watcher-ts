@@ -3,14 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import { ethers } from 'ethers';
 
-const callTracerWithAddresses = fs.readFileSync(path.join(__dirname, 'tracers', 'call_address_tracer.js')).toString("utf-8");
+const callTracerWithAddresses = fs.readFileSync(path.join(__dirname, 'tracers', 'call_address_tracer.js')).toString('utf-8');
 
 export class TracingClient {
-
   _providerUrl: string;
   _provider: ethers.providers.JsonRpcProvider;
 
-  constructor(providerUrl: string) {
+  constructor (providerUrl: string) {
     assert(providerUrl);
 
     this._providerUrl = providerUrl;
@@ -27,9 +26,9 @@ export class TracingClient {
     }
 
     return this._provider.send('debug_traceTransaction', [txHash, { tracer, timeout }]);
-  };
+  }
 
   async getCallTrace (block: string, txData: any, tracer: string | undefined): Promise<any> {
-    return this._provider.send('debug_traceCall', [ txData, block, { tracer }]);
-  };
+    return this._provider.send('debug_traceCall', [txData, block, { tracer }]);
+  }
 }

@@ -1,0 +1,7 @@
+# Don't lint node_modules.
+node_modules
+
+# Don't lint build output.
+dist
+
+src/tracers

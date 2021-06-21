@@ -17,7 +17,7 @@ interface StructLog {
     }
   }).argv;
 
-  const { structLogs }: { structLogs: StructLog[] } = JSON.parse(fs.readFileSync(argv.traceFile).toString("utf-8"));
+  const { structLogs }: { structLogs: StructLog[] } = JSON.parse(fs.readFileSync(argv.traceFile).toString('utf-8'));
 
   const addressMap: any = {};
 
@@ -30,7 +30,7 @@ interface StructLog {
 
     // Address are 40 bytes.
     // Example: 000000000000000000000000ca6d29232d1435d8198e3e5302495417dd073d61
-    if (!maybeAddress.startsWith("000000000000000000000000")) {
+    if (!maybeAddress.startsWith('000000000000000000000000')) {
       return;
     }
 
@@ -38,7 +38,7 @@ interface StructLog {
       return;
     }
 
-    maybeAddress = maybeAddress.substr("000000000000000000000000".length);
+    maybeAddress = maybeAddress.substr('000000000000000000000000'.length);
 
     if (!ethers.utils.isAddress(maybeAddress)) {
       return;

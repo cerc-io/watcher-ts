@@ -63,7 +63,7 @@ export class Indexer {
     return true;
   }
 
-  async traceTx (txHash: string): Promise<any> {
+  async traceTxAndIndexAppearances (txHash: string): Promise<any> {
     let entity = await this._db.getTrace(txHash);
     if (entity) {
       log('traceTx: db hit');
@@ -100,8 +100,10 @@ export class Indexer {
     const addresses = _.uniq(_.compact(_.flattenDeep(addressesIn(traceObj)))).sort();
 
     trace.accounts = _.map(addresses, address => {
+      assert(address);
+
       const account = new Account();
-      account.address = address || '';
+      account.address = ethers.utils.getAddress(address);
       account.startingBlock = trace.blockNumber;
 
       return account;

@@ -30,7 +30,7 @@ import { TracingClient } from '../tracing';
     },
     timeout: {
       type: 'string',
-      default: "10s",
+      default: '10s',
       describe: 'Trace execution timeout'
     }
   }).argv;
@@ -39,7 +39,7 @@ import { TracingClient } from '../tracing';
 
   const tracerFile = argv.tracerFile;
   if (tracerFile) {
-    tracer = fs.readFileSync(tracerFile).toString("utf-8");
+    tracer = fs.readFileSync(tracerFile).toString('utf-8');
   }
 
   const tracingClient = new TracingClient(argv.providerUrl);

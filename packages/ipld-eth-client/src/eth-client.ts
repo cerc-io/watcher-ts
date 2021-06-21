@@ -125,6 +125,18 @@ export class EthClient {
     });
   }
 
+  async watchTransactions (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
+    const observable = await this._client.subscribe({
+      query: ethQueries.subscribeTransactions
+    });
+
+    return observable.subscribe({
+      next (data) {
+        onNext(data);
+      }
+    });
+  }
+
   async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {
     const keyObj = {
       queryName,

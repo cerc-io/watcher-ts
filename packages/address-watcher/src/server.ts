@@ -18,6 +18,7 @@ import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { getConfig } from './config';
+import { TxWatcher } from './tx-watcher';
 
 const log = debug('vulcanize:server');
 
@@ -60,6 +61,9 @@ export const main = async (): Promise<any> => {
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
   const indexer = new Indexer(db, ethClient, pubsub, tracingClient);
+
+  const txWatcher = new TxWatcher(ethClient, indexer);
+  await txWatcher.start();
 
   const resolvers = await createResolvers(indexer);
 

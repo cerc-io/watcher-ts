@@ -15,10 +15,10 @@ import { TracingClient } from '../tracing';
       describe: 'ETH JSON-RPC provider URL'
     },
     block: {
-        type: 'string',
-        require: true,
-        demandOption: true,
-        describe: 'Block hash or number'
+      type: 'string',
+      require: true,
+      demandOption: true,
+      describe: 'Block hash or number'
     },
     txFile: {
       type: 'string',
@@ -32,7 +32,7 @@ import { TracingClient } from '../tracing';
     },
     tracerFile: {
       type: 'string',
-      "describe": 'File with custom tracing JS code'
+      describe: 'File with custom tracing JS code'
     }
   }).argv;
 
@@ -40,10 +40,10 @@ import { TracingClient } from '../tracing';
 
   const tracerFile = argv.tracerFile;
   if (tracerFile) {
-    tracer = fs.readFileSync(tracerFile).toString("utf-8");
+    tracer = fs.readFileSync(tracerFile).toString('utf-8');
   }
 
-  const txData = JSON.parse(fs.readFileSync(argv.txFile).toString("utf-8"));
+  const txData = JSON.parse(fs.readFileSync(argv.txFile).toString('utf-8'));
 
   const tracingClient = new TracingClient(argv.providerUrl);
   const result = await tracingClient.getCallTrace(argv.block, txData, tracer);
