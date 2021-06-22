@@ -101,7 +101,28 @@ describe('Get value from storage', () => {
     return hash;
   };
 
-  let contracts: Contracts;
+  let getStorageAt = rpcGetStorageAt;
+
+  // Check if running test against ipld graphql endpoint.
+  if (process.env.IPLD_GQL) {
+    // Set ipld-eth-client.
+    const ethClient = new EthClient({
+      gqlEndpoint: process.env.GQL_ENDPOINT || '',
+      gqlSubscriptionEndpoint: process.env.GQL_ENDPOINT || '',
+      cache: undefined
+    });
+
+    // Use ipld graphql endpoint to get storage value.
+    getStorageAt = ethClient.getStorageAt.bind(ethClient);
+  }
+
+  let contracts: Contracts, blockHash: string;
+  let testBooleans: Contract, testAddress: Contract, testContractTypes: Contract, testEnums: Contract;
+
+  const bool1Value = true;
+  const bool2Value = false;
+  const [address1Value] = generateDummyAddresses(1);
+  const enumValue = 1;
 
   before(async () => {
     const contractPromises = CONTRACTS.map(async name => {
@@ -120,22 +141,53 @@ describe('Get value from storage', () => {
       acc[name] = data;
       return acc;
     }, {});
+
+    ({
+      TestBooleans: { contract: testBooleans },
+      TestAddress: { contract: testAddress },
+      TestContractTypes: { contract: testContractTypes },
+      TestEnums: { contract: testEnums }
+    } = contracts);
+
+    const transactions = await Promise.all([
+      testBooleans.setBool1(bool1Value),
+      testBooleans.setBool2(bool2Value),
+      testAddress.setAddress1(address1Value),
+      testContractTypes.setAddressContract1(testAddress.address),
+      testEnums.setChoicesEnum1(enumValue)
+    ]);
+
+    await Promise.all(transactions.map(transaction => transaction.wait()));
+    blockHash = await getBlockHash();
   });
 
-  let getStorageAt = rpcGetStorageAt;
+  it('get value for boolean type', async () => {
+    const { storageLayout } = contracts.TestBooleans;
+    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBooleans.address, 'bool1');
+    expect(value).to.equal(bool1Value);
 
-  // Check if running test against ipld graphql endpoint.
-  if (process.env.IPLD_GQL) {
-    // Set ipld-eth-client.
-    const ethClient = new EthClient({
-      gqlEndpoint: process.env.GQL_ENDPOINT || '',
-      gqlSubscriptionEndpoint: process.env.GQL_ENDPOINT || '',
-      cache: undefined
-    });
+    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBooleans.address, 'bool2'));
+    expect(value).to.equal(bool2Value);
+  });
 
-    // Use ipld graphql endpoint to get storage value.
-    getStorageAt = ethClient.getStorageAt.bind(ethClient);
-  }
+  it('get value for address type', async () => {
+    const { storageLayout } = contracts.TestAddress;
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testAddress.address, 'address1');
+    expect(value).to.be.a('string');
+    expect(String(value).toLowerCase()).to.equal(address1Value);
+  });
+
+  it('get value for contract type', async () => {
+    const { storageLayout } = contracts.TestContractTypes;
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testContractTypes.address, 'addressContract1');
+    expect(value).to.equal(testAddress.address.toLowerCase());
+  });
+
+  it('get value for enum types', async () => {
+    const { storageLayout } = contracts.TestEnums;
+    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testEnums.address, 'choicesEnum1');
+    expect(value).to.equal(BigInt(enumValue));
+  });
 
   describe('signed integer type', () => {
     let integers: Contract, storageLayout: StorageLayout, blockHash: string;
@@ -203,85 +255,52 @@ describe('Get value from storage', () => {
     });
   });
 
-  it('get value for boolean type', async () => {
-    const { contract: booleans, storageLayout } = contracts.TestBooleans;
-    const bool1Value = true;
-    const bool2Value = false;
-
-    const transactions = await Promise.all([
-      booleans.setBool1(bool1Value),
-      booleans.setBool2(bool2Value)
-    ]);
-
-    await Promise.all(transactions.map(transaction => transaction.wait()));
-    const blockHash = await getBlockHash();
-
-    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, booleans.address, 'bool1');
-    expect(value).to.equal(bool1Value);
-
-    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, booleans.address, 'bool2'));
-    expect(value).to.equal(bool2Value);
-  });
-
-  it('get value for address type', async () => {
-    const { contract: address, storageLayout } = contracts.TestAddress;
-    const [signer] = await ethers.getSigners();
-    const transaction = await address.setAddress1(signer.address);
-    await transaction.wait();
-    const blockHash = await getBlockHash();
-    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, address.address, 'address1');
-    expect(value).to.be.a('string');
-    expect(String(value).toLowerCase()).to.equal(signer.address.toLowerCase());
-  });
-
-  it('get value for contract type', async () => {
-    const { contract: testAddress } = contracts.TestAddress;
-    const { contract: testContractTypes, storageLayout } = contracts.TestContractTypes;
-    const transaction = await testContractTypes.setAddressContract1(testAddress.address);
-    await transaction.wait();
-    const blockHash = await getBlockHash();
-    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testContractTypes.address, 'addressContract1');
-    expect(value).to.equal(testAddress.address.toLowerCase());
-  });
-
-  it('get value for fixed size byte arrays packed together', async () => {
-    const { contract: testBytes, storageLayout } = contracts.TestBytes;
+  describe('byte array', () => {
+    let testBytes: Contract, storageLayout: StorageLayout, blockHash: string;
     const bytesTenValue = ethers.utils.hexlify(ethers.utils.randomBytes(10));
     const bytesTwentyValue = ethers.utils.hexlify(ethers.utils.randomBytes(20));
+    const bytesThirtyValue = ethers.utils.hexlify(ethers.utils.randomBytes(30));
+    const bytesArray1 = ethers.utils.hexlify(ethers.utils.randomBytes(24));
+    const bytesArray2 = ethers.utils.hexlify(ethers.utils.randomBytes(100));
 
-    const transactions = await Promise.all([
-      testBytes.setBytesTen(bytesTenValue),
-      testBytes.setBytesTwenty(bytesTwentyValue)
-    ]);
+    before(async () => {
+      ({ contract: testBytes, storageLayout } = contracts.TestBytes);
 
-    await Promise.all(transactions.map(transaction => transaction.wait()));
-    const blockHash = await getBlockHash();
+      const transactions = await Promise.all([
+        testBytes.setBytesTen(bytesTenValue),
+        testBytes.setBytesTwenty(bytesTwentyValue),
+        testBytes.setBytesThirty(bytesThirtyValue),
+        testBytes.setBytesArray1(bytesArray1),
+        testBytes.setBytesArray2(bytesArray2)
+      ]);
 
-    let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTen');
-    expect(value).to.equal(bytesTenValue);
+      await Promise.all(transactions.map(transaction => transaction.wait()));
+      blockHash = await getBlockHash();
+    });
 
-    ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTwenty'));
-    expect(value).to.equal(bytesTwentyValue);
-  });
+    it('get value for fixed size byte arrays packed together', async () => {
+      let { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTen');
+      expect(value).to.equal(bytesTenValue);
 
-  it('get value for fixed size byte arrays using single slot', async () => {
-    const { contract: testBytes, storageLayout } = contracts.TestBytes;
-    const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(30));
-    const transaction = await testBytes.setBytesThirty(expectedValue);
-    await transaction.wait();
-    const blockHash = await getBlockHash();
-    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesThirty');
-    expect(value).to.equal(expectedValue);
-  });
+      ({ value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTwenty'));
+      expect(value).to.equal(bytesTwentyValue);
+    });
 
-  it('get value for enum types', async () => {
-    const { contract: testEnums, storageLayout } = contracts.TestEnums;
-    const expectedValue = 1;
-    const transaction = await testEnums.setChoicesEnum1(expectedValue);
-    await transaction.wait();
-    const blockHash = await getBlockHash();
-    const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testEnums.address, 'choicesEnum1');
-    expect(value).to.equal(BigInt(expectedValue));
+    it('get value for fixed size byte arrays using single slot', async () => {
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesThirty');
+      expect(value).to.equal(bytesThirtyValue);
+    });
+
+    // Dynamically sized byte array.
+    it('get value for dynamic byte array of length less than 32 bytes', async () => {
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray1');
+      expect(value).to.equal(bytesArray1);
+    });
+
+    it('get value for dynamic byte array of length more than 32 bytes', async () => {
+      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray2');
+      expect(value).to.equal(bytesArray2);
+    });
   });
 
   describe('string type', () => {
@@ -311,32 +330,6 @@ describe('Get value from storage', () => {
     it('get value for string length more than 32 bytes', async () => {
       const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, strings.address, 'string2');
       expect(value).to.equal(string2Value);
-    });
-  });
-
-  describe('dynamically sized byte array', () => {
-    let testBytes: Contract, storageLayout: StorageLayout;
-
-    before(async () => {
-      ({ contract: testBytes, storageLayout } = contracts.TestBytes);
-    });
-
-    it('get value for byte array length less than 32 bytes', async () => {
-      const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(24));
-      const transaction = await testBytes.setBytesArray(expectedValue);
-      await transaction.wait();
-      const blockHash = await getBlockHash();
-      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray');
-      expect(value).to.equal(expectedValue);
-    });
-
-    it('get value for byte array length more than 32 bytes', async () => {
-      const expectedValue = ethers.utils.hexlify(ethers.utils.randomBytes(100));
-      const transaction = await testBytes.setBytesArray(expectedValue);
-      await transaction.wait();
-      const blockHash = await getBlockHash();
-      const { value } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray');
-      expect(value).to.equal(expectedValue);
     });
   });
 

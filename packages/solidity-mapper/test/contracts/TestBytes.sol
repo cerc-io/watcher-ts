@@ -13,7 +13,8 @@ contract TestBytes {
     // If data is 32 or more bytes, the main slot stores the value length * 2 + 1 and the data is stored in keccak256(slot).
     // Else the main slot stores the data and value length * 2.
     // https://docs.soliditylang.org/en/v0.7.4/internals/layout_in_storage.html#bytes-and-string
-    bytes bytesArray;
+    bytes bytesArray1;
+    bytes bytesArray2;
 
     // Set variable bytesTen.
     function setBytesTen(bytes10 value) external {
@@ -30,8 +31,13 @@ contract TestBytes {
         bytesThirty = value;
     }
 
-    // Set variable bytesArray.
-    function setBytesArray(bytes calldata value) external {
-        bytesArray = value;
+    // Set variable bytesArray1.
+    function setBytesArray1(bytes calldata value) external {
+        bytesArray1 = value;
+    }
+
+    // Set variable bytesArray2.
+    function setBytesArray2(bytes calldata value) external {
+        bytesArray2 = value;
     }
 }
