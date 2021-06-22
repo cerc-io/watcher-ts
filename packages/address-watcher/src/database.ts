@@ -60,16 +60,24 @@ export class Database {
   }
 
   async getTrace (txHash: string): Promise<Trace | undefined> {
-    return this._conn.getRepository(Trace)
-      .createQueryBuilder('trace')
-      .where('tx_hash = :txHash', { txHash })
-      .getOne();
+    const repo = this._conn.getRepository(Trace);
+    return repo.findOne({ where: { txHash } });
   }
 
-  async saveTrace ({ txHash, blockNumber, blockHash, trace }: DeepPartial<Trace>): Promise<Trace> {
-    const repo = this._conn.getRepository(Trace);
-    const entity = repo.create({ txHash, blockNumber, blockHash, trace });
-    return repo.save(entity);
+  async saveTrace ({ txHash, blockNumber, blockHash, trace }: DeepPartial<Trace>): Promise<void> {
+    await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Trace);
+
+      const numRows = await repo
+        .createQueryBuilder()
+        .where('tx_hash = :txHash', { txHash })
+        .getCount();
+
+      if (numRows === 0) {
+        const entity = repo.create({ txHash, blockNumber, blockHash, trace });
+        await repo.save(entity);
+      }
+    });
   }
 
   async saveTraceEntity (trace: Trace): Promise<Trace> {

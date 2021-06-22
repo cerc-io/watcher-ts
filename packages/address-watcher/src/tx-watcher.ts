@@ -29,7 +29,9 @@ export class TxWatcher {
     this._subscription = await this._ethClient.watchTransactions(async (value) => {
       const { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } = _.get(value, 'data.listen.relatedNode');
       log('watchTransaction', JSON.stringify({ txHash, blockHash, blockNumber }, null, 2));
+
       await this._indexer.traceTxAndIndexAppearances(txHash);
+      await this._indexer.publishAddressEventToSubscribers(txHash);
     });
   }
 

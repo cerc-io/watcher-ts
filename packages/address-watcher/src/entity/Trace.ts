@@ -18,6 +18,6 @@ export class Trace {
   @Column('text')
   trace!: string;
 
-  @ManyToMany(() => Account, account => account.appearances, { cascade: ['insert'] })
+  @ManyToMany(() => Account, account => account.appearances, { eager: true, cascade: ['insert'] })
   accounts: Account[]
 }

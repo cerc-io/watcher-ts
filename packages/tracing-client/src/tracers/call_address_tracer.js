@@ -314,6 +314,10 @@
 		if (result.error !== undefined && (result.error !== "execution reverted" || result.output ==="0x")) {
 			delete result.output;
 		}
+		if (this.callstack[0].addresses !== undefined) {
+			result.addresses = this.callstack[0].addresses;
+		}
+
 		return this.finalize(result);
 	},
 

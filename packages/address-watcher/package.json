@@ -47,9 +47,11 @@
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
+    "@types/chai": "^4.2.19",
     "@types/express": "^4.17.11",
     "@types/fs-extra": "^9.0.11",
     "@types/json-bigint": "^1.0.0",
+    "@types/mocha": "^8.2.2",
     "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",

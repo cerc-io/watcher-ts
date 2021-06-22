@@ -1,5 +1,7 @@
 import assert from 'assert';
 import debug from 'debug';
+import { withFilter } from 'apollo-server-express';
+import { ethers } from 'ethers';
 
 import { Indexer } from './indexer';
 
@@ -22,12 +24,19 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
   return {
     Subscription: {
       onAddressEvent: {
-        subscribe: () => indexer.getEventIterator()
+        subscribe: withFilter(
+          () => indexer.getAddressEventIterator(),
+          (payload: any, variables: any) => {
+            return payload.onAddressEvent.address === ethers.utils.getAddress(variables.address);
+          }
+        )
       }
     },
 
     Mutation: {
       watchAddress: (_: any, { address, startingBlock = 1 }: WatchAddressParams): Promise<boolean> => {
+        address = ethers.utils.getAddress(address);
+
         log('watchAddress', address, startingBlock);
         return indexer.watchAddress(address, startingBlock);
       }
@@ -35,13 +44,23 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
     Query: {
       appearances: async (_: any, { address, fromBlockNumber, toBlockNumber }: AppearanceParams): Promise<any> => {
+        address = ethers.utils.getAddress(address);
+
         log('appearances', address, fromBlockNumber, toBlockNumber);
         return indexer.getAppearances(address, fromBlockNumber, toBlockNumber);
       },
 
       traceTx: async (_: any, { txHash }: { txHash: string }): Promise<any> => {
         log('traceTx', txHash);
-        return indexer.traceTxAndIndexAppearances(txHash);
+
+        const { blockHash, blockNumber, trace } = await indexer.traceTxAndIndexAppearances(txHash);
+
+        return {
+          txHash,
+          blockNumber,
+          blockHash,
+          trace
+        };
       }
     }
   };

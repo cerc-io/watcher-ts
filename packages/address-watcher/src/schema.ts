@@ -46,8 +46,8 @@ type Query {
 #
 type Subscription {
 
-  # Watch for token events (at head of chain).
-  onAddressEvent: WatchedAddressEvent!
+  # Watch for address events (at head of chain).
+  onAddressEvent(address: String!): WatchedAddressEvent!
 }
 
 #

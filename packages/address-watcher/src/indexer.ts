@@ -2,29 +2,19 @@ import assert from 'assert';
 import debug from 'debug';
 import { ethers } from 'ethers';
 import { PubSub } from 'apollo-server-express';
-import _ from 'lodash';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { GetStorageAt } from '@vulcanize/solidity-mapper';
 import { TracingClient } from '@vulcanize/tracing-client';
 
+import { addressesInTrace } from './util';
 import { Database } from './database';
 import { Trace } from './entity/Trace';
 import { Account } from './entity/Account';
 
 const log = debug('vulcanize:indexer');
 
-const addressesIn = (obj: any): any => {
-  if (!obj) {
-    return [];
-  }
-
-  if (_.isArray(obj)) {
-    return _.map(obj, addressesIn);
-  }
-
-  return [obj.from, obj.to, ...addressesIn(obj.calls)];
-};
+const AddressEvent = 'address_event';
 
 export class Indexer {
   _db: Database
@@ -46,8 +36,8 @@ export class Indexer {
     this._tracingClient = tracingClient;
   }
 
-  getEventIterator (): AsyncIterator<any> {
-    return this._pubsub.asyncIterator(['event']);
+  getAddressEventIterator (): AsyncIterator<any> {
+    return this._pubsub.asyncIterator([AddressEvent]);
   }
 
   async isWatchedAddress (address : string): Promise<boolean> {
@@ -63,7 +53,39 @@ export class Indexer {
     return true;
   }
 
-  async traceTxAndIndexAppearances (txHash: string): Promise<any> {
+  async getTrace (txHash: string): Promise<Trace | undefined> {
+    return this._db.getTrace(txHash);
+  }
+
+  async publishAddressEventToSubscribers (txHash: string): Promise<void> {
+    const traceObj = await this._db.getTrace(txHash);
+    if (!traceObj) {
+      return;
+    }
+
+    const { blockNumber, blockHash, trace } = traceObj;
+
+    for (let i = 0; i < traceObj.accounts.length; i++) {
+      const account = traceObj.accounts[i];
+
+      log(`pushing tx ${txHash} event to GQL subscribers for address ${account.address}`);
+
+      // Publishing the event here will result in pushing the payload to GQL subscribers for `onAddressEvent(address)`.
+      await this._pubsub.publish(AddressEvent, {
+        onAddressEvent: {
+          address: account.address,
+          txTrace: {
+            txHash,
+            blockHash,
+            blockNumber,
+            trace
+          }
+        }
+      });
+    }
+  }
+
+  async traceTxAndIndexAppearances (txHash: string): Promise<Trace> {
     let entity = await this._db.getTrace(txHash);
     if (entity) {
       log('traceTx: db hit');
@@ -73,22 +95,20 @@ export class Indexer {
       const tx = await this._tracingClient.getTx(txHash);
       const trace = await this._tracingClient.getTxTrace(txHash, 'callTraceWithAddresses', '15s');
 
-      entity = await this._db.saveTrace({
+      await this._db.saveTrace({
         txHash,
         blockNumber: tx.blockNumber,
         blockHash: tx.blockHash,
         trace: JSON.stringify(trace)
       });
 
+      entity = await this._db.getTrace(txHash);
+
+      assert(entity);
       await this.indexAppearances(entity);
     }
 
-    return {
-      txHash,
-      blockNumber: entity.blockNumber,
-      blockHash: entity.blockHash,
-      trace: entity.trace
-    };
+    return entity;
   }
 
   async getAppearances (address: string, fromBlockNumber: number, toBlockNumber: number): Promise<Trace[]> {
@@ -97,9 +117,11 @@ export class Indexer {
 
   async indexAppearances (trace: Trace): Promise<Trace> {
     const traceObj = JSON.parse(trace.trace);
-    const addresses = _.uniq(_.compact(_.flattenDeep(addressesIn(traceObj)))).sort();
 
-    trace.accounts = _.map(addresses, address => {
+    // TODO: Check if tx has failed?
+    const addresses = addressesInTrace(traceObj);
+
+    trace.accounts = addresses.map((address: string) => {
       assert(address);
 
       const account = new Account();
