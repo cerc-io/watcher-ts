@@ -298,7 +298,7 @@ const getStructureValue = async (getStorageAt: GetStorageAt, blockHash: string, 
   return members.reduce((acc, member, index) => {
     acc.value[member.label] = results[index].value;
     const proofData = JSON.parse(acc.proof.data);
-    proofData[member.label] = results[index].proof;
+    proofData[member.label] = JSON.parse(results[index].proof.data);
     acc.proof.data = JSON.stringify(proofData);
     return acc;
   }, initialValue);
@@ -336,6 +336,7 @@ const getInplaceValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
 const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string) => {
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
   let length = 0;
+  const proofs = [JSON.parse(proof.data)];
 
   // Get length of bytes stored.
   if (BigNumber.from(utils.hexDataSlice(value, 0, 1)).isZero()) {
@@ -353,14 +354,13 @@ const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, addr
   if (length < 32) {
     return {
       value: utils.hexDataSlice(value, 0, length),
-      proof
+      proof: {
+        data: JSON.stringify(proofs)
+      }
     };
   }
 
   // Array to hold multiple bytes32 data.
-  const proofs = [
-    JSON.parse(proof.data)
-  ];
   const hexStringArray = [];
 
   // Compute zero padded hexstring to calculate hashed position of storage.

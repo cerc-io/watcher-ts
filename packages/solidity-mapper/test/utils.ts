@@ -1,7 +1,11 @@
+/* eslint-disable no-unused-expressions */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ContractInterface } from '@ethersproject/contracts';
 import '@nomiclabs/hardhat-ethers';
 import { artifacts, ethers } from 'hardhat';
 import { CompilerOutput, CompilerOutputBytecode } from 'hardhat/types';
+import { expect } from 'chai';
+import isArray from 'lodash/isArray';
 
 import { StorageLayout, GetStorageAt } from '../src';
 
@@ -23,6 +27,17 @@ interface StorageCompilerOutput extends CompilerOutput {
       }
     };
   };
+}
+
+interface ProofData {
+  blockHash: string;
+  account: {
+    address: string;
+    storage: {
+      ipldBlock: string;
+      cid: string;
+    }
+  }
 }
 
 /**
@@ -77,5 +92,79 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
 export const generateDummyAddresses = (length: number): Array<string> => {
   return Array.from({ length }, () => {
     return ethers.utils.hexlify(ethers.utils.randomBytes(20));
+  });
+};
+
+/**
+ * Get latest blockHash.
+ */
+export const getBlockHash = async (): Promise<string> => {
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const { hash } = await ethers.provider.getBlock(blockNumber);
+  return hash;
+};
+
+/**
+ * Assert proof data returned from ipld graphql server.
+ * @param blockHash
+ * @param address
+ * @param proofData
+ */
+export const assertProofData = (blockHash: string, address: string, proofData: ProofData): void => {
+  const {
+    blockHash: proofBlockHash,
+    account: {
+      address: proofAddress,
+      storage
+    }
+  } = proofData;
+
+  expect(proofBlockHash).to.equal(blockHash);
+  expect(proofAddress).to.equal(address);
+  expect(storage.cid).to.not.be.empty;
+  expect(storage.ipldBlock).to.not.be.empty;
+};
+
+/**
+ * Assert array of proof data.
+ * @param blockHash
+ * @param address
+ * @param proofArray
+ */
+export const assertProofArray = (blockHash: string, address: string, proofArray: Array<any>): void => {
+  proofArray.forEach(proofData => {
+    if (isArray(proofData)) {
+      assertProofArray(blockHash, address, proofData);
+      return;
+    }
+
+    if (['blockHash', 'account'].every(key => key in proofData)) {
+      assertProofData(blockHash, address, proofData);
+      return;
+    }
+
+    assertProofStruct(blockHash, address, proofData);
+  });
+};
+
+/**
+ * Assert array of proof data from structure type.
+ * @param blockHash
+ * @param address
+ * @param proofStruct
+ */
+export const assertProofStruct = (blockHash: string, address: string, proofStruct: {[key: string]: any}): void => {
+  Object.values(proofStruct).forEach(proofData => {
+    if (isArray(proofData)) {
+      assertProofArray(blockHash, address, proofData);
+      return;
+    }
+
+    if (['blockHash', 'account'].every(key => key in proofData)) {
+      assertProofData(blockHash, address, proofData);
+      return;
+    }
+
+    assertProofStruct(blockHash, address, proofData);
   });
 };
