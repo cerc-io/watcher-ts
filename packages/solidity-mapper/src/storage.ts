@@ -79,9 +79,17 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
     return !BigNumber.from(storageValue).isZero();
   }
 
+  const [isIntegerOrEnum, isInteger, isUnsigned, integerSize] = typeLabel.match(/^enum|((u?)int([0-9]+))/) || [false];
+
   // Parse value for uint/int type or enum type.
-  if (typeLabel.match(/^enum|u?int[0-9]+/)) {
-    return BigInt(storageValue);
+  if (isIntegerOrEnum) {
+    let bigNumber = BigNumber.from(storageValue);
+
+    if (Boolean(isInteger) && !isUnsigned) {
+      bigNumber = bigNumber.fromTwos(Number(integerSize));
+    }
+
+    return BigInt(bigNumber.toString());
   }
 
   // Parse value for string type.

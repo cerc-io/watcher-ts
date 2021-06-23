@@ -208,8 +208,17 @@ describe('Get value from storage', () => {
   describe('signed integer type', () => {
     let integers: Contract, storageLayout: StorageLayout, blockHash: string;
     const int1Value = 12;
-    const int2Value = 34;
+    const int2Value = -34;
     const int3Value = 123;
+    const int4Value = -12;
+    const int5Value = -123;
+    const int6Value = -456;
+    const int7Value = -789;
+    const int9Value = -1234;
+    const int10Value = -4567;
+    const int11Value = -12345;
+    const int12Value = -67890;
+    const int13Value = -123456;
 
     before(async () => {
       ({ contract: integers, storageLayout } = contracts.TestIntegers);
@@ -217,7 +226,16 @@ describe('Get value from storage', () => {
       const transactions = await Promise.all([
         integers.setInt1(int1Value),
         integers.setInt2(int2Value),
-        integers.setInt3(int3Value)
+        integers.setInt3(int3Value),
+        integers.setInt4(int4Value),
+        integers.setInt5(int5Value),
+        integers.setInt6(int6Value),
+        integers.setInt7(int7Value),
+        integers.setInt9(int9Value),
+        integers.setInt10(int10Value),
+        integers.setInt11(int11Value),
+        integers.setInt12(int12Value),
+        integers.setInt13(int13Value)
       ]);
 
       await Promise.all(transactions.map(transaction => transaction.wait()));
@@ -243,6 +261,71 @@ describe('Get value from storage', () => {
     it('get value for integer type variables using single slot', async () => {
       const { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int3');
       expect(value).to.equal(BigInt(int3Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+    });
+
+    it('get value for integer type variables with negative values', async () => {
+      let { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int4');
+      expect(value).to.equal(BigInt(int4Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int5'));
+      expect(value).to.equal(BigInt(int5Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int6'));
+      expect(value).to.equal(BigInt(int6Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int7'));
+      expect(value).to.equal(BigInt(int7Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int9'));
+      expect(value).to.equal(BigInt(int9Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int10'));
+      expect(value).to.equal(BigInt(int10Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int11'));
+      expect(value).to.equal(BigInt(int11Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int12'));
+      expect(value).to.equal(BigInt(int12Value));
+
+      if (isIpldGql) {
+        assertProofData(blockHash, integers.address, JSON.parse(proofData));
+      }
+
+      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, integers.address, 'int13'));
+      expect(value).to.equal(BigInt(int13Value));
 
       if (isIpldGql) {
         assertProofData(blockHash, integers.address, JSON.parse(proofData));
