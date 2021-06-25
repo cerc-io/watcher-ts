@@ -1,9 +1,9 @@
-import assert from 'assert';
 import debug from 'debug';
 import { withFilter } from 'apollo-server-express';
 import { ethers } from 'ethers';
 
 import { Indexer } from './indexer';
+import { TxWatcher } from './tx-watcher';
 
 const log = debug('vulcanize:resolver');
 
@@ -18,14 +18,12 @@ interface AppearanceParams {
   toBlockNumber: number
 }
 
-export const createResolvers = async (indexer: Indexer): Promise<any> => {
-  assert(indexer);
-
+export const createResolvers = async (indexer: Indexer, txWatcher: TxWatcher): Promise<any> => {
   return {
     Subscription: {
       onAddressEvent: {
         subscribe: withFilter(
-          () => indexer.getAddressEventIterator(),
+          () => txWatcher.getAddressEventIterator(),
           (payload: any, variables: any) => {
             return payload.onAddressEvent.address === ethers.utils.getAddress(variables.address);
           }

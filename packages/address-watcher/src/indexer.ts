@@ -1,7 +1,6 @@
 import assert from 'assert';
 import debug from 'debug';
 import { ethers } from 'ethers';
-import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { GetStorageAt } from '@vulcanize/solidity-mapper';
@@ -14,30 +13,21 @@ import { Account } from './entity/Account';
 
 const log = debug('vulcanize:indexer');
 
-const AddressEvent = 'address_event';
-
 export class Indexer {
   _db: Database
   _ethClient: EthClient
-  _pubsub: PubSub
   _getStorageAt: GetStorageAt
   _tracingClient: TracingClient
 
-  constructor (db: Database, ethClient: EthClient, pubsub: PubSub, tracingClient: TracingClient) {
+  constructor (db: Database, ethClient: EthClient, tracingClient: TracingClient) {
     assert(db);
     assert(ethClient);
-    assert(pubsub);
     assert(tracingClient);
 
     this._db = db;
     this._ethClient = ethClient;
-    this._pubsub = pubsub;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
     this._tracingClient = tracingClient;
-  }
-
-  getAddressEventIterator (): AsyncIterator<any> {
-    return this._pubsub.asyncIterator([AddressEvent]);
   }
 
   async isWatchedAddress (address : string): Promise<boolean> {
@@ -55,34 +45,6 @@ export class Indexer {
 
   async getTrace (txHash: string): Promise<Trace | undefined> {
     return this._db.getTrace(txHash);
-  }
-
-  async publishAddressEventToSubscribers (txHash: string): Promise<void> {
-    const traceObj = await this._db.getTrace(txHash);
-    if (!traceObj) {
-      return;
-    }
-
-    const { blockNumber, blockHash, trace } = traceObj;
-
-    for (let i = 0; i < traceObj.accounts.length; i++) {
-      const account = traceObj.accounts[i];
-
-      log(`pushing tx ${txHash} event to GQL subscribers for address ${account.address}`);
-
-      // Publishing the event here will result in pushing the payload to GQL subscribers for `onAddressEvent(address)`.
-      await this._pubsub.publish(AddressEvent, {
-        onAddressEvent: {
-          address: account.address,
-          txTrace: {
-            txHash,
-            blockHash,
-            blockNumber,
-            trace
-          }
-        }
-      });
-    }
   }
 
   async traceTxAndIndexAppearances (txHash: string): Promise<Trace> {
@@ -105,7 +67,7 @@ export class Indexer {
       entity = await this._db.getTrace(txHash);
 
       assert(entity);
-      await this.indexAppearances(entity);
+      await this._indexAppearances(entity);
     }
 
     return entity;
@@ -115,7 +77,7 @@ export class Indexer {
     return this._db.getAppearances(address, fromBlockNumber, toBlockNumber);
   }
 
-  async indexAppearances (trace: Trace): Promise<Trace> {
+  async _indexAppearances (trace: Trace): Promise<Trace> {
     const traceObj = JSON.parse(trace.trace);
 
     // TODO: Check if tx has failed?

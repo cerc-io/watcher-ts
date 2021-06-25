@@ -106,6 +106,12 @@ export class EthClient {
     };
   }
 
+  async getBlockWithTransactions (blockNumber: string): Promise<any> {
+    const { data: result } = await this._client.query({ query: ethQueries.getBlockWithTransactions, variables: { blockNumber } });
+
+    return result;
+  }
+
   async getLogs (vars: Vars): Promise<any> {
     const result = await this._getCachedOrFetch('getLogs', vars);
     const { getLogs: logs } = result;

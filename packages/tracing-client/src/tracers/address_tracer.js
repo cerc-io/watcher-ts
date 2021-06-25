@@ -54,11 +54,13 @@
 
   // step is invoked for every opcode that the VM executes.
   step: function(log, db) {
-    var topOfStack = log.stack.peek(0).toString(16);
-    var result = this.isAddress(log, db, topOfStack);
+    if (log.stack.length()) {
+      var topOfStack = log.stack.peek(0).toString(16);
+      var result = this.isAddress(log, db, topOfStack);
 
-    if (result.isAddress) {
-      this.data[result.address] = result.confidence;
+      if (result.isAddress) {
+        this.data[result.address] = result.confidence;
+      }
     }
   },
 

@@ -20,6 +20,10 @@ export interface Config {
     traceProviderEndpoint: string;
     cache: CacheConfig
   }
+  jobQueue: {
+    dbConnectionString: string;
+    maxCompletionLag: number;
+  }
 }
 
 export const getConfig = async (configFile: string): Promise<Config> => {

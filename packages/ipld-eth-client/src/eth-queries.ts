@@ -24,6 +24,24 @@ query getLogs($blockHash: Bytes32!, $contract: Address!) {
 }
 `;
 
+export const getBlockWithTransactions = gql`
+query allEthHeaderCids($blockNumber: BigInt) {
+  allEthHeaderCids(condition: { blockNumber: $blockNumber }) {
+    nodes {
+      cid
+      blockNumber
+      blockHash
+      ethTransactionCidsByHeaderId {
+        nodes {
+          cid
+          txHash
+        }
+      }
+    }
+  }
+}
+`;
+
 export const subscribeLogs = gql`
 subscription SubscriptionReceipt {
   listen(topic: "receipt_cids") {
@@ -66,6 +84,7 @@ subscription SubscriptionHeader {
 export default {
   getStorageAt,
   getLogs,
+  getBlockWithTransactions,
   subscribeLogs,
   subscribeTransactions
 };

@@ -240,19 +240,21 @@
 			this.callstack[left-1].calls.push(call);
 		}
 
-		var topOfStack = log.stack.peek(0).toString(16);
-		var result = this.isAddress(log, db, topOfStack);
-		if (result.isAddress) {
-			var call = this.callstack[this.callstack.length - 1];
-			if (!call.addresses) {
-				call.addresses = {};
-			}
+		if (log.stack.length()) {
+			var topOfStack = log.stack.peek(0).toString(16);
+			var result = this.isAddress(log, db, topOfStack);
+			if (result.isAddress) {
+				var call = this.callstack[this.callstack.length - 1];
+				if (!call.addresses) {
+					call.addresses = {};
+				}
 
-			if (!call.addresses[result.address]) {
-				call.addresses[result.address] = { confidence: result.confidence, opcodes: [] };
-			}
+				if (!call.addresses[result.address]) {
+					call.addresses[result.address] = { confidence: result.confidence, opcodes: [] };
+				}
 
-			call.addresses[result.address].opcodes.push(this.prevStepOp);
+				call.addresses[result.address].opcodes.push(this.prevStepOp);
+			}
 		}
 
 		this.prevStepOp = log.op.toString();

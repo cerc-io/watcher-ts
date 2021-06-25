@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "server": "DEBUG=vulcanize:* nodemon src/server.ts -f environments/local.toml",
+    "job-runner": "DEBUG=vulcanize:* nodemon src/job-runner.ts -f environments/local.toml",
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "lint": "eslint .",
     "build": "tsc"
@@ -39,6 +40,7 @@
     "json-bigint": "^1.0.0",
     "lodash": "^4.17.21",
     "pg": "^8.6.0",
+    "pg-boss": "^6.1.0",
     "reflect-metadata": "^0.1.13",
     "toml": "^3.0.0",
     "typeorm": "^0.2.32",

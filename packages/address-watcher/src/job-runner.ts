@@ -1,24 +1,18 @@
 import assert from 'assert';
 import 'reflect-metadata';
-import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { createServer } from 'http';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { TracingClient } from '@vulcanize/tracing-client';
 
-import typeDefs from './schema';
-
-import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { getConfig } from './config';
-import { TxWatcher } from './tx-watcher';
 import { JobQueue } from './job-queue';
+import { QUEUE_TX_TRACING } from './tx-watcher';
 
 const log = debug('vulcanize:server');
 
@@ -35,8 +29,6 @@ export const main = async (): Promise<any> => {
   const config = await getConfig(argv.f);
 
   assert(config.server, 'Missing server config');
-
-  const { host, port } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -63,40 +55,19 @@ export const main = async (): Promise<any> => {
 
   const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
-  assert(dbConnectionString, 'Missing job queue max completion lag time (seconds)');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
   await jobQueue.start();
 
-  // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
-  // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-  const pubsub = new PubSub();
-  const txWatcher = new TxWatcher(ethClient, indexer, pubsub, jobQueue);
-  await txWatcher.start();
-
-  const resolvers = await createResolvers(indexer, txWatcher);
-
-  const app: Application = express();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
+  await jobQueue.subscribe(QUEUE_TX_TRACING, async (job) => {
+    const { data: { txHash } } = job;
+    await indexer.traceTxAndIndexAppearances(txHash);
+    await jobQueue.markComplete(job);
   });
-
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
-
-  return { app, server };
 };
 
 main().then(() => {
-  log('Starting server...');
+  log('Starting job runner...');
 }).catch(err => {
   log(err);
 });
