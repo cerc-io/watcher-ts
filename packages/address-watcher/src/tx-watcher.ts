@@ -39,7 +39,8 @@ export class TxWatcher {
     this._jobQueue.onComplete(QUEUE_TX_TRACING, async (job) => {
       const { data: { request, failed, state, createdOn } } = job;
       const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
-      if (!failed && state === 'completed') {
+      log(`Job onComplete tx ${request.data.txHash} publish ${!!request.data.publish}`);
+      if (!failed && state === 'completed' && request.data.publish) {
         // Check for max acceptable lag time between tracing request and sending results to live subscribers.
         if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
           return await this.publishAddressEventToSubscribers(request.data.txHash, timeElapsedInSeconds);
@@ -52,7 +53,7 @@ export class TxWatcher {
     this._watchTxSubscription = await this._ethClient.watchTransactions(async (value) => {
       const { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } = _.get(value, 'data.listen.relatedNode');
       log('watchTransaction', JSON.stringify({ txHash, blockHash, blockNumber }, null, 2));
-      this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash });
+      await this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, publish: true });
     });
   }
 

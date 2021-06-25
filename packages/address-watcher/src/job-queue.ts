@@ -38,7 +38,8 @@ export class JobQueue {
 
   async onComplete (queue: string, callback: JobCallback): Promise<string> {
     return await this._boss.onComplete(queue, async (job: any) => {
-      log(`Job complete for queue ${queue} job ${job.id}...`);
+      const { id, data: { failed, createdOn } } = job;
+      log(`Job onComplete for queue ${queue} job ${id} created ${createdOn} success ${!failed}`);
       await callback(job);
     });
   }

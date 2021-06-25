@@ -31,6 +31,7 @@ query allEthHeaderCids($blockNumber: BigInt) {
       cid
       blockNumber
       blockHash
+      timestamp
       ethTransactionCidsByHeaderId {
         nodes {
           cid
