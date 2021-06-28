@@ -28,6 +28,10 @@ export const createResolvers = async (indexer: Indexer, txWatcher: TxWatcher): P
             return payload.onAddressEvent.address === ethers.utils.getAddress(variables.address);
           }
         )
+      },
+
+      onBlockProgressEvent: {
+        subscribe: () => txWatcher.getBlockProgressEventIterator()
       }
     },
 

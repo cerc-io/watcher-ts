@@ -7,10 +7,12 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { Indexer } from './indexer';
 import { JobQueue } from './job-queue';
+import { BlockProgress } from './entity/BlockProgress';
 
 const log = debug('vulcanize:tx-watcher');
 
 export const AddressEvent = 'address-event';
+export const BlockProgressEvent = 'block-progress-event';
 export const QUEUE_TX_TRACING = 'tx-tracing';
 
 export class TxWatcher {
@@ -31,6 +33,10 @@ export class TxWatcher {
     return this._pubsub.asyncIterator([AddressEvent]);
   }
 
+  getBlockProgressEventIterator (): AsyncIterator<any> {
+    return this._pubsub.asyncIterator([BlockProgressEvent]);
+  }
+
   async start (): Promise<void> {
     assert(!this._watchTxSubscription, 'subscription already started');
 
@@ -38,6 +44,13 @@ export class TxWatcher {
 
     this._jobQueue.onComplete(QUEUE_TX_TRACING, async (job) => {
       const { data: { request, failed, state, createdOn } } = job;
+
+      await this._indexer.updateBlockProgress(request.data.blockHash);
+      const blockProgress = await this._indexer.getBlockProgress(request.data.blockHash);
+      if (blockProgress && request.data.publishBlockProgress) {
+        await this.publishBlockProgressToSubscribers(blockProgress);
+      }
+
       const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
       log(`Job onComplete tx ${request.data.txHash} publish ${!!request.data.publish}`);
       if (!failed && state === 'completed' && request.data.publish) {
@@ -53,7 +66,7 @@ export class TxWatcher {
     this._watchTxSubscription = await this._ethClient.watchTransactions(async (value) => {
       const { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } = _.get(value, 'data.listen.relatedNode');
       log('watchTransaction', JSON.stringify({ txHash, blockHash, blockNumber }, null, 2));
-      await this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, publish: true });
+      await this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, blockHash, publish: true });
     });
   }
 
@@ -83,6 +96,21 @@ export class TxWatcher {
         }
       });
     }
+  }
+
+  async publishBlockProgressToSubscribers (blockProgress: BlockProgress): Promise<void> {
+    const { blockHash, blockNumber, numTx, numTracedTx, isComplete } = blockProgress;
+
+    // Publishing the event here will result in pushing the payload to GQL subscribers for `onAddressEvent(address)`.
+    await this._pubsub.publish(BlockProgressEvent, {
+      onBlockProgressEvent: {
+        blockHash,
+        blockNumber,
+        numTx,
+        numTracedTx,
+        isComplete
+      }
+    });
   }
 
   async stop (): Promise<void> {

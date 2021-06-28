@@ -2,7 +2,14 @@
 
 ## Setup
 
-Enable the `pgcrypto` extension on the database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
+Create a postgres12 database for the job queue:
+
+```
+sudo su - postgres
+createdb job-queue
+```
+
+Enable the `pgcrypto` extension on the job queue database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
 
 Example:
 
@@ -16,4 +23,38 @@ Type "help" for help.
 job-queue=# CREATE EXTENSION pgcrypto;
 CREATE EXTENSION
 job-queue=# exit
+```
+
+Create a postgres12 database for the address watcher:
+
+```
+sudo su - postgres
+createdb address-watcher
+```
+
+Update `environments/local.toml` with database connection settings for both the databases.
+
+Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API, the `indexer-db` postgraphile and the tracing API (`debug_traceTransaction` RPC provider) endpoints.
+
+## Run
+
+Run the following scripts in different terminals.
+
+
+GQL server:
+
+```
+yarn server
+```
+
+Job runner for processing the tracing requests queue:
+
+```
+yarn job-runner
+```
+
+To fill a block range:
+
+```
+yarn fill --startBlock 1 --endBlock 1000
 ```

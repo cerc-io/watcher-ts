@@ -3,6 +3,7 @@ import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'ty
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { Account } from './entity/Account';
+import { BlockProgress } from './entity/BlockProgress';
 import { Trace } from './entity/Trace';
 
 export class Database {
@@ -92,5 +93,40 @@ export class Database {
       .where('address = :address AND block_number >= :fromBlockNumber AND block_number <= :toBlockNumber', { address, fromBlockNumber, toBlockNumber })
       .orderBy({ block_number: 'ASC' })
       .getMany();
+  }
+
+  async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
+    const repo = this._conn.getRepository(BlockProgress);
+    return repo.findOne({ where: { blockHash } });
+  }
+
+  async initBlockProgress (blockHash: string, blockNumber: number, numTx: number): Promise<void> {
+    await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(BlockProgress);
+
+      const numRows = await repo
+        .createQueryBuilder()
+        .where('block_hash = :blockHash', { blockHash })
+        .getCount();
+
+      if (numRows === 0) {
+        const entity = repo.create({ blockHash, blockNumber, numTx, numTracedTx: 0, isComplete: (numTx === 0) });
+        await repo.save(entity);
+      }
+    });
+  }
+
+  async updateBlockProgress (blockHash: string): Promise<void> {
+    await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(BlockProgress);
+      const entity = await repo.findOne({ where: { blockHash } });
+      if (entity && !entity.isComplete) {
+        entity.numTracedTx++;
+        if (entity.numTracedTx >= entity.numTx) {
+          entity.isComplete = true;
+        }
+        await repo.save(entity);
+      }
+    });
   }
 }

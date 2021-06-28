@@ -10,6 +10,7 @@ import { addressesInTrace } from './util';
 import { Database } from './database';
 import { Trace } from './entity/Trace';
 import { Account } from './entity/Account';
+import { BlockProgress } from './entity/BlockProgress';
 
 const log = debug('vulcanize:indexer');
 
@@ -50,9 +51,9 @@ export class Indexer {
   async traceTxAndIndexAppearances (txHash: string): Promise<Trace> {
     let entity = await this._db.getTrace(txHash);
     if (entity) {
-      log('traceTx: db hit');
+      log(`traceTx: db hit ${txHash}`);
     } else {
-      log('traceTx: db miss, fetching from tracing API server');
+      log(`traceTx: db miss, fetching from tracing API server ${txHash}`);
 
       const tx = await this._tracingClient.getTx(txHash);
       const trace = await this._tracingClient.getTxTrace(txHash, 'callTraceWithAddresses', '15s');
@@ -75,6 +76,14 @@ export class Indexer {
 
   async getAppearances (address: string, fromBlockNumber: number, toBlockNumber: number): Promise<Trace[]> {
     return this._db.getAppearances(address, fromBlockNumber, toBlockNumber);
+  }
+
+  async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
+    return this._db.getBlockProgress(blockHash);
+  }
+
+  async updateBlockProgress (blockHash: string): Promise<void> {
+    return this._db.updateBlockProgress(blockHash);
   }
 
   async _indexAppearances (trace: Trace): Promise<Trace> {

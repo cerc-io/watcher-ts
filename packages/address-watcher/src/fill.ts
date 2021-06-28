@@ -76,14 +76,21 @@ export const main = async (): Promise<any> => {
     const { allEthHeaderCids: { nodes: blockNodes } } = result;
     for (let bi = 0; bi < blockNodes.length; bi++) {
       const { blockHash, ethTransactionCidsByHeaderId: { nodes: txNodes } } = blockNodes[bi];
-      for (let ti = 0; ti < txNodes.length; ti++) {
-        const { txHash } = txNodes[ti];
-        log(`Filling block number ${blockNumber}, block hash ${blockHash}, tx hash ${txHash}`);
+      const blockProgress = await db.getBlockProgress(blockHash);
+      if (blockProgress) {
+        log(`Block number ${blockNumber}, block hash ${blockHash} already known, skip filling`);
+      } else {
+        await db.initBlockProgress(blockHash, blockNumber, txNodes.length);
 
-        // Never push appearances from fill jobs to GQL subscribers, as this command can be run multiple times
-        // for the same block range, and/or process the same block in multiple different runs spread over a
-        // period of time. Also, the tx's are probably too old anyway for publishing.
-        await jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, publish: false });
+        for (let ti = 0; ti < txNodes.length; ti++) {
+          const { txHash } = txNodes[ti];
+          log(`Filling block number ${blockNumber}, block hash ${blockHash}, tx hash ${txHash}`);
+
+          // Never push appearances from fill jobs to GQL subscribers, as this command can be run multiple times
+          // for the same block range, and/or process the same block in multiple different runs spread over a
+          // period of time. Also, the tx's are probably too old anyway for publishing.
+          await jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, blockHash, publish: false, publishBlockProgress: true });
+        }
       }
     }
   }

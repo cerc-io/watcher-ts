@@ -16,6 +16,14 @@ type WatchedAddressEvent {
   txTrace: TxTrace!
 }
 
+type BlockProgressEvent {
+  blockNumber: Int!
+  blockHash: String!
+  numTx: Int!
+  numTracedTx: Int!
+  isComplete: Boolean!
+}
+
 #
 # Queries
 #
@@ -48,6 +56,9 @@ type Subscription {
 
   # Watch for address events (at head of chain).
   onAddressEvent(address: String!): WatchedAddressEvent!
+
+  # Watch for block progress events from filler process.
+  onBlockProgressEvent: BlockProgressEvent!
 }
 
 #

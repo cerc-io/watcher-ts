@@ -21,6 +21,8 @@ sudo su - postgres
 createdb erc20-watcher
 ```
 
+Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+
 Run the watcher:
 
 ```bash
