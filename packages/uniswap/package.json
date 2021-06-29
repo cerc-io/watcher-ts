@@ -1,0 +1,14 @@
+{
+  "name": "@vulcanize/uniswap",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "scripts": {
+    "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > schema.graphql",
+    "lint:schema": "graphql-schema-linter"
+  },
+  "devDependencies": {
+    "get-graphql-schema": "^2.1.2",
+    "graphql-schema-linter": "^2.0.1"
+  }
+}
