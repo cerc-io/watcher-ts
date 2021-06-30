@@ -1,4 +1,4 @@
-## Queries
+# Frontend (Info App) Queries
 
 - uniswap-v3 endpoint (https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt)
 
