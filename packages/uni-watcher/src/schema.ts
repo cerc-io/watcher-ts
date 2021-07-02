@@ -39,6 +39,13 @@ type TransferEvent {
 
 union ERC20Event = TransferEvent
 
+# Factory Types
+
+type ResultGetPool {
+  pool: String
+
+  proof: Proof
+}
 
 # Factory Events
 
@@ -54,6 +61,30 @@ type PoolCreatedEvent {
 # All events emitted by the UniswapV3Factory contract.
 union FactoryEvent = PoolCreatedEvent
 
+# NonfungiblePositionManager Types
+
+type ResultPosition {
+  nonce: BigInt!
+  operator: String!
+  poolId: BigInt!
+  tickLower: BigInt!
+  tickUpper: BigInt!
+  liquidity: BigInt!
+  feeGrowthInside0LastX128: BigInt!
+  feeGrowthInside1LastX128: BigInt!
+  tokensOwed0: BigInt!
+  tokensOwed1: BigInt!
+
+  proof: Proof
+}
+
+type ResultPoolKey {
+  token0: String!
+  token1: String!
+  fee: BigInt!
+
+  proof: Proof
+}
 
 # NonfungiblePositionManager Events
 
@@ -153,7 +184,39 @@ type WatchedEvent {
 
 type Query {
 
-  # Get token events at a certain block, optionally filter by event name.
+  # NonfungiblePositionManager
+
+  position(
+    blockHash: String!
+    tokenId: BigInt!
+  ): ResultPosition
+
+  poolIdToPoolKey(
+    blockHash: String!
+    poolId: BigInt!
+  ): ResultPoolKey
+
+  # Factory
+
+  getPool(
+    blockHash: String!
+    token0: String!
+    token1: String!
+    fee: BigInt!
+  ): ResultGetPool
+
+  # Pool
+
+  feeGrowthGlobal0X128(
+    blockHash: String!
+  ): ResultUInt256!
+
+  # Pool (feeGrowthGlobal1X128)
+  feeGrowthGlobal1X128(
+    blockHash: String!
+  ): ResultUInt256!
+
+  # Get uniswap events at a certain block, optionally filter by event name.
   events(
     blockHash: String!
     contract: String!
