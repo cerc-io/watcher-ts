@@ -28,41 +28,41 @@ export class Database {
   }
 
   // Returns true if events have already been synced for the (block, token) combination.
-  async didSyncEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<boolean> {
+  async didSyncEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<boolean> {
     const numRows = await this._conn.getRepository(EventSyncProgress)
       .createQueryBuilder()
-      .where('block_hash = :blockHash AND token = :token', {
+      .where('block_hash = :blockHash AND contract = :contract', {
         blockHash,
-        token
+        contract
       })
       .getCount();
 
     return numRows > 0;
   }
 
-  async getEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<Event[]> {
+  async getEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<Event[]> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
-      .where('block_hash = :blockHash AND token = :token', {
+      .where('block_hash = :blockHash AND contract = :contract', {
         blockHash,
-        token
+        contract
       })
       .addOrderBy('id', 'ASC')
       .getMany();
   }
 
-  async getEventsByName ({ blockHash, token, eventName }: { blockHash: string, token: string, eventName: string }): Promise<Event[] | undefined> {
+  async getEventsByName ({ blockHash, contract, eventName }: { blockHash: string, contract: string, eventName: string }): Promise<Event[] | undefined> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
-      .where('block_hash = :blockHash AND token = :token AND :eventName = :eventName', {
+      .where('block_hash = :blockHash AND contract = :contract AND event_name = :eventName', {
         blockHash,
-        token,
+        contract,
         eventName
       })
       .getMany();
   }
 
-  async saveEvents ({ blockHash, token, events }: { blockHash: string, token: string, events: DeepPartial<Event>[] }): Promise<void> {
+  async saveEvents ({ blockHash, contract, events }: { blockHash: string, contract: string, events: DeepPartial<Event>[] }): Promise<void> {
     // In a transaction:
     // (1) Save all the events in the database.
     // (2) Add an entry to the event progress table.
@@ -73,9 +73,9 @@ export class Database {
       // Check sync progress inside the transaction.
       const numRows = await repo
         .createQueryBuilder()
-        .where('block_hash = :blockHash AND token = :token', {
+        .where('block_hash = :blockHash AND contract = :contract', {
           blockHash,
-          token
+          contract
         })
         .getCount();
 
@@ -88,7 +88,7 @@ export class Database {
           .execute();
 
         // Update event sync progress.
-        const progress = repo.create({ blockHash, token });
+        const progress = repo.create({ blockHash, contract });
         await repo.save(progress);
       }
     });

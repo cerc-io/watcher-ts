@@ -11,7 +11,6 @@ import { createServer } from 'http';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
-import artifacts from './artifacts/ERC20.json';
 import typeDefs from './schema';
 
 import { createResolvers as createMockResolvers } from './mock/resolvers';
@@ -58,7 +57,7 @@ export const main = async (): Promise<any> => {
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, ethClient, pubsub);
+  const indexer = new Indexer(config, db, ethClient, pubsub);
 
   const eventWatcher = new EventWatcher(ethClient, indexer);
   await eventWatcher.start();

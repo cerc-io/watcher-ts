@@ -1,107 +1,73 @@
 import assert from 'assert';
 import debug from 'debug';
-import { invert } from 'lodash';
-import { JsonFragment } from '@ethersproject/abi';
+import _ from 'lodash';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import { PubSub } from 'apollo-server-express';
 
-import { EthClient, topictoAddress } from '@vulcanize/ipld-eth-client';
-import { getEventNameTopics, getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { GetStorageAt } from '@vulcanize/solidity-mapper';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
+import { Config } from './config';
+
+import factoryABI from './artifacts/factory.json';
 
 const log = debug('vulcanize:indexer');
 
-interface Artifacts {
-  abi: JsonFragment[];
-  storageLayout: StorageLayout;
-}
-
-export interface ValueResult {
-  value: string | bigint;
-  proof: {
-    data: string;
-  }
-}
-
 type EventsResult = Array<{
-  event: {
-    from?: string;
-    to?: string;
-    owner?: string;
-    spender?: string;
-    value?: BigInt;
-    __typename: string;
-  }
+  event: any;
   proof: string;
 }>
 
 export class Indexer {
+  _config: Config;
   _db: Database
   _ethClient: EthClient
   _pubsub: PubSub
   _getStorageAt: GetStorageAt
 
-  // _abi: JsonFragment[]
-  // _storageLayout: StorageLayout
-  // _contract: ethers.utils.Interface
+  _factoryContract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, pubsub: PubSub) {
+  constructor (config: Config, db: Database, ethClient: EthClient, pubsub: PubSub) {
+    assert(config);
     assert(db);
     assert(ethClient);
     assert(pubsub);
 
-    // const { abi, storageLayout } = artifacts;
-
-    // assert(abi);
-    // assert(storageLayout);
-
+    this._config = config;
     this._db = db;
     this._ethClient = ethClient;
     this._pubsub = pubsub;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
 
-    // this._abi = abi;
-    // this._storageLayout = storageLayout;
-
-    // this._contract = new ethers.utils.Interface(this._abi);
+    this._factoryContract = new ethers.utils.Interface(factoryABI);
   }
 
   getEventIterator (): AsyncIterator<any> {
     return this._pubsub.asyncIterator(['event']);
   }
 
-  async getEvents (blockHash: string, token: string, name: string | null): Promise<EventsResult> {
-    const didSyncEvents = await this._db.didSyncEvents({ blockHash, token });
+  async getEvents (blockHash: string, contract: string, name: string | null): Promise<EventsResult> {
+    const didSyncEvents = await this._db.didSyncEvents({ blockHash, contract });
     if (!didSyncEvents) {
       // Fetch and save events first and make a note in the event sync progress table.
-      await this._fetchAndSaveEvents({ blockHash, token });
+      await this._fetchAndSaveEvents({ blockHash, contract });
       log('getEvents: db miss, fetching from upstream server');
     }
 
-    assert(await this._db.didSyncEvents({ blockHash, token }));
+    assert(await this._db.didSyncEvents({ blockHash, contract }));
 
-    const events = await this._db.getEvents({ blockHash, token });
-    log('getEvents: db hit');
+    const events = await this._db.getEvents({ blockHash, contract });
+    log(`getEvents: db hit, num events: ${events.length}`);
 
     const result = events
       // TODO: Filter using db WHERE condition when name is not empty.
       .filter(event => !name || name === event.eventName)
       .map(e => {
-        const eventFields: {
-          from?: string,
-          to?: string,
-          value?: BigInt,
-          owner?: string,
-          spender?: string,
-        } = {};
-
-        switch (e.eventName) {
-          // TODO: Handle events.
-        }
+        const eventFields = JSON.parse(e.eventData);
 
         return {
           event: {
@@ -118,112 +84,87 @@ export class Indexer {
     return result;
   }
 
-  async triggerIndexingOnEvent (blockHash: string, token: string, receipt: any, logIndex: number): Promise<void> {
-    const topics = [];
+  /* eslint-disable */
+  async triggerIndexingOnEvent (blockHash: string, contract: string, receipt: any, logIndex: number): Promise<void> {
 
-    // We only care about the event type for now.
-    const data = '0x0000000000000000000000000000000000000000000000000000000000000000';
-
-    topics.push(receipt.topic0S[logIndex]);
-    topics.push(receipt.topic1S[logIndex]);
-    topics.push(receipt.topic2S[logIndex]);
-
-    // const { name: eventName, args } = this._contract.parseLog({ topics, data });
-    // log(`trigger indexing on event: ${eventName} ${args}`);
-
-    // What data we index depends on the kind of event.
-    // switch (eventName) {
-      // TODO: Index event.
-    // }
   }
+  /* eslint-enable */
 
-  async publishEventToSubscribers (blockHash: string, token: string, logIndex: number): Promise<void> {
+  async publishEventToSubscribers (blockHash: string, contract: string, logIndex: number): Promise<void> {
     // TODO: Optimize this fetching of events.
-    const events = await this.getEvents(blockHash, token, null);
+    const events = await this.getEvents(blockHash, contract, null);
+
+    log(JSON.stringify(events, null, 2));
+    log(logIndex);
+
     const event = events[logIndex];
 
     log(`pushing event to GQL subscribers: ${event.event.__typename}`);
 
-    // Publishing the event here will result in pushing the payload to GQL subscribers for `onTokenEvent`.
+    // Publishing the event here will result in pushing the payload to GQL subscribers for `onEvent`.
     await this._pubsub.publish('event', {
-      onTokenEvent: {
+      onEvent: {
         blockHash,
-        token,
+        contract,
         event
       }
     });
   }
 
-  async isUniswapContract (address: String): Promise<boolean> {
+  async isUniswapContract (address: string): Promise<boolean> {
     // TODO: Return true for uniswap contracts of interest to the indexer (from config?).
     return address != null;
   }
 
-  async processEvent (blockHash: string, token: string, receipt: any, logIndex: number): Promise<void> {
+  async processEvent (blockHash: string, contract: string, receipt: any, logIndex: number): Promise<void> {
     // Trigger indexing of data based on the event.
-    await this.triggerIndexingOnEvent(blockHash, token, receipt, logIndex);
+    await this.triggerIndexingOnEvent(blockHash, contract, receipt, logIndex);
 
     // Also trigger downstream event watcher subscriptions.
-    await this.publishEventToSubscribers(blockHash, token, logIndex);
+    await this.publishEventToSubscribers(blockHash, contract, logIndex);
   }
 
-  // TODO: Move into base/class or framework package.
-  async _getStorageValue (blockHash: string, token: string, variable: string, ...mappingKeys: string[]): Promise<ValueResult> {
-    return {
-      value: '',
-      proof: {
-        data: ''
+  async _fetchAndSaveEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<void> {
+    const logs = await this._ethClient.getLogs({ blockHash, contract });
+
+    const dbEvents = logs.map((logObj: any) => {
+      const { topics, data, cid, ipldBlock } = logObj;
+
+      let eventName;
+      let eventProps = {};
+
+      // TODO: Get contract kind from contracts table.
+      if (contract === this._config.contracts.factory) {
+        const logDescription = this._factoryContract.parseLog({ data, topics });
+        const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
+
+        eventName = logDescription.name;
+        eventProps = { token0, token1, fee, tickSpacing, pool };
       }
-    };
 
-    // return getStorageValue(
-    //   this._storageLayout,
-    //   this._getStorageAt,
-    //   blockHash,
-    //   token,
-    //   variable,
-    //   ...mappingKeys
-    // );
-  }
-
-  async _fetchAndSaveEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<void> {
-    const logs = await this._ethClient.getLogs({ blockHash, contract: token });
-
-    const eventNameToTopic = {}; // getEventNameTopics(this._abi);
-    const logTopicToEventName = invert(eventNameToTopic);
-
-    const dbEvents = logs.map((log: any) => {
-      const { topics, data: value, cid, ipldBlock } = log;
-
-      const [topic0, topic1, topic2] = topics;
-
-      const eventName = logTopicToEventName[topic0];
-      const address1 = topictoAddress(topic1);
-      const address2 = topictoAddress(topic2);
-
-      const event: DeepPartial<Event> = {
-        blockHash,
-        token,
-        eventName,
-
-        proof: JSONbig.stringify({
-          data: JSONbig.stringify({
-            blockHash,
-            receipt: {
-              cid,
-              ipldBlock
-            }
+      let event: DeepPartial<Event> | undefined;
+      if (eventName) {
+        event = {
+          blockHash,
+          contract,
+          eventName,
+          eventData: JSONbig.stringify({ ...eventProps }),
+          proof: JSONbig.stringify({
+            data: JSONbig.stringify({
+              blockHash,
+              receipt: {
+                cid,
+                ipldBlock
+              }
+            })
           })
-        })
-      };
-
-      switch (eventName) {
-        // TODO: Handle event.
+        };
       }
 
       return event;
     });
 
-    await this._db.saveEvents({ blockHash, token, events: dbEvents });
+    const events: DeepPartial<Event>[] = _.compact(dbEvents);
+    await this._db.saveEvents({ blockHash, contract, events });
   }
 }

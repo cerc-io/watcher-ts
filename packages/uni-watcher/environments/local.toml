@@ -22,10 +22,13 @@
     subscribersDir = "src/subscriber"
 
 [upstream]
-  gqlEndpoint = "http://127.0.0.1:8083/graphql"
+  gqlEndpoint = "http://127.0.0.1:8082/graphql"
   gqlSubscriptionEndpoint = "http://127.0.0.1:5000/graphql"
 
   [upstream.cache]
     name = "requests"
     enabled = false
     deleteOnStart = false
+
+[contracts]
+  factory = "0xF3eeD405056b4BB1ce100761325f82F2b6Da2D82"

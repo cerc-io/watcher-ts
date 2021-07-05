@@ -2,7 +2,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
-import { Indexer, ValueResult } from './indexer';
+import { Indexer } from './indexer';
 
 const log = debug('vulcanize:resolver');
 
@@ -13,32 +13,34 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
     BigInt: new BigInt('bigInt'),
 
     ERC20Event: {
-      __resolveType() {
+      __resolveType () {
         return null;
       }
     },
 
     FactoryEvent: {
-      __resolveType() {
+      __resolveType () {
         return null;
       }
     },
 
     NonFungiblePositionManagerEvent: {
-      __resolveType() {
+      __resolveType () {
         return null;
       }
     },
 
     PoolEvent: {
-      __resolveType() {
+      __resolveType () {
         return null;
       }
     },
 
     Event: {
-      __resolveType() {
-        return null;
+      __resolveType: (obj: any) => {
+        assert(obj.__typename);
+
+        return obj.__typename;
       }
     },
 
@@ -50,9 +52,9 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
     Query: {
 
-      events: async (_: any, { blockHash, token, name }: { blockHash: string, token: string, name: string }) => {
-        log('events', blockHash, token, name || '');
-        return indexer.getEvents(blockHash, token, name);
+      events: async (_: any, { blockHash, contract, name }: { blockHash: string, contract: string, name: string }) => {
+        log('events', blockHash, contract, name || '');
+        return indexer.getEvents(blockHash, contract, name);
       }
     }
   };

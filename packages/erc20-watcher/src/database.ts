@@ -92,7 +92,7 @@ export class Database {
   async getEventsByName ({ blockHash, token, eventName }: { blockHash: string, token: string, eventName: string }): Promise<Event[] | undefined> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
-      .where('block_hash = :blockHash AND token = :token AND :eventName = :eventName', {
+      .where('block_hash = :blockHash AND token = :token AND event_name = :eventName', {
         blockHash,
         token,
         eventName

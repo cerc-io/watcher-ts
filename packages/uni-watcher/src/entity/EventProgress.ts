@@ -7,7 +7,7 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 // yet been synced from upstream.
 //
 @Entity()
-@Index(['blockHash', 'token'], { unique: true })
+@Index(['blockHash', 'contract'], { unique: true })
 export class EventSyncProgress {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -16,5 +16,5 @@ export class EventSyncProgress {
   blockHash!: string;
 
   @Column('varchar', { length: 42 })
-  token!: string;
+  contract!: string;
 }
