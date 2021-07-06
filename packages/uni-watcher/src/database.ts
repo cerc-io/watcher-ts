@@ -3,6 +3,7 @@ import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'ty
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { Event } from './entity/Event';
+import { Contract } from './entity/Contract';
 import { EventSyncProgress } from './entity/EventProgress';
 
 export class Database {
@@ -90,6 +91,29 @@ export class Database {
         // Update event sync progress.
         const progress = repo.create({ blockHash, contract });
         await repo.save(progress);
+      }
+    });
+  }
+
+  async getContract (address: string): Promise<Contract | undefined> {
+    return this._conn.getRepository(Contract)
+      .createQueryBuilder('contract')
+      .where('address = :address', { address })
+      .getOne();
+  }
+
+  async saveContract (address: string, kind: string, startingBlock: number): Promise<void> {
+    await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Contract);
+
+      const numRows = await repo
+        .createQueryBuilder()
+        .where('address = :address', { address })
+        .getCount();
+
+      if (numRows === 0) {
+        const entity = repo.create({ address, kind, startingBlock });
+        await repo.save(entity);
       }
     });
   }

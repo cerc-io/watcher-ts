@@ -29,6 +29,3 @@
     name = "requests"
     enabled = false
     deleteOnStart = false
-
-[contracts]
-  factory = "0xECfCae19742EE4644b209d75cF15ee6D02A726Ff"

@@ -11,16 +11,19 @@ import { GetStorageAt } from '@vulcanize/solidity-mapper';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
+import { Contract, KIND_FACTORY, KIND_POOL } from './entity/Contract';
 import { Config } from './config';
 
 import factoryABI from './artifacts/factory.json';
 
 const log = debug('vulcanize:indexer');
 
-type EventsResult = Array<{
+type EventResult = {
   event: any;
   proof: string;
-}>
+};
+
+type EventsResult = Array<EventResult>;
 
 export class Indexer {
   _config: Config;
@@ -51,10 +54,15 @@ export class Indexer {
   }
 
   async getEvents (blockHash: string, contract: string, name: string | null): Promise<EventsResult> {
+    const uniContract = await this.isUniswapContract(contract);
+    if (!uniContract) {
+      throw new Error('Not a uniswap contract');
+    }
+
     const didSyncEvents = await this._db.didSyncEvents({ blockHash, contract });
     if (!didSyncEvents) {
       // Fetch and save events first and make a note in the event sync progress table.
-      await this._fetchAndSaveEvents({ blockHash, contract });
+      await this._fetchAndSaveEvents({ blockHash, contract, uniContract });
       log('getEvents: db miss, fetching from upstream server');
     }
 
@@ -84,21 +92,16 @@ export class Indexer {
     return result;
   }
 
-  /* eslint-disable */
-  async triggerIndexingOnEvent (blockHash: string, contract: string, receipt: any, logIndex: number): Promise<void> {
-
+  async triggerIndexingOnEvent (blockNumber: number, event: EventResult): Promise<void> {
+    switch (event.event.__typename) {
+      case 'PoolCreatedEvent': {
+        const poolContract = ethers.utils.getAddress(event.event.pool);
+        await this._db.saveContract(poolContract, KIND_POOL, blockNumber);
+      }
+    }
   }
-  /* eslint-enable */
 
-  async publishEventToSubscribers (blockHash: string, blockNumber: number, contract: string, logIndex: number): Promise<void> {
-    // TODO: Optimize this fetching of events.
-    const events = await this.getEvents(blockHash, contract, null);
-
-    log(JSON.stringify(events, null, 2));
-    log(logIndex);
-
-    const event = events[logIndex];
-
+  async publishEventToSubscribers (blockHash: string, blockNumber: number, contract: string, event: EventResult): Promise<void> {
     log(`pushing event to GQL subscribers: ${event.event.__typename}`);
 
     // Publishing the event here will result in pushing the payload to GQL subscribers for `onEvent`.
@@ -112,20 +115,21 @@ export class Indexer {
     });
   }
 
-  async isUniswapContract (address: string): Promise<boolean> {
-    // TODO: Return true for uniswap contracts of interest to the indexer (from config?).
-    return address != null;
+  async isUniswapContract (address: string): Promise<Contract | undefined> {
+    return this._db.getContract(ethers.utils.getAddress(address));
   }
 
-  async processEvent (blockHash: string, blockNumber: number, contract: string, receipt: any, logIndex: number): Promise<void> {
+  async processEvent (blockHash: string, blockNumber: number, contract: Contract, receipt: any, event: EventResult): Promise<void> {
     // Trigger indexing of data based on the event.
-    await this.triggerIndexingOnEvent(blockHash, contract, receipt, logIndex);
+    await this.triggerIndexingOnEvent(blockNumber, event);
 
     // Also trigger downstream event watcher subscriptions.
-    await this.publishEventToSubscribers(blockHash, blockNumber, contract, logIndex);
+    await this.publishEventToSubscribers(blockHash, blockNumber, contract.address, event);
   }
 
-  async _fetchAndSaveEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<void> {
+  async _fetchAndSaveEvents ({ blockHash, contract, uniContract }: { blockHash: string, contract: string, uniContract: Contract }): Promise<void> {
+    assert(uniContract);
+
     const logs = await this._ethClient.getLogs({ blockHash, contract });
 
     const dbEvents = logs.map((logObj: any) => {
@@ -134,8 +138,7 @@ export class Indexer {
       let eventName;
       let eventProps = {};
 
-      // TODO: Get contract kind from contracts table.
-      if (contract === this._config.contracts.factory) {
+      if (uniContract.kind === KIND_FACTORY) {
         const logDescription = this._factoryContract.parseLog({ data, topics });
         const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
 

@@ -19,9 +19,6 @@ export interface Config {
     gqlSubscriptionEndpoint: string;
     cache: CacheConfig
   }
-  contracts: {
-    factory: string;
-  }
 }
 
 export const getConfig = async (configFile: string): Promise<Config> => {

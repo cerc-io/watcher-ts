@@ -35,15 +35,14 @@ export class EventWatcher {
       if (logContracts && logContracts.length) {
         for (let logIndex = 0; logIndex < logContracts.length; logIndex++) {
           const contractAddress = logContracts[logIndex];
-          const isWatchedContract = await this._indexer.isUniswapContract(contractAddress);
-          if (isWatchedContract) {
-            // TODO: Move processing to background task runner.
-
+          const uniContract = await this._indexer.isUniswapContract(contractAddress);
+          if (uniContract) {
             const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
-            await this._indexer.getEvents(blockHash, contractAddress, null);
+            const events = await this._indexer.getEvents(blockHash, contractAddress, null);
+            const event = events[logIndex];
 
             // Trigger other indexer methods based on event topic.
-            await this._indexer.processEvent(blockHash, blockNumber, contractAddress, receipt, logIndex);
+            await this._indexer.processEvent(blockHash, blockNumber, uniContract, receipt, event);
           }
         }
       }
