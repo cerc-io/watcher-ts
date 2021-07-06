@@ -15,6 +15,7 @@ import { Contract, KIND_FACTORY, KIND_POOL } from './entity/Contract';
 import { Config } from './config';
 
 import factoryABI from './artifacts/factory.json';
+import poolABI from './artifacts/pool.json';
 
 const log = debug('vulcanize:indexer');
 
@@ -33,6 +34,7 @@ export class Indexer {
   _getStorageAt: GetStorageAt
 
   _factoryContract: ethers.utils.Interface
+  _poolContract: ethers.utils.Interface
 
   constructor (config: Config, db: Database, ethClient: EthClient, pubsub: PubSub) {
     assert(config);
@@ -47,6 +49,7 @@ export class Indexer {
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
+    this._poolContract = new ethers.utils.Interface(poolABI);
   }
 
   getEventIterator (): AsyncIterator<any> {
@@ -138,12 +141,35 @@ export class Indexer {
       let eventName;
       let eventProps = {};
 
-      if (uniContract.kind === KIND_FACTORY) {
-        const logDescription = this._factoryContract.parseLog({ data, topics });
-        const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
+      switch (uniContract.kind) {
+        case KIND_FACTORY: {
+          const logDescription = this._factoryContract.parseLog({ data, topics });
+          switch (logDescription.name) {
+            case 'PoolCreated': {
+              eventName = logDescription.name;
+              const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
+              eventProps = { token0, token1, fee, tickSpacing, pool };
 
-        eventName = logDescription.name;
-        eventProps = { token0, token1, fee, tickSpacing, pool };
+              break;
+            }
+          }
+
+          break;
+        }
+        case KIND_POOL: {
+          const logDescription = this._poolContract.parseLog({ data, topics });
+          switch (logDescription.name) {
+            case 'Initialize': {
+              eventName = logDescription.name;
+              const { sqrtPriceX96, tick } = logDescription.args;
+              eventProps = { sqrtPriceX96: sqrtPriceX96.toString(), tick };
+
+              break;
+            }
+          }
+
+          break;
+        }
       }
 
       let event: DeepPartial<Event> | undefined;

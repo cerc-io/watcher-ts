@@ -8,7 +8,8 @@
     "lint:schema": "graphql-schema-linter",
     "deploy:factory": "hardhat deploy-factory",
     "deploy:token": "hardhat deploy-token",
-    "create:pool": "hardhat create-pool"
+    "create:pool": "hardhat create-pool",
+    "initialize:pool": "hardhat initialize-pool"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

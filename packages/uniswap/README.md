@@ -42,14 +42,16 @@ $ yarn deploy:token --network localhost --name Token0 --symbol TK0
 
 * **lint:schema**
 
-  Lint schema graphql files.
+  Lint schema graphql files:
+
   ```bash
   $ yarn lint:schema schema/frontend.graphql
   ```
 
 * **deploy:factory**
 
-  Deploy Factory contract.
+  Deploy Factory contract:
+
   ```bash
   $ yarn deploy:factory
 
@@ -59,17 +61,27 @@ $ yarn deploy:token --network localhost --name Token0 --symbol TK0
 
 * **deploy:token**
 
-  Deploy Token contract.
+  Deploy Token contract:
+
   ```bash
   $ yarn deploy:token --name TokenName --symbol TKS
   ```
 
 * **create:pool**
 
-  Create pool with factory contract and tokens.
+  Create pool with factory contract and tokens:
+
   ```bash
   $ yarn create:pool --factory 0xFactoryAddress --token0 0xToken0Address --token1 0xToken1Address --fee 500
   ```
+
+* **initialize:pool**
+
+  Initialize a pool with price:
+
+  ```bash
+  $ yarn initialize:pool --pool 0xPoolAddress --sqrt-price 4295128739
+    ```
 
 ## References
 

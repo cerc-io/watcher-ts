@@ -2,10 +2,11 @@ import 'dotenv/config';
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 
-import './tasks/accounts'
-import './tasks/deploy-factory'
-import './tasks/deploy-token'
-import './tasks/create-pool'
+import './tasks/accounts';
+import './tasks/deploy-factory';
+import './tasks/deploy-token';
+import './tasks/create-pool';
+import './tasks/initialize-pool';
 
 const config: HardhatUserConfig = {
   solidity: "0.8.0",
