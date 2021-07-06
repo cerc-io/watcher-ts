@@ -39,11 +39,11 @@ export class EventWatcher {
           if (isWatchedContract) {
             // TODO: Move processing to background task runner.
 
-            const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash } } } = receipt;
+            const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
             await this._indexer.getEvents(blockHash, contractAddress, null);
 
             // Trigger other indexer methods based on event topic.
-            await this._indexer.processEvent(blockHash, contractAddress, receipt, logIndex);
+            await this._indexer.processEvent(blockHash, blockNumber, contractAddress, receipt, logIndex);
           }
         }
       }

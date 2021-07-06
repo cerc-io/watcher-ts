@@ -173,6 +173,7 @@ type ResultEvent {
 # Watched event, include additional context over and above the event data.
 type WatchedEvent {
   blockHash: String!
+  blockNumber: Int!
   contract: String!
 
   event: ResultEvent!

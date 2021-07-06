@@ -90,7 +90,7 @@ export class Indexer {
   }
   /* eslint-enable */
 
-  async publishEventToSubscribers (blockHash: string, contract: string, logIndex: number): Promise<void> {
+  async publishEventToSubscribers (blockHash: string, blockNumber: number, contract: string, logIndex: number): Promise<void> {
     // TODO: Optimize this fetching of events.
     const events = await this.getEvents(blockHash, contract, null);
 
@@ -105,6 +105,7 @@ export class Indexer {
     await this._pubsub.publish('event', {
       onEvent: {
         blockHash,
+        blockNumber,
         contract,
         event
       }
@@ -116,12 +117,12 @@ export class Indexer {
     return address != null;
   }
 
-  async processEvent (blockHash: string, contract: string, receipt: any, logIndex: number): Promise<void> {
+  async processEvent (blockHash: string, blockNumber: number, contract: string, receipt: any, logIndex: number): Promise<void> {
     // Trigger indexing of data based on the event.
     await this.triggerIndexingOnEvent(blockHash, contract, receipt, logIndex);
 
     // Also trigger downstream event watcher subscriptions.
-    await this.publishEventToSubscribers(blockHash, contract, logIndex);
+    await this.publishEventToSubscribers(blockHash, blockNumber, contract, logIndex);
   }
 
   async _fetchAndSaveEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<void> {
