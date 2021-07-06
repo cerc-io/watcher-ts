@@ -1,18 +1,10 @@
 import assert from 'assert';
-import debug from 'debug';
-import fetch from 'cross-fetch';
-import { SubscriptionClient } from 'subscriptions-transport-ws';
-import ws from 'ws';
 
-import { ApolloClient, NormalizedCacheObject, split, HttpLink, InMemoryCache } from '@apollo/client/core';
-import { getMainDefinition } from '@apollo/client/utilities';
-import { WebSocketLink } from '@apollo/client/link/ws';
 import { Cache } from '@vulcanize/cache';
 
 import ethQueries from './eth-queries';
 import { padKey } from './utils';
-
-const log = debug('vulcanize:eth-client');
+import { GraphQLClient } from './graphql-client';
 
 interface Config {
   gqlEndpoint: string;
@@ -28,7 +20,7 @@ interface Vars {
 
 export class EthClient {
   _config: Config;
-  _client: ApolloClient<NormalizedCacheObject>;
+  _graphqlClient: GraphQLClient;
   _cache: Cache | undefined;
 
   constructor (config: Config) {
@@ -39,45 +31,7 @@ export class EthClient {
     assert(gqlEndpoint, 'Missing gql endpoint');
     assert(gqlSubscriptionEndpoint, 'Missing gql subscription endpoint');
 
-    // https://www.apollographql.com/docs/react/data/subscriptions/
-    const subscriptionClient = new SubscriptionClient(gqlSubscriptionEndpoint, {
-      reconnect: true,
-      connectionCallback: (error: Error[]) => {
-        if (error) {
-          log('Subscription client connection error', error[0].message);
-        } else {
-          log('Subscription client connected successfully');
-        }
-      }
-    }, ws);
-
-    subscriptionClient.onError(error => {
-      log('Subscription client error', error.message);
-    });
-
-    const httpLink = new HttpLink({
-      uri: gqlEndpoint,
-      fetch
-    });
-
-    const wsLink = new WebSocketLink(subscriptionClient);
-
-    const splitLink = split(
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === 'OperationDefinition' &&
-          definition.operation === 'subscription'
-        );
-      },
-      wsLink,
-      httpLink
-    );
-
-    this._client = new ApolloClient({
-      link: splitLink,
-      cache: new InMemoryCache()
-    });
+    this._graphqlClient = new GraphQLClient({ gqlEndpoint, gqlSubscriptionEndpoint });
 
     this._cache = cache;
   }
@@ -107,9 +61,7 @@ export class EthClient {
   }
 
   async getBlockWithTransactions (blockNumber: string): Promise<any> {
-    const { data: result } = await this._client.query({ query: ethQueries.getBlockWithTransactions, variables: { blockNumber } });
-
-    return result;
+    return this._graphqlClient.query(ethQueries.getBlockWithTransactions, { blockNumber });
   }
 
   async getLogs (vars: Vars): Promise<any> {
@@ -120,27 +72,11 @@ export class EthClient {
   }
 
   async watchLogs (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    const observable = await this._client.subscribe({
-      query: ethQueries.subscribeLogs
-    });
-
-    return observable.subscribe({
-      next (data) {
-        onNext(data);
-      }
-    });
+    return this._graphqlClient.subscribe(ethQueries.subscribeLogs, onNext);
   }
 
   async watchTransactions (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    const observable = await this._client.subscribe({
-      query: ethQueries.subscribeTransactions
-    });
-
-    return observable.subscribe({
-      next (data) {
-        onNext(data);
-      }
-    });
+    return this._graphqlClient.subscribe(ethQueries.subscribeTransactions, onNext);
   }
 
   async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {
@@ -158,7 +94,7 @@ export class EthClient {
     }
 
     // Result not cached or cache disabled, need to perform an upstream GQL query.
-    const { data: result } = await this._client.query({ query: ethQueries[queryName], variables: vars });
+    const result = await this._graphqlClient.query(ethQueries[queryName], vars);
 
     // Cache the result and return it, if cache is enabled.
     if (this._cache) {

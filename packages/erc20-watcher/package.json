@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "ERC20 Watcher",
   "private": true,
+  "main": "index.ts",
   "scripts": {
     "server": "DEBUG=vulcanize:* nodemon src/server.ts -f environments/local.toml",
     "server:mock": "MOCK=1 nodemon src/server.ts -f environments/local.toml",

@@ -1,8 +1,9 @@
-import { task, types } from "hardhat/config";
+import { task } from "hardhat/config";
 import {
   abi as FACTORY_ABI,
   bytecode as FACTORY_BYTECODE,
-} from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
+} from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json';
+import '@nomiclabs/hardhat-ethers';
 
 task("deploy-factory", "Deploys Factory contract")
   .setAction(async (_, hre) => {

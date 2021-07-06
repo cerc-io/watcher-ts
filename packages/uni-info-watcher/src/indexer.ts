@@ -23,6 +23,11 @@ export interface ValueResult {
   }
 }
 
+export interface BlockHeight {
+  number: number;
+  hash: string;
+}
+
 type EventsResult = Array<{
   event: {
     from?: string;

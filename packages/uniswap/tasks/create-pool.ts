@@ -3,6 +3,7 @@ import {
   abi as FACTORY_ABI,
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
 import { ContractTransaction } from "ethers";
+import '@nomiclabs/hardhat-ethers';
 
 task("create-pool", "Creates pool using Factory contract")
   .addParam('factory', 'Address of factory contract', undefined, types.string)

@@ -1,6 +1,6 @@
 [server]
   host = "127.0.0.1"
-  port = 3003
+  port = 3004
 
 [database]
   type = "postgres"
@@ -22,10 +22,18 @@
     subscribersDir = "src/subscriber"
 
 [upstream]
-  gqlEndpoint = "http://127.0.0.1:8083/graphql"
+  gqlEndpoint = "http://127.0.0.1:8082/graphql"
   gqlSubscriptionEndpoint = "http://127.0.0.1:5000/graphql"
 
   [upstream.cache]
     name = "requests"
     enabled = false
     deleteOnStart = false
+
+  [upstream.uniWatcher]
+    gqlEndpoint = "http://127.0.0.1:3003/graphql"
+    gqlSubscriptionEndpoint = "http://127.0.0.1:3003/graphql"
+
+  [upstream.tokenWatcher]
+    gqlEndpoint = "http://127.0.0.1:3001/graphql"
+    gqlSubscriptionEndpoint = "http://127.0.0.1:3001/graphql"

@@ -2,7 +2,10 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
+import { Factory } from './entity/Factory';
+import { Pool } from './entity/Pool';
 import { Event } from './entity/Event';
+import { Token } from './entity/Token';
 import { EventSyncProgress } from './entity/EventProgress';
 
 export class Database {
@@ -25,6 +28,67 @@ export class Database {
 
   async close (): Promise<void> {
     return this._conn.close();
+  }
+
+  async loadFactory ({ id, blockNumber }: DeepPartial<Factory>): Promise<Factory> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Factory);
+
+      let entity = await repo.createQueryBuilder('factory')
+        .where('id = :id AND block_number <= :blockNumber', {
+          id,
+          blockNumber
+        })
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
+  async loadPool ({ id, blockNumber }: DeepPartial<Pool>): Promise<Pool> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Pool);
+
+      let entity = await repo.createQueryBuilder('pool')
+        .where('id = :id AND block_number <= :blockNumber', {
+          id,
+          blockNumber
+        })
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
+  async loadToken ({ id, blockNumber }: DeepPartial<Token>, getValues: () => Promise<DeepPartial<Token>>): Promise<Token> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Token);
+
+      let entity = await repo.createQueryBuilder('token')
+        .where('id = :id AND block_number <= :blockNumber', {
+          id,
+          blockNumber
+        })
+        .getOne();
+
+      if (!entity) {
+        const tokenValues = await getValues();
+        entity = repo.create({ blockNumber, id, ...tokenValues });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
   }
 
   // Returns true if events have already been synced for the (block, token) combination.
