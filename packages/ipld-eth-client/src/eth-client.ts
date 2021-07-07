@@ -4,11 +4,9 @@ import { Cache } from '@vulcanize/cache';
 
 import ethQueries from './eth-queries';
 import { padKey } from './utils';
-import { GraphQLClient } from './graphql-client';
+import { GraphQLClient, GraphQLConfig } from './graphql-client';
 
-interface Config {
-  gqlEndpoint: string;
-  gqlSubscriptionEndpoint: string;
+interface Config extends GraphQLConfig {
   cache: Cache | undefined;
 }
 

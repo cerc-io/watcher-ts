@@ -10,16 +10,16 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 
 const log = debug('vulcanize:client');
 
-interface Config {
+export interface GraphQLConfig {
   gqlEndpoint: string;
   gqlSubscriptionEndpoint: string;
 }
 
 export class GraphQLClient {
-  _config: Config;
+  _config: GraphQLConfig;
   _client: ApolloClient<NormalizedCacheObject>;
 
-  constructor (config: Config) {
+  constructor (config: GraphQLConfig) {
     this._config = config;
 
     const { gqlEndpoint, gqlSubscriptionEndpoint } = config;

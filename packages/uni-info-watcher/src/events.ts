@@ -2,6 +2,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
+import { BigNumber } from 'ethers';
 
 import { Database } from './database';
 
@@ -58,6 +59,7 @@ export class EventWatcher {
 
     switch (eventType) {
       case 'PoolCreatedEvent':
+        log('PoolCreated event', contract);
         this._handlePoolCreated(blockHash, blockNumber, contract, eventValues as PoolCreatedEvent);
         break;
 
@@ -67,28 +69,62 @@ export class EventWatcher {
   }
 
   async _handlePoolCreated (blockHash: string, blockNumber: number, contractAddress: string, poolCreatedEvent: PoolCreatedEvent): Promise<void> {
-    const { token0: token0Address, token1: token1Address, fee, tickSpacing, pool: poolAddress } = poolCreatedEvent;
+    const { token0: token0Address, token1: token1Address, fee, pool: poolAddress } = poolCreatedEvent;
 
     // Load factory.
     const factory = await this._db.loadFactory({ blockNumber, id: contractAddress });
-    factory.poolCount = factory.poolCount + 1;
 
-    // Create new Pool entity.
-    const pool = this._db.loadPool({ blockNumber, id: poolAddress });
+    // Update Factory.
+    let factoryPoolCount = BigNumber.from(factory.poolCount);
+    factoryPoolCount = factoryPoolCount.add(1);
+    factory.poolCount = BigInt(factoryPoolCount.toHexString());
 
-    // TODO: Load Token entities.
-    const getTokenValues = async (tokenAddress: string) => {
+    // Get Tokens.
+    let [token0, token1] = await Promise.all([
+      this._db.getToken({ blockNumber, id: token0Address }),
+      this._db.getToken({ blockNumber, id: token1Address })
+    ]);
+
+    // Create Token.
+    const createToken = async (tokenAddress: string) => {
       const { value: symbol } = await this._erc20Client.getSymbol(blockHash, tokenAddress);
-      return { symbol };
+      const { value: name } = await this._erc20Client.getName(blockHash, tokenAddress);
+      const { value: totalSupply } = await this._erc20Client.getTotalSupply(blockHash, tokenAddress);
+
+      // TODO: decimals not implemented by erc20-watcher.
+      // const { value: decimals } = await this._erc20Client.getDecimals(blockHash, tokenAddress);
+
+      return this._db.loadToken({
+        blockNumber,
+        id: token1Address,
+        symbol,
+        name,
+        totalSupply
+      });
     };
 
-    const token0 = this._db.loadToken({ blockNumber, id: token0Address }, () => getTokenValues(token0Address));
-    const token1 = this._db.loadToken({ blockNumber, id: token1Address }, () => getTokenValues(token1Address));
+    // Create Tokens if not present.
+    if (!token0) {
+      token0 = await createToken(token0Address);
+    }
 
-    // TODO: Update Token entities.
+    if (!token1) {
+      token1 = await createToken(token1Address);
+    }
 
-    // TODO: Update Pool entity.
+    // Create new Pool entity.
+    // Skipping adding createdAtTimestamp field as it is not queried in frontend subgraph.
+    await this._db.loadPool({
+      blockNumber,
+      id: poolAddress,
+      token0: token0,
+      token1: token1,
+      feeTier: BigInt(fee)
+    });
 
-    // TODO: Save entities to DB.
+    // Skipping updating token whitelistPools field as it is not queried in frontend subgraph.
+
+    // Save entities to DB.
+    await this._db.saveFactory(factory, blockNumber);
   }
 }

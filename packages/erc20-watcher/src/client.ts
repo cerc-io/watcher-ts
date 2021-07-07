@@ -1,29 +1,51 @@
-import { gql } from 'apollo-server-express';
-import { GraphQLClient } from '@vulcanize/ipld-eth-client';
+import { gql } from '@apollo/client/core';
+import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
-import { querySymbol } from './queries';
-
-interface Config {
-  gqlEndpoint: string;
-  gqlSubscriptionEndpoint: string;
-}
+import { queryName, queryDecimals, queryTotalSupply, querySymbol } from './queries';
 
 export class Client {
-  _config: Config;
+  _config: GraphQLConfig;
   _client: GraphQLClient;
 
-  constructor (config: Config) {
+  constructor (config: GraphQLConfig) {
     this._config = config;
 
     this._client = new GraphQLClient(config);
   }
 
-  async getSymbol (blockHash: string | undefined, token: string): Promise<any> {
+  async getSymbol (blockHash: string, token: string): Promise<any> {
     const { symbol } = await this._client.query(
       gql(querySymbol),
       { blockHash, token }
     );
 
     return symbol;
+  }
+
+  async getName (blockHash: string, token: string): Promise<any> {
+    const { name } = await this._client.query(
+      gql(queryName),
+      { blockHash, token }
+    );
+
+    return name;
+  }
+
+  async getTotalSupply (blockHash: string, token: string): Promise<any> {
+    const { totalSupply } = await this._client.query(
+      gql(queryTotalSupply),
+      { blockHash, token }
+    );
+
+    return totalSupply;
+  }
+
+  async getDecimals (blockHash: string, token: string): Promise<any> {
+    const { decimals } = await this._client.query(
+      gql(queryDecimals),
+      { blockHash, token }
+    );
+
+    return decimals;
   }
 }

@@ -1,16 +1,11 @@
-import { gql } from 'apollo-server-express';
-import { GraphQLClient } from '@vulcanize/ipld-eth-client';
-
-interface Config {
-  gqlEndpoint: string;
-  gqlSubscriptionEndpoint: string;
-}
+import { gql } from '@apollo/client/core';
+import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
 export class Client {
-  _config: Config;
+  _config: GraphQLConfig;
   _client: GraphQLClient;
 
-  constructor (config: Config) {
+  constructor (config: GraphQLConfig) {
     this._config = config;
 
     this._client = new GraphQLClient(config);

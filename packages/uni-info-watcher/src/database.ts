@@ -30,7 +30,19 @@ export class Database {
     return this._conn.close();
   }
 
-  async loadFactory ({ id, blockNumber }: DeepPartial<Factory>): Promise<Factory> {
+  async getToken ({ id, blockNumber }: DeepPartial<Token>): Promise<Token | undefined> {
+    const repo = this._conn.getRepository(Token);
+
+    return repo.createQueryBuilder('token')
+      .where('id = :id AND block_number <= :blockNumber', {
+        id,
+        blockNumber
+      })
+      .orderBy('token.block_number', 'DESC')
+      .getOne();
+  }
+
+  async loadFactory ({ id, blockNumber, ...values }: DeepPartial<Factory>): Promise<Factory> {
     return this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Factory);
 
@@ -39,10 +51,11 @@ export class Database {
           id,
           blockNumber
         })
+        .orderBy('factory.block_number', 'DESC')
         .getOne();
 
       if (!entity) {
-        entity = repo.create({ blockNumber, id });
+        entity = repo.create({ blockNumber, id, ...values });
         entity = await repo.save(entity);
       }
 
@@ -50,7 +63,7 @@ export class Database {
     });
   }
 
-  async loadPool ({ id, blockNumber }: DeepPartial<Pool>): Promise<Pool> {
+  async loadPool ({ id, blockNumber, ...values }: DeepPartial<Pool>): Promise<Pool> {
     return this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Pool);
 
@@ -59,10 +72,11 @@ export class Database {
           id,
           blockNumber
         })
+        .orderBy('pool.block_number', 'DESC')
         .getOne();
 
       if (!entity) {
-        entity = repo.create({ blockNumber, id });
+        entity = repo.create({ blockNumber, id, ...values });
         entity = await repo.save(entity);
       }
 
@@ -70,7 +84,7 @@ export class Database {
     });
   }
 
-  async loadToken ({ id, blockNumber }: DeepPartial<Token>, getValues: () => Promise<DeepPartial<Token>>): Promise<Token> {
+  async loadToken ({ id, blockNumber, ...values }: DeepPartial<Token>): Promise<Token> {
     return this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Token);
 
@@ -79,15 +93,23 @@ export class Database {
           id,
           blockNumber
         })
+        .orderBy('token.block_number', 'DESC')
         .getOne();
 
       if (!entity) {
-        const tokenValues = await getValues();
-        entity = repo.create({ blockNumber, id, ...tokenValues });
+        entity = repo.create({ blockNumber, id, ...values });
         entity = await repo.save(entity);
       }
 
       return entity;
+    });
+  }
+
+  async saveFactory (factory: Factory, blockNumber: number): Promise<Factory> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Factory);
+      factory.blockNumber = blockNumber;
+      return repo.save(factory);
     });
   }
 
