@@ -9,7 +9,8 @@
     "deploy:factory": "hardhat deploy-factory",
     "deploy:token": "hardhat deploy-token",
     "create:pool": "hardhat create-pool",
-    "initialize:pool": "hardhat initialize-pool"
+    "initialize:pool": "hardhat initialize-pool",
+    "mint:pool": "hardhat mint-pool"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

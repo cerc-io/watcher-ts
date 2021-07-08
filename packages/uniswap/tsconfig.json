@@ -70,6 +70,6 @@
     "forceConsistentCasingInFileNames": true,       /* Disallow inconsistently-cased references to the same file. */
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tasks/*"],
   "exclude": ["src/**/*.test.ts"]
 }

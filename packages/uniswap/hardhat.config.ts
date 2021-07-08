@@ -7,6 +7,7 @@ import './tasks/deploy-factory';
 import './tasks/deploy-token';
 import './tasks/create-pool';
 import './tasks/initialize-pool';
+import './tasks/mint-pool';
 
 const config: HardhatUserConfig = {
   solidity: "0.8.0",

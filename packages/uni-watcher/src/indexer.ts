@@ -166,6 +166,21 @@ export class Indexer {
 
               break;
             }
+            case 'Mint': {
+              eventName = logDescription.name;
+              const { sender, owner, tickLower, tickUpper, amount, amount0, amount1 } = logDescription.args;
+              eventProps = {
+                sender,
+                owner,
+                tickLower,
+                tickUpper,
+                amount: amount.toString(),
+                amount0: amount0.toString(),
+                amount1: amount1.toString()
+              };
+
+              break;
+            }
           }
 
           break;
