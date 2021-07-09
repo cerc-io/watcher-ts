@@ -10,6 +10,7 @@ import { createServer } from 'http';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { getConfig } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -18,7 +19,6 @@ import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { EventWatcher } from './events';
-import { getConfig } from './config';
 
 const log = debug('vulcanize:server');
 

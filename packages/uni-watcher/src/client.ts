@@ -25,12 +25,18 @@ export class Client {
               }
               event {
                 __typename
+                
                 ... on PoolCreatedEvent {
                   token0
                   token1
                   fee
                   tickSpacing
                   pool
+                }
+
+                ... on InitializeEvent {
+                  sqrtPriceX96
+                  tick
                 }
               }
             }

@@ -12,6 +12,7 @@ import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
+import { getConfig } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -20,7 +21,6 @@ import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { EventWatcher } from './events';
-import { getConfig } from './config';
 
 const log = debug('vulcanize:server');
 

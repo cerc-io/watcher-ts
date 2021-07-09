@@ -8,11 +8,11 @@ import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { GetStorageAt } from '@vulcanize/solidity-mapper';
+import { Config } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
 import { Contract, KIND_FACTORY, KIND_POOL } from './entity/Contract';
-import { Config } from './config';
 
 import factoryABI from './artifacts/factory.json';
 import poolABI from './artifacts/pool.json';

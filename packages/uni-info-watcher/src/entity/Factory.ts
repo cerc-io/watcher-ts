@@ -1,12 +1,11 @@
-import { Entity, Column, Index, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
-@Index(['blockNumber', 'id'], { unique: true })
 export class Factory {
   @PrimaryColumn('varchar', { length: 42 })
   id!: string;
 
-  @PrimaryColumn('numeric')
+  @PrimaryColumn('integer')
   blockNumber!: number;
 
   @Column('numeric', { default: BigInt(0) })

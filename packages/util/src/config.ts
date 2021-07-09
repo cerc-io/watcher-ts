@@ -18,8 +18,16 @@ export interface Config {
     gqlEndpoint: string;
     gqlSubscriptionEndpoint: string;
     traceProviderEndpoint: string;
-    cache: CacheConfig
-  }
+    cache: CacheConfig,
+    uniWatcher: {
+      gqlEndpoint: string;
+      gqlSubscriptionEndpoint: string;
+    };
+    tokenWatcher: {
+      gqlEndpoint: string;
+      gqlSubscriptionEndpoint: string;
+    }
+  },
   jobQueue: {
     dbConnectionString: string;
     maxCompletionLag: number;
