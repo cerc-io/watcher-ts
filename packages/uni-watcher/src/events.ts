@@ -37,12 +37,12 @@ export class EventWatcher {
           const contractAddress = logContracts[logIndex];
           const uniContract = await this._indexer.isUniswapContract(contractAddress);
           if (uniContract) {
-            const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
+            const { ethTransactionCidByTxId: { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
             const events = await this._indexer.getEvents(blockHash, contractAddress, null);
             const event = events[logIndex];
 
             // Trigger other indexer methods based on event topic.
-            await this._indexer.processEvent(blockHash, blockNumber, uniContract, receipt, event);
+            await this._indexer.processEvent(blockHash, blockNumber, uniContract, txHash, receipt, event);
           }
         }
       }

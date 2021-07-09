@@ -55,6 +55,7 @@ subscription SubscriptionReceipt {
         topic3S
         contract
         ethTransactionCidByTxId {
+          txHash
           ethHeaderCidByHeaderId {
             blockHash
             blockNumber

@@ -104,7 +104,7 @@ export class Indexer {
     }
   }
 
-  async publishEventToSubscribers (blockHash: string, blockNumber: number, contract: string, event: EventResult): Promise<void> {
+  async publishEventToSubscribers (blockHash: string, blockNumber: number, contract: string, txHash: string, event: EventResult): Promise<void> {
     log(`pushing event to GQL subscribers: ${event.event.__typename}`);
 
     // Publishing the event here will result in pushing the payload to GQL subscribers for `onEvent`.
@@ -113,6 +113,7 @@ export class Indexer {
         blockHash,
         blockNumber,
         contract,
+        txHash,
         event
       }
     });
@@ -122,12 +123,12 @@ export class Indexer {
     return this._db.getContract(ethers.utils.getAddress(address));
   }
 
-  async processEvent (blockHash: string, blockNumber: number, contract: Contract, receipt: any, event: EventResult): Promise<void> {
+  async processEvent (blockHash: string, blockNumber: number, contract: Contract, txHash: string, receipt: any, event: EventResult): Promise<void> {
     // Trigger indexing of data based on the event.
     await this.triggerIndexingOnEvent(blockNumber, event);
 
     // Also trigger downstream event watcher subscriptions.
-    await this.publishEventToSubscribers(blockHash, blockNumber, contract.address, event);
+    await this.publishEventToSubscribers(blockHash, blockNumber, contract.address, txHash, event);
   }
 
   async _fetchAndSaveEvents ({ blockHash, contract, uniContract }: { blockHash: string, contract: string, uniContract: Contract }): Promise<void> {

@@ -113,7 +113,7 @@ type CollectEvent {
 }
 
 # All events emitted by the NonfungiblePositionManager contract.
-union NonFungiblePositionManagerEvent = IncreaseLiquidityEvent | DecreaseLiquidityEvent
+union NonFungiblePositionManagerEvent = IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent
 
 
 # Pool Events
@@ -160,7 +160,7 @@ union PoolEvent = InitializeEvent | MintEvent | BurnEvent | SwapEvent
 
 
 # All events emitted by the watcher.
-union Event = TransferEvent | PoolCreatedEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent
+union Event = TransferEvent | PoolCreatedEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent
 
 # Result type, with proof, for event return values.
 type ResultEvent {
@@ -175,6 +175,7 @@ type WatchedEvent {
   blockHash: String!
   blockNumber: Int!
   contract: String!
+  txHash: String!
 
   event: ResultEvent!
 }
