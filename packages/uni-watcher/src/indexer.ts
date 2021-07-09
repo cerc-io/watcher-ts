@@ -181,6 +181,35 @@ export class Indexer {
 
               break;
             }
+            case 'Burn': {
+              eventName = logDescription.name;
+              const { owner, tickLower, tickUpper, amount, amount0, amount1 } = logDescription.args;
+              eventProps = {
+                owner,
+                tickLower,
+                tickUpper,
+                amount: amount.toString(),
+                amount0: amount0.toString(),
+                amount1: amount1.toString()
+              };
+
+              break;
+            }
+            case 'Swap': {
+              eventName = logDescription.name;
+              const { sender, recipient, amount0, amount1, sqrtPriceX96, liquidity, tick } = logDescription.args;
+              eventProps = {
+                sender,
+                recipient,
+                amount0: amount0.toString(),
+                amount1: amount1.toString(),
+                sqrtPriceX96: sqrtPriceX96.toString(),
+                liquidity: liquidity.toString(),
+                tick
+              };
+
+              break;
+            }
           }
 
           break;

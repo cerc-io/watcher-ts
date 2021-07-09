@@ -17,7 +17,9 @@
     "server:mock": "MOCK=1 nodemon src/server.ts -f environments/local.toml",
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "lint": "eslint .",
-    "build": "tsc"
+    "build": "tsc",
+    "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > docs/analysis/schema/full-schema.graphql",
+    "lint:schema": "graphql-schema-linter"
   },
   "devDependencies": {
     "@types/chance": "^1.1.2",
@@ -33,6 +35,8 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
+    "get-graphql-schema": "^2.1.2",
+    "graphql-schema-linter": "^2.0.1",
     "mocha": "^8.4.0",
     "nodemon": "^2.0.7"
   }
