@@ -29,16 +29,21 @@ export class Database {
   }
 
   // Returns true if events have already been synced for the (block, token) combination.
-  async didSyncEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<boolean> {
+  async didSyncEvents ({ blockHash }: { blockHash: string }): Promise<boolean> {
     const numRows = await this._conn.getRepository(EventSyncProgress)
       .createQueryBuilder()
-      .where('block_hash = :blockHash AND contract = :contract', {
-        blockHash,
-        contract
-      })
+      .where('block_hash = :blockHash', { blockHash })
       .getCount();
 
     return numRows > 0;
+  }
+
+  async getBlockEvents ({ blockHash }: { blockHash: string }): Promise<Event[]> {
+    return this._conn.getRepository(Event)
+      .createQueryBuilder('event')
+      .where('block_hash = :blockHash', { blockHash })
+      .addOrderBy('id', 'ASC')
+      .getMany();
   }
 
   async getEvents ({ blockHash, contract }: { blockHash: string, contract: string }): Promise<Event[]> {
@@ -63,7 +68,7 @@ export class Database {
       .getMany();
   }
 
-  async saveEvents ({ blockHash, contract, events }: { blockHash: string, contract: string, events: DeepPartial<Event>[] }): Promise<void> {
+  async saveEvents ({ blockHash, events }: { blockHash: string, events: DeepPartial<Event>[] }): Promise<void> {
     // In a transaction:
     // (1) Save all the events in the database.
     // (2) Add an entry to the event progress table.
@@ -74,10 +79,7 @@ export class Database {
       // Check sync progress inside the transaction.
       const numRows = await repo
         .createQueryBuilder()
-        .where('block_hash = :blockHash AND contract = :contract', {
-          blockHash,
-          contract
-        })
+        .where('block_hash = :blockHash', { blockHash })
         .getCount();
 
       if (numRows === 0) {
@@ -89,7 +91,7 @@ export class Database {
           .execute();
 
         // Update event sync progress.
-        const progress = repo.create({ blockHash, contract });
+        const progress = repo.create({ blockHash });
         await repo.save(progress);
       }
     });

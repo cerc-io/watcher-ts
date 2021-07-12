@@ -30,21 +30,43 @@ export class EventWatcher {
       const receipt = _.get(value, 'data.listen.relatedNode');
       log('watchLogs', JSON.stringify(receipt, null, 2));
 
-      // Check if this log is for a contract we care about.
+      const blocks = [];
+
       const { logContracts } = receipt;
       if (logContracts && logContracts.length) {
         for (let logIndex = 0; logIndex < logContracts.length; logIndex++) {
-          const contractAddress = logContracts[logIndex];
-          const uniContract = await this._indexer.isUniswapContract(contractAddress);
-          if (uniContract) {
-            const { ethTransactionCidByTxId: { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
-            const events = await this._indexer.getEvents(blockHash, contractAddress, null);
-            const event = events[logIndex];
+          const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
+          await this._indexer.getBlockEvents(blockHash);
+          blocks.push({ blockHash, blockNumber });
+        }
+      }
 
+      const processedBlocks: any = {};
+      if (!blocks.length) {
+        return;
+      }
+
+      // Process events, if from known uniswap contracts.
+      for (let bi = 0; bi < blocks.length; bi++) {
+        const { blockHash, blockNumber } = blocks[bi];
+        if (processedBlocks[blockHash]) {
+          continue;
+        }
+
+        const events = await this._indexer.getBlockEvents(blockHash);
+        for (let ei = 0; ei < events.length; ei++) {
+          const eventObj = events[ei];
+          const uniContract = await this._indexer.isUniswapContract(eventObj.extra.contract);
+          if (uniContract) {
+            log('event', JSON.stringify(eventObj, null, 2));
+
+            // TODO: Move processing to background queue (need sequential processing of events).
             // Trigger other indexer methods based on event topic.
-            await this._indexer.processEvent(blockHash, blockNumber, uniContract, txHash, receipt, event);
+            await this._indexer.processEvent(blockHash, blockNumber, uniContract, eventObj.extra.txHash, eventObj);
           }
         }
+
+        processedBlocks[blockHash] = true;
       }
     });
   }

@@ -12,7 +12,7 @@ interface Config extends GraphQLConfig {
 
 interface Vars {
   blockHash: string;
-  contract: string;
+  contract?: string;
   slot?: string;
 }
 

@@ -11,10 +11,13 @@ query getStorageAt($blockHash: Bytes32!, $contract: Address!, $slot: Bytes32!) {
 `;
 
 export const getLogs = gql`
-query getLogs($blockHash: Bytes32!, $contract: Address!) {
+query getLogs($blockHash: Bytes32!, $contract: Address) {
   getLogs(blockHash: $blockHash, contract: $contract) {
     account {
       address
+    }
+    transaction {
+      hash
     }
     topics
     data

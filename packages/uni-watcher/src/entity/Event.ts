@@ -10,6 +10,9 @@ export class Event {
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
+  @Column('varchar', { length: 66 })
+  txHash!: string;
+
   @Column('varchar', { length: 42 })
   contract!: string;
 

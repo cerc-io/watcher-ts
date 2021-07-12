@@ -22,6 +22,7 @@ const log = debug('vulcanize:indexer');
 type EventResult = {
   event: any;
   proof: string;
+  extra: any;
 };
 
 type EventsResult = Array<EventResult>;
@@ -56,25 +57,62 @@ export class Indexer {
     return this._pubsub.asyncIterator(['event']);
   }
 
+  async getBlockEvents (blockHash: string): Promise<EventsResult> {
+    const didSyncEvents = await this._db.didSyncEvents({ blockHash });
+    if (!didSyncEvents) {
+      // Fetch and save events first and make a note in the event sync progress table.
+      await this._fetchAndSaveEvents({ blockHash });
+      log('getEvents: db miss, fetching from upstream server');
+    }
+
+    assert(await this._db.didSyncEvents({ blockHash }));
+
+    const events = await this._db.getBlockEvents({ blockHash });
+    log(`getEvents: db hit, num events: ${events.length}`);
+
+    const result = events
+      .map(e => {
+        const eventFields = JSON.parse(e.eventData);
+
+        return {
+          event: {
+            __typename: `${e.eventName}Event`,
+            ...eventFields
+          },
+          // TODO: Return proof only if requested.
+          proof: JSON.parse(e.proof),
+          extra: {
+            contract: e.contract,
+            txHash: e.txHash
+          }
+        };
+      });
+
+    // log(JSONbig.stringify(result, null, 2));
+
+    return result;
+  }
+
   async getEvents (blockHash: string, contract: string, name: string | null): Promise<EventsResult> {
     const uniContract = await this.isUniswapContract(contract);
     if (!uniContract) {
       throw new Error('Not a uniswap contract');
     }
 
-    const didSyncEvents = await this._db.didSyncEvents({ blockHash, contract });
+    const didSyncEvents = await this._db.didSyncEvents({ blockHash });
     if (!didSyncEvents) {
       // Fetch and save events first and make a note in the event sync progress table.
-      await this._fetchAndSaveEvents({ blockHash, contract, uniContract });
+      await this._fetchAndSaveEvents({ blockHash });
       log('getEvents: db miss, fetching from upstream server');
     }
 
-    assert(await this._db.didSyncEvents({ blockHash, contract }));
+    assert(await this._db.didSyncEvents({ blockHash }));
 
     const events = await this._db.getEvents({ blockHash, contract });
     log(`getEvents: db hit, num events: ${events.length}`);
 
     const result = events
+      .filter(event => contract === event.contract)
       // TODO: Filter using db WHERE condition when name is not empty.
       .filter(event => !name || name === event.eventName)
       .map(e => {
@@ -86,7 +124,11 @@ export class Indexer {
             ...eventFields
           },
           // TODO: Return proof only if requested.
-          proof: JSON.parse(e.proof)
+          proof: JSON.parse(e.proof),
+          extra: {
+            contract: e.contract,
+            txHash: e.txHash
+          }
         };
       });
 
@@ -123,7 +165,7 @@ export class Indexer {
     return this._db.getContract(ethers.utils.getAddress(address));
   }
 
-  async processEvent (blockHash: string, blockNumber: number, contract: Contract, txHash: string, receipt: any, event: EventResult): Promise<void> {
+  async processEvent (blockHash: string, blockNumber: number, contract: Contract, txHash: string, event: EventResult): Promise<void> {
     // Trigger indexing of data based on the event.
     await this.triggerIndexingOnEvent(blockNumber, event);
 
@@ -131,16 +173,23 @@ export class Indexer {
     await this.publishEventToSubscribers(blockHash, blockNumber, contract.address, txHash, event);
   }
 
-  async _fetchAndSaveEvents ({ blockHash, contract, uniContract }: { blockHash: string, contract: string, uniContract: Contract }): Promise<void> {
-    assert(uniContract);
+  async _fetchAndSaveEvents ({ blockHash }: { blockHash: string }): Promise<void> {
+    const logs = await this._ethClient.getLogs({ blockHash });
 
-    const logs = await this._ethClient.getLogs({ blockHash, contract });
+    const dbEvents: Array<DeepPartial<Event>> = [];
 
-    const dbEvents = logs.map((logObj: any) => {
-      const { topics, data, cid, ipldBlock } = logObj;
+    for (let logIndex = 0; logIndex < logs.length; logIndex++) {
+      const logObj = logs[logIndex];
+      const { topics, data, cid, ipldBlock, account: { address }, transaction: { hash: txHash } } = logObj;
 
       let eventName;
       let eventProps = {};
+
+      const contract = ethers.utils.getAddress(address);
+      const uniContract = await this.isUniswapContract(contract);
+      if (!uniContract) {
+        continue;
+      }
 
       switch (uniContract.kind) {
         case KIND_FACTORY: {
@@ -217,10 +266,10 @@ export class Indexer {
         }
       }
 
-      let event: DeepPartial<Event> | undefined;
       if (eventName) {
-        event = {
+        dbEvents.push({
           blockHash,
+          txHash,
           contract,
           eventName,
           eventData: JSONbig.stringify({ ...eventProps }),
@@ -233,13 +282,11 @@ export class Indexer {
               }
             })
           })
-        };
+        });
       }
-
-      return event;
-    });
+    }
 
     const events: DeepPartial<Event>[] = _.compact(dbEvents);
-    await this._db.saveEvents({ blockHash, contract, events });
+    await this._db.saveEvents({ blockHash, events });
   }
 }
