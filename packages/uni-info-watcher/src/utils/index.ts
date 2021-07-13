@@ -22,21 +22,17 @@ export const convertTokenToDecimal = (tokenAmount: bigint, exchangeDecimals: big
   return (new Decimal(tokenAmount.toString())).div(exponentToBigDecimal(exchangeDecimals));
 };
 
-export const loadTransaction = async (db: Database, event: { txHash: string, blockNumber: number }): Promise<Transaction> => {
-  const { txHash, blockNumber } = event;
-
-  // TODO: Get block timestamp from event.
-  // transaction.timestamp = event.block.timestamp
-  const timestamp = BigInt(Math.floor(Date.now() / 1000)); // Unix timestamp.
+export const loadTransaction = async (db: Database, event: { txHash: string, blockNumber: number, blockTimestamp: number }): Promise<Transaction> => {
+  const { txHash, blockNumber, blockTimestamp } = event;
 
   const transaction = await db.loadTransaction({
     id: txHash,
     blockNumber,
-    timestamp
+    timestamp: BigInt(blockTimestamp)
   });
 
   transaction.blockNumber = blockNumber;
-  transaction.timestamp = timestamp;
+  transaction.timestamp = BigInt(blockTimestamp);
 
   return db.saveTransaction(transaction, blockNumber);
 };

@@ -54,7 +54,9 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
       events: async (_: any, { blockHash, contract, name }: { blockHash: string, contract: string, name: string }) => {
         log('events', blockHash, contract, name || '');
-        return indexer.getEvents(blockHash, contract, name);
+        const events = await indexer.getEvents(blockHash, contract, name);
+
+        return events.map(event => indexer.getResultEvent(event));
       }
     }
   };

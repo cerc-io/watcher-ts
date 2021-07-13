@@ -13,17 +13,14 @@ import { UniswapDayData } from '../entity/UniswapDayData';
  * @param db
  * @param event
  */
-export const updateUniswapDayData = async (db: Database, event: { contractAddress: string, blockNumber: number }): Promise<UniswapDayData> => {
-  const { blockNumber } = event;
+export const updateUniswapDayData = async (db: Database, event: { contractAddress: string, blockNumber: number, blockTimestamp: number }): Promise<UniswapDayData> => {
+  const { blockNumber, blockTimestamp } = event;
+
   // TODO: In subgraph factory is fetched by hardcoded factory address.
   // Currently fetching first factory in database as only one exists.
   const [factory] = await db.getFactories({ blockNumber }, { limit: 1 });
 
-  // TODO: Get block timestamp from event.
-  // let timestamp = event.block.timestamp.toI32()
-  const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp.
-
-  const dayID = Math.floor(timestamp / 86400); // Rounded.
+  const dayID = Math.floor(blockTimestamp / 86400); // Rounded.
   const dayStartTimestamp = dayID * 86400;
 
   const uniswapDayData = await db.loadUniswapDayData({
@@ -39,14 +36,9 @@ export const updateUniswapDayData = async (db: Database, event: { contractAddres
   return db.saveUniswapDayData(uniswapDayData, blockNumber);
 };
 
-export const updatePoolDayData = async (db: Database, event: { contractAddress: string, blockNumber: number }): Promise<PoolDayData> => {
-  const { contractAddress, blockNumber } = event;
-
-  // TODO: Get block timestamp from event.
-  // let timestamp = event.block.timestamp.toI32()
-  const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp.
-
-  const dayID = Math.floor(timestamp / 86400);
+export const updatePoolDayData = async (db: Database, event: { contractAddress: string, blockNumber: number, blockTimestamp: number }): Promise<PoolDayData> => {
+  const { contractAddress, blockNumber, blockTimestamp } = event;
+  const dayID = Math.floor(blockTimestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
 
   const dayPoolID = contractAddress
@@ -88,14 +80,9 @@ export const updatePoolDayData = async (db: Database, event: { contractAddress: 
   return poolDayData;
 };
 
-export const updatePoolHourData = async (db: Database, event: { contractAddress: string, blockNumber: number }): Promise<PoolHourData> => {
-  const { contractAddress, blockNumber } = event;
-
-  // TODO: Get block timestamp from event.
-  // let timestamp = event.block.timestamp.toI32()
-  const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp.
-
-  const hourIndex = Math.floor(timestamp / 3600); // Get unique hour within unix history.
+export const updatePoolHourData = async (db: Database, event: { contractAddress: string, blockNumber: number, blockTimestamp: number }): Promise<PoolHourData> => {
+  const { contractAddress, blockNumber, blockTimestamp } = event;
+  const hourIndex = Math.floor(blockTimestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
 
   const hourPoolID = contractAddress
@@ -137,15 +124,10 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
   return poolHourData;
 };
 
-export const updateTokenDayData = async (db: Database, token: Token, event: { blockNumber: number }): Promise<TokenDayData> => {
-  const { blockNumber } = event;
+export const updateTokenDayData = async (db: Database, token: Token, event: { blockNumber: number, blockTimestamp: number }): Promise<TokenDayData> => {
+  const { blockNumber, blockTimestamp } = event;
   const bundle = await db.loadBundle({ id: '1', blockNumber });
-
-  // TODO: Get block timestamp from event.
-  // let timestamp = event.block.timestamp.toI32()
-  const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp.
-
-  const dayID = Math.floor(timestamp / 86400);
+  const dayID = Math.floor(blockTimestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
 
   const tokenDayID = token.id
@@ -183,15 +165,10 @@ export const updateTokenDayData = async (db: Database, token: Token, event: { bl
   return db.saveTokenDayData(tokenDayData, blockNumber);
 };
 
-export const updateTokenHourData = async (db: Database, token: Token, event: { blockNumber: number }): Promise<TokenHourData> => {
-  const { blockNumber } = event;
+export const updateTokenHourData = async (db: Database, token: Token, event: { blockNumber: number, blockTimestamp: number }): Promise<TokenHourData> => {
+  const { blockNumber, blockTimestamp } = event;
   const bundle = await db.loadBundle({ id: '1', blockNumber });
-
-  // TODO: Get block timestamp from event.
-  // let timestamp = event.block.timestamp.toI32()
-  const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp.
-
-  const hourIndex = Math.floor(timestamp / 3600); // Get unique hour within unix history.
+  const hourIndex = Math.floor(blockTimestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
 
   const tokenHourID = token.id

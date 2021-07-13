@@ -30,14 +30,14 @@ export class EventWatcher {
       const receipt = _.get(value, 'data.listen.relatedNode');
       log('watchLogs', JSON.stringify(receipt, null, 2));
 
-      const blocks = [];
+      const blocks: string[] = [];
 
       const { logContracts } = receipt;
       if (logContracts && logContracts.length) {
         for (let logIndex = 0; logIndex < logContracts.length; logIndex++) {
-          const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash, blockNumber } } } = receipt;
+          const { ethTransactionCidByTxId: { ethHeaderCidByHeaderId: { blockHash } } } = receipt;
           await this._indexer.getBlockEvents(blockHash);
-          blocks.push({ blockHash, blockNumber });
+          blocks.push(blockHash);
         }
       }
 
@@ -48,7 +48,7 @@ export class EventWatcher {
 
       // Process events, if from known uniswap contracts.
       for (let bi = 0; bi < blocks.length; bi++) {
-        const { blockHash, blockNumber } = blocks[bi];
+        const blockHash = blocks[bi];
         if (processedBlocks[blockHash]) {
           continue;
         }
@@ -56,13 +56,13 @@ export class EventWatcher {
         const events = await this._indexer.getBlockEvents(blockHash);
         for (let ei = 0; ei < events.length; ei++) {
           const eventObj = events[ei];
-          const uniContract = await this._indexer.isUniswapContract(eventObj.extra.contract);
+          const uniContract = await this._indexer.isUniswapContract(eventObj.contract);
           if (uniContract) {
             log('event', JSON.stringify(eventObj, null, 2));
 
             // TODO: Move processing to background queue (need sequential processing of events).
             // Trigger other indexer methods based on event topic.
-            await this._indexer.processEvent(blockHash, blockNumber, uniContract, eventObj.extra.txHash, eventObj);
+            await this._indexer.processEvent(eventObj);
           }
         }
 

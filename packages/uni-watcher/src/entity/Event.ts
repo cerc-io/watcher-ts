@@ -7,11 +7,22 @@ export class Event {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  // TODO: Denormalizing the block fields is simpler but perhaps not necessary.
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
+  @Column('integer')
+  blockNumber!: number;
+
+  @Column('integer')
+  blockTimestamp!: number;
+
   @Column('varchar', { length: 66 })
   txHash!: string;
+
+  // Index of the log in the block.
+  @Column('integer')
+  index!: number;
 
   @Column('varchar', { length: 42 })
   contract!: string;
@@ -19,9 +30,14 @@ export class Event {
   @Column('varchar', { length: 256 })
   eventName!: string;
 
-  // TODO: Polymorphic relationships?
   @Column('text')
-  eventData!: string;
+  eventInfo!: string;
+
+  @Column('text')
+  extraInfo!: string;
+
+  @Column('boolean', { default: false })
+  isProcessed!: boolean;
 
   @Column('text')
   proof!: string;

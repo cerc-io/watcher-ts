@@ -1,4 +1,5 @@
 import assert from 'assert';
+import _ from 'lodash';
 
 import { Cache } from '@vulcanize/cache';
 
@@ -64,9 +65,21 @@ export class EthClient {
 
   async getLogs (vars: Vars): Promise<any> {
     const result = await this._getCachedOrFetch('getLogs', vars);
-    const { getLogs: logs } = result;
+    const { getLogs: logs, block: { number: blockNumHex, timestamp: timestampHex } } = result;
+    const blockNumber = parseInt(blockNumHex, 16);
+    const timestamp = parseInt(timestampHex, 16);
 
-    return logs;
+    return logs.map((logEntry: any) => {
+      return _.merge({}, logEntry, {
+        transaction: {
+          block: {
+            hash: vars.blockHash,
+            number: blockNumber,
+            timestamp
+          }
+        }
+      });
+    });
   }
 
   async watchLogs (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {

@@ -21,8 +21,13 @@ query getLogs($blockHash: Bytes32!, $contract: Address) {
     }
     topics
     data
+    index
     cid
     ipldBlock
+  }
+  block(hash: $blockHash) {
+    number
+    timestamp
   }
 }
 `;

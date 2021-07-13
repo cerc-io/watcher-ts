@@ -16,48 +16,51 @@ export class Client {
       gql`
         subscription SubscriptionReceipt {
           onEvent {
-            blockHash
-            blockNumber
+            block {
+              number
+              hash
+              timestamp
+            }
             contract
-            txHash
+            tx {
+              hash
+            }
+            proof {
+              data
+            }
             event {
-              proof {
-                data
+              __typename
+              
+              ... on PoolCreatedEvent {
+                token0
+                token1
+                fee
+                tickSpacing
+                pool
               }
-              event {
-                __typename
-                
-                ... on PoolCreatedEvent {
-                  token0
-                  token1
-                  fee
-                  tickSpacing
-                  pool
-                }
 
-                ... on InitializeEvent {
-                  sqrtPriceX96
-                  tick
-                }
+              ... on InitializeEvent {
+                sqrtPriceX96
+                tick
+              }
 
-                ... on MintEvent {
-                  sender
-                  owner
-                  tickLower
-                  tickUpper
-                  amount
-                  amount0
-                  amount1
-                }
+              ... on MintEvent {
+                sender
+                owner
+                tickLower
+                tickUpper
+                amount
+                amount0
+                amount1
+              }
 
-                ... on BurnEvent {
-                  owner
-                  tickLower
-                  tickUpper
-                  amount
-                  amount0
-                  amount1
-                }
+              ... on BurnEvent {
+                owner
+                tickLower
+                tickUpper
+                amount
+                amount0
+                amount1
               }
             }
           }

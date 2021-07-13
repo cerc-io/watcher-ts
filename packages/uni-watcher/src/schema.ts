@@ -12,14 +12,6 @@ type Proof {
   data: String!
 }
 
-# Result type, with proof, for string method return values.
-type ResultString {
-  value: String
-
-  # Proof from state/storage trie.
-  proof: Proof
-}
-
 # Result type, with proof, for uint256 method return values.
 type ResultUInt256 {
   value: BigInt!
@@ -162,23 +154,39 @@ union PoolEvent = InitializeEvent | MintEvent | BurnEvent | SwapEvent
 # All events emitted by the watcher.
 union Event = TransferEvent | PoolCreatedEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent
 
-# Result type, with proof, for event return values.
+# Ethereum types
+
+type Block {
+  hash: String!
+  number: Int!
+  timestamp: Int!
+}
+
+type Transaction {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+# Result event, include additional context over and above the event data.
 type ResultEvent {
+  # Block and tx data for the event.
+  block: Block!
+  tx: Transaction!
+
+  # Contract that generated the event.
+  contract: String!
+
+  # Index of the event in the block.
+  eventIndex: Int!
+
   event: Event!
 
   # Proof from receipts trie.
   proof: Proof
 }
 
-# Watched event, include additional context over and above the event data.
-type WatchedEvent {
-  blockHash: String!
-  blockNumber: Int!
-  contract: String!
-  txHash: String!
-
-  event: ResultEvent!
-}
 
 #
 # Queries
@@ -224,6 +232,12 @@ type Query {
     contract: String!
     name: String
   ): [ResultEvent!]
+
+  # Get uniswap events in a given block range.
+  eventsInRange(
+    fromBlockNumber: Int!
+    toBlockNumber: Int!
+  ): [ResultEvent!]
 }
 
 #
@@ -232,6 +246,6 @@ type Query {
 type Subscription {
 
   # Watch for events (at head of chain).
-  onEvent: WatchedEvent!
+  onEvent: ResultEvent!
 }
 `;
