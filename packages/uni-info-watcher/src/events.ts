@@ -36,6 +36,15 @@ interface MintEvent {
   amount1: bigint;
 }
 
+interface BurnEvent {
+  owner: string;
+  tickLower: bigint;
+  tickUpper: bigint;
+  amount: bigint;
+  amount0: bigint;
+  amount1: bigint;
+}
+
 interface ResultEvent {
   proof: {
     data: string
@@ -91,6 +100,11 @@ export class EventWatcher {
       case 'MintEvent':
         log('Pool Mint event', contract);
         this._handleMint(blockHash, blockNumber, contract, txHash, eventValues as MintEvent);
+        break;
+
+      case 'BurnEvent':
+        log('Pool Burn event', contract);
+        this._handleBurn(blockHash, blockNumber, contract, txHash, eventValues as BurnEvent);
         break;
 
       default:
@@ -324,6 +338,130 @@ export class EventWatcher {
     await this._db.savePool(pool, blockNumber);
     await this._db.saveFactory(factory, blockNumber);
 
+    await Promise.all([
+      await this._db.saveTick(lowerTick, blockNumber),
+      await this._db.saveTick(upperTick, blockNumber)
+    ]);
+
     // Skipping update inner tick vars and tick day data as they are not queried.
+  }
+
+  async _handleBurn (blockHash: string, blockNumber: number, contractAddress: string, txHash: string, burnEvent: BurnEvent): Promise<void> {
+    const bundle = await this._db.loadBundle({ id: '1', blockNumber });
+    const poolAddress = contractAddress;
+    const pool = await this._db.loadPool({ id: poolAddress, blockNumber });
+
+    // TODO: In subgraph factory is fetched by hardcoded factory address.
+    // Currently fetching first factory in database as only one exists.
+    const [factory] = await this._db.getFactories({ blockNumber }, { limit: 1 });
+
+    const token0 = pool.token0;
+    const token1 = pool.token1;
+    const amount0 = convertTokenToDecimal(burnEvent.amount0, token0.decimals);
+    const amount1 = convertTokenToDecimal(burnEvent.amount1, token1.decimals);
+
+    const amountUSD = amount0
+      .times(token0.derivedETH.times(bundle.ethPriceUSD))
+      .plus(amount1.times(token1.derivedETH.times(bundle.ethPriceUSD)));
+
+    // Reset tvl aggregates until new amounts calculated.
+    factory.totalValueLockedETH = factory.totalValueLockedETH.minus(pool.totalValueLockedETH);
+
+    // Update globals.
+    factory.txCount = factory.txCount + BigInt(1);
+
+    // Update token0 data.
+    token0.txCount = token0.txCount + BigInt(1);
+    token0.totalValueLocked = token0.totalValueLocked.minus(amount0);
+    token0.totalValueLockedUSD = token0.totalValueLocked.times(token0.derivedETH.times(bundle.ethPriceUSD));
+
+    // Update token1 data.
+    token1.txCount = token1.txCount + BigInt(1);
+    token1.totalValueLocked = token1.totalValueLocked.minus(amount1);
+    token1.totalValueLockedUSD = token1.totalValueLocked.times(token1.derivedETH.times(bundle.ethPriceUSD));
+
+    // Pool data.
+    pool.txCount = pool.txCount + BigInt(1);
+
+    // Pools liquidity tracks the currently active liquidity given pools current tick.
+    // We only want to update it on burn if the position being burnt includes the current tick.
+    if (
+      pool.tick !== null &&
+      burnEvent.tickLower <= pool.tick &&
+      burnEvent.tickUpper > pool.tick
+    ) {
+      pool.liquidity = pool.liquidity - burnEvent.amount;
+    }
+
+    pool.totalValueLockedToken0 = pool.totalValueLockedToken0.minus(amount0);
+    pool.totalValueLockedToken1 = pool.totalValueLockedToken1.minus(amount1);
+
+    pool.totalValueLockedETH = pool.totalValueLockedToken0
+      .times(token0.derivedETH)
+      .plus(pool.totalValueLockedToken1.times(token1.derivedETH));
+
+    pool.totalValueLockedUSD = pool.totalValueLockedETH.times(bundle.ethPriceUSD);
+
+    // Reset aggregates with new amounts.
+    factory.totalValueLockedETH = factory.totalValueLockedETH.plus(pool.totalValueLockedETH);
+    factory.totalValueLockedUSD = factory.totalValueLockedETH.times(bundle.ethPriceUSD);
+
+    // Burn entity.
+    const transaction = await loadTransaction(this._db, { txHash, blockNumber });
+
+    await this._db.loadBurn({
+      id: transaction.id + '#' + pool.txCount.toString(),
+      blockNumber,
+      transaction,
+      timestamp: transaction.timestamp,
+      pool,
+      token0: pool.token0,
+      token1: pool.token1,
+      owner: burnEvent.owner,
+
+      // TODO: Assign origin with Transaction from address.
+      // origin: event.transaction.from
+
+      amount: burnEvent.amount,
+      amount0,
+      amount1,
+      amountUSD,
+      tickLower: burnEvent.tickLower,
+      tickUpper: burnEvent.tickUpper
+    });
+
+    // Tick entities.
+    const lowerTickId = poolAddress + '#' + (burnEvent.tickLower).toString();
+    const upperTickId = poolAddress + '#' + (burnEvent.tickUpper).toString();
+    const lowerTick = await this._db.loadTick({ id: lowerTickId, blockNumber });
+    const upperTick = await this._db.loadTick({ id: upperTickId, blockNumber });
+    const amount = burnEvent.amount;
+    lowerTick.liquidityGross = lowerTick.liquidityGross - amount;
+    lowerTick.liquidityNet = lowerTick.liquidityNet - amount;
+    upperTick.liquidityGross = upperTick.liquidityGross - amount;
+    upperTick.liquidityNet = upperTick.liquidityNet + amount;
+
+    await updateUniswapDayData(this._db, { blockNumber, contractAddress });
+    await updatePoolDayData(this._db, { blockNumber, contractAddress });
+    await updatePoolHourData(this._db, { blockNumber, contractAddress });
+    await updateTokenDayData(this._db, token0, { blockNumber });
+    await updateTokenDayData(this._db, token0, { blockNumber });
+    await updateTokenHourData(this._db, token0, { blockNumber });
+    await updateTokenHourData(this._db, token0, { blockNumber });
+
+    // Skipping update Tick fee and Tick day data as they are not queried.
+
+    await Promise.all([
+      await this._db.saveTick(lowerTick, blockNumber),
+      await this._db.saveTick(upperTick, blockNumber)
+    ]);
+
+    await Promise.all([
+      this._db.saveToken(token0, blockNumber),
+      this._db.saveToken(token1, blockNumber)
+    ]);
+
+    await this._db.savePool(pool, blockNumber);
+    await this._db.saveFactory(factory, blockNumber);
   }
 }

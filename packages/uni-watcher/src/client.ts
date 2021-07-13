@@ -49,6 +49,15 @@ export class Client {
                   amount0
                   amount1
                 }
+
+                ... on BurnEvent {
+                  owner
+                  tickLower
+                  tickUpper
+                  amount
+                  amount0
+                  amount1
+                }
               }
             }
           }

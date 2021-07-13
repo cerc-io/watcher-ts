@@ -16,6 +16,7 @@ import { UniswapDayData } from './entity/UniswapDayData';
 import { Tick } from './entity/Tick';
 import { TokenDayData } from './entity/TokenDayData';
 import { TokenHourData } from './entity/TokenHourData';
+import { Burn } from './entity/Burn';
 
 export class Database {
   _config: ConnectionOptions
@@ -298,6 +299,29 @@ export class Database {
     });
   }
 
+  async loadBurn ({ id, blockNumber, ...values }:DeepPartial<Burn>): Promise<Burn> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Burn);
+
+      let selectQueryBuilder = repo.createQueryBuilder('burn')
+        .where('id = :id', { id });
+
+      if (blockNumber) {
+        selectQueryBuilder = selectQueryBuilder.andWhere('block_number <= :blockNumber', { blockNumber });
+      }
+
+      let entity = await selectQueryBuilder.orderBy('block_number', 'DESC')
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id, ...values });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
   async loadTick ({ id, blockNumber, ...values }: DeepPartial<Tick>): Promise<Tick> {
     return this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Tick);
@@ -467,6 +491,14 @@ export class Database {
       const repo = tx.getRepository(TokenHourData);
       tokenHourData.blockNumber = blockNumber;
       return repo.save(tokenHourData);
+    });
+  }
+
+  async saveTick (tick: Tick, blockNumber: number): Promise<Tick> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Tick);
+      tick.blockNumber = blockNumber;
+      return repo.save(tick);
     });
   }
 
