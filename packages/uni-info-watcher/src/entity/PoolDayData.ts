@@ -1,4 +1,7 @@
+import Decimal from 'decimal.js';
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
+import { decimalTransformer } from '@vulcanize/util';
+
 import { Pool } from './Pool';
 
 @Entity()
@@ -15,23 +18,23 @@ export class PoolDayData {
   @ManyToOne(() => Pool)
   pool!: Pool;
 
-  @Column('numeric')
-  high!: number;
+  @Column('numeric', { transformer: decimalTransformer })
+  high!: Decimal;
 
-  @Column('numeric')
-  low!: number;
+  @Column('numeric', { transformer: decimalTransformer })
+  low!: Decimal;
 
-  @Column('numeric')
-  open!: number;
+  @Column('numeric', { transformer: decimalTransformer })
+  open!: Decimal;
 
-  @Column('numeric')
-  close!: number;
+  @Column('numeric', { transformer: decimalTransformer })
+  close!: Decimal;
 
   @Column('numeric', { default: BigInt(0) })
   sqrtPrice!: bigint
 
-  @Column('numeric', { default: BigInt(0) })
-  tick!: bigint
+  @Column('bigint', { nullable: true })
+  tick!: bigint | null
 
   @Column('numeric', { default: BigInt(0) })
   liquidity!: bigint
@@ -42,14 +45,14 @@ export class PoolDayData {
   @Column('numeric', { default: BigInt(0) })
   feeGrowthGlobal1X128!: bigint
 
-  @Column('numeric', { default: 0 })
-  token0Price!: number
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  token0Price!: Decimal
 
-  @Column('numeric', { default: 0 })
-  token1Price!: number
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  token1Price!: Decimal
 
-  @Column('numeric', { default: 0 })
-  tvlUSD!: number
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  tvlUSD!: Decimal
 
   @Column('numeric', { default: BigInt(0) })
   txCount!: bigint

@@ -3,13 +3,22 @@ import Decimal from 'decimal.js';
 import { decimalTransformer } from '@vulcanize/util';
 
 @Entity()
-export class Bundle {
-  @PrimaryColumn('varchar', { length: 1 })
+export class UniswapDayData {
+  @PrimaryColumn('varchar')
   id!: string;
 
   @PrimaryColumn('integer')
   blockNumber!: number;
 
+  @Column('integer')
+  date!: number
+
+  @Column('numeric', { transformer: decimalTransformer })
+  tvlUSD!: Decimal
+
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  ethPriceUSD!: Decimal
+  volumeUSD!: Decimal
+
+  @Column('bigint')
+  txCount!: bigint;
 }

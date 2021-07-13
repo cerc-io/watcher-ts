@@ -19,6 +19,7 @@ export class Client {
             blockHash
             blockNumber
             contract
+            txHash
             event {
               proof {
                 data
@@ -37,6 +38,16 @@ export class Client {
                 ... on InitializeEvent {
                   sqrtPriceX96
                   tick
+                }
+
+                ... on MintEvent {
+                  sender
+                  owner
+                  tickLower
+                  tickUpper
+                  amount
+                  amount0
+                  amount1
                 }
               }
             }

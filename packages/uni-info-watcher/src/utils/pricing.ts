@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
 
 import { Database } from '../database';
@@ -34,16 +35,16 @@ export const WHITELIST_TOKENS: string[] = [
   '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9' // AAVE
 ];
 
-const MINIMUM_ETH_LOCKED = 52;
+const MINIMUM_ETH_LOCKED = new Decimal(52);
 
-export const getEthPriceInUSD = async (db: Database): Promise<number> => {
+export const getEthPriceInUSD = async (db: Database): Promise<Decimal> => {
   // Fetch eth prices for each stablecoin.
   const usdcPool = await db.getPool({ id: USDC_WETH_03_POOL }); // DAI is token0.
 
   if (usdcPool) {
     return usdcPool.token0Price;
   } else {
-    return 0;
+    return new Decimal(0);
   }
 };
 
@@ -51,16 +52,16 @@ export const getEthPriceInUSD = async (db: Database): Promise<number> => {
  * Search through graph to find derived Eth per token.
  * @todo update to be derived ETH (add stablecoin estimates)
  **/
-export const findEthPerToken = async (token: Token): Promise<number> => {
+export const findEthPerToken = async (token: Token): Promise<Decimal> => {
   if (token.id === WETH_ADDRESS) {
-    return 1;
+    return new Decimal(1);
   }
 
   const whiteList = token.whitelistPools;
   // For now just take USD from pool with greatest TVL.
   // Need to update this to actually detect best rate based on liquidity distribution.
-  let largestLiquidityETH = 0;
-  let priceSoFar = 0;
+  let largestLiquidityETH = new Decimal(0);
+  let priceSoFar = new Decimal(0);
 
   for (let i = 0; i < whiteList.length; ++i) {
     const pool = whiteList[i];
@@ -70,23 +71,23 @@ export const findEthPerToken = async (token: Token): Promise<number> => {
         // Whitelist token is token1.
         const token1 = pool.token1;
         // Get the derived ETH in pool.
-        const ethLocked = Number(pool.totalValueLockedToken1) * Number(token1.derivedETH);
+        const ethLocked = pool.totalValueLockedToken1.times(token1.derivedETH);
 
-        if (ethLocked > largestLiquidityETH && ethLocked > MINIMUM_ETH_LOCKED) {
+        if (ethLocked.gt(largestLiquidityETH) && ethLocked.gt(MINIMUM_ETH_LOCKED)) {
           largestLiquidityETH = ethLocked;
           // token1 per our token * Eth per token1
-          priceSoFar = Number(pool.token1Price) * Number(token1.derivedETH);
+          priceSoFar = pool.token1Price.times(token1.derivedETH);
         }
       }
       if (pool.token1.id === token.id) {
         const token0 = pool.token0;
         // Get the derived ETH in pool.
-        const ethLocked = Number(pool.totalValueLockedToken0) * Number(token0.derivedETH);
+        const ethLocked = pool.totalValueLockedToken0.times(token0.derivedETH);
 
-        if (ethLocked > largestLiquidityETH && ethLocked > MINIMUM_ETH_LOCKED) {
+        if (ethLocked.gt(largestLiquidityETH) && ethLocked.gt(MINIMUM_ETH_LOCKED)) {
           largestLiquidityETH = ethLocked;
           // token0 per our token * ETH per token0
-          priceSoFar = Number(pool.token0Price) * Number(token0.derivedETH);
+          priceSoFar = pool.token0Price.times(token0.derivedETH);
         }
       }
     }
