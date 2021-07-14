@@ -6,10 +6,9 @@ import debug from 'debug';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { getConfig, JobQueue } from '@vulcanize/util';
 
 import { Database } from './database';
-import { getConfig } from './config';
-import { JobQueue } from './job-queue';
 import { QUEUE_TX_TRACING } from './tx-watcher';
 
 const log = debug('vulcanize:server');

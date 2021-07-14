@@ -10,7 +10,7 @@ import { createServer } from 'http';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig } from '@vulcanize/util';
+import { getConfig, JobQueue } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -38,7 +38,7 @@ export const main = async (): Promise<any> => {
 
   const { host, port } = config.server;
 
-  const { upstream, database: dbConfig } = config;
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
   assert(dbConfig, 'Missing database config');
 
@@ -57,12 +57,20 @@ export const main = async (): Promise<any> => {
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(config, db, ethClient, pubsub);
+  const indexer = new Indexer(config, db, ethClient);
 
-  const eventWatcher = new EventWatcher(ethClient, indexer);
+  assert(jobQueueConfig, 'Missing job queue config');
+
+  const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
+  assert(dbConnectionString, 'Missing job queue db connection string');
+
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
+  await jobQueue.start();
+
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
   await eventWatcher.start();
 
-  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer);
+  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
 
   const app: Application = express();
   const server = new ApolloServer({

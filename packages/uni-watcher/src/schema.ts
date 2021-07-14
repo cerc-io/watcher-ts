@@ -187,6 +187,13 @@ type ResultEvent {
   proof: Proof
 }
 
+type BlockProgressEvent {
+  blockNumber: Int!
+  blockHash: String!
+  numEvents: Int!
+  numProcessedEvents: Int!
+  isComplete: Boolean!
+}
 
 #
 # Queries
@@ -245,7 +252,10 @@ type Query {
 #
 type Subscription {
 
-  # Watch for events (at head of chain).
+  # Watch for Wniswap events (at head of chain).
   onEvent: ResultEvent!
+
+  # Watch for block progress events from filler process.
+  onBlockProgressEvent: BlockProgressEvent!
 }
 `;

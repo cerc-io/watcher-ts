@@ -29,3 +29,7 @@
     name = "requests"
     enabled = false
     deleteOnStart = false
+
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/uni-watcher-job-queue"
+  maxCompletionLag = 300

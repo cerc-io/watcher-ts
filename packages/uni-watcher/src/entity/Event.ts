@@ -1,5 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
+export const UNKNOWN_EVENT_NAME = '__unknown__';
+
 @Entity()
 // Index to query all events for a contract efficiently.
 @Index(['blockHash', 'contract'])
@@ -35,9 +37,6 @@ export class Event {
 
   @Column('text')
   extraInfo!: string;
-
-  @Column('boolean', { default: false })
-  isProcessed!: boolean;
 
   @Column('text')
   proof!: string;

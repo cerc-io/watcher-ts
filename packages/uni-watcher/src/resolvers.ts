@@ -3,12 +3,11 @@ import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
 import { Indexer } from './indexer';
+import { EventWatcher } from './events';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexer: Indexer): Promise<any> => {
-  assert(indexer);
-
+export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
   return {
     BigInt: new BigInt('bigInt'),
 
@@ -46,7 +45,11 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
     Subscription: {
       onEvent: {
-        subscribe: () => indexer.getEventIterator()
+        subscribe: () => eventWatcher.getEventIterator()
+      },
+
+      onBlockProgressEvent: {
+        subscribe: () => eventWatcher.getBlockProgressEventIterator()
       }
     },
 
@@ -54,8 +57,14 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
       events: async (_: any, { blockHash, contract, name }: { blockHash: string, contract: string, name: string }) => {
         log('events', blockHash, contract, name || '');
-        const events = await indexer.getEvents(blockHash, contract, name);
 
+        const blockProgress = await indexer.getBlockProgress(blockHash);
+        if (!blockProgress || !blockProgress.isComplete) {
+          // TODO: Trigger indexing for the block.
+          throw new Error('Not available');
+        }
+
+        const events = await indexer.getEventsByFilter(blockHash, contract, name);
         return events.map(event => indexer.getResultEvent(event));
       }
     }

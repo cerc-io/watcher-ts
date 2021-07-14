@@ -4,9 +4,9 @@ import _ from 'lodash';
 import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { JobQueue } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
-import { JobQueue } from './job-queue';
 import { BlockProgress } from './entity/BlockProgress';
 
 const log = debug('vulcanize:tx-watcher');

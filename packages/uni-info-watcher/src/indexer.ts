@@ -193,7 +193,7 @@ export class Indexer {
   }
 
   async _fetchAndSaveEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<void> {
-    const logs = await this._ethClient.getLogs({ blockHash, contract: token });
+    const { logs } = await this._ethClient.getLogs({ blockHash, contract: token });
 
     const eventNameToTopic = {}; // getEventNameTopics(this._abi);
     const logTopicToEventName = invert(eventNameToTopic);
