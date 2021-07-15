@@ -37,6 +37,18 @@ export class Token {
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   totalValueLockedUSD!: Decimal;
 
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volume!: Decimal;
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volumeUSD!: Decimal;
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  untrackedVolumeUSD!: Decimal;
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  feesUSD!: Decimal;
+
   @ManyToMany(() => Pool)
   @JoinTable()
   whitelistPools!: Pool[];

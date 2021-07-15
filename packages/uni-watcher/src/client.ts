@@ -62,6 +62,16 @@ export class Client {
                 amount0
                 amount1
               }
+
+              ... on SwapEvent {
+                sender
+                recipient
+                amount0
+                amount1
+                sqrtPriceX96
+                liquidity
+                tick
+              }
             }
           }
         }

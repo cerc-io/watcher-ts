@@ -22,5 +22,20 @@ export class Factory {
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   totalValueLockedUSD!: Decimal;
 
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  totalVolumeUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  totalVolumeETH!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  totalFeesUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  totalFeesETH!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  untrackedVolumeUSD!: Decimal
+
   // TODO: Add remaining fields when they are used.
 }

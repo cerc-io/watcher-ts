@@ -57,5 +57,17 @@ export class PoolHourData {
   @Column('numeric', { default: BigInt(0) })
   txCount!: bigint
 
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volumeToken0!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volumeToken1!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volumeUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  feesUSD!: Decimal
+
   // TODO: Add remaining fields when they are used.
 }

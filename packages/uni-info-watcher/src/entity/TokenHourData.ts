@@ -38,4 +38,16 @@ export class TokenHourData {
 
   @Column('numeric', { transformer: decimalTransformer })
   totalValueLockedUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volumeUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  volume!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  untrackedVolumeUSD!: Decimal
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  feesUSD!: Decimal
 }

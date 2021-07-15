@@ -21,4 +21,10 @@ export class UniswapDayData {
 
   @Column('bigint')
   txCount!: bigint;
+
+  @Column('numeric', { transformer: decimalTransformer, default: 0 })
+  volumeETH!: Decimal
+
+  @Column('numeric', { transformer: decimalTransformer, default: 0 })
+  feesUSD!: Decimal
 }

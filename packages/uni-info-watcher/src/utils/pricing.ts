@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
 
+import { exponentToBigDecimal, safeDiv } from '.';
 import { Database } from '../database';
 import { Token } from '../entity/Token';
 
@@ -36,6 +37,21 @@ export const WHITELIST_TOKENS: string[] = [
 ];
 
 const MINIMUM_ETH_LOCKED = new Decimal(52);
+const Q192 = 2 ** 192;
+
+export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, token1: Token): Decimal[] => {
+  const num = new Decimal((sqrtPriceX96 * sqrtPriceX96).toString());
+  const denom = new Decimal(Q192.toString());
+
+  const price1 = num
+    .div(denom)
+    .times(exponentToBigDecimal(token0.decimals))
+    .div(exponentToBigDecimal(token1.decimals));
+
+  const price0 = safeDiv(new Decimal('1'), price1);
+
+  return [price0, price1];
+};
 
 export const getEthPriceInUSD = async (db: Database): Promise<Decimal> => {
   // Fetch eth prices for each stablecoin.
@@ -94,4 +110,40 @@ export const findEthPerToken = async (token: Token): Promise<Decimal> => {
   }
 
   return priceSoFar; // If nothing was found return 0.
+};
+
+/**
+ * Accepts tokens and amounts, return tracked amount based on token whitelist.
+ * If one token on whitelist, return amount in that token converted to USD * 2.
+ * If both are, return sum of two amounts.
+ * If neither is, return 0.
+ */
+export const getTrackedAmountUSD = async (
+  db: Database,
+  tokenAmount0: Decimal,
+  token0: Token,
+  tokenAmount1: Decimal,
+  token1: Token
+): Promise<Decimal> => {
+  const bundle = await db.loadBundle({ id: '1' });
+  const price0USD = token0.derivedETH.times(bundle.ethPriceUSD);
+  const price1USD = token1.derivedETH.times(bundle.ethPriceUSD);
+
+  // Both are whitelist tokens, return sum of both amounts.
+  if (WHITELIST_TOKENS.includes(token0.id) && WHITELIST_TOKENS.includes(token1.id)) {
+    return tokenAmount0.times(price0USD).plus(tokenAmount1.times(price1USD));
+  }
+
+  // Take double value of the whitelisted token amount.
+  if (WHITELIST_TOKENS.includes(token0.id) && !WHITELIST_TOKENS.includes(token1.id)) {
+    return tokenAmount0.times(price0USD).times(new Decimal('2'));
+  }
+
+  // Take double value of the whitelisted token amount.
+  if (!WHITELIST_TOKENS.includes(token0.id) && WHITELIST_TOKENS.includes(token1.id)) {
+    return tokenAmount1.times(price1USD).times(new Decimal('2'));
+  }
+
+  // Neither token is on white list, tracked amount is 0.
+  return new Decimal(0);
 };

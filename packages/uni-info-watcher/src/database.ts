@@ -17,6 +17,7 @@ import { Tick } from './entity/Tick';
 import { TokenDayData } from './entity/TokenDayData';
 import { TokenHourData } from './entity/TokenHourData';
 import { Burn } from './entity/Burn';
+import { Swap } from './entity/Swap';
 
 export class Database {
   _config: ConnectionOptions
@@ -304,6 +305,29 @@ export class Database {
       const repo = tx.getRepository(Burn);
 
       let selectQueryBuilder = repo.createQueryBuilder('burn')
+        .where('id = :id', { id });
+
+      if (blockNumber) {
+        selectQueryBuilder = selectQueryBuilder.andWhere('block_number <= :blockNumber', { blockNumber });
+      }
+
+      let entity = await selectQueryBuilder.orderBy('block_number', 'DESC')
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id, ...values });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
+  async loadSwap ({ id, blockNumber, ...values }:DeepPartial<Swap>): Promise<Swap> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Swap);
+
+      let selectQueryBuilder = repo.createQueryBuilder('swap')
         .where('id = :id', { id });
 
       if (blockNumber) {
