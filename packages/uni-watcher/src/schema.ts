@@ -20,17 +20,6 @@ type ResultUInt256 {
   proof: Proof
 }
 
-# ERC20 Events
-
-# event Transfer(address indexed from, address indexed to, uint256 value);
-type TransferEvent {
-  from: String!
-  to: String!
-  value: BigInt!
-}
-
-union ERC20Event = TransferEvent
-
 # Factory Types
 
 type ResultGetPool {
@@ -104,8 +93,16 @@ type CollectEvent {
   amount1: BigInt!
 }
 
+# ERC721 Event
+# event Transfer(address indexed from, address indexed to, uint256 tokenId);
+type TransferEvent {
+  from: String!
+  to: String!
+  tokenId: BigInt!
+}
+
 # All events emitted by the NonfungiblePositionManager contract.
-union NonFungiblePositionManagerEvent = IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent
+union NonFungiblePositionManagerEvent = IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent | TransferEvent
 
 
 # Pool Events

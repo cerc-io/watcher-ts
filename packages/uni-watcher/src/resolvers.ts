@@ -11,12 +11,6 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
   return {
     BigInt: new BigInt('bigInt'),
 
-    ERC20Event: {
-      __resolveType () {
-        return null;
-      }
-    },
-
     FactoryEvent: {
       __resolveType () {
         return null;

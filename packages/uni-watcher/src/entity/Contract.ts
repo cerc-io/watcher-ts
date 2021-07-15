@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 export const KIND_FACTORY = 'factory';
 export const KIND_POOL = 'pool';
+export const KIND_NFPM = 'nfpm';
 
 @Entity()
 @Index(['address'], { unique: true })

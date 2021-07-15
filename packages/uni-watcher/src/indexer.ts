@@ -10,10 +10,11 @@ import { Config } from '@vulcanize/util';
 import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { BlockProgress } from './entity/BlockProgress';
-import { Contract, KIND_FACTORY, KIND_POOL } from './entity/Contract';
+import { Contract, KIND_FACTORY, KIND_POOL, KIND_NFPM } from './entity/Contract';
 
 import factoryABI from './artifacts/factory.json';
 import poolABI from './artifacts/pool.json';
+import nfpmABI from './artifacts/NonfungiblePositionManager.json';
 
 // TODO: Move to config.
 const MAX_EVENTS_BLOCK_RANGE = 1000;
@@ -40,6 +41,7 @@ export class Indexer {
 
   _factoryContract: ethers.utils.Interface
   _poolContract: ethers.utils.Interface
+  _nfpmContract: ethers.utils.Interface
 
   constructor (config: Config, db: Database, ethClient: EthClient) {
     this._config = config;
@@ -49,6 +51,7 @@ export class Indexer {
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
+    this._nfpmContract = new ethers.utils.Interface(nfpmABI);
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -206,6 +209,64 @@ export class Indexer {
               sqrtPriceX96: sqrtPriceX96.toString(),
               liquidity: liquidity.toString(),
               tick
+            };
+
+            break;
+          }
+        }
+
+        break;
+      }
+      case KIND_NFPM: {
+        const logDescription = this._nfpmContract.parseLog({ data, topics });
+        switch (logDescription.name) {
+          case 'IncreaseLiquidity': {
+            eventName = logDescription.name;
+            const { tokenId, liquidity, amount0, amount1 } = logDescription.args;
+
+            eventInfo = {
+              tokenId: tokenId.toString(),
+              liquidity: liquidity.toString(),
+              amount0: amount0.toString(),
+              amount1: amount1.toString()
+            };
+
+            break;
+          }
+          case 'DecreaseLiquidity': {
+            eventName = logDescription.name;
+            const { tokenId, liquidity, amount0, amount1 } = logDescription.args;
+
+            eventInfo = {
+              tokenId: tokenId.toString(),
+              liquidity: liquidity.toString(),
+              amount0: amount0.toString(),
+              amount1: amount1.toString()
+            };
+
+            break;
+          }
+          case 'Collect': {
+            eventName = logDescription.name;
+            const { tokenId, recipient, amount0, amount1 } = logDescription.args;
+
+            eventInfo = {
+              tokenId: tokenId.toString(),
+              recipient,
+              amount0: amount0.toString(),
+              amount1: amount1.toString()
+            };
+
+            break;
+          }
+          case 'Transfer': {
+            eventName = logDescription.name;
+            const { from, to, tokenId } = logDescription.args;
+
+            eventInfo = {
+              from,
+              to,
+              tokenId: tokenId.toString()
             };
 
             break;

@@ -26,7 +26,7 @@ import { Database } from '../database';
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'Kind of contract (factory|pool)'
+      describe: 'Kind of contract (factory|pool|nfpm)'
     },
     startingBlock: {
       type: 'number',

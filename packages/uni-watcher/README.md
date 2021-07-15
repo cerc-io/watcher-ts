@@ -51,6 +51,14 @@ Example:
 $ yarn watch:contract --address 0xfE0034a874c2707c23F91D7409E9036F5e08ac34 --kind factory --startingBlock 100
 ```
 
+Start watching the NonFungiblePositionManager contract:
+
+Example:
+
+```bash
+$ yarn watch:contract --address 0xB171168C0df9457Ff3E3D795aE25Bf4f41e2FFE3 --kind nfpm --startingBlock 100
+```
+
 ## Scripts
 
 * `yarn server`
