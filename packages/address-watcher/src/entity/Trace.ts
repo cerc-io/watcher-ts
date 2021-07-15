@@ -9,7 +9,7 @@ export class Trace {
   @PrimaryColumn('varchar', { length: 66 })
   txHash!: string;
 
-  @Column('numeric')
+  @Column('integer')
   blockNumber!: number;
 
   @Column('varchar', { length: 66 })

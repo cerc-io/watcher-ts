@@ -15,6 +15,6 @@ export class Contract {
   @Column('varchar', { length: 8 })
   kind!: string;
 
-  @Column('numeric')
+  @Column('integer')
   startingBlock!: number;
 }

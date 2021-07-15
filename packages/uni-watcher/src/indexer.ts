@@ -15,6 +15,9 @@ import { Contract, KIND_FACTORY, KIND_POOL } from './entity/Contract';
 import factoryABI from './artifacts/factory.json';
 import poolABI from './artifacts/pool.json';
 
+// TODO: Move to config.
+const MAX_EVENTS_BLOCK_RANGE = 1000;
+
 const log = debug('vulcanize:indexer');
 
 type ResultEvent = {
@@ -293,5 +296,21 @@ export class Indexer {
 
   async updateBlockProgress (blockHash: string): Promise<void> {
     return this._db.updateBlockProgress(blockHash);
+  }
+
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    return this._db.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
+    if (toBlockNumber <= fromBlockNumber) {
+      throw new Error('toBlockNumber should be greater than fromBlockNumber');
+    }
+
+    if ((toBlockNumber - fromBlockNumber) > MAX_EVENTS_BLOCK_RANGE) {
+      throw new Error(`Max range (${MAX_EVENTS_BLOCK_RANGE}) exceeded`);
+    }
+
+    return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
   }
 }

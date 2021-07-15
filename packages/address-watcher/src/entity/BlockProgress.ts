@@ -6,13 +6,13 @@ export class BlockProgress {
   @PrimaryColumn('varchar', { length: 66 })
   blockHash!: string;
 
-  @Column('numeric')
+  @Column('integer')
   blockNumber!: number;
 
-  @Column('numeric')
+  @Column('integer')
   numTx!: number;
 
-  @Column('numeric')
+  @Column('integer')
   numTracedTx!: number;
 
   @Column('boolean')

@@ -6,7 +6,7 @@ export class Account {
   @PrimaryColumn('varchar', { length: 42 })
   address!: string;
 
-  @Column('numeric')
+  @Column('integer')
   startingBlock!: number;
 
   @ManyToMany(() => Trace, trace => trace.accounts)

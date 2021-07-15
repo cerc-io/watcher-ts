@@ -5,6 +5,8 @@ export const UNKNOWN_EVENT_NAME = '__unknown__';
 @Entity()
 // Index to query all events for a contract efficiently.
 @Index(['blockHash', 'contract'])
+// Index to query block range for uniswap events.
+@Index(['blockNumber', 'eventName'])
 export class Event {
   @PrimaryGeneratedColumn()
   id!: number;

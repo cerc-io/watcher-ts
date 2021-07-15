@@ -9,13 +9,13 @@ export class BlockProgress {
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
-  @Column('numeric')
+  @Column('integer')
   blockNumber!: number;
 
-  @Column('numeric')
+  @Column('integer')
   numEvents!: number;
 
-  @Column('numeric')
+  @Column('integer')
   numProcessedEvents!: number;
 
   @Column('boolean')

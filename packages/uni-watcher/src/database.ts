@@ -1,8 +1,9 @@
 import assert from 'assert';
+import _ from 'lodash';
 import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
-import { Event } from './entity/Event';
+import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { Contract } from './entity/Contract';
 import { BlockProgress } from './entity/BlockProgress';
 
@@ -54,6 +55,35 @@ export class Database {
         blockHash,
         contract,
         eventName
+      })
+      .getMany();
+  }
+
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    const blockNumbers = _.range(fromBlockNumber, toBlockNumber + 1);
+    const expected = blockNumbers.length;
+
+    const repo = this._conn.getRepository(BlockProgress);
+    const { count: actual } = await repo
+      .createQueryBuilder('block_progress')
+      .select('COUNT(DISTINCT(block_number))', 'count')
+      .where('block_number IN (:...blockNumbers) AND is_complete = :isComplete', { blockNumbers, isComplete: true })
+      .getRawOne();
+
+    return { expected, actual: parseInt(actual) };
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
+    return this._conn.getRepository(Event)
+      .createQueryBuilder('event')
+      .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName', {
+        fromBlockNumber,
+        toBlockNumber,
+        eventName: UNKNOWN_EVENT_NAME
+      })
+      .orderBy({
+        block_number: 'ASC',
+        index: 'ASC'
       })
       .getMany();
   }

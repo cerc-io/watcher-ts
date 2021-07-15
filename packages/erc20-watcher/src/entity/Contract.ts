@@ -9,6 +9,6 @@ export class Contract {
   @Column('varchar', { length: 42 })
   address!: string;
 
-  @Column('numeric')
+  @Column('integer')
   startingBlock!: number;
 }
