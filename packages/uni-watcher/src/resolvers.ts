@@ -78,7 +78,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
-      },
+      }
     }
   };
 };

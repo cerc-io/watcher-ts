@@ -67,7 +67,7 @@ export class EthClient {
     const result = await this._getCachedOrFetch('getLogs', vars);
     const { getLogs: resultLogs, block: { number: blockNumHex, timestamp: timestampHex } } = result;
     const block = { hash: vars.blockHash, number: parseInt(blockNumHex, 16), timestamp: parseInt(timestampHex, 16) };
-    const logs = resultLogs.map((logEntry: any) => _.merge({}, logEntry, { transaction: { block }}));
+    const logs = resultLogs.map((logEntry: any) => _.merge({}, logEntry, { transaction: { block } }));
 
     return { logs, block };
   }

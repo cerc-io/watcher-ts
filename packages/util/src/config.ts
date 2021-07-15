@@ -15,10 +15,12 @@ export interface Config {
   };
   database: ConnectionOptions;
   upstream: {
-    gqlEndpoint: string;
-    gqlSubscriptionEndpoint: string;
-    traceProviderEndpoint: string;
     cache: CacheConfig,
+    ethServer: {
+      gqlApiEndpoint: string;
+      gqlPostgraphileEndpoint: string;
+    }
+    traceProviderEndpoint: string;
     uniWatcher: {
       gqlEndpoint: string;
       gqlSubscriptionEndpoint: string;
