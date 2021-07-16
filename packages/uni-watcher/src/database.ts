@@ -122,6 +122,14 @@ export class Database {
       .getOne();
   }
 
+  async getLatestContract (kind: string): Promise<Contract | undefined> {
+    return this._conn.getRepository(Contract)
+      .createQueryBuilder('contract')
+      .where('kind = :kind', { kind })
+      .orderBy('id', 'DESC')
+      .getOne();
+  }
+
   async saveContract (address: string, kind: string, startingBlock: number): Promise<void> {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Contract);

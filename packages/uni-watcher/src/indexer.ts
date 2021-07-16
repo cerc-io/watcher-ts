@@ -2,9 +2,10 @@ import debug from 'debug';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
+import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { GetStorageAt } from '@vulcanize/solidity-mapper';
+import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
 import { Config } from '@vulcanize/util';
 
 import { Database } from './database';
@@ -12,9 +13,9 @@ import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract, KIND_FACTORY, KIND_POOL, KIND_NFPM } from './entity/Contract';
 
-import factoryABI from './artifacts/factory.json';
+import { abi as factoryABI, storageLayout as factoryStorageLayout } from './artifacts/factory.json';
+import { abi as nfpmABI, storageLayout as nfpmStorageLayout } from './artifacts/NonfungiblePositionManager.json';
 import poolABI from './artifacts/pool.json';
-import nfpmABI from './artifacts/NonfungiblePositionManager.json';
 
 // TODO: Move to config.
 const MAX_EVENTS_BLOCK_RANGE = 1000;
@@ -32,6 +33,13 @@ type ResultEvent = {
 
   proof: string;
 };
+
+interface ValueResult {
+  value: any;
+  proof: {
+    data: string;
+  }
+}
 
 export class Indexer {
   _config: Config;
@@ -373,5 +381,50 @@ export class Indexer {
     }
 
     return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
+  }
+
+  async position (blockHash: string, tokenId: string) {
+    const nfpmContract = await this._db.getLatestContract('nfpm');
+    assert(nfpmContract, 'No NFPM contract watched.');
+    const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_positions', BigInt(tokenId));
+
+    return {
+      ...value,
+      proof
+    };
+  }
+
+  async poolIdToPoolKey (blockHash: string, poolId: string) {
+    const nfpmContract = await this._db.getLatestContract('nfpm');
+    assert(nfpmContract, 'No NFPM contract watched.');
+    const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_poolIdToPoolKey', BigInt(poolId));
+
+    return {
+      ...value,
+      proof
+    };
+  }
+
+  async getPool (blockHash: string, token0: string, token1: string, fee: string) {
+    const factoryContract = await this._db.getLatestContract('factory');
+    assert(factoryContract, 'No Factory contract watched.');
+    const { value, proof } = await this._getStorageValue(factoryStorageLayout, blockHash, factoryContract.address, 'getPool', token0, token1, BigInt(fee));
+
+    return {
+      pool: value,
+      proof
+    };
+  }
+
+  // TODO: Move into base/class or framework package.
+  async _getStorageValue (storageLayout: StorageLayout, blockHash: string, token: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
+    return getStorageValue(
+      storageLayout,
+      this._getStorageAt,
+      blockHash,
+      token,
+      variable,
+      ...mappingKeys
+    );
   }
 }

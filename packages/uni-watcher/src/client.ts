@@ -1,6 +1,8 @@
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
+import { queryGetPool, queryPoolIdToPoolKey, queryPosition } from './queries';
+
 export class Client {
   _config: GraphQLConfig;
   _client: GraphQLClient;
@@ -72,6 +74,13 @@ export class Client {
                 liquidity
                 tick
               }
+
+              ... on IncreaseLiquidityEvent {
+                tokenId
+                liquidity
+                amount0
+                amount1
+              }
             }
           }
         }
@@ -80,5 +89,43 @@ export class Client {
         onNext(data.onEvent);
       }
     );
+  }
+
+  async getPosition (blockHash: string, tokenId: bigint): Promise<any> {
+    const { position } = await this._client.query(
+      gql(queryPosition),
+      {
+        blockHash,
+        tokenId: tokenId.toString()
+      }
+    );
+
+    return position;
+  }
+
+  async poolIdToPoolKey (blockHash: string, poolId: bigint): Promise<any> {
+    const { poolIdToPoolKey } = await this._client.query(
+      gql(queryPoolIdToPoolKey),
+      {
+        blockHash,
+        poolId: poolId.toString()
+      }
+    );
+
+    return poolIdToPoolKey;
+  }
+
+  async getPool (blockHash: string, token0: string, token1: string, fee: bigint): Promise<any> {
+    const { getPool } = await this._client.query(
+      gql(queryGetPool),
+      {
+        blockHash,
+        token0,
+        token1,
+        fee: fee.toString()
+      }
+    );
+
+    return getPool;
   }
 }

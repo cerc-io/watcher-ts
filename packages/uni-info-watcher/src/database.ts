@@ -18,6 +18,8 @@ import { TokenDayData } from './entity/TokenDayData';
 import { TokenHourData } from './entity/TokenHourData';
 import { Burn } from './entity/Burn';
 import { Swap } from './entity/Swap';
+import { Position } from './entity/Position';
+import { PositionSnapshot } from './entity/PositionSnapshot';
 
 export class Database {
   _config: ConnectionOptions
@@ -72,6 +74,44 @@ export class Database {
     const findOptions: FindOneOptions<Pool> = {
       where: whereOptions,
       relations: ['token0', 'token1'],
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    return repo.findOne(findOptions);
+  }
+
+  async getPosition ({ id, blockNumber }: DeepPartial<Position>): Promise<Position | undefined> {
+    const repo = this._conn.getRepository(Position);
+    const whereOptions: FindConditions<Position> = { id };
+
+    if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    }
+
+    const findOptions: FindOneOptions<Position> = {
+      where: whereOptions,
+      relations: ['pool', 'token0', 'token1', 'tickLower', 'tickUpper', 'transaction'],
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    return repo.findOne(findOptions);
+  }
+
+  async getTick ({ id, blockNumber }: DeepPartial<Tick>): Promise<Tick | undefined> {
+    const repo = this._conn.getRepository(Tick);
+    const whereOptions: FindConditions<Tick> = { id };
+
+    if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    }
+
+    const findOptions: FindOneOptions<Tick> = {
+      where: whereOptions,
+      relations: ['pool'],
       order: {
         blockNumber: 'DESC'
       }
@@ -438,6 +478,52 @@ export class Database {
     });
   }
 
+  async loadPosition ({ id, blockNumber, ...values }: DeepPartial<Position>): Promise<Position> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Position);
+
+      let selectQueryBuilder = repo.createQueryBuilder('position')
+        .where('id = :id', { id });
+
+      if (blockNumber) {
+        selectQueryBuilder = selectQueryBuilder.andWhere('block_number <= :blockNumber', { blockNumber });
+      }
+
+      let entity = await selectQueryBuilder.orderBy('block_number', 'DESC')
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id, ...values });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
+  async loadPositionSnapshot ({ id, blockNumber, ...values }: DeepPartial<PositionSnapshot>): Promise<PositionSnapshot> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(PositionSnapshot);
+
+      let selectQueryBuilder = repo.createQueryBuilder('positionSnapshot')
+        .where('id = :id', { id });
+
+      if (blockNumber) {
+        selectQueryBuilder = selectQueryBuilder.andWhere('block_number <= :blockNumber', { blockNumber });
+      }
+
+      let entity = await selectQueryBuilder.orderBy('block_number', 'DESC')
+        .getOne();
+
+      if (!entity) {
+        entity = repo.create({ blockNumber, id, ...values });
+        entity = await repo.save(entity);
+      }
+
+      return entity;
+    });
+  }
+
   async saveFactory (factory: Factory, blockNumber: number): Promise<Factory> {
     return this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Factory);
@@ -523,6 +609,14 @@ export class Database {
       const repo = tx.getRepository(Tick);
       tick.blockNumber = blockNumber;
       return repo.save(tick);
+    });
+  }
+
+  async savePosition (position: Position, blockNumber: number): Promise<Position> {
+    return this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Position);
+      position.blockNumber = blockNumber;
+      return repo.save(position);
     });
   }
 

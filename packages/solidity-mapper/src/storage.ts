@@ -97,6 +97,10 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
     return utils.toUtf8String(storageValue);
   }
 
+  if (typeLabel.startsWith('address')) {
+    return utils.getAddress(storageValue);
+  }
+
   return storageValue;
 };
 

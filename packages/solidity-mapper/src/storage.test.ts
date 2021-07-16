@@ -178,7 +178,7 @@ describe('Get value from storage', () => {
     const { storageLayout } = contracts.TestAddress;
     const { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testAddress.address, 'address1');
     expect(value).to.be.a('string');
-    expect(String(value).toLowerCase()).to.equal(address1Value);
+    expect(value).to.equal(address1Value);
 
     if (isIpldGql) {
       assertProofData(blockHash, testAddress.address, JSON.parse(proofData));

@@ -91,7 +91,7 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
  */
 export const generateDummyAddresses = (length: number): Array<string> => {
   return Array.from({ length }, () => {
-    return ethers.utils.hexlify(ethers.utils.randomBytes(20));
+    return ethers.utils.getAddress(ethers.utils.hexlify(ethers.utils.randomBytes(20)));
   });
 };
 

@@ -202,12 +202,12 @@ type Query {
 
   position(
     blockHash: String!
-    tokenId: BigInt!
+    tokenId: String!
   ): ResultPosition
 
   poolIdToPoolKey(
     blockHash: String!
-    poolId: BigInt!
+    poolId: String!
   ): ResultPoolKey
 
   # Factory
@@ -216,7 +216,7 @@ type Query {
     blockHash: String!
     token0: String!
     token1: String!
-    fee: BigInt!
+    fee: String!
   ): ResultGetPool
 
   # Pool

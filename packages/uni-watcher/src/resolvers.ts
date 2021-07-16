@@ -72,6 +72,21 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
+      },
+
+      position: (_: any, { blockHash, tokenId }: { blockHash: string, tokenId: string }) => {
+        log('position', blockHash, tokenId);
+        return indexer.position(blockHash, tokenId);
+      },
+
+      poolIdToPoolKey: (_: any, { blockHash, poolId }: { blockHash: string, poolId: string }) => {
+        log('poolIdToPoolKey', blockHash, poolId);
+        return indexer.poolIdToPoolKey(blockHash, poolId);
+      },
+
+      getPool: (_: any, { blockHash, token0, token1, fee }: { blockHash: string, token0: string, token1: string, fee: string }) => {
+        log('getPool', blockHash, token0, token1, fee);
+        return indexer.getPool(blockHash, token0, token1, fee);
       }
     }
   };

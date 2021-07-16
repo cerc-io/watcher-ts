@@ -1,198 +1,366 @@
-[
-  {
-    "anonymous": false,
-    "inputs": [
+{
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint24",
+          "name": "fee",
+          "type": "uint24"
+        },
+        {
+          "indexed": true,
+          "internalType": "int24",
+          "name": "tickSpacing",
+          "type": "int24"
+        }
+      ],
+      "name": "FeeAmountEnabled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "oldOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnerChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token0",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token1",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint24",
+          "name": "fee",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "internalType": "int24",
+          "name": "tickSpacing",
+          "type": "int24"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        }
+      ],
+      "name": "PoolCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenA",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "tokenB",
+          "type": "address"
+        },
+        {
+          "internalType": "uint24",
+          "name": "fee",
+          "type": "uint24"
+        }
+      ],
+      "name": "createPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint24",
+          "name": "fee",
+          "type": "uint24"
+        },
+        {
+          "internalType": "int24",
+          "name": "tickSpacing",
+          "type": "int24"
+        }
+      ],
+      "name": "enableFeeAmount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint24",
+          "name": "",
+          "type": "uint24"
+        }
+      ],
+      "name": "feeAmountTickSpacing",
+      "outputs": [
+        {
+          "internalType": "int24",
+          "name": "",
+          "type": "int24"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint24",
+          "name": "",
+          "type": "uint24"
+        }
+      ],
+      "name": "getPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "parameters",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "factory",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token0",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token1",
+          "type": "address"
+        },
+        {
+          "internalType": "uint24",
+          "name": "fee",
+          "type": "uint24"
+        },
+        {
+          "internalType": "int24",
+          "name": "tickSpacing",
+          "type": "int24"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        }
+      ],
+      "name": "setOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "storageLayout": {
+    "storage": [
       {
-        "indexed": true,
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
+        "astId": 2840,
+        "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+        "label": "parameters",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_struct(Parameters)2836_storage"
       },
       {
-        "indexed": true,
-        "internalType": "int24",
-        "name": "tickSpacing",
-        "type": "int24"
-      }
-    ],
-    "name": "FeeAmountEnabled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "oldOwner",
-        "type": "address"
+        "astId": 56,
+        "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+        "label": "owner",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnerChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token0",
-        "type": "address"
+        "astId": 62,
+        "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+        "label": "feeAmountTickSpacing",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_mapping(t_uint24,t_int24)"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token1",
-        "type": "address"
+        "astId": 72,
+        "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+        "label": "getPool",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_uint24,t_address)))"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
       },
-      {
-        "indexed": true,
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
+      "t_int24": {
+        "encoding": "inplace",
+        "label": "int24",
+        "numberOfBytes": "3"
       },
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickSpacing",
-        "type": "int24"
+      "t_mapping(t_address,t_mapping(t_address,t_mapping(t_uint24,t_address)))": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => mapping(address => mapping(uint24 => address)))",
+        "numberOfBytes": "32",
+        "value": "t_mapping(t_address,t_mapping(t_uint24,t_address))"
       },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
-      }
-    ],
-    "name": "PoolCreated",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "tokenA",
-        "type": "address"
+      "t_mapping(t_address,t_mapping(t_uint24,t_address))": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => mapping(uint24 => address))",
+        "numberOfBytes": "32",
+        "value": "t_mapping(t_uint24,t_address)"
       },
-      {
-        "internalType": "address",
-        "name": "tokenB",
-        "type": "address"
+      "t_mapping(t_uint24,t_address)": {
+        "encoding": "mapping",
+        "key": "t_uint24",
+        "label": "mapping(uint24 => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
       },
-      {
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
-      }
-    ],
-    "name": "createPool",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
+      "t_mapping(t_uint24,t_int24)": {
+        "encoding": "mapping",
+        "key": "t_uint24",
+        "label": "mapping(uint24 => int24)",
+        "numberOfBytes": "32",
+        "value": "t_int24"
       },
-      {
-        "internalType": "int24",
-        "name": "tickSpacing",
-        "type": "int24"
-      }
-    ],
-    "name": "enableFeeAmount",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
-      }
-    ],
-    "name": "feeAmountTickSpacing",
-    "outputs": [
-      {
-        "internalType": "int24",
-        "name": "",
-        "type": "int24"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "tokenA",
-        "type": "address"
+      "t_struct(Parameters)2836_storage": {
+        "encoding": "inplace",
+        "label": "struct UniswapV3PoolDeployer.Parameters",
+        "members": [
+          {
+            "astId": 2827,
+            "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+            "label": "factory",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 2829,
+            "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+            "label": "token0",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address"
+          },
+          {
+            "astId": 2831,
+            "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+            "label": "token1",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address"
+          },
+          {
+            "astId": 2833,
+            "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+            "label": "fee",
+            "offset": 20,
+            "slot": "2",
+            "type": "t_uint24"
+          },
+          {
+            "astId": 2835,
+            "contract": "contracts/UniswapV3Factory.sol:UniswapV3Factory",
+            "label": "tickSpacing",
+            "offset": 23,
+            "slot": "2",
+            "type": "t_int24"
+          }
+        ],
+        "numberOfBytes": "96"
       },
-      {
-        "internalType": "address",
-        "name": "tokenB",
-        "type": "address"
-      },
-      {
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
+      "t_uint24": {
+        "encoding": "inplace",
+        "label": "uint24",
+        "numberOfBytes": "3"
       }
-    ],
-    "name": "getPool",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      }
-    ],
-    "name": "setOwner",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    }
   }
-]
+}
