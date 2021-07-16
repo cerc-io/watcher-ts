@@ -10,97 +10,74 @@ Install packages (Node.JS v15.11.0):
 yarn
 ```
 
-## ERC20 Watcher
+### Services
 
-Create a postgres12 database and provide connection settings in `environments/local.toml`.
+The default config files used by the watchers assume the following services are setup and running on localhost:
 
-For example:
+* `vulcanize/go-ethereum` on port 8545
+* `vulcanize/ipld-eth-server` with native GQL API enabled, on port 8082
+* `postgraphile` on the `vulcanize/ipld-eth-server` database, on port 5000
 
-```
+### Databases
+
+Note: Requires `postgres12`.
+
+Login as the postgres user:
+
+```bash
 sudo su - postgres
+```
+
+Create the databases for the watchers:
+
+```
 createdb erc20-watcher
+createdb address-watcher
+createdb uni-watcher
+createdb uni-info-watcher
 ```
 
-Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+Create the databases for the job queues and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
-Run the watcher:
+```
+createdb address-watcher-job-queue
+createdb uni-watcher-job-queue
+```
+
+```
+postgres@tesla:~$ psql -U postgres -h localhost address-watcher-job-queue
+Password for user postgres:
+psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+address-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+CREATE EXTENSION
+address-watcher-job-queue=# exit
+```
+
+```
+postgres@tesla:~$ psql -U postgres -h localhost uni-watcher-job-queue
+Password for user postgres:
+psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+uni-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+CREATE EXTENSION
+uni-watcher-job-queue=# exit
+```
+
+## Run
+
+To run any watcher, `cd` into their package folder and run:
 
 ```bash
-cd packages/erc20-watcher
-yarn run server
+yarn server
 ```
 
-GQL console: http://localhost:3001/graphql
-
-To run tests (GQL queries) against the mock server:
-
-```
-cd packages/erc20-watcher
-yarn run server:mock
-```
+If the watcher uses a job queue, start the job runner in another terminal:
 
 ```bash
-cd packages/erc20-watcher
-yarn test
-```
-
-### Example GQL Queries
-
-```text
-{
-  name(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
-    value
-    proof {
-      data
-    }
-  }
-
-  symbol(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
-    value
-    proof {
-      data
-    }
-  }
-
-  totalSupply(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
-    value
-    proof {
-      data
-    }
-  }
-
-  balanceOf(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc") {
-    value
-    proof {
-      data
-    }
-  }
-
-  allowance(blockHash: "0x81ed2b04af35b1b276281c37243212731202d5a191a27d07b22a605fd442998d", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc", spender: "0xCA6D29232D1435D8198E3E5302495417dD073d61") {
-    value
-    proof {
-      data
-    }
-  }
-
-  events(blockHash: "0x3441ba476dff95c58528afe754ceec659e0ef8ff1b59244ec4545f4f9784a51c", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
-    event {
-      __typename
-      ... on TransferEvent {
-        from
-        to
-        value
-      }
-      ... on ApprovalEvent {
-        owner
-        spender
-        value
-      }
-    }
-    proof {
-      data
-    }
-  }
-}
-
+yarn job-runner
 ```

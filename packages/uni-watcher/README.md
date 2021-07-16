@@ -43,6 +43,12 @@ Run the server:
 $ yarn server
 ```
 
+Start the job runner:
+
+```bash
+$ yarn job-runner
+```
+
 Start watching the factory contract:
 
 Example:
@@ -59,21 +65,24 @@ Example:
 $ yarn watch:contract --address 0xB171168C0df9457Ff3E3D795aE25Bf4f41e2FFE3 --kind nfpm --startingBlock 100
 ```
 
-## Scripts
+To fill a block range:
 
-* `yarn server`
+```bash
+$ yarn fill --startBlock <from-block> --endBlock <to-block>
+```
 
-  Start the GraphQL server.
+Example:
 
-* `yarn watch:contract`
+```bash
+$ yarn fill --startBlock 1000 --endBlock 2000
+```
 
-  Add contract to watch.
+## Test
 
-* `yarn lint`
+To test the watchers locally:
 
-  Lint files.
+* Deploy the Uniswap contracts
+* Watch the Factory and NonFungiblePositionManager contracts
+* Send transactions to trigger events
 
-  ```bash
-  # Lint fix.
-  $ yarn lint --fix
-  ```
+See https://github.com/vulcanize/uniswap-v3-periphery/blob/watcher-ts/demo.md for instructions.

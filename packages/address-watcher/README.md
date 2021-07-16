@@ -6,7 +6,7 @@ Create a postgres12 database for the job queue:
 
 ```
 sudo su - postgres
-createdb job-queue
+createdb address-watcher-job-queue
 ```
 
 Enable the `pgcrypto` extension on the job queue database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
@@ -14,15 +14,15 @@ Enable the `pgcrypto` extension on the job queue database (https://github.com/ti
 Example:
 
 ```
-postgres@tesla:~$ psql -U postgres -h localhost job-queue
+postgres@tesla:~$ psql -U postgres -h localhost address-watcher-job-queue
 Password for user postgres:
 psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
 SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
 Type "help" for help.
 
-job-queue=# CREATE EXTENSION pgcrypto;
+address-watcher-job-queue=# CREATE EXTENSION pgcrypto;
 CREATE EXTENSION
-job-queue=# exit
+address-watcher-job-queue=# exit
 ```
 
 Create a postgres12 database for the address watcher:
