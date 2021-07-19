@@ -81,6 +81,13 @@ export class Client {
                 amount0
                 amount1
               }
+
+              ... on DecreaseLiquidityEvent {
+                tokenId
+                liquidity
+                amount0
+                amount1
+              }
             }
           }
         }

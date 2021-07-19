@@ -70,6 +70,14 @@ interface IncreaseLiquidityEvent {
   amount1: bigint;
 }
 
+interface DecreaseLiquidityEvent {
+  __typename: 'DecreaseLiquidityEvent';
+  tokenId: bigint;
+  liquidity: bigint;
+  amount0: bigint;
+  amount1: bigint;
+}
+
 interface Block {
   number: number;
   hash: string;
@@ -85,7 +93,7 @@ interface ResultEvent {
   block: Block;
   tx: Transaction;
   contract: string;
-  event: PoolCreatedEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent | IncreaseLiquidityEvent;
+  event: PoolCreatedEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent;
   proof: {
     data: string;
   }
@@ -151,6 +159,11 @@ export class EventWatcher {
       case 'IncreaseLiquidityEvent':
         log('NFPM IncreaseLiquidity event', contract);
         this._handleIncreaseLiquidity(block, contract, tx, event as IncreaseLiquidityEvent);
+        break;
+
+      case 'DecreaseLiquidityEvent':
+        log('NFPM DecreaseLiquidity event', contract);
+        this._handleDecreaseLiquidity(block, contract, tx, event as DecreaseLiquidityEvent);
         break;
 
       default:
@@ -731,7 +744,7 @@ export class EventWatcher {
       return;
     }
 
-    // Temp fix.
+    // Temp fix from Subgraph mapping code.
     if (utils.getAddress(position.pool.id) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
       return;
     }
@@ -743,6 +756,36 @@ export class EventWatcher {
     const amount1 = convertTokenToDecimal(BigInt(event.amount1), BigInt(token1.decimals));
 
     position.liquidity = BigInt(position.liquidity) + BigInt(event.liquidity);
+    position.depositedToken0 = position.depositedToken0.plus(amount0);
+    position.depositedToken1 = position.depositedToken1.plus(amount1);
+
+    await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
+
+    await this._db.savePosition(position, blockNumber);
+
+    await this._savePositionSnapshot(position, block, tx);
+  }
+
+  async _handleDecreaseLiquidity (block: Block, contractAddress: string, tx: Transaction, event: DecreaseLiquidityEvent): Promise<void> {
+    const { number: blockNumber } = block;
+    const position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
+
+    // Position was not able to be fetched.
+    if (position == null) {
+      return;
+    }
+
+    // Temp fix from Subgraph mapping code.
+    if (utils.getAddress(position.pool.id) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
+      return;
+    }
+
+    const token0 = position.token0;
+    const token1 = position.token1;
+    const amount0 = convertTokenToDecimal(BigInt(event.amount0), BigInt(token0.decimals));
+    const amount1 = convertTokenToDecimal(BigInt(event.amount1), BigInt(token1.decimals));
+
+    position.liquidity = BigInt(position.liquidity) - BigInt(event.liquidity);
     position.depositedToken0 = position.depositedToken0.plus(amount0);
     position.depositedToken1 = position.depositedToken1.plus(amount1);
 
