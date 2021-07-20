@@ -39,6 +39,7 @@ query allEthHeaderCids($blockNumber: BigInt) {
       cid
       blockNumber
       blockHash
+      parentHash
       timestamp
       ethTransactionCidsByHeaderId {
         nodes {
@@ -67,6 +68,7 @@ subscription SubscriptionReceipt {
           ethHeaderCidByHeaderId {
             blockHash
             blockNumber
+            parentHash
           }
         }
       }
@@ -82,6 +84,7 @@ subscription {
       ... on EthHeaderCid {
         blockHash
         blockNumber
+        parentHash
       }
     }
   }
@@ -97,6 +100,7 @@ subscription SubscriptionHeader {
         ethHeaderCidByHeaderId {
           blockHash
           blockNumber
+          parentHash
         }
       }
     }

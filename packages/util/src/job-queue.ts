@@ -17,7 +17,24 @@ export class JobQueue {
 
   constructor (config: Config) {
     this._config = config;
-    this._boss = new PgBoss({ connectionString: this._config.dbConnectionString, onComplete: true });
+    this._boss = new PgBoss({
+      // https://github.com/timgit/pg-boss/blob/master/docs/configuration.md
+
+      connectionString: this._config.dbConnectionString,
+      onComplete: true,
+
+      // Num of retries with backoff
+      retryLimit: 15,
+      retryDelay: 1,
+      retryBackoff: true,
+
+      expireInHours: 24 * 7, // 7 days
+
+      retentionDays: 30, // 30 days
+
+      newJobCheckIntervalSeconds: 1
+    });
+
     this._boss.on('error', error => log(error));
   }
 
@@ -30,7 +47,7 @@ export class JobQueue {
   }
 
   async subscribe (queue: string, callback: JobCallback): Promise<string> {
-    return await this._boss.subscribe(queue, async (job: any) => {
+    return await this._boss.subscribe(queue, { teamSize: 1, teamConcurrency: 1 }, async (job: any) => {
       log(`Processing queue ${queue} job ${job.id}...`);
       await callback(job);
     });
