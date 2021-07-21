@@ -52,8 +52,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       events: async (_: any, { blockHash, contract, name }: { blockHash: string, contract: string, name: string }) => {
         log('events', blockHash, contract, name || '');
 
-        const blockProgress = await indexer.getBlockProgress(blockHash);
-        if (!blockProgress || !blockProgress.isComplete) {
+        const block = await indexer.getBlockProgress(blockHash);
+        if (!block || !block.isComplete) {
           // TODO: Trigger indexing for the block.
           throw new Error('Not available');
         }

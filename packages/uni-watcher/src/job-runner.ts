@@ -61,12 +61,11 @@ export const main = async (): Promise<any> => {
   await jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
     const { data: { blockHash, blockNumber } } = job;
 
-    log(`Processing block ${blockHash} ${blockNumber}`);
+    log(`Processing block number ${blockNumber} hash ${blockHash} `);
 
     const events = await indexer.getOrFetchBlockEvents(blockHash);
     for (let ei = 0; ei < events.length; ei++) {
-      const { blockHash, id } = events[ei];
-      await jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { blockHash, id, publish: true });
+      await jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
     }
 
     await jobQueue.markComplete(job);
@@ -92,7 +91,8 @@ export const main = async (): Promise<any> => {
         dbEvent = await indexer.saveEventEntity(dbEvent);
       }
 
-      await indexer.processEvent(dbEvent);
+      dbEvent = await indexer.getEvent(id);
+      await indexer.processEvent(dbEvent!);
     }
 
     await jobQueue.markComplete(job);
@@ -103,4 +103,8 @@ main().then(() => {
   log('Starting job runner...');
 }).catch(err => {
   log(err);
+});
+
+process.on('uncaughtException', err => {
+  log('uncaughtException', err);
 });

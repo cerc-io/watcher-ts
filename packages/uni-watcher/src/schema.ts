@@ -157,6 +157,7 @@ type Block {
   hash: String!
   number: Int!
   timestamp: Int!
+  parentHash: String!
 }
 
 type Transaction {

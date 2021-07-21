@@ -32,30 +32,34 @@ export class Database {
   async getBlockEvents (blockHash: string): Promise<Event[]> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
       .where('block_hash = :blockHash', { blockHash })
-      .addOrderBy('id', 'ASC')
+      .addOrderBy('event.id', 'ASC')
       .getMany();
   }
 
   async getEvents (blockHash: string, contract: string): Promise<Event[]> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
       .where('block_hash = :blockHash AND contract = :contract', {
         blockHash,
         contract
       })
-      .addOrderBy('id', 'ASC')
+      .addOrderBy('event.id', 'ASC')
       .getMany();
   }
 
   async getEventsByName (blockHash: string, contract: string, eventName: string): Promise<Event[] | undefined> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
       .where('block_hash = :blockHash AND contract = :contract AND event_name = :eventName', {
         blockHash,
         contract,
         eventName
       })
+      .addOrderBy('event.id', 'ASC')
       .getMany();
   }
 
@@ -74,40 +78,64 @@ export class Database {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
-    return this._conn.getRepository(Event)
+    const events = await this._conn.getRepository(Event)
       .createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
       .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName', {
         fromBlockNumber,
         toBlockNumber,
         eventName: UNKNOWN_EVENT_NAME
       })
-      .orderBy({
-        block_number: 'ASC',
-        index: 'ASC'
-      })
+      .addOrderBy('event.id', 'ASC')
       .getMany();
+
+    return events;
   }
 
-  async saveEvents (blockHash: string, blockNumber: number, events: DeepPartial<Event>[]): Promise<void> {
+  async saveEvents (block: any, events: DeepPartial<Event>[]): Promise<void> {
+    const {
+      hash: blockHash,
+      number: blockNumber,
+      timestamp: blockTimestamp,
+      parent: {
+        hash: parentHash
+      }
+    } = block;
+
+    assert(blockHash);
+    assert(blockNumber);
+    assert(blockTimestamp);
+    assert(parentHash);
+
     // In a transaction:
     // (1) Save all the events in the database.
     // (2) Add an entry to the block progress table.
     await this._conn.transaction(async (tx) => {
       const numEvents = events.length;
       const blockProgressRepo = tx.getRepository(BlockProgress);
-      const blockProgress = await blockProgressRepo.findOne({ where: { blockHash } });
+      let blockProgress = await blockProgressRepo.findOne({ where: { blockHash } });
       if (!blockProgress) {
-        // Bulk insert events.
-        await tx.createQueryBuilder().insert().into(Event).values(events).execute();
+        const entity = blockProgressRepo.create({
+          blockHash,
+          parentHash,
+          blockNumber,
+          blockTimestamp,
+          numEvents,
+          numProcessedEvents: 0,
+          isComplete: (numEvents === 0)
+        });
 
-        const entity = blockProgressRepo.create({ blockHash, blockNumber, numEvents, numProcessedEvents: 0, isComplete: (numEvents === 0) });
-        await blockProgressRepo.save(entity);
+        blockProgress = await blockProgressRepo.save(entity);
+
+        // Bulk insert events.
+        events.forEach(event => event.block = blockProgress);
+        await tx.createQueryBuilder().insert().into(Event).values(events).execute();
       }
     });
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
-    return this._conn.getRepository(Event).findOne(id);
+    return this._conn.getRepository(Event).findOne(id, { relations: [ 'block' ]});
   }
 
   async saveEventEntity (entity: Event): Promise<Event> {

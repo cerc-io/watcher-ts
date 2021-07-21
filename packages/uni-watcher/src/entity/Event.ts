@@ -1,25 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm';
+import { BlockProgress } from './BlockProgress';
 
 export const UNKNOWN_EVENT_NAME = '__unknown__';
 
 @Entity()
 // Index to query all events for a contract efficiently.
-@Index(['blockHash', 'contract'])
-// Index to query block range for uniswap events.
-@Index(['blockNumber', 'eventName'])
+@Index(['contract'])
 export class Event {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // TODO: Denormalizing the block fields is simpler but perhaps not necessary.
-  @Column('varchar', { length: 66 })
-  blockHash!: string;
-
-  @Column('integer')
-  blockNumber!: number;
-
-  @Column('integer')
-  blockTimestamp!: number;
+  @ManyToOne(() => BlockProgress)
+  block!: BlockProgress;
 
   @Column('varchar', { length: 66 })
   txHash!: string;
