@@ -65,10 +65,10 @@ export class JobQueue {
     this._boss.complete(job.id);
   }
 
-  async pushJob (queue: string, job: any): Promise<void> {
+  async pushJob (queue: string, job: any, options: PgBoss.PublishOptions = {}): Promise<void> {
     assert(this._boss);
 
-    const jobId = await this._boss.publish(queue, job);
+    const jobId = await this._boss.publish(queue, job, options);
     log(`Created job in queue ${queue}: ${jobId}`);
   }
 }

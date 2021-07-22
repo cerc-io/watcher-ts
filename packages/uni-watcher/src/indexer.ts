@@ -16,6 +16,7 @@ import { Contract, KIND_FACTORY, KIND_POOL, KIND_NFPM } from './entity/Contract'
 import { abi as factoryABI, storageLayout as factoryStorageLayout } from './artifacts/factory.json';
 import { abi as nfpmABI, storageLayout as nfpmStorageLayout } from './artifacts/NonfungiblePositionManager.json';
 import poolABI from './artifacts/pool.json';
+import { SyncStatus } from './entity/SyncStatus';
 
 // TODO: Move to config.
 const MAX_EVENTS_BLOCK_RANGE = 1000;
@@ -96,14 +97,18 @@ export class Indexer {
     const blockProgress = await this._db.getBlockProgress(blockHash);
     if (!blockProgress) {
       // Fetch and save events first and make a note in the event sync progress table.
+      log(`getBlockEvents: db miss, fetching from upstream server ${blockHash}`);
       await this.fetchAndSaveEvents(blockHash);
-      log('getBlockEvents: db miss, fetching from upstream server');
     }
 
     const events = await this._db.getBlockEvents(blockHash);
-    log(`getBlockEvents: db hit, num events: ${events.length}`);
+    log(`getBlockEvents: db hit, ${blockHash} num events: ${events.length}`);
 
     return events;
+  }
+
+  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
+    return this._db.getBlockEvents(blockHash);
   }
 
   async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
@@ -345,6 +350,19 @@ export class Indexer {
     await this._db.saveEvents(block, dbEvents);
   }
 
+  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._db.updateSyncStatus(blockHash, blockNumber);
+  }
+
+  async getSyncStatus (): Promise<SyncStatus | undefined> {
+    return this._db.getSyncStatus();
+  }
+
+  async getBlock (blockHash: string): Promise<any> {
+    const { block } = await this._ethClient.getLogs({ blockHash });
+    return block;
+  }
+
   async getEvent (id: string): Promise<Event | undefined> {
     return this._db.getEvent(id);
   }
@@ -357,8 +375,8 @@ export class Indexer {
     return this._db.getBlockProgress(blockHash);
   }
 
-  async updateBlockProgress (blockHash: string): Promise<void> {
-    return this._db.updateBlockProgress(blockHash);
+  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    return this._db.updateBlockProgress(blockHash, lastProcessedEventIndex);
   }
 
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
@@ -377,7 +395,7 @@ export class Indexer {
     return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
   }
 
-  async position (blockHash: string, tokenId: string) {
+  async position (blockHash: string, tokenId: string): Promise<any> {
     const nfpmContract = await this._db.getLatestContract('nfpm');
     assert(nfpmContract, 'No NFPM contract watched.');
     const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_positions', BigInt(tokenId));
@@ -388,7 +406,7 @@ export class Indexer {
     };
   }
 
-  async poolIdToPoolKey (blockHash: string, poolId: string) {
+  async poolIdToPoolKey (blockHash: string, poolId: string): Promise<any> {
     const nfpmContract = await this._db.getLatestContract('nfpm');
     assert(nfpmContract, 'No NFPM contract watched.');
     const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_poolIdToPoolKey', BigInt(poolId));
@@ -399,7 +417,7 @@ export class Indexer {
     };
   }
 
-  async getPool (blockHash: string, token0: string, token1: string, fee: string) {
+  async getPool (blockHash: string, token0: string, token1: string, fee: string): Promise<any> {
     const factoryContract = await this._db.getLatestContract('factory');
     assert(factoryContract, 'No Factory contract watched.');
     const { value, proof } = await this._getStorageValue(factoryStorageLayout, blockHash, factoryContract.address, 'getPool', token0, token1, BigInt(fee));

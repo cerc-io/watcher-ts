@@ -6,6 +6,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { Contract } from './entity/Contract';
 import { BlockProgress } from './entity/BlockProgress';
+import { SyncStatus } from './entity/SyncStatus';
 
 export class Database {
   _config: ConnectionOptions
@@ -97,16 +98,46 @@ export class Database {
           blockTimestamp,
           numEvents,
           numProcessedEvents: 0,
+          lastProcessedEventIndex: -1,
           isComplete: (numEvents === 0)
         });
 
         blockProgress = await blockProgressRepo.save(entity);
 
         // Bulk insert events.
-        events.forEach(event => event.block = blockProgress);
+        events.forEach(event => {
+          event.block = blockProgress;
+        });
+
         await tx.createQueryBuilder().insert().into(Event).values(events).execute();
       }
     });
+  }
+
+  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(SyncStatus);
+
+      let entity = await repo.findOne();
+      if (!entity) {
+        entity = repo.create({
+          latestCanonicalBlockHash: blockHash,
+          latestCanonicalBlockNumber: blockNumber
+        });
+      }
+
+      if (blockNumber >= entity.latestCanonicalBlockNumber) {
+        entity.chainHeadBlockHash = blockHash;
+        entity.chainHeadBlockNumber = blockNumber;
+      }
+
+      return await repo.save(entity);
+    });
+  }
+
+  async getSyncStatus (): Promise<SyncStatus | undefined> {
+    const repo = this._conn.getRepository(SyncStatus);
+    return repo.findOne();
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
@@ -154,15 +185,21 @@ export class Database {
     return repo.findOne({ where: { blockHash } });
   }
 
-  async updateBlockProgress (blockHash: string): Promise<void> {
+  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(BlockProgress);
       const entity = await repo.findOne({ where: { blockHash } });
       if (entity && !entity.isComplete) {
+        if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
+          throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
+        }
+
+        entity.lastProcessedEventIndex = lastProcessedEventIndex;
         entity.numProcessedEvents++;
         if (entity.numProcessedEvents >= entity.numEvents) {
           entity.isComplete = true;
         }
+
         await repo.save(entity);
       }
     });

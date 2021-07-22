@@ -75,12 +75,12 @@ export const main = async (): Promise<any> => {
     const result = await ethClient.getBlockWithTransactions(blockNumber.toString());
     const { allEthHeaderCids: { nodes: blockNodes } } = result;
     for (let bi = 0; bi < blockNodes.length; bi++) {
-      const { blockHash, blockNumber } = blockNodes[bi];
+      const { blockHash, blockNumber, parentHash } = blockNodes[bi];
       const blockProgress = await db.getBlockProgress(blockHash);
       if (blockProgress) {
         log(`Block number ${blockNumber}, block hash ${blockHash} already known, skip filling`);
       } else {
-        await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber });
+        await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber, parentHash });
       }
     }
   }
