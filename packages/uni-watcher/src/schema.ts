@@ -234,7 +234,7 @@ type Query {
   # Get uniswap events at a certain block, optionally filter by event name.
   events(
     blockHash: String!
-    contract: String!
+    contract: String
     name: String
   ): [ResultEvent!]
 

@@ -14,7 +14,7 @@ export class Burn {
   @PrimaryColumn('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Transaction, transaction => transaction.mints)
+  @ManyToOne(() => Transaction, transaction => transaction.burns)
   transaction!: Transaction
 
   @Column('bigint')

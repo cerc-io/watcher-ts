@@ -1,15 +1,96 @@
 import { gql } from 'graphql-request';
 
-export const queryEvents = gql`
-query getEvents($blockHash: String!, $token: String!) {
-  events(blockHash: $blockHash, token: $token) {
-    event {
-      __typename
+const resultEvent = `
+{
+  block {
+    number
+    hash
+    timestamp
+    parentHash
+  }
+  tx {
+    hash
+  }
+  contract
+  eventIndex
+
+  event {
+    __typename
+
+    ... on PoolCreatedEvent {
+      token0
+      token1
+      fee
+      tickSpacing
+      pool
     }
-    proof {
-      data
+
+    ... on InitializeEvent {
+      sqrtPriceX96
+      tick
+    }
+
+    ... on MintEvent {
+      sender
+      owner
+      tickLower
+      tickUpper
+      amount
+      amount0
+      amount1
+    }
+
+    ... on BurnEvent {
+      owner
+      tickLower
+      tickUpper
+      amount
+      amount0
+      amount1
+    }
+
+    ... on SwapEvent {
+      sender
+      recipient
+      amount0
+      amount1
+      sqrtPriceX96
+      liquidity
+      tick
+    }
+
+    ... on IncreaseLiquidityEvent {
+      tokenId
+      liquidity
+      amount0
+      amount1
+    }
+
+    ... on DecreaseLiquidityEvent {
+      tokenId
+      liquidity
+      amount0
+      amount1
     }
   }
+
+  proof {
+    data
+  }
+}
+`;
+
+export const subscribeEvents = gql`
+  subscription SubscriptionEvents {
+    onEvent 
+      ${resultEvent}
+  }
+`;
+
+export const queryEvents = gql`
+query getEvents($blockHash: String!, $contract: String) {
+  events(blockHash: $blockHash, contract: $contract)
+    ${resultEvent}
 }
 `;
 

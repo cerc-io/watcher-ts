@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
-import { queryGetPool, queryPoolIdToPoolKey, queryPosition } from './queries';
+import { queryGetPool, queryPoolIdToPoolKey, queryPosition, queryEvents, subscribeEvents } from './queries';
 
 export class Client {
   _config: GraphQLConfig;
@@ -15,87 +15,23 @@ export class Client {
 
   async watchEvents (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
     return this._client.subscribe(
-      gql`
-        subscription SubscriptionReceipt {
-          onEvent {
-            block {
-              number
-              hash
-              timestamp
-            }
-            contract
-            tx {
-              hash
-            }
-            proof {
-              data
-            }
-            event {
-              __typename
-              
-              ... on PoolCreatedEvent {
-                token0
-                token1
-                fee
-                tickSpacing
-                pool
-              }
-
-              ... on InitializeEvent {
-                sqrtPriceX96
-                tick
-              }
-
-              ... on MintEvent {
-                sender
-                owner
-                tickLower
-                tickUpper
-                amount
-                amount0
-                amount1
-              }
-
-              ... on BurnEvent {
-                owner
-                tickLower
-                tickUpper
-                amount
-                amount0
-                amount1
-              }
-
-              ... on SwapEvent {
-                sender
-                recipient
-                amount0
-                amount1
-                sqrtPriceX96
-                liquidity
-                tick
-              }
-
-              ... on IncreaseLiquidityEvent {
-                tokenId
-                liquidity
-                amount0
-                amount1
-              }
-
-              ... on DecreaseLiquidityEvent {
-                tokenId
-                liquidity
-                amount0
-                amount1
-              }
-            }
-          }
-        }
-      `,
+      gql(subscribeEvents),
       ({ data }) => {
         onNext(data.onEvent);
       }
     );
+  }
+
+  async getEvents (blockHash: string, contract?: string): Promise<any> {
+    const { events } = await this._client.query(
+      gql(queryEvents),
+      {
+        blockHash,
+        contract
+      }
+    );
+
+    return events;
   }
 
   async getPosition (blockHash: string, tokenId: bigint): Promise<any> {

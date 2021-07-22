@@ -1,20 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
+import { BlockProgress } from './BlockProgress';
 
 @Entity()
 // Index to query all events for a contract efficiently.
-@Index(['blockHash', 'token'])
+@Index(['contract'])
 export class Event {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @ManyToOne(() => BlockProgress)
+  block!: BlockProgress;
+
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+  txHash!: string;
+
+  // Index of the log in the block.
+  @Column('integer')
+  index!: number;
 
   @Column('varchar', { length: 42 })
-  token!: string;
+  contract!: string;
 
   @Column('varchar', { length: 256 })
   eventName!: string;
+
+  @Column('text')
+  eventInfo!: string;
 
   @Column('text')
   proof!: string;

@@ -4,6 +4,7 @@ import debug from 'debug';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+import { UNKNOWN_EVENT_NAME } from './entity/Event';
 
 const log = debug('vulcanize:resolver');
 
@@ -59,7 +60,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         }
 
         const events = await indexer.getEventsByFilter(blockHash, contract, name);
-        return events.map(event => indexer.getResultEvent(event));
+        return events.filter(event => event.eventName !== UNKNOWN_EVENT_NAME)
+          .map(event => indexer.getResultEvent(event));
       },
 
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {

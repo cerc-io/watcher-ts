@@ -107,18 +107,20 @@ export class Indexer {
   }
 
   async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
-    const uniContract = await this.isUniswapContract(contract);
-    if (!uniContract) {
-      throw new Error('Not a uniswap contract');
+    if (contract) {
+      const uniContract = await this.isUniswapContract(contract);
+      if (!uniContract) {
+        throw new Error('Not a uniswap contract');
+      }
     }
 
-    const events = await this._db.getEvents(blockHash, contract);
+    const events = await this._db.getBlockEvents(blockHash);
     log(`getEvents: db hit, num events: ${events.length}`);
 
     // Filtering.
     const result = events
       // TODO: Filter using db WHERE condition on contract.
-      .filter(event => contract === event.contract)
+      .filter(event => !contract || contract === event.contract)
       // TODO: Filter using db WHERE condition when name is not empty.
       .filter(event => !name || name === event.eventName);
 
@@ -339,7 +341,6 @@ export class Indexer {
         })
       });
     }
-
 
     await this._db.saveEvents(block, dbEvents);
   }

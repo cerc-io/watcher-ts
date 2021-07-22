@@ -14,7 +14,7 @@ export class Swap {
   @PrimaryColumn('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Transaction, transaction => transaction.mints)
+  @ManyToOne(() => Transaction, transaction => transaction.swaps)
   transaction!: Transaction
 
   @Column('bigint')

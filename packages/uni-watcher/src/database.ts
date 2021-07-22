@@ -38,31 +38,6 @@ export class Database {
       .getMany();
   }
 
-  async getEvents (blockHash: string, contract: string): Promise<Event[]> {
-    return this._conn.getRepository(Event)
-      .createQueryBuilder('event')
-      .innerJoinAndSelect('event.block', 'block')
-      .where('block_hash = :blockHash AND contract = :contract', {
-        blockHash,
-        contract
-      })
-      .addOrderBy('event.id', 'ASC')
-      .getMany();
-  }
-
-  async getEventsByName (blockHash: string, contract: string, eventName: string): Promise<Event[] | undefined> {
-    return this._conn.getRepository(Event)
-      .createQueryBuilder('event')
-      .innerJoinAndSelect('event.block', 'block')
-      .where('block_hash = :blockHash AND contract = :contract AND event_name = :eventName', {
-        blockHash,
-        contract,
-        eventName
-      })
-      .addOrderBy('event.id', 'ASC')
-      .getMany();
-  }
-
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
     const blockNumbers = _.range(fromBlockNumber, toBlockNumber + 1);
     const expected = blockNumbers.length;
@@ -135,7 +110,7 @@ export class Database {
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
-    return this._conn.getRepository(Event).findOne(id, { relations: [ 'block' ]});
+    return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
   }
 
   async saveEventEntity (entity: Event): Promise<Event> {

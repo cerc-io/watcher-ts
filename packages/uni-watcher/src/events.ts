@@ -52,8 +52,11 @@ export class EventWatcher {
     this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
       const { data: { request, failed, state, createdOn } } = job;
 
-      await this._indexer.updateBlockProgress(request.data.blockHash);
-      const blockProgress = await this._indexer.getBlockProgress(request.data.blockHash);
+      const dbEvent = await this._indexer.getEvent(request.data.id);
+      assert(dbEvent);
+
+      await this._indexer.updateBlockProgress(dbEvent.block.blockHash);
+      const blockProgress = await this._indexer.getBlockProgress(dbEvent.block.blockHash);
       if (blockProgress && request.data.publishBlockProgress) {
         await this.publishBlockProgressToSubscribers(blockProgress);
       }

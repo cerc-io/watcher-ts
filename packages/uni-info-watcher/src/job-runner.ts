@@ -1,26 +1,18 @@
 import assert from 'assert';
 import 'reflect-metadata';
-import express, { Application } from 'express';
-import { ApolloServer } from 'apollo-server-express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import 'graphql-import-node';
-import { createServer } from 'http';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getConfig, JobQueue } from '@vulcanize/util';
 
-import typeDefs from './schema';
-
-import { createResolvers as createMockResolvers } from './mock/resolvers';
-import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
-import { EventWatcher } from './events';
+import { QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './events';
 
-const log = debug('vulcanize:server');
+const log = debug('vulcanize:job-runner');
 
 export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv))
@@ -36,8 +28,6 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port } = config.server;
-
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
   assert(dbConfig, 'Missing database config');
@@ -46,20 +36,17 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const {
-    ethServer: {
-      gqlApiEndpoint,
-      gqlPostgraphileEndpoint
-    },
-    uniWatcher,
-    tokenWatcher
-  } = upstream;
+  const { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint }, tokenWatcher } = upstream;
+  assert(gqlEndpoint, 'Missing upstream uniWatcher.gqlEndpoint');
+  assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
 
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
+  const uniClient = new UniClient({
+    gqlEndpoint,
+    gqlSubscriptionEndpoint
+  });
 
-  const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
+
   const indexer = new Indexer(db, uniClient, erc20Client);
 
   assert(jobQueueConfig, 'Missing job queue config');
@@ -70,32 +57,37 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(indexer, uniClient, jobQueue);
-  await eventWatcher.start();
+  await jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
+    const { data: { block } } = job;
+    log(`Processing block hash ${block.hash} number ${block.number}`);
+    const events = await indexer.getOrFetchBlockEvents(block);
 
-  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer);
+    for (let ei = 0; ei < events.length; ei++) {
+      const { id } = events[ei];
+      await jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id });
+    }
 
-  const app: Application = express();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
+    await jobQueue.markComplete(job);
   });
 
-  await server.start();
-  server.applyMiddleware({ app });
+  await jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
+    const { data: { id } } = job;
 
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
+    log(`Processing event ${id}`);
+    const dbEvent = await db.getEvent(id);
+    assert(dbEvent);
 
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
+    if (!dbEvent.block.isComplete) {
+      await indexer.processEvent(dbEvent);
+      await indexer.updateBlockProgress(dbEvent.block.blockHash);
+    }
+
+    await jobQueue.markComplete(job);
   });
-
-  return { app, server };
 };
 
 main().then(() => {
-  log('Starting server...');
+  log('Starting job runner...');
 }).catch(err => {
   log(err);
 });
