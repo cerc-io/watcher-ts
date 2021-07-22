@@ -72,6 +72,19 @@ const resultEvent = `
       amount0
       amount1
     }
+
+    ... on CollectEvent {
+      tokenId
+      recipient
+      amount0
+      amount1
+    }
+
+    ... on TransferEvent {
+      from
+      to
+      tokenId
+    }
   }
 
   proof {

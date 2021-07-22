@@ -69,6 +69,21 @@ export interface DecreaseLiquidityEvent {
   amount1: bigint;
 }
 
+export interface CollectEvent {
+  __typename: 'CollectEvent';
+  tokenId: bigint;
+  recipient: string;
+  amount0: bigint;
+  amount1: bigint;
+}
+
+export interface TransferEvent {
+  __typename: 'TransferEvent';
+  from: string;
+  to: string;
+  tokenId: bigint;
+}
+
 export interface Block {
   number: number;
   hash: string;
@@ -86,7 +101,7 @@ export interface ResultEvent {
   tx: Transaction;
   contract: string;
   eventIndex: number;
-  event: PoolCreatedEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent;
+  event: PoolCreatedEvent | InitializeEvent | MintEvent | BurnEvent | SwapEvent | IncreaseLiquidityEvent | DecreaseLiquidityEvent | CollectEvent | TransferEvent;
   proof: {
     data: string;
   }

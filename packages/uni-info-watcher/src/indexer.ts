@@ -15,7 +15,7 @@ import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
 import { Database } from './database';
 import { Event } from './entity/Event';
-import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent } from './events';
+import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent, CollectEvent, TransferEvent } from './events';
 
 const log = debug('vulcanize:indexer');
 
@@ -94,37 +94,47 @@ export class Indexer {
     switch (eventType) {
       case 'PoolCreatedEvent':
         log('Factory PoolCreated event', contract);
-        this._handlePoolCreated(block, contract, tx, event as PoolCreatedEvent);
+        await this._handlePoolCreated(block, contract, tx, event as PoolCreatedEvent);
         break;
 
       case 'InitializeEvent':
         log('Pool Initialize event', contract);
-        this._handleInitialize(block, contract, tx, event as InitializeEvent);
+        await this._handleInitialize(block, contract, tx, event as InitializeEvent);
         break;
 
       case 'MintEvent':
         log('Pool Mint event', contract);
-        this._handleMint(block, contract, tx, event as MintEvent);
+        await this._handleMint(block, contract, tx, event as MintEvent);
         break;
 
       case 'BurnEvent':
         log('Pool Burn event', contract);
-        this._handleBurn(block, contract, tx, event as BurnEvent);
+        await this._handleBurn(block, contract, tx, event as BurnEvent);
         break;
 
       case 'SwapEvent':
         log('Pool Swap event', contract);
-        this._handleSwap(block, contract, tx, event as SwapEvent);
+        await this._handleSwap(block, contract, tx, event as SwapEvent);
         break;
 
       case 'IncreaseLiquidityEvent':
         log('NFPM IncreaseLiquidity event', contract);
-        this._handleIncreaseLiquidity(block, contract, tx, event as IncreaseLiquidityEvent);
+        await this._handleIncreaseLiquidity(block, contract, tx, event as IncreaseLiquidityEvent);
         break;
 
       case 'DecreaseLiquidityEvent':
         log('NFPM DecreaseLiquidity event', contract);
-        this._handleDecreaseLiquidity(block, contract, tx, event as DecreaseLiquidityEvent);
+        await this._handleDecreaseLiquidity(block, contract, tx, event as DecreaseLiquidityEvent);
+        break;
+
+      case 'CollectEvent':
+        log('NFPM Collect event', contract);
+        await this._handleCollect(block, contract, tx, event as CollectEvent);
+        break;
+
+      case 'TransferEvent':
+        log('NFPM Transfer event', contract);
+        await this._handleTransfer(block, contract, tx, event as TransferEvent);
         break;
 
       default:
@@ -789,6 +799,47 @@ export class Indexer {
     await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
 
     await this._db.savePosition(position, blockNumber);
+
+    await this._savePositionSnapshot(position, block, tx);
+  }
+
+  async _handleCollect (block: Block, contractAddress: string, tx: Transaction, event: CollectEvent): Promise<void> {
+    const { number: blockNumber } = block;
+    let position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
+
+    // Position was not able to be fetched.
+    if (position == null) {
+      return;
+    }
+
+    // Temp fix from Subgraph mapping code.
+    if (utils.getAddress(position.pool.id) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
+      return;
+    }
+
+    const token0 = position.token0;
+    const token1 = position.token1;
+    const amount0 = convertTokenToDecimal(BigInt(event.amount0), BigInt(token0.decimals));
+    const amount1 = convertTokenToDecimal(BigInt(event.amount1), BigInt(token1.decimals));
+    position.collectedFeesToken0 = position.collectedFeesToken0.plus(amount0);
+    position.collectedFeesToken1 = position.collectedFeesToken1.plus(amount1);
+
+    position = await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
+
+    await this._db.savePosition(position, blockNumber);
+
+    await this._savePositionSnapshot(position, block, tx);
+  }
+
+  async _handleTransfer (block: Block, contractAddress: string, tx: Transaction, event: TransferEvent): Promise<void> {
+    const position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
+    // Position was not able to be fetched.
+    if (position === null) {
+      return;
+    }
+
+    position.owner = event.to;
+    await this._db.savePosition(position, block.number);
 
     await this._savePositionSnapshot(position, block, tx);
   }
