@@ -25,7 +25,7 @@ export const convertTokenToDecimal = (tokenAmount: bigint, exchangeDecimals: big
 
 export const loadTransaction = async (db: Database, event: { block: Block, tx: Transaction }): Promise<TransactionEntity> => {
   const { tx, block } = event;
-  let transaction = await db.getTransaction({ id: tx.hash, blockNumber: block.number });
+  let transaction = await db.getTransaction({ id: tx.hash, blockHash: block.hash });
 
   if (!transaction) {
     transaction = new TransactionEntity();

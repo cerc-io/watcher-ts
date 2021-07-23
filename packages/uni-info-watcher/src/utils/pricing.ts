@@ -5,6 +5,7 @@ import { BigNumber } from 'ethers';
 import { exponentToBigDecimal, safeDiv } from '.';
 import { Database } from '../database';
 import { Token } from '../entity/Token';
+import { Block } from '../events';
 
 // TODO: Move constants to config.
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
@@ -54,9 +55,9 @@ export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, t
   return [price0, price1];
 };
 
-export const getEthPriceInUSD = async (db: Database): Promise<Decimal> => {
+export const getEthPriceInUSD = async (db: Database, block: Block): Promise<Decimal> => {
   // Fetch eth prices for each stablecoin.
-  const usdcPool = await db.getPool({ id: USDC_WETH_03_POOL }); // DAI is token0.
+  const usdcPool = await db.getPool({ id: USDC_WETH_03_POOL, blockHash: block.hash }); // DAI is token0.
 
   if (usdcPool) {
     return usdcPool.token0Price;

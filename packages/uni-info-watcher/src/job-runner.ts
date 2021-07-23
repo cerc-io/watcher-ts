@@ -7,6 +7,8 @@ import debug from 'debug';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getConfig, JobQueue } from '@vulcanize/util';
+import { getCache } from '@vulcanize/cache';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
@@ -36,9 +38,16 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint }, tokenWatcher } = upstream;
+  const { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint }, tokenWatcher, cache: cacheConfig, ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint } } = upstream;
   assert(gqlEndpoint, 'Missing upstream uniWatcher.gqlEndpoint');
   assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
+
+  const cache = await getCache(cacheConfig);
+  const ethClient = new EthClient({
+    gqlEndpoint: gqlApiEndpoint,
+    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
 
   const uniClient = new UniClient({
     gqlEndpoint,
@@ -47,7 +56,7 @@ export const main = async (): Promise<any> => {
 
   const erc20Client = new ERC20Client(tokenWatcher);
 
-  const indexer = new Indexer(db, uniClient, erc20Client);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -58,8 +67,49 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   await jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-    const { data: { block } } = job;
+    const { data: { block, priority } } = job;
     log(`Processing block hash ${block.hash} number ${block.number}`);
+
+    // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
+    // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
+    let syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      syncStatus = await indexer.updateSyncStatus(block.hash, block.number);
+    }
+
+    if (block.hash !== syncStatus.latestCanonicalBlockHash) {
+      const parent = await indexer.getBlockProgress(block.parentHash);
+      if (!parent) {
+        const { number: parentBlockNumber, parent: { hash: grandparentHash }, timestamp: parentTimestamp } = await indexer.getBlock(block.parentHash);
+
+        // Create a higher priority job to index parent block and then abort.
+        // We don't have to worry about aborting as this job will get retried later.
+        const newPriority = (priority || 0) + 1;
+        await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
+          block: {
+            hash: block.parentHash,
+            number: parentBlockNumber,
+            parentHash: grandparentHash,
+            timestamp: parentTimestamp
+          },
+          priority: newPriority
+        }, { priority: newPriority });
+
+        const message = `Parent block number ${parentBlockNumber} hash ${block.parentHash} of block number ${block.number} hash ${block.hash} not fetched yet, aborting`;
+        log(message);
+
+        throw new Error(message);
+      }
+
+      if (block.parentHash !== syncStatus.latestCanonicalBlockHash && !parent.isComplete) {
+        // Parent block indexing needs to finish before this block can be indexed.
+        const message = `Indexing incomplete for parent block number ${parent.blockNumber} hash ${block.parentHash} of block number ${block.number} hash ${block.hash}, aborting`;
+        log(message);
+
+        throw new Error(message);
+      }
+    }
+
     const events = await indexer.getOrFetchBlockEvents(block);
 
     for (let ei = 0; ei < events.length; ei++) {
@@ -79,7 +129,6 @@ export const main = async (): Promise<any> => {
 
     if (!dbEvent.block.isComplete) {
       await indexer.processEvent(dbEvent);
-      await indexer.updateBlockProgress(dbEvent.block.blockHash);
     }
 
     await jobQueue.markComplete(job);

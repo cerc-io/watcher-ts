@@ -10,7 +10,9 @@ import { createServer } from 'http';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 import { getConfig, JobQueue } from '@vulcanize/util';
+import { getCache } from '@vulcanize/cache';
 
 import typeDefs from './schema';
 
@@ -52,15 +54,23 @@ export const main = async (): Promise<any> => {
       gqlPostgraphileEndpoint
     },
     uniWatcher,
-    tokenWatcher
+    tokenWatcher,
+    cache: cacheConfig
   } = upstream;
 
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
+  const cache = await getCache(cacheConfig);
+  const ethClient = new EthClient({
+    gqlEndpoint: gqlApiEndpoint,
+    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const indexer = new Indexer(db, uniClient, erc20Client);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -70,7 +80,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(indexer, uniClient, jobQueue);
+  const eventWatcher = new EventWatcher(indexer, ethClient, jobQueue);
   await eventWatcher.start();
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer);

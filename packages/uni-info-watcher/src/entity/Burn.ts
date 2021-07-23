@@ -11,6 +11,7 @@ export class Burn {
   @PrimaryColumn('varchar')
   id!: string;
 
+  // https://typeorm.io/#/entities/primary-columns
   @PrimaryColumn('varchar', { length: 66 })
   blockHash!: string
 

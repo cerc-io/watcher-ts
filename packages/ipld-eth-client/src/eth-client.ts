@@ -63,6 +63,10 @@ export class EthClient {
     return this._graphqlClient.query(ethQueries.getBlockWithTransactions, { blockNumber });
   }
 
+  async getBlockByHash (blockHash: string): Promise<any> {
+    return this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
+  }
+
   async getLogs (vars: Vars): Promise<any> {
     const result = await this._getCachedOrFetch('getLogs', vars);
     const {

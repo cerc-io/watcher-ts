@@ -1,6 +1,7 @@
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, FindOneOptions, LessThanOrEqual } from 'typeorm';
+import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, FindOneOptions, In, LessThanOrEqual, Repository } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { MAX_REORG_DEPTH } from '@vulcanize/util';
 
 import { EventSyncProgress } from './entity/EventProgress';
 import { Factory } from './entity/Factory';
@@ -22,6 +23,7 @@ import { Position } from './entity/Position';
 import { PositionSnapshot } from './entity/PositionSnapshot';
 import { BlockProgress } from './entity/BlockProgress';
 import { Block } from './events';
+import { SyncStatus } from './entity/SyncStatus';
 
 export class Database {
   _config: ConnectionOptions
@@ -45,54 +47,63 @@ export class Database {
     return this._conn.close();
   }
 
-  async getFactory ({ id, blockNumber }: DeepPartial<Factory>): Promise<Factory | undefined> {
+  async getFactory ({ id, blockHash }: DeepPartial<Factory>): Promise<Factory | undefined> {
     const repo = this._conn.getRepository(Factory);
-
     const whereOptions: FindConditions<Factory> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Factory> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Factory>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getBundle ({ id, blockNumber }: DeepPartial<Bundle>): Promise<Bundle | undefined> {
+  async getBundle ({ id, blockHash }: DeepPartial<Bundle>): Promise<Bundle | undefined> {
     const repo = this._conn.getRepository(Bundle);
-
     const whereOptions: FindConditions<Bundle> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Bundle> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
-  }
+    let entity = await repo.findOne(findOptions as FindOneOptions<Bundle>);
 
-  async getToken ({ id, blockNumber }: DeepPartial<Token>): Promise<Token | undefined> {
-    const repo = this._conn.getRepository(Token);
-
-    const whereOptions: FindConditions<Token> = { id };
-
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
     }
 
-    const findOptions: FindOneOptions<Token> = {
+    return entity;
+  }
+
+  async getToken ({ id, blockHash }: DeepPartial<Token>): Promise<Token | undefined> {
+    const repo = this._conn.getRepository(Token);
+    const whereOptions: FindConditions<Token> = { id };
+
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
+    }
+
+    const findOptions = {
       where: whereOptions,
       relations: ['whitelistPools', 'whitelistPools.token0', 'whitelistPools.token1'],
       order: {
@@ -100,18 +111,24 @@ export class Database {
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Token>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getPool ({ id, blockNumber }: DeepPartial<Pool>): Promise<Pool | undefined> {
+  async getPool ({ id, blockHash }: DeepPartial<Pool>): Promise<Pool | undefined> {
     const repo = this._conn.getRepository(Pool);
     const whereOptions: FindConditions<Pool> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Pool> = {
+    const findOptions = {
       where: whereOptions,
       relations: ['token0', 'token1'],
       order: {
@@ -119,18 +136,24 @@ export class Database {
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Pool>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getPosition ({ id, blockNumber }: DeepPartial<Position>): Promise<Position | undefined> {
+  async getPosition ({ id, blockHash }: DeepPartial<Position>): Promise<Position | undefined> {
     const repo = this._conn.getRepository(Position);
     const whereOptions: FindConditions<Position> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Position> = {
+    const findOptions = {
       where: whereOptions,
       relations: ['pool', 'token0', 'token1', 'tickLower', 'tickUpper', 'transaction'],
       order: {
@@ -138,18 +161,24 @@ export class Database {
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Position>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getTick ({ id, blockNumber }: DeepPartial<Tick>): Promise<Tick | undefined> {
+  async getTick ({ id, blockHash }: DeepPartial<Tick>): Promise<Tick | undefined> {
     const repo = this._conn.getRepository(Tick);
     const whereOptions: FindConditions<Tick> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Tick> = {
+    const findOptions = {
       where: whereOptions,
       relations: ['pool'],
       order: {
@@ -157,118 +186,160 @@ export class Database {
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Tick>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getPoolDayData ({ id, blockNumber }: DeepPartial<PoolDayData>): Promise<PoolDayData | undefined> {
+  async getPoolDayData ({ id, blockHash }: DeepPartial<PoolDayData>): Promise<PoolDayData | undefined> {
     const repo = this._conn.getRepository(PoolDayData);
     const whereOptions: FindConditions<PoolDayData> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<PoolDayData> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<PoolDayData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getPoolHourData ({ id, blockNumber }: DeepPartial<PoolHourData>): Promise<PoolHourData | undefined> {
+  async getPoolHourData ({ id, blockHash }: DeepPartial<PoolHourData>): Promise<PoolHourData | undefined> {
     const repo = this._conn.getRepository(PoolHourData);
     const whereOptions: FindConditions<PoolHourData> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<PoolHourData> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<PoolHourData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getUniswapDayData ({ id, blockNumber }: DeepPartial<UniswapDayData>): Promise<UniswapDayData | undefined> {
+  async getUniswapDayData ({ id, blockHash }: DeepPartial<UniswapDayData>): Promise<UniswapDayData | undefined> {
     const repo = this._conn.getRepository(UniswapDayData);
     const whereOptions: FindConditions<UniswapDayData> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<UniswapDayData> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<UniswapDayData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getTokenDayData ({ id, blockNumber }: DeepPartial<TokenDayData>): Promise<TokenDayData | undefined> {
+  async getTokenDayData ({ id, blockHash }: DeepPartial<TokenDayData>): Promise<TokenDayData | undefined> {
     const repo = this._conn.getRepository(TokenDayData);
     const whereOptions: FindConditions<TokenDayData> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<TokenDayData> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<TokenDayData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getTokenHourData ({ id, blockNumber }: DeepPartial<TokenHourData>): Promise<TokenHourData | undefined> {
+  async getTokenHourData ({ id, blockHash }: DeepPartial<TokenHourData>): Promise<TokenHourData | undefined> {
     const repo = this._conn.getRepository(TokenHourData);
     const whereOptions: FindConditions<TokenHourData> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<TokenHourData> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<TokenHourData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getTransaction ({ id, blockNumber }: DeepPartial<Transaction>): Promise<Transaction | undefined> {
+  async getTransaction ({ id, blockHash }: DeepPartial<Transaction>): Promise<Transaction | undefined> {
     const repo = this._conn.getRepository(Transaction);
     const whereOptions: FindConditions<Transaction> = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
-    const findOptions: FindOneOptions<Transaction> = {
+    const findOptions = {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
       }
     };
 
-    return repo.findOne(findOptions);
+    let entity = await repo.findOne(findOptions as FindOneOptions<Transaction>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._getPrevEntityVersion(repo, findOptions);
+    }
+
+    return entity;
   }
 
-  async getFactories ({ blockNumber }: DeepPartial<Factory>, queryOptions: { [key: string]: any }): Promise<Array<Factory>> {
+  async getFactories ({ blockHash }: DeepPartial<Factory>, queryOptions: { [key: string]: any }): Promise<Array<Factory>> {
     const repo = this._conn.getRepository(Factory);
 
     let selectQueryBuilder = repo.createQueryBuilder('factory')
@@ -276,8 +347,12 @@ export class Database {
       .orderBy('id')
       .addOrderBy('block_number', 'DESC');
 
-    if (blockNumber) {
-      selectQueryBuilder = selectQueryBuilder.where('block_number <= :blockNumber', { blockNumber });
+    if (blockHash) {
+      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .where('block_hash IN (:...blockHashes)', { blockHashes })
+        .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
     }
 
     const { limit } = queryOptions;
@@ -525,6 +600,32 @@ export class Database {
     return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
   }
 
+  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(SyncStatus);
+
+      let entity = await repo.findOne();
+      if (!entity) {
+        entity = repo.create({
+          latestCanonicalBlockHash: blockHash,
+          latestCanonicalBlockNumber: blockNumber
+        });
+      }
+
+      if (blockNumber >= entity.latestCanonicalBlockNumber) {
+        entity.chainHeadBlockHash = blockHash;
+        entity.chainHeadBlockNumber = blockNumber;
+      }
+
+      return await repo.save(entity);
+    });
+  }
+
+  async getSyncStatus (): Promise<SyncStatus | undefined> {
+    const repo = this._conn.getRepository(SyncStatus);
+    return repo.findOne();
+  }
+
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
     const repo = this._conn.getRepository(BlockProgress);
     return repo.findOne({ where: { blockHash } });
@@ -542,5 +643,38 @@ export class Database {
         await repo.save(entity);
       }
     });
+  }
+
+  async _getPrevEntityVersion<Entity> (repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
+    assert(findOptions.order.blockNumber);
+    const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(findOptions.where.blockHash);
+    findOptions.where.blockHash = In(blockHashes)
+    let entity = await repo.findOne(findOptions);
+
+    if (!entity) {
+      delete findOptions.where.blockHash;
+      findOptions.where.blockNumber = LessThanOrEqual(canonicalBlockNumber);
+      entity = await repo.findOne(findOptions);
+    }
+
+    return entity;
+  }
+
+  async _getBranchInfo (blockHash: string): Promise<{ canonicalBlockNumber: number, blockHashes: string[] }> {
+    const blockRepo = this._conn.getRepository(BlockProgress);
+    let block = await blockRepo.findOne({ blockHash });
+    assert(block);
+    const blockHashes = [blockHash];
+
+    // TODO: Should be calcualted from chainHeadBlockNumber?
+    const canonicalBlockNumber = block.blockNumber - MAX_REORG_DEPTH;
+
+    while (block.blockNumber > canonicalBlockNumber) {
+      blockHashes.push(block.parentHash);
+      block = await blockRepo.findOne({ blockHash: block.parentHash });
+      assert(block);
+    }
+
+    return { canonicalBlockNumber, blockHashes };
   }
 }

@@ -7,6 +7,7 @@ export class Factory {
   @PrimaryColumn('varchar', { length: 42 })
   id!: string;
 
+  // https://typeorm.io/#/entities/primary-columns
   @PrimaryColumn('varchar', { length: 66 })
   blockHash!: string
 

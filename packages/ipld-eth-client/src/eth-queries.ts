@@ -55,6 +55,20 @@ query allEthHeaderCids($blockNumber: BigInt) {
 }
 `;
 
+export const getBlockByHash = gql`
+query allEthHeaderCids($blockHash: Bytes32) {
+  allEthHeaderCids(condition: { blockHash: $blockHash }) {
+    nodes {
+      cid
+      blockNumber
+      blockHash
+      parentHash
+      timestamp
+    }
+  }
+}
+`;
+
 export const subscribeLogs = gql`
 subscription SubscriptionReceipt {
   listen(topic: "receipt_cids") {
@@ -88,6 +102,7 @@ subscription {
         blockHash
         blockNumber
         parentHash
+        timestamp
       }
     }
   }
@@ -115,6 +130,7 @@ export default {
   getStorageAt,
   getLogs,
   getBlockWithTransactions,
+  getBlockByHash,
   subscribeLogs,
   subscribeBlocks,
   subscribeTransactions

@@ -7,6 +7,7 @@ export class Bundle {
   @PrimaryColumn('varchar', { length: 1 })
   id!: string;
 
+  // https://typeorm.io/#/entities/primary-columns
   @PrimaryColumn('varchar', { length: 66 })
   blockHash!: string
 

@@ -20,12 +20,12 @@ export const updateUniswapDayData = async (db: Database, event: { contractAddres
 
   // TODO: In subgraph factory is fetched by hardcoded factory address.
   // Currently fetching first factory in database as only one exists.
-  const [factory] = await db.getFactories({ blockNumber: block.number }, { limit: 1 });
+  const [factory] = await db.getFactories({ blockHash: block.hash }, { limit: 1 });
 
   const dayID = Math.floor(block.timestamp / 86400); // Rounded.
   const dayStartTimestamp = dayID * 86400;
 
-  let uniswapDayData = await db.getUniswapDayData({ id: dayID.toString(), blockNumber: block.number });
+  let uniswapDayData = await db.getUniswapDayData({ id: dayID.toString(), blockHash: block.hash });
 
   if (!uniswapDayData) {
     uniswapDayData = new UniswapDayData();
@@ -49,10 +49,10 @@ export const updatePoolDayData = async (db: Database, event: { contractAddress: 
     .concat('-')
     .concat(dayID.toString());
 
-  const pool = await db.getPool({ id: contractAddress, blockNumber: block.number });
+  const pool = await db.getPool({ id: contractAddress, blockHash: block.hash });
   assert(pool);
 
-  let poolDayData = await db.getPoolDayData({ id: dayPoolID, blockNumber: block.number });
+  let poolDayData = await db.getPoolDayData({ id: dayPoolID, blockHash: block.hash });
 
   if (!poolDayData) {
     poolDayData = new PoolDayData();
@@ -97,10 +97,10 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
     .concat('-')
     .concat(hourIndex.toString());
 
-  const pool = await db.getPool({ id: contractAddress, blockNumber: block.number });
+  const pool = await db.getPool({ id: contractAddress, blockHash: block.hash });
   assert(pool);
 
-  let poolHourData = await db.getPoolHourData({ id: hourPoolID, blockNumber: block.number });
+  let poolHourData = await db.getPoolHourData({ id: hourPoolID, blockHash: block.hash });
 
   if (!poolHourData) {
     poolHourData = new PoolHourData();
@@ -138,7 +138,7 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
 
 export const updateTokenDayData = async (db: Database, token: Token, event: { block: Block }): Promise<TokenDayData> => {
   const { block } = event;
-  const bundle = await db.getBundle({ id: '1', blockNumber: block.number });
+  const bundle = await db.getBundle({ id: '1', blockHash: block.hash });
   assert(bundle);
   const dayID = Math.floor(block.timestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
@@ -149,7 +149,7 @@ export const updateTokenDayData = async (db: Database, token: Token, event: { bl
 
   const tokenPrice = token.derivedETH.times(bundle.ethPriceUSD);
 
-  let tokenDayData = await db.getTokenDayData({ id: tokenDayID, blockNumber: block.number });
+  let tokenDayData = await db.getTokenDayData({ id: tokenDayID, blockHash: block.hash });
 
   if (!tokenDayData) {
     tokenDayData = new TokenDayData();
@@ -182,7 +182,7 @@ export const updateTokenDayData = async (db: Database, token: Token, event: { bl
 
 export const updateTokenHourData = async (db: Database, token: Token, event: { block: Block }): Promise<TokenHourData> => {
   const { block } = event;
-  const bundle = await db.getBundle({ id: '1', blockNumber: block.number });
+  const bundle = await db.getBundle({ id: '1', blockHash: block.hash });
   assert(bundle);
   const hourIndex = Math.floor(block.timestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
@@ -193,7 +193,7 @@ export const updateTokenHourData = async (db: Database, token: Token, event: { b
 
   const tokenPrice = token.derivedETH.times(bundle.ethPriceUSD);
 
-  let tokenHourData = await db.getTokenHourData({ id: tokenHourID, blockNumber: block.number });
+  let tokenHourData = await db.getTokenHourData({ id: tokenHourID, blockHash: block.hash });
 
   if (!tokenHourData) {
     tokenHourData = new TokenHourData();
