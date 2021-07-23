@@ -1,3 +1,4 @@
+import assert from 'assert';
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
 
@@ -125,7 +126,8 @@ export const getTrackedAmountUSD = async (
   tokenAmount1: Decimal,
   token1: Token
 ): Promise<Decimal> => {
-  const bundle = await db.loadBundle({ id: '1' });
+  const bundle = await db.getBundle({ id: '1' });
+  assert(bundle);
   const price0USD = token0.derivedETH.times(bundle.ethPriceUSD);
   const price1USD = token1.derivedETH.times(bundle.ethPriceUSD);
 

@@ -11,7 +11,10 @@ export class Swap {
   @PrimaryColumn('varchar')
   id!: string;
 
-  @PrimaryColumn('integer')
+  @PrimaryColumn('varchar', { length: 66 })
+  blockHash!: string
+
+  @Column('integer')
   blockNumber!: number;
 
   @ManyToOne(() => Transaction, transaction => transaction.swaps)

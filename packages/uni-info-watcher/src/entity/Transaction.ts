@@ -11,7 +11,10 @@ export class Transaction {
   @PrimaryColumn('varchar')
   id!: string;
 
-  @PrimaryColumn('integer')
+  @PrimaryColumn('varchar', { length: 66 })
+  blockHash!: string
+
+  @Column('integer')
   blockNumber!: number;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

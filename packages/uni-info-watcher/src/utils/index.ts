@@ -1,8 +1,9 @@
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
 
-import { Transaction } from '../entity/Transaction';
+import { Transaction as TransactionEntity } from '../entity/Transaction';
 import { Database } from '../database';
+import { Block, Transaction } from '../events';
 
 export const exponentToBigDecimal = (decimals: bigint): Decimal => {
   let bd = new Decimal(1);
@@ -22,19 +23,19 @@ export const convertTokenToDecimal = (tokenAmount: bigint, exchangeDecimals: big
   return (new Decimal(tokenAmount.toString())).div(exponentToBigDecimal(exchangeDecimals));
 };
 
-export const loadTransaction = async (db: Database, event: { txHash: string, blockNumber: number, blockTimestamp: number }): Promise<Transaction> => {
-  const { txHash, blockNumber, blockTimestamp } = event;
+export const loadTransaction = async (db: Database, event: { block: Block, tx: Transaction }): Promise<TransactionEntity> => {
+  const { tx, block } = event;
+  let transaction = await db.getTransaction({ id: tx.hash, blockNumber: block.number });
 
-  const transaction = await db.loadTransaction({
-    id: txHash,
-    blockNumber,
-    timestamp: BigInt(blockTimestamp)
-  });
+  if (!transaction) {
+    transaction = new TransactionEntity();
+    transaction.id = tx.hash;
+  }
 
-  transaction.blockNumber = blockNumber;
-  transaction.timestamp = BigInt(blockTimestamp);
+  transaction.blockNumber = block.number;
+  transaction.timestamp = BigInt(block.timestamp);
 
-  return db.saveTransaction(transaction, blockNumber);
+  return db.saveTransaction(transaction, block);
 };
 
 // Return 0 if denominator is 0 in division.

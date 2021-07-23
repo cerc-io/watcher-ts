@@ -7,7 +7,10 @@ export class Factory {
   @PrimaryColumn('varchar', { length: 42 })
   id!: string;
 
-  @PrimaryColumn('integer')
+  @PrimaryColumn('varchar', { length: 66 })
+  blockHash!: string
+
+  @Column('integer')
   blockNumber!: number;
 
   @Column('bigint', { default: BigInt(0) })

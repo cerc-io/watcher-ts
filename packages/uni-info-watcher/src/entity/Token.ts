@@ -9,7 +9,10 @@ export class Token {
   @PrimaryColumn('varchar', { length: 42 })
   id!: string;
 
-  @PrimaryColumn('integer')
+  @PrimaryColumn('varchar', { length: 66 })
+  blockHash!: string
+
+  @Column('integer')
   blockNumber!: number;
 
   @Column('varchar')

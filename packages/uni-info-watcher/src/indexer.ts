@@ -2,7 +2,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 
@@ -10,12 +10,19 @@ import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToT
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
 import { Token } from './entity/Token';
 import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
-import { loadTick } from './utils/tick';
+import { createTick } from './utils/tick';
 import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
 import { Database } from './database';
 import { Event } from './entity/Event';
 import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent, CollectEvent, TransferEvent } from './events';
+import { Factory } from './entity/Factory';
+import { Bundle } from './entity/Bundle';
+import { Pool } from './entity/Pool';
+import { Mint } from './entity/Mint';
+import { Burn } from './entity/Burn';
+import { Swap } from './entity/Swap';
+import { PositionSnapshot } from './entity/PositionSnapshot';
 
 const log = debug('vulcanize:indexer');
 
@@ -88,7 +95,7 @@ export class Indexer {
     const resultEvent = this.getResultEvent(dbEvent);
 
     // TODO: Process proof (proof.data) in event.
-    const { contract, block, tx, event } = resultEvent;
+    const { contract, tx, block, event } = resultEvent;
     const { __typename: eventType } = event;
 
     switch (eventType) {
@@ -179,16 +186,33 @@ export class Indexer {
   }
 
   async _handlePoolCreated (block: Block, contractAddress: string, tx: Transaction, poolCreatedEvent: PoolCreatedEvent): Promise<void> {
-    const { number: blockNumber, hash: blockHash } = block;
+    const { number: blockNumber } = block;
     const { token0: token0Address, token1: token1Address, fee, pool: poolAddress } = poolCreatedEvent;
 
+    // Temp fix from Subgraph mapping code.
+    if (utils.getAddress(poolAddress) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
+      return;
+    }
+
     // Load factory.
-    const factory = await this._db.loadFactory({ blockNumber, id: contractAddress });
+    let factory = await this._db.getFactory({ blockNumber, id: contractAddress });
+
+    if (!factory) {
+      factory = new Factory();
+      factory.id = contractAddress;
+      factory = await this._db.saveFactory(factory, block);
+
+      // Create new bundle for tracking eth price.
+      const bundle = new Bundle();
+      bundle.id = '1';
+      await this._db.saveBundle(bundle, block);
+    }
 
     // Update Factory.
-    let factoryPoolCount = BigNumber.from(factory.poolCount);
-    factoryPoolCount = factoryPoolCount.add(1);
-    factory.poolCount = BigInt(factoryPoolCount.toHexString());
+    factory.poolCount = BigInt(factory.poolCount) + BigInt(1);
+
+    let pool = new Pool();
+    pool.id = poolAddress;
 
     // Get Tokens.
     let [token0, token1] = await Promise.all([
@@ -198,61 +222,59 @@ export class Indexer {
 
     // Create Tokens if not present.
     if (!token0) {
-      token0 = await this._createToken(blockHash, blockNumber, token0Address);
+      token0 = await this._createToken(block, token0Address);
     }
 
     if (!token1) {
-      token1 = await this._createToken(blockHash, blockNumber, token1Address);
+      token1 = await this._createToken(block, token1Address);
     }
 
-    // Create new Pool entity.
-    // Skipping adding createdAtTimestamp field as it is not queried in frontend subgraph.
-    const pool = await this._db.loadPool({
-      blockNumber,
-      id: poolAddress,
-      token0: token0,
-      token1: token1,
-      feeTier: BigInt(fee)
-    });
+    pool.token0 = token0;
+    pool.token1 = token1;
+    pool.feeTier = BigInt(fee);
+    pool = await this._db.savePool(pool, block);
 
     // Update white listed pools.
     if (WHITELIST_TOKENS.includes(token0.id)) {
       token1.whitelistPools.push(pool);
-      await this._db.saveToken(token1, blockNumber);
     }
 
     if (WHITELIST_TOKENS.includes(token1.id)) {
       token0.whitelistPools.push(pool);
-      await this._db.saveToken(token0, blockNumber);
     }
 
+    // Skipping adding createdAtTimestamp field as it is not queried in frontend subgraph.
+
     // Save entities to DB.
-    await this._db.saveFactory(factory, blockNumber);
+    await this._db.saveToken(token0, block);
+    await this._db.saveToken(token1, block);
+    await this._db.saveFactory(factory, block);
   }
 
   /**
    * Create new Token.
    * @param tokenAddress
    */
-  async _createToken (blockHash: string, blockNumber: number, tokenAddress: string): Promise<Token> {
-    const { value: symbol } = await this._erc20Client.getSymbol(blockHash, tokenAddress);
-    const { value: name } = await this._erc20Client.getName(blockHash, tokenAddress);
-    const { value: totalSupply } = await this._erc20Client.getTotalSupply(blockHash, tokenAddress);
+  async _createToken (block: Block, tokenAddress: string): Promise<Token> {
+    const token = new Token();
+    token.id = tokenAddress;
+
+    const { value: symbol } = await this._erc20Client.getSymbol(block.hash, tokenAddress);
+    const { value: name } = await this._erc20Client.getName(block.hash, tokenAddress);
+    const { value: totalSupply } = await this._erc20Client.getTotalSupply(block.hash, tokenAddress);
 
     // TODO: Decimals not implemented by erc20-watcher.
     // const { value: decimals } = await this._erc20Client.getDecimals(blockHash, tokenAddress);
 
-    return this._db.loadToken({
-      blockNumber,
-      id: tokenAddress,
-      symbol,
-      name,
-      totalSupply
-    });
+    token.symbol = symbol;
+    token.name = name;
+    token.totalSupply = totalSupply;
+
+    return this._db.saveToken(token, block);
   }
 
   async _handleInitialize (block: Block, contractAddress: string, tx: Transaction, initializeEvent: InitializeEvent): Promise<void> {
-    const { number: blockNumber, timestamp: blockTimestamp } = block;
+    const { number: blockNumber } = block;
     const { sqrtPriceX96, tick } = initializeEvent;
     const pool = await this._db.getPool({ id: contractAddress, blockNumber });
     assert(pool, `Pool ${contractAddress} not found.`);
@@ -260,39 +282,41 @@ export class Indexer {
     // Update Pool.
     pool.sqrtPrice = BigInt(sqrtPriceX96);
     pool.tick = BigInt(tick);
-    this._db.savePool(pool, blockNumber);
+    this._db.savePool(pool, block);
 
-    // Update ETH price now that prices could have changed.
-    const bundle = await this._db.loadBundle({ id: '1', blockNumber });
-    bundle.ethPriceUSD = await getEthPriceInUSD(this._db);
-    this._db.saveBundle(bundle, blockNumber);
-
-    await updatePoolDayData(this._db, { contractAddress, blockNumber, blockTimestamp });
-    await updatePoolHourData(this._db, { contractAddress, blockNumber, blockTimestamp });
-
+    // Update token prices.
     const [token0, token1] = await Promise.all([
       this._db.getToken({ id: pool.token0.id, blockNumber }),
       this._db.getToken({ id: pool.token1.id, blockNumber })
     ]);
 
+    // Update ETH price now that prices could have changed.
+    const bundle = await this._db.getBundle({ id: '1', blockNumber });
+    assert(bundle);
+    bundle.ethPriceUSD = await getEthPriceInUSD(this._db);
+    this._db.saveBundle(bundle, block);
+
+    await updatePoolDayData(this._db, { contractAddress, block });
+    await updatePoolHourData(this._db, { contractAddress, block });
+
     assert(token0 && token1, 'Pool tokens not found.');
 
-    // Update token prices.
     token0.derivedETH = await findEthPerToken(token0);
     token1.derivedETH = await findEthPerToken(token1);
 
     await Promise.all([
-      this._db.saveToken(token0, blockNumber),
-      this._db.saveToken(token1, blockNumber)
+      this._db.saveToken(token0, block),
+      this._db.saveToken(token1, block)
     ]);
   }
 
   async _handleMint (block: Block, contractAddress: string, tx: Transaction, mintEvent: MintEvent): Promise<void> {
-    const { number: blockNumber, timestamp: blockTimestamp } = block;
-    const { hash: txHash } = tx;
-    const bundle = await this._db.loadBundle({ id: '1', blockNumber });
+    const { number: blockNumber } = block;
+    const bundle = await this._db.getBundle({ id: '1', blockNumber });
+    assert(bundle);
     const poolAddress = contractAddress;
-    const pool = await this._db.loadPool({ id: poolAddress, blockNumber });
+    const pool = await this._db.getPool({ id: poolAddress, blockNumber });
+    assert(pool);
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
@@ -349,29 +373,27 @@ export class Indexer {
     factory.totalValueLockedETH = factory.totalValueLockedETH.plus(pool.totalValueLockedETH);
     factory.totalValueLockedUSD = factory.totalValueLockedETH.times(bundle.ethPriceUSD);
 
-    const transaction = await loadTransaction(this._db, { txHash, blockNumber, blockTimestamp });
+    const transaction = await loadTransaction(this._db, { block, tx });
 
-    await this._db.loadMint({
-      id: transaction.id + '#' + pool.txCount.toString(),
-      blockNumber,
-      transaction,
-      timestamp: transaction.timestamp,
-      pool,
-      token0: pool.token0,
-      token1: pool.token1,
-      owner: mintEvent.owner,
-      sender: mintEvent.sender,
+    const mint = new Mint();
+    mint.id = transaction.id + '#' + pool.txCount.toString();
+    mint.transaction = transaction;
+    mint.timestamp = transaction.timestamp;
+    mint.pool = pool;
+    mint.token0 = pool.token0;
+    mint.token1 = pool.token1;
+    mint.owner = mintEvent.owner;
+    mint.sender = mintEvent.sender;
 
-      // TODO: Assign origin with Transaction from address.
-      // origin: event.transaction.from
+    // TODO: Assign origin with Transaction from address.
+    // origin: event.transaction.from
 
-      amount: mintEvent.amount,
-      amount0: amount0,
-      amount1: amount1,
-      amountUSD: amountUSD,
-      tickLower: mintEvent.tickLower,
-      tickUpper: mintEvent.tickUpper
-    });
+    mint.amount = mintEvent.amount;
+    mint.amount0 = amount0;
+    mint.amount1 = amount1;
+    mint.amountUSD = amountUSD;
+    mint.tickLower = mintEvent.tickLower;
+    mint.tickUpper = mintEvent.tickUpper;
 
     // Tick entities.
     const lowerTickIdx = mintEvent.tickLower;
@@ -380,8 +402,16 @@ export class Indexer {
     const lowerTickId = poolAddress + '#' + mintEvent.tickLower.toString();
     const upperTickId = poolAddress + '#' + mintEvent.tickUpper.toString();
 
-    const lowerTick = await loadTick(this._db, lowerTickId, BigInt(lowerTickIdx), pool, blockNumber);
-    const upperTick = await loadTick(this._db, upperTickId, BigInt(upperTickIdx), pool, blockNumber);
+    let lowerTick = await this._db.getTick({ id: lowerTickId, blockNumber });
+    let upperTick = await this._db.getTick({ id: upperTickId, blockNumber });
+
+    if (!lowerTick) {
+      lowerTick = await createTick(this._db, lowerTickId, BigInt(lowerTickIdx), pool, block);
+    }
+
+    if (!upperTick) {
+      upperTick = await createTick(this._db, upperTickId, BigInt(upperTickIdx), pool, block);
+    }
 
     const amount = BigInt(mintEvent.amount);
     lowerTick.liquidityGross = BigInt(lowerTick.liquidityGross) + amount;
@@ -392,36 +422,38 @@ export class Indexer {
     // TODO: Update Tick's volume, fees, and liquidity provider count.
     // Computing these on the tick level requires reimplementing some of the swapping code from v3-core.
 
-    await updateUniswapDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updatePoolDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updatePoolHourData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updateTokenDayData(this._db, token0, { blockNumber, blockTimestamp });
-    await updateTokenDayData(this._db, token1, { blockNumber, blockTimestamp });
-    await updateTokenHourData(this._db, token0, { blockNumber, blockTimestamp });
-    await updateTokenHourData(this._db, token1, { blockNumber, blockTimestamp });
+    await updateUniswapDayData(this._db, { block, contractAddress });
+    await updatePoolDayData(this._db, { block, contractAddress });
+    await updatePoolHourData(this._db, { block, contractAddress });
+    await updateTokenDayData(this._db, token0, { block });
+    await updateTokenDayData(this._db, token1, { block });
+    await updateTokenHourData(this._db, token0, { block });
+    await updateTokenHourData(this._db, token1, { block });
 
     await Promise.all([
-      this._db.saveToken(token0, blockNumber),
-      this._db.saveToken(token1, blockNumber)
+      this._db.saveToken(token0, block),
+      this._db.saveToken(token1, block)
     ]);
 
-    await this._db.savePool(pool, blockNumber);
-    await this._db.saveFactory(factory, blockNumber);
+    await this._db.savePool(pool, block);
+    await this._db.saveFactory(factory, block);
+    await this._db.saveMint(mint, block);
 
     await Promise.all([
-      await this._db.saveTick(lowerTick, blockNumber),
-      await this._db.saveTick(upperTick, blockNumber)
+      await this._db.saveTick(lowerTick, block),
+      await this._db.saveTick(upperTick, block)
     ]);
 
     // Skipping update inner tick vars and tick day data as they are not queried.
   }
 
   async _handleBurn (block: Block, contractAddress: string, tx: Transaction, burnEvent: BurnEvent): Promise<void> {
-    const { number: blockNumber, timestamp: blockTimestamp } = block;
-    const { hash: txHash } = tx;
-    const bundle = await this._db.loadBundle({ id: '1', blockNumber });
+    const { number: blockNumber } = block;
+    const bundle = await this._db.getBundle({ id: '1', blockNumber });
+    assert(bundle);
     const poolAddress = contractAddress;
-    const pool = await this._db.loadPool({ id: poolAddress, blockNumber });
+    const pool = await this._db.getPool({ id: poolAddress, blockNumber });
+    assert(pool);
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
@@ -479,74 +511,75 @@ export class Indexer {
     factory.totalValueLockedUSD = factory.totalValueLockedETH.times(bundle.ethPriceUSD);
 
     // Burn entity.
-    const transaction = await loadTransaction(this._db, { txHash, blockNumber, blockTimestamp });
+    const transaction = await loadTransaction(this._db, { block, tx });
 
-    await this._db.loadBurn({
-      id: transaction.id + '#' + pool.txCount.toString(),
-      blockNumber,
-      transaction,
-      timestamp: transaction.timestamp,
-      pool,
-      token0: pool.token0,
-      token1: pool.token1,
-      owner: burnEvent.owner,
+    const burn = new Burn();
+    burn.id = transaction.id + '#' + pool.txCount.toString();
+    burn.transaction = transaction;
+    burn.timestamp = transaction.timestamp;
+    burn.pool = pool;
+    burn.token0 = pool.token0;
+    burn.token1 = pool.token1;
+    burn.owner = burnEvent.owner;
 
-      // TODO: Assign origin with Transaction from address.
-      // origin: event.transaction.from
+    // TODO: Assign origin with Transaction from address.
+    // origin: event.transaction.from
 
-      amount: burnEvent.amount,
-      amount0,
-      amount1,
-      amountUSD,
-      tickLower: burnEvent.tickLower,
-      tickUpper: burnEvent.tickUpper
-    });
+    burn.amount = burnEvent.amount;
+    burn.amount0 = amount0;
+    burn.amount1 = amount1;
+    burn.amountUSD = amountUSD;
+    burn.tickLower = burnEvent.tickLower;
+    burn.tickUpper = burnEvent.tickUpper;
 
     // Tick entities.
     const lowerTickId = poolAddress + '#' + (burnEvent.tickLower).toString();
     const upperTickId = poolAddress + '#' + (burnEvent.tickUpper).toString();
-    const lowerTick = await this._db.loadTick({ id: lowerTickId, blockNumber });
-    const upperTick = await this._db.loadTick({ id: upperTickId, blockNumber });
+    const lowerTick = await this._db.getTick({ id: lowerTickId, blockNumber });
+    const upperTick = await this._db.getTick({ id: upperTickId, blockNumber });
+    assert(lowerTick && upperTick);
     const amount = BigInt(burnEvent.amount);
     lowerTick.liquidityGross = BigInt(lowerTick.liquidityGross) - amount;
     lowerTick.liquidityNet = BigInt(lowerTick.liquidityNet) - amount;
     upperTick.liquidityGross = BigInt(upperTick.liquidityGross) - amount;
     upperTick.liquidityNet = BigInt(upperTick.liquidityNet) + amount;
 
-    await updateUniswapDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updatePoolDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updatePoolHourData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    await updateTokenDayData(this._db, token0, { blockNumber, blockTimestamp });
-    await updateTokenDayData(this._db, token0, { blockNumber, blockTimestamp });
-    await updateTokenHourData(this._db, token0, { blockNumber, blockTimestamp });
-    await updateTokenHourData(this._db, token0, { blockNumber, blockTimestamp });
+    await updateUniswapDayData(this._db, { block, contractAddress });
+    await updatePoolDayData(this._db, { block, contractAddress });
+    await updatePoolHourData(this._db, { block, contractAddress });
+    await updateTokenDayData(this._db, token0, { block });
+    await updateTokenDayData(this._db, token0, { block });
+    await updateTokenHourData(this._db, token0, { block });
+    await updateTokenHourData(this._db, token0, { block });
 
     // Skipping update Tick fee and Tick day data as they are not queried.
 
     await Promise.all([
-      await this._db.saveTick(lowerTick, blockNumber),
-      await this._db.saveTick(upperTick, blockNumber)
+      await this._db.saveTick(lowerTick, block),
+      await this._db.saveTick(upperTick, block)
     ]);
 
     await Promise.all([
-      this._db.saveToken(token0, blockNumber),
-      this._db.saveToken(token1, blockNumber)
+      this._db.saveToken(token0, block),
+      this._db.saveToken(token1, block)
     ]);
 
-    await this._db.savePool(pool, blockNumber);
-    await this._db.saveFactory(factory, blockNumber);
+    await this._db.savePool(pool, block);
+    await this._db.saveFactory(factory, block);
+    await this._db.saveBurn(burn, block);
   }
 
   async _handleSwap (block: Block, contractAddress: string, tx: Transaction, swapEvent: SwapEvent): Promise<void> {
-    const { number: blockNumber, timestamp: blockTimestamp } = block;
-    const { hash: txHash } = tx;
-    const bundle = await this._db.loadBundle({ id: '1', blockNumber });
+    const { number: blockNumber } = block;
+    const bundle = await this._db.getBundle({ id: '1', blockNumber });
+    assert(bundle);
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
     const [factory] = await this._db.getFactories({ blockNumber }, { limit: 1 });
 
-    const pool = await this._db.loadPool({ id: contractAddress, blockNumber });
+    const pool = await this._db.getPool({ id: contractAddress, blockNumber });
+    assert(pool);
 
     // Hot fix for bad pricing.
     if (pool.id === '0x9663f2ca0454accad3e094448ea6f77443880454') {
@@ -637,11 +670,11 @@ export class Indexer {
     const prices = sqrtPriceX96ToTokenPrices(pool.sqrtPrice, token0 as Token, token1 as Token);
     pool.token0Price = prices[0];
     pool.token1Price = prices[1];
-    this._db.savePool(pool, blockNumber);
+    this._db.savePool(pool, block);
 
     // Update USD pricing.
     bundle.ethPriceUSD = await getEthPriceInUSD(this._db);
-    this._db.saveBundle(bundle, blockNumber);
+    this._db.saveBundle(bundle, block);
     token0.derivedETH = await findEthPerToken(token0);
     token1.derivedETH = await findEthPerToken(token1);
 
@@ -661,39 +694,37 @@ export class Indexer {
     token1.totalValueLockedUSD = token1.totalValueLocked.times(token1.derivedETH).times(bundle.ethPriceUSD);
 
     // Create Swap event
-    const transaction = await loadTransaction(this._db, { txHash, blockNumber, blockTimestamp });
+    const transaction = await loadTransaction(this._db, { block, tx });
 
-    await this._db.loadSwap({
-      id: transaction.id + '#' + pool.txCount.toString(),
-      blockNumber,
-      transaction,
-      timestamp: transaction.timestamp,
-      pool,
-      token0: pool.token0,
-      token1: pool.token1,
-      sender: swapEvent.sender,
+    const swap = new Swap();
+    swap.id = transaction.id + '#' + pool.txCount.toString();
+    swap.transaction = transaction;
+    swap.timestamp = transaction.timestamp;
+    swap.pool = pool;
+    swap.token0 = pool.token0;
+    swap.token1 = pool.token1;
+    swap.sender = swapEvent.sender;
 
-      // TODO: Assign origin with Transaction from address.
-      // origin: event.transaction.from
+    // TODO: Assign origin with Transaction from address.
+    // origin: event.transaction.from
 
-      recipient: swapEvent.recipient,
-      amount0: amount0,
-      amount1: amount1,
-      amountUSD: amountTotalUSDTracked,
-      tick: BigInt(swapEvent.tick),
-      sqrtPriceX96: swapEvent.sqrtPriceX96
-    });
+    swap.recipient = swapEvent.recipient;
+    swap.amount0 = amount0;
+    swap.amount1 = amount1;
+    swap.amountUSD = amountTotalUSDTracked;
+    swap.tick = BigInt(swapEvent.tick);
+    swap.sqrtPriceX96 = swapEvent.sqrtPriceX96;
 
     // Skipping update pool fee growth as they are not queried.
 
     // Interval data.
-    const uniswapDayData = await updateUniswapDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    const poolDayData = await updatePoolDayData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    const poolHourData = await updatePoolHourData(this._db, { blockNumber, contractAddress, blockTimestamp });
-    const token0DayData = await updateTokenDayData(this._db, token0, { blockNumber, blockTimestamp });
-    const token1DayData = await updateTokenDayData(this._db, token0, { blockNumber, blockTimestamp });
-    const token0HourData = await updateTokenHourData(this._db, token0, { blockNumber, blockTimestamp });
-    const token1HourData = await updateTokenHourData(this._db, token0, { blockNumber, blockTimestamp });
+    const uniswapDayData = await updateUniswapDayData(this._db, { block, contractAddress });
+    const poolDayData = await updatePoolDayData(this._db, { block, contractAddress });
+    const poolHourData = await updatePoolHourData(this._db, { block, contractAddress });
+    const token0DayData = await updateTokenDayData(this._db, token0, { block });
+    const token1DayData = await updateTokenDayData(this._db, token0, { block });
+    const token0HourData = await updateTokenHourData(this._db, token0, { block });
+    const token1HourData = await updateTokenHourData(this._db, token0, { block });
 
     // Update volume metrics.
     uniswapDayData.volumeETH = uniswapDayData.volumeETH.plus(amountTotalETHTracked);
@@ -730,20 +761,20 @@ export class Indexer {
     token1HourData.untrackedVolumeUSD = token1HourData.untrackedVolumeUSD.plus(amountTotalUSDTracked);
     token1HourData.feesUSD = token1HourData.feesUSD.plus(feesUSD);
 
-    this._db.saveTokenDayData(token0DayData, blockNumber);
-    this._db.saveTokenDayData(token1DayData, blockNumber);
-    this._db.saveUniswapDayData(uniswapDayData, blockNumber);
-    this._db.savePoolDayData(poolDayData, blockNumber);
-    this._db.saveFactory(factory, blockNumber);
-    this._db.savePool(pool, blockNumber);
-    this._db.saveToken(token0, blockNumber);
-    this._db.saveToken(token1, blockNumber);
+    await this._db.saveSwap(swap, block);
+    await this._db.saveTokenDayData(token0DayData, block);
+    await this._db.saveTokenDayData(token1DayData, block);
+    await this._db.saveUniswapDayData(uniswapDayData, block);
+    await this._db.savePoolDayData(poolDayData, block);
+    await this._db.saveFactory(factory, block);
+    await this._db.savePool(pool, block);
+    await this._db.saveToken(token0, block);
+    await this._db.saveToken(token1, block);
 
     // Skipping update of inner vars of current or crossed ticks as they are not queried.
   }
 
   async _handleIncreaseLiquidity (block: Block, contractAddress: string, tx: Transaction, event: IncreaseLiquidityEvent): Promise<void> {
-    const { number: blockNumber } = block;
     const position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
 
     // position was not able to be fetched.
@@ -768,14 +799,13 @@ export class Indexer {
 
     await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
 
-    await this._db.savePosition(position, blockNumber);
+    await this._db.savePosition(position, block);
 
     await this._savePositionSnapshot(position, block, tx);
   }
 
   async _handleDecreaseLiquidity (block: Block, contractAddress: string, tx: Transaction, event: DecreaseLiquidityEvent): Promise<void> {
-    const { number: blockNumber } = block;
-    const position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
+    let position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
 
     // Position was not able to be fetched.
     if (position == null) {
@@ -796,15 +826,14 @@ export class Indexer {
     position.depositedToken0 = position.depositedToken0.plus(amount0);
     position.depositedToken1 = position.depositedToken1.plus(amount1);
 
-    await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
+    position = await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
 
-    await this._db.savePosition(position, blockNumber);
+    await this._db.savePosition(position, block);
 
     await this._savePositionSnapshot(position, block, tx);
   }
 
   async _handleCollect (block: Block, contractAddress: string, tx: Transaction, event: CollectEvent): Promise<void> {
-    const { number: blockNumber } = block;
     let position = await this._getPosition(block, contractAddress, tx, BigInt(event.tokenId));
 
     // Position was not able to be fetched.
@@ -826,7 +855,7 @@ export class Indexer {
 
     position = await this._updateFeeVars(position, block, contractAddress, BigInt(event.tokenId));
 
-    await this._db.savePosition(position, blockNumber);
+    await this._db.savePosition(position, block);
 
     await this._savePositionSnapshot(position, block, tx);
   }
@@ -839,14 +868,13 @@ export class Indexer {
     }
 
     position.owner = event.to;
-    await this._db.savePosition(position, block.number);
+    await this._db.savePosition(position, block);
 
     await this._savePositionSnapshot(position, block, tx);
   }
 
   async _getPosition (block: Block, contractAddress: string, tx: Transaction, tokenId: bigint): Promise<Position | null> {
-    const { number: blockNumber, hash: blockHash, timestamp: blockTimestamp } = block;
-    const { hash: txHash } = tx;
+    const { number: blockNumber, hash: blockHash } = block;
     let position = await this._db.getPosition({ id: tokenId.toString(), blockNumber });
 
     if (!position) {
@@ -861,31 +889,36 @@ export class Indexer {
 
         const { pool: poolAddress } = await this._uniClient.getPool(blockHash, token0Address, token1Address, fee);
 
-        const transaction = await loadTransaction(this._db, { txHash, blockNumber, blockTimestamp });
+        position = new Position();
+        position.id = tokenId.toString();
+
         const pool = await this._db.getPool({ id: poolAddress, blockNumber });
+        assert(pool);
+        position.pool = pool;
 
         const [token0, token1] = await Promise.all([
           this._db.getToken({ id: token0Address, blockNumber }),
           this._db.getToken({ id: token0Address, blockNumber })
         ]);
+        assert(token0 && token1);
+        position.token0 = token0;
+        position.token1 = token1;
 
         const [tickLower, tickUpper] = await Promise.all([
           this._db.getTick({ id: poolAddress.concat('#').concat(nfpmPosition.tickLower.toString()), blockNumber }),
           this._db.getTick({ id: poolAddress.concat('#').concat(nfpmPosition.tickUpper.toString()), blockNumber })
         ]);
+        assert(tickLower && tickUpper);
+        position.tickLower = tickLower;
+        position.tickUpper = tickUpper;
 
-        position = await this._db.loadPosition({
-          id: tokenId.toString(),
-          blockNumber,
-          pool,
-          token0,
-          token1,
-          tickLower,
-          tickUpper,
-          transaction,
-          feeGrowthInside0LastX128: BigInt(nfpmPosition.feeGrowthInside0LastX128.toString()),
-          feeGrowthInside1LastX128: BigInt(nfpmPosition.feeGrowthInside1LastX128.toString())
-        });
+        const transaction = await loadTransaction(this._db, { block, tx });
+        position.transaction = transaction;
+
+        position.feeGrowthInside0LastX128 = BigInt(nfpmPosition.feeGrowthInside0LastX128.toString());
+        position.feeGrowthInside1LastX128 = BigInt(nfpmPosition.feeGrowthInside1LastX128.toString());
+
+        position = await this._db.savePosition(position, block);
       }
     }
 
@@ -904,25 +937,24 @@ export class Indexer {
   }
 
   async _savePositionSnapshot (position: Position, block: Block, tx: Transaction): Promise<void> {
-    const transaction = await loadTransaction(this._db, { txHash: tx.hash, blockNumber: block.number, blockTimestamp: block.timestamp });
+    const positionSnapshot = new PositionSnapshot();
+    positionSnapshot.id = position.id.concat('#').concat(block.number.toString());
+    positionSnapshot.blockNumber = block.number;
+    positionSnapshot.owner = position.owner;
+    positionSnapshot.pool = position.pool;
+    positionSnapshot.position = position;
+    positionSnapshot.timestamp = BigInt(block.timestamp);
+    positionSnapshot.liquidity = position.liquidity;
+    positionSnapshot.depositedToken0 = position.depositedToken0;
+    positionSnapshot.depositedToken1 = position.depositedToken1;
+    positionSnapshot.withdrawnToken0 = position.withdrawnToken0;
+    positionSnapshot.withdrawnToken1 = position.withdrawnToken1;
+    positionSnapshot.collectedFeesToken0 = position.collectedFeesToken0;
+    positionSnapshot.collectedFeesToken1 = position.collectedFeesToken1;
+    positionSnapshot.transaction = await loadTransaction(this._db, { block, tx });
+    positionSnapshot.feeGrowthInside0LastX128 = position.feeGrowthInside0LastX128;
+    positionSnapshot.feeGrowthInside1LastX128 = position.feeGrowthInside1LastX128;
 
-    await this._db.loadPositionSnapshot({
-      id: position.id.concat('#').concat(block.number.toString()),
-      blockNumber: block.number,
-      owner: position.owner,
-      pool: position.pool,
-      position: position,
-      timestamp: block.timestamp,
-      liquidity: position.liquidity,
-      depositedToken0: position.depositedToken0,
-      depositedToken1: position.depositedToken1,
-      withdrawnToken0: position.withdrawnToken0,
-      withdrawnToken1: position.withdrawnToken1,
-      collectedFeesToken0: position.collectedFeesToken0,
-      collectedFeesToken1: position.collectedFeesToken1,
-      transaction,
-      feeGrowthInside0LastX128: position.feeGrowthInside0LastX128,
-      feeGrowthInside1LastX128: position.feeGrowthInside1LastX128
-    });
+    await this._db.savePositionSnapshot(positionSnapshot, block);
   }
 }
