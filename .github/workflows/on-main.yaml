@@ -1,0 +1,39 @@
+name: Docker Compose Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [15.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: yarn
+      - name: Linter check
+        run: yarn lint
+  build:
+    name: Run docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get the version
+        id: vars
+        run: echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
+      - name: Run docker build
+        run: make docker-build
+      - name: Tag docker image
+        run: docker tag vulcanize/watcher-ts ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}}
+      - name: Docker Login
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u vulcanize --password-stdin
+      - name: Docker Push
+        run: docker push ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}}
+
