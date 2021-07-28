@@ -27,13 +27,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: Get the version
         id: vars
-        run: echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
+        run: |
+            echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
+            echo ::set-output name=repo::$(echo ${{ github.repository }})
       - name: Run docker build
-        run: make docker-build
+        run: docker build -t ${{steps.vars.outputs.repo}} .
       - name: Tag docker image
-        run: docker tag vulcanize/watcher-ts ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}}
+        run: docker tag ${{steps.vars.outputs.repo}} ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
       - name: Docker Login
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u vulcanize --password-stdin
       - name: Docker Push
-        run: docker push ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}}
-
+        run: docker push ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
