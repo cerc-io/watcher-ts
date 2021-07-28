@@ -26,6 +26,9 @@ export class BlockProgress {
   @Column('integer')
   numProcessedEvents!: number;
 
+  @Column('integer')
+  lastProcessedEventIndex!: number;
+
   @Column('boolean')
   isComplete!: boolean
 }

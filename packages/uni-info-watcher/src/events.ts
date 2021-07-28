@@ -174,7 +174,7 @@ export class EventWatcher {
       const dbEvent = await this._indexer.getEvent(request.data.id);
       assert(dbEvent);
 
-      await this._indexer.updateBlockProgress(dbEvent.block.blockHash);
+      await this._indexer.updateBlockProgress(dbEvent.block.blockHash, dbEvent.index);
 
       log(`Job onComplete event ${request.data.id}`);
     });

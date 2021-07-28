@@ -13,6 +13,7 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './events';
+import { Event } from './entity/Event';
 
 const log = debug('vulcanize:job-runner');
 
@@ -110,11 +111,15 @@ export const main = async (): Promise<any> => {
       }
     }
 
-    const events = await indexer.getOrFetchBlockEvents(block);
+    // Check if block is being already processed.
+    const blockProgress = await indexer.getBlockProgress(block.hash);
+    if (!blockProgress) {
+      const events = await indexer.getOrFetchBlockEvents(block);
 
-    for (let ei = 0; ei < events.length; ei++) {
-      const { id } = events[ei];
-      await jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id });
+      for (let ei = 0; ei < events.length; ei++) {
+        const { id } = events[ei];
+        await jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id });
+      }
     }
 
     await jobQueue.markComplete(job);
@@ -127,7 +132,35 @@ export const main = async (): Promise<any> => {
     const dbEvent = await db.getEvent(id);
     assert(dbEvent);
 
-    if (!dbEvent.block.isComplete) {
+    const event: Event = dbEvent;
+
+    // Confirm that the parent block has been completely processed.
+    // We don't have to worry about aborting as this job will get retried later.
+    const parent = await indexer.getBlockProgress(event.block.parentHash);
+    if (!parent || !parent.isComplete) {
+      const message = `Abort processing of event ${id} as parent block not processed yet`;
+      throw new Error(message);
+    }
+
+    const blockProgress = await indexer.getBlockProgress(event.block.blockHash);
+    assert(blockProgress);
+
+    const events = await indexer.getBlockEvents(event.block.blockHash);
+    const eventIndex = events.findIndex(e => e.id === event.id);
+    assert(eventIndex !== -1);
+
+    // Check if previous event in block has been processed exactly before this and abort if not.
+    if (eventIndex > 0) { // Skip the first event in the block.
+      const prevIndex = eventIndex - 1;
+      const prevEvent = events[prevIndex];
+      if (prevEvent.index !== blockProgress.lastProcessedEventIndex) {
+        throw new Error(`Events received out of order for block number ${event.block.blockNumber} hash ${event.block.blockHash},` +
+        ` prev event index ${prevEvent.index}, got event index ${event.index} and lastProcessedEventIndex ${blockProgress.lastProcessedEventIndex}, aborting`);
+      }
+    }
+
+    // Check if event is processed.
+    if (!dbEvent.block.isComplete && event.index !== blockProgress.lastProcessedEventIndex) {
       await indexer.processEvent(dbEvent);
     }
 

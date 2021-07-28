@@ -584,6 +584,7 @@ export class Database {
           blockTimestamp,
           numEvents,
           numProcessedEvents: 0,
+          lastProcessedEventIndex: -1,
           isComplete: (numEvents === 0)
         });
 
@@ -631,15 +632,21 @@ export class Database {
     return repo.findOne({ where: { blockHash } });
   }
 
-  async updateBlockProgress (blockHash: string): Promise<void> {
+  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(BlockProgress);
       const entity = await repo.findOne({ where: { blockHash } });
       if (entity && !entity.isComplete) {
+        if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
+          throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
+        }
+
+        entity.lastProcessedEventIndex = lastProcessedEventIndex;
         entity.numProcessedEvents++;
         if (entity.numProcessedEvents >= entity.numEvents) {
           entity.isComplete = true;
         }
+
         await repo.save(entity);
       }
     });

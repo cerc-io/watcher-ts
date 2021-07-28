@@ -48,8 +48,14 @@ export class JobQueue {
 
   async subscribe (queue: string, callback: JobCallback): Promise<string> {
     return await this._boss.subscribe(queue, { teamSize: 1, teamConcurrency: 1 }, async (job: any) => {
-      log(`Processing queue ${queue} job ${job.id}...`);
-      await callback(job);
+      try {
+        log(`Processing queue ${queue} job ${job.id}...`);
+        await callback(job);
+      } catch (error) {
+        log(`Error in queue ${queue}`);
+        log(error);
+        throw error;
+      }
     });
   }
 

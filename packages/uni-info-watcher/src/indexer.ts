@@ -98,6 +98,10 @@ export class Indexer {
     return events;
   }
 
+  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
+    return this._db.getBlockEvents(blockHash);
+  }
+
   async processEvent (dbEvent: Event): Promise<void> {
     const resultEvent = this.getResultEvent(dbEvent);
 
@@ -180,8 +184,8 @@ export class Indexer {
     return this._db.getBlockProgress(blockHash);
   }
 
-  async updateBlockProgress (blockHash: string): Promise<void> {
-    return this._db.updateBlockProgress(blockHash);
+  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    return this._db.updateBlockProgress(blockHash, lastProcessedEventIndex);
   }
 
   async _fetchAndSaveEvents (block: Block): Promise<void> {
