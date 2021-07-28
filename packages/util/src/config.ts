@@ -12,6 +12,7 @@ export interface Config {
   server: {
     host: string;
     port: number;
+    mode: string;
   };
   database: ConnectionOptions;
   upstream: {
@@ -19,6 +20,7 @@ export interface Config {
     ethServer: {
       gqlApiEndpoint: string;
       gqlPostgraphileEndpoint: string;
+      rpcProviderEndpoint: string
     }
     traceProviderEndpoint: string;
     uniWatcher: {

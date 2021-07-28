@@ -21,6 +21,6 @@ export class Allowance {
   @Column('numeric')
   value!: bigint;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   proof!: string;
 }

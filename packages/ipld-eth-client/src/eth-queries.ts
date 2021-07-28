@@ -56,15 +56,14 @@ query allEthHeaderCids($blockNumber: BigInt) {
 `;
 
 export const getBlockByHash = gql`
-query allEthHeaderCids($blockHash: Bytes32) {
-  allEthHeaderCids(condition: { blockHash: $blockHash }) {
-    nodes {
-      cid
-      blockNumber
-      blockHash
-      parentHash
-      timestamp
+query block($blockHash: Bytes32) {
+  block(hash: $blockHash) {
+    number
+    hash
+    parent {
+      hash
     }
+    timestamp
   }
 }
 `;

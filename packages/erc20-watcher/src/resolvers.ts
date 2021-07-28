@@ -62,7 +62,7 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
 
       decimals: (_: any, { blockHash, token }: { blockHash: string, token: string }) => {
         log('decimals', blockHash, token);
-        return indexer.decimals();
+        return indexer.decimals(blockHash, token);
       },
 
       events: async (_: any, { blockHash, token, name }: { blockHash: string, token: string, name: string }) => {

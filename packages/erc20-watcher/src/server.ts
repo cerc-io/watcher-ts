@@ -7,6 +7,7 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
+import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -37,7 +38,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port } = config.server;
+  const { host, port, mode } = config.server;
 
   const { upstream, database: dbConfig } = config;
 
@@ -47,7 +48,7 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint }, cache: cacheConfig } = upstream;
+  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
@@ -58,10 +59,12 @@ export const main = async (): Promise<any> => {
     cache
   });
 
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, ethClient, pubsub, artifacts);
+  const indexer = new Indexer(db, ethClient, ethProvider, pubsub, artifacts, mode);
 
   const eventWatcher = new EventWatcher(ethClient, indexer);
   await eventWatcher.start();

@@ -648,7 +648,7 @@ export class Database {
   async _getPrevEntityVersion<Entity> (repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
     assert(findOptions.order.blockNumber);
     const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(findOptions.where.blockHash);
-    findOptions.where.blockHash = In(blockHashes)
+    findOptions.where.blockHash = In(blockHashes);
     let entity = await repo.findOne(findOptions);
 
     if (!entity) {

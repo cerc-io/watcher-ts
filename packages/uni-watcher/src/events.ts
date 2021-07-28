@@ -47,7 +47,7 @@ export class EventWatcher {
     await this.initEventProcessingOnCompleteHandler();
   }
 
-  async watchBlocksAtChainHead () {
+  async watchBlocksAtChainHead (): Promise<void> {
     log('Started watching upstream blocks...');
     this._subscription = await this._ethClient.watchBlocks(async (value) => {
       const { blockHash, blockNumber, parentHash } = _.get(value, 'data.listen.relatedNode');
@@ -59,7 +59,7 @@ export class EventWatcher {
     });
   }
 
-  async initBlockProcessingOnCompleteHandler () {
+  async initBlockProcessingOnCompleteHandler (): Promise<void> {
     this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
       const { data: { request: { data: { blockHash, blockNumber } } } } = job;
       log(`Job onComplete block ${blockHash} ${blockNumber}`);
@@ -70,7 +70,7 @@ export class EventWatcher {
     });
   }
 
-  async initEventProcessingOnCompleteHandler () {
+  async initEventProcessingOnCompleteHandler (): Promise<void> {
     this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
       const { data: { request, failed, state, createdOn } } = job;
 
