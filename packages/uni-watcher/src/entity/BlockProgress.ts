@@ -31,4 +31,7 @@ export class BlockProgress {
 
   @Column('boolean')
   isComplete!: boolean
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

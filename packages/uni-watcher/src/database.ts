@@ -114,19 +114,55 @@ export class Database {
     });
   }
 
-  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(SyncStatus);
+
+      const entity = await repo.findOne();
+      assert(entity);
+
+      if (blockNumber >= entity.latestIndexedBlockNumber) {
+        entity.latestIndexedBlockHash = blockHash;
+        entity.latestIndexedBlockNumber = blockNumber;
+      }
+
+      return await repo.save(entity);
+    });
+  }
+
+  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(SyncStatus);
+
+      const entity = await repo.findOne();
+      assert(entity);
+
+      if (blockNumber >= entity.latestCanonicalBlockNumber) {
+        entity.latestCanonicalBlockHash = blockHash;
+        entity.latestCanonicalBlockNumber = blockNumber;
+      }
+
+      return await repo.save(entity);
+    });
+  }
+
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
     return await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(SyncStatus);
 
       let entity = await repo.findOne();
       if (!entity) {
         entity = repo.create({
+          chainHeadBlockHash: blockHash,
+          chainHeadBlockNumber: blockNumber,
           latestCanonicalBlockHash: blockHash,
-          latestCanonicalBlockNumber: blockNumber
+          latestCanonicalBlockNumber: blockNumber,
+          latestIndexedBlockHash: '',
+          latestIndexedBlockNumber: -1
         });
       }
 
-      if (blockNumber >= entity.latestCanonicalBlockNumber) {
+      if (blockNumber >= entity.chainHeadBlockNumber) {
         entity.chainHeadBlockHash = blockHash;
         entity.chainHeadBlockNumber = blockNumber;
       }
@@ -178,6 +214,19 @@ export class Database {
         await repo.save(entity);
       }
     });
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
+    return this._conn.getRepository(BlockProgress)
+      .createQueryBuilder('block_progress')
+      .where('block_number = :height AND is_pruned = :isPruned', { height, isPruned })
+      .getMany();
+  }
+
+  async markBlockAsPruned (block: BlockProgress): Promise<BlockProgress> {
+    const repo = this._conn.getRepository(BlockProgress);
+    block.isPruned = true;
+    return repo.save(block);
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {

@@ -4,7 +4,7 @@ import _ from 'lodash';
 import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { JobQueue } from '@vulcanize/util';
+import { JobQueue, MAX_REORG_DEPTH } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { BlockProgress } from './entity/BlockProgress';
@@ -16,6 +16,7 @@ export const UniswapEvent = 'uniswap-event';
 export const BlockProgressEvent = 'block-progress-event';
 export const QUEUE_EVENT_PROCESSING = 'event-processing';
 export const QUEUE_BLOCK_PROCESSING = 'block-processing';
+export const QUEUE_CHAIN_PRUNING = 'chain-pruning';
 
 export class EventWatcher {
   _ethClient: EthClient
@@ -45,6 +46,7 @@ export class EventWatcher {
     await this.watchBlocksAtChainHead();
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
+    await this.initChainPruningOnCompleteHandler();
   }
 
   async watchBlocksAtChainHead (): Promise<void> {
@@ -52,7 +54,7 @@ export class EventWatcher {
     this._subscription = await this._ethClient.watchBlocks(async (value) => {
       const { blockHash, blockNumber, parentHash } = _.get(value, 'data.listen.relatedNode');
 
-      await this._indexer.updateSyncStatus(blockHash, blockNumber);
+      await this._indexer.updateSyncStatusChainHead(blockHash, blockNumber);
 
       log('watchBlock', blockHash, blockNumber);
       await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber, parentHash });
@@ -63,6 +65,19 @@ export class EventWatcher {
     this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
       const { data: { request: { data: { blockHash, blockNumber } } } } = job;
       log(`Job onComplete block ${blockHash} ${blockNumber}`);
+
+      // Update sync progress.
+      const syncStatus = await this._indexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+
+      // Create pruning job if required.
+      if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
+        // Create a job to prune at block height (latestCanonicalBlockNumber + 1)
+        const pruneBlockHeight = syncStatus.latestCanonicalBlockNumber + 1;
+        // TODO: Move this to the block processing queue to run pruning jobs at a higher priority than block processing jobs.
+        await this._jobQueue.pushJob(QUEUE_CHAIN_PRUNING, { pruneBlockHeight });
+      }
+
+      // Publish block progress event.
       const blockProgress = await this._indexer.getBlockProgress(blockHash);
       if (blockProgress) {
         await this.publishBlockProgressToSubscribers(blockProgress);
@@ -93,6 +108,21 @@ export class EventWatcher {
           log(`event ${request.data.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
         }
       }
+    });
+  }
+
+  async initChainPruningOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_CHAIN_PRUNING, async (job) => {
+      const { data: { request: { data: { pruneBlockHeight } } } } = job;
+      log(`Job onComplete chain pruning ${pruneBlockHeight}`);
+
+      const blocks = await this._indexer.getBlocksAtHeight(pruneBlockHeight, false);
+
+      // Only one canonical (not pruned) block should exist at the pruned height.
+      assert(blocks.length === 1);
+      const [block] = blocks;
+
+      await this._indexer.updateSyncStatusCanonicalBlock(block.blockHash, block.blockNumber);
     });
   }
 

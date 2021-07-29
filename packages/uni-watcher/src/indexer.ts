@@ -350,8 +350,16 @@ export class Indexer {
     await this._db.saveEvents(block, dbEvents);
   }
 
-  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._db.updateSyncStatus(blockHash, blockNumber);
+  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._db.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+  }
+
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._db.updateSyncStatusChainHead(blockHash, blockNumber);
+  }
+
+  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._db.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -373,6 +381,41 @@ export class Indexer {
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
     return this._db.getBlockProgress(blockHash);
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
+    return this._db.getBlocksAtHeight(height, isPruned);
+  }
+
+  async blockIsAncestor (ancestorBlockHash: string, blockHash: string, maxDepth: number): Promise<boolean> {
+    assert(maxDepth > 0);
+
+    let depth = 0;
+    let currentBlockHash = blockHash;
+    let currentBlock;
+
+    // TODO: Use a hierarchical query to optimize this.
+    while (depth < maxDepth) {
+      depth++;
+
+      currentBlock = await this._db.getBlockProgress(currentBlockHash);
+      if (!currentBlock) {
+        break;
+      } else {
+        if (currentBlock.parentHash === ancestorBlockHash) {
+          return true;
+        }
+
+        // Descend the chain.
+        currentBlockHash = currentBlock.parentHash;
+      }
+    }
+
+    return false;
+  }
+
+  async markBlockAsPruned (block: BlockProgress): Promise<BlockProgress> {
+    return this._db.markBlockAsPruned(block);
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
