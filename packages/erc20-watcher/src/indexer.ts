@@ -116,8 +116,7 @@ export class Indexer {
 
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);
-      const { block } = await this._ethClient.getBlockByHash(blockHash);
-      const { number } = block;
+      const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
       const blockNumber = BigNumber.from(number).toNumber();
 
       // eth_call doesnt support calling method by blockHash https://eth.wiki/json-rpc/API#the-default-block-parameter
@@ -154,8 +153,7 @@ export class Indexer {
 
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);
-      const { block } = await this._ethClient.getBlockByHash(blockHash);
-      const { number } = block;
+      const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
       const blockNumber = BigNumber.from(number).toNumber();
       const value = await contract.allowance(owner, spender, { blockTag: blockNumber });
 

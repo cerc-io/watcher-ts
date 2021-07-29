@@ -14,7 +14,7 @@ import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
 import { createTick } from './utils/tick';
 import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
-import { Database } from './database';
+import { Database, QueryOptions } from './database';
 import { Event } from './entity/Event';
 import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent, CollectEvent, TransferEvent } from './events';
 import { Factory } from './entity/Factory';
@@ -193,8 +193,16 @@ export class Indexer {
     return this._db.getBundle({ id, blockHash: block.hash });
   }
 
-  async getBundles (first: string, block: BlockHeight): Promise<Bundle[]> {
-    return this._db.getBundles({ blockHash: block.hash, blockNumber: block.number }, { limit: first });
+  async getBundles (block: BlockHeight, queryOptions: QueryOptions): Promise<Bundle[]> {
+    return this._db.getBundles({ blockHash: block.hash, blockNumber: block.number }, queryOptions);
+  }
+
+  async getBurns (where: Partial<Burn>, queryOptions: QueryOptions): Promise<Burn[]> {
+    return this._db.getBurns(where, queryOptions);
+  }
+
+  async getFactories (block: BlockHeight, queryOptions: QueryOptions): Promise<Factory[]> {
+    return this._db.getFactories({ blockHash: block.hash, blockNumber: block.number }, queryOptions);
   }
 
   async _fetchAndSaveEvents (block: Block): Promise<void> {

@@ -25,6 +25,17 @@ import { BlockProgress } from './entity/BlockProgress';
 import { Block } from './events';
 import { SyncStatus } from './entity/SyncStatus';
 
+export enum OrderDirection {
+  asc = 'asc',
+  desc = 'desc'
+}
+
+export interface QueryOptions {
+  limit?: number;
+  orderBy?: string;
+  orderDirection?: OrderDirection;
+}
+
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
@@ -343,7 +354,7 @@ export class Database {
     return entity;
   }
 
-  async getFactories ({ blockHash }: DeepPartial<Factory>, queryOptions: { [key: string]: any }): Promise<Array<Factory>> {
+  async getFactories ({ blockHash, blockNumber }: Partial<Factory>, queryOptions: QueryOptions): Promise<Array<Factory>> {
     const repo = this._conn.getRepository(Factory);
 
     let selectQueryBuilder = repo.createQueryBuilder('factory')
@@ -359,6 +370,10 @@ export class Database {
         .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
     }
 
+    if (blockNumber) {
+      selectQueryBuilder = selectQueryBuilder.where('block_number <= :blockNumber', { blockNumber });
+    }
+
     const { limit } = queryOptions;
 
     if (limit) {
@@ -368,7 +383,7 @@ export class Database {
     return selectQueryBuilder.getMany();
   }
 
-  async getBundles ({ blockHash, blockNumber }: DeepPartial<Bundle>, queryOptions: { [key: string]: any }): Promise<Array<Bundle>> {
+  async getBundles ({ blockHash, blockNumber }: Partial<Bundle>, queryOptions: QueryOptions): Promise<Array<Bundle>> {
     const repo = this._conn.getRepository(Bundle);
 
     let selectQueryBuilder = repo.createQueryBuilder('bundle')
@@ -392,6 +407,32 @@ export class Database {
 
     if (limit) {
       selectQueryBuilder = selectQueryBuilder.limit(limit);
+    }
+
+    return selectQueryBuilder.getMany();
+  }
+
+  async getBurns (where: Partial<Burn> = {}, queryOptions: QueryOptions): Promise<Array<Burn>> {
+    const repo = this._conn.getRepository(Burn);
+
+    let selectQueryBuilder = repo.createQueryBuilder('burn')
+      .distinctOn(['burn.id'])
+      .orderBy('burn.id')
+      .addOrderBy('burn.block_number', 'DESC')
+      .innerJoinAndSelect('burn.pool', 'pool');
+
+    Object.entries(where).forEach(([field, value]) => {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`burn.${field} = :value`, { value });
+    });
+
+    const { limit, orderBy, orderDirection } = queryOptions;
+
+    if (limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(limit);
+    }
+
+    if (orderBy) {
+      selectQueryBuilder = selectQueryBuilder.addOrderBy(orderBy, orderDirection === 'desc' ? 'DESC' : 'ASC');
     }
 
     return selectQueryBuilder.getMany();

@@ -4,13 +4,9 @@ import BigInt from 'apollo-type-bigint';
 
 import { Data, Entity, NO_OF_BLOCKS } from './data';
 import { BlockHeight } from '../resolvers';
+import { OrderDirection } from '../database';
 
 const log = debug('vulcanize:test');
-
-enum OrderDirection {
-  asc,
-  desc
-}
 
 enum BurnOrderBy {
   timestamp
