@@ -26,6 +26,7 @@ import { Swap } from './entity/Swap';
 import { PositionSnapshot } from './entity/PositionSnapshot';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
+import { BlockHeight } from './resolvers';
 
 const log = debug('vulcanize:indexer');
 
@@ -186,6 +187,14 @@ export class Indexer {
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
     return this._db.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  }
+
+  async getBundle (id: string, block: BlockHeight): Promise<Bundle | undefined> {
+    return this._db.getBundle({ id, blockHash: block.hash });
+  }
+
+  async getBundles (first: string, block: BlockHeight): Promise<Bundle[]> {
+    return this._db.getBundles({ blockHash: block.hash, blockNumber: block.number }, { limit: first });
   }
 
   async _fetchAndSaveEvents (block: Block): Promise<void> {

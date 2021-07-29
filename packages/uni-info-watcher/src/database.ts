@@ -71,12 +71,16 @@ export class Database {
     return entity;
   }
 
-  async getBundle ({ id, blockHash }: DeepPartial<Bundle>): Promise<Bundle | undefined> {
+  async getBundle ({ id, blockHash, blockNumber }: DeepPartial<Bundle>): Promise<Bundle | undefined> {
     const repo = this._conn.getRepository(Bundle);
     const whereOptions: FindConditions<Bundle> = { id };
 
     if (blockHash) {
       whereOptions.blockHash = blockHash;
+    }
+
+    if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
     }
 
     const findOptions = {
@@ -353,6 +357,35 @@ export class Database {
       selectQueryBuilder = selectQueryBuilder
         .where('block_hash IN (:...blockHashes)', { blockHashes })
         .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+    }
+
+    const { limit } = queryOptions;
+
+    if (limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(limit);
+    }
+
+    return selectQueryBuilder.getMany();
+  }
+
+  async getBundles ({ blockHash, blockNumber }: DeepPartial<Bundle>, queryOptions: { [key: string]: any }): Promise<Array<Bundle>> {
+    const repo = this._conn.getRepository(Bundle);
+
+    let selectQueryBuilder = repo.createQueryBuilder('bundle')
+      .distinctOn(['id'])
+      .orderBy('id')
+      .addOrderBy('block_number', 'DESC');
+
+    if (blockHash) {
+      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .where('block_hash IN (:...blockHashes)', { blockHashes })
+        .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+    }
+
+    if (blockNumber) {
+      selectQueryBuilder = selectQueryBuilder.where('block_number <= :blockNumber', { blockNumber });
     }
 
     const { limit } = queryOptions;

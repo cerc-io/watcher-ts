@@ -1,14 +1,11 @@
 /* eslint-disable camelcase */
 import debug from 'debug';
 import BigInt from 'apollo-type-bigint';
+
 import { Data, Entity, NO_OF_BLOCKS } from './data';
+import { BlockHeight } from '../resolvers';
 
 const log = debug('vulcanize:test');
-
-interface BlockHeight {
-  number: number;
-  hash: string;
-}
 
 enum OrderDirection {
   asc,
