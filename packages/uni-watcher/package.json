@@ -9,10 +9,12 @@
     "server:mock": "MOCK=1 nodemon src/server.ts -f environments/local.toml",
     "job-runner": "DEBUG=vulcanize:* nodemon src/job-runner.ts -f environments/local.toml",
     "fill": "DEBUG=vulcanize:* ts-node src/fill.ts -f environments/local.toml",
-    "test": "mocha -r ts-node/register src/**/*.spec.ts",
+    "test": "mocha src/**/*.spec.ts",
     "lint": "eslint .",
     "build": "tsc",
-    "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml"
+    "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml",
+    "test:compile": "hardhat compile",
+    "smoke-test": "yarn test:compile && mocha src/smoke.test.ts"
   },
   "repository": {
     "type": "git",
@@ -52,12 +54,18 @@
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@types/chai": "^4.2.18",
     "@types/express": "^4.17.11",
     "@types/fs-extra": "^9.0.11",
     "@types/json-bigint": "^1.0.0",
+    "@types/mocha": "^8.2.2",
     "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
+    "@uniswap/v3-core": "1.0.0",
+    "@uniswap/v3-periphery": "^1.1.1",
     "chai": "^4.3.4",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
@@ -66,7 +74,10 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
+    "hardhat": "^2.3.0",
     "mocha": "^8.4.0",
-    "nodemon": "^2.0.7"
+    "nodemon": "^2.0.7",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.2"
   }
 }

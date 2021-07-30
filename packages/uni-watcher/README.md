@@ -86,3 +86,14 @@ To test the watchers locally:
 * Send transactions to trigger events
 
 See https://github.com/vulcanize/uniswap-v3-periphery/blob/watcher-ts/demo.md for instructions.
+
+### Smoke test
+
+To run a smoke test:
+
+* Start the server and the job-runner.
+* Run:
+
+  ```bash
+  $ yarn smoke-test
+  ```

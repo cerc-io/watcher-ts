@@ -34,5 +34,5 @@
     deleteOnStart = false
 
 [jobQueue]
-  dbConnectionString = "postgres://postgres:postgres@localhost/job-queue"
+  dbConnectionString = "postgres://postgres:postgres@localhost/address-watcher-job-queue"
   maxCompletionLag = 300

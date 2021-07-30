@@ -1,10 +1,11 @@
 import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
-import { ethers } from 'ethers';
 
 import { Config, getConfig } from '@vulcanize/util';
+
 import { Database } from '../database';
+import { watchContract } from '../utils/index';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -43,9 +44,7 @@ import { Database } from '../database';
   const db = new Database(dbConfig);
   await db.init();
 
-  // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-  const address = ethers.utils.getAddress(argv.address);
+  await watchContract(db, argv.address, argv.kind, argv.startingBlock);
 
-  await db.saveContract(address, argv.kind, argv.startingBlock);
   await db.close();
 })();
