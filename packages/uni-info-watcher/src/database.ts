@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, FindOneOptions, In, LessThanOrEqual, Repository } from 'typeorm';
+import { Brackets, Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, FindOneOptions, In, LessThanOrEqual, Repository } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { MAX_REORG_DEPTH } from '@vulcanize/util';
 
@@ -25,6 +25,9 @@ import { BlockProgress } from './entity/BlockProgress';
 import { Block } from './events';
 import { SyncStatus } from './entity/SyncStatus';
 
+const DEFAULT_LIMIT = 100;
+const DEFAULT_SKIP = 0;
+
 export enum OrderDirection {
   asc = 'asc',
   desc = 'desc'
@@ -32,6 +35,7 @@ export enum OrderDirection {
 
 export interface QueryOptions {
   limit?: number;
+  skip?: number;
   orderBy?: string;
   orderDirection?: OrderDirection;
 }
@@ -135,12 +139,16 @@ export class Database {
     return entity;
   }
 
-  async getPool ({ id, blockHash }: DeepPartial<Pool>): Promise<Pool | undefined> {
+  async getPool ({ id, blockHash, blockNumber }: DeepPartial<Pool>): Promise<Pool | undefined> {
     const repo = this._conn.getRepository(Pool);
     const whereOptions: FindConditions<Pool> = { id };
 
     if (blockHash) {
       whereOptions.blockHash = blockHash;
+    }
+
+    if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
     }
 
     const findOptions = {
@@ -354,85 +362,46 @@ export class Database {
     return entity;
   }
 
-  async getFactories ({ blockHash, blockNumber }: Partial<Factory>, queryOptions: QueryOptions): Promise<Array<Factory>> {
-    const repo = this._conn.getRepository(Factory);
+  async getEntities<Entity> (entity: new () => Entity, where: { [key: string]: any } = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
+    const { blockHash, blockNumber, ...filter } = where;
+    const repo = this._conn.getRepository(entity);
+    const { tableName } = repo.metadata;
 
-    let selectQueryBuilder = repo.createQueryBuilder('factory')
-      .distinctOn(['id'])
-      .orderBy('id')
-      .addOrderBy('block_number', 'DESC');
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .distinctOn([`${tableName}.id`])
+      .orderBy(`${tableName}.id`)
+      .addOrderBy(`${tableName}.block_number`, 'DESC');
 
-    if (blockHash) {
-      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .where('block_hash IN (:...blockHashes)', { blockHashes })
-        .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-    }
-
-    if (blockNumber) {
-      selectQueryBuilder = selectQueryBuilder.where('block_number <= :blockNumber', { blockNumber });
-    }
-
-    const { limit } = queryOptions;
-
-    if (limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(limit);
-    }
-
-    return selectQueryBuilder.getMany();
-  }
-
-  async getBundles ({ blockHash, blockNumber }: Partial<Bundle>, queryOptions: QueryOptions): Promise<Array<Bundle>> {
-    const repo = this._conn.getRepository(Bundle);
-
-    let selectQueryBuilder = repo.createQueryBuilder('bundle')
-      .distinctOn(['id'])
-      .orderBy('id')
-      .addOrderBy('block_number', 'DESC');
-
-    if (blockHash) {
-      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .where('block_hash IN (:...blockHashes)', { blockHashes })
-        .orWhere('block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-    }
-
-    if (blockNumber) {
-      selectQueryBuilder = selectQueryBuilder.where('block_number <= :blockNumber', { blockNumber });
-    }
-
-    const { limit } = queryOptions;
-
-    if (limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(limit);
-    }
-
-    return selectQueryBuilder.getMany();
-  }
-
-  async getBurns (where: Partial<Burn> = {}, queryOptions: QueryOptions): Promise<Array<Burn>> {
-    const repo = this._conn.getRepository(Burn);
-
-    let selectQueryBuilder = repo.createQueryBuilder('burn')
-      .distinctOn(['burn.id'])
-      .orderBy('burn.id')
-      .addOrderBy('burn.block_number', 'DESC')
-      .innerJoinAndSelect('burn.pool', 'pool');
-
-    Object.entries(where).forEach(([field, value]) => {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`burn.${field} = :value`, { value });
+    relations.forEach(relation => {
+      selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
     });
 
-    const { limit, orderBy, orderDirection } = queryOptions;
+    Object.entries(filter).forEach(([field, value]) => {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.${field} = :value`, { value });
+    });
 
-    if (limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(limit);
+    if (blockHash) {
+      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
+            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
+        }));
     }
 
+    if (blockNumber) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber });
+    }
+
+    const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
+
+    // TODO: Use skip and take methods. Currently throws error when using with join.
+    selectQueryBuilder = selectQueryBuilder.offset(skip)
+      .limit(limit);
+
     if (orderBy) {
-      selectQueryBuilder = selectQueryBuilder.addOrderBy(orderBy, orderDirection === 'desc' ? 'DESC' : 'ASC');
+      selectQueryBuilder = selectQueryBuilder.addOrderBy(`${tableName}.${orderBy}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
     }
 
     return selectQueryBuilder.getMany();

@@ -2,6 +2,7 @@ import assert from 'assert';
 import { BigNumber } from 'ethers';
 
 import { Database } from '../database';
+import { Factory } from '../entity/Factory';
 import { PoolDayData } from '../entity/PoolDayData';
 import { PoolHourData } from '../entity/PoolHourData';
 import { Token } from '../entity/Token';
@@ -20,7 +21,7 @@ export const updateUniswapDayData = async (db: Database, event: { contractAddres
 
   // TODO: In subgraph factory is fetched by hardcoded factory address.
   // Currently fetching first factory in database as only one exists.
-  const [factory] = await db.getFactories({ blockHash: block.hash }, { limit: 1 });
+  const [factory] = await db.getEntities(Factory, { blockHash: block.hash }, { limit: 1 });
 
   const dayID = Math.floor(block.timestamp / 86400); // Rounded.
   const dayStartTimestamp = dayID * 86400;
