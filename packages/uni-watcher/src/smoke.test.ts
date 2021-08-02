@@ -1,5 +1,5 @@
 import { expect, assert } from 'chai';
-import { ethers, Contract, Signer } from 'ethers';
+import { ethers, Contract, ContractTransaction, Signer, constants } from 'ethers';
 import 'reflect-metadata';
 import 'mocha';
 
@@ -14,11 +14,35 @@ import {
 import {
   abi as POOL_ABI
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json';
+import {
+  abi as NFTD_ABI,
+  bytecode as NFTD_BYTECODE
+} from '@uniswap/v3-periphery/artifacts/contracts/libraries/NFTDescriptor.sol/NFTDescriptor.json';
+import {
+  abi as NFTPD_ABI,
+  bytecode as NFTPD_BYTECODE,
+  linkReferences as NFTPD_LINKREFS
+} from '@uniswap/v3-periphery/artifacts/contracts/NonfungibleTokenPositionDescriptor.sol/NonfungibleTokenPositionDescriptor.json';
+import {
+  abi as NFPM_ABI,
+  bytecode as NFPM_BYTECODE
+} from '@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { watchContract } from './utils/index';
-import { testCreatePool, testInitialize } from '../test/utils';
+import {
+  linkLibraries,
+  testCreatePool,
+  testInitialize,
+  checkMintEvent,
+  checkBurnEvent,
+  checkSwapEvent,
+  checkTransferEvent,
+  checkIncreaseLiquidityEvent,
+  checkDecreaseLiquidityEvent,
+  checksCollectEvent
+} from '../test/utils';
 import {
   abi as TESTERC20_ABI,
   bytecode as TESTERC20_BYTECODE
@@ -27,6 +51,10 @@ import {
   abi as TESTUNISWAPV3CALLEE_ABI,
   bytecode as TESTUNISWAPV3CALLEE_BYTECODE
 } from '../artifacts/test/contracts/TestUniswapV3Callee.sol/TestUniswapV3Callee.json';
+import {
+  abi as WETH9_ABI,
+  bytecode as WETH9_BYTECODE
+} from '../artifacts/test/contracts/WETH9.sol/WETH9.json';
 
 const TICK_MIN = -887272;
 const TICK_MAX = 887272;
@@ -35,11 +63,14 @@ const getMaxTick = (tickSpacing: number) => Math.floor(TICK_MAX / tickSpacing) *
 
 describe('uni-watcher', () => {
   let factory: Contract;
+  let pool: Contract;
   let token0: Contract;
   let token1: Contract;
-  let pool: Contract;
+  let token0Address: string;
+  let token1Address: string;
+  let weth9Address: string;
+  let nfpm: Contract;
 
-  let poolAddress: string;
   let tickLower: number;
   let tickUpper: number;
   let config: Config;
@@ -112,29 +143,37 @@ describe('uni-watcher', () => {
     // Deploy 2 tokens.
     const Token = new ethers.ContractFactory(TESTERC20_ABI, TESTERC20_BYTECODE, signer);
 
-    token0 = await Token.deploy(ethers.BigNumber.from(2).pow(255));
-    expect(token0.address).to.not.be.empty;
+    // Not initializing global token contract variables just yet; initialized in `create pool` to maintatin order coherency.
+    const token0 = await Token.deploy(ethers.BigNumber.from(2).pow(255));
+    token0Address = token0.address;
+    expect(token0Address).to.not.be.empty;
 
-    token1 = await Token.deploy(ethers.BigNumber.from(2).pow(255));
-    expect(token1.address).to.not.be.empty;
+    const token1 = await Token.deploy(ethers.BigNumber.from(2).pow(255));
+    token1Address = token1.address;
+    expect(token1Address).to.not.be.empty;
   });
 
   it('should create pool', async () => {
     const fee = 500;
 
-    pool = await testCreatePool(uniClient, factory, token0, token1, POOL_ABI, signer, fee);
-    poolAddress = pool.address;
+    pool = await testCreatePool(uniClient, factory, token0Address, token1Address, fee, POOL_ABI, signer);
+
+    // Getting tokens from pool as their order might be swapped (Need to do only once for two specific tokens).
+    token0Address = await pool.token0();
+    token0 = new Contract(token0Address, TESTERC20_ABI, signer);
+    token1Address = await pool.token1();
+    token1 = new Contract(token1Address, TESTERC20_ABI, signer);
   });
 
   it('should initialize pool', async () => {
     const sqrtPrice = '4295128939';
 
-    await testInitialize(uniClient, pool, TICK_MIN, sqrtPrice);
+    await testInitialize(uniClient, pool, sqrtPrice, TICK_MIN);
   });
 
   it('should mint specified amount', done => {
     (async () => {
-      const amount = '10';
+      const amount = 10;
       const approveAmount = BigInt(1000000000000000000000000);
 
       const TestUniswapV3Callee = new ethers.ContractFactory(TESTUNISWAPV3CALLEE_ABI, TESTUNISWAPV3CALLEE_BYTECODE, signer);
@@ -156,21 +195,11 @@ describe('uni-watcher', () => {
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
         if (value.event.__typename === 'MintEvent') {
-          expect(value.block).to.not.be.empty;
-          expect(value.tx).to.not.be.empty;
-          expect(value.contract).to.equal(pool.address);
-          expect(value.eventIndex).to.be.a('number');
+          const expectedContract: string = pool.address;
+          const expectedSender: string = poolCallee.address;
+          const exptectedOwner: string = recipient;
 
-          expect(value.event.__typename).to.equal('MintEvent');
-          expect(value.event.sender).to.equal(poolCallee.address);
-          expect(value.event.owner).to.equal(recipient);
-          expect(value.event.tickLower).to.equal(tickLower.toString());
-          expect(value.event.tickUpper).to.equal(tickUpper.toString());
-          expect(value.event.amount).to.equal(amount);
-          expect(value.event.amount0).to.not.be.empty;
-          expect(value.event.amount1).to.not.be.empty;
-
-          expect(value.proof).to.not.be.empty;
+          checkMintEvent(value, expectedContract, expectedSender, exptectedOwner, tickLower, tickUpper, amount);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -180,15 +209,16 @@ describe('uni-watcher', () => {
       });
 
       // Pool mint.
-      await poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
+      const transaction: ContractTransaction = await poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
+      await transaction.wait();
     })().catch((error) => {
-      console.error(error);
+      done(error);
     });
   });
 
   it('should burn specified amount', done => {
     (async () => {
-      const amount = '10';
+      const amount = 10;
 
       const tickSpacing = await pool.tickSpacing();
       // https://github.com/Uniswap/uniswap-v3-core/blob/main/test/UniswapV3Pool.spec.ts#L196
@@ -198,20 +228,10 @@ describe('uni-watcher', () => {
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
         if (value.event.__typename === 'BurnEvent') {
-          expect(value.block).to.not.be.empty;
-          expect(value.tx).to.not.be.empty;
-          expect(value.contract).to.equal(pool.address);
-          expect(value.eventIndex).to.be.a('number');
+          const expectedContract: string = pool.address;
+          const exptectedOwner: string = recipient;
 
-          expect(value.event.__typename).to.equal('BurnEvent');
-          expect(value.event.owner).to.equal(recipient);
-          expect(value.event.tickLower).to.equal(tickLower.toString());
-          expect(value.event.tickUpper).to.equal(tickUpper.toString());
-          expect(value.event.amount).to.equal(amount);
-          expect(value.event.amount0).to.not.be.empty;
-          expect(value.event.amount1).to.not.be.empty;
-
-          expect(value.proof).to.not.be.empty;
+          checkBurnEvent(value, expectedContract, exptectedOwner, tickLower, tickUpper, amount);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -221,9 +241,10 @@ describe('uni-watcher', () => {
       });
 
       // Pool burn.
-      await pool.burn(BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
+      const transaction: ContractTransaction = await pool.burn(BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
+      await transaction.wait();
     })().catch((error) => {
-      console.error(error);
+      done(error);
     });
   });
 
@@ -237,21 +258,10 @@ describe('uni-watcher', () => {
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
         if (value.event.__typename === 'SwapEvent') {
-          expect(value.block).to.not.be.empty;
-          expect(value.tx).to.not.be.empty;
-          expect(value.contract).to.equal(poolAddress);
-          expect(value.eventIndex).to.be.a('number');
+          const expectedContract: string = pool.address;
+          const exptectedSender: string = poolCallee.address;
 
-          expect(value.event.__typename).to.equal('SwapEvent');
-          expect(value.event.sender).to.equal(poolCallee.address);
-          expect(value.event.recipient).to.equal(recipient);
-          expect(value.event.amount0).to.not.be.empty;
-          expect(value.event.amount1).to.not.be.empty;
-          expect(value.event.sqrtPriceX96).to.equal(sqrtPrice);
-          expect(value.event.liquidity).to.not.be.empty;
-          expect(value.event.tick).to.equal(TICK_MIN.toString());
-
-          expect(value.proof).to.not.be.empty;
+          checkSwapEvent(value, expectedContract, exptectedSender, recipient, sqrtPrice, TICK_MIN);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -260,9 +270,261 @@ describe('uni-watcher', () => {
         }
       });
 
-      await poolCallee.swapToLowerSqrtPrice(poolAddress, BigInt(sqrtPrice), recipient);
+      const transaction: ContractTransaction = await poolCallee.swapToLowerSqrtPrice(pool.address, BigInt(sqrtPrice), recipient);
+      await transaction.wait();
     })().catch((error) => {
-      console.error(error);
+      done(error);
+    });
+  });
+
+  it('should deploy a WETH9 token', async () => {
+    // Deploy weth9 token.
+    const WETH9 = new ethers.ContractFactory(WETH9_ABI, WETH9_BYTECODE, signer);
+    const weth9 = await WETH9.deploy();
+
+    weth9Address = weth9.address;
+    expect(weth9.address).to.not.be.empty;
+  });
+
+  it('should deploy NonfungiblePositionManager', async () => {
+    // Deploy NonfungiblePositionManager.
+    // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/test/shared/completeFixture.ts#L31
+    const nftDescriptorLibraryFactory = new ethers.ContractFactory(NFTD_ABI, NFTD_BYTECODE, signer);
+    const nftDescriptorLibrary = await nftDescriptorLibraryFactory.deploy();
+    expect(nftDescriptorLibrary.address).to.not.be.empty;
+
+    // Linking NFTDescriptor library to NFTPD before deploying.
+    const linkedNFTPDBytecode = linkLibraries({
+      bytecode: NFTPD_BYTECODE,
+      linkReferences: NFTPD_LINKREFS
+    }, {
+      NFTDescriptor: nftDescriptorLibrary.address
+    }
+    );
+
+    const positionDescriptorFactory = new ethers.ContractFactory(
+      NFTPD_ABI,
+      linkedNFTPDBytecode,
+      signer);
+    const nftDescriptor = await positionDescriptorFactory.deploy(weth9Address);
+    expect(nftDescriptor.address).to.not.be.empty;
+
+    const positionManagerFactory = new ethers.ContractFactory(
+      NFPM_ABI,
+      NFPM_BYTECODE,
+      signer);
+    nfpm = await positionManagerFactory.deploy(factory.address, weth9Address, nftDescriptor.address);
+
+    expect(nfpm.address).to.not.be.empty;
+  });
+
+  it('should watch NonfungiblePositionManager contract', async () => {
+    // Watch factory contract.
+    await watchContract(db, nfpm.address, 'nfpm', 100);
+
+    // Verifying with the db.
+    const indexer = new Indexer(config, db, ethClient);
+    assert(await indexer.isUniswapContract(nfpm.address), 'NonfungiblePositionManager contract not added to database.');
+  });
+
+  it('should mint specified amount: nfpm', done => {
+    (async () => {
+      const fee = 3000;
+      pool = await testCreatePool(uniClient, factory, token0Address, token1Address, fee, POOL_ABI, signer);
+
+      const sqrtPrice = '79228162514264337593543950336';
+      await testInitialize(uniClient, pool, sqrtPrice, 0);
+
+      const amount0Desired = 15;
+      const amount1Desired = 15;
+      const amount0Min = 0;
+      const amount1Min = 0;
+      const deadline = 1634367993;
+
+      const tickSpacing = await pool.tickSpacing();
+      // https://github.com/Uniswap/uniswap-v3-core/blob/main/test/UniswapV3Pool.spec.ts#L196
+      tickLower = getMinTick(tickSpacing);
+      tickUpper = getMaxTick(tickSpacing);
+
+      // Approving tokens for NonfungiblePositionManager contract.
+      // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/test/NonfungiblePositionManager.spec.ts#L44
+      const t0 = await token0.approve(nfpm.address, constants.MaxUint256);
+      await t0.wait();
+
+      const t1 = await token1.approve(nfpm.address, constants.MaxUint256);
+      await t1.wait();
+
+      // Subscribe using UniClient.
+      const subscription = await uniClient.watchEvents((value: any) => {
+        // TODO Verify what should amount values be checked against.
+        if (value.event.__typename === 'MintEvent') {
+          const expectedContract: string = pool.address;
+          const expectedSender: string = nfpm.address;
+          const exptectedOwner: string = nfpm.address;
+
+          checkMintEvent(value, expectedContract, expectedSender, exptectedOwner, tickLower, tickUpper, amount1Desired);
+        }
+        if (value.event.__typename === 'TransferEvent') {
+          const expectedContract: string = nfpm.address;
+          const from = '0x0000000000000000000000000000000000000000';
+
+          checkTransferEvent(value, expectedContract, from, recipient);
+        }
+        if (value.event.__typename === 'IncreaseLiquidityEvent') {
+          const expectedContract: string = nfpm.address;
+
+          checkIncreaseLiquidityEvent(value, expectedContract, amount1Desired);
+
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+          done();
+        }
+      });
+
+      // Position manger mint.
+      const transaction: ContractTransaction = await nfpm.mint({
+        token0: token0Address,
+        token1: token1Address,
+        tickLower,
+        tickUpper,
+        amount0Desired,
+        amount1Desired,
+        amount0Min,
+        amount1Min,
+        recipient,
+        deadline,
+        fee
+      });
+      await transaction.wait();
+    })().catch((error) => {
+      done(error);
+    });
+  });
+
+  it('should increase liquidity', done => {
+    (async () => {
+      const tokenId = 1;
+      const amount0Desired = 15;
+      const amount1Desired = 15;
+      const amount0Min = 0;
+      const amount1Min = 0;
+      const deadline = 1634367993;
+
+      // Subscribe using UniClient.
+      const subscription = await uniClient.watchEvents((value: any) => {
+        if (value.event.__typename === 'MintEvent') {
+          const expectedContract: string = pool.address;
+          const expectedSender: string = nfpm.address;
+          const exptectedOwner: string = nfpm.address;
+
+          checkMintEvent(value, expectedContract, expectedSender, exptectedOwner, tickLower, tickUpper, amount0Desired);
+        }
+        if (value.event.__typename === 'IncreaseLiquidityEvent') {
+          const expectedContract: string = nfpm.address;
+
+          checkIncreaseLiquidityEvent(value, expectedContract, amount0Desired);
+
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+          done();
+        }
+      });
+
+      // Position manger increase liquidity.
+      const transaction: ContractTransaction = await nfpm.increaseLiquidity({
+        tokenId,
+        amount0Desired,
+        amount1Desired,
+        amount0Min,
+        amount1Min,
+        deadline
+      });
+      await transaction.wait();
+    })().catch((error) => {
+      done(error);
+    });
+  });
+
+  it('should decrease liquidity', done => {
+    (async () => {
+      const tokenId = 1;
+      const liquidity = 5;
+      const amount0Min = 0;
+      const amount1Min = 0;
+      const deadline = 1634367993;
+
+      // Subscribe using UniClient.
+      const subscription = await uniClient.watchEvents((value: any) => {
+        if (value.event.__typename === 'BurnEvent') {
+          const expectedContract: string = pool.address;
+          const exptectedOwner: string = nfpm.address;
+
+          checkBurnEvent(value, expectedContract, exptectedOwner, tickLower, tickUpper, liquidity);
+        }
+        if (value.event.__typename === 'DecreaseLiquidityEvent') {
+          const expectedContract: string = nfpm.address;
+
+          checkDecreaseLiquidityEvent(value, expectedContract, liquidity);
+
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+          done();
+        }
+      });
+
+      // Position manger decrease liquidity.
+      const transaction: ContractTransaction = await nfpm.decreaseLiquidity({
+        tokenId,
+        liquidity,
+        amount0Min,
+        amount1Min,
+        deadline
+      });
+      await transaction.wait();
+    })().catch((error) => {
+      done(error);
+    });
+  });
+
+  it('should collect fees', done => {
+    (async () => {
+      const tokenId = 1;
+      const amount0Max = 15;
+      const amount1Max = 15;
+
+      // Subscribe using UniClient.
+      const subscription = await uniClient.watchEvents((value: any) => {
+        if (value.event.__typename === 'BurnEvent') {
+          const expectedContract: string = pool.address;
+          const exptectedOwner: string = nfpm.address;
+
+          checkBurnEvent(value, expectedContract, exptectedOwner, tickLower, tickUpper, 0);
+        }
+        if (value.event.__typename === 'CollectEvent') {
+          const expectedContract: string = nfpm.address;
+
+          checksCollectEvent(value, expectedContract, recipient);
+
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+          done();
+        }
+      });
+
+      // Position manger increase liquidity.
+      const transaction: ContractTransaction = await nfpm.collect({
+        tokenId,
+        recipient,
+        amount0Max,
+        amount1Max
+      });
+      await transaction.wait();
+    })().catch((error) => {
+      done(error);
     });
   });
 });
