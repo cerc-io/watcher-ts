@@ -199,6 +199,10 @@ export class Indexer {
     return this._db.getPool({ id, blockHash: block.hash, blockNumber: block.number });
   }
 
+  async getToken (id: string, block: BlockHeight): Promise<Token | undefined> {
+    return this._db.getToken({ id, blockHash: block.hash, blockNumber: block.number });
+  }
+
   async getEntities<Entity> (entity: new () => Entity, where: Partial<Entity>, queryOptions: QueryOptions, relations?: string[]): Promise<Entity[]> {
     const res = await this._db.getEntities(entity, where, queryOptions, relations);
     return res;

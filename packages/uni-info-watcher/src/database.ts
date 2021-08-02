@@ -367,10 +367,27 @@ export class Database {
     const repo = this._conn.getRepository(entity);
     const { tableName } = repo.metadata;
 
+    let subQuery = await repo.createQueryBuilder('subTable')
+      .select('MAX(subTable.block_number)')
+      .where(`subTable.id = ${tableName}.id`);
+
+    if (blockHash) {
+      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
+
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
+    }
+
+    if (blockNumber) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber });
+    }
+
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .distinctOn([`${tableName}.id`])
-      .orderBy(`${tableName}.id`)
-      .addOrderBy(`${tableName}.block_number`, 'DESC');
+      .where(`${tableName}.block_number IN (${subQuery.getQuery()})`)
+      .setParameters(subQuery.getParameters());
 
     relations.forEach(relation => {
       selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
@@ -380,20 +397,6 @@ export class Database {
       selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.${field} = :value`, { value });
     });
 
-    if (blockHash) {
-      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .andWhere(new Brackets(qb => {
-          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
-            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
-        }));
-    }
-
-    if (blockNumber) {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber });
-    }
-
     const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
 
     // TODO: Use skip and take methods. Currently throws error when using with join.
@@ -401,7 +404,7 @@ export class Database {
       .limit(limit);
 
     if (orderBy) {
-      selectQueryBuilder = selectQueryBuilder.addOrderBy(`${tableName}.${orderBy}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
+      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${orderBy}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
     }
 
     return selectQueryBuilder.getMany();

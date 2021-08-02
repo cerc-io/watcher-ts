@@ -10,6 +10,8 @@ import { Mint } from './entity/Mint';
 import { PoolDayData } from './entity/PoolDayData';
 import { Pool } from './entity/Pool';
 import { Swap } from './entity/Swap';
+import { Tick } from './entity/Tick';
+import { Token } from './entity/Token';
 
 const log = debug('vulcanize:resolver');
 
@@ -79,6 +81,26 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
         log('swaps', first, orderBy, orderDirection, where);
 
         return indexer.getEntities(Swap, where, { limit: first, orderBy, orderDirection }, ['pool', 'transaction']);
+      },
+
+      ticks: async (_: any, { block = {}, first, skip, where = {} }: { block: BlockHeight, first: number, skip: number, where: Partial<Tick> }) => {
+        log('ticks', block, first, skip, where);
+        where.blockHash = block.hash;
+        where.blockNumber = block.number;
+
+        return indexer.getEntities(Tick, where, { limit: first, skip });
+      },
+
+      token: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('token', id, block);
+
+        return indexer.getToken(id, block);
+      },
+
+      tokens: async (_: any, { orderBy, orderDirection, where }: { orderBy: string, orderDirection: OrderDirection, where: Partial<Token> }) => {
+        log('tokens', orderBy, orderDirection, where);
+
+        return indexer.getEntities(Token, where, { orderBy, orderDirection });
       }
     }
   };
