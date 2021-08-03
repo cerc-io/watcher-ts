@@ -28,6 +28,23 @@ import { SyncStatus } from './entity/SyncStatus';
 const DEFAULT_LIMIT = 100;
 const DEFAULT_SKIP = 0;
 
+const OPERATOR_MAP = {
+  equals: '=',
+  gt: '>',
+  lt: '<',
+  gte: '>=',
+  lte: '<=',
+  in: 'IN',
+  contains: 'LIKE',
+  starts: 'LIKE',
+  ends: 'LIKE'
+};
+
+export interface BlockHeight {
+  number?: number;
+  hash?: string;
+}
+
 export enum OrderDirection {
   asc = 'asc',
   desc = 'desc'
@@ -38,6 +55,14 @@ export interface QueryOptions {
   skip?: number;
   orderBy?: string;
   orderDirection?: OrderDirection;
+}
+
+interface Where {
+  [key: string]: {
+    value: any;
+    not: boolean;
+    operator: keyof typeof OPERATOR_MAP;
+  }
 }
 
 export class Database {
@@ -230,7 +255,8 @@ export class Database {
       where: whereOptions,
       order: {
         blockNumber: 'DESC'
-      }
+      },
+      relations: ['pool']
     };
 
     let entity = await repo.findOne(findOptions as FindOneOptions<PoolDayData>);
@@ -362,17 +388,16 @@ export class Database {
     return entity;
   }
 
-  async getEntities<Entity> (entity: new () => Entity, where: { [key: string]: any } = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
-    const { blockHash, blockNumber, ...filter } = where;
+  async getEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
     const repo = this._conn.getRepository(entity);
     const { tableName } = repo.metadata;
 
-    let subQuery = await repo.createQueryBuilder('subTable')
+    let subQuery = repo.createQueryBuilder('subTable')
       .select('MAX(subTable.block_number)')
       .where(`subTable.id = ${tableName}.id`);
 
-    if (blockHash) {
-      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(blockHash);
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._getBranchInfo(block.hash);
 
       subQuery = subQuery
         .andWhere(new Brackets(qb => {
@@ -381,8 +406,8 @@ export class Database {
         }));
     }
 
-    if (blockNumber) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber });
+    if (block.number) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
     }
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -393,8 +418,40 @@ export class Database {
       selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
     });
 
-    Object.entries(filter).forEach(([field, value]) => {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.${field} = :value`, { value });
+    Object.entries(where).forEach(([field, filter]) => {
+      // Form the where clause.
+      const { not, operator, value } = filter;
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+      assert(columnMetadata);
+      let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+
+      if (not) {
+        if (operator === 'equals') {
+          whereClause += '!';
+        } else {
+          whereClause += 'NOT ';
+        }
+      }
+
+      whereClause += `${OPERATOR_MAP[operator]} `;
+
+      if (['contains', 'starts'].some(el => el === operator)) {
+        whereClause += '%:';
+      } else if (operator === 'in') {
+        whereClause += '(:...';
+      } else {
+        whereClause += ':';
+      }
+
+      whereClause += 'value';
+
+      if (['contains', 'ends'].some(el => el === operator)) {
+        whereClause += '%';
+      } else if (operator === 'in') {
+        whereClause += ')';
+      }
+
+      selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { value });
     });
 
     const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
@@ -404,7 +461,9 @@ export class Database {
       .limit(limit);
 
     if (orderBy) {
-      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${orderBy}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
+      assert(columnMetadata);
+      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${columnMetadata.propertyAliasName}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
     }
 
     return selectQueryBuilder.getMany();

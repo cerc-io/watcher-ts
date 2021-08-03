@@ -14,7 +14,7 @@ import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
 import { createTick } from './utils/tick';
 import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
-import { Database, QueryOptions, OrderDirection } from './database';
+import { Database, QueryOptions, OrderDirection, BlockHeight } from './database';
 import { Event } from './entity/Event';
 import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent, CollectEvent, TransferEvent } from './events';
 import { Factory } from './entity/Factory';
@@ -26,7 +26,6 @@ import { Swap } from './entity/Swap';
 import { PositionSnapshot } from './entity/PositionSnapshot';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
-import { BlockHeight } from './resolvers';
 
 const log = debug('vulcanize:indexer');
 
@@ -37,7 +36,7 @@ export interface ValueResult {
   }
 }
 
-export { OrderDirection };
+export { OrderDirection, BlockHeight };
 
 export class Indexer {
   _db: Database
@@ -203,8 +202,31 @@ export class Indexer {
     return this._db.getToken({ id, blockHash: block.hash, blockNumber: block.number });
   }
 
-  async getEntities<Entity> (entity: new () => Entity, where: Partial<Entity>, queryOptions: QueryOptions, relations?: string[]): Promise<Entity[]> {
-    const res = await this._db.getEntities(entity, where, queryOptions, relations);
+  async getEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions, relations?: string[]): Promise<Entity[]> {
+    where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
+      const [field, ...suffix] = fieldWithSuffix.split('_');
+
+      acc[field] = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      let operator = suffix.shift();
+
+      if (operator === 'not') {
+        acc[field].not = true;
+        operator = suffix.shift();
+      }
+
+      if (operator) {
+        acc[field].operator = operator;
+      }
+
+      return acc;
+    }, {});
+
+    const res = await this._db.getEntities(entity, block, where, queryOptions, relations);
     return res;
   }
 
@@ -368,7 +390,7 @@ export class Indexer {
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
-    const [factory] = await this._db.getEntities(Factory, { blockHash: block.hash }, { limit: 1 });
+    const [factory] = await this._db.getEntities(Factory, { hash: block.hash }, {}, { limit: 1 });
 
     const token0 = pool.token0;
     const token1 = pool.token1;
@@ -504,7 +526,7 @@ export class Indexer {
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
-    const [factory] = await this._db.getEntities(Factory, { blockHash: block.hash }, { limit: 1 });
+    const [factory] = await this._db.getEntities(Factory, { hash: block.hash }, {}, { limit: 1 });
 
     const token0 = pool.token0;
     const token1 = pool.token1;
@@ -622,7 +644,7 @@ export class Indexer {
 
     // TODO: In subgraph factory is fetched by hardcoded factory address.
     // Currently fetching first factory in database as only one exists.
-    const [factory] = await this._db.getEntities(Factory, { blockHash: block.hash }, { limit: 1 });
+    const [factory] = await this._db.getEntities(Factory, { hash: block.hash }, {}, { limit: 1 });
 
     const pool = await this._db.getPool({ id: contractAddress, blockHash: block.hash });
     assert(pool);
