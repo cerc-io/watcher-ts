@@ -36,9 +36,8 @@ export class Swap {
   @Column('varchar', { length: 42 })
   sender!: string
 
-  // TODO: Assign origin with Transaction from address.
-  // @Column('varchar', { length: 42 })
-  // origin!: string
+  @Column('varchar', { length: 42 })
+  origin!: string
 
   @Column('varchar', { length: 42 })
   recipient!: string

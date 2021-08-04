@@ -25,8 +25,7 @@ export class Token {
   @Column('numeric', { transformer: decimalTransformer })
   totalSupply!: Decimal;
 
-  // TODO: Fetch decimals from contract using erc20-watcher. Currently using hardcoded value.
-  @Column('bigint', { default: 18 })
+  @Column('bigint')
   decimals!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

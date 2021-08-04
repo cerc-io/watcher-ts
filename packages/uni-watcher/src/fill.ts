@@ -72,7 +72,7 @@ export const main = async (): Promise<any> => {
     log(`Fill block ${blockNumber}`);
 
     // TODO: Add pause between requests so as to not overwhelm the upsteam server.
-    const result = await ethClient.getBlockWithTransactions(blockNumber.toString());
+    const result = await ethClient.getBlockWithTransactions({ blockNumber });
     const { allEthHeaderCids: { nodes: blockNodes } } = result;
     for (let bi = 0; bi < blockNodes.length; bi++) {
       const { blockHash, blockNumber, parentHash } = blockNodes[bi];

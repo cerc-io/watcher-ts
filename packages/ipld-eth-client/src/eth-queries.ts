@@ -36,8 +36,8 @@ query getLogs($blockHash: Bytes32!, $contract: Address) {
 `;
 
 export const getBlockWithTransactions = gql`
-query allEthHeaderCids($blockNumber: BigInt) {
-  allEthHeaderCids(condition: { blockNumber: $blockNumber }) {
+query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
+  allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {
     nodes {
       cid
       blockNumber
@@ -48,6 +48,9 @@ query allEthHeaderCids($blockNumber: BigInt) {
         nodes {
           cid
           txHash
+          index
+          src
+          dst
         }
       }
     }

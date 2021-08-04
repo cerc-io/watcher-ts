@@ -35,6 +35,7 @@ export interface Config {
   jobQueue: {
     dbConnectionString: string;
     maxCompletionLag: number;
+    jobDelay?: number;
   }
 }
 

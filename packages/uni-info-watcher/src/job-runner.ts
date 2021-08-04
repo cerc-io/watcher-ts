@@ -6,7 +6,7 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getConfig, JobQueue } from '@vulcanize/util';
+import { getConfig, JobQueue, wait } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
@@ -61,7 +61,8 @@ export const main = async (): Promise<any> => {
 
   assert(jobQueueConfig, 'Missing job queue config');
 
-  const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
+  const { dbConnectionString, maxCompletionLag, jobDelay } = jobQueueConfig;
+  assert(jobDelay, 'Missing job delay time');
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
@@ -114,6 +115,9 @@ export const main = async (): Promise<any> => {
     // Check if block is being already processed.
     const blockProgress = await indexer.getBlockProgress(block.hash);
     if (!blockProgress) {
+      // Delay to allow uni-watcher to process block.
+      await wait(jobDelay);
+
       const events = await indexer.getOrFetchBlockEvents(block);
 
       for (let ei = 0; ei < events.length; ei++) {

@@ -214,7 +214,12 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const indexer = new Indexer(config, db, ethClient);
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
+  const indexer = new Indexer(config, db, ethClient, postgraphileClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

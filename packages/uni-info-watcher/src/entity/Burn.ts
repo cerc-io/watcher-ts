@@ -36,9 +36,8 @@ export class Burn {
   @Column('varchar', { length: 42 })
   owner!: string
 
-  // TODO: Assign origin with Transaction from address.
-  // @Column('varchar', { length: 42 })
-  // origin!: string
+  @Column('varchar', { length: 42 })
+  origin!: string
 
   @Column('bigint')
   amount!: bigint

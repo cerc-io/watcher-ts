@@ -4,7 +4,7 @@ import fetch from 'cross-fetch';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
 import ws from 'ws';
 
-import { ApolloClient, NormalizedCacheObject, split, HttpLink, InMemoryCache, DocumentNode, TypedDocumentNode } from '@apollo/client/core';
+import { ApolloClient, NormalizedCacheObject, split, HttpLink, InMemoryCache, DocumentNode, TypedDocumentNode, from } from '@apollo/client/core';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { WebSocketLink } from '@apollo/client/link/ws';
 
@@ -12,7 +12,7 @@ const log = debug('vulcanize:client');
 
 export interface GraphQLConfig {
   gqlEndpoint: string;
-  gqlSubscriptionEndpoint: string;
+  gqlSubscriptionEndpoint?: string;
 }
 
 export class GraphQLClient {
@@ -25,45 +25,50 @@ export class GraphQLClient {
     const { gqlEndpoint, gqlSubscriptionEndpoint } = config;
 
     assert(gqlEndpoint, 'Missing gql endpoint');
-    assert(gqlSubscriptionEndpoint, 'Missing gql subscription endpoint');
-
-    // https://www.apollographql.com/docs/react/data/subscriptions/
-    const subscriptionClient = new SubscriptionClient(gqlSubscriptionEndpoint, {
-      reconnect: true,
-      connectionCallback: (error: Error[]) => {
-        if (error) {
-          log('Subscription client connection error', error[0].message);
-        } else {
-          log('Subscription client connected successfully');
-        }
-      }
-    }, ws);
-
-    subscriptionClient.onError(error => {
-      log('Subscription client error', error.message);
-    });
 
     const httpLink = new HttpLink({
       uri: gqlEndpoint,
       fetch
     });
 
-    const wsLink = new WebSocketLink(subscriptionClient);
+    let link = from([httpLink]);
 
-    const splitLink = split(
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === 'OperationDefinition' &&
-          definition.operation === 'subscription'
-        );
-      },
-      wsLink,
-      httpLink
-    );
+    if (gqlSubscriptionEndpoint) {
+      // https://www.apollographql.com/docs/react/data/subscriptions/
+      const subscriptionClient = new SubscriptionClient(gqlSubscriptionEndpoint, {
+        reconnect: true,
+        connectionCallback: (error: Error[]) => {
+          if (error) {
+            log('Subscription client connection error', error[0].message);
+          } else {
+            log('Subscription client connected successfully');
+          }
+        }
+      }, ws);
+
+      subscriptionClient.onError(error => {
+        log('Subscription client error', error.message);
+      });
+
+      const wsLink = new WebSocketLink(subscriptionClient);
+
+      const splitLink = split(
+        ({ query }) => {
+          const definition = getMainDefinition(query);
+          return (
+            definition.kind === 'OperationDefinition' &&
+            definition.operation === 'subscription'
+          );
+        },
+        wsLink,
+        httpLink
+      );
+
+      link = splitLink;
+    }
 
     this._client = new ApolloClient({
-      link: splitLink,
+      link,
       cache: new InMemoryCache()
     });
   }

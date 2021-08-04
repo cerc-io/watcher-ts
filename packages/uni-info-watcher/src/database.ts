@@ -456,9 +456,8 @@ export class Database {
 
     const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
 
-    // TODO: Use skip and take methods. Currently throws error when using with join.
-    selectQueryBuilder = selectQueryBuilder.offset(skip)
-      .limit(limit);
+    selectQueryBuilder = selectQueryBuilder.skip(skip)
+      .take(limit);
 
     if (orderBy) {
       const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
@@ -776,15 +775,19 @@ export class Database {
     const blockRepo = this._conn.getRepository(BlockProgress);
     let block = await blockRepo.findOne({ blockHash });
     assert(block);
-    const blockHashes = [blockHash];
 
     // TODO: Should be calcualted from chainHeadBlockNumber?
     const canonicalBlockNumber = block.blockNumber - MAX_REORG_DEPTH;
 
-    while (block.blockNumber > canonicalBlockNumber) {
-      blockHashes.push(block.parentHash);
-      block = await blockRepo.findOne({ blockHash: block.parentHash });
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+    const blockHashes = [block.blockHash];
+
+    while (block.blockNumber > canonicalBlockNumber && block.blockNumber > syncStatus.latestCanonicalBlockNumber) {
+      blockHash = block.parentHash;
+      block = await blockRepo.findOne({ blockHash });
       assert(block);
+      blockHashes.push(block.blockHash);
     }
 
     return { canonicalBlockNumber, blockHashes };

@@ -28,5 +28,8 @@ export class Event {
   eventInfo!: string;
 
   @Column('text')
+  extraInfo!: string;
+
+  @Column('text')
   proof!: string;
 }

@@ -100,6 +100,8 @@ export const fetchTokenDecimals = async (ethProvider: BaseProvider, tokenAddress
     if (staticTokenDefinition != null) {
       return staticTokenDefinition.decimals;
     }
+
+    decimalValue = 0;
   }
 
   return BigInt(decimalValue);

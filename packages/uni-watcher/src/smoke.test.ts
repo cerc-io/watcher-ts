@@ -77,6 +77,7 @@ describe('uni-watcher', () => {
   let db: Database;
   let uniClient: UniClient;
   let ethClient: EthClient;
+  let postgraphileClient: EthClient;
   let signer: Signer;
   let recipient: string;
 
@@ -102,6 +103,11 @@ describe('uni-watcher', () => {
     ethClient = new EthClient({
       gqlEndpoint: gqlApiEndpoint,
       gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+      cache
+    });
+
+    postgraphileClient = new EthClient({
+      gqlEndpoint: gqlPostgraphileEndpoint,
       cache
     });
 
@@ -135,7 +141,7 @@ describe('uni-watcher', () => {
     await watchContract(db, factory.address, 'factory', 100);
 
     // Verifying with the db.
-    const indexer = new Indexer(config, db, ethClient);
+    const indexer = new Indexer(config, db, ethClient, postgraphileClient);
     assert(await indexer.isUniswapContract(factory.address), 'Factory contract not added to database.');
   });
 
@@ -323,7 +329,7 @@ describe('uni-watcher', () => {
     await watchContract(db, nfpm.address, 'nfpm', 100);
 
     // Verifying with the db.
-    const indexer = new Indexer(config, db, ethClient);
+    const indexer = new Indexer(config, db, ethClient, postgraphileClient);
     assert(await indexer.isUniswapContract(nfpm.address), 'NonfungiblePositionManager contract not added to database.');
   });
 

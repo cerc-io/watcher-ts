@@ -46,16 +46,18 @@ export class Indexer {
   _config: Config;
   _db: Database
   _ethClient: EthClient
+  _postgraphileClient: EthClient
   _getStorageAt: GetStorageAt
 
   _factoryContract: ethers.utils.Interface
   _poolContract: ethers.utils.Interface
   _nfpmContract: ethers.utils.Interface
 
-  constructor (config: Config, db: Database, ethClient: EthClient) {
+  constructor (config: Config, db: Database, ethClient: EthClient, postgraphileClient: EthClient) {
     this._config = config;
     this._db = db;
     this._ethClient = ethClient;
+    this._postgraphileClient = postgraphileClient;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
@@ -66,6 +68,7 @@ export class Indexer {
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSON.parse(event.eventInfo);
+    const { tx } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -76,7 +79,10 @@ export class Indexer {
       },
 
       tx: {
-        hash: event.txHash
+        hash: event.txHash,
+        from: tx.src,
+        to: tx.dst,
+        index: tx.index
       },
 
       contract: event.contract,
@@ -297,6 +303,23 @@ export class Indexer {
   async fetchAndSaveEvents (blockHash: string): Promise<void> {
     const { block, logs } = await this._ethClient.getLogs({ blockHash });
 
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          {
+            ethTransactionCidsByHeaderId: {
+              nodes: transactions
+            }
+          }
+        ]
+      }
+    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+
+    const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
+      acc[transaction.txHash] = transaction;
+      return acc;
+    }, {});
+
     const dbEvents: Array<DeepPartial<Event>> = [];
 
     for (let li = 0; li < logs.length; li++) {
@@ -317,7 +340,8 @@ export class Indexer {
 
       let eventName = UNKNOWN_EVENT_NAME;
       let eventInfo = {};
-      const extraInfo = { topics, data };
+      const tx = transactionMap[txHash];
+      const extraInfo = { topics, data, tx };
 
       const contract = ethers.utils.getAddress(address);
       const uniContract = await this.isUniswapContract(contract);

@@ -28,7 +28,6 @@ export class EthClient {
     const { gqlEndpoint, gqlSubscriptionEndpoint, cache } = config;
 
     assert(gqlEndpoint, 'Missing gql endpoint');
-    assert(gqlSubscriptionEndpoint, 'Missing gql subscription endpoint');
 
     this._graphqlClient = new GraphQLClient({ gqlEndpoint, gqlSubscriptionEndpoint });
 
@@ -59,8 +58,14 @@ export class EthClient {
     };
   }
 
-  async getBlockWithTransactions (blockNumber: string): Promise<any> {
-    return this._graphqlClient.query(ethQueries.getBlockWithTransactions, { blockNumber });
+  async getBlockWithTransactions ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    return this._graphqlClient.query(
+      ethQueries.getBlockWithTransactions,
+      {
+        blockNumber: blockNumber?.toString(),
+        blockHash
+      }
+    );
   }
 
   async getBlockByHash (blockHash: string): Promise<any> {

@@ -59,6 +59,7 @@ export class Indexer {
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSON.parse(event.eventInfo);
+    const { tx } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -68,13 +69,10 @@ export class Indexer {
         parentHash: block.parentHash
       },
 
-      tx: {
-        hash: event.txHash
-      },
-
+      tx,
       contract: event.contract,
-
       eventIndex: event.index,
+
       event: {
         __typename: event.eventName,
         ...eventFields
@@ -244,6 +242,7 @@ export class Indexer {
       } = events[i];
 
       const { __typename: eventName, ...eventInfo } = event;
+      const extraInfo = { tx };
 
       dbEvents.push({
         index: eventIndex,
@@ -251,6 +250,7 @@ export class Indexer {
         contract,
         eventName,
         eventInfo: JSONbig.stringify(eventInfo),
+        extraInfo: JSONbig.stringify(extraInfo),
         proof: JSONbig.stringify(proof)
       });
     }
@@ -334,13 +334,12 @@ export class Indexer {
     const { value: symbol } = await this._erc20Client.getSymbol(block.hash, tokenAddress);
     const { value: name } = await this._erc20Client.getName(block.hash, tokenAddress);
     const { value: totalSupply } = await this._erc20Client.getTotalSupply(block.hash, tokenAddress);
-
-    // TODO: Decimals not implemented by erc20-watcher.
-    // const { value: decimals } = await this._erc20Client.getDecimals(blockHash, tokenAddress);
+    const { value: decimals } = await this._erc20Client.getDecimals(block.hash, tokenAddress);
 
     token.symbol = symbol;
     token.name = name;
     token.totalSupply = totalSupply;
+    token.decimals = decimals;
 
     return this._db.saveToken(token, block);
   }
@@ -454,10 +453,7 @@ export class Indexer {
     mint.token1 = pool.token1;
     mint.owner = mintEvent.owner;
     mint.sender = mintEvent.sender;
-
-    // TODO: Assign origin with Transaction from address.
-    // origin: event.transaction.from
-
+    mint.origin = tx.from;
     mint.amount = mintEvent.amount;
     mint.amount0 = amount0;
     mint.amount1 = amount1;
@@ -590,10 +586,7 @@ export class Indexer {
     burn.token0 = pool.token0;
     burn.token1 = pool.token1;
     burn.owner = burnEvent.owner;
-
-    // TODO: Assign origin with Transaction from address.
-    // origin: event.transaction.from
-
+    burn.origin = tx.from;
     burn.amount = burnEvent.amount;
     burn.amount0 = amount0;
     burn.amount1 = amount1;
@@ -772,10 +765,7 @@ export class Indexer {
     swap.token0 = pool.token0;
     swap.token1 = pool.token1;
     swap.sender = swapEvent.sender;
-
-    // TODO: Assign origin with Transaction from address.
-    // origin: event.transaction.from
-
+    swap.origin = tx.from;
     swap.recipient = swapEvent.recipient;
     swap.amount0 = amount0;
     swap.amount1 = amount1;
