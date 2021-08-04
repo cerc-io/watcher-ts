@@ -12,10 +12,10 @@
     "toml": "^3.0.0"
   },
   "devDependencies": {
-    "@vulcanize/cache": "^0.1.0",
     "@types/fs-extra": "^9.0.11",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
+    "@vulcanize/cache": "^0.1.0",
     "chai": "^4.3.4",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
@@ -24,11 +24,13 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
+    "hardhat": "^2.3.0",
     "mocha": "^8.4.0",
     "typeorm": "^0.2.32"
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "tsc"
+    "build": "tsc",
+    "test:compile": "hardhat compile"
   }
 }

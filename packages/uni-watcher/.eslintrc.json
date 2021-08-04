@@ -29,7 +29,7 @@
             "files": ["*.test.ts", "test/*.ts"],
             "rules": {
               "no-unused-expressions": "off",
-              "no-prototype-builtins":"off"
+              "no-prototype-builtins": "off"
             }
         }
     ]
