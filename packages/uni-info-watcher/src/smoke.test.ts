@@ -1,9 +1,22 @@
 import { expect } from 'chai';
-import { ethers, Contract, Signer } from 'ethers';
+import { ethers, Contract, ContractTransaction, Signer } from 'ethers';
 import { request } from 'graphql-request';
 import 'mocha';
+import _ from 'lodash';
 
-import { Config, getConfig, wait, deployTokens, createPool, initializePool } from '@vulcanize/util';
+import {
+  Config,
+  getConfig,
+  wait,
+  deployTokens,
+  deployUniswapV3Callee,
+  TESTERC20_ABI,
+  createPool,
+  initializePool,
+  getMinTick,
+  getMaxTick,
+  approveToken
+} from '@vulcanize/util';
 import { Client as UniClient, watchEvent } from '@vulcanize/uni-watcher';
 import {
   abi as FACTORY_ABI
@@ -18,7 +31,9 @@ import {
   queryToken,
   queryPoolsByTokens,
   queryPoolById,
-  queryPoolDayData
+  queryPoolDayData,
+  queryMints,
+  queryTicks
 } from '../test/queries';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
@@ -28,10 +43,13 @@ const TICK_MIN = -887272;
 describe('uni-info-watcher', () => {
   let factory: Contract;
   let pool: Contract;
+  let token0: Contract;
+  let token1: Contract;
   let token0Address: string;
   let token1Address: string;
 
   let signer: Signer;
+  let recipient: string;
   let config: Config;
   let endpoint: string;
   let uniClient: UniClient;
@@ -39,6 +57,7 @@ describe('uni-info-watcher', () => {
   before(async () => {
     const provider = new ethers.providers.JsonRpcProvider(NETWORK_RPC_URL);
     signer = provider.getSigner();
+    recipient = await signer.getAddress();
 
     const configFile = './environments/local.toml';
     config = await getConfig(configFile);
@@ -94,7 +113,7 @@ describe('uni-info-watcher', () => {
       expect(data1.token).to.be.null;
     });
 
-    it('should create pool', async () => {
+    it('should trigger PoolCreatedEvent', async () => {
       // Create Pool.
       createPool(factory, token0Address, token1Address, fee);
 
@@ -103,7 +122,7 @@ describe('uni-info-watcher', () => {
       await watchEvent(uniClient, eventType);
 
       // Sleeping for 5 sec for the entities to be processed.
-      await wait(5000);
+      await wait(10000);
     });
 
     it('should create Token entities', async () => {
@@ -129,6 +148,12 @@ describe('uni-info-watcher', () => {
       expect(pool.address).to.not.be.empty;
 
       expect(data.pools[0].feeTier).to.be.equal(fee.toString());
+
+      // Initializing the token variables.
+      token0Address = await pool.token0();
+      token0 = new Contract(token0Address, TESTERC20_ABI, signer);
+      token1Address = await pool.token1();
+      token1 = new Contract(token1Address, TESTERC20_ABI, signer);
     });
   });
 
@@ -142,7 +167,7 @@ describe('uni-info-watcher', () => {
       expect(data.pool.tick).to.be.null;
     });
 
-    it('should initialize pool', async () => {
+    it('should trigger InitializeEvent', async () => {
       initializePool(pool, sqrtPrice);
 
       // Wait for InitializeEvent.
@@ -181,6 +206,143 @@ describe('uni-info-watcher', () => {
       expect(poolID).to.be.equal(pool.address);
       expect(date).to.be.equal(dayStartTimestamp);
       expect(tvlUSD).to.be.equal(totalValueLockedUSD);
+    });
+  });
+
+  describe('MintEvent', () => {
+    const amount = 10;
+    const approveAmount = BigInt(1000000000000000000000000);
+    let poolCallee: Contract;
+    let tickLower: number;
+    let tickUpper: number;
+
+    // Initial entity values
+    let oldFactory: any;
+    let oldToken0: any;
+    let oldToken1: any;
+    let oldPool: any;
+
+    before(async () => {
+      // Deploy UniswapV3Callee.
+      poolCallee = await deployUniswapV3Callee(signer);
+
+      const tickSpacing = await pool.tickSpacing();
+      // https://github.com/Uniswap/uniswap-v3-core/blob/main/test/UniswapV3Pool.spec.ts#L196
+      tickLower = getMinTick(tickSpacing);
+      tickUpper = getMaxTick(tickSpacing);
+
+      await approveToken(token0, poolCallee.address, approveAmount);
+      await approveToken(token1, poolCallee.address, approveAmount);
+
+      // Get initial entity values.
+      let data: any;
+
+      data = await request(endpoint, queryFactory);
+      oldFactory = data.factories[0];
+      
+      data = await request(endpoint, queryToken, { id: token0.address });
+      oldToken0 = data.token;
+
+      data = await request(endpoint, queryToken, { id: token1.address });
+      oldToken1 = data.token;
+
+      data = await request(endpoint, queryPoolById, { id: pool.address });
+      oldPool = data.pool;
+    });
+
+    it('should trigger MintEvent', async () => {
+      // Pool mint.
+      const transaction: ContractTransaction = await poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
+      await transaction.wait();
+
+      // Wait for MintEvent.
+      const eventType = 'MintEvent';
+      await watchEvent(uniClient, eventType);
+
+      // Sleeping for 20 sec for the entities to be processed.
+      await wait(20000);
+    });
+
+    it('should update Token entities', async () => {
+      // Check txCount.
+      let data: any;
+
+      data = await request(endpoint, queryToken, { id: token0.address });
+      const newToken0 = data.token;
+
+      data = await request(endpoint, queryToken, { id: token1.address });
+      const newToken1 = data.token;
+
+      expect(newToken0.txCount).to.be.equal((BigInt(oldToken0.txCount) + BigInt(1)).toString());
+      expect(newToken1.txCount).to.be.equal((BigInt(oldToken1.txCount) + BigInt(1)).toString());
+    });
+
+    it('should update Factory entity', async () => {
+      // Check txCount.
+      const data = await request(endpoint, queryFactory);
+      const newFactory = data.factories[0];
+      expect(newFactory.txCount).to.be.equal((BigInt(oldFactory.txCount) + BigInt(1)).toString());
+    });
+
+    it('should update Pool entity', async () => {
+      // Check txCount, liquidity.
+      let expectedLiquidity = BigInt(oldPool.liquidity);
+      if (oldPool.tick !== null) {
+        if (
+          BigInt(tickLower) <= BigInt(oldPool.tick) &&
+          BigInt(tickUpper) > BigInt(oldPool.tick)
+        ) {
+          expectedLiquidity = BigInt(oldPool.liquidity) + BigInt(amount);
+        }
+      }
+
+      const data = await request(endpoint, queryPoolById, { id: pool.address });
+      const newPool = data.pool;
+
+      expect(newPool.txCount).to.be.equal((BigInt(oldPool.txCount) + BigInt(1)).toString());
+      expect(BigInt(newPool.liquidity)).to.be.equal(expectedLiquidity);
+    });
+
+    it('should create a Mint entity', async () => {
+      // Check id, owner, sender.
+      // Get the latest Mint.
+      let data: any;
+      const variables = {
+        first: 1,
+        orderBy: 'timestamp',
+        orderDirection: 'desc',
+        pool: pool.address,
+      };
+      data = await request(endpoint, queryMints, variables);
+      expect(data.mints).to.not.be.empty;
+
+      const id: string = data.mints[0].id;
+      const txCountID = id.split('#')[1];
+      const owner = data.mints[0].owner;
+      const sender = data.mints[0].sender;
+
+      data = await request(endpoint, queryPoolById, { id: pool.address });
+      const poolTxCount = data.pool.txCount;
+      const expectedOwner = recipient;
+      const expectedSender = poolCallee.address;
+
+      expect(txCountID).to.be.equal(poolTxCount);
+      expect(owner).to.be.equal(expectedOwner);
+      expect(sender).to.be.equal(expectedSender);
+    });
+
+    it('should create Tick entities', async () => {
+      // Check liquidityGross, liquidityNet.
+      const data = await request(endpoint, queryTicks, { pool: pool.address });
+      expect(data.ticks).to.not.be.empty;
+
+      const lowerTick: any = _.filter(data.ticks, { tickIdx: tickLower.toString() })[0];
+      const upperTick: any = _.filter(data.ticks, { tickIdx: tickUpper.toString() })[0];
+
+      expect(lowerTick.liquidityGross).to.be.equal(amount.toString());
+      expect(lowerTick.liquidityNet).to.be.equal(amount.toString());
+      expect(upperTick.liquidityGross).to.be.equal(amount.toString());
+      expect(upperTick.liquidityNet).to.be.equal(amount.toString());
     });
   });
 });
