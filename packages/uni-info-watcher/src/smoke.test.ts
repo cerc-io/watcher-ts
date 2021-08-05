@@ -11,6 +11,7 @@ import {
   deployTokens,
   deployUniswapV3Callee,
   TESTERC20_ABI,
+  TICK_MIN,
   createPool,
   initializePool,
   getMinTick,
@@ -37,8 +38,6 @@ import {
 } from '../test/queries';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
-
-const TICK_MIN = -887272;
 
 describe('uni-info-watcher', () => {
   let factory: Contract;
@@ -239,7 +238,7 @@ describe('uni-info-watcher', () => {
 
       data = await request(endpoint, queryFactory);
       oldFactory = data.factories[0];
-      
+
       data = await request(endpoint, queryToken, { id: token0.address });
       oldToken0 = data.token;
 
@@ -311,7 +310,7 @@ describe('uni-info-watcher', () => {
         first: 1,
         orderBy: 'timestamp',
         orderDirection: 'desc',
-        pool: pool.address,
+        pool: pool.address
       };
       data = await request(endpoint, queryMints, variables);
       expect(data.mints).to.not.be.empty;

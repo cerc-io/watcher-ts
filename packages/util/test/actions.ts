@@ -11,10 +11,16 @@ import {
 
 export { abi as TESTERC20_ABI } from '../artifacts/test/contracts/TestERC20.sol/TestERC20.json';
 
-const TICK_MIN = -887272;
-const TICK_MAX = 887272;
-export const getMinTick = (tickSpacing: number) => Math.ceil(TICK_MIN / tickSpacing) * tickSpacing;
-export const getMaxTick = (tickSpacing: number) => Math.floor(TICK_MAX / tickSpacing) * tickSpacing;
+export const TICK_MIN = -887272;
+export const TICK_MAX = 887272;
+
+export const getMinTick = (tickSpacing: number): number => {
+  return Math.ceil(TICK_MIN / tickSpacing) * tickSpacing;
+};
+
+export const getMaxTick = (tickSpacing: number): number => {
+  return Math.floor(TICK_MAX / tickSpacing) * tickSpacing;
+};
 
 export const deployTokens = async (signer: Signer): Promise<{token0Address: string, token1Address: string}> => {
   const Token = new ethers.ContractFactory(TESTERC20_ABI, TESTERC20_BYTECODE, signer);

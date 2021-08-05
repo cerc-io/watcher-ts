@@ -8,6 +8,7 @@ import {
   deployTokens,
   deployUniswapV3Callee,
   TESTERC20_ABI,
+  TICK_MIN,
   getMinTick,
   getMaxTick,
   approveToken
@@ -57,9 +58,6 @@ import {
 } from '../artifacts/test/contracts/WETH9.sol/WETH9.json';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
-
-const TICK_MIN = -887272;
-const TICK_MAX = 887272;
 
 describe('uni-watcher', () => {
   let factory: Contract;
