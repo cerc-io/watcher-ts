@@ -1,5 +1,5 @@
 import debug from 'debug';
-import { DeepPartial } from 'typeorm';
+import { DeepPartial, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import assert from 'assert';
@@ -138,13 +138,13 @@ export class Indexer {
     return result;
   }
 
-  async triggerIndexingOnEvent (dbEvent: Event): Promise<void> {
+  async triggerIndexingOnEvent (dbTx: QueryRunner, dbEvent: Event): Promise<void> {
     const re = this.getResultEvent(dbEvent);
 
     switch (re.event.__typename) {
       case 'PoolCreatedEvent': {
         const poolContract = ethers.utils.getAddress(re.event.pool);
-        await this._db.saveContract(poolContract, KIND_POOL, dbEvent.block.blockNumber);
+        await this._db.saveContract(dbTx, poolContract, KIND_POOL, dbEvent.block.blockNumber);
       }
     }
   }
@@ -154,8 +154,18 @@ export class Indexer {
   }
 
   async processEvent (event: Event): Promise<void> {
-    // Trigger indexing of data based on the event.
-    await this.triggerIndexingOnEvent(event);
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      // Trigger indexing of data based on the event.
+      await this.triggerIndexingOnEvent(dbTx, event);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -371,19 +381,68 @@ export class Indexer {
       });
     }
 
-    await this._db.saveEvents(block, dbEvents);
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      await this._db.saveEvents(dbTx, block, dbEvents);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._db.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatusIndexedBlock(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._db.updateSyncStatusChainHead(blockHash, blockNumber);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._db.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatusCanonicalBlock(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -400,7 +459,20 @@ export class Indexer {
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {
-    return this._db.saveEventEntity(dbEvent);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = this._db.saveEventEntity(dbTx, dbEvent);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
@@ -439,11 +511,37 @@ export class Indexer {
   }
 
   async markBlockAsPruned (block: BlockProgress): Promise<BlockProgress> {
-    return this._db.markBlockAsPruned(block);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.markBlockAsPruned(dbTx, block);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._db.updateBlockProgress(blockHash, lastProcessedEventIndex);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateBlockProgress(dbTx, blockHash, lastProcessedEventIndex);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
