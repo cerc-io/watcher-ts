@@ -472,8 +472,8 @@ export class Indexer {
 
       const token0 = pool.token0;
       const token1 = pool.token1;
-      const amount0 = convertTokenToDecimal(mintEvent.amount0, BigInt(token0.decimals));
-      const amount1 = convertTokenToDecimal(mintEvent.amount1, BigInt(token1.decimals));
+      const amount0 = convertTokenToDecimal(BigInt(mintEvent.amount0), BigInt(token0.decimals));
+      const amount1 = convertTokenToDecimal(BigInt(mintEvent.amount1), BigInt(token1.decimals));
 
       const amountUSD = amount0
         .times(token0.derivedETH.times(bundle.ethPriceUSD))
@@ -533,12 +533,12 @@ export class Indexer {
       mint.owner = mintEvent.owner;
       mint.sender = mintEvent.sender;
       mint.origin = tx.from;
-      mint.amount = mintEvent.amount;
+      mint.amount = BigInt(mintEvent.amount);
       mint.amount0 = amount0;
       mint.amount1 = amount1;
       mint.amountUSD = amountUSD;
-      mint.tickLower = mintEvent.tickLower;
-      mint.tickUpper = mintEvent.tickUpper;
+      mint.tickLower = BigInt(mintEvent.tickLower);
+      mint.tickUpper = BigInt(mintEvent.tickUpper);
 
       // Tick entities.
       const lowerTickIdx = mintEvent.tickLower;
@@ -617,8 +617,8 @@ export class Indexer {
 
       const token0 = pool.token0;
       const token1 = pool.token1;
-      const amount0 = convertTokenToDecimal(burnEvent.amount0, BigInt(token0.decimals));
-      const amount1 = convertTokenToDecimal(burnEvent.amount1, BigInt(token1.decimals));
+      const amount0 = convertTokenToDecimal(BigInt(burnEvent.amount0), BigInt(token0.decimals));
+      const amount1 = convertTokenToDecimal(BigInt(burnEvent.amount1), BigInt(token1.decimals));
 
       const amountUSD = amount0
         .times(token0.derivedETH.times(bundle.ethPriceUSD))
@@ -645,12 +645,13 @@ export class Indexer {
 
       // Pools liquidity tracks the currently active liquidity given pools current tick.
       // We only want to update it on burn if the position being burnt includes the current tick.
-      if (
-        pool.tick !== null &&
-        burnEvent.tickLower <= pool.tick &&
-        burnEvent.tickUpper > pool.tick
-      ) {
-        pool.liquidity = pool.liquidity - burnEvent.amount;
+      if (pool.tick !== null) {
+        if (
+          BigInt(burnEvent.tickLower) <= BigInt(pool.tick) &&
+          BigInt(burnEvent.tickUpper) > BigInt(pool.tick)
+        ) {
+          pool.liquidity = BigInt(pool.liquidity) - BigInt(burnEvent.amount);
+        }
       }
 
       pool.totalValueLockedToken0 = pool.totalValueLockedToken0.minus(amount0);
@@ -678,12 +679,12 @@ export class Indexer {
       burn.token1 = pool.token1;
       burn.owner = burnEvent.owner;
       burn.origin = tx.from;
-      burn.amount = burnEvent.amount;
+      burn.amount = BigInt(burnEvent.amount);
       burn.amount0 = amount0;
       burn.amount1 = amount1;
       burn.amountUSD = amountUSD;
-      burn.tickLower = burnEvent.tickLower;
-      burn.tickUpper = burnEvent.tickUpper;
+      burn.tickLower = BigInt(burnEvent.tickLower);
+      burn.tickUpper = BigInt(burnEvent.tickUpper);
 
       // Tick entities.
       const lowerTickId = poolAddress + '#' + (burnEvent.tickLower).toString();
@@ -757,8 +758,8 @@ export class Indexer {
       assert(token0 && token1, 'Pool tokens not found.');
 
       // Amounts - 0/1 are token deltas. Can be positive or negative.
-      const amount0 = convertTokenToDecimal(swapEvent.amount0, BigInt(token0.decimals));
-      const amount1 = convertTokenToDecimal(swapEvent.amount1, BigInt(token1.decimals));
+      const amount0 = convertTokenToDecimal(BigInt(swapEvent.amount0), BigInt(token0.decimals));
+      const amount1 = convertTokenToDecimal(BigInt(swapEvent.amount1), BigInt(token1.decimals));
 
       // Need absolute amounts for volume.
       let amount0Abs = amount0;
@@ -807,9 +808,9 @@ export class Indexer {
       pool.txCount = BigInt(pool.txCount) + BigInt(1);
 
       // Update the pool with the new active liquidity, price, and tick.
-      pool.liquidity = swapEvent.liquidity;
+      pool.liquidity = BigInt(swapEvent.liquidity);
       pool.tick = BigInt(swapEvent.tick);
-      pool.sqrtPrice = swapEvent.sqrtPriceX96;
+      pool.sqrtPrice = BigInt(swapEvent.sqrtPriceX96);
       pool.totalValueLockedToken0 = pool.totalValueLockedToken0.plus(amount0);
       pool.totalValueLockedToken1 = pool.totalValueLockedToken1.plus(amount1);
 
@@ -871,7 +872,7 @@ export class Indexer {
       swap.amount1 = amount1;
       swap.amountUSD = amountTotalUSDTracked;
       swap.tick = BigInt(swapEvent.tick);
-      swap.sqrtPriceX96 = swapEvent.sqrtPriceX96;
+      swap.sqrtPriceX96 = BigInt(swapEvent.sqrtPriceX96);
 
       // Skipping update pool fee growth as they are not queried.
 

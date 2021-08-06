@@ -137,6 +137,34 @@ query queryMints(
       }
 }`;
 
+// Getting burns(s) filtered by pool, tokens and ordered by timestamp.
+export const queryBurns = gql`
+query queryBurns(
+  $first: Int,
+  $orderBy: Burn_orderBy,
+  $orderDirection: OrderDirection,
+  $pool: String,
+  $token0: String,
+  $token1: String) {
+    burns(
+      first: $first,
+      orderBy: $orderBy,
+      orderDirection: $orderDirection,
+      where: {
+        pool: $pool,
+        token0: $token0,
+        token1: $token1
+      }) {
+        amount0
+        amount1
+        amountUSD
+        id
+        origin
+        owner
+        timestamp
+      }
+}`;
+
 // Getting Tick(s) filtered by pool.
 export const queryTicks = gql`
 query queryTicksByPool($pool: String) {
