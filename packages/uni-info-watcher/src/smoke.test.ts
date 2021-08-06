@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers, Contract, ContractTransaction, Signer } from 'ethers';
+import { ethers, Contract, Signer } from 'ethers';
 import { request } from 'graphql-request';
 import 'mocha';
 import _ from 'lodash';
@@ -32,10 +32,15 @@ import {
   queryToken,
   queryPoolsByTokens,
   queryPoolById,
-  queryPoolDayData,
   queryMints,
   queryTicks
 } from '../test/queries';
+import {
+  checkUniswapDayData,
+  checkPoolDayData,
+  checkTokenDayData,
+  checkTokenHourData
+} from '../test/utils';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
 
@@ -92,7 +97,7 @@ describe('uni-info-watcher', () => {
   });
 
   describe('PoolCreatedEvent', () => {
-    // NOTE Skipping checking entity updates that cannot be gotten using queries.
+    // NOTE Skipping checking entity updates that cannot be gotten/derived using queries.
 
     const fee = 500;
 
@@ -114,6 +119,7 @@ describe('uni-info-watcher', () => {
 
     it('should trigger PoolCreatedEvent', async () => {
       // Create Pool.
+      // Not doing tx.wait() here as we are waiting for the event.
       createPool(factory, token0Address, token1Address, fee);
 
       // Wait for PoolCreatedEvent.
@@ -182,29 +188,7 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update PoolDayData entity', async () => {
-      // Get the latest PoolDayData.
-      const variables = {
-        first: 1,
-        orderBy: 'date',
-        orderDirection: 'desc',
-        pool: pool.address
-      };
-      const data = await request(endpoint, queryPoolDayData, variables);
-      expect(data.poolDayDatas).to.not.be.empty;
-
-      const dayPoolID: string = data.poolDayDatas[0].id;
-      const poolID: string = dayPoolID.split('-')[0];
-      const dayID: number = +dayPoolID.split('-')[1];
-      const date = data.poolDayDatas[0].date;
-      const tvlUSD = data.poolDayDatas[0].tvlUSD;
-
-      const dayStartTimestamp = dayID * 86400;
-      const poolData = await request(endpoint, queryPoolById, { id: pool.address });
-      const totalValueLockedUSD: string = poolData.pool.totalValueLockedUSD;
-
-      expect(poolID).to.be.equal(pool.address);
-      expect(date).to.be.equal(dayStartTimestamp);
-      expect(tvlUSD).to.be.equal(totalValueLockedUSD);
+      checkPoolDayData(endpoint, pool.address);
     });
   });
 
@@ -251,8 +235,7 @@ describe('uni-info-watcher', () => {
 
     it('should trigger MintEvent', async () => {
       // Pool mint.
-      const transaction: ContractTransaction = await poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
-      await transaction.wait();
+      poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
 
       // Wait for MintEvent.
       const eventType = 'MintEvent';
@@ -317,15 +300,18 @@ describe('uni-info-watcher', () => {
 
       const id: string = data.mints[0].id;
       const txCountID = id.split('#')[1];
+      const origin = data.mints[0].origin;
       const owner = data.mints[0].owner;
       const sender = data.mints[0].sender;
 
       data = await request(endpoint, queryPoolById, { id: pool.address });
       const poolTxCount = data.pool.txCount;
+      const expectedOrigin = recipient;
       const expectedOwner = recipient;
       const expectedSender = poolCallee.address;
 
       expect(txCountID).to.be.equal(poolTxCount);
+      expect(origin).to.be.equal(expectedOrigin);
       expect(owner).to.be.equal(expectedOwner);
       expect(sender).to.be.equal(expectedSender);
     });
@@ -342,6 +328,24 @@ describe('uni-info-watcher', () => {
       expect(lowerTick.liquidityNet).to.be.equal(amount.toString());
       expect(upperTick.liquidityGross).to.be.equal(amount.toString());
       expect(upperTick.liquidityNet).to.be.equal(amount.toString());
+    });
+
+    it('should update UniswapDayData entity', async () => {
+      checkUniswapDayData(endpoint);
+    });
+
+    it('should update PoolDayData entity', async () => {
+      checkPoolDayData(endpoint, pool.address);
+    });
+
+    it('should update TokenDayData entities', async () => {
+      checkTokenDayData(endpoint, token0.address);
+      checkTokenDayData(endpoint, token1.address);
+    });
+
+    it('should update TokenHourData entities', async () => {
+      checkTokenHourData(endpoint, token0.address);
+      checkTokenHourData(endpoint, token1.address);
     });
   });
 });

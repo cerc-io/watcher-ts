@@ -65,6 +65,16 @@ query queryPoolsByTokens($tokens: [String!]) {
   }
 }`;
 
+// Getting UniswapDayData(s).
+export const queryUniswapDayData = gql`
+query queryUniswapDayData($first: Int, $orderBy: UniswapDayData_orderBy, $orderDirection: OrderDirection) {
+  uniswapDayDatas(first: $first, orderBy: $orderBy, orderDirection: $orderDirection) {
+    id,
+    date,
+    tvlUSD
+  }
+}`;
+
 // Getting PoolDayData(s) filtered by pool and ordered by date.
 export const queryPoolDayData = gql`
 query queryPoolDayData($first: Int, $orderBy: PoolDayData_orderBy, $orderDirection: OrderDirection, $pool: String) {
@@ -72,6 +82,29 @@ query queryPoolDayData($first: Int, $orderBy: PoolDayData_orderBy, $orderDirecti
     id,
     date,
     tvlUSD
+  }
+}`;
+
+// Getting TokenDayDatas(s) filtered by token and ordered by date.
+export const queryTokenDayData = gql`
+query queryTokenDayData($first: Int, $orderBy: TokenDayData_orderBy, $orderDirection: OrderDirection, $token: String) {
+  tokenDayDatas(first: $first, orderBy: $orderBy, orderDirection: $orderDirection, where: { token: $token }) {
+    id,
+    date,
+    totalValueLockedUSD
+  }
+}`;
+
+// Getting TokenDayDatas(s) filtered by token and ordered by date.
+export const queryTokenHourData = gql`
+query queryTokenHourData($first: Int, $orderBy: TokenHourData_orderBy, $orderDirection: OrderDirection, $token: String) {
+  tokenHourDatas(first: $first, orderBy: $orderBy, orderDirection: $orderDirection, where: { token: $token }) {
+    id,
+    low,
+    high,
+    open,
+    close,
+    periodStartUnix
   }
 }`;
 
