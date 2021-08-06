@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { BigNumber } from 'ethers';
+import { QueryRunner } from 'typeorm';
 
 import { Database } from '../database';
 import { Factory } from '../entity/Factory';
@@ -16,17 +17,17 @@ import { Block } from '../events';
  * @param db
  * @param event
  */
-export const updateUniswapDayData = async (db: Database, event: { contractAddress: string, block: Block }): Promise<UniswapDayData> => {
+export const updateUniswapDayData = async (db: Database, dbTx: QueryRunner, event: { contractAddress: string, block: Block }): Promise<UniswapDayData> => {
   const { block } = event;
 
   // TODO: In subgraph factory is fetched by hardcoded factory address.
   // Currently fetching first factory in database as only one exists.
-  const [factory] = await db.getEntities(Factory, { hash: block.hash }, {}, { limit: 1 });
+  const [factory] = await db.getEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
   const dayID = Math.floor(block.timestamp / 86400); // Rounded.
   const dayStartTimestamp = dayID * 86400;
 
-  let uniswapDayData = await db.getUniswapDayData({ id: dayID.toString(), blockHash: block.hash });
+  let uniswapDayData = await db.getUniswapDayData(dbTx, { id: dayID.toString(), blockHash: block.hash });
 
   if (!uniswapDayData) {
     uniswapDayData = new UniswapDayData();
@@ -38,10 +39,10 @@ export const updateUniswapDayData = async (db: Database, event: { contractAddres
 
   uniswapDayData.tvlUSD = factory.totalValueLockedUSD;
   uniswapDayData.txCount = factory.txCount;
-  return db.saveUniswapDayData(uniswapDayData, block);
+  return db.saveUniswapDayData(dbTx, uniswapDayData, block);
 };
 
-export const updatePoolDayData = async (db: Database, event: { contractAddress: string, block: Block }): Promise<PoolDayData> => {
+export const updatePoolDayData = async (db: Database, dbTx: QueryRunner, event: { contractAddress: string, block: Block }): Promise<PoolDayData> => {
   const { contractAddress, block } = event;
   const dayID = Math.floor(block.timestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
@@ -50,10 +51,10 @@ export const updatePoolDayData = async (db: Database, event: { contractAddress: 
     .concat('-')
     .concat(dayID.toString());
 
-  const pool = await db.getPool({ id: contractAddress, blockHash: block.hash });
+  const pool = await db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
   assert(pool);
 
-  let poolDayData = await db.getPoolDayData({ id: dayPoolID, blockHash: block.hash });
+  let poolDayData = await db.getPoolDayData(dbTx, { id: dayPoolID, blockHash: block.hash });
 
   if (!poolDayData) {
     poolDayData = new PoolDayData();
@@ -64,7 +65,7 @@ export const updatePoolDayData = async (db: Database, event: { contractAddress: 
     poolDayData.high = pool.token0Price;
     poolDayData.low = pool.token0Price;
     poolDayData.close = pool.token0Price;
-    poolDayData = await db.savePoolDayData(poolDayData, block);
+    poolDayData = await db.savePoolDayData(dbTx, poolDayData, block);
   }
 
   if (Number(pool.token0Price) > Number(poolDayData.high)) {
@@ -84,12 +85,12 @@ export const updatePoolDayData = async (db: Database, event: { contractAddress: 
   poolDayData.tick = pool.tick;
   poolDayData.tvlUSD = pool.totalValueLockedUSD;
   poolDayData.txCount = BigInt(BigNumber.from(poolDayData.txCount).add(1).toHexString());
-  poolDayData = await db.savePoolDayData(poolDayData, block);
+  poolDayData = await db.savePoolDayData(dbTx, poolDayData, block);
 
   return poolDayData;
 };
 
-export const updatePoolHourData = async (db: Database, event: { contractAddress: string, block: Block }): Promise<PoolHourData> => {
+export const updatePoolHourData = async (db: Database, dbTx: QueryRunner, event: { contractAddress: string, block: Block }): Promise<PoolHourData> => {
   const { contractAddress, block } = event;
   const hourIndex = Math.floor(block.timestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
@@ -98,10 +99,10 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
     .concat('-')
     .concat(hourIndex.toString());
 
-  const pool = await db.getPool({ id: contractAddress, blockHash: block.hash });
+  const pool = await db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
   assert(pool);
 
-  let poolHourData = await db.getPoolHourData({ id: hourPoolID, blockHash: block.hash });
+  let poolHourData = await db.getPoolHourData(dbTx, { id: hourPoolID, blockHash: block.hash });
 
   if (!poolHourData) {
     poolHourData = new PoolHourData();
@@ -112,7 +113,7 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
     poolHourData.high = pool.token0Price;
     poolHourData.low = pool.token0Price;
     poolHourData.close = pool.token0Price;
-    poolHourData = await db.savePoolHourData(poolHourData, block);
+    poolHourData = await db.savePoolHourData(dbTx, poolHourData, block);
   }
 
   if (Number(pool.token0Price) > Number(poolHourData.high)) {
@@ -132,14 +133,14 @@ export const updatePoolHourData = async (db: Database, event: { contractAddress:
   poolHourData.tick = pool.tick;
   poolHourData.tvlUSD = pool.totalValueLockedUSD;
   poolHourData.txCount = BigInt(BigNumber.from(poolHourData.txCount).add(1).toHexString());
-  poolHourData = await db.savePoolHourData(poolHourData, block);
+  poolHourData = await db.savePoolHourData(dbTx, poolHourData, block);
 
   return poolHourData;
 };
 
-export const updateTokenDayData = async (db: Database, token: Token, event: { block: Block }): Promise<TokenDayData> => {
+export const updateTokenDayData = async (db: Database, dbTx: QueryRunner, token: Token, event: { block: Block }): Promise<TokenDayData> => {
   const { block } = event;
-  const bundle = await db.getBundle({ id: '1', blockHash: block.hash });
+  const bundle = await db.getBundle(dbTx, { id: '1', blockHash: block.hash });
   assert(bundle);
   const dayID = Math.floor(block.timestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
@@ -150,7 +151,7 @@ export const updateTokenDayData = async (db: Database, token: Token, event: { bl
 
   const tokenPrice = token.derivedETH.times(bundle.ethPriceUSD);
 
-  let tokenDayData = await db.getTokenDayData({ id: tokenDayID, blockHash: block.hash });
+  let tokenDayData = await db.getTokenDayData(dbTx, { id: tokenDayID, blockHash: block.hash });
 
   if (!tokenDayData) {
     tokenDayData = new TokenDayData();
@@ -178,12 +179,12 @@ export const updateTokenDayData = async (db: Database, token: Token, event: { bl
   tokenDayData.priceUSD = token.derivedETH.times(bundle.ethPriceUSD);
   tokenDayData.totalValueLocked = token.totalValueLocked;
   tokenDayData.totalValueLockedUSD = token.totalValueLockedUSD;
-  return db.saveTokenDayData(tokenDayData, block);
+  return db.saveTokenDayData(dbTx, tokenDayData, block);
 };
 
-export const updateTokenHourData = async (db: Database, token: Token, event: { block: Block }): Promise<TokenHourData> => {
+export const updateTokenHourData = async (db: Database, dbTx: QueryRunner, token: Token, event: { block: Block }): Promise<TokenHourData> => {
   const { block } = event;
-  const bundle = await db.getBundle({ id: '1', blockHash: block.hash });
+  const bundle = await db.getBundle(dbTx, { id: '1', blockHash: block.hash });
   assert(bundle);
   const hourIndex = Math.floor(block.timestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
@@ -194,7 +195,7 @@ export const updateTokenHourData = async (db: Database, token: Token, event: { b
 
   const tokenPrice = token.derivedETH.times(bundle.ethPriceUSD);
 
-  let tokenHourData = await db.getTokenHourData({ id: tokenHourID, blockHash: block.hash });
+  let tokenHourData = await db.getTokenHourData(dbTx, { id: tokenHourID, blockHash: block.hash });
 
   if (!tokenHourData) {
     tokenHourData = new TokenHourData();
@@ -222,5 +223,5 @@ export const updateTokenHourData = async (db: Database, token: Token, event: { b
   tokenHourData.priceUSD = tokenPrice;
   tokenHourData.totalValueLocked = token.totalValueLocked;
   tokenHourData.totalValueLockedUSD = token.totalValueLockedUSD;
-  return db.saveTokenHourData(tokenHourData, block);
+  return db.saveTokenHourData(dbTx, tokenHourData, block);
 };

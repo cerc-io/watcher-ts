@@ -1,6 +1,7 @@
 import assert from 'assert';
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
+import { QueryRunner } from 'typeorm';
 
 import { exponentToBigDecimal, safeDiv } from '.';
 import { Database } from '../database';
@@ -55,9 +56,9 @@ export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, t
   return [price0, price1];
 };
 
-export const getEthPriceInUSD = async (db: Database, block: Block): Promise<Decimal> => {
+export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: Block): Promise<Decimal> => {
   // Fetch eth prices for each stablecoin.
-  const usdcPool = await db.getPool({ id: USDC_WETH_03_POOL, blockHash: block.hash }); // DAI is token0.
+  const usdcPool = await db.getPool(dbTx, { id: USDC_WETH_03_POOL, blockHash: block.hash }); // DAI is token0.
 
   if (usdcPool) {
     return usdcPool.token0Price;
@@ -122,12 +123,13 @@ export const findEthPerToken = async (token: Token): Promise<Decimal> => {
  */
 export const getTrackedAmountUSD = async (
   db: Database,
+  dbTx: QueryRunner,
   tokenAmount0: Decimal,
   token0: Token,
   tokenAmount1: Decimal,
   token1: Token
 ): Promise<Decimal> => {
-  const bundle = await db.getBundle({ id: '1' });
+  const bundle = await db.getBundle(dbTx, { id: '1' });
   assert(bundle);
   const price0USD = token0.derivedETH.times(bundle.ethPriceUSD);
   const price1USD = token1.derivedETH.times(bundle.ethPriceUSD);

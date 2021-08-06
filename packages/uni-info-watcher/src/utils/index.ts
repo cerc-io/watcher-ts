@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
+import { QueryRunner } from 'typeorm';
 
 import { Transaction as TransactionEntity } from '../entity/Transaction';
 import { Database } from '../database';
@@ -23,9 +24,9 @@ export const convertTokenToDecimal = (tokenAmount: bigint, exchangeDecimals: big
   return (new Decimal(tokenAmount.toString())).div(exponentToBigDecimal(exchangeDecimals));
 };
 
-export const loadTransaction = async (db: Database, event: { block: Block, tx: Transaction }): Promise<TransactionEntity> => {
+export const loadTransaction = async (db: Database, dbTx: QueryRunner, event: { block: Block, tx: Transaction }): Promise<TransactionEntity> => {
   const { tx, block } = event;
-  let transaction = await db.getTransaction({ id: tx.hash, blockHash: block.hash });
+  let transaction = await db.getTransaction(dbTx, { id: tx.hash, blockHash: block.hash });
 
   if (!transaction) {
     transaction = new TransactionEntity();
@@ -35,7 +36,7 @@ export const loadTransaction = async (db: Database, event: { block: Block, tx: T
   transaction.blockNumber = block.number;
   transaction.timestamp = BigInt(block.timestamp);
 
-  return db.saveTransaction(transaction, block);
+  return db.saveTransaction(dbTx, transaction, block);
 };
 
 // Return 0 if denominator is 0 in division.
