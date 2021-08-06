@@ -34,7 +34,8 @@ import {
   queryPoolById,
   queryMints,
   queryTicks,
-  queryBurns
+  queryBurns,
+  querySwaps
 } from '../test/queries';
 import {
   checkUniswapDayData,
@@ -48,6 +49,7 @@ const NETWORK_RPC_URL = 'http://localhost:8545';
 describe('uni-info-watcher', () => {
   let factory: Contract;
   let pool: Contract;
+  let poolCallee: Contract;
   let token0: Contract;
   let token1: Contract;
   let token0Address: string;
@@ -198,7 +200,6 @@ describe('uni-info-watcher', () => {
   describe('MintEvent', () => {
     const amount = 10;
     const approveAmount = BigInt(1000000000000000000000000);
-    let poolCallee: Contract;
 
     // Initial entity values
     let oldFactory: any;
@@ -287,7 +288,7 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Mint entity', async () => {
-      // Check id, owner, sender.
+      // Check id, origin, owner, sender.
       // Get the latest Mint.
       let data: any;
       const variables = {
@@ -437,7 +438,7 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Burn entity', async () => {
-      // Check id, owner, sender.
+      // Check id, origin, owner.
       // Get the latest Burn.
       let data: any;
       const variables = {
@@ -482,6 +483,126 @@ describe('uni-info-watcher', () => {
       expect(newLowerTick.liquidityNet).to.be.equal(expectedLN.toString());
       expect(newUpperTick.liquidityGross).to.be.equal(expectedULG.toString());
       expect(newUpperTick.liquidityNet).to.be.equal(expectedUN.toString());
+    });
+
+    it('should update UniswapDayData entity', async () => {
+      checkUniswapDayData(endpoint);
+    });
+
+    it('should update PoolDayData entity', async () => {
+      checkPoolDayData(endpoint, pool.address);
+    });
+
+    it('should update TokenDayData entities', async () => {
+      checkTokenDayData(endpoint, token0.address);
+      checkTokenDayData(endpoint, token1.address);
+    });
+
+    it('should update TokenHourData entities', async () => {
+      checkTokenHourData(endpoint, token0.address);
+      checkTokenHourData(endpoint, token1.address);
+    });
+  });
+
+  describe('SwapEvent', () => {
+    const sqrtPrice = '4295128938';
+
+    // Initial entity values
+    let eventValue: any;
+    let oldFactory: any;
+    let oldToken0: any;
+    let oldToken1: any;
+    let oldPool: any;
+
+    before(async () => {
+      // Get initial entity values.
+      let data: any;
+
+      data = await request(endpoint, queryFactory);
+      oldFactory = data.factories[0];
+
+      data = await request(endpoint, queryToken, { id: token0.address });
+      oldToken0 = data.token;
+
+      data = await request(endpoint, queryToken, { id: token1.address });
+      oldToken1 = data.token;
+
+      data = await request(endpoint, queryPoolById, { id: pool.address });
+      oldPool = data.pool;
+    });
+
+    it('should trigger SwapEvent', async () => {
+      // Pool swap.
+      poolCallee.swapToLowerSqrtPrice(pool.address, BigInt(sqrtPrice), recipient);
+
+      // Wait for SwapEvent.
+      const eventType = 'SwapEvent';
+      eventValue = await watchEvent(uniClient, eventType);
+
+      // Sleeping for 5 sec for the entities to be processed.
+      await wait(5000);
+    });
+
+    it('should update Token entities', async () => {
+      // Check txCount.
+      let data: any;
+
+      data = await request(endpoint, queryToken, { id: token0.address });
+      const newToken0 = data.token;
+
+      data = await request(endpoint, queryToken, { id: token1.address });
+      const newToken1 = data.token;
+
+      expect(newToken0.txCount).to.be.equal((BigInt(oldToken0.txCount) + BigInt(1)).toString());
+      expect(newToken1.txCount).to.be.equal((BigInt(oldToken1.txCount) + BigInt(1)).toString());
+    });
+
+    it('should update Factory entity', async () => {
+      // Check txCount.
+      const data = await request(endpoint, queryFactory);
+      const newFactory = data.factories[0];
+      expect(newFactory.txCount).to.be.equal((BigInt(oldFactory.txCount) + BigInt(1)).toString());
+    });
+
+    it('should update Pool entity', async () => {
+      // Check txCount, liquidity, tick, sqrtPrice.
+      const expectedLiquidity = eventValue.event.liquidity;
+      const expectedTick = eventValue.event.tick;
+      const expectedSqrtPrice = eventValue.event.sqrtPriceX96;
+
+      const data = await request(endpoint, queryPoolById, { id: pool.address });
+      const newPool = data.pool;
+
+      expect(newPool.txCount).to.be.equal((BigInt(oldPool.txCount) + BigInt(1)).toString());
+      expect(newPool.liquidity).to.be.equal(expectedLiquidity);
+      expect(newPool.tick).to.be.equal(expectedTick);
+      expect(newPool.sqrtPrice).to.be.equal(expectedSqrtPrice);
+    });
+
+    it('should create a Swap entity', async () => {
+      // Check id, origin.
+      // Get the latest Swap.
+      let data: any;
+      const variables = {
+        first: 1,
+        orderBy: 'timestamp',
+        orderDirection: 'desc',
+        pool: pool.address
+      };
+
+      data = await request(endpoint, querySwaps, variables);
+      expect(data.swaps).to.not.be.empty;
+
+      const id: string = data.swaps[0].id;
+      const txCountID = id.split('#')[1];
+      const origin = data.swaps[0].origin;
+
+      data = await request(endpoint, queryPoolById, { id: pool.address });
+      const poolTxCount = data.pool.txCount;
+      const expectedOrigin = recipient;
+
+      expect(txCountID).to.be.equal(poolTxCount);
+      expect(origin).to.be.equal(expectedOrigin);
     });
 
     it('should update UniswapDayData entity', async () => {

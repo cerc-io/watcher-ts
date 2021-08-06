@@ -258,6 +258,7 @@ describe('uni-watcher', () => {
         }
       });
 
+      // Pool swap.
       const transaction: ContractTransaction = await poolCallee.swapToLowerSqrtPrice(pool.address, BigInt(sqrtPrice), recipient);
       await transaction.wait();
     })().catch((error) => {

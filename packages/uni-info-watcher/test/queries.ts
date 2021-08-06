@@ -56,6 +56,19 @@ query queryPoolById($id: ID!) {
   }
 }`;
 
+// Getting Tick(s) filtered by pool.
+export const queryTicks = gql`
+query queryTicksByPool($pool: String) {
+  ticks(where: { poolAddress: $pool }) {
+    id
+    liquidityGross
+    liquidityNet
+    price0
+    price1
+    tickIdx
+  }
+}`;
+
 // Getting Pool(s) filtered by tokens.
 export const queryPoolsByTokens = gql`
 query queryPoolsByTokens($tokens: [String!]) {
@@ -165,15 +178,29 @@ query queryBurns(
       }
 }`;
 
-// Getting Tick(s) filtered by pool.
-export const queryTicks = gql`
-query queryTicksByPool($pool: String) {
-  ticks(where: { poolAddress: $pool }) {
-    id
-    liquidityGross
-    liquidityNet
-    price0
-    price1
-    tickIdx
-  }
+// Getting burns(s) filtered by pool, tokens and ordered by timestamp.
+export const querySwaps = gql`
+query querySwaps(
+  $first: Int,
+  $orderBy: Swap_orderBy,
+  $orderDirection: OrderDirection,
+  $pool: String,
+  $token0: String,
+  $token1: String) {
+    swaps(
+      first: $first,
+      orderBy: $orderBy,
+      orderDirection: $orderDirection,
+      where: {
+        pool: $pool,
+        token0: $token0,
+        token1: $token1
+      }) {
+        amount0
+        amount1
+        amountUSD
+        id
+        origin
+        timestamp
+      }
 }`;
