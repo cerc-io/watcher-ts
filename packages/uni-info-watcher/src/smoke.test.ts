@@ -41,7 +41,8 @@ import {
   checkUniswapDayData,
   checkPoolDayData,
   checkTokenDayData,
-  checkTokenHourData
+  checkTokenHourData,
+  checkTransaction
 } from '../test/utils';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
@@ -103,6 +104,7 @@ describe('uni-info-watcher', () => {
 
   describe('PoolCreatedEvent', () => {
     // NOTE Skipping checking entity updates that cannot be gotten/derived using queries.
+    // Checked entities: Token, Pool.
 
     const fee = 500;
 
@@ -145,6 +147,8 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Pool entity', async () => {
+      // Checked values: feeTier
+
       const variables = {
         tokens: [token0Address, token1Address]
       };
@@ -168,6 +172,9 @@ describe('uni-info-watcher', () => {
   });
 
   describe('InitializeEvent', () => {
+    // Checked entities: Pool, PoolDayData.
+    // Unchecked entities: Bundle, Token.
+
     const sqrtPrice = '4295128939';
     const tick = TICK_MIN;
 
@@ -186,6 +193,10 @@ describe('uni-info-watcher', () => {
 
       // Sleeping for 5 sec for the entities to be processed.
       await wait(5000);
+    });
+
+    it('should update Pool entity', async () => {
+      // Checked values: sqrtPrice, tick.
 
       const data = await request(endpoint, queryPoolById, { id: pool.address });
       expect(data.pool.sqrtPrice).to.be.equal(sqrtPrice);
@@ -198,8 +209,12 @@ describe('uni-info-watcher', () => {
   });
 
   describe('MintEvent', () => {
+    // Checked entities: Token, Factory, Pool, Transaction, Mint, Tick, UniswapDayData, PoolDayData, TokenDayData, TokenHourData.
+
     const amount = 10;
     const approveAmount = BigInt(1000000000000000000000000);
+    let expectedTxID: string;
+    let expectedTxTimestamp: string;
 
     // Initial entity values
     let oldFactory: any;
@@ -248,7 +263,9 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Token entities', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: totalValueLocked, totalValueLockedUSD.
+
       let data: any;
 
       data = await request(endpoint, queryToken, { id: token0.address });
@@ -262,14 +279,18 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Factory entity', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: totalValueLockedUSD.
+
       const data = await request(endpoint, queryFactory);
       const newFactory = data.factories[0];
       expect(newFactory.txCount).to.be.equal((BigInt(oldFactory.txCount) + BigInt(1)).toString());
     });
 
     it('should update Pool entity', async () => {
-      // Check txCount, liquidity.
+      // Checked values: txCount, liquidity.
+      // Unchecked values: totalValueLockedToken0, totalValueLockedToken1, totalValueLockedUSD.
+
       let expectedLiquidity = BigInt(oldPool.liquidity);
       if (oldPool.tick !== null) {
         if (
@@ -287,8 +308,15 @@ describe('uni-info-watcher', () => {
       expect(BigInt(newPool.liquidity)).to.be.equal(expectedLiquidity);
     });
 
+    it('should create a Transaction entity', async () => {
+      const eventType = 'MintEvent';
+      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+    });
+
     it('should create a Mint entity', async () => {
-      // Check id, origin, owner, sender.
+      // Checked values: id, origin, owner, sender, timestamp, pool, transaction.
+      // Unchecked values: amount0, amount1, amountUSD.
+
       // Get the latest Mint.
       let data: any;
       const variables = {
@@ -300,11 +328,9 @@ describe('uni-info-watcher', () => {
       data = await request(endpoint, queryMints, variables);
       expect(data.mints).to.not.be.empty;
 
-      const id: string = data.mints[0].id;
-      const txCountID = id.split('#')[1];
-      const origin = data.mints[0].origin;
-      const owner = data.mints[0].owner;
-      const sender = data.mints[0].sender;
+      const mint = data.mints[0];
+      const txID = mint.id.split('#')[0];
+      const txCountID = mint.id.split('#')[1];
 
       data = await request(endpoint, queryPoolById, { id: pool.address });
       const poolTxCount = data.pool.txCount;
@@ -312,14 +338,21 @@ describe('uni-info-watcher', () => {
       const expectedOwner = recipient;
       const expectedSender = poolCallee.address;
 
+      expect(txID).to.be.equal(expectedTxID);
       expect(txCountID).to.be.equal(poolTxCount);
-      expect(origin).to.be.equal(expectedOrigin);
-      expect(owner).to.be.equal(expectedOwner);
-      expect(sender).to.be.equal(expectedSender);
+      expect(mint.origin).to.be.equal(expectedOrigin);
+      expect(mint.owner).to.be.equal(expectedOwner);
+      expect(mint.sender).to.be.equal(expectedSender);
+      expect(mint.timestamp).to.be.equal(expectedTxTimestamp);
+
+      expect(mint.pool.id).to.be.equal(pool.address);
+      expect(mint.transaction.id).to.be.equal(expectedTxID);
     });
 
     it('should create Tick entities', async () => {
-      // Check liquidityGross, liquidityNet.
+      // Checked values: liquidityGross, liquidityNet.
+      // Unchecked values: id, price0, price1.
+
       const data = await request(endpoint, queryTicks, { pool: pool.address });
       expect(data.ticks).to.not.be.empty;
 
@@ -352,7 +385,11 @@ describe('uni-info-watcher', () => {
   });
 
   describe('BurnEvent', () => {
+    // Checked entities: Token, Factory, Pool, Transaction, Burn, Tick, UniswapDayData, PoolDayData, TokenDayData, TokenHourData.
+
     const amount = 10;
+    let expectedTxID: string;
+    let expectedTxTimestamp: string;
 
     // Initial entity values
     let oldFactory: any;
@@ -398,7 +435,9 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Token entities', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: totalValueLocked, totalValueLockedUSD.
+
       let data: any;
 
       data = await request(endpoint, queryToken, { id: token0.address });
@@ -412,14 +451,18 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Factory entity', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: totalValueLockedUSD.
+
       const data = await request(endpoint, queryFactory);
       const newFactory = data.factories[0];
       expect(newFactory.txCount).to.be.equal((BigInt(oldFactory.txCount) + BigInt(1)).toString());
     });
 
     it('should update Pool entity', async () => {
-      // Check txCount, liquidity.
+      // Checked values: txCount, liquidity.
+      // Unchecked values: totalValueLockedToken0, totalValueLockedToken1, totalValueLockedUSD.
+
       let expectedLiquidity = BigInt(oldPool.liquidity);
       if (oldPool.tick !== null) {
         if (
@@ -437,8 +480,15 @@ describe('uni-info-watcher', () => {
       expect(BigInt(newPool.liquidity)).to.be.equal(expectedLiquidity);
     });
 
+    it('should create a Transaction entity', async () => {
+      const eventType = 'BurnEvent';
+      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+    });
+
     it('should create a Burn entity', async () => {
-      // Check id, origin, owner.
+      // Checked values: id, origin, owner, timestamp, pool, transaction.
+      // Unchecked values: amount0, amount1, amountUSD.
+
       // Get the latest Burn.
       let data: any;
       const variables = {
@@ -451,23 +501,29 @@ describe('uni-info-watcher', () => {
       data = await request(endpoint, queryBurns, variables);
       expect(data.burns).to.not.be.empty;
 
-      const id: string = data.burns[0].id;
-      const txCountID = id.split('#')[1];
-      const origin = data.burns[0].origin;
-      const owner = data.burns[0].owner;
+      const burn = data.burns[0];
+      const txID = burn.id.split('#')[0];
+      const txCountID = burn.id.split('#')[1];
 
       data = await request(endpoint, queryPoolById, { id: pool.address });
       const poolTxCount = data.pool.txCount;
       const expectedOrigin = recipient;
       const expectedOwner = recipient;
 
+      expect(txID).to.be.equal(expectedTxID);
       expect(txCountID).to.be.equal(poolTxCount);
-      expect(origin).to.be.equal(expectedOrigin);
-      expect(owner).to.be.equal(expectedOwner);
+      expect(burn.origin).to.be.equal(expectedOrigin);
+      expect(burn.owner).to.be.equal(expectedOwner);
+      expect(burn.timestamp).to.be.equal(expectedTxTimestamp);
+
+      expect(burn.pool.id).to.be.equal(pool.address);
+      expect(burn.transaction.id).to.be.equal(expectedTxID);
     });
 
     it('should update Tick entities', async () => {
-      // Check liquidityGross, liquidityNet.
+      // Checked values: liquidityGross, liquidityNet.
+      // Unchecked values: id, price0, price1.
+
       const data = await request(endpoint, queryTicks, { pool: pool.address });
       expect(data.ticks).to.not.be.empty;
 
@@ -505,7 +561,12 @@ describe('uni-info-watcher', () => {
   });
 
   describe('SwapEvent', () => {
+    // Checked entities: Token, Factory, Pool, Transaction, Swap, Tick, UniswapDayData, PoolDayData, TokenDayData, TokenHourData.
+    // Unchecked entities: Bundle.
+
     const sqrtPrice = '4295128938';
+    let expectedTxID: string;
+    let expectedTxTimestamp: string;
 
     // Initial entity values
     let eventValue: any;
@@ -544,7 +605,9 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Token entities', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: derivedETH, feesUSD, totalValueLocked, totalValueLockedUSD, volume, volumeUSD.
+
       let data: any;
 
       data = await request(endpoint, queryToken, { id: token0.address });
@@ -558,14 +621,18 @@ describe('uni-info-watcher', () => {
     });
 
     it('should update Factory entity', async () => {
-      // Check txCount.
+      // Checked values: txCount.
+      // Unchecked values: totalFeesUSD, totalValueLockedUSD, totalVolumeUSD.
+
       const data = await request(endpoint, queryFactory);
       const newFactory = data.factories[0];
       expect(newFactory.txCount).to.be.equal((BigInt(oldFactory.txCount) + BigInt(1)).toString());
     });
 
     it('should update Pool entity', async () => {
-      // Check txCount, liquidity, tick, sqrtPrice.
+      // Checked values: txCount, liquidity, tick, sqrtPrice.
+      // Unchecked values: token0Price, token1Price, totalValueLockedToken0, totalValueLockedToken1, totalValueLockedUSD, volumeUSD.
+
       const expectedLiquidity = eventValue.event.liquidity;
       const expectedTick = eventValue.event.tick;
       const expectedSqrtPrice = eventValue.event.sqrtPriceX96;
@@ -579,9 +646,15 @@ describe('uni-info-watcher', () => {
       expect(newPool.sqrtPrice).to.be.equal(expectedSqrtPrice);
     });
 
+    it('should create a Transaction entity', async () => {
+      const eventType = 'SwapEvent';
+      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+    });
+
     it('should create a Swap entity', async () => {
-      // Check id, origin.
-      // Get the latest Swap.
+      // Checked values: id, origin, timestamp, pool, transaction.
+      // Unchecked values: amount0, amount1, amountUSD.
+
       let data: any;
       const variables = {
         first: 1,
@@ -593,16 +666,21 @@ describe('uni-info-watcher', () => {
       data = await request(endpoint, querySwaps, variables);
       expect(data.swaps).to.not.be.empty;
 
-      const id: string = data.swaps[0].id;
-      const txCountID = id.split('#')[1];
-      const origin = data.swaps[0].origin;
+      const swap = data.swaps[0];
+      const txID = swap.id.split('#')[0];
+      const txCountID = swap.id.split('#')[1];
 
       data = await request(endpoint, queryPoolById, { id: pool.address });
       const poolTxCount = data.pool.txCount;
       const expectedOrigin = recipient;
 
+      expect(txID).to.be.equal(expectedTxID);
       expect(txCountID).to.be.equal(poolTxCount);
-      expect(origin).to.be.equal(expectedOrigin);
+      expect(swap.origin).to.be.equal(expectedOrigin);
+      expect(swap.timestamp).to.be.equal(expectedTxTimestamp);
+
+      expect(swap.pool.id).to.be.equal(pool.address);
+      expect(swap.transaction.id).to.be.equal(expectedTxID);
     });
 
     it('should update UniswapDayData entity', async () => {

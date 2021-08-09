@@ -10,10 +10,14 @@ import {
   queryPoolDayData,
   queryUniswapDayData,
   queryTokenDayData,
-  queryTokenHourData
+  queryTokenHourData,
+  queryTransactions
 } from '../test/queries';
 
 export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
+  // Checked values: date, tvlUSD.
+  // Unchecked values: volumeUSD.
+
   // Get the latest UniswapDayData.
   const variables = {
     first: 1,
@@ -37,6 +41,9 @@ export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
 };
 
 export const checkPoolDayData = async (endpoint: string, poolAddress: string): Promise<void> => {
+  // Checked values: id, date, tvlUSD.
+  // Unchecked values: volumeUSD.
+
   // Get the latest PoolDayData.
   const variables = {
     first: 1,
@@ -63,6 +70,9 @@ export const checkPoolDayData = async (endpoint: string, poolAddress: string): P
 };
 
 export const checkTokenDayData = async (endpoint: string, tokenAddress: string): Promise<void> => {
+  // Checked values: id, date, totalValueLockedUSD.
+  // Unchecked values: volumeUSD.
+
   // Get the latest TokenDayData.
   const variables = {
     first: 1,
@@ -89,6 +99,9 @@ export const checkTokenDayData = async (endpoint: string, tokenAddress: string):
 };
 
 export const checkTokenHourData = async (endpoint: string, tokenAddress: string): Promise<void> => {
+  // Checked values: id, periodStartUnix, low, high, open, close.
+  // Unchecked values:
+
   // Get the latest TokenHourData.
   const variables = {
     first: 1,
@@ -119,4 +132,59 @@ export const checkTokenHourData = async (endpoint: string, tokenAddress: string)
   expect(high).to.be.equal(tokenPrice.toString());
   expect(open).to.be.equal(tokenPrice.toString());
   expect(close).to.be.equal(tokenPrice.toString());
+};
+
+export const checkTransaction = async (endpoint: string, eventType: string): Promise<{expectedTxID: string, expectedTxTimestamp: string}> => {
+  // Checked values: mints, burns, swaps.
+
+  // Get the latest Transaction.
+  // Get only the latest mint, burn and swap entity in the transaction.
+
+  const variables = {
+    first: 1,
+    orderBy: 'timestamp',
+    mintOrderBy: 'timestamp',
+    burnOrderBy: 'timestamp',
+    swapOrderBy: 'timestamp',
+    orderDirection: 'desc'
+  };
+
+  const data = await request(endpoint, queryTransactions, variables);
+  expect(data.transactions).to.not.be.empty;
+
+  const transaction = data.transactions[0];
+  const expectedTxID = transaction.id;
+  const expectedTxTimestamp = transaction.timestamp;
+
+  let timestamp = '';
+
+  switch (eventType) {
+    case 'MintEvent':
+      expect(transaction.mints).to.not.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.be.empty;
+      timestamp = transaction.mints[0].timestamp;
+      break;
+
+    case 'BurnEvent':
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.not.be.empty;
+      expect(transaction.swaps).to.be.empty;
+      timestamp = transaction.burns[0].timestamp;
+      break;
+
+    case 'SwapEvent':
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.not.be.empty;
+      timestamp = transaction.swaps[0].timestamp;
+      break;
+
+    default:
+      break;
+  }
+
+  expect(timestamp).to.be.equal(expectedTxTimestamp);
+
+  return { expectedTxID, expectedTxTimestamp };
 };

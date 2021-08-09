@@ -139,14 +139,20 @@ query queryMints(
         token0: $token0,
         token1: $token1
       }) {
-        amount0
-        amount1
-        amountUSD
-        id
-        origin
-        owner
-        sender
-        timestamp
+        amount0,
+        amount1,
+        amountUSD,
+        id,
+        origin,
+        owner,
+        sender,
+        timestamp,
+        pool {
+          id
+        },
+        transaction {
+          id
+        }
       }
 }`;
 
@@ -168,13 +174,19 @@ query queryBurns(
         token0: $token0,
         token1: $token1
       }) {
-        amount0
-        amount1
-        amountUSD
-        id
-        origin
-        owner
-        timestamp
+        amount0,
+        amount1,
+        amountUSD,
+        id,
+        origin,
+        owner,
+        timestamp,
+        pool {
+          id
+        },
+        transaction {
+          id
+        }
       }
 }`;
 
@@ -196,11 +208,47 @@ query querySwaps(
         token0: $token0,
         token1: $token1
       }) {
-        amount0
-        amount1
-        amountUSD
-        id
-        origin
+        amount0,
+        amount1,
+        amountUSD,
+        id,
+        origin,
+        timestamp,
+        pool {
+          id
+        },
+        transaction {
+          id
+        }
+      }
+}`;
+
+// Getting transactions(s) ordered by timestamp.
+export const queryTransactions = gql`
+query queryTransactions(
+  $first: Int,
+  $orderBy: Transaction_orderBy,
+  $mintOrderBy: Mint_orderBy,
+  $burnOrderBy: Burn_orderBy,
+  $swapOrderBy: Swap_orderBy,
+  $orderDirection: OrderDirection) {
+    transactions(
+      first: $first,
+      orderBy: $orderBy,
+      orderDirection: $orderDirection) {
+        id,
+        mints( first: $first, orderBy: $mintOrderBy, orderDirection: $orderDirection) {
+          id,
+          timestamp
+        },
+        burns( first: $first, orderBy: $burnOrderBy, orderDirection: $orderDirection) {
+          id,
+          timestamp
+        },
+        swaps( first: $first, orderBy: $swapOrderBy, orderDirection: $orderDirection) {
+          id,
+          timestamp
+        },
         timestamp
       }
 }`;
