@@ -4,7 +4,9 @@ import 'mocha';
 
 import {
   Config,
-  getConfig,
+  getConfig
+} from '@vulcanize/util';
+import {
   deployTokens,
   deployUniswapV3Callee,
   TESTERC20_ABI,
@@ -12,7 +14,7 @@ import {
   getMinTick,
   getMaxTick,
   approveToken
-} from '@vulcanize/util';
+} from '@vulcanize/util/test';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';

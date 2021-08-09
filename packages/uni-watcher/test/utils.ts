@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import 'mocha';
 
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { createPool, initializePool } from '@vulcanize/util';
+import { createPool, initializePool } from '@vulcanize/util/test';
 
 // https://github.com/ethers-io/ethers.js/issues/195
 export const linkLibraries = (

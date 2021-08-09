@@ -7,7 +7,9 @@ import _ from 'lodash';
 import {
   Config,
   getConfig,
-  wait,
+  wait
+} from '@vulcanize/util';
+import {
   deployTokens,
   deployUniswapV3Callee,
   TESTERC20_ABI,
@@ -17,7 +19,7 @@ import {
   getMinTick,
   getMaxTick,
   approveToken
-} from '@vulcanize/util';
+} from '@vulcanize/util/test';
 import { Client as UniClient, watchEvent } from '@vulcanize/uni-watcher';
 import {
   abi as FACTORY_ABI
