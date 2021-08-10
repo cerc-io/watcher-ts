@@ -1,38 +1,9 @@
-import { ethers, utils, Contract, Signer } from 'ethers';
+import { ethers, Contract, Signer } from 'ethers';
 import { expect } from 'chai';
 import 'mocha';
 
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { createPool, initializePool } from '@vulcanize/util/test';
-
-// https://github.com/ethers-io/ethers.js/issues/195
-export const linkLibraries = (
-  {
-    bytecode,
-    linkReferences
-  }: {
-    bytecode: string
-    linkReferences: { [fileName: string]: { [contractName: string]: { length: number; start: number }[] } }
-  },
-  libraries: { [libraryName: string]: string }): string => {
-  Object.keys(linkReferences).forEach((fileName) => {
-    Object.keys(linkReferences[fileName]).forEach((contractName) => {
-      if (!libraries.hasOwnProperty(contractName)) {
-        throw new Error(`Missing link library name ${contractName}`);
-      }
-      const address = utils.getAddress(libraries[contractName]).toLowerCase().slice(2);
-      linkReferences[fileName][contractName].forEach(({ start: byteStart, length: byteLength }) => {
-        const start = 2 + byteStart * 2;
-        const length = byteLength * 2;
-        bytecode = bytecode
-          .slice(0, start)
-          .concat(address)
-          .concat(bytecode.slice(start + length, bytecode.length));
-      });
-    });
-  });
-  return bytecode;
-};
 
 export const testCreatePool = async (
   uniClient: UniClient,
@@ -201,13 +172,13 @@ export const checkTransferEvent = (
   value: any,
   expectedContract: string,
   from: string,
-  recipient: string
+  to: string
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
   expect(value.event.__typename).to.equal('TransferEvent');
   expect(value.event.from).to.equal(from);
-  expect(value.event.to).to.equal(recipient);
+  expect(value.event.to).to.equal(to);
   expect(value.event.tokenId).to.equal('1');
 };
 

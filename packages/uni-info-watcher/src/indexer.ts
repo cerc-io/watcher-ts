@@ -1139,7 +1139,7 @@ export class Indexer {
 
         const [token0, token1] = await Promise.all([
           this._db.getTokenNoTx({ id: token0Address, blockHash }),
-          this._db.getTokenNoTx({ id: token0Address, blockHash })
+          this._db.getTokenNoTx({ id: token1Address, blockHash })
         ]);
         assert(token0 && token1);
         position.token0 = token0;

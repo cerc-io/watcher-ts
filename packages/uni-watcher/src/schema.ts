@@ -193,6 +193,10 @@ type BlockProgressEvent {
   isComplete: Boolean!
 }
 
+type Contract {
+  address: String!
+}
+
 #
 # Queries
 #
@@ -200,6 +204,10 @@ type BlockProgressEvent {
 type Query {
 
   # NonfungiblePositionManager
+
+  latestContract(
+    type: String!
+  ): Contract
 
   position(
     blockHash: String!

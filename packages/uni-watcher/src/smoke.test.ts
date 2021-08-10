@@ -13,7 +13,9 @@ import {
   TICK_MIN,
   getMinTick,
   getMaxTick,
-  approveToken
+  approveToken,
+  deployWETH9Token,
+  deployNFPM
 } from '@vulcanize/util/test';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getCache } from '@vulcanize/cache';
@@ -25,25 +27,11 @@ import {
 import {
   abi as POOL_ABI
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json';
-import {
-  abi as NFTD_ABI,
-  bytecode as NFTD_BYTECODE
-} from '@uniswap/v3-periphery/artifacts/contracts/libraries/NFTDescriptor.sol/NFTDescriptor.json';
-import {
-  abi as NFTPD_ABI,
-  bytecode as NFTPD_BYTECODE,
-  linkReferences as NFTPD_LINKREFS
-} from '@uniswap/v3-periphery/artifacts/contracts/NonfungibleTokenPositionDescriptor.sol/NonfungibleTokenPositionDescriptor.json';
-import {
-  abi as NFPM_ABI,
-  bytecode as NFPM_BYTECODE
-} from '@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { watchContract } from './utils/index';
 import {
-  linkLibraries,
   testCreatePool,
   testInitialize,
   checkMintEvent,
@@ -54,10 +42,6 @@ import {
   checkDecreaseLiquidityEvent,
   checksCollectEvent
 } from '../test/utils';
-import {
-  abi as WETH9_ABI,
-  bytecode as WETH9_BYTECODE
-} from '../artifacts/test/contracts/WETH9.sol/WETH9.json';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
 
@@ -270,47 +254,18 @@ describe('uni-watcher', () => {
 
   it('should deploy a WETH9 token', async () => {
     // Deploy weth9 token.
-    const WETH9 = new ethers.ContractFactory(WETH9_ABI, WETH9_BYTECODE, signer);
-    const weth9 = await WETH9.deploy();
-
-    weth9Address = weth9.address;
-    expect(weth9.address).to.not.be.empty;
+    weth9Address = await deployWETH9Token(signer);
+    expect(weth9Address).to.not.be.empty;
   });
 
   it('should deploy NonfungiblePositionManager', async () => {
     // Deploy NonfungiblePositionManager.
-    // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/test/shared/completeFixture.ts#L31
-    const nftDescriptorLibraryFactory = new ethers.ContractFactory(NFTD_ABI, NFTD_BYTECODE, signer);
-    const nftDescriptorLibrary = await nftDescriptorLibraryFactory.deploy();
-    expect(nftDescriptorLibrary.address).to.not.be.empty;
-
-    // Linking NFTDescriptor library to NFTPD before deploying.
-    const linkedNFTPDBytecode = linkLibraries({
-      bytecode: NFTPD_BYTECODE,
-      linkReferences: NFTPD_LINKREFS
-    }, {
-      NFTDescriptor: nftDescriptorLibrary.address
-    }
-    );
-
-    const positionDescriptorFactory = new ethers.ContractFactory(
-      NFTPD_ABI,
-      linkedNFTPDBytecode,
-      signer);
-    const nftDescriptor = await positionDescriptorFactory.deploy(weth9Address);
-    expect(nftDescriptor.address).to.not.be.empty;
-
-    const positionManagerFactory = new ethers.ContractFactory(
-      NFPM_ABI,
-      NFPM_BYTECODE,
-      signer);
-    nfpm = await positionManagerFactory.deploy(factory.address, weth9Address, nftDescriptor.address);
-
+    nfpm = await deployNFPM(signer, factory, weth9Address);
     expect(nfpm.address).to.not.be.empty;
   });
 
   it('should watch NonfungiblePositionManager contract', async () => {
-    // Watch factory contract.
+    // Watch NFPM contract.
     await watchContract(db, nfpm.address, 'nfpm', 100);
 
     // Verifying with the db.

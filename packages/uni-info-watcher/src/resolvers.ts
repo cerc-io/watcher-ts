@@ -16,6 +16,7 @@ import { TokenDayData } from './entity/TokenDayData';
 import { TokenHourData } from './entity/TokenHourData';
 import { Transaction } from './entity/Transaction';
 import { UniswapDayData } from './entity/UniswapDayData';
+import { Position } from './entity/Position';
 
 const log = debug('vulcanize:resolver');
 
@@ -122,6 +123,12 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
         log('uniswapDayDatas', first, skip, orderBy, orderDirection, where);
 
         return indexer.getEntities(UniswapDayData, {}, where, { limit: first, skip, orderBy, orderDirection });
+      },
+
+      positions: async (_: any, { first, where }: { first: number, where: { [key: string]: any } }) => {
+        log('uniswapDayDatas', first, where);
+
+        return indexer.getEntities(Position, {}, where, { limit: first }, ['pool', 'token0', 'token1', 'tickLower', 'tickUpper', 'transaction']);
       }
     }
   };

@@ -252,3 +252,37 @@ query queryTransactions(
         timestamp
       }
 }`;
+
+// Getting position filtered by id.
+export const queryPositions = gql`
+query queryPositions($first: Int, $id: ID) {
+  positions(first: $first, where: { id: $id }) {
+    id,
+    pool {
+      id
+    },
+    token0 {
+      id
+    },
+    token1 {
+      id
+    },
+    tickLower {
+      id
+    },
+    tickUpper {
+      id
+    },
+    transaction {
+      id
+    },
+    liquidity,
+    depositedToken0,
+    depositedToken1,
+    collectedFeesToken0,
+    collectedFeesToken1,
+    owner,
+    feeGrowthInside0LastX128,
+    feeGrowthInside1LastX128
+  }
+}`;

@@ -155,3 +155,11 @@ query getPool($blockHash: String!, $token0: String!, $token1: String!, $fee: Str
   }
 }
 `;
+
+export const queryLatestContract = gql`
+query queryLatestContract($type: String!) {
+  latestContract(type: $type) {
+    address
+  }
+}
+`;

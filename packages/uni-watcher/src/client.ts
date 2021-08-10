@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
-import { queryGetPool, queryPoolIdToPoolKey, queryPosition, queryEvents, subscribeEvents } from './queries';
+import { queryGetPool, queryPoolIdToPoolKey, queryPosition, queryEvents, subscribeEvents, queryLatestContract } from './queries';
 
 export class Client {
   _config: GraphQLConfig;
@@ -70,5 +70,16 @@ export class Client {
     );
 
     return getPool;
+  }
+
+  async getLatestContract (type: string): Promise<any> {
+    const { latestContract } = await this._client.query(
+      gql(queryLatestContract),
+      {
+        type
+      }
+    );
+
+    return latestContract;
   }
 }

@@ -138,6 +138,24 @@ type TokenHourData {
   periodStartUnix: Int!
 }
 
+type Position {
+  id: ID!
+  pool: Pool!
+  token0: Token!
+  token1: Token!
+  tickLower: Tick!
+  tickUpper: Tick!
+  transaction: Transaction!
+  liquidity: BigInt!
+  depositedToken0: BigDecimal!
+  depositedToken1: BigDecimal!
+  collectedFeesToken0: BigDecimal!
+  collectedFeesToken1: BigDecimal!
+  owner: Bytes!
+  feeGrowthInside0LastX128: BigInt!
+  feeGrowthInside1LastX128: BigInt!
+}
+
 enum OrderDirection {
   asc
   desc
@@ -240,6 +258,10 @@ input TokenHourData_filter {
 
 enum TokenHourData_orderBy {
   periodStartUnix
+}
+
+input Position_filter {
+  id: ID
 }
 
 type Query {
@@ -382,5 +404,10 @@ type Query {
     orderDirection: OrderDirection
     where: UniswapDayData_filter
   ): [UniswapDayData!]!
+
+  positions(
+    first: Int = 100
+    where: Position_filter
+  ): [Position!]!
 }
 `;
