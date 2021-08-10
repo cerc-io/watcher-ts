@@ -1022,4 +1022,53 @@ describe('uni-info-watcher', () => {
       expect(position.liquidity).to.be.equal(expectedLiquidity.toString());
     });
   });
+
+  xdescribe('CollectEvent', () => {
+    // Checked entities: Transaction.
+    // Unchecked entities: Position.
+
+    let eventType: string;
+
+    const tokenId = 1;
+    const amount0Max = 15;
+    const amount1Max = 15;
+
+    it('should trigger CollectEvent', async () => {
+      // Position manger collect and wait for BurnEvent.
+      const transaction = nfpm.collect({
+        tokenId,
+        recipient,
+        amount0Max,
+        amount1Max
+      });
+
+      eventType = 'BurnEvent';
+      await Promise.all([
+        transaction,
+        watchEvent(uniClient, eventType)
+      ]);
+
+      // Wait for CollectEvent.
+      eventType = 'CollectEvent';
+      await watchEvent(uniClient, eventType);
+
+      // Sleeping for 10 sec for the events to be processed.
+      await wait(10000);
+    });
+
+    it('should create a Transaction entity', async () => {
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      const expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.not.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.burns[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
+    });
+  });
 });

@@ -461,7 +461,7 @@ describe('uni-watcher', () => {
         }
       });
 
-      // Position manger increase liquidity.
+      // Position manger collect.
       const transaction: ContractTransaction = await nfpm.collect({
         tokenId,
         recipient,
