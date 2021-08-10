@@ -92,6 +92,12 @@ See https://github.com/vulcanize/uniswap-v3-periphery/blob/watcher-ts/demo.md fo
 To run a smoke test:
 
 * Start the server and the job-runner.
+* To build contracts for tests, run the command below in root of the repository:
+
+  ```bash
+  $ yarn build:contracts
+  ```
+ 
 * Run:
 
   ```bash

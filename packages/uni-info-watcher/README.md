@@ -262,3 +262,20 @@ Queries with ID param
   ```bash
   $ yarn lint:schema docs/analysis/schema/frontend.graphql
   ```
+
+## Test
+
+### Smoke test
+
+To run a smoke test:
+
+* Start the server in `packages/erc-20-watcher`.
+* Start the server and the job-runner in `packages/uni-watcher`.
+* Start the server and the job-runner in `packages/uni-info-watcher`.
+* Run the smoke test in `packages/uni-watcher` atleast once.
+* Run:
+
+  ```bash
+  $ yarn smoke-test
+  ```
+  

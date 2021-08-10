@@ -948,4 +948,78 @@ describe('uni-info-watcher', () => {
       expect(position.liquidity).to.be.equal(expectedLiquidity.toString());
     });
   });
+
+  describe('DecreaseLiquidityEvent', () => {
+    // Checked entities: Transaction, Position.
+
+    let oldPosition: any;
+    let eventValue: any;
+    let eventType: string;
+
+    const tokenId = 1;
+    const liquidity = 5;
+    const amount0Min = 0;
+    const amount1Min = 0;
+    const deadline = 1634367993;
+
+    before(async () => {
+      // Get initial entity values.
+      const data = await request(endpoint, queryPositions, { id: Number(tokenId) });
+      oldPosition = data.positions[0];
+    });
+
+    it('should trigger DecreaseLiquidityEvent', async () => {
+      // Position manger decrease liquidity and wait for BurnEvent.
+      const transaction = nfpm.decreaseLiquidity({
+        tokenId,
+        liquidity,
+        amount0Min,
+        amount1Min,
+        deadline
+      });
+
+      eventType = 'BurnEvent';
+      await Promise.all([
+        transaction,
+        watchEvent(uniClient, eventType)
+      ]);
+
+      // Wait for DecreaseLiquidityEvent.
+      eventType = 'DecreaseLiquidityEvent';
+      eventValue = await watchEvent(uniClient, eventType);
+
+      // Sleeping for 10 sec for the events to be processed.
+      await wait(10000);
+    });
+
+    it('should create a Transaction entity', async () => {
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      const expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.not.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.burns[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
+    });
+
+    it('should update Position entity', async () => {
+      // Checked values: liquidity.
+      // Unchecked values: depositedToken0, depositedToken1, feeGrowthInside0LastX128, feeGrowthInside0LastX128.
+
+      // Get the Position using tokenId.
+      const data = await request(endpoint, queryPositions, { id: Number(eventValue.event.tokenId) });
+      expect(data.positions).to.not.be.empty;
+
+      const position = data.positions[0];
+
+      const expectedLiquidity = BigInt(oldPosition.liquidity) - BigInt(eventValue.event.liquidity);
+
+      expect(position.liquidity).to.be.equal(expectedLiquidity.toString());
+    });
+  });
 });
