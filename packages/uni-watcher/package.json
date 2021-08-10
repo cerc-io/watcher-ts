@@ -13,8 +13,7 @@
     "lint": "eslint .",
     "build": "tsc",
     "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml",
-    "test:compile": "hardhat compile",
-    "smoke-test": "yarn test:compile && mocha src/smoke.test.ts"
+    "smoke-test": "mocha src/smoke.test.ts"
   },
   "repository": {
     "type": "git",

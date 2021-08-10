@@ -31,6 +31,6 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "test:compile": "hardhat compile"
+    "build:contracts": "hardhat compile"
   }
 }

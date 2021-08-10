@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "lerna run test --stream --no-bail",
-    "lint": "lerna run lint --stream"
+    "lint": "lerna run lint --stream",
+    "build:contracts": "lerna run build:contracts"
   }
 }

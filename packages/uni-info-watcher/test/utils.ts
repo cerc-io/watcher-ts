@@ -134,9 +134,7 @@ export const checkTokenHourData = async (endpoint: string, tokenAddress: string)
   expect(close).to.be.equal(tokenPrice.toString());
 };
 
-export const checkTransaction = async (endpoint: string, eventType: string): Promise<{expectedTxID: string, expectedTxTimestamp: string}> => {
-  // Checked values: mints, burns, swaps.
-
+export const fetchTransaction = async (endpoint: string): Promise<{transaction: any}> => {
   // Get the latest Transaction.
   // Get only the latest mint, burn and swap entity in the transaction.
 
@@ -151,40 +149,11 @@ export const checkTransaction = async (endpoint: string, eventType: string): Pro
 
   const data = await request(endpoint, queryTransactions, variables);
   expect(data.transactions).to.not.be.empty;
-
   const transaction = data.transactions[0];
-  const expectedTxID = transaction.id;
-  const expectedTxTimestamp = transaction.timestamp;
 
-  let timestamp = '';
+  expect(transaction.mints).to.be.an.instanceOf(Array);
+  expect(transaction.burns).to.be.an.instanceOf(Array);
+  expect(transaction.swaps).to.be.an.instanceOf(Array);
 
-  switch (eventType) {
-    case 'MintEvent':
-      expect(transaction.mints).to.not.be.empty;
-      expect(transaction.burns).to.be.empty;
-      expect(transaction.swaps).to.be.empty;
-      timestamp = transaction.mints[0].timestamp;
-      break;
-
-    case 'BurnEvent':
-      expect(transaction.mints).to.be.empty;
-      expect(transaction.burns).to.not.be.empty;
-      expect(transaction.swaps).to.be.empty;
-      timestamp = transaction.burns[0].timestamp;
-      break;
-
-    case 'SwapEvent':
-      expect(transaction.mints).to.be.empty;
-      expect(transaction.burns).to.be.empty;
-      expect(transaction.swaps).to.not.be.empty;
-      timestamp = transaction.swaps[0].timestamp;
-      break;
-
-    default:
-      break;
-  }
-
-  expect(timestamp).to.be.equal(expectedTxTimestamp);
-
-  return { expectedTxID, expectedTxTimestamp };
+  return transaction;
 };

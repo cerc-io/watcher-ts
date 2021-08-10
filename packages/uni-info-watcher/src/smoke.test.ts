@@ -46,7 +46,7 @@ import {
   checkPoolDayData,
   checkTokenDayData,
   checkTokenHourData,
-  checkTransaction
+  fetchTransaction
 } from '../test/utils';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
@@ -130,13 +130,12 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger PoolCreatedEvent', async () => {
-      // Create Pool.
-      // Not doing tx.wait() here as we are waiting for the event.
-      createPool(factory, token0Address, token1Address, fee);
-
-      // Wait for PoolCreatedEvent.
+      // Create Pool and wait for PoolCreatedEvent.
       const eventType = 'PoolCreatedEvent';
-      await watchEvent(uniClient, eventType);
+      await Promise.all([
+        createPool(factory, token0Address, token1Address, fee),
+        watchEvent(uniClient, eventType)
+      ]);
 
       // Sleeping for 10 sec for the event to be processed.
       await wait(10000);
@@ -190,12 +189,12 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger InitializeEvent', async () => {
-      // Initialize Pool.
-      initializePool(pool, sqrtPrice);
-
-      // Wait for InitializeEvent.
+      // Initialize Pool and wait for InitializeEvent
       const eventType = 'InitializeEvent';
-      await watchEvent(uniClient, eventType);
+      await Promise.all([
+        initializePool(pool, sqrtPrice),
+        watchEvent(uniClient, eventType)
+      ]);
 
       // Sleeping for 5 sec for the event to be processed.
       await wait(5000);
@@ -257,12 +256,12 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger MintEvent', async () => {
-      // Pool mint.
-      poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
-
-      // Wait for MintEvent.
+      // Pool mint and wait for MintEvent.
       const eventType = 'MintEvent';
-      await watchEvent(uniClient, eventType);
+      await Promise.all([
+        poolCallee.mint(pool.address, recipient, BigInt(tickLower), BigInt(tickUpper), BigInt(amount)),
+        watchEvent(uniClient, eventType)
+      ]);
 
       // Sleeping for 20 sec for the event to be processed.
       await wait(20000);
@@ -315,8 +314,19 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Transaction entity', async () => {
-      const eventType = 'MintEvent';
-      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      expectedTxID = transaction.id;
+      expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.not.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.mints[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
     });
 
     it('should create a Mint entity', async () => {
@@ -429,12 +439,12 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger BurnEvent', async () => {
-      // Pool burn.
-      pool.burn(BigInt(tickLower), BigInt(tickUpper), BigInt(amount));
-
-      // Wait for BurnEvent.
+      // Pool burn and wait for BurnEvent.
       const eventType = 'BurnEvent';
-      await watchEvent(uniClient, eventType);
+      await Promise.all([
+        pool.burn(BigInt(tickLower), BigInt(tickUpper), BigInt(amount)),
+        watchEvent(uniClient, eventType)
+      ]);
 
       // Sleeping for 15 sec for the event to be processed.
       await wait(15000);
@@ -487,8 +497,19 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Transaction entity', async () => {
-      const eventType = 'BurnEvent';
-      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      expectedTxID = transaction.id;
+      expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.not.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.burns[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
     });
 
     it('should create a Burn entity', async () => {
@@ -599,12 +620,13 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger SwapEvent', async () => {
-      // Pool swap.
-      poolCallee.swapToLowerSqrtPrice(pool.address, BigInt(sqrtPrice), recipient);
-
-      // Wait for SwapEvent.
+      // Pool swap and wait for SwapEvent.
       const eventType = 'SwapEvent';
-      eventValue = await watchEvent(uniClient, eventType);
+      const values = await Promise.all([
+        poolCallee.swapToLowerSqrtPrice(pool.address, BigInt(sqrtPrice), recipient),
+        watchEvent(uniClient, eventType)
+      ]);
+      eventValue = values[1];
 
       // Sleeping for 5 sec for the event to be processed.
       await wait(5000);
@@ -653,8 +675,19 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Transaction entity', async () => {
-      const eventType = 'SwapEvent';
-      ({ expectedTxID, expectedTxTimestamp } = await checkTransaction(endpoint, eventType));
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      expectedTxID = transaction.id;
+      expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.not.be.empty;
+
+      const timestamp = transaction.swaps[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
     });
 
     it('should create a Swap entity', async () => {
@@ -767,7 +800,8 @@ describe('uni-info-watcher', () => {
     });
 
     it('should trigger TransferEvent', async () => {
-      nfpm.mint({
+      // NFPM mint and wait for MintEvent.
+      const transaction = nfpm.mint({
         token0: token0Address,
         token1: token1Address,
         tickLower,
@@ -781,9 +815,11 @@ describe('uni-info-watcher', () => {
         fee
       });
 
-      // Wait for MintEvent.
       eventType = 'MintEvent';
-      await watchEvent(uniClient, eventType);
+      await Promise.all([
+        transaction,
+        watchEvent(uniClient, eventType)
+      ]);
 
       // Wait for TransferEvent.
       eventType = 'TransferEvent';
@@ -798,8 +834,19 @@ describe('uni-info-watcher', () => {
     });
 
     it('should create a Transaction entity', async () => {
-      const eventType = 'MintEvent';
-      ({ expectedTxID } = await checkTransaction(endpoint, eventType));
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      expectedTxID = transaction.id;
+      const expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.not.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.mints[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
     });
 
     it('should createa a Position entity', async () => {
@@ -823,6 +870,82 @@ describe('uni-info-watcher', () => {
       expect(positionTickUpper).to.be.equal(tickUpper.toString());
       expect(position.transaction.id).to.be.equal(expectedTxID);
       expect(position.owner).to.be.equal(expectedOwner);
+    });
+  });
+
+  describe('IncreaseLiquidityEvent', () => {
+    // Checked entities: Transaction, Position.
+
+    let oldPosition: any;
+    let eventValue: any;
+    let eventType: string;
+
+    const tokenId = 1;
+    const amount0Desired = 15;
+    const amount1Desired = 15;
+    const amount0Min = 0;
+    const amount1Min = 0;
+    const deadline = 1634367993;
+
+    before(async () => {
+      // Get initial entity values.
+      const data = await request(endpoint, queryPositions, { id: Number(tokenId) });
+      oldPosition = data.positions[0];
+    });
+
+    it('should trigger IncreaseLiquidityEvent', async () => {
+      // Position manger increase liquidity and wait for MintEvent.
+      const transaction = nfpm.increaseLiquidity({
+        tokenId,
+        amount0Desired,
+        amount1Desired,
+        amount0Min,
+        amount1Min,
+        deadline
+      });
+
+      eventType = 'MintEvent';
+      await Promise.all([
+        transaction,
+        watchEvent(uniClient, eventType)
+      ]);
+
+      // Wait for IncreaseLiquidityEvent.
+      eventType = 'IncreaseLiquidityEvent';
+      eventValue = await watchEvent(uniClient, eventType);
+
+      // Sleeping for 10 sec for the events to be processed.
+      await wait(10000);
+    });
+
+    it('should create a Transaction entity', async () => {
+      // Checked values: mints, burns, swaps.
+
+      const transaction: any = await fetchTransaction(endpoint);
+
+      const expectedTxTimestamp = transaction.timestamp;
+
+      expect(transaction.mints).to.not.be.empty;
+      expect(transaction.burns).to.be.empty;
+      expect(transaction.swaps).to.be.empty;
+
+      const timestamp = transaction.mints[0].timestamp;
+      expect(timestamp).to.be.equal(expectedTxTimestamp);
+    });
+
+    it('should update Position entity', async () => {
+      // Checked values: liquidity.
+      // Unchecked values: depositedToken0, depositedToken1, feeGrowthInside0LastX128, feeGrowthInside0LastX128.
+
+      // Get the Position using tokenId.
+      const data = await request(endpoint, queryPositions, { id: Number(eventValue.event.tokenId) });
+      expect(data.positions).to.not.be.empty;
+
+      const position = data.positions[0];
+
+      const expectedLiquidity = BigInt(oldPosition.liquidity) + BigInt(eventValue.event.liquidity);
+
+      expect(position.liquidity).to.be.equal(expectedLiquidity.toString());
     });
   });
 });
