@@ -758,11 +758,12 @@ describe('uni-info-watcher', () => {
     const deadline = 1634367993;
 
     before(async () => {
-      // Get the NFPM contract.
-      const latestContract = await uniClient.getLatestContract('nfpm');
-      expect(latestContract.address).to.not.be.empty;
+      // Get the NFPM contract address.
+      const nfpmContract = await uniClient.getContract('nfpm');
+      expect(nfpmContract).to.not.be.empty;
 
-      nfpm = new Contract(latestContract.address, NFPM_ABI, signer);
+      // Initialize the NFPM contract.
+      nfpm = new Contract(nfpmContract.address, NFPM_ABI, signer);
 
       // Create Pool.
       createPool(factory, token0Address, token1Address, fee);
@@ -772,7 +773,7 @@ describe('uni-info-watcher', () => {
       eventValue = await watchEvent(uniClient, eventType);
 
       // Sleeping for 10 sec for the event to be processed.
-      await wait(10000); // not needed
+      await wait(10000);
 
       // Reinitializing the pool variable.
       const poolAddress = eventValue.event.pool;

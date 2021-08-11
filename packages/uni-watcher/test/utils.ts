@@ -88,7 +88,6 @@ export const checkPoolCreatedEvent = (
   fee: number): string => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('PoolCreatedEvent');
   const tokens = new Set([token0Address, token1Address]);
   expect(new Set([value.event.token0, value.event.token1])).to.eql(tokens);
   expect(value.event.fee).to.equal(fee.toString());
@@ -105,7 +104,6 @@ export const checkInitializeEvent = (
   tick: number): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('InitializeEvent');
   expect(value.event.sqrtPriceX96).to.equal(sqrtPrice);
   expect(value.event.tick).to.equal(tick.toString());
 };
@@ -120,7 +118,6 @@ export const checkMintEvent = (
   amount: number): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('MintEvent');
   expect(value.event.sender).to.equal(expectedSender);
   expect(value.event.owner).to.equal(exptectedOwner);
   expect(value.event.tickLower).to.equal(tickLower.toString());
@@ -139,7 +136,6 @@ export const checkBurnEvent = (
   amount: number): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('BurnEvent');
   expect(value.event.owner).to.equal(exptectedOwner);
   expect(value.event.tickLower).to.equal(tickLower.toString());
   expect(value.event.tickUpper).to.equal(tickUpper.toString());
@@ -158,7 +154,6 @@ export const checkSwapEvent = (
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('SwapEvent');
   expect(value.event.sender).to.equal(expectedSender);
   expect(value.event.recipient).to.equal(recipient);
   expect(value.event.amount0).to.not.be.empty;
@@ -176,20 +171,19 @@ export const checkTransferEvent = (
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('TransferEvent');
   expect(value.event.from).to.equal(from);
   expect(value.event.to).to.equal(to);
-  expect(value.event.tokenId).to.equal('1');
 };
 
 export const checkIncreaseLiquidityEvent = (
   value: any,
+  expectedTokenId: number,
   expectedContract: string,
   amount1Desired: number
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.tokenId).to.equal('1');
+  expect(value.event.tokenId).to.equal(expectedTokenId.toString());
   expect(value.event.liquidity).to.equal(amount1Desired.toString());
   expect(value.event.amount0).to.equal(amount1Desired.toString());
   expect(value.event.amount1).to.equal(amount1Desired.toString());
@@ -197,13 +191,13 @@ export const checkIncreaseLiquidityEvent = (
 
 export const checkDecreaseLiquidityEvent = (
   value: any,
+  expectedTokenId: number,
   expectedContract: string,
   liquidity: number
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('DecreaseLiquidityEvent');
-  expect(value.event.tokenId).to.equal('1');
+  expect(value.event.tokenId).to.equal(expectedTokenId.toString());
   expect(value.event.liquidity).to.equal(liquidity.toString());
   expect(value.event.amount0).to.not.be.empty;
   expect(value.event.amount1).to.not.be.empty;
@@ -211,13 +205,13 @@ export const checkDecreaseLiquidityEvent = (
 
 export const checksCollectEvent = (
   value: any,
+  expectedTokenId: number,
   expectedContract: string,
   recipient: string
 ): void => {
   checkEventCommonValues(value, expectedContract);
 
-  expect(value.event.__typename).to.equal('CollectEvent');
-  expect(value.event.tokenId).to.equal('1');
+  expect(value.event.tokenId).to.equal(expectedTokenId.toString());
   expect(value.event.recipient).to.equal(recipient);
   expect(value.event.amount0).to.not.be.empty;
   expect(value.event.amount1).to.not.be.empty;

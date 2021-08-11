@@ -14,15 +14,13 @@ import {
   getMinTick,
   getMaxTick,
   approveToken,
-  deployWETH9Token,
-  deployNFPM
+  NFPM_ABI
 } from '@vulcanize/util/test';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import {
-  abi as FACTORY_ABI,
-  bytecode as FACTORY_BYTECODE
+  abi as FACTORY_ABI
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json';
 import {
   abi as POOL_ABI
@@ -30,7 +28,6 @@ import {
 
 import { Indexer } from './indexer';
 import { Database } from './database';
-import { watchContract } from './utils/index';
 import {
   testCreatePool,
   testInitialize,
@@ -53,9 +50,9 @@ describe('uni-watcher', () => {
   let poolCallee: Contract;
   let token0Address: string;
   let token1Address: string;
-  let weth9Address: string;
   let nfpm: Contract;
 
+  let nfpmTokenId: number;
   let tickLower: number;
   let tickUpper: number;
   let config: Config;
@@ -113,21 +110,17 @@ describe('uni-watcher', () => {
     await db.close();
   });
 
-  it('should deploy contract factory', async () => {
-    // Deploy factory from uniswap package.
-    const Factory = new ethers.ContractFactory(FACTORY_ABI, FACTORY_BYTECODE, signer);
-    factory = await Factory.deploy();
+  it('should have a watched Factory contract', async () => {
+    // Get the factory contract address.
+    const factoryContract = await uniClient.getContract('factory');
+    expect(factoryContract).to.not.be.empty;
 
-    expect(factory.address).to.not.be.empty;
-  });
-
-  it('should watch factory contract', async () => {
-    // Watch factory contract.
-    await watchContract(db, factory.address, 'factory', 100);
+    // Initialize the factory contract.
+    factory = new Contract(factoryContract.address, FACTORY_ABI, signer);
 
     // Verifying with the db.
     const indexer = new Indexer(config, db, ethClient, postgraphileClient);
-    assert(await indexer.isUniswapContract(factory.address), 'Factory contract not added to database.');
+    assert(await indexer.isUniswapContract(factory.address), 'Factory contract not added to the database.');
   });
 
   it('should deploy 2 tokens', async () => {
@@ -252,25 +245,17 @@ describe('uni-watcher', () => {
     });
   });
 
-  it('should deploy a WETH9 token', async () => {
-    // Deploy weth9 token.
-    weth9Address = await deployWETH9Token(signer);
-    expect(weth9Address).to.not.be.empty;
-  });
+  it('should have a watched NFPM contract', async () => {
+    // Get the NFPM contract address.
+    const nfpmContract = await uniClient.getContract('nfpm');
+    expect(nfpmContract).to.not.be.empty;
 
-  it('should deploy NonfungiblePositionManager', async () => {
-    // Deploy NonfungiblePositionManager.
-    nfpm = await deployNFPM(signer, factory, weth9Address);
-    expect(nfpm.address).to.not.be.empty;
-  });
-
-  it('should watch NonfungiblePositionManager contract', async () => {
-    // Watch NFPM contract.
-    await watchContract(db, nfpm.address, 'nfpm', 100);
+    // Initialize the NFPM contract.
+    nfpm = new Contract(nfpmContract.address, NFPM_ABI, signer);
 
     // Verifying with the db.
     const indexer = new Indexer(config, db, ethClient, postgraphileClient);
-    assert(await indexer.isUniswapContract(nfpm.address), 'NonfungiblePositionManager contract not added to database.');
+    assert(await indexer.isUniswapContract(nfpm.address), 'NFPM contract not added to the database.');
   });
 
   it('should mint specified amount: nfpm', done => {
@@ -302,7 +287,6 @@ describe('uni-watcher', () => {
 
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
-        // TODO Verify what should amount values be checked against.
         if (value.event.__typename === 'MintEvent') {
           const expectedContract: string = pool.address;
           const expectedSender: string = nfpm.address;
@@ -315,11 +299,13 @@ describe('uni-watcher', () => {
           const from = '0x0000000000000000000000000000000000000000';
 
           checkTransferEvent(value, expectedContract, from, recipient);
+          nfpmTokenId = Number(value.event.tokenId);
         }
         if (value.event.__typename === 'IncreaseLiquidityEvent') {
+          const expectedTokenId = nfpmTokenId;
           const expectedContract: string = nfpm.address;
 
-          checkIncreaseLiquidityEvent(value, expectedContract, amount1Desired);
+          checkIncreaseLiquidityEvent(value, expectedTokenId, expectedContract, amount1Desired);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -350,7 +336,6 @@ describe('uni-watcher', () => {
 
   it('should increase liquidity', done => {
     (async () => {
-      const tokenId = 1;
       const amount0Desired = 15;
       const amount1Desired = 15;
       const amount0Min = 0;
@@ -367,9 +352,10 @@ describe('uni-watcher', () => {
           checkMintEvent(value, expectedContract, expectedSender, exptectedOwner, tickLower, tickUpper, amount0Desired);
         }
         if (value.event.__typename === 'IncreaseLiquidityEvent') {
+          const expectedTokenId = nfpmTokenId;
           const expectedContract: string = nfpm.address;
 
-          checkIncreaseLiquidityEvent(value, expectedContract, amount0Desired);
+          checkIncreaseLiquidityEvent(value, expectedTokenId, expectedContract, amount0Desired);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -380,7 +366,7 @@ describe('uni-watcher', () => {
 
       // Position manger increase liquidity.
       const transaction: ContractTransaction = await nfpm.increaseLiquidity({
-        tokenId,
+        tokenId: nfpmTokenId,
         amount0Desired,
         amount1Desired,
         amount0Min,
@@ -395,7 +381,6 @@ describe('uni-watcher', () => {
 
   it('should decrease liquidity', done => {
     (async () => {
-      const tokenId = 1;
       const liquidity = 5;
       const amount0Min = 0;
       const amount1Min = 0;
@@ -410,9 +395,10 @@ describe('uni-watcher', () => {
           checkBurnEvent(value, expectedContract, exptectedOwner, tickLower, tickUpper, liquidity);
         }
         if (value.event.__typename === 'DecreaseLiquidityEvent') {
+          const expectedTokenId = nfpmTokenId;
           const expectedContract: string = nfpm.address;
 
-          checkDecreaseLiquidityEvent(value, expectedContract, liquidity);
+          checkDecreaseLiquidityEvent(value, expectedTokenId, expectedContract, liquidity);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -423,7 +409,7 @@ describe('uni-watcher', () => {
 
       // Position manger decrease liquidity.
       const transaction: ContractTransaction = await nfpm.decreaseLiquidity({
-        tokenId,
+        tokenId: nfpmTokenId,
         liquidity,
         amount0Min,
         amount1Min,
@@ -437,7 +423,6 @@ describe('uni-watcher', () => {
 
   xit('should collect fees', done => {
     (async () => {
-      const tokenId = 1;
       const amount0Max = 15;
       const amount1Max = 15;
 
@@ -450,9 +435,10 @@ describe('uni-watcher', () => {
           checkBurnEvent(value, expectedContract, exptectedOwner, tickLower, tickUpper, 0);
         }
         if (value.event.__typename === 'CollectEvent') {
+          const expectedTokenId = nfpmTokenId;
           const expectedContract: string = nfpm.address;
 
-          checksCollectEvent(value, expectedContract, recipient);
+          checksCollectEvent(value, expectedTokenId, expectedContract, recipient);
 
           if (subscription) {
             subscription.unsubscribe();
@@ -463,7 +449,7 @@ describe('uni-watcher', () => {
 
       // Position manger collect.
       const transaction: ContractTransaction = await nfpm.collect({
-        tokenId,
+        tokenId: nfpmTokenId,
         recipient,
         amount0Max,
         amount1Max

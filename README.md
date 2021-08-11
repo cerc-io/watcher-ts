@@ -18,6 +18,12 @@ The default config files used by the watchers assume the following services are 
 * `vulcanize/ipld-eth-server` with native GQL API enabled, on port 8082
 * `postgraphile` on the `vulcanize/ipld-eth-server` database, on port 5000
 
+#### Note
+
+* In `vulcanize/ipld-eth-server`, add the following statement to `[ethereum]` section in `environments/config.toml`:
+  
+  `chainConfig = "./chain.json" # ETH_CHAIN_CONFIG`
+
 ### Databases
 
 Note: Requires `postgres12`.

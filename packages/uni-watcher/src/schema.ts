@@ -205,7 +205,7 @@ type Query {
 
   # NonfungiblePositionManager
 
-  latestContract(
+  getContract(
     type: String!
   ): Contract
 

@@ -91,9 +91,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getPool(blockHash, token0, token1, fee);
       },
 
-      latestContract: (_: any, { type }: { type: string }) => {
-        log('latestContract', type);
-        return indexer.getLatestContract(type);
+      getContract: (_: any, { type }: { type: string }) => {
+        log('getContract', type);
+        return indexer.getContract(type);
       }
     }
   };

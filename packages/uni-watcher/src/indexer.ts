@@ -605,10 +605,8 @@ export class Indexer {
     );
   }
 
-  async getLatestContract (type: string): Promise<any> {
+  async getContract (type: string): Promise<any> {
     const contract = await this._db.getLatestContract(type);
-    assert(contract, `No ${type} contract watched.`);
-
     return contract;
   }
 }

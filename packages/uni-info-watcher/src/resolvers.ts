@@ -54,13 +54,13 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       },
 
       mints: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
-        log('burns', first, orderBy, orderDirection, where);
+        log('mints', first, orderBy, orderDirection, where);
 
         return indexer.getEntities(Mint, {}, where, { limit: first, orderBy, orderDirection }, ['pool', 'transaction']);
       },
 
       pool: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('bundle', id, block);
+        log('pool', id, block);
 
         return indexer.getPool(id, block);
       },
@@ -72,7 +72,7 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       },
 
       pools: async (_: any, { block = {}, first, orderBy, orderDirection, where = {} }: { block: BlockHeight, first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
-        log('burns', block, first, orderBy, orderDirection, where);
+        log('pools', block, first, orderBy, orderDirection, where);
 
         return indexer.getEntities(Pool, block, where, { limit: first, orderBy, orderDirection }, ['token0', 'token1']);
       },
@@ -108,7 +108,7 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       },
 
       tokenHourDatas: async (_: any, { first, skip, orderBy, orderDirection, where }: { first: number, skip: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
-        log('tokenDayDatas', first, skip, orderBy, orderDirection, where);
+        log('tokenHourDatas', first, skip, orderBy, orderDirection, where);
 
         return indexer.getEntities(TokenHourData, {}, where, { limit: first, skip, orderBy, orderDirection });
       },
@@ -126,7 +126,7 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
       },
 
       positions: async (_: any, { first, where }: { first: number, where: { [key: string]: any } }) => {
-        log('uniswapDayDatas', first, where);
+        log('positions', first, where);
 
         return indexer.getEntities(Position, {}, where, { limit: first }, ['pool', 'token0', 'token1', 'tickLower', 'tickUpper', 'transaction']);
       }
