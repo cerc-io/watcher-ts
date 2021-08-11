@@ -684,7 +684,7 @@ export class Database {
       .getMany();
   }
 
-  async saveEvents (block: Block, events: DeepPartial<Event>[]): Promise<void> {
+  async saveEvents (queryRunner: QueryRunner, block: Block, events: DeepPartial<Event>[]): Promise<void> {
     const {
       hash: blockHash,
       number: blockNumber,
@@ -700,55 +700,51 @@ export class Database {
     // In a transaction:
     // (1) Save all the events in the database.
     // (2) Add an entry to the block progress table.
-    await this._conn.transaction(async (tx) => {
-      const numEvents = events.length;
-      const blockProgressRepo = tx.getRepository(BlockProgress);
-      let blockProgress = await blockProgressRepo.findOne({ where: { blockHash } });
+    const numEvents = events.length;
+    const blockProgressRepo = queryRunner.manager.getRepository(BlockProgress);
+    let blockProgress = await blockProgressRepo.findOne({ where: { blockHash } });
 
-      if (!blockProgress) {
-        const entity = blockProgressRepo.create({
-          blockHash,
-          parentHash,
-          blockNumber,
-          blockTimestamp,
-          numEvents,
-          numProcessedEvents: 0,
-          lastProcessedEventIndex: -1,
-          isComplete: (numEvents === 0)
-        });
+    if (!blockProgress) {
+      const entity = blockProgressRepo.create({
+        blockHash,
+        parentHash,
+        blockNumber,
+        blockTimestamp,
+        numEvents,
+        numProcessedEvents: 0,
+        lastProcessedEventIndex: -1,
+        isComplete: (numEvents === 0)
+      });
 
-        blockProgress = await blockProgressRepo.save(entity);
+      blockProgress = await blockProgressRepo.save(entity);
 
-        // Bulk insert events.
-        events.forEach(event => { event.block = blockProgress; });
-        await tx.createQueryBuilder().insert().into(Event).values(events).execute();
-      }
-    });
+      // Bulk insert events.
+      events.forEach(event => { event.block = blockProgress; });
+      await queryRunner.manager.createQueryBuilder().insert().into(Event).values(events).execute();
+    }
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
     return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
   }
 
-  async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return await this._conn.transaction(async (tx) => {
-      const repo = tx.getRepository(SyncStatus);
+  async updateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
 
-      let entity = await repo.findOne();
-      if (!entity) {
-        entity = repo.create({
-          latestCanonicalBlockHash: blockHash,
-          latestCanonicalBlockNumber: blockNumber
-        });
-      }
+    let entity = await repo.findOne();
+    if (!entity) {
+      entity = repo.create({
+        latestCanonicalBlockHash: blockHash,
+        latestCanonicalBlockNumber: blockNumber
+      });
+    }
 
-      if (blockNumber >= entity.latestCanonicalBlockNumber) {
-        entity.chainHeadBlockHash = blockHash;
-        entity.chainHeadBlockNumber = blockNumber;
-      }
+    if (blockNumber >= entity.latestCanonicalBlockNumber) {
+      entity.chainHeadBlockHash = blockHash;
+      entity.chainHeadBlockNumber = blockNumber;
+    }
 
-      return await repo.save(entity);
-    });
+    return await repo.save(entity);
   }
 
   async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
@@ -761,24 +757,22 @@ export class Database {
     return repo.findOne({ where: { blockHash } });
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    await this._conn.transaction(async (tx) => {
-      const repo = tx.getRepository(BlockProgress);
-      const entity = await repo.findOne({ where: { blockHash } });
-      if (entity && !entity.isComplete) {
-        if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
-          throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
-        }
-
-        entity.lastProcessedEventIndex = lastProcessedEventIndex;
-        entity.numProcessedEvents++;
-        if (entity.numProcessedEvents >= entity.numEvents) {
-          entity.isComplete = true;
-        }
-
-        await repo.save(entity);
+  async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+    const entity = await repo.findOne({ where: { blockHash } });
+    if (entity && !entity.isComplete) {
+      if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
+        throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
       }
-    });
+
+      entity.lastProcessedEventIndex = lastProcessedEventIndex;
+      entity.numProcessedEvents++;
+      if (entity.numProcessedEvents >= entity.numEvents) {
+        entity.isComplete = true;
+      }
+
+      await repo.save(entity);
+    }
   }
 
   async _getPrevEntityVersion<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {

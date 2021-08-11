@@ -164,7 +164,20 @@ export class Indexer {
   }
 
   async updateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._db.updateSyncStatus(blockHash, blockNumber);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatus(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -198,7 +211,20 @@ export class Indexer {
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._db.updateBlockProgress(blockHash, lastProcessedEventIndex);
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateBlockProgress(dbTx, blockHash, lastProcessedEventIndex);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getBundle (id: string, block: BlockHeight): Promise<Bundle | undefined> {
@@ -319,7 +345,17 @@ export class Indexer {
       });
     }
 
-    await this._db.saveEvents(block, dbEvents);
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      await this._db.saveEvents(dbTx, block, dbEvents);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async _handlePoolCreated (block: Block, contractAddress: string, tx: Transaction, poolCreatedEvent: PoolCreatedEvent): Promise<void> {
