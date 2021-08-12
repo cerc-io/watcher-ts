@@ -5,25 +5,6 @@
 [watch]
   lighthouse = "0xbDA876401576281a1912a20de135F60de6D7d711"
 
-[database]
-  type = "postgres"
-  host = "localhost"
-  port = 5432
-  database = "lighthouse-watcher"
-  username = "postgres"
-  password = "postgres"
-  synchronize = true
-  logging = false
-
-  entities = [ "src/entity/**/*.ts" ]
-  migrations = [ "src/migration/**/*.ts" ]
-  subscribers = [ "src/subscriber/**/*.ts" ]
-
-  [database.cli]
-    entitiesDir = "src/entity"
-    migrationsDir = "src/migration"
-    subscribersDir = "src/subscriber"
-
 [upstream]
   [upstream.ethServer]
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
@@ -33,7 +14,3 @@
     name = "requests"
     enabled = false
     deleteOnStart = false
-
-[jobQueue]
-  dbConnectionString = "postgres://postgres:postgres@localhost/lighthouse-watcher-job-queue"
-  maxCompletionLag = 300
