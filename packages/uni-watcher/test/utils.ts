@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { ethers, Contract, Signer } from 'ethers';
 import { expect } from 'chai';
 import 'mocha';

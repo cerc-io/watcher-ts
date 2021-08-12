@@ -16,7 +16,7 @@
     "url": "git+https://github.com/vulcanize/watcher-ts.git"
   },
   "author": "",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/vulcanize/watcher-ts/issues"
   },

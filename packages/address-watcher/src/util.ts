@@ -1,3 +1,6 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
 
 import _ from 'lodash';
 import { ethers } from 'ethers';

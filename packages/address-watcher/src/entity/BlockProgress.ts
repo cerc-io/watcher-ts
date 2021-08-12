@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
 @Entity()

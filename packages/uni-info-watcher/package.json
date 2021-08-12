@@ -2,7 +2,7 @@
   "name": "@vulcanize/uni-info-watcher",
   "version": "0.1.0",
   "main": "index.js",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0",
   "private": true,
   "dependencies": {
     "@vulcanize/cache": "^0.1.0",

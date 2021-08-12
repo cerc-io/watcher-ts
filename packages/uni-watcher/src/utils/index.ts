@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { ethers } from 'ethers';
 
 import { Database } from '../database';

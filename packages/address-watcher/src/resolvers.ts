@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import debug from 'debug';
 import { withFilter } from 'apollo-server-express';
 import { ethers } from 'ethers';

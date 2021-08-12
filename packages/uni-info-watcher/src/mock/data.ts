@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import Chance from 'chance';
 import { ethers } from 'ethers';
 

@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';

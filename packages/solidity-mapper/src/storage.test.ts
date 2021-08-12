@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Contract } from '@ethersproject/contracts';
 import { expect } from 'chai';

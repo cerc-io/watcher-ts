@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import _ from 'lodash';
 import { Connection, ConnectionOptions, createConnection, DeepPartial, QueryRunner } from 'typeorm';

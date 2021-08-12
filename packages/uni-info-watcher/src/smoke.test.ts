@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { expect } from 'chai';
 import { ethers, Contract, Signer, constants } from 'ethers';
 import { request } from 'graphql-request';

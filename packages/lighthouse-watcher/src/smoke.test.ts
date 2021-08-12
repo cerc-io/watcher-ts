@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { expect } from 'chai';
 import assert from 'assert';
 import { ethers, Contract, ContractTransaction, Signer, utils } from 'ethers';

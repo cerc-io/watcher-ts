@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import fs from 'fs';
 import yargs from 'yargs';
 

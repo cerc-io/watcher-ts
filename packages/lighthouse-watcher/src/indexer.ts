@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';

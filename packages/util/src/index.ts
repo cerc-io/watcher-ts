@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 /**
  * Method to wait for specified time.
  * @param time Time to wait in milliseconds

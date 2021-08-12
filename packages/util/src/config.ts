@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import fs from 'fs-extra';
 import path from 'path';
 import toml from 'toml';

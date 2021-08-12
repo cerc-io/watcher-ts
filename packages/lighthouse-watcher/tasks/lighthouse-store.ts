@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { task, types } from 'hardhat/config';
 import '@nomiclabs/hardhat-ethers';
 import { ContractTransaction, utils } from 'ethers';

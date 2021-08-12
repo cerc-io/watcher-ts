@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { JsonFragment } from '@ethersproject/abi';
 import { utils } from 'ethers';
 

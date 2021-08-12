@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import canonicalStringify from 'canonical-json';
 import { ethers } from 'ethers';

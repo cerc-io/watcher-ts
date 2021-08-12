@@ -2,7 +2,7 @@
   "name": "@vulcanize/solidity-mapper",
   "version": "0.1.0",
   "main": "src/index.ts",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
     "@ethersproject/contracts": "^5.3.0",

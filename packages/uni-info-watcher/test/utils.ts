@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { expect } from 'chai';
 import { request } from 'graphql-request';
 import Decimal from 'decimal.js';

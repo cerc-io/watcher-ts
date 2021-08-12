@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 

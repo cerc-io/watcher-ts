@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.7.6;
 
 // https://docs.soliditylang.org/en/v0.8.5/layout-of-source-files.html#abi-coder-pragma

@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { Contract, utils } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 

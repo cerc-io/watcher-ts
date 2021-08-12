@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { gql } from 'graphql-request';
 
 export const queryToken = gql`

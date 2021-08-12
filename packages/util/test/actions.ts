@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { ethers, Contract, ContractTransaction, Signer, BigNumber, utils } from 'ethers';
 import assert from 'assert';
 

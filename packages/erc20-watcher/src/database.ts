@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';

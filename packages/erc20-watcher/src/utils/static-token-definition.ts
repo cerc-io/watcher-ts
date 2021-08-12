@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { utils } from 'ethers';
 
 // Initialize a Token Definition with the attributes.

@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { expect } from 'chai';
 import '@nomiclabs/hardhat-ethers';
 import { artifacts } from 'hardhat';

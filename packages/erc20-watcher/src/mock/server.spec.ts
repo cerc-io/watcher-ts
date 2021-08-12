@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import 'mocha';
 import { expect } from 'chai';
 import _ from 'lodash';

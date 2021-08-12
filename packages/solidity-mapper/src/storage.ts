@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { utils, BigNumber } from 'ethers';
 
 interface Storage {

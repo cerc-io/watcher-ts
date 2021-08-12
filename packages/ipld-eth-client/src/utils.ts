@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import leftPad from 'left-pad';
 import { ethers } from 'ethers';
 

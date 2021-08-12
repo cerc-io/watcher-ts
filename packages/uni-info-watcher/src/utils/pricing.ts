@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';

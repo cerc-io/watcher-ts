@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { gql } from '@apollo/client/core';
 
 export const getStorageAt = gql`

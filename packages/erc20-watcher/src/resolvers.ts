@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';

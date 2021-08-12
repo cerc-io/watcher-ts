@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 import Decimal from 'decimal.js';
 import { decimalTransformer } from '@vulcanize/util';

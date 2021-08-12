@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import assert from 'assert';
 import debug from 'debug';
 import { DeepPartial, QueryRunner } from 'typeorm';

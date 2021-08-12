@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 // Stores a row if events for a (block, token) combination have already been fetched.

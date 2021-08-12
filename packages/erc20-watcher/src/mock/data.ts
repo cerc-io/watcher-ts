@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 // TODO: Pull mock data for 5 tokens from rinkeby.
 
 export const tokens: {[address: string]: {[variable: string]: string}} = {

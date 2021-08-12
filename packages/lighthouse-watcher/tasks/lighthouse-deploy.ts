@@ -1,3 +1,7 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
 import { task } from 'hardhat/config';
 import '@nomiclabs/hardhat-ethers';
 
