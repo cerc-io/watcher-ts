@@ -74,6 +74,14 @@ CREATE EXTENSION
 uni-watcher-job-queue=# exit
 ```
 
+#### Reset
+
+Reset the databases used by the watchers:
+
+```bash
+yarn db:reset
+```
+
 ## Run
 
 To run any watcher, `cd` into their package folder and run:

@@ -10,6 +10,7 @@
   "scripts": {
     "test": "lerna run test --stream --no-bail",
     "lint": "lerna run lint --stream",
-    "build:contracts": "lerna run build:contracts"
+    "build:contracts": "lerna run build:contracts",
+    "db:reset": "sudo ./scripts/reset-dbs.sh"
   }
 }
