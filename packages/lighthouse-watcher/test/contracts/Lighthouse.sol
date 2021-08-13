@@ -1,3 +1,8 @@
+// Original: https://github.com/nandit123/lighthouse/blob/master/contracts/Lighthouse.sol
+// License:
+// https://github.com/nandit123/lighthouse/blob/master/LICENSE-APACHE
+// https://github.com/nandit123/lighthouse/blob/master/LICENSE-MIT
+
 pragma solidity >=0.4.22 <0.8.0;
 
 contract Lighthouse  {
@@ -28,6 +33,6 @@ contract Lighthouse  {
         require(msg.sender == owner);
         recipient.transfer(amount);
     }
-    
+
     fallback () external payable  {}
 }

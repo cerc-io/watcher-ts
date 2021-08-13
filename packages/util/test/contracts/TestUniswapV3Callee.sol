@@ -1,4 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
+// Original: https://github.com/Uniswap/uniswap-v3-core/blob/main/contracts/test/TestUniswapV3Callee.sol
+// Copyright 2021 Uniswap Labs
+// LICENSE: https://github.com/Uniswap/uniswap-v3-core/blob/main/LICENSE
+
 pragma solidity =0.7.6;
 
 import '@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol';
