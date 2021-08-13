@@ -160,6 +160,12 @@ type Position {
   feeGrowthInside1LastX128: BigInt!
 }
 
+type Block {
+  number: Int!
+  hash: Bytes!
+  timestamp: Int!
+}
+
 enum OrderDirection {
   asc
   desc
@@ -266,6 +272,15 @@ enum TokenHourData_orderBy {
 
 input Position_filter {
   id: ID
+}
+
+input Block_filter {
+  timestamp_gt: Int
+  timestamp_lt: Int
+}
+
+enum Block_orderBy {
+  timestamp
 }
 
 type Query {
@@ -413,5 +428,12 @@ type Query {
     first: Int = 100
     where: Position_filter
   ): [Position!]!
+
+  blocks(
+    first: Int = 100
+    orderBy: Block_orderBy
+    orderDirection: OrderDirection
+    where: Block_filter
+  ): [Block!]!
 }
 `;

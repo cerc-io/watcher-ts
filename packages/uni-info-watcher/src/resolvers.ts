@@ -133,6 +133,12 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
         log('positions', first, where);
 
         return indexer.getEntities(Position, {}, where, { limit: first }, ['pool', 'token0', 'token1', 'tickLower', 'tickUpper', 'transaction']);
+      },
+
+      blocks: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
+        log('blocks', first, orderBy, orderDirection, where);
+
+        return indexer.getBlocks(where, { limit: first, orderBy, orderDirection });
       }
     }
   };

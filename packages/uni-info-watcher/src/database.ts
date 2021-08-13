@@ -62,11 +62,11 @@ export interface QueryOptions {
 }
 
 interface Where {
-  [key: string]: {
+  [key: string]: [{
     value: any;
     not: boolean;
     operator: keyof typeof OPERATOR_MAP;
-  }
+  }]
 }
 
 export class Database {
@@ -479,40 +479,43 @@ export class Database {
       selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
     });
 
-    Object.entries(where).forEach(([field, filter]) => {
-      // Form the where clause.
-      const { not, operator, value } = filter;
-      const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-      assert(columnMetadata);
-      let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+    Object.entries(where).forEach(([field, filters]) => {
+      filters.forEach((filter, index) => {
+        // Form the where clause.
+        const { not, operator, value } = filter;
+        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+        assert(columnMetadata);
+        let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
 
-      if (not) {
-        if (operator === 'equals') {
-          whereClause += '!';
-        } else {
-          whereClause += 'NOT ';
+        if (not) {
+          if (operator === 'equals') {
+            whereClause += '!';
+          } else {
+            whereClause += 'NOT ';
+          }
         }
-      }
 
-      whereClause += `${OPERATOR_MAP[operator]} `;
+        whereClause += `${OPERATOR_MAP[operator]} `;
 
-      if (['contains', 'starts'].some(el => el === operator)) {
-        whereClause += '%:';
-      } else if (operator === 'in') {
-        whereClause += '(:...';
-      } else {
-        whereClause += ':';
-      }
+        if (['contains', 'starts'].some(el => el === operator)) {
+          whereClause += '%:';
+        } else if (operator === 'in') {
+          whereClause += '(:...';
+        } else {
+          whereClause += ':';
+        }
 
-      whereClause += 'value';
+        const variableName = `${field}${index}`;
+        whereClause += variableName;
 
-      if (['contains', 'ends'].some(el => el === operator)) {
-        whereClause += '%';
-      } else if (operator === 'in') {
-        whereClause += ')';
-      }
+        if (['contains', 'ends'].some(el => el === operator)) {
+          whereClause += '%';
+        } else if (operator === 'in') {
+          whereClause += ')';
+        }
 
-      selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { value });
+        selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
+      });
     });
 
     const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
