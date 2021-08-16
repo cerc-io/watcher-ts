@@ -260,7 +260,7 @@ export class Indexer {
     let res;
 
     try {
-      res = this._db.getBundle(dbTx, { id, blockHash: block.hash, blockNumber: block.number });
+      res = await this._db.getBundle(dbTx, { id, blockHash: block.hash, blockNumber: block.number });
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -294,7 +294,7 @@ export class Indexer {
     let res;
 
     try {
-      res = this._db.getToken(dbTx, { id, blockHash: block.hash, blockNumber: block.number });
+      res = await this._db.getToken(dbTx, { id, blockHash: block.hash, blockNumber: block.number });
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
