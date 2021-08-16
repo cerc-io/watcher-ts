@@ -3,8 +3,10 @@
 //
 
 import { expect } from 'chai';
+import { ethers } from 'ethers';
 import { request } from 'graphql-request';
 import Decimal from 'decimal.js';
+import _ from 'lodash';
 
 import {
   queryFactory,
@@ -17,6 +19,9 @@ import {
   queryTokenHourData,
   queryTransactions
 } from '../test/queries';
+import { TestDatabase } from './test-db';
+import { Block } from '../src/events';
+import { Token } from '../src/entity/Token';
 
 export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
   // Checked values: date, tvlUSD.
@@ -161,3 +166,159 @@ export const fetchTransaction = async (endpoint: string): Promise<{transaction: 
 
   return transaction;
 };
+
+export const insertDummyBlock = async (db: TestDatabase, parentBlock: Block): Promise<Block> => {
+  // Insert a dummy BlockProgress entity after parentBlock.
+
+  const dbTx = await db.createTransactionRunner();
+
+  try {
+    const randomByte = ethers.utils.randomBytes(10);
+    const blockHash = ethers.utils.sha256(randomByte);
+    const blockTimestamp = Math.floor(Date.now() / 1000);
+    const parentHash = parentBlock.hash;
+    const blockNumber = parentBlock.number + 1;
+
+    const block: Block = {
+      number: blockNumber,
+      hash: blockHash,
+      timestamp: blockTimestamp,
+      parentHash
+    };
+    await db.updateSyncStatus(dbTx, blockHash, blockNumber);
+    await db.saveEvents(dbTx, block, []);
+
+    await dbTx.commitTransaction();
+    return block;
+  } catch (error) {
+    await dbTx.rollbackTransaction();
+    throw error;
+  } finally {
+    await dbTx.release();
+  }
+};
+
+export const insertNDummyBlocks = async (db: TestDatabase, numberOfBlocks:number, parentBlock?: Block): Promise<Block[]> => {
+  // Insert n dummy BlockProgress serially after parentBlock.
+
+  const blocksArray: Block[] = [];
+  if (!parentBlock) {
+    const randomByte = ethers.utils.randomBytes(10);
+    const hash = ethers.utils.sha256(randomByte);
+    parentBlock = {
+      number: 0,
+      hash,
+      timestamp: -1,
+      parentHash: ''
+    };
+  }
+
+  let block = parentBlock;
+  for (let i = 0; i < numberOfBlocks; i++) {
+    block = await insertDummyBlock(db, block);
+    blocksArray.push(block);
+  }
+
+  return blocksArray;
+};
+
+export const createTestBlockTree = async (db: TestDatabase): Promise<Block[][]> => {
+  // Create BlockProgress test data.
+  //
+  //                                     +---+
+  //                           head----->| 21|
+  //                                     +---+
+  //                                       |
+  //                                       |
+  //                                     +---+            +---+
+  //                                     | 20|            | 15|------Token (token44)
+  //                                     +---+            +---+
+  //                                       |             /
+  //                                       |            /
+  //                                      8 Blocks   3 Blocks
+  //                                       |          /
+  //                                       |         /
+  //                       +---+         +---+  +---+
+  //                       | 11|         | 11|  | 11|
+  //                       +---+         +---+  +---+
+  //                            \          |   /
+  //                             \         |  /
+  //                              +---+  +---+
+  //                              | 10|  | 10|
+  //                              +---+  +---+
+  //                                   \   |
+  //                                    \  |
+  //                                     +---+
+  //                                     | 9 |
+  //                                     +---+
+  //                                       |
+  //                                       |
+  //                                   7 Blocks
+  //                                       |
+  //                                       |
+  //                                     +---+
+  //                           tail----->| 1 |------Token (token00)
+  //                                     +---+        (Target)
+  //
+
+  const blocks: Block[][] = [];
+
+  const firstSeg = await insertNDummyBlocks(db, 9);
+  const secondSeg = await insertNDummyBlocks(db, 2, _.last(firstSeg));
+  const thirdSeg = await insertNDummyBlocks(db, 1, _.last(firstSeg));
+  const fourthSeg = await insertNDummyBlocks(db, 11, _.last(thirdSeg));
+  const fifthSeg = await insertNDummyBlocks(db, 5, _.last(thirdSeg));
+
+  blocks.push(firstSeg);
+  blocks.push(secondSeg);
+  blocks.push(thirdSeg);
+  blocks.push(fourthSeg);
+  blocks.push(fifthSeg);
+
+  return blocks;
+};
+
+export const insertDummyToken = async (db: TestDatabase, block: Block, token?: Token): Promise<Token> => {
+  // Insert a dummy Token entity at block.
+
+  if (!token) {
+    const randomByte = ethers.utils.randomBytes(20);
+    const tokenAddress = ethers.utils.hexValue(randomByte);
+
+    token = new Token();
+    token.symbol = 'TEST';
+    token.name = 'TestToken';
+    token.id = tokenAddress;
+    token.totalSupply = new Decimal(0);
+    token.decimals = BigInt(0);
+  }
+
+  const dbTx = await db.createTransactionRunner();
+
+  try {
+    token = await db.saveToken(dbTx, token, block);
+    dbTx.commitTransaction();
+    return token;
+  } catch (error) {
+    await dbTx.rollbackTransaction();
+    throw error;
+  } finally {
+    await dbTx.release();
+  }
+};
+
+export async function removeEntities<Entity> (db: TestDatabase, entity: new () => Entity): Promise<void> {
+  // Remove all entries of the specified entity from database.
+
+  const dbTx = await db.createTransactionRunner();
+
+  try {
+    await db.removeEntities(dbTx, entity);
+    dbTx.commitTransaction();
+  } catch (error) {
+    await dbTx.rollbackTransaction();
+    throw error;
+  } finally {
+    await dbTx.release();
+  }
+}

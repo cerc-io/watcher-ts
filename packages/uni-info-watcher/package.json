@@ -23,7 +23,8 @@
     "build": "tsc",
     "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > docs/analysis/schema/full-schema.graphql",
     "lint:schema": "graphql-schema-linter",
-    "smoke-test": "mocha src/smoke.test.ts"
+    "smoke-test": "mocha src/smoke.test.ts",
+    "test:gpev": "mocha src/get-prev-entity.test.ts"
   },
   "devDependencies": {
     "@types/chance": "^1.1.2",
