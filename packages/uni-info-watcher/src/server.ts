@@ -5,7 +5,7 @@
 import assert from 'assert';
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import { ApolloServer } from 'apollo-server-express';
+import { ApolloServer, PubSub } from 'apollo-server-express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
@@ -84,10 +84,11 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(indexer, ethClient, jobQueue);
+  const pubSub = new PubSub();
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubSub, jobQueue);
   await eventWatcher.start();
 
-  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer);
+  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
 
   const app: Application = express();
   const server = new ApolloServer({

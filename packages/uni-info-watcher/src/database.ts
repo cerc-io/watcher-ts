@@ -691,11 +691,11 @@ export class Database {
       .getMany();
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: Block, events: DeepPartial<Event>[]): Promise<void> {
+  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
     const {
-      hash: blockHash,
-      number: blockNumber,
-      timestamp: blockTimestamp,
+      blockHash,
+      blockNumber,
+      blockTimestamp,
       parentHash
     } = block;
 

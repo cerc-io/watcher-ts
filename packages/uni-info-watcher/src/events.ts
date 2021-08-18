@@ -5,9 +5,11 @@
 import assert from 'assert';
 import debug from 'debug';
 import _ from 'lodash';
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { PubSub } from 'apollo-server-express';
 
-import { JobQueue } from '../../util';
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EventWatcher as BaseEventWatcher, EventWatcherInterface, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from '@vulcanize/util';
+
 import { Indexer } from './indexer';
 
 const log = debug('vulcanize:events');
@@ -115,28 +117,33 @@ export interface ResultEvent {
   }
 }
 
-export const QUEUE_EVENT_PROCESSING = 'event-processing';
-export const QUEUE_BLOCK_PROCESSING = 'block-processing';
-
-export class EventWatcher {
-  _subscription?: ZenObservable.Subscription
+export class EventWatcher implements EventWatcherInterface {
   _ethClient: EthClient
-  _jobQueue: JobQueue
   _indexer: Indexer
+  _subscription?: ZenObservable.Subscription
+  _pubsub: PubSub
+  _jobQueue: JobQueue
+  _eventWatcher: BaseEventWatcher
 
-  constructor (indexer: Indexer, ethClient: EthClient, jobQueue: JobQueue) {
+  constructor (ethClient: EthClient, indexer: Indexer, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
-    this._jobQueue = jobQueue;
     this._indexer = indexer;
+    this._pubsub = pubsub;
+    this._jobQueue = jobQueue;
+    this._eventWatcher = new BaseEventWatcher(this._ethClient, this._indexer, this._pubsub, this._jobQueue);
+  }
+
+  getBlockProgressEventIterator (): AsyncIterator<any> {
+    return this._eventWatcher.getBlockProgressEventIterator();
   }
 
   async start (): Promise<void> {
     assert(!this._subscription, 'subscription already started');
     log('Started watching upstream events...');
 
-    await this._initBlockProcessingOnCompleteHandler();
-    await this._initEventProcessingOnCompleteHandler();
-    await this._watchBlocksAtChainHead();
+    await this.initBlockProcessingOnCompleteHandler();
+    await this.initEventProcessingOnCompleteHandler();
+    await this.watchBlocksAtChainHead();
   }
 
   async stop (): Promise<void> {
@@ -146,7 +153,26 @@ export class EventWatcher {
     }
   }
 
-  async _watchBlocksAtChainHead (): Promise<void> {
+  async initBlockProcessingOnCompleteHandler (): Promise<void> {
+    await this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
+      const { data: { request: { data: { blockHash, blockNumber } } } } = job;
+      log(`Job onComplete block ${blockHash} ${blockNumber}`);
+
+      // Publish block progress event.
+      const blockProgress = await this._indexer.getBlockProgress(blockHash);
+      if (blockProgress) {
+        await this._eventWatcher.publishBlockProgressToSubscribers(blockProgress);
+      }
+    });
+  }
+
+  async initEventProcessingOnCompleteHandler (): Promise<void> {
+    await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
+      await this._eventWatcher.eventProcessingCompleteHandler(job);
+    });
+  }
+
+  async watchBlocksAtChainHead (): Promise<void> {
     log('Started watching upstream blocks...');
     this._subscription = await this._ethClient.watchBlocks(async (value) => {
       const { blockHash, blockNumber, parentHash, timestamp } = _.get(value, 'data.listen.relatedNode');
@@ -155,34 +181,7 @@ export class EventWatcher {
 
       log('watchBlock', blockHash, blockNumber);
 
-      const block = {
-        hash: blockHash,
-        number: blockNumber,
-        parentHash,
-        timestamp
-      };
-
-      await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { block });
-    });
-  }
-
-  async _initBlockProcessingOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
-      const { data: { request: { data: { block } } } } = job;
-      log(`Job onComplete block ${block.hash} ${block.number}`);
-    });
-  }
-
-  async _initEventProcessingOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
-      const { data: { request } } = job;
-
-      const dbEvent = await this._indexer.getEvent(request.data.id);
-      assert(dbEvent);
-
-      await this._indexer.updateBlockProgress(dbEvent.block.blockHash, dbEvent.index);
-
-      log(`Job onComplete event ${request.data.id}`);
+      await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber, parentHash, timestamp });
     });
   }
 }

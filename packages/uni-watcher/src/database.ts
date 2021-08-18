@@ -79,14 +79,12 @@ export class Database {
     return events;
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: any, events: DeepPartial<Event>[]): Promise<void> {
+  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
     const {
-      hash: blockHash,
-      number: blockNumber,
-      timestamp: blockTimestamp,
-      parent: {
-        hash: parentHash
-      }
+      blockHash,
+      blockNumber,
+      blockTimestamp,
+      parentHash
     } = block;
 
     assert(blockHash);

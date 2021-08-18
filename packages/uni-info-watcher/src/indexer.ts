@@ -7,9 +7,11 @@ import debug from 'debug';
 import { DeepPartial, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { utils } from 'ethers';
+
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { IndexerInterface } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -42,7 +44,7 @@ export interface ValueResult {
 
 export { OrderDirection, BlockHeight };
 
-export class Indexer {
+export class Indexer implements IndexerInterface {
   _db: Database
   _uniClient: UniClient
   _erc20Client: ERC20Client
@@ -87,8 +89,9 @@ export class Indexer {
   }
 
   // Note: Some event names might be unknown at this point, as earlier events might not yet be processed.
-  async getOrFetchBlockEvents (block: Block): Promise<Array<Event>> {
-    const blockProgress = await this._db.getBlockProgress(block.hash);
+  async getOrFetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<Array<Event>> {
+    assert(block.blockHash);
+    const blockProgress = await this._db.getBlockProgress(block.blockHash);
 
     if (!blockProgress) {
       // Fetch and save events first and make a note in the event sync progress table.
@@ -96,7 +99,7 @@ export class Indexer {
       log('getBlockEvents: db miss, fetching from upstream server');
     }
 
-    const events = await this._db.getBlockEvents(block.hash);
+    const events = await this._db.getBlockEvents(block.blockHash);
     log(`getBlockEvents: db hit, num events: ${events.length}`);
 
     return events;
@@ -352,8 +355,9 @@ export class Indexer {
     return res;
   }
 
-  async _fetchAndSaveEvents (block: Block): Promise<void> {
-    const events = await this._uniClient.getEvents(block.hash);
+  async _fetchAndSaveEvents (block: DeepPartial<BlockProgress>): Promise<void> {
+    assert(block.blockHash);
+    const events = await this._uniClient.getEvents(block.blockHash);
     const dbEvents: Array<DeepPartial<Event>> = [];
 
     for (let i = 0; i < events.length; i++) {

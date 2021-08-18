@@ -24,7 +24,8 @@
     "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > docs/analysis/schema/full-schema.graphql",
     "lint:schema": "graphql-schema-linter",
     "smoke-test": "mocha src/smoke.test.ts",
-    "test:gpev": "mocha src/get-prev-entity.test.ts"
+    "test:gpev": "mocha src/get-prev-entity.test.ts",
+    "fill": "DEBUG=vulcanize:* ts-node src/fill.ts -f environments/local.toml"
   },
   "devDependencies": {
     "@types/chance": "^1.1.2",

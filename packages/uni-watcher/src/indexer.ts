@@ -16,11 +16,11 @@ import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract, KIND_FACTORY, KIND_POOL, KIND_NFPM } from './entity/Contract';
+import { SyncStatus } from './entity/SyncStatus';
 
 import { abi as factoryABI, storageLayout as factoryStorageLayout } from './artifacts/factory.json';
 import { abi as nfpmABI, storageLayout as nfpmStorageLayout } from './artifacts/NonfungiblePositionManager.json';
 import poolABI from './artifacts/pool.json';
-import { SyncStatus } from './entity/SyncStatus';
 
 // TODO: Move to config.
 const MAX_EVENTS_BLOCK_RANGE = 1000;
@@ -103,16 +103,17 @@ export class Indexer {
   }
 
   // Note: Some event names might be unknown at this point, as earlier events might not yet be processed.
-  async getOrFetchBlockEvents (blockHash: string): Promise<Array<Event>> {
-    const blockProgress = await this._db.getBlockProgress(blockHash);
+  async getOrFetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<Array<Event>> {
+    assert(block.blockHash);
+    const blockProgress = await this._db.getBlockProgress(block.blockHash);
     if (!blockProgress) {
       // Fetch and save events first and make a note in the event sync progress table.
-      log(`getBlockEvents: db miss, fetching from upstream server ${blockHash}`);
-      await this.fetchAndSaveEvents(blockHash);
+      log(`getBlockEvents: db miss, fetching from upstream server ${block.blockHash}`);
+      await this.fetchAndSaveEvents(block);
     }
 
-    const events = await this._db.getBlockEvents(blockHash);
-    log(`getBlockEvents: db hit, ${blockHash} num events: ${events.length}`);
+    const events = await this._db.getBlockEvents(block.blockHash);
+    log(`getBlockEvents: db hit, ${block.blockHash} num events: ${events.length}`);
 
     return events;
   }
@@ -314,8 +315,9 @@ export class Indexer {
     return { eventName, eventInfo };
   }
 
-  async fetchAndSaveEvents (blockHash: string): Promise<void> {
-    const { block, logs } = await this._ethClient.getLogs({ blockHash });
+  async fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<void> {
+    assert(blockHash);
+    let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
     const {
       allEthHeaderCids: {
@@ -388,6 +390,13 @@ export class Indexer {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
+      block = {
+        blockHash,
+        blockNumber: block.number,
+        blockTimestamp: block.timestamp,
+        parentHash: block.parent.hash
+      };
+
       await this._db.saveEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
     } catch (error) {

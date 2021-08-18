@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import { request } from 'graphql-request';
 import Decimal from 'decimal.js';
 import _ from 'lodash';
+import { DeepPartial } from 'typeorm';
 
 import {
   queryFactory,
@@ -19,9 +20,10 @@ import {
   queryTokenHourData,
   queryTransactions
 } from '../test/queries';
-import { TestDatabase } from './test-db';
 import { Block } from '../src/events';
 import { Token } from '../src/entity/Token';
+import { BlockProgress } from '../src/entity/BlockProgress';
+import { TestDatabase } from './test-db';
 
 export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
   // Checked values: date, tvlUSD.
@@ -179,17 +181,23 @@ export const insertDummyBlock = async (db: TestDatabase, parentBlock: Block): Pr
     const parentHash = parentBlock.hash;
     const blockNumber = parentBlock.number + 1;
 
-    const block: Block = {
-      number: blockNumber,
-      hash: blockHash,
-      timestamp: blockTimestamp,
+    const block: DeepPartial<BlockProgress> = {
+      blockNumber,
+      blockHash,
+      blockTimestamp,
       parentHash
     };
     await db.updateSyncStatus(dbTx, blockHash, blockNumber);
     await db.saveEvents(dbTx, block, []);
 
     await dbTx.commitTransaction();
-    return block;
+
+    return {
+      number: blockNumber,
+      hash: blockHash,
+      timestamp: blockTimestamp,
+      parentHash
+    };
   } catch (error) {
     await dbTx.rollbackTransaction();
     throw error;

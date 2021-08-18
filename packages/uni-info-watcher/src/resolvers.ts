@@ -21,16 +21,23 @@ import { TokenHourData } from './entity/TokenHourData';
 import { Transaction } from './entity/Transaction';
 import { UniswapDayData } from './entity/UniswapDayData';
 import { Position } from './entity/Position';
+import { EventWatcher } from './events';
 
 const log = debug('vulcanize:resolver');
 
 export { BlockHeight };
 
-export const createResolvers = async (indexer: Indexer): Promise<any> => {
+export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
   assert(indexer);
 
   return {
     BigInt: new BigInt('bigInt'),
+
+    Subscription: {
+      onBlockProgressEvent: {
+        subscribe: () => eventWatcher.getBlockProgressEventIterator()
+      }
+    },
 
     Query: {
       bundle: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {

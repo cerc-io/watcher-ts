@@ -7,13 +7,15 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { PubSub } from 'apollo-server-express';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { getConfig, fillBlocks, JobQueue } from '@vulcanize/util';
+import { Client as UniClient } from '@vulcanize/uni-watcher';
+import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 
 import { Database } from './database';
+import { PubSub } from 'apollo-server-express';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
@@ -56,7 +58,7 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlPostgraphileEndpoint }, cache: cacheConfig } = upstream;
+  const { ethServer: { gqlPostgraphileEndpoint }, cache: cacheConfig, uniWatcher, tokenWatcher } = upstream;
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
   const cache = await getCache(cacheConfig);
@@ -66,16 +68,15 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
+  const uniClient = new UniClient(uniWatcher);
+  const erc20Client = new ERC20Client(tokenWatcher);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(config, db, ethClient, postgraphileClient);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
 
+  assert(jobQueueConfig, 'Missing job queue config');
   const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
@@ -83,8 +84,6 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-
-  assert(jobQueueConfig, 'Missing job queue config');
 
   await fillBlocks(jobQueue, indexer, ethClient, eventWatcher, argv);
 };

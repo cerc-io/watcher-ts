@@ -166,6 +166,14 @@ type Block {
   timestamp: Int!
 }
 
+type BlockProgressEvent {
+  blockNumber: Int!
+  blockHash: String!
+  numEvents: Int!
+  numProcessedEvents: Int!
+  isComplete: Boolean!
+}
+
 enum OrderDirection {
   asc
   desc
@@ -435,5 +443,13 @@ type Query {
     orderDirection: OrderDirection
     where: Block_filter
   ): [Block!]!
+}
+
+#
+# Subscriptions
+#
+type Subscription {
+  # Watch for block progress events from filler process.
+  onBlockProgressEvent: BlockProgressEvent!
 }
 `;

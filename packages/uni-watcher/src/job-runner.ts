@@ -10,12 +10,11 @@ import debug from 'debug';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig, JobQueue, MAX_REORG_DEPTH } from '@vulcanize/util';
+import { getConfig, JobQueue, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
 import { UNKNOWN_EVENT_NAME, Event } from './entity/Event';
-import { QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING } from './events';
 
 const log = debug('vulcanize:job-runner');
 
@@ -36,7 +35,7 @@ export class JobRunner {
 
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-      const { data: { blockHash, blockNumber, parentHash, priority } } = job;
+      const { data: { blockHash, blockNumber, parentHash, timestamp, priority } } = job;
 
       log(`Processing block number ${blockNumber} hash ${blockHash} `);
 
@@ -51,7 +50,7 @@ export class JobRunner {
       if (blockHash !== syncStatus.latestCanonicalBlockHash) {
         const parent = await this._indexer.getBlockProgress(parentHash);
         if (!parent) {
-          const { number: parentBlockNumber, parent: { hash: grandparentHash } } = await this._indexer.getBlock(parentHash);
+          const { number: parentBlockNumber, parent: { hash: grandparentHash }, timestamp: parentTimestamp } = await this._indexer.getBlock(parentHash);
 
           // Create a higher priority job to index parent block and then abort.
           // We don't have to worry about aborting as this job will get retried later.
@@ -60,6 +59,7 @@ export class JobRunner {
             blockHash: parentHash,
             blockNumber: parentBlockNumber,
             parentHash: grandparentHash,
+            timestamp: parentTimestamp,
             priority: newPriority
           }, { priority: newPriority });
 
@@ -78,7 +78,7 @@ export class JobRunner {
         }
       }
 
-      const events = await this._indexer.getOrFetchBlockEvents(blockHash);
+      const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
       for (let ei = 0; ei < events.length; ei++) {
         await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
       }

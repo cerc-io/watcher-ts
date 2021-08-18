@@ -4,11 +4,13 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
+import { BlockProgressInterface } from '@vulcanize/util';
+
 @Entity()
 @Index(['blockHash'], { unique: true })
 @Index(['blockNumber'])
 @Index(['parentHash'])
-export class BlockProgress {
+export class BlockProgress implements BlockProgressInterface {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -35,4 +37,7 @@ export class BlockProgress {
 
   @Column('boolean')
   isComplete!: boolean
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

@@ -10,13 +10,12 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getConfig, JobQueue, wait } from '@vulcanize/util';
+import { getConfig, JobQueue, wait, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
-import { QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './events';
 import { Event } from './entity/Event';
 
 const log = debug('vulcanize:job-runner');
@@ -73,43 +72,42 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   await jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-    const { data: { block, priority } } = job;
-    log(`Processing block hash ${block.hash} number ${block.number}`);
+    const { data: { blockHash, blockNumber, parentHash, timestamp, priority } } = job;
+    log(`Processing block number ${blockNumber} hash ${blockHash} `);
+
+    // Init sync status record if none exists.
+    let syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      syncStatus = await indexer.updateSyncStatus(blockHash, blockNumber);
+    }
 
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
     // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
-    let syncStatus = await indexer.getSyncStatus();
-    if (!syncStatus) {
-      syncStatus = await indexer.updateSyncStatus(block.hash, block.number);
-    }
-
-    if (block.hash !== syncStatus.latestCanonicalBlockHash) {
-      const parent = await indexer.getBlockProgress(block.parentHash);
+    if (blockHash !== syncStatus.latestCanonicalBlockHash) {
+      const parent = await indexer.getBlockProgress(parentHash);
       if (!parent) {
-        const { number: parentBlockNumber, parent: { hash: grandparentHash }, timestamp: parentTimestamp } = await indexer.getBlock(block.parentHash);
+        const { number: parentBlockNumber, parent: { hash: grandparentHash }, timestamp: parentTimestamp } = await indexer.getBlock(parentHash);
 
         // Create a higher priority job to index parent block and then abort.
         // We don't have to worry about aborting as this job will get retried later.
         const newPriority = (priority || 0) + 1;
         await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
-          block: {
-            hash: block.parentHash,
-            number: parentBlockNumber,
-            parentHash: grandparentHash,
-            timestamp: parentTimestamp
-          },
+          blockHash: parentHash,
+          blockNumber: parentBlockNumber,
+          parentHash: grandparentHash,
+          timestamp: parentTimestamp,
           priority: newPriority
         }, { priority: newPriority });
 
-        const message = `Parent block number ${parentBlockNumber} hash ${block.parentHash} of block number ${block.number} hash ${block.hash} not fetched yet, aborting`;
+        const message = `Parent block number ${parentBlockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash} not fetched yet, aborting`;
         log(message);
 
         throw new Error(message);
       }
 
-      if (block.parentHash !== syncStatus.latestCanonicalBlockHash && !parent.isComplete) {
+      if (parentHash !== syncStatus.latestCanonicalBlockHash && !parent.isComplete) {
         // Parent block indexing needs to finish before this block can be indexed.
-        const message = `Indexing incomplete for parent block number ${parent.blockNumber} hash ${block.parentHash} of block number ${block.number} hash ${block.hash}, aborting`;
+        const message = `Indexing incomplete for parent block number ${parent.blockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash}, aborting`;
         log(message);
 
         throw new Error(message);
@@ -117,12 +115,12 @@ export const main = async (): Promise<any> => {
     }
 
     // Check if block is being already processed.
-    const blockProgress = await indexer.getBlockProgress(block.hash);
+    const blockProgress = await indexer.getBlockProgress(blockHash);
     if (!blockProgress) {
       // Delay to allow uni-watcher to process block.
       await wait(jobDelay);
 
-      const events = await indexer.getOrFetchBlockEvents(block);
+      const events = await indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
       for (let ei = 0; ei < events.length; ei++) {
         const { id } = events[ei];
