@@ -10,7 +10,7 @@ import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
-import { Config } from '@vulcanize/util';
+import { Config, IndexerInterface, Indexer as BaseIndexer } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
@@ -46,12 +46,13 @@ interface ValueResult {
   }
 }
 
-export class Indexer {
+export class Indexer implements IndexerInterface {
   _config: Config;
   _db: Database
   _ethClient: EthClient
   _postgraphileClient: EthClient
   _getStorageAt: GetStorageAt
+  _baseIndexer: BaseIndexer
 
   _factoryContract: ethers.utils.Interface
   _poolContract: ethers.utils.Interface
@@ -63,6 +64,7 @@ export class Indexer {
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
+    this._baseIndexer = new BaseIndexer(this._db);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
@@ -408,54 +410,15 @@ export class Indexer {
   }
 
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.updateSyncStatusIndexedBlock(dbTx, blockHash, blockNumber);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
   }
 
   async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.updateSyncStatusCanonicalBlock(dbTx, blockHash, blockNumber);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -493,51 +456,15 @@ export class Indexer {
   }
 
   async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
-    return this._db.getBlocksAtHeight(height, isPruned);
+    return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
   async blockIsAncestor (ancestorBlockHash: string, blockHash: string, maxDepth: number): Promise<boolean> {
-    assert(maxDepth > 0);
-
-    let depth = 0;
-    let currentBlockHash = blockHash;
-    let currentBlock;
-
-    // TODO: Use a hierarchical query to optimize this.
-    while (depth < maxDepth) {
-      depth++;
-
-      currentBlock = await this._db.getBlockProgress(currentBlockHash);
-      if (!currentBlock) {
-        break;
-      } else {
-        if (currentBlock.parentHash === ancestorBlockHash) {
-          return true;
-        }
-
-        // Descend the chain.
-        currentBlockHash = currentBlock.parentHash;
-      }
-    }
-
-    return false;
+    return this._baseIndexer.blockIsAncestor(ancestorBlockHash, blockHash, maxDepth);
   }
 
   async markBlockAsPruned (block: BlockProgress): Promise<BlockProgress> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.markBlockAsPruned(dbTx, block);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.markBlockAsPruned(block);
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {

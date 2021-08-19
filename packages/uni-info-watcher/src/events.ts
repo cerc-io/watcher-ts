@@ -4,11 +4,10 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import _ from 'lodash';
 import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { EventWatcher as BaseEventWatcher, EventWatcherInterface, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from '@vulcanize/util';
+import { EventWatcher as BaseEventWatcher, EventWatcherInterface, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 
@@ -123,65 +122,55 @@ export class EventWatcher implements EventWatcherInterface {
   _subscription?: ZenObservable.Subscription
   _pubsub: PubSub
   _jobQueue: JobQueue
-  _eventWatcher: BaseEventWatcher
+  _baseEventWatcher: BaseEventWatcher
 
   constructor (ethClient: EthClient, indexer: Indexer, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
-    this._eventWatcher = new BaseEventWatcher(this._ethClient, this._indexer, this._pubsub, this._jobQueue);
+    this._baseEventWatcher = new BaseEventWatcher(this._ethClient, this._indexer, this._pubsub, this._jobQueue);
   }
 
   getBlockProgressEventIterator (): AsyncIterator<any> {
-    return this._eventWatcher.getBlockProgressEventIterator();
+    return this._baseEventWatcher.getBlockProgressEventIterator();
   }
 
   async start (): Promise<void> {
     assert(!this._subscription, 'subscription already started');
     log('Started watching upstream events...');
 
+    await this.watchBlocksAtChainHead();
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
-    await this.watchBlocksAtChainHead();
+    await this.initChainPruningOnCompleteHandler();
   }
 
   async stop (): Promise<void> {
-    if (this._subscription) {
-      log('Stopped watching upstream events');
-      this._subscription.unsubscribe();
-    }
+    this._baseEventWatcher.stop();
+  }
+
+  async watchBlocksAtChainHead (): Promise<void> {
+    this._subscription = await this._ethClient.watchBlocks(async (value) => {
+      await this._baseEventWatcher.blocksHandler(value);
+    });
   }
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
-      const { data: { request: { data: { blockHash, blockNumber } } } } = job;
-      log(`Job onComplete block ${blockHash} ${blockNumber}`);
-
-      // Publish block progress event.
-      const blockProgress = await this._indexer.getBlockProgress(blockHash);
-      if (blockProgress) {
-        await this._eventWatcher.publishBlockProgressToSubscribers(blockProgress);
-      }
+      await this._baseEventWatcher.blockProcessingCompleteHandler(job);
     });
   }
 
   async initEventProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
-      await this._eventWatcher.eventProcessingCompleteHandler(job);
+      await this._baseEventWatcher.eventProcessingCompleteHandler(job);
     });
   }
 
-  async watchBlocksAtChainHead (): Promise<void> {
-    log('Started watching upstream blocks...');
-    this._subscription = await this._ethClient.watchBlocks(async (value) => {
-      const { blockHash, blockNumber, parentHash, timestamp } = _.get(value, 'data.listen.relatedNode');
-
-      await this._indexer.updateSyncStatus(blockHash, blockNumber);
-
-      log('watchBlock', blockHash, blockNumber);
-
-      await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber, parentHash, timestamp });
+  async initChainPruningOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_CHAIN_PRUNING, async (job) => {
+      await this._baseEventWatcher.chainPruningCompleteHandler(job);
     });
   }
 }

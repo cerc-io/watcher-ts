@@ -3,9 +3,9 @@
 //
 
 import assert from 'assert';
-import { Brackets, Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, FindOneOptions, LessThanOrEqual, QueryRunner, Repository } from 'typeorm';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { MAX_REORG_DEPTH } from '@vulcanize/util';
+import { Brackets, Connection, ConnectionOptions, DeepPartial, FindConditions, FindOneOptions, LessThanOrEqual, QueryRunner, Repository } from 'typeorm';
+
+import { MAX_REORG_DEPTH, Database as BaseDatabase } from '@vulcanize/util';
 
 import { EventSyncProgress } from './entity/EventProgress';
 import { Factory } from './entity/Factory';
@@ -72,30 +72,24 @@ interface Where {
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
+  _baseDatabase: BaseDatabase
 
   constructor (config: ConnectionOptions) {
     assert(config);
     this._config = config;
+    this._baseDatabase = new BaseDatabase(this._config);
   }
 
   async init (): Promise<void> {
-    assert(!this._conn);
-
-    this._conn = await createConnection({
-      ...this._config,
-      namingStrategy: new SnakeNamingStrategy()
-    });
+    this._conn = await this._baseDatabase.init();
   }
 
   async close (): Promise<void> {
-    return this._conn.close();
+    return this._baseDatabase.close();
   }
 
   async createTransactionRunner (): Promise<QueryRunner> {
-    const queryRunner = this._conn.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    return queryRunner;
+    return this._baseDatabase.createTransactionRunner();
   }
 
   async getFactory (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<Factory>): Promise<Factory | undefined> {
@@ -731,32 +725,43 @@ export class Database {
     }
   }
 
-  async getEvent (id: string): Promise<Event | undefined> {
-    return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
-  }
-
-  async updateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    let entity = await repo.findOne();
-    if (!entity) {
-      entity = repo.create({
-        latestCanonicalBlockHash: blockHash,
-        latestCanonicalBlockNumber: blockNumber
-      });
-    }
+    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber);
+  }
 
-    if (blockNumber >= entity.latestCanonicalBlockNumber) {
-      entity.chainHeadBlockHash = blockHash;
-      entity.chainHeadBlockNumber = blockNumber;
-    }
+  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return await repo.save(entity);
+    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber);
+  }
+
+  async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber);
   }
 
   async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
     return repo.findOne();
+  }
+
+  async getEvent (id: string): Promise<Event | undefined> {
+    return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
+  }
+
+  async markBlockAsPruned (queryRunner: QueryRunner, block: BlockProgress): Promise<BlockProgress> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.markBlockAsPruned(repo, block);
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {

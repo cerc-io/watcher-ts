@@ -2,22 +2,96 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
-import { ValueTransformer } from 'typeorm';
+import assert from 'assert';
+import { Connection, ConnectionOptions, createConnection, QueryRunner, Repository } from 'typeorm';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
-export const decimalTransformer: ValueTransformer = {
-  to: (value?: Decimal) => {
-    if (value) {
-      return value.toString();
-    }
+import { BlockProgressInterface, SyncStatusInterface } from './types';
 
-    return value;
-  },
-  from: (value?: string) => {
-    if (value) {
-      return new Decimal(value);
-    }
+export class Database {
+  _config: ConnectionOptions
+  _conn!: Connection
 
-    return value;
+  constructor (config: ConnectionOptions) {
+    assert(config);
+    this._config = config;
   }
-};
+
+  async init (): Promise<Connection> {
+    assert(!this._conn);
+
+    this._conn = await createConnection({
+      ...this._config,
+      namingStrategy: new SnakeNamingStrategy()
+    });
+
+    return this._conn;
+  }
+
+  async close (): Promise<void> {
+    return this._conn.close();
+  }
+
+  async createTransactionRunner (): Promise<QueryRunner> {
+    const queryRunner = this._conn.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    return queryRunner;
+  }
+
+  async updateSyncStatusIndexedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
+
+    if (blockNumber >= entity.latestIndexedBlockNumber) {
+      entity.latestIndexedBlockHash = blockHash;
+      entity.latestIndexedBlockNumber = blockNumber;
+    }
+
+    return await repo.save(entity);
+  }
+
+  async updateSyncStatusCanonicalBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
+
+    if (blockNumber >= entity.latestCanonicalBlockNumber) {
+      entity.latestCanonicalBlockHash = blockHash;
+      entity.latestCanonicalBlockNumber = blockNumber;
+    }
+
+    return await repo.save(entity);
+  }
+
+  async updateSyncStatusChainHead (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    let entity = await repo.findOne();
+    if (!entity) {
+      entity = repo.create({
+        chainHeadBlockHash: blockHash,
+        chainHeadBlockNumber: blockNumber,
+        latestCanonicalBlockHash: blockHash,
+        latestCanonicalBlockNumber: blockNumber,
+        latestIndexedBlockHash: '',
+        latestIndexedBlockNumber: -1
+      });
+    }
+
+    if (blockNumber >= entity.chainHeadBlockNumber) {
+      entity.chainHeadBlockHash = blockHash;
+      entity.chainHeadBlockNumber = blockNumber;
+    }
+
+    return await repo.save(entity);
+  }
+
+  async getBlocksAtHeight (repo: Repository<BlockProgressInterface>, height: number, isPruned: boolean): Promise<BlockProgressInterface[]> {
+    return repo.createQueryBuilder('block_progress')
+      .where('block_number = :height AND is_pruned = :isPruned', { height, isPruned })
+      .getMany();
+  }
+
+  async markBlockAsPruned (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface): Promise<BlockProgressInterface> {
+    block.isPruned = true;
+    return repo.save(block);
+  }
+}

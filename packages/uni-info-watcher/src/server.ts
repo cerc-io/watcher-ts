@@ -74,7 +74,7 @@ export const main = async (): Promise<any> => {
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, config);
 
   assert(jobQueueConfig, 'Missing job queue config');
 
