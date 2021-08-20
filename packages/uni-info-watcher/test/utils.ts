@@ -7,7 +7,8 @@ import { ethers } from 'ethers';
 import { request } from 'graphql-request';
 import Decimal from 'decimal.js';
 import _ from 'lodash';
-import { DeepPartial } from 'typeorm';
+
+import { insertNDummyBlocks } from '@vulcanize/util/test';
 
 import {
   queryFactory,
@@ -20,10 +21,9 @@ import {
   queryTokenHourData,
   queryTransactions
 } from '../test/queries';
+import { Database } from '../src/database';
 import { Block } from '../src/events';
 import { Token } from '../src/entity/Token';
-import { BlockProgress } from '../src/entity/BlockProgress';
-import { TestDatabase } from './test-db';
 
 export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
   // Checked values: date, tvlUSD.
@@ -169,68 +169,7 @@ export const fetchTransaction = async (endpoint: string): Promise<{transaction: 
   return transaction;
 };
 
-export const insertDummyBlock = async (db: TestDatabase, parentBlock: Block): Promise<Block> => {
-  // Insert a dummy BlockProgress entity after parentBlock.
-
-  const dbTx = await db.createTransactionRunner();
-
-  try {
-    const randomByte = ethers.utils.randomBytes(10);
-    const blockHash = ethers.utils.sha256(randomByte);
-    const blockTimestamp = Math.floor(Date.now() / 1000);
-    const parentHash = parentBlock.hash;
-    const blockNumber = parentBlock.number + 1;
-
-    const block: DeepPartial<BlockProgress> = {
-      blockNumber,
-      blockHash,
-      blockTimestamp,
-      parentHash
-    };
-    await db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber);
-    await db.saveEvents(dbTx, block, []);
-
-    await dbTx.commitTransaction();
-
-    return {
-      number: blockNumber,
-      hash: blockHash,
-      timestamp: blockTimestamp,
-      parentHash
-    };
-  } catch (error) {
-    await dbTx.rollbackTransaction();
-    throw error;
-  } finally {
-    await dbTx.release();
-  }
-};
-
-export const insertNDummyBlocks = async (db: TestDatabase, numberOfBlocks:number, parentBlock?: Block): Promise<Block[]> => {
-  // Insert n dummy BlockProgress serially after parentBlock.
-
-  const blocksArray: Block[] = [];
-  if (!parentBlock) {
-    const randomByte = ethers.utils.randomBytes(10);
-    const hash = ethers.utils.sha256(randomByte);
-    parentBlock = {
-      number: 0,
-      hash,
-      timestamp: -1,
-      parentHash: ''
-    };
-  }
-
-  let block = parentBlock;
-  for (let i = 0; i < numberOfBlocks; i++) {
-    block = await insertDummyBlock(db, block);
-    blocksArray.push(block);
-  }
-
-  return blocksArray;
-};
-
-export const createTestBlockTree = async (db: TestDatabase): Promise<Block[][]> => {
+export const createTestBlockTree = async (db: Database): Promise<Block[][]> => {
   // Create BlockProgress test data.
   //
   //                                     +---+
@@ -239,7 +178,7 @@ export const createTestBlockTree = async (db: TestDatabase): Promise<Block[][]> 
   //                                       |
   //                                       |
   //                                     +---+            +---+
-  //                                     | 20|            | 15|------Token (token44)
+  //                                     | 20|            | 15|
   //                                     +---+            +---+
   //                                       |             /
   //                                       |            /
@@ -265,8 +204,8 @@ export const createTestBlockTree = async (db: TestDatabase): Promise<Block[][]> 
   //                                       |
   //                                       |
   //                                     +---+
-  //                           tail----->| 1 |------Token (token00)
-  //                                     +---+        (Target)
+  //                           tail----->| 1 |
+  //                                     +---+
   //
 
   const blocks: Block[][] = [];
@@ -286,7 +225,7 @@ export const createTestBlockTree = async (db: TestDatabase): Promise<Block[][]> 
   return blocks;
 };
 
-export const insertDummyToken = async (db: TestDatabase, block: Block, token?: Token): Promise<Token> => {
+export const insertDummyToken = async (db: Database, block: Block, token?: Token): Promise<Token> => {
   // Insert a dummy Token entity at block.
 
   if (!token) {
@@ -314,19 +253,3 @@ export const insertDummyToken = async (db: TestDatabase, block: Block, token?: T
     await dbTx.release();
   }
 };
-
-export async function removeEntities<Entity> (db: TestDatabase, entity: new () => Entity): Promise<void> {
-  // Remove all entries of the specified entity from database.
-
-  const dbTx = await db.createTransactionRunner();
-
-  try {
-    await db.removeEntities(dbTx, entity);
-    dbTx.commitTransaction();
-  } catch (error) {
-    await dbTx.rollbackTransaction();
-    throw error;
-  } finally {
-    await dbTx.release();
-  }
-}

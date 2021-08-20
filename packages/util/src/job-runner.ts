@@ -123,13 +123,15 @@ export class JobRunner {
       // Should be at least 1.
       assert(blocksAtHeight.length);
 
-      // We have more than one node at this height, so prune all nodes not reachable from head.
+      // We have more than one node at this height, so prune all nodes not reachable from indexed block at max reorg depth from prune height.
       // This will lead to orphaned nodes, which will get pruned at the next height.
       if (blocksAtHeight.length > 1) {
+        const [indexedBlock] = await this._indexer.getBlocksAtHeight(pruneBlockHeight + MAX_REORG_DEPTH, false);
+
         for (let i = 0; i < blocksAtHeight.length; i++) {
           const block = blocksAtHeight[i];
-          // If this block is not reachable from the latest indexed block, mark it as pruned.
-          const isAncestor = await this._indexer.blockIsAncestor(block.blockHash, syncStatus.latestIndexedBlockHash, MAX_REORG_DEPTH);
+          // If this block is not reachable from the indexed block at max reorg depth from prune height, mark it as pruned.
+          const isAncestor = await this._indexer.blockIsAncestor(block.blockHash, indexedBlock.blockHash, MAX_REORG_DEPTH);
           if (!isAncestor) {
             await this._indexer.markBlockAsPruned(block);
           }

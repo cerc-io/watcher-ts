@@ -4,16 +4,16 @@
 
 import assert from 'assert';
 import _ from 'lodash';
-import { Connection, ConnectionOptions, DeepPartial, QueryRunner } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, QueryRunner, FindConditions } from 'typeorm';
 
-import { Database as BaseDatabase } from '@vulcanize/util';
+import { Database as BaseDatabase, DatabaseInterface } from '@vulcanize/util';
 
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
 import { Contract } from './entity/Contract';
 import { BlockProgress } from './entity/BlockProgress';
 import { SyncStatus } from './entity/SyncStatus';
 
-export class Database {
+export class Database implements DatabaseInterface {
   _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase
@@ -210,5 +210,17 @@ export class Database {
 
       await repo.save(entity);
     }
+  }
+
+  async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {
+    return this._baseDatabase.getEntities(queryRunner, entity, findConditions);
+  }
+
+  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void> {
+    return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
+  }
+
+  async isEntityEmpty<Entity> (entity: new () => Entity): Promise<boolean> {
+    return this._baseDatabase.isEntityEmpty(entity);
   }
 }

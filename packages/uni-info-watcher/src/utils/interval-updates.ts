@@ -26,7 +26,7 @@ export const updateUniswapDayData = async (db: Database, dbTx: QueryRunner, even
 
   // TODO: In subgraph factory is fetched by hardcoded factory address.
   // Currently fetching first factory in database as only one exists.
-  const [factory] = await db.getEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+  const [factory] = await db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
   const dayID = Math.floor(block.timestamp / 86400); // Rounded.
   const dayStartTimestamp = dayID * 86400;

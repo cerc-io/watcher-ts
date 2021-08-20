@@ -4,8 +4,10 @@
 
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
+import { SyncStatusInterface } from '@vulcanize/util';
+
 @Entity()
-export class SyncStatus {
+export class SyncStatus implements SyncStatusInterface {
   @PrimaryGeneratedColumn()
   id!: number;
 

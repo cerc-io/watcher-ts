@@ -32,6 +32,8 @@ import {
   bytecode as WETH9_BYTECODE
 } from '../artifacts/test/contracts/WETH9.sol/WETH9.json';
 
+import { DatabaseInterface } from '../src/types';
+
 export { abi as NFPM_ABI } from '@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json';
 export { abi as TESTERC20_ABI } from '../artifacts/test/contracts/TestERC20.sol/TestERC20.json';
 
@@ -147,3 +149,86 @@ export const deployNFPM = async (signer: Signer, factory: Contract, weth9Address
     signer);
   return await positionManagerFactory.deploy(factory.address, weth9Address, nftDescriptor.address);
 };
+
+export const insertDummyBlock = async (db: DatabaseInterface, parentBlock: any): Promise<any> => {
+  // Insert a dummy BlockProgress entity after parentBlock.
+
+  const dbTx = await db.createTransactionRunner();
+
+  try {
+    const randomByte = ethers.utils.randomBytes(10);
+    const blockHash = ethers.utils.sha256(randomByte);
+    const blockTimestamp = Math.floor(Date.now() / 1000);
+    const parentHash = parentBlock.hash;
+    const blockNumber = parentBlock.number + 1;
+
+    const block = {
+      blockNumber,
+      blockHash,
+      blockTimestamp,
+      parentHash
+    };
+
+    await db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber);
+    await db.saveEvents(dbTx, block, []);
+    await db.updateSyncStatusIndexedBlock(dbTx, blockHash, blockNumber);
+
+    await dbTx.commitTransaction();
+
+    return {
+      number: blockNumber,
+      hash: blockHash,
+      timestamp: blockTimestamp,
+      parent: {
+        hash: parentHash
+      }
+    };
+  } catch (error) {
+    await dbTx.rollbackTransaction();
+    throw error;
+  } finally {
+    await dbTx.release();
+  }
+};
+
+export const insertNDummyBlocks = async (db: DatabaseInterface, numberOfBlocks:number, parentBlock?: any): Promise<any[]> => {
+  // Insert n dummy BlockProgress serially after parentBlock.
+
+  const blocksArray: any[] = [];
+  if (!parentBlock) {
+    const randomByte = ethers.utils.randomBytes(10);
+    const hash = ethers.utils.sha256(randomByte);
+    parentBlock = {
+      number: 0,
+      hash,
+      timestamp: -1,
+      parent: {
+        hash: ''
+      }
+    };
+  }
+
+  let block = parentBlock;
+  for (let i = 0; i < numberOfBlocks; i++) {
+    block = await insertDummyBlock(db, block);
+    blocksArray.push(block);
+  }
+
+  return blocksArray;
+};
+
+export async function removeEntities<Entity> (db: DatabaseInterface, entity: new () => Entity): Promise<void> {
+  // Remove all entries of the specified entity from database.
+
+  const dbTx = await db.createTransactionRunner();
+
+  try {
+    await db.removeEntities(dbTx, entity);
+    dbTx.commitTransaction();
+  } catch (error) {
+    await dbTx.rollbackTransaction();
+    throw error;
+  } finally {
+    await dbTx.release();
+  }
+}

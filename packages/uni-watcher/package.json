@@ -14,7 +14,8 @@
     "build": "tsc",
     "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml",
     "test:init": "ts-node test/init.ts",
-    "smoke-test": "yarn test:init && mocha src/smoke.test.ts"
+    "smoke-test": "yarn test:init && mocha src/smoke.test.ts",
+    "test:chain-pruning": "mocha src/chain-pruning.test.ts"
   },
   "repository": {
     "type": "git",

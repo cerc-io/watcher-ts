@@ -358,7 +358,7 @@ export class Indexer implements IndexerInterface {
         return acc;
       }, {});
 
-      res = await this._db.getEntities(dbTx, entity, block, where, queryOptions, relations);
+      res = await this._db.getUniswapEntities(dbTx, entity, block, where, queryOptions, relations);
       dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -570,7 +570,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const token0 = pool.token0;
       const token1 = pool.token1;
@@ -715,7 +715,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const token0 = pool.token0;
       const token1 = pool.token1;
@@ -842,7 +842,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
       assert(pool);
