@@ -64,7 +64,11 @@ export interface DatabaseInterface {
   createTransactionRunner(): Promise<QueryRunner>;
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>;
+  getBlockEvents (blockHash: string): Promise<EventInterface[]>;
+  getEvent (id: string): Promise<EventInterface | undefined>
+  getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatusInterface | undefined>
   markBlockAsPruned (queryRunner: QueryRunner, block: BlockProgressInterface): Promise<BlockProgressInterface>;
+  updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void>
   updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;
   updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;

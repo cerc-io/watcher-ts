@@ -11,7 +11,7 @@ import { utils } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { Config, IndexerInterface, wait, Indexer as BaseIndexer } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -49,10 +49,9 @@ export class Indexer implements IndexerInterface {
   _uniClient: UniClient
   _erc20Client: ERC20Client
   _ethClient: EthClient
-  _config: Config
   _baseIndexer: BaseIndexer
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, config: Config) {
+  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
@@ -62,8 +61,7 @@ export class Indexer implements IndexerInterface {
     this._uniClient = uniClient;
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
-    this._config = config;
-    this._baseIndexer = new BaseIndexer(this._db);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -92,29 +90,12 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  // Note: Some event names might be unknown at this point, as earlier events might not yet be processed.
   async getOrFetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<Array<Event>> {
-    assert(block.blockHash);
-    const blockProgress = await this._db.getBlockProgress(block.blockHash);
-
-    if (!blockProgress) {
-      const { jobQueue: { jobDelay } } = this._config;
-      assert(jobDelay);
-      // Delay to allow uni-watcher to process block.
-      await wait(jobDelay);
-      // Fetch and save events first and make a note in the event sync progress table.
-      await this._fetchAndSaveEvents(block);
-      log('getBlockEvents: db miss, fetching from upstream server');
-    }
-
-    const events = await this._db.getBlockEvents(block.blockHash);
-    log(`getBlockEvents: db hit, num events: ${events.length}`);
-
-    return events;
+    return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string): Promise<Array<Event>> {
-    return this._db.getBlockEvents(blockHash);
+    return this._baseIndexer.getBlockEvents(blockHash);
   }
 
   async processEvent (dbEvent: Event): Promise<void> {
@@ -191,25 +172,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.getSyncStatus(dbTx);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.getSyncStatus();
   }
 
   async getBlock (blockHash: string): Promise<any> {
-    const { block } = await this._ethClient.getLogs({ blockHash });
-    return block;
+    return this._baseIndexer.getBlock(blockHash);
   }
 
   async getBlocks (where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
@@ -237,11 +204,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
-    return this._db.getEvent(id);
+    return this._baseIndexer.getEvent(id);
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
-    return this._db.getBlockProgress(blockHash);
+    return this._baseIndexer.getBlockProgress(blockHash);
   }
 
   async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
@@ -257,20 +224,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.updateBlockProgress(dbTx, blockHash, lastProcessedEventIndex);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
   }
 
   async getBundle (id: string, block: BlockHeight): Promise<Bundle | undefined> {

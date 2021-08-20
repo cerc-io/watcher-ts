@@ -3,10 +3,10 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, FindConditions, QueryRunner, Repository } from 'typeorm';
+import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, QueryRunner, Repository } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
-import { BlockProgressInterface, SyncStatusInterface } from './types';
+import { BlockProgressInterface, EventInterface, SyncStatusInterface } from './types';
 
 export class Database {
   _config: ConnectionOptions
@@ -37,6 +37,10 @@ export class Database {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     return queryRunner;
+  }
+
+  async getSyncStatus (repo: Repository<SyncStatusInterface>): Promise<SyncStatusInterface | undefined> {
+    return repo.findOne();
   }
 
   async updateSyncStatusIndexedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
@@ -84,15 +88,90 @@ export class Database {
     return await repo.save(entity);
   }
 
+  async getBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string): Promise<BlockProgressInterface | undefined> {
+    return repo.findOne({ where: { blockHash } });
+  }
+
   async getBlocksAtHeight (repo: Repository<BlockProgressInterface>, height: number, isPruned: boolean): Promise<BlockProgressInterface[]> {
     return repo.createQueryBuilder('block_progress')
       .where('block_number = :height AND is_pruned = :isPruned', { height, isPruned })
       .getMany();
   }
 
+  async updateBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    const entity = await repo.findOne({ where: { blockHash } });
+    if (entity && !entity.isComplete) {
+      if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
+        throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
+      }
+
+      entity.lastProcessedEventIndex = lastProcessedEventIndex;
+      entity.numProcessedEvents++;
+      if (entity.numProcessedEvents >= entity.numEvents) {
+        entity.isComplete = true;
+      }
+
+      await repo.save(entity);
+    }
+  }
+
   async markBlockAsPruned (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface): Promise<BlockProgressInterface> {
     block.isPruned = true;
     return repo.save(block);
+  }
+
+  async getEvent (repo: Repository<EventInterface>, id: string): Promise<EventInterface | undefined> {
+    return repo.findOne(id, { relations: ['block'] });
+  }
+
+  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string): Promise<EventInterface[]> {
+    return repo.createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
+      .where('block_hash = :blockHash', { blockHash })
+      .addOrderBy('event.id', 'ASC')
+      .getMany();
+  }
+
+  async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void> {
+    const {
+      blockHash,
+      blockNumber,
+      blockTimestamp,
+      parentHash
+    } = block;
+
+    assert(blockHash);
+    assert(blockNumber);
+    assert(blockTimestamp);
+    assert(parentHash);
+
+    // In a transaction:
+    // (1) Save all the events in the database.
+    // (2) Add an entry to the block progress table.
+    const numEvents = events.length;
+    let blockProgress = await blockRepo.findOne({ where: { blockHash } });
+
+    if (!blockProgress) {
+      const entity = blockRepo.create({
+        blockHash,
+        parentHash,
+        blockNumber,
+        blockTimestamp,
+        numEvents,
+        numProcessedEvents: 0,
+        lastProcessedEventIndex: -1,
+        isComplete: (numEvents === 0)
+      });
+
+      blockProgress = await blockRepo.save(entity);
+
+      // Bulk insert events.
+      events.forEach(event => {
+        event.block = blockProgress;
+      });
+
+      await eventRepo.createQueryBuilder().insert().values(events).execute();
+    }
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {
@@ -102,27 +181,27 @@ export class Database {
     return entities;
   }
 
+  async isEntityEmpty<Entity> (entity: new () => Entity): Promise<boolean> {
+    const queryRunner = this._conn.createQueryRunner();
+
+    try {
+      await queryRunner.connect();
+      const data = await this.getEntities(queryRunner, entity);
+
+      if (data.length > 0) {
+        return false;
+      }
+
+      return true;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void> {
     const repo = queryRunner.manager.getRepository(entity);
 
     const entities = await repo.find(findConditions);
     await repo.remove(entities);
-  }
-
-  async isEntityEmpty<Entity> (entity: new () => Entity): Promise<boolean> {
-    const dbTx = await this.createTransactionRunner();
-    try {
-      const data = await this.getEntities(dbTx, entity);
-
-      if (data.length > 0) {
-        return false;
-      }
-      return true;
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
   }
 }

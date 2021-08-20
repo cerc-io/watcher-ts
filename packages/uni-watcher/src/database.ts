@@ -37,12 +37,9 @@ export class Database implements DatabaseInterface {
   }
 
   async getBlockEvents (blockHash: string): Promise<Event[]> {
-    return this._conn.getRepository(Event)
-      .createQueryBuilder('event')
-      .innerJoinAndSelect('event.block', 'block')
-      .where('block_hash = :blockHash', { blockHash })
-      .addOrderBy('event.id', 'ASC')
-      .getMany();
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getBlockEvents(repo, blockHash);
   }
 
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
@@ -75,45 +72,10 @@ export class Database implements DatabaseInterface {
   }
 
   async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
-    const {
-      blockHash,
-      blockNumber,
-      blockTimestamp,
-      parentHash
-    } = block;
+    const blockRepo = queryRunner.manager.getRepository(BlockProgress);
+    const eventRepo = queryRunner.manager.getRepository(Event);
 
-    assert(blockHash);
-    assert(blockNumber);
-    assert(blockTimestamp);
-    assert(parentHash);
-
-    // In a transaction:
-    // (1) Save all the events in the database.
-    // (2) Add an entry to the block progress table.
-    const numEvents = events.length;
-    const blockProgressRepo = queryRunner.manager.getRepository(BlockProgress);
-    let blockProgress = await blockProgressRepo.findOne({ where: { blockHash } });
-    if (!blockProgress) {
-      const entity = blockProgressRepo.create({
-        blockHash,
-        parentHash,
-        blockNumber,
-        blockTimestamp,
-        numEvents,
-        numProcessedEvents: 0,
-        lastProcessedEventIndex: -1,
-        isComplete: (numEvents === 0)
-      });
-
-      blockProgress = await blockProgressRepo.save(entity);
-
-      // Bulk insert events.
-      events.forEach(event => {
-        event.block = blockProgress;
-      });
-
-      await queryRunner.manager.createQueryBuilder().insert().into(Event).values(events).execute();
-    }
+    return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
   async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
@@ -134,13 +96,16 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber);
   }
 
-  async getSyncStatus (): Promise<SyncStatus | undefined> {
-    const repo = this._conn.getRepository(SyncStatus);
-    return repo.findOne();
+  async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.getSyncStatus(repo);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
-    return this._conn.getRepository(Event).findOne(id, { relations: ['block'] });
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getEvent(repo, id);
   }
 
   async saveEventEntity (queryRunner: QueryRunner, entity: Event): Promise<Event> {
@@ -191,25 +156,13 @@ export class Database implements DatabaseInterface {
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
     const repo = this._conn.getRepository(BlockProgress);
-    return repo.findOne({ where: { blockHash } });
+    return this._baseDatabase.getBlockProgress(repo, blockHash);
   }
 
   async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
-    const entity = await repo.findOne({ where: { blockHash } });
-    if (entity && !entity.isComplete) {
-      if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
-        throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
-      }
 
-      entity.lastProcessedEventIndex = lastProcessedEventIndex;
-      entity.numProcessedEvents++;
-      if (entity.numProcessedEvents >= entity.numEvents) {
-        entity.isComplete = true;
-      }
-
-      await repo.save(entity);
-    }
+    return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {

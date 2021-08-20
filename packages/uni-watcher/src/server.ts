@@ -69,7 +69,7 @@ export const main = async (): Promise<any> => {
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(config, db, ethClient, postgraphileClient);
+  const indexer = new Indexer(db, ethClient, postgraphileClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

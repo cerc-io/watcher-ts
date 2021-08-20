@@ -60,7 +60,7 @@ describe('chain pruning', () => {
       cache
     });
 
-    indexer = new Indexer(config, db, ethClient, postgraphileClient);
+    indexer = new Indexer(db, ethClient, postgraphileClient);
     assert(indexer, 'Could not create indexer object.');
 
     const jobQueue = new JobQueue(jobQueueConfig);

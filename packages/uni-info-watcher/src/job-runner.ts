@@ -10,7 +10,7 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getConfig, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING, JobRunner as BaseJobRunner } from '@vulcanize/util';
+import { getConfig, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING, JobRunner as BaseJobRunner, wait, JobQueueConfig } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
@@ -23,10 +23,12 @@ export class JobRunner {
   _indexer: Indexer
   _jobQueue: JobQueue
   _baseJobRunner: BaseJobRunner
+  _jobQueueConfig: JobQueueConfig
 
-  constructor (indexer: Indexer, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, indexer: Indexer, jobQueue: JobQueue) {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
+    this._jobQueueConfig = jobQueueConfig;
     this._baseJobRunner = new BaseJobRunner(this._indexer, this._jobQueue);
   }
 
@@ -47,6 +49,10 @@ export class JobRunner {
       const blockProgress = await this._indexer.getBlockProgress(blockHash);
 
       if (!blockProgress) {
+        const { jobDelay } = this._jobQueueConfig;
+        assert(jobDelay);
+        // Delay to allow uni-watcher to process block.
+        await wait(jobDelay);
         const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
         for (let ei = 0; ei < events.length; ei++) {
@@ -120,7 +126,7 @@ export const main = async (): Promise<any> => {
 
   const erc20Client = new ERC20Client(tokenWatcher);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, config);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -131,7 +137,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
   await jobQueue.start();
 
-  const jobRunner = new JobRunner(indexer, jobQueue);
+  const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
 };
 
