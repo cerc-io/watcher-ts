@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, QueryRunner, Repository } from 'typeorm';
+import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, In, QueryRunner, Repository } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { BlockProgressInterface, EventInterface, SyncStatusInterface } from './types';
@@ -115,9 +115,10 @@ export class Database {
     }
   }
 
-  async markBlockAsPruned (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface): Promise<BlockProgressInterface> {
-    block.isPruned = true;
-    return repo.save(block);
+  async markBlocksAsPruned (repo: Repository<BlockProgressInterface>, blocks: BlockProgressInterface[]): Promise<void> {
+    const ids = blocks.map(({ id }) => id);
+
+    await repo.update({ id: In(ids) }, { isPruned: true });
   }
 
   async getEvent (repo: Repository<EventInterface>, id: string): Promise<EventInterface | undefined> {
@@ -203,5 +204,45 @@ export class Database {
 
     const entities = await repo.find(findConditions);
     await repo.remove(entities);
+  }
+
+  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+    const heirerchicalQuery = `
+      WITH RECURSIVE cte_query AS
+      (
+        SELECT
+          block_hash,
+          block_number,
+          parent_hash,
+          0 as depth
+        FROM
+          block_progress
+        WHERE
+          block_hash = $1
+        UNION ALL
+          SELECT
+            b.block_hash,
+            b.block_number,
+            b.parent_hash,
+            c.depth + 1
+          FROM
+            block_progress b
+          INNER JOIN
+            cte_query c ON c.parent_hash = b.block_hash
+          WHERE
+            c.depth < $2
+      )
+      SELECT
+        block_hash, block_number
+      FROM
+        cte_query
+      ORDER BY block_number ASC
+      LIMIT 1;
+    `;
+
+    // Get ancestor block hash using heirarchical query.
+    const [{ block_hash: ancestorBlockHash }] = await this._conn.query(heirerchicalQuery, [blockHash, depth]);
+
+    return ancestorBlockHash;
   }
 }

@@ -102,39 +102,11 @@ export class Indexer {
     return this._db.getBlocksAtHeight(height, isPruned);
   }
 
-  async blockIsAncestor (ancestorBlockHash: string, blockHash: string, maxDepth: number): Promise<boolean> {
-    assert(maxDepth > 0);
-
-    let depth = 0;
-    let currentBlockHash = blockHash;
-    let currentBlock;
-
-    // TODO: Use a hierarchical query to optimize this.
-    while (depth < maxDepth) {
-      depth++;
-
-      currentBlock = await this._db.getBlockProgress(currentBlockHash);
-      if (!currentBlock) {
-        break;
-      } else {
-        if (currentBlock.parentHash === ancestorBlockHash) {
-          return true;
-        }
-
-        // Descend the chain.
-        currentBlockHash = currentBlock.parentHash;
-      }
-    }
-
-    return false;
-  }
-
-  async markBlockAsPruned (block: BlockProgressInterface): Promise<BlockProgressInterface> {
+  async markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
-    let res;
 
     try {
-      res = await this._db.markBlockAsPruned(dbTx, block);
+      await this._db.markBlocksAsPruned(dbTx, blocks);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -142,8 +114,6 @@ export class Indexer {
     } finally {
       await dbTx.release();
     }
-
-    return res;
   }
 
   async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
@@ -184,5 +154,9 @@ export class Indexer {
 
   async getBlockEvents (blockHash: string): Promise<Array<EventInterface>> {
     return this._db.getBlockEvents(blockHash);
+  }
+
+  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+    return this._db.getAncestorAtDepth(blockHash, depth);
   }
 }

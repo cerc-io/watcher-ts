@@ -128,13 +128,14 @@ export class JobRunner {
       if (blocksAtHeight.length > 1) {
         const [indexedBlock] = await this._indexer.getBlocksAtHeight(pruneBlockHeight + MAX_REORG_DEPTH, false);
 
-        for (let i = 0; i < blocksAtHeight.length; i++) {
-          const block = blocksAtHeight[i];
-          // If this block is not reachable from the indexed block at max reorg depth from prune height, mark it as pruned.
-          const isAncestor = await this._indexer.blockIsAncestor(block.blockHash, indexedBlock.blockHash, MAX_REORG_DEPTH);
-          if (!isAncestor) {
-            await this._indexer.markBlockAsPruned(block);
-          }
+        // Get ancestor blockHash from indexed block at prune height.
+        const ancestorBlockHash = await this._indexer.getAncestorAtDepth(indexedBlock.blockHash, MAX_REORG_DEPTH);
+
+        const blocksToBePruned = blocksAtHeight.filter(block => ancestorBlockHash !== block.blockHash);
+
+        if (blocksToBePruned.length) {
+          // Mark blocks pruned which are not the ancestor block.
+          await this._indexer.markBlocksAsPruned(blocksToBePruned);
         }
       }
     }

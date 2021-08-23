@@ -148,10 +148,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
   }
 
-  async markBlockAsPruned (queryRunner: QueryRunner, block: BlockProgress): Promise<BlockProgress> {
+  async markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgress[]): Promise<void> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
-    return this._baseDatabase.markBlockAsPruned(repo, block);
+    return this._baseDatabase.markBlocksAsPruned(repo, blocks);
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
@@ -175,5 +175,9 @@ export class Database implements DatabaseInterface {
 
   async isEntityEmpty<Entity> (entity: new () => Entity): Promise<boolean> {
     return this._baseDatabase.isEntityEmpty(entity);
+  }
+
+  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+    return this._baseDatabase.getAncestorAtDepth(blockHash, depth);
   }
 }
