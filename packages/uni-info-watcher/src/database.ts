@@ -88,10 +88,6 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.close();
   }
 
-  async createTransactionRunner (): Promise<QueryRunner> {
-    return this._baseDatabase.createTransactionRunner();
-  }
-
   async getFactory (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<Factory>): Promise<Factory | undefined> {
     const repo = queryRunner.manager.getRepository(Factory);
     const whereOptions: FindConditions<Factory> = { id };
@@ -651,12 +647,6 @@ export class Database implements DatabaseInterface {
     return numRows > 0;
   }
 
-  async getBlockEvents (blockHash: string): Promise<Event[]> {
-    const repo = this._conn.getRepository(Event);
-
-    return this._baseDatabase.getBlockEvents(repo, blockHash);
-  }
-
   async getEvents ({ blockHash, token }: { blockHash: string, token: string }): Promise<Event[]> {
     return this._conn.getRepository(Event)
       .createQueryBuilder('event')
@@ -680,6 +670,33 @@ export class Database implements DatabaseInterface {
       })
       .addOrderBy('event.id', 'ASC')
       .getMany();
+  }
+
+  async createTransactionRunner (): Promise<QueryRunner> {
+    return this._baseDatabase.createTransactionRunner();
+  }
+
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getProcessedBlockCountForRange(repo, fromBlockNumber, toBlockNumber);
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getEventsInRange(repo, fromBlockNumber, toBlockNumber);
+  }
+
+  async saveEventEntity (queryRunner: QueryRunner, entity: Event): Promise<Event> {
+    const repo = queryRunner.manager.getRepository(Event);
+    return this._baseDatabase.saveEventEntity(repo, entity);
+  }
+
+  async getBlockEvents (blockHash: string): Promise<Event[]> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getBlockEvents(repo, blockHash);
   }
 
   async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {

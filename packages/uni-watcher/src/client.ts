@@ -5,7 +5,15 @@
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
-import { queryGetPool, queryPoolIdToPoolKey, queryPosition, queryEvents, subscribeEvents, queryGetContract } from './queries';
+import {
+  queryGetPool,
+  queryPoolIdToPoolKey,
+  queryPosition,
+  queryEvents,
+  subscribeEvents,
+  queryGetContract,
+  queryEventsInRange
+} from './queries';
 
 export class Client {
   _config: GraphQLConfig;
@@ -85,5 +93,17 @@ export class Client {
     );
 
     return getContract;
+  }
+
+  async getEventsInRange (fromblockNumber: number, toBlockNumber: number): Promise<any> {
+    const { events } = await this._client.query(
+      gql(queryEventsInRange),
+      {
+        fromblockNumber,
+        toBlockNumber
+      }
+    );
+
+    return events;
   }
 }

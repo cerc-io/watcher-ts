@@ -10,6 +10,8 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusInterface } from './types';
 
+const MAX_EVENTS_BLOCK_RANGE = 1000;
+
 const log = debug('vulcanize:indexer');
 
 export class Indexer {
@@ -158,5 +160,38 @@ export class Indexer {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._db.getAncestorAtDepth(blockHash, depth);
+  }
+
+  async saveEventEntity (dbEvent: EventInterface): Promise<EventInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = this._db.saveEventEntity(dbTx, dbEvent);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    return this._db.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>> {
+    if (toBlockNumber <= fromBlockNumber) {
+      throw new Error('toBlockNumber should be greater than fromBlockNumber');
+    }
+
+    if ((toBlockNumber - fromBlockNumber) > MAX_EVENTS_BLOCK_RANGE) {
+      throw new Error(`Max range (${MAX_EVENTS_BLOCK_RANGE}) exceeded`);
+    }
+
+    return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
   }
 }

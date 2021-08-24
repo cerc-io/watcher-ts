@@ -63,9 +63,12 @@ describe('chain pruning', () => {
     indexer = new Indexer(db, ethClient, postgraphileClient);
     assert(indexer, 'Could not create indexer object.');
 
-    const jobQueue = new JobQueue(jobQueueConfig);
+    const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+    assert(dbConnectionString, 'Missing job queue db connection string');
 
-    jobRunner = new JobRunner(indexer, jobQueue);
+    const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+
+    jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   });
 
   afterEach(async () => {

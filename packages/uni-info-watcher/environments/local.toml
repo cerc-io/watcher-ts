@@ -41,5 +41,5 @@
 
 [jobQueue]
   dbConnectionString = "postgres://postgres:postgres@localhost/uni-info-watcher-job-queue"
-  maxCompletionLag = 300
-  jobDelay = 1000
+  maxCompletionLagInSecs = 300
+  jobDelayInMilliSecs = 1000

@@ -5,8 +5,11 @@
 import assert from 'assert';
 import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, In, QueryRunner, Repository } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import _ from 'lodash';
 
 import { BlockProgressInterface, EventInterface, SyncStatusInterface } from './types';
+
+const UNKNOWN_EVENT_NAME = '__unknown__';
 
 export class Database {
   _config: ConnectionOptions
@@ -244,5 +247,36 @@ export class Database {
     const [{ block_hash: ancestorBlockHash }] = await this._conn.query(heirerchicalQuery, [blockHash, depth]);
 
     return ancestorBlockHash;
+  }
+
+  async getProcessedBlockCountForRange (repo: Repository<BlockProgressInterface>, fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    const blockNumbers = _.range(fromBlockNumber, toBlockNumber + 1);
+    const expected = blockNumbers.length;
+
+    const { count: actual } = await repo
+      .createQueryBuilder('block_progress')
+      .select('COUNT(DISTINCT(block_number))', 'count')
+      .where('block_number IN (:...blockNumbers) AND is_complete = :isComplete', { blockNumbers, isComplete: true })
+      .getRawOne();
+
+    return { expected, actual: parseInt(actual) };
+  }
+
+  async getEventsInRange (repo: Repository<EventInterface>, fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>> {
+    const events = repo.createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
+      .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName', {
+        fromBlockNumber,
+        toBlockNumber,
+        eventName: UNKNOWN_EVENT_NAME
+      })
+      .addOrderBy('event.id', 'ASC')
+      .getMany();
+
+    return events;
+  }
+
+  async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
+    return await repo.save(entity);
   }
 }

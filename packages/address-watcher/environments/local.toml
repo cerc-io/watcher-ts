@@ -35,4 +35,4 @@
 
 [jobQueue]
   dbConnectionString = "postgres://postgres:postgres@localhost/address-watcher-job-queue"
-  maxCompletionLag = 300
+  maxCompletionLagInSecs = 300

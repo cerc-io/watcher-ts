@@ -77,10 +77,10 @@ export const main = async (): Promise<any> => {
   const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
 
   assert(jobQueueConfig, 'Missing job queue config');
-  const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);

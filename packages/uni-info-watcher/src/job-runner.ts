@@ -10,9 +10,17 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getConfig, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING, JobRunner as BaseJobRunner, wait, JobQueueConfig } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import {
+  getConfig,
+  JobQueue,
+  QUEUE_BLOCK_PROCESSING,
+  QUEUE_EVENT_PROCESSING,
+  QUEUE_CHAIN_PRUNING,
+  JobRunner as BaseJobRunner,
+  JobQueueConfig
+} from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
@@ -29,7 +37,7 @@ export class JobRunner {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
-    this._baseJobRunner = new BaseJobRunner(this._indexer, this._jobQueue);
+    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this._jobQueue);
   }
 
   async start (): Promise<void> {
@@ -41,24 +49,6 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
-
-      const { data: { blockHash, blockNumber, parentHash, timestamp } } = job;
-
-      // Check if block is being already processed.
-      // TODO: Debug issue block getting processed twice without this check. Can reproduce with NFPM.mint().
-      const blockProgress = await this._indexer.getBlockProgress(blockHash);
-
-      if (!blockProgress) {
-        const { jobDelay } = this._jobQueueConfig;
-        assert(jobDelay);
-        // Delay to allow uni-watcher to process block.
-        await wait(jobDelay);
-        const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
-
-        for (let ei = 0; ei < events.length; ei++) {
-          await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
-        }
-      }
 
       await this._jobQueue.markComplete(job);
     });
@@ -130,11 +120,10 @@ export const main = async (): Promise<any> => {
 
   assert(jobQueueConfig, 'Missing job queue config');
 
-  const { dbConnectionString, maxCompletionLag, jobDelay } = jobQueueConfig;
-  assert(jobDelay, 'Missing job delay time');
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);

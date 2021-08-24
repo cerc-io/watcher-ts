@@ -76,10 +76,10 @@ export const main = async (): Promise<any> => {
   const pubsub = new PubSub();
   const indexer = new Indexer(db, ethClient, postgraphileClient);
 
-  const { dbConnectionString, maxCompletionLag } = jobQueueConfig;
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag });
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);

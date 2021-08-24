@@ -14,8 +14,8 @@ const log = debug('vulcanize:config');
 
 export interface JobQueueConfig {
   dbConnectionString: string;
-  maxCompletionLag: number;
-  jobDelay?: number;
+  maxCompletionLagInSecs: number;
+  jobDelayInMilliSecs?: number;
 }
 
 export interface Config {

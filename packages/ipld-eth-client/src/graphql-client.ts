@@ -8,7 +8,17 @@ import fetch from 'cross-fetch';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
 import ws from 'ws';
 
-import { ApolloClient, NormalizedCacheObject, split, HttpLink, InMemoryCache, DocumentNode, TypedDocumentNode, from } from '@apollo/client/core';
+import {
+  ApolloClient,
+  NormalizedCacheObject,
+  split,
+  HttpLink,
+  InMemoryCache,
+  DocumentNode,
+  TypedDocumentNode,
+  from,
+  DefaultOptions
+} from '@apollo/client/core';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { WebSocketLink } from '@apollo/client/link/ws';
 
@@ -71,9 +81,19 @@ export class GraphQLClient {
       link = splitLink;
     }
 
+    const defaultOptions: DefaultOptions = {
+      watchQuery: {
+        fetchPolicy: 'no-cache'
+      },
+      query: {
+        fetchPolicy: 'no-cache'
+      }
+    };
+
     this._client = new ApolloClient({
       link,
-      cache: new InMemoryCache()
+      cache: new InMemoryCache(),
+      defaultOptions
     });
   }
 

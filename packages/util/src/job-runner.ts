@@ -4,8 +4,10 @@
 
 import assert from 'assert';
 import debug from 'debug';
+import { wait } from '.';
 
-import { MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING } from './constants';
+import { JobQueueConfig } from './config';
+import { MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface } from './types';
 
@@ -14,14 +16,16 @@ const log = debug('vulcanize:job-runner');
 export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
+  _jobQueueConfig: JobQueueConfig
 
-  constructor (indexer: IndexerInterface, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
+    this._jobQueueConfig = jobQueueConfig;
   }
 
   async processBlock (job: any): Promise<void> {
-    const { data: { blockHash, blockNumber, parentHash, priority } } = job;
+    const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
 
     log(`Processing block number ${blockNumber} hash ${blockHash} `);
 
@@ -61,6 +65,21 @@ export class JobRunner {
         log(message);
 
         throw new Error(message);
+      }
+    }
+
+    // Check if block is being already processed.
+    const blockProgress = await this._indexer.getBlockProgress(blockHash);
+
+    if (!blockProgress) {
+      const { jobDelayInMilliSecs = 0 } = this._jobQueueConfig;
+
+      // Delay required to process block.
+      await wait(jobDelayInMilliSecs);
+      const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+
+      for (let ei = 0; ei < events.length; ei++) {
+        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
       }
     }
   }

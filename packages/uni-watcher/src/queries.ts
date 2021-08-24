@@ -167,3 +167,10 @@ query queryGetContract($type: String!) {
   }
 }
 `;
+
+export const queryEventsInRange = gql`
+query getEventsInRange($fromBlockNumber: Int!, $toBlockNumber: Int!) {
+  eventsInRange(fromBlockNumber: $fromBlockNumber, toBlockNumber: $toBlockNumber)
+    ${resultEvent}
+}
+`;

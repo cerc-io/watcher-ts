@@ -4,75 +4,53 @@
 
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { request } from 'graphql-request';
 import Decimal from 'decimal.js';
 import _ from 'lodash';
 
 import { insertNDummyBlocks } from '@vulcanize/util/test';
 
-import {
-  queryFactory,
-  queryBundle,
-  queryToken,
-  queryPoolById,
-  queryPoolDayData,
-  queryUniswapDayData,
-  queryTokenDayData,
-  queryTokenHourData,
-  queryTransactions
-} from '../test/queries';
-import { Database } from '../src/database';
+import { Database, OrderDirection } from '../src/database';
 import { Block } from '../src/events';
 import { Token } from '../src/entity/Token';
+import { Client } from '../src/client';
 
-export const checkUniswapDayData = async (endpoint: string): Promise<void> => {
+export const checkUniswapDayData = async (client: Client): Promise<void> => {
   // Checked values: date, tvlUSD.
   // Unchecked values: volumeUSD.
 
   // Get the latest UniswapDayData.
-  const variables = {
-    first: 1,
-    orderBy: 'date',
-    orderDirection: 'desc'
-  };
-  const data = await request(endpoint, queryUniswapDayData, variables);
-  expect(data.uniswapDayDatas).to.not.be.empty;
+  const uniswapDayDatas = await client.getUniswapDayDatas({}, 0, 1, 'date', OrderDirection.desc);
+  expect(uniswapDayDatas).to.not.be.empty;
 
-  const id: string = data.uniswapDayDatas[0].id;
+  const id: string = uniswapDayDatas[0].id;
   const dayID = Number(id);
-  const date = data.uniswapDayDatas[0].date;
-  const tvlUSD = data.uniswapDayDatas[0].tvlUSD;
+  const date = uniswapDayDatas[0].date;
+  const tvlUSD = uniswapDayDatas[0].tvlUSD;
 
   const dayStartTimestamp = dayID * 86400;
-  const factoryData = await request(endpoint, queryFactory);
-  const totalValueLockedUSD: string = factoryData.factories[0].totalValueLockedUSD;
+  const factories = await client.getFactories(1);
+  const totalValueLockedUSD: string = factories[0].totalValueLockedUSD;
 
   expect(date).to.be.equal(dayStartTimestamp);
   expect(tvlUSD).to.be.equal(totalValueLockedUSD);
 };
 
-export const checkPoolDayData = async (endpoint: string, poolAddress: string): Promise<void> => {
+export const checkPoolDayData = async (client: Client, poolAddress: string): Promise<void> => {
   // Checked values: id, date, tvlUSD.
   // Unchecked values: volumeUSD.
 
   // Get the latest PoolDayData.
-  const variables = {
-    first: 1,
-    orderBy: 'date',
-    orderDirection: 'desc',
-    pool: poolAddress
-  };
-  const data = await request(endpoint, queryPoolDayData, variables);
-  expect(data.poolDayDatas).to.not.be.empty;
+  const poolDayDatas = await client.getPoolDayDatas({ pool: poolAddress }, 0, 1, 'date', OrderDirection.desc);
+  expect(poolDayDatas).to.not.be.empty;
 
-  const dayPoolID: string = data.poolDayDatas[0].id;
+  const dayPoolID: string = poolDayDatas[0].id;
   const poolID: string = dayPoolID.split('-')[0];
   const dayID = Number(dayPoolID.split('-')[1]);
-  const date = data.poolDayDatas[0].date;
-  const tvlUSD = data.poolDayDatas[0].tvlUSD;
+  const date = poolDayDatas[0].date;
+  const tvlUSD = poolDayDatas[0].tvlUSD;
 
   const dayStartTimestamp = dayID * 86400;
-  const poolData = await request(endpoint, queryPoolById, { id: poolAddress });
+  const poolData = await client.getPoolById(poolAddress);
   const totalValueLockedUSD: string = poolData.pool.totalValueLockedUSD;
 
   expect(poolID).to.be.equal(poolAddress);
@@ -80,28 +58,22 @@ export const checkPoolDayData = async (endpoint: string, poolAddress: string): P
   expect(tvlUSD).to.be.equal(totalValueLockedUSD);
 };
 
-export const checkTokenDayData = async (endpoint: string, tokenAddress: string): Promise<void> => {
+export const checkTokenDayData = async (client: Client, tokenAddress: string): Promise<void> => {
   // Checked values: id, date, totalValueLockedUSD.
   // Unchecked values: volumeUSD.
 
   // Get the latest TokenDayData.
-  const variables = {
-    first: 1,
-    orderBy: 'date',
-    orderDirection: 'desc',
-    token: tokenAddress
-  };
-  const data = await request(endpoint, queryTokenDayData, variables);
-  expect(data.tokenDayDatas).to.not.be.empty;
+  const tokenDayDatas = await client.getTokenDayDatas({ token: tokenAddress }, 0, 1, 'date', OrderDirection.desc);
+  expect(tokenDayDatas).to.not.be.empty;
 
-  const tokenDayID: string = data.tokenDayDatas[0].id;
+  const tokenDayID: string = tokenDayDatas[0].id;
   const tokenID: string = tokenDayID.split('-')[0];
   const dayID = Number(tokenDayID.split('-')[1]);
-  const date = data.tokenDayDatas[0].date;
-  const tvlUSD = data.tokenDayDatas[0].totalValueLockedUSD;
+  const date = tokenDayDatas[0].date;
+  const tvlUSD = tokenDayDatas[0].totalValueLockedUSD;
 
   const dayStartTimestamp = dayID * 86400;
-  const tokenData = await request(endpoint, queryToken, { id: tokenAddress });
+  const tokenData = await client.getToken(tokenAddress);
   const totalValueLockedUSD: string = tokenData.token.totalValueLockedUSD;
 
   expect(tokenID).to.be.equal(tokenAddress);
@@ -109,33 +81,27 @@ export const checkTokenDayData = async (endpoint: string, tokenAddress: string):
   expect(tvlUSD).to.be.equal(totalValueLockedUSD);
 };
 
-export const checkTokenHourData = async (endpoint: string, tokenAddress: string): Promise<void> => {
+export const checkTokenHourData = async (client: Client, tokenAddress: string): Promise<void> => {
   // Checked values: id, periodStartUnix, low, high, open, close.
   // Unchecked values:
 
   // Get the latest TokenHourData.
-  const variables = {
-    first: 1,
-    orderBy: 'periodStartUnix',
-    orderDirection: 'desc',
-    token: tokenAddress
-  };
-  const data = await request(endpoint, queryTokenHourData, variables);
-  expect(data.tokenHourDatas).to.not.be.empty;
+  const tokenHourDatas = await client.getTokenHourDatas({ token: tokenAddress }, 0, 1, 'periodStartUnix', OrderDirection.desc);
+  expect(tokenHourDatas).to.not.be.empty;
 
-  const tokenHourID: string = data.tokenHourDatas[0].id;
+  const tokenHourID: string = tokenHourDatas[0].id;
   const tokenID: string = tokenHourID.split('-')[0];
   const hourIndex = Number(tokenHourID.split('-')[1]);
-  const periodStartUnix = data.tokenHourDatas[0].periodStartUnix;
-  const low = data.tokenHourDatas[0].low;
-  const high = data.tokenHourDatas[0].high;
-  const open = data.tokenHourDatas[0].open;
-  const close = data.tokenHourDatas[0].close;
+  const periodStartUnix = tokenHourDatas[0].periodStartUnix;
+  const low = tokenHourDatas[0].low;
+  const high = tokenHourDatas[0].high;
+  const open = tokenHourDatas[0].open;
+  const close = tokenHourDatas[0].close;
 
   const hourStartUnix = hourIndex * 3600;
-  const tokenData = await request(endpoint, queryToken, { id: tokenAddress });
-  const bundleData = await request(endpoint, queryBundle);
-  const tokenPrice = new Decimal(tokenData.token.derivedETH).times(bundleData.bundles[0].ethPriceUSD);
+  const tokenData = await client.getToken(tokenAddress);
+  const bundles = await client.getBundles(1);
+  const tokenPrice = new Decimal(tokenData.token.derivedETH).times(bundles[0].ethPriceUSD);
 
   expect(tokenID).to.be.equal(tokenAddress);
   expect(periodStartUnix).to.be.equal(hourStartUnix);
@@ -145,22 +111,22 @@ export const checkTokenHourData = async (endpoint: string, tokenAddress: string)
   expect(close).to.be.equal(tokenPrice.toString());
 };
 
-export const fetchTransaction = async (endpoint: string): Promise<{transaction: any}> => {
+export const fetchTransaction = async (client: Client): Promise<{transaction: any}> => {
   // Get the latest Transaction.
   // Get only the latest mint, burn and swap entity in the transaction.
+  const transactions = await client.getTransactions(
+    1,
+    {
+      orderBy: 'timestamp',
+      mintOrderBy: 'timestamp',
+      burnOrderBy: 'timestamp',
+      swapOrderBy: 'timestamp'
+    },
+    OrderDirection.desc
+  );
 
-  const variables = {
-    first: 1,
-    orderBy: 'timestamp',
-    mintOrderBy: 'timestamp',
-    burnOrderBy: 'timestamp',
-    swapOrderBy: 'timestamp',
-    orderDirection: 'desc'
-  };
-
-  const data = await request(endpoint, queryTransactions, variables);
-  expect(data.transactions).to.not.be.empty;
-  const transaction = data.transactions[0];
+  expect(transactions).to.not.be.empty;
+  const transaction = transactions[0];
 
   expect(transaction.mints).to.be.an.instanceOf(Array);
   expect(transaction.burns).to.be.an.instanceOf(Array);
