@@ -6,9 +6,9 @@
 import debug from 'debug';
 import BigInt from 'apollo-type-bigint';
 
+import { BlockHeight, OrderDirection } from '@vulcanize/util';
+
 import { Data, Entity, NO_OF_BLOCKS } from './data';
-import { BlockHeight } from '../resolvers';
-import { OrderDirection } from '../database';
 
 const log = debug('vulcanize:test');
 

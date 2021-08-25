@@ -10,7 +10,8 @@ import _ from 'lodash';
 import {
   Config,
   getConfig,
-  wait
+  wait,
+  OrderDirection
 } from '@vulcanize/util';
 import {
   deployTokens,
@@ -40,7 +41,6 @@ import {
   checkTokenHourData,
   fetchTransaction
 } from '../test/utils';
-import { OrderDirection } from './indexer';
 
 const NETWORK_RPC_URL = 'http://localhost:8545';
 

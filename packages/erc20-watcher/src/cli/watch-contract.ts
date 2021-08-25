@@ -7,7 +7,8 @@ import yargs from 'yargs';
 import 'reflect-metadata';
 import { ethers } from 'ethers';
 
-import { Config, getConfig } from '../config';
+import { Config, getConfig } from '@vulcanize/util';
+
 import { Database } from '../database';
 
 (async () => {

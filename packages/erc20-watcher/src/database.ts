@@ -3,8 +3,9 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { Connection, ConnectionOptions, DeepPartial } from 'typeorm';
+
+import { Database as BaseDatabase } from '@vulcanize/util';
 
 import { Allowance } from './entity/Allowance';
 import { Balance } from './entity/Balance';
@@ -15,23 +16,20 @@ import { EventSyncProgress } from './entity/EventProgress';
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
+  _baseDatabase: BaseDatabase;
 
   constructor (config: ConnectionOptions) {
     assert(config);
     this._config = config;
+    this._baseDatabase = new BaseDatabase(this._config);
   }
 
   async init (): Promise<void> {
-    assert(!this._conn);
-
-    this._conn = await createConnection({
-      ...this._config,
-      namingStrategy: new SnakeNamingStrategy()
-    });
+    this._conn = await this._baseDatabase.init();
   }
 
   async close (): Promise<void> {
-    return this._conn.close();
+    return this._baseDatabase.close();
   }
 
   async getBalance ({ blockHash, token, owner }: { blockHash: string, token: string, owner: string }): Promise<Balance | undefined> {
@@ -149,15 +147,7 @@ export class Database {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Contract);
 
-      const numRows = await repo
-        .createQueryBuilder()
-        .where('address = :address', { address })
-        .getCount();
-
-      if (numRows === 0) {
-        const entity = repo.create({ address, startingBlock });
-        await repo.save(entity);
-      }
+      return this._baseDatabase.saveContract(repo, address, startingBlock);
     });
   }
 }

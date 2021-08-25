@@ -11,7 +11,7 @@ import { utils } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -20,7 +20,7 @@ import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
 import { createTick } from './utils/tick';
 import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
-import { Database, QueryOptions, OrderDirection, BlockHeight } from './database';
+import { Database } from './database';
 import { Event } from './entity/Event';
 import { ResultEvent, Block, Transaction, PoolCreatedEvent, InitializeEvent, MintEvent, BurnEvent, SwapEvent, IncreaseLiquidityEvent, DecreaseLiquidityEvent, CollectEvent, TransferEvent } from './events';
 import { Factory } from './entity/Factory';
@@ -264,7 +264,7 @@ export class Indexer implements IndexerInterface {
         return acc;
       }, {});
 
-      res = await this._db.getUniswapEntities(dbTx, entity, block, where, queryOptions, relations);
+      res = await this._db.getModelEntities(dbTx, entity, block, where, queryOptions, relations);
       dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -524,7 +524,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const token0 = pool.token0;
       const token1 = pool.token1;
@@ -669,7 +669,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const token0 = pool.token0;
       const token1 = pool.token1;
@@ -796,7 +796,7 @@ export class Indexer implements IndexerInterface {
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
-      const [factory] = await this._db.getUniswapEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
+      const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
       const pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
       assert(pool);

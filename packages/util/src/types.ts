@@ -39,6 +39,13 @@ export interface EventInterface {
   proof: string;
 }
 
+export interface ContractInterface {
+  id: number;
+  address: string;
+  startingBlock: number;
+  kind?: string;
+}
+
 export interface IndexerInterface {
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getEvent (id: string): Promise<EventInterface | undefined>

@@ -6,7 +6,9 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
-import { Indexer, OrderDirection, BlockHeight } from './indexer';
+import { BlockHeight, OrderDirection } from '@vulcanize/util';
+
+import { Indexer } from './indexer';
 import { Burn } from './entity/Burn';
 import { Bundle } from './entity/Bundle';
 import { Factory } from './entity/Factory';

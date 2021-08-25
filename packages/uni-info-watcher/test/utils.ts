@@ -7,9 +7,10 @@ import { ethers } from 'ethers';
 import Decimal from 'decimal.js';
 import _ from 'lodash';
 
+import { OrderDirection } from '@vulcanize/util';
 import { insertNDummyBlocks } from '@vulcanize/util/test';
 
-import { Database, OrderDirection } from '../src/database';
+import { Database } from '../src/database';
 import { Block } from '../src/events';
 import { Token } from '../src/entity/Token';
 import { Client } from '../src/client';

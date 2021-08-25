@@ -4,8 +4,8 @@
 
 import { gql } from '@apollo/client/core';
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
+import { BlockHeight, OrderDirection } from '@vulcanize/util';
 
-import { BlockHeight, OrderDirection } from './indexer';
 import {
   queryBundles,
   queryBurns,

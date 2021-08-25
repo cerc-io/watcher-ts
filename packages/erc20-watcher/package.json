@@ -9,7 +9,8 @@
     "server:mock": "MOCK=1 nodemon src/server.ts -f environments/local.toml",
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "lint": "eslint .",
-    "build": "tsc"
+    "build": "tsc",
+    "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml"
   },
   "repository": {
     "type": "git",

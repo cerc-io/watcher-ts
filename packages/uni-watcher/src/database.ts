@@ -49,15 +49,7 @@ export class Database implements DatabaseInterface {
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<void> {
     const repo = queryRunner.manager.getRepository(Contract);
 
-    const numRows = await repo
-      .createQueryBuilder()
-      .where('address = :address', { address })
-      .getCount();
-
-    if (numRows === 0) {
-      const entity = repo.create({ address, kind, startingBlock });
-      await repo.save(entity);
-    }
+    return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
   }
 
   async createTransactionRunner (): Promise<QueryRunner> {

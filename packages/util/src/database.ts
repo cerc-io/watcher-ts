@@ -3,13 +3,63 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, createConnection, DeepPartial, FindConditions, In, QueryRunner, Repository } from 'typeorm';
+import {
+  Brackets,
+  Connection,
+  ConnectionOptions,
+  createConnection,
+  DeepPartial,
+  FindConditions,
+  In,
+  QueryRunner,
+  Repository
+} from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
 
-import { BlockProgressInterface, EventInterface, SyncStatusInterface } from './types';
+import { BlockProgressInterface, ContractInterface, EventInterface, SyncStatusInterface } from './types';
+import { MAX_REORG_DEPTH } from './constants';
 
 const UNKNOWN_EVENT_NAME = '__unknown__';
+const DEFAULT_LIMIT = 100;
+const DEFAULT_SKIP = 0;
+
+const OPERATOR_MAP = {
+  equals: '=',
+  gt: '>',
+  lt: '<',
+  gte: '>=',
+  lte: '<=',
+  in: 'IN',
+  contains: 'LIKE',
+  starts: 'LIKE',
+  ends: 'LIKE'
+};
+
+export interface BlockHeight {
+  number?: number;
+  hash?: string;
+}
+
+export enum OrderDirection {
+  asc = 'asc',
+  desc = 'desc'
+}
+
+export interface QueryOptions {
+  limit?: number;
+  skip?: number;
+  orderBy?: string;
+  orderDirection?: OrderDirection;
+}
+
+export interface Where {
+  [key: string]: [{
+    value: any;
+    not: boolean;
+    operator: keyof typeof OPERATOR_MAP;
+  }]
+}
 
 export class Database {
   _config: ConnectionOptions
@@ -265,7 +315,7 @@ export class Database {
   async getEventsInRange (repo: Repository<EventInterface>, fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>> {
     const events = repo.createQueryBuilder('event')
       .innerJoinAndSelect('event.block', 'block')
-      .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName', {
+      .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName AND is_pruned = false', {
         fromBlockNumber,
         toBlockNumber,
         eventName: UNKNOWN_EVENT_NAME
@@ -278,5 +328,210 @@ export class Database {
 
   async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
     return await repo.save(entity);
+  }
+
+  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+
+    let subQuery = repo.createQueryBuilder('subTable')
+      .select('MAX(subTable.block_number)')
+      .where(`subTable.id = ${tableName}.id`);
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this.getFrothyRegion(queryRunner, block.hash);
+
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+    }
+
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .where(`${tableName}.block_number IN (${subQuery.getQuery()})`)
+      .setParameters(subQuery.getParameters());
+
+    relations.forEach(relation => {
+      selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
+    });
+
+    Object.entries(where).forEach(([field, filters]) => {
+      filters.forEach((filter, index) => {
+        // Form the where clause.
+        const { not, operator, value } = filter;
+        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+        assert(columnMetadata);
+        let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+
+        if (not) {
+          if (operator === 'equals') {
+            whereClause += '!';
+          } else {
+            whereClause += 'NOT ';
+          }
+        }
+
+        whereClause += `${OPERATOR_MAP[operator]} `;
+
+        if (['contains', 'starts'].some(el => el === operator)) {
+          whereClause += '%:';
+        } else if (operator === 'in') {
+          whereClause += '(:...';
+        } else {
+          whereClause += ':';
+        }
+
+        const variableName = `${field}${index}`;
+        whereClause += variableName;
+
+        if (['contains', 'ends'].some(el => el === operator)) {
+          whereClause += '%';
+        } else if (operator === 'in') {
+          whereClause += ')';
+        }
+
+        selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
+      });
+    });
+
+    const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
+
+    selectQueryBuilder = selectQueryBuilder.skip(skip)
+      .take(limit);
+
+    if (orderBy) {
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
+      assert(columnMetadata);
+      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${columnMetadata.propertyAliasName}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
+    }
+
+    return selectQueryBuilder.getMany();
+  }
+
+  async getPrevEntityVersion<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
+    // Hierarchical query for getting the entity in the frothy region.
+    const heirerchicalQuery = `
+      WITH RECURSIVE cte_query AS
+      (
+        SELECT
+          b.block_hash,
+          b.block_number,
+          b.parent_hash,
+          1 as depth,
+          e.id
+        FROM
+          block_progress b
+          LEFT JOIN
+            ${repo.metadata.tableName} e ON e.block_hash = b.block_hash
+        WHERE
+          b.block_hash = $1
+        UNION ALL
+          SELECT
+            b.block_hash,
+            b.block_number,
+            b.parent_hash,
+            c.depth + 1,
+            e.id
+          FROM
+            block_progress b
+            LEFT JOIN
+              ${repo.metadata.tableName} e
+              ON e.block_hash = b.block_hash
+              AND e.id = $2
+            INNER JOIN
+              cte_query c ON c.parent_hash = b.block_hash
+            WHERE
+              c.id IS NULL AND c.depth < $3
+      )
+      SELECT
+        block_hash, block_number, id
+      FROM
+        cte_query
+      ORDER BY block_number ASC
+      LIMIT 1;
+    `;
+
+    // Fetching blockHash for previous entity in frothy region.
+    const [{ block_hash: blockHash, block_number: blockNumber, id }] = await queryRunner.query(heirerchicalQuery, [findOptions.where.blockHash, findOptions.where.id, MAX_REORG_DEPTH]);
+
+    if (id) {
+      // Entity found in frothy region.
+      findOptions.where.blockHash = blockHash;
+    } else {
+      // If entity not found in frothy region get latest entity in the pruned region.
+      // Filter out entities from pruned blocks.
+      const canonicalBlockNumber = blockNumber + 1;
+      const entityInPrunedRegion:any = await repo.createQueryBuilder('entity')
+        .innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
+        .where('block.is_pruned = false')
+        .andWhere('entity.id = :id', { id: findOptions.where.id })
+        .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
+        .orderBy('entity.block_number', 'DESC')
+        .limit(1)
+        .getOne();
+
+      findOptions.where.blockHash = entityInPrunedRegion?.blockHash;
+    }
+
+    return repo.findOne(findOptions);
+  }
+
+  async getFrothyRegion (queryRunner: QueryRunner, blockHash: string): Promise<{ canonicalBlockNumber: number, blockHashes: string[] }> {
+    const heirerchicalQuery = `
+      WITH RECURSIVE cte_query AS
+      (
+        SELECT
+          block_hash,
+          block_number,
+          parent_hash,
+          1 as depth
+        FROM
+          block_progress
+        WHERE
+          block_hash = $1
+        UNION ALL
+          SELECT
+            b.block_hash,
+            b.block_number,
+            b.parent_hash,
+            c.depth + 1
+          FROM
+            block_progress b
+          INNER JOIN
+            cte_query c ON c.parent_hash = b.block_hash
+          WHERE
+            c.depth < $2
+      )
+      SELECT
+        block_hash, block_number
+      FROM
+        cte_query;
+    `;
+
+    // Get blocks in the frothy region using heirarchical query.
+    const blocks = await queryRunner.query(heirerchicalQuery, [blockHash, MAX_REORG_DEPTH]);
+    const blockHashes = blocks.map(({ block_hash: blockHash }: any) => blockHash);
+
+    // Canonical block is the block after the last block in frothy region.
+    const canonicalBlockNumber = blocks[blocks.length - 1].block_number + 1;
+
+    return { canonicalBlockNumber, blockHashes };
+  }
+
+  async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<void> {
+    const numRows = await repo
+      .createQueryBuilder()
+      .where('address = :address', { address })
+      .getCount();
+
+    if (numRows === 0) {
+      const entity = repo.create({ address, kind, startingBlock });
+      await repo.save(entity);
+    }
   }
 }
