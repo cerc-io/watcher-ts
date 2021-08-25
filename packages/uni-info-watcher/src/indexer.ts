@@ -33,6 +33,8 @@ import { PositionSnapshot } from './entity/PositionSnapshot';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 
+const SYNC_DELTA = 5;
+
 const log = debug('vulcanize:indexer');
 
 export interface ValueResult {
@@ -173,6 +175,29 @@ export class Indexer implements IndexerInterface {
       number: block.blockNumber,
       hash: block.blockHash
     }));
+  }
+
+  async getIndexingStatus (): Promise<any> {
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+    const synced = (syncStatus.chainHeadBlockNumber - syncStatus.latestIndexedBlockNumber) <= SYNC_DELTA;
+
+    return {
+      synced,
+      health: 'healthy',
+      chains: [
+        {
+          chainHeadBlock: {
+            number: syncStatus.chainHeadBlockNumber,
+            hash: syncStatus.chainHeadBlockHash
+          },
+          latestBlock: {
+            number: syncStatus.latestIndexedBlockNumber,
+            hash: syncStatus.latestIndexedBlockHash
+          }
+        }
+      ]
+    };
   }
 
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {

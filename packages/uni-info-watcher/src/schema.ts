@@ -291,6 +291,33 @@ enum Block_orderBy {
   timestamp
 }
 
+interface ChainIndexingStatus {
+  chainHeadBlock: Block
+  latestBlock: Block
+}
+
+type EthereumIndexingStatus implements ChainIndexingStatus {
+  chainHeadBlock: Block
+  latestBlock: Block
+}
+
+enum Health {
+  """Syncing normally"""
+  healthy
+
+  """Syncing but with errors"""
+  unhealthy
+
+  """Halted due to errors"""
+  failed
+}
+
+type SubgraphIndexingStatus {
+  synced: Boolean!
+  health: Health!
+  chains: [ChainIndexingStatus!]!
+}
+
 type Query {
   bundle(
     id: ID!
@@ -443,6 +470,10 @@ type Query {
     orderDirection: OrderDirection
     where: Block_filter
   ): [Block!]!
+
+  indexingStatusForCurrentVersion(
+    subgraphName: String
+  ): SubgraphIndexingStatus
 }
 
 #

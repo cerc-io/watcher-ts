@@ -35,6 +35,12 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
   return {
     BigInt: new BigInt('bigInt'),
 
+    ChainIndexingStatus: {
+      __resolveType: () => {
+        return 'EthereumIndexingStatus';
+      }
+    },
+
     Subscription: {
       onBlockProgressEvent: {
         subscribe: () => eventWatcher.getBlockProgressEventIterator()
@@ -148,6 +154,12 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         log('blocks', first, orderBy, orderDirection, where);
 
         return indexer.getBlocks(where, { limit: first, orderBy, orderDirection });
+      },
+
+      indexingStatusForCurrentVersion: async (_: any, { subgraphName }: { subgraphName: string }) => {
+        log('health', subgraphName);
+
+        return indexer.getIndexingStatus();
       }
     }
   };

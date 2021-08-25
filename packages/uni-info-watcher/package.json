@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "build": "tsc",
     "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > docs/analysis/schema/full-schema.graphql",
+    "generate:health-schema": "get-graphql-schema https://api.thegraph.com/index-node/graphql > docs/analysis/schema/health-schema.graphql",
     "lint:schema": "graphql-schema-linter",
     "smoke-test": "mocha src/smoke.test.ts",
     "test:gpev": "mocha src/get-prev-entity.test.ts",

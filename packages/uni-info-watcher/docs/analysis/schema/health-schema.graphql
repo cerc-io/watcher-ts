@@ -1,0 +1,66 @@
+scalar BigInt
+
+type Block {
+  hash: Bytes!
+  number: BigInt!
+}
+
+scalar Bytes
+
+interface ChainIndexingStatus {
+  network: String!
+  chainHeadBlock: Block
+  earliestBlock: Block
+  latestBlock: Block
+  lastHealthyBlock: Block
+}
+
+type EthereumIndexingStatus implements ChainIndexingStatus {
+  network: String!
+  chainHeadBlock: Block
+  earliestBlock: Block
+  latestBlock: Block
+  lastHealthyBlock: Block
+}
+
+enum Health {
+  """Subgraph syncing normally"""
+  healthy
+
+  """Subgraph syncing but with errors"""
+  unhealthy
+
+  """Subgraph halted due to errors"""
+  failed
+}
+
+type Query {
+  indexingStatusForCurrentVersion(subgraphName: String!): SubgraphIndexingStatus
+  indexingStatusForPendingVersion(subgraphName: String!): SubgraphIndexingStatus
+  indexingStatusesForSubgraphName(subgraphName: String!): [SubgraphIndexingStatus!]!
+  indexingStatuses(subgraphs: [String!]): [SubgraphIndexingStatus!]!
+  proofOfIndexing(subgraph: String!, blockNumber: Int!, blockHash: Bytes!, indexer: Bytes): Bytes
+}
+
+type SubgraphError {
+  message: String!
+  block: Block
+  handler: String
+  deterministic: Boolean!
+}
+
+type SubgraphIndexingStatus {
+  subgraph: String!
+  synced: Boolean!
+  health: Health!
+
+  """If the subgraph has failed, this is the error caused it"""
+  fatalError: SubgraphError
+
+  """Sorted from first to last, limited to first 1000"""
+  nonFatalErrors: [SubgraphError!]!
+  chains: [ChainIndexingStatus!]!
+  entityCount: BigInt!
+  node: String
+}
+
