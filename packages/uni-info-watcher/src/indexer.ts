@@ -11,7 +11,7 @@ import { utils } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -52,8 +52,9 @@ export class Indexer implements IndexerInterface {
   _erc20Client: ERC20Client
   _ethClient: EthClient
   _baseIndexer: BaseIndexer
+  _isDemo: boolean
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient) {
+  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, mode: string) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
@@ -64,6 +65,7 @@ export class Indexer implements IndexerInterface {
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
+    this._isDemo = mode === 'demo';
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -255,7 +257,7 @@ export class Indexer implements IndexerInterface {
     return res;
   }
 
-  async getEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions, relations?: string[]): Promise<Entity[]> {
+  async getEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions, relations?: Relation[]): Promise<Entity[]> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
@@ -439,6 +441,11 @@ export class Indexer implements IndexerInterface {
 
       token0 = await this._db.saveToken(dbTx, token0, block);
       token1 = await this._db.saveToken(dbTx, token1, block);
+      token0 = await this._db.getToken(dbTx, token0);
+      token1 = await this._db.getToken(dbTx, token1);
+      assert(token0);
+      assert(token1);
+
       pool.token0 = token0;
       pool.token1 = token1;
       pool.feeTier = BigInt(fee);
@@ -448,11 +455,11 @@ export class Indexer implements IndexerInterface {
       pool = await this._db.savePool(dbTx, pool, block);
 
       // Update white listed pools.
-      if (WHITELIST_TOKENS.includes(token0.id)) {
+      if (WHITELIST_TOKENS.includes(token0.id) || this._isDemo) {
         token1.whitelistPools.push(pool);
       }
 
-      if (WHITELIST_TOKENS.includes(token1.id)) {
+      if (WHITELIST_TOKENS.includes(token1.id) || this._isDemo) {
         token0.whitelistPools.push(pool);
       }
 
@@ -860,7 +867,7 @@ export class Indexer implements IndexerInterface {
       const amount1USD = amount1ETH.times(bundle.ethPriceUSD);
 
       // Get amount that should be tracked only - div 2 because cant count both input and output as volume.
-      const trackedAmountUSD = await getTrackedAmountUSD(this._db, dbTx, amount0Abs, token0, amount1Abs, token1);
+      const trackedAmountUSD = await getTrackedAmountUSD(this._db, dbTx, amount0Abs, token0, amount1Abs, token1, this._isDemo);
       const amountTotalUSDTracked = trackedAmountUSD.div(new Decimal('2'));
       const amountTotalETHTracked = safeDiv(amountTotalUSDTracked, bundle.ethPriceUSD);
       const amountTotalUSDUntracked = amount0USD.plus(amount1USD).div(new Decimal('2'));

@@ -42,7 +42,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port } = config.server;
+  const { host, port, mode } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -74,7 +74,7 @@ export const main = async (): Promise<any> => {
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

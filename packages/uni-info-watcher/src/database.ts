@@ -18,7 +18,8 @@ import {
   DatabaseInterface,
   BlockHeight,
   QueryOptions,
-  Where
+  Where,
+  Relation
 } from '@vulcanize/util';
 
 import { Factory } from './entity/Factory';
@@ -412,7 +413,7 @@ export class Database implements DatabaseInterface {
     return entity;
   }
 
-  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
+  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: Relation[] = []): Promise<Entity[]> {
     return this._baseDatabase.getModelEntities(queryRunner, entity, block, where, queryOptions, relations);
   }
 

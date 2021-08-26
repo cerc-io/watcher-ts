@@ -109,6 +109,7 @@ type Transaction {
 }
 
 type Token {
+  decimals: BigInt!
   derivedETH: BigDecimal!
   feesUSD: BigDecimal!
   id: ID!
@@ -440,9 +441,11 @@ type Query {
   ): [TokenHourData!]!
 
   tokens(
+    first: Int = 100
     orderBy: Token_orderBy
     orderDirection: OrderDirection
     where: Token_filter
+    block: Block_height
   ): [Token!]!
 
   transactions(

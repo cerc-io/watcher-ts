@@ -61,6 +61,8 @@ export interface Where {
   }]
 }
 
+export type Relation = string | { property: string, alias: string }
+
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
@@ -330,7 +332,7 @@ export class Database {
     return await repo.save(entity);
   }
 
-  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: string[] = []): Promise<Entity[]> {
+  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: Relation[] = []): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository(entity);
     const { tableName } = repo.metadata;
 
@@ -357,7 +359,17 @@ export class Database {
       .setParameters(subQuery.getParameters());
 
     relations.forEach(relation => {
-      selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(`${repo.metadata.tableName}.${relation}`, relation);
+      let alias, property;
+
+      if (typeof relation === 'string') {
+        [, alias] = relation.split('.');
+        property = relation;
+      } else {
+        alias = relation.alias;
+        property = relation.property;
+      }
+
+      selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(property, alias);
     });
 
     Object.entries(where).forEach(([field, filters]) => {
@@ -393,6 +405,10 @@ export class Database {
           whereClause += '%';
         } else if (operator === 'in') {
           whereClause += ')';
+
+          if (!value.length) {
+            whereClause = 'FALSE';
+          }
         }
 
         selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });

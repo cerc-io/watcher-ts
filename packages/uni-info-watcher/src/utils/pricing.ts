@@ -131,7 +131,8 @@ export const getTrackedAmountUSD = async (
   tokenAmount0: Decimal,
   token0: Token,
   tokenAmount1: Decimal,
-  token1: Token
+  token1: Token,
+  isDemo: boolean
 ): Promise<Decimal> => {
   const bundle = await db.getBundle(dbTx, { id: '1' });
   assert(bundle);
@@ -139,7 +140,8 @@ export const getTrackedAmountUSD = async (
   const price1USD = token1.derivedETH.times(bundle.ethPriceUSD);
 
   // Both are whitelist tokens, return sum of both amounts.
-  if (WHITELIST_TOKENS.includes(token0.id) && WHITELIST_TOKENS.includes(token1.id)) {
+  // Use demo mode
+  if ((WHITELIST_TOKENS.includes(token0.id) && WHITELIST_TOKENS.includes(token1.id)) || isDemo) {
     return tokenAmount0.times(price0USD).plus(tokenAmount1.times(price1USD));
   }
 

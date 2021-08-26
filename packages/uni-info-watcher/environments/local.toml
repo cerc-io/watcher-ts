@@ -1,6 +1,9 @@
 [server]
   host = "127.0.0.1"
   port = 3004
+  # Use mode demo when running watcher locally.
+  # Mode demo whitelists all tokens so that entity values get updated.
+  mode = "demo"
 
 [database]
   type = "postgres"

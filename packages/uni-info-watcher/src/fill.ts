@@ -50,7 +50,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: { mode } } = config;
 
   assert(dbConfig, 'Missing database config');
 
@@ -74,7 +74,7 @@ export const main = async (): Promise<any> => {
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
