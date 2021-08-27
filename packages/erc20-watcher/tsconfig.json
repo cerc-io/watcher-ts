@@ -73,5 +73,6 @@
     "resolveJsonModule": true                       /* Enabling the option allows importing JSON, and validating the types in that JSON file. */
   },
   "include": ["src"],
-  "exclude": ["dist"]
+  "exclude": ["dist"],
+  "files": ["./hardhat.config.ts"]
 }

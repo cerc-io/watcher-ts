@@ -10,7 +10,13 @@
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "lint": "eslint .",
     "build": "tsc",
-    "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml"
+    "watch:contract": "ts-node src/cli/watch-contract.ts --configFile environments/local.toml",
+    "token:deploy": "hardhat --network localhost token-deploy",
+    "token:deploy:docker": "hardhat --network docker token-deploy",
+    "token:transfer": "hardhat --network localhost token-transfer",
+    "token:transfer:docker": "hardhat --network docker token-transfer",
+    "block:latest": "hardhat --network localhost block-latest",
+    "block:latest:docker": "hardhat --network docker block-latest"
   },
   "repository": {
     "type": "git",
@@ -50,6 +56,7 @@
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
+    "@openzeppelin/contracts": "^4.3.1",
     "@types/express": "^4.17.11",
     "@types/fs-extra": "^9.0.11",
     "@types/json-bigint": "^1.0.0",
