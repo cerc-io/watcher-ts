@@ -7,7 +7,7 @@ import debug from 'debug';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
-import { QUEUE_BLOCK_PROCESSING } from './constants';
+import { JOB_KIND_INDEX, QUEUE_BLOCK_PROCESSING } from './constants';
 import { EventWatcherInterface, IndexerInterface } from './types';
 
 const log = debug('vulcanize:fill');
@@ -35,7 +35,7 @@ export const fillBlocks = async (
       if (blockProgress) {
         log(`Block number ${blockNumber}, block hash ${blockHash} already known, skip filling`);
       } else {
-        await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { blockHash, blockNumber, parentHash, timestamp });
+        await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
       }
     }
   }

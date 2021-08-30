@@ -12,7 +12,6 @@ import {
   EventWatcher as BaseEventWatcher,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
-  QUEUE_CHAIN_PRUNING,
   EventWatcherInterface
 } from '@vulcanize/util';
 
@@ -53,7 +52,6 @@ export class EventWatcher implements EventWatcherInterface {
     await this.watchBlocksAtChainHead();
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
-    await this.initChainPruningOnCompleteHandler();
   }
 
   async stop (): Promise<void> {
@@ -89,12 +87,6 @@ export class EventWatcher implements EventWatcherInterface {
           log(`event ${request.data.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
         }
       }
-    });
-  }
-
-  async initChainPruningOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_CHAIN_PRUNING, async (job) => {
-      await this._baseEventWatcher.chainPruningCompleteHandler(job);
     });
   }
 

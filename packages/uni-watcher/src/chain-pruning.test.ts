@@ -7,7 +7,7 @@ import { AssertionError } from 'assert';
 import 'mocha';
 import _ from 'lodash';
 
-import { getConfig, JobQueue, JobRunner } from '@vulcanize/util';
+import { getConfig, JobQueue, JobRunner, JOB_KIND_PRUNE } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { insertNDummyBlocks, removeEntities } from '@vulcanize/util/test';
@@ -125,8 +125,8 @@ describe('chain pruning', () => {
     const blocks = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
     expect(blocks).to.have.lengthOf(1);
 
-    const job = { data: { pruneBlockHeight } };
-    await jobRunner.pruneChain(job);
+    const job = { data: { kind: JOB_KIND_PRUNE, pruneBlockHeight } };
+    await jobRunner.processBlock(job);
 
     // Only one canonical (not pruned) block should exist at the pruned height.
     const blocksAfterPruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
@@ -191,8 +191,8 @@ describe('chain pruning', () => {
     const blocksBeforePruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
     expect(blocksBeforePruning).to.have.lengthOf(3);
 
-    const job = { data: { pruneBlockHeight } };
-    await jobRunner.pruneChain(job);
+    const job = { data: { kind: JOB_KIND_PRUNE, pruneBlockHeight } };
+    await jobRunner.processBlock(job);
 
     // Only one canonical (not pruned) block should exist at the pruned height.
     const blocksAfterPruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
@@ -277,8 +277,8 @@ describe('chain pruning', () => {
     const blocksBeforePruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
     expect(blocksBeforePruning).to.have.lengthOf(2);
 
-    const job = { data: { pruneBlockHeight } };
-    await jobRunner.pruneChain(job);
+    const job = { data: { kind: JOB_KIND_PRUNE, pruneBlockHeight } };
+    await jobRunner.processBlock(job);
 
     // Only one canonical (not pruned) block should exist at the pruned height.
     const blocksAfterPruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
@@ -341,8 +341,8 @@ describe('chain pruning', () => {
     const blocksBeforePruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
     expect(blocksBeforePruning).to.have.lengthOf(2);
 
-    const job = { data: { pruneBlockHeight } };
-    await jobRunner.pruneChain(job);
+    const job = { data: { kind: JOB_KIND_PRUNE, pruneBlockHeight } };
+    await jobRunner.processBlock(job);
 
     // Only one canonical (not pruned) block should exist at the pruned height.
     const blocksAfterPruning = await indexer.getBlocksAtHeight(pruneBlockHeight, false);
@@ -405,8 +405,8 @@ describe('chain pruning', () => {
     expect(blocksBeforePruning).to.have.lengthOf(2);
 
     try {
-      const job = { data: { pruneBlockHeight } };
-      await jobRunner.pruneChain(job);
+      const job = { data: { kind: JOB_KIND_PRUNE, pruneBlockHeight } };
+      await jobRunner.processBlock(job);
       expect.fail('Job Runner should throw error for pruning at frothy region');
     } catch (error) {
       expect(error).to.be.instanceof(AssertionError);

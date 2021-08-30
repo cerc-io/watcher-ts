@@ -7,7 +7,7 @@ import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { EventWatcher as BaseEventWatcher, EventWatcherInterface, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_CHAIN_PRUNING } from '@vulcanize/util';
+import { EventWatcher as BaseEventWatcher, EventWatcherInterface, JobQueue, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 
@@ -143,7 +143,6 @@ export class EventWatcher implements EventWatcherInterface {
     await this.watchBlocksAtChainHead();
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
-    await this.initChainPruningOnCompleteHandler();
   }
 
   async stop (): Promise<void> {
@@ -165,12 +164,6 @@ export class EventWatcher implements EventWatcherInterface {
   async initEventProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
       await this._baseEventWatcher.eventProcessingCompleteHandler(job);
-    });
-  }
-
-  async initChainPruningOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_CHAIN_PRUNING, async (job) => {
-      await this._baseEventWatcher.chainPruningCompleteHandler(job);
     });
   }
 }

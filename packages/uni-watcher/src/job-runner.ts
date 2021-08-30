@@ -16,7 +16,6 @@ import {
   JobRunner as BaseJobRunner,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
-  QUEUE_CHAIN_PRUNING,
   JobQueueConfig
 } from '@vulcanize/util';
 
@@ -42,7 +41,6 @@ export class JobRunner {
   async start (): Promise<void> {
     await this.subscribeBlockProcessingQueue();
     await this.subscribeEventProcessingQueue();
-    await this.subscribeChainPruningQueue();
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
@@ -77,14 +75,6 @@ export class JobRunner {
 
         await this._indexer.processEvent(dbEvent);
       }
-
-      await this._jobQueue.markComplete(job);
-    });
-  }
-
-  async subscribeChainPruningQueue (): Promise<void> {
-    await this._jobQueue.subscribe(QUEUE_CHAIN_PRUNING, async (job) => {
-      await this._baseJobRunner.pruneChain(job);
 
       await this._jobQueue.markComplete(job);
     });
