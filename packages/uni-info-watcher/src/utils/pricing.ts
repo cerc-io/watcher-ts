@@ -46,6 +46,9 @@ export const WHITELIST_TOKENS: string[] = [
 const MINIMUM_ETH_LOCKED = new Decimal(52);
 const Q192 = 2 ** 192;
 
+// Constants used in demo.
+const ETH_PRICE_IN_USD = '3200.00';
+
 export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, token1: Token): Decimal[] => {
   const num = new Decimal((sqrtPriceX96 * sqrtPriceX96).toString());
   const denom = new Decimal(Q192.toString());
@@ -60,7 +63,13 @@ export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, t
   return [price0, price1];
 };
 
-export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: Block): Promise<Decimal> => {
+export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: Block, isDemo: boolean): Promise<Decimal> => {
+  if (isDemo) {
+    // For demo purpose in local development.
+    const ethPriceInUSD = new Decimal(ETH_PRICE_IN_USD);
+    return ethPriceInUSD;
+  }
+
   // Fetch eth prices for each stablecoin.
   const usdcPool = await db.getPool(dbTx, { id: USDC_WETH_03_POOL, blockHash: block.hash }); // DAI is token0.
 
@@ -75,8 +84,8 @@ export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: B
  * Search through graph to find derived Eth per token.
  * @todo update to be derived ETH (add stablecoin estimates)
  **/
-export const findEthPerToken = async (token: Token): Promise<Decimal> => {
-  if (token.id === WETH_ADDRESS) {
+export const findEthPerToken = async (db: Database, dbTx: QueryRunner, token: Token, isDemo: boolean): Promise<Decimal> => {
+  if (token.id === WETH_ADDRESS || isDemo) {
     return new Decimal(1);
   }
 
@@ -87,7 +96,9 @@ export const findEthPerToken = async (token: Token): Promise<Decimal> => {
   let priceSoFar = new Decimal(0);
 
   for (let i = 0; i < whiteList.length; ++i) {
-    const pool = whiteList[i];
+    const poolAddress = whiteList[i].id;
+    const pool = await db.getPool(dbTx, { id: poolAddress });
+    assert(pool);
 
     if (BigNumber.from(pool.liquidity).gt(0)) {
       if (pool.token0.id === token.id) {

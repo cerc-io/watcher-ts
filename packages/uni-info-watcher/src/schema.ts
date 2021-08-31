@@ -120,6 +120,7 @@ type Token {
   txCount: BigInt!
   volume: BigDecimal!
   volumeUSD: BigDecimal!
+  whitelistPools: [Pool]
 }
 
 type TokenDayData {

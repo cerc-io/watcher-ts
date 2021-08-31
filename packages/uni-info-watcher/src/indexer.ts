@@ -463,8 +463,11 @@ export class Indexer implements IndexerInterface {
         token0.whitelistPools.push(pool);
       }
 
-      await this._db.saveToken(dbTx, token0, block);
-      await this._db.saveToken(dbTx, token1, block);
+      token0 = await this._db.saveToken(dbTx, token0, block);
+      token1 = await this._db.saveToken(dbTx, token1, block);
+      pool.token0 = token0;
+      pool.token1 = token1;
+      await this._db.savePool(dbTx, pool, block);
       await this._db.saveFactory(dbTx, factory, block);
       await dbTx.commitTransaction();
     } catch (error) {
@@ -511,7 +514,7 @@ export class Indexer implements IndexerInterface {
       // Update ETH price now that prices could have changed.
       const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
-      bundle.ethPriceUSD = await getEthPriceInUSD(this._db, dbTx, block);
+      bundle.ethPriceUSD = await getEthPriceInUSD(this._db, dbTx, block, this._isDemo);
 
       // Update token prices.
       const [token0, token1] = await Promise.all([
@@ -521,11 +524,13 @@ export class Indexer implements IndexerInterface {
 
       assert(token0 && token1, 'Pool tokens not found.');
 
-      token0.derivedETH = await findEthPerToken(token0);
-      token1.derivedETH = await findEthPerToken(token1);
+      token0.derivedETH = await findEthPerToken(this._db, dbTx, token0, this._isDemo);
+      token1.derivedETH = await findEthPerToken(this._db, dbTx, token1, this._isDemo);
 
-      this._db.savePool(dbTx, pool, block);
-      this._db.saveBundle(dbTx, bundle, block);
+      pool.token0 = token0;
+      pool.token1 = token1;
+      await this._db.savePool(dbTx, pool, block);
+      await this._db.saveBundle(dbTx, bundle, block);
 
       await updatePoolDayData(this._db, dbTx, { contractAddress, block });
       await updatePoolHourData(this._db, dbTx, { contractAddress, block });
@@ -551,15 +556,17 @@ export class Indexer implements IndexerInterface {
       const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
       const poolAddress = contractAddress;
-      const pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
+      let pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
       assert(pool);
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
       const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
-      const token0 = pool.token0;
-      const token1 = pool.token1;
+      let token0 = await this._db.getToken(dbTx, pool.token0);
+      let token1 = await this._db.getToken(dbTx, pool.token1);
+      assert(token0);
+      assert(token1);
       const amount0 = convertTokenToDecimal(BigInt(mintEvent.amount0), BigInt(token0.decimals));
       const amount1 = convertTokenToDecimal(BigInt(mintEvent.amount1), BigInt(token1.decimals));
 
@@ -664,16 +671,24 @@ export class Indexer implements IndexerInterface {
       await updatePoolDayData(this._db, dbTx, { block, contractAddress });
       await updatePoolHourData(this._db, dbTx, { block, contractAddress });
 
-      await Promise.all([
+      [token0, token1] = await Promise.all([
         this._db.saveToken(dbTx, token0, block),
         this._db.saveToken(dbTx, token1, block)
       ]);
 
-      await this._db.savePool(dbTx, pool, block);
+      pool.token0 = token0;
+      pool.token1 = token1;
+
+      pool = await this._db.savePool(dbTx, pool, block);
       await this._db.saveFactory(dbTx, factory, block);
 
+      mint.pool = pool;
+      mint.token0 = token0;
+      mint.token1 = token1;
       await this._db.saveMint(dbTx, mint, block);
 
+      lowerTick.pool = pool;
+      upperTick.pool = pool;
       await Promise.all([
         await this._db.saveTick(dbTx, lowerTick, block),
         await this._db.saveTick(dbTx, upperTick, block)
@@ -696,15 +711,17 @@ export class Indexer implements IndexerInterface {
       const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
       const poolAddress = contractAddress;
-      const pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
+      let pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
       assert(pool);
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
       const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
-      const token0 = pool.token0;
-      const token1 = pool.token1;
+      let token0 = await this._db.getToken(dbTx, pool.token0);
+      let token1 = await this._db.getToken(dbTx, pool.token1);
+      assert(token0);
+      assert(token1);
       const amount0 = convertTokenToDecimal(BigInt(burnEvent.amount0), BigInt(token0.decimals));
       const amount1 = convertTokenToDecimal(BigInt(burnEvent.amount1), BigInt(token1.decimals));
 
@@ -794,21 +811,28 @@ export class Indexer implements IndexerInterface {
       await updatePoolDayData(this._db, dbTx, { block, contractAddress });
       await updatePoolHourData(this._db, dbTx, { block, contractAddress });
 
-      await Promise.all([
+      [token0, token1] = await Promise.all([
         this._db.saveToken(dbTx, token0, block),
         this._db.saveToken(dbTx, token1, block)
       ]);
 
-      await this._db.savePool(dbTx, pool, block);
+      pool.token0 = token0;
+      pool.token1 = token1;
+      pool = await this._db.savePool(dbTx, pool, block);
       await this._db.saveFactory(dbTx, factory, block);
 
       // Skipping update Tick fee and Tick day data as they are not queried.
 
+      lowerTick.pool = pool;
+      upperTick.pool = pool;
       await Promise.all([
         await this._db.saveTick(dbTx, lowerTick, block),
         await this._db.saveTick(dbTx, upperTick, block)
       ]);
 
+      burn.pool = pool;
+      burn.token0 = token0;
+      burn.token1 = token1;
       await this._db.saveBurn(dbTx, burn, block);
       await dbTx.commitTransaction();
     } catch (error) {
@@ -823,14 +847,14 @@ export class Indexer implements IndexerInterface {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
+      let bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
 
       // TODO: In subgraph factory is fetched by hardcoded factory address.
       // Currently fetching first factory in database as only one exists.
       const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
-      const pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
+      let pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
       assert(pool);
 
       // Hot fix for bad pricing.
@@ -838,7 +862,7 @@ export class Indexer implements IndexerInterface {
         return;
       }
 
-      const [token0, token1] = await Promise.all([
+      let [token0, token1] = await Promise.all([
         this._db.getToken(dbTx, { id: pool.token0.id, blockHash: block.hash }),
         this._db.getToken(dbTx, { id: pool.token1.id, blockHash: block.hash })
       ]);
@@ -924,9 +948,10 @@ export class Indexer implements IndexerInterface {
       pool.token1Price = prices[1];
 
       // Update USD pricing.
-      bundle.ethPriceUSD = await getEthPriceInUSD(this._db, dbTx, block);
-      token0.derivedETH = await findEthPerToken(token0);
-      token1.derivedETH = await findEthPerToken(token1);
+      bundle.ethPriceUSD = await getEthPriceInUSD(this._db, dbTx, block, this._isDemo);
+      bundle = await this._db.saveBundle(dbTx, bundle, block);
+      token0.derivedETH = await findEthPerToken(this._db, dbTx, token0, this._isDemo);
+      token1.derivedETH = await findEthPerToken(this._db, dbTx, token1, this._isDemo);
 
       /**
        * Things afffected by new USD rates.
@@ -1008,16 +1033,31 @@ export class Indexer implements IndexerInterface {
       token1HourData.untrackedVolumeUSD = token1HourData.untrackedVolumeUSD.plus(amountTotalUSDTracked);
       token1HourData.feesUSD = token1HourData.feesUSD.plus(feesUSD);
 
-      await this._db.saveBundle(dbTx, bundle, block);
+      await this._db.saveFactory(dbTx, factory, block);
+
+      [token0, token1] = await Promise.all([
+        this._db.saveToken(dbTx, token0, block),
+        this._db.saveToken(dbTx, token1, block)
+      ]);
+
+      pool.token0 = token0;
+      pool.token1 = token1;
+      pool = await this._db.savePool(dbTx, pool, block);
+
+      swap.token0 = token0;
+      swap.token1 = token1;
+      swap.pool = pool;
       await this._db.saveSwap(dbTx, swap, block);
+
+      token0DayData.token = token0;
+      token1DayData.token = token1;
       await this._db.saveTokenDayData(dbTx, token0DayData, block);
       await this._db.saveTokenDayData(dbTx, token1DayData, block);
+
       await this._db.saveUniswapDayData(dbTx, uniswapDayData, block);
+
+      poolDayData.pool = pool;
       await this._db.savePoolDayData(dbTx, poolDayData, block);
-      await this._db.saveFactory(dbTx, factory, block);
-      await this._db.savePool(dbTx, pool, block);
-      await this._db.saveToken(dbTx, token0, block);
-      await this._db.saveToken(dbTx, token1, block);
 
       // Skipping update of inner vars of current or crossed ticks as they are not queried.
       await dbTx.commitTransaction();

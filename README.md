@@ -48,6 +48,7 @@ Create the databases for the job queues and enable the `pgcrypto` extension on t
 ```
 createdb address-watcher-job-queue
 createdb uni-watcher-job-queue
+createdb uni-info-watcher-job-queue
 ```
 
 ```
@@ -72,6 +73,18 @@ Type "help" for help.
 uni-watcher-job-queue=# CREATE EXTENSION pgcrypto;
 CREATE EXTENSION
 uni-watcher-job-queue=# exit
+```
+
+```
+postgres@tesla:~$ psql -U postgres -h localhost uni-info-watcher-job-queue
+Password for user postgres:
+psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+uni-info-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+CREATE EXTENSION
+uni-info-watcher-job-queue=# exit
 ```
 
 #### Reset
