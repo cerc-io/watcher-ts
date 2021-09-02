@@ -14,7 +14,7 @@ import { createServer } from 'http';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { TracingClient } from '@vulcanize/tracing-client';
-import { getConfig, JobQueue } from '@vulcanize/util';
+import { getConfig, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -31,7 +31,8 @@ export const main = async (): Promise<any> => {
       alias: 'config-file',
       demandOption: true,
       describe: 'configuration file path (toml)',
-      type: 'string'
+      type: 'string',
+      default: DEFAULT_CONFIG_PATH
     })
     .argv;
 

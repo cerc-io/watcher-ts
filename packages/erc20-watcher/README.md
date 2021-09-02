@@ -15,11 +15,22 @@ Update the `upstream` config in `environments/local.toml` and provide the `ipld-
 
 ## Run
 
+Build files:
+
+```bash
+yarn build
+```
+
 Run the watcher:
 
 ```bash
-cd packages/erc20-watcher
 yarn run server
+
+# For development.
+yarn run server:dev
+
+# For specifying config file.
+yarn run server -f environments/local.toml
 ```
 
 GQL console: http://localhost:3001/graphql
@@ -90,11 +101,9 @@ GQL console: http://localhost:3001/graphql
 To run tests (GQL queries) against the mock server:
 
 ```
-cd packages/erc20-watcher
 yarn run server:mock
 ```
 
 ```bash
-cd packages/erc20-watcher
 yarn test
 ```

@@ -6,7 +6,7 @@ import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
 
-import { Config, getConfig } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
 
 import { Database } from '../database';
 import { watchContract } from '../utils/index';
@@ -16,10 +16,12 @@ import { watchContract } from '../utils/index';
     'parse-numbers': false
   }).options({
     configFile: {
+      alias: 'f',
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'configuration file path (toml)'
+      describe: 'configuration file path (toml)',
+      default: DEFAULT_CONFIG_PATH
     },
     address: {
       type: 'string',

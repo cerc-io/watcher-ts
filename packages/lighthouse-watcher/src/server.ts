@@ -13,7 +13,7 @@ import { createServer } from 'http';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -29,7 +29,8 @@ export const main = async (): Promise<any> => {
       alias: 'config-file',
       demandOption: true,
       describe: 'configuration file path (toml)',
-      type: 'string'
+      type: 'string',
+      default: DEFAULT_CONFIG_PATH
     })
     .argv;
 

@@ -11,7 +11,7 @@ import { PubSub } from 'apollo-server-express';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig, fillBlocks, JobQueue } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Indexer } from './indexer';
@@ -28,7 +28,8 @@ export const main = async (): Promise<any> => {
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'configuration file path (toml)'
+      describe: 'configuration file path (toml)',
+      default: DEFAULT_CONFIG_PATH
     },
     startBlock: {
       type: 'number',

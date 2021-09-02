@@ -4,6 +4,7 @@
 
 import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial } from 'typeorm';
+import path from 'path';
 
 import { Database as BaseDatabase } from '@vulcanize/util';
 
@@ -20,7 +21,12 @@ export class Database {
 
   constructor (config: ConnectionOptions) {
     assert(config);
-    this._config = config;
+
+    this._config = {
+      ...config,
+      entities: [path.join(__dirname, 'entity/*')]
+    };
+
     this._baseDatabase = new BaseDatabase(this._config);
   }
 

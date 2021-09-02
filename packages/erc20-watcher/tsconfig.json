@@ -72,7 +72,6 @@
     "forceConsistentCasingInFileNames": true,        /* Disallow inconsistently-cased references to the same file. */
     "resolveJsonModule": true                       /* Enabling the option allows importing JSON, and validating the types in that JSON file. */
   },
-  "include": ["src"],
-  "exclude": ["dist"],
-  "files": ["./hardhat.config.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["dist"]
 }

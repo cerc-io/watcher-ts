@@ -18,6 +18,8 @@ import { BlockProgress } from './entity/BlockProgress';
 import { SyncStatus } from './entity/SyncStatus';
 import { Token } from './entity/Token';
 
+const CONFIG_FILE = './environments/local.toml';
+
 describe('getPrevEntityVersion', () => {
   let db: Database;
   let blocks: Block[][];
@@ -27,8 +29,7 @@ describe('getPrevEntityVersion', () => {
 
   before(async () => {
     // Get config.
-    const configFile = './environments/local.toml';
-    const config = await getConfig(configFile);
+    const config = await getConfig(CONFIG_FILE);
 
     const { database: dbConfig } = config;
     assert(dbConfig, 'Missing dbConfig.');

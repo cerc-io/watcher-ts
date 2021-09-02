@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Generic object cache",
   "private": true,
-  "main": "index.ts",
+  "main": "dist/index.js",
   "scripts": {
+    "lint": "eslint .",
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
-    "build": "tsc",
-    "lint": "eslint ."
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

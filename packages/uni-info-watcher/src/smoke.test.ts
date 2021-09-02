@@ -42,6 +42,7 @@ import {
   fetchTransaction
 } from '../test/utils';
 
+const CONFIG_FILE = './environments/local.toml';
 const NETWORK_RPC_URL = 'http://localhost:8545';
 
 describe('uni-info-watcher', () => {
@@ -67,8 +68,7 @@ describe('uni-info-watcher', () => {
     signer = provider.getSigner();
     recipient = await signer.getAddress();
 
-    const configFile = './environments/local.toml';
-    config = await getConfig(configFile);
+    config = await getConfig(CONFIG_FILE);
 
     const { upstream, server: { host, port } } = config;
     const endpoint = `http://${host}:${port}/graphql`;

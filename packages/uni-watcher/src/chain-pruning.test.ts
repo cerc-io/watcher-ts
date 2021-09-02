@@ -17,6 +17,8 @@ import { Database } from './database';
 import { BlockProgress } from './entity/BlockProgress';
 import { SyncStatus } from './entity/SyncStatus';
 
+const CONFIG_FILE = './environments/local.toml';
+
 describe('chain pruning', () => {
   let db: Database;
   let indexer: Indexer;
@@ -24,8 +26,7 @@ describe('chain pruning', () => {
 
   before(async () => {
     // Get config.
-    const configFile = './environments/local.toml';
-    const config = await getConfig(configFile);
+    const config = await getConfig(CONFIG_FILE);
 
     const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 

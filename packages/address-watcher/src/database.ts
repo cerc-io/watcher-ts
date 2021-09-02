@@ -5,6 +5,7 @@
 import assert from 'assert';
 import { Connection, ConnectionOptions, createConnection, DeepPartial } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import path from 'path';
 
 import { Account } from './entity/Account';
 import { BlockProgress } from './entity/BlockProgress';
@@ -16,7 +17,11 @@ export class Database {
 
   constructor (config: ConnectionOptions) {
     assert(config);
-    this._config = config;
+
+    this._config = {
+      ...config,
+      entities: [path.join(__dirname, 'entity/*')]
+    };
   }
 
   async init (): Promise<void> {

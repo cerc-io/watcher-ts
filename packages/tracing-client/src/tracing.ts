@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { ethers } from 'ethers';
 
-const callTracerWithAddresses = fs.readFileSync(path.join(__dirname, 'tracers', 'call_address_tracer.js')).toString('utf-8');
+const callTracerWithAddresses = fs.readFileSync(path.join(__dirname, '../tracers', 'call_address_tracer.js')).toString('utf-8');
 
 export class TracingClient {
   _providerUrl: string;

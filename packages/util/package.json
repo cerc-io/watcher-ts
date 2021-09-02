@@ -1,13 +1,12 @@
 {
   "name": "@vulcanize/util",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
     "debug": "^4.3.1",
     "ethers": "^5.2.0",
     "fs-extra": "^10.0.0",
-    "pg": "^8.6.0",
     "pg-boss": "^6.1.0",
     "toml": "^3.0.0"
   },
@@ -16,7 +15,8 @@
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "@vulcanize/cache": "^0.1.0",
-    "chai": "^4.3.4",
+    "@vulcanize/ipld-eth-client": "^0.1.0",
+    "@uniswap/v3-periphery": "1.0.0",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
     "eslint-config-standard": "^16.0.3",
@@ -25,8 +25,11 @@
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
     "hardhat": "^2.3.0",
-    "mocha": "^8.4.0",
-    "typeorm": "^0.2.32"
+    "typeorm": "^0.2.32",
+    "typeorm-naming-strategies": "^2.0.0",
+    "lodash": "^4.17.21",
+    "apollo-server-express": "^2.25.0",
+    "decimal.js": "^10.3.1"
   },
   "scripts": {
     "lint": "eslint .",

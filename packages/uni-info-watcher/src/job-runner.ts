@@ -18,7 +18,8 @@ import {
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   JobRunner as BaseJobRunner,
-  JobQueueConfig
+  JobQueueConfig,
+  DEFAULT_CONFIG_PATH
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -72,7 +73,8 @@ export const main = async (): Promise<any> => {
       alias: 'config-file',
       demandOption: true,
       describe: 'configuration file path (toml)',
-      type: 'string'
+      type: 'string',
+      default: DEFAULT_CONFIG_PATH
     })
     .argv;
 

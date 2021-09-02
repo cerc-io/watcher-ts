@@ -5,7 +5,6 @@
 import { Contract, ethers, Signer } from 'ethers';
 import assert from 'assert';
 
-import { Client as UniClient } from '@vulcanize/uni-watcher';
 import {
   getConfig
 } from '@vulcanize/util';
@@ -18,9 +17,11 @@ import {
   bytecode as FACTORY_BYTECODE
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json';
 
+import { Client as UniClient } from '../src/client';
 import { Database } from '../src/database';
 import { watchContract } from '../src/utils/index';
 
+const CONFIG_FILE = './environments/local.toml';
 const NETWORK_RPC_URL = 'http://localhost:8545';
 
 const deployFactoryContract = async (db: Database, signer: Signer): Promise<Contract> => {
@@ -50,8 +51,7 @@ const deployNFPMContract = async (db: Database, signer: Signer, factory: Contrac
 
 const main = async () => {
   // Get config.
-  const configFile = './environments/local.toml';
-  const config = await getConfig(configFile);
+  const config = await getConfig(CONFIG_FILE);
 
   const { database: dbConfig, server: { host, port } } = config;
   assert(dbConfig, 'Missing dbConfig.');

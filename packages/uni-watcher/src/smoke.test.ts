@@ -20,7 +20,6 @@ import {
   approveToken,
   NFPM_ABI
 } from '@vulcanize/util/test';
-import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import {
@@ -30,6 +29,7 @@ import {
   abi as POOL_ABI
 } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json';
 
+import { Client as UniClient } from './client';
 import { Indexer } from './indexer';
 import { Database } from './database';
 import {
@@ -44,6 +44,7 @@ import {
   checksCollectEvent
 } from '../test/utils';
 
+const CONFIG_FILE = './environments/local.toml';
 const NETWORK_RPC_URL = 'http://localhost:8545';
 
 describe('uni-watcher', () => {
@@ -68,8 +69,7 @@ describe('uni-watcher', () => {
   let recipient: string;
 
   before(async () => {
-    const configFile = './environments/local.toml';
-    config = await getConfig(configFile);
+    config = await getConfig(CONFIG_FILE);
 
     const { database: dbConfig, upstream, server: { host, port } } = config;
     assert(dbConfig, 'Missing dbConfig.');

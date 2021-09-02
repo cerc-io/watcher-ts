@@ -6,8 +6,9 @@ import { ethers, Contract, Signer } from 'ethers';
 import { expect } from 'chai';
 import 'mocha';
 
-import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { createPool, initializePool } from '@vulcanize/util/test';
+
+import { Client as UniClient } from '../src/client';
 
 export const testCreatePool = async (
   uniClient: UniClient,

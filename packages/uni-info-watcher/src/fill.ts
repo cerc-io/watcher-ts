@@ -10,7 +10,7 @@ import debug from 'debug';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig, fillBlocks, JobQueue } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 
@@ -30,7 +30,8 @@ export const main = async (): Promise<any> => {
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'configuration file path (toml)'
+      describe: 'configuration file path (toml)',
+      default: DEFAULT_CONFIG_PATH
     },
     startBlock: {
       type: 'number',

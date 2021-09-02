@@ -12,6 +12,7 @@ import {
   LessThanOrEqual,
   QueryRunner
 } from 'typeorm';
+import path from 'path';
 
 import {
   Database as BaseDatabase,
@@ -50,7 +51,12 @@ export class Database implements DatabaseInterface {
 
   constructor (config: ConnectionOptions) {
     assert(config);
-    this._config = config;
+
+    this._config = {
+      ...config,
+      entities: [path.join(__dirname, 'entity/*')]
+    };
+
     this._baseDatabase = new BaseDatabase(this._config);
   }
 

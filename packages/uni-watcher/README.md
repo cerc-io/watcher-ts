@@ -37,19 +37,44 @@ Update `environments/local.toml` with database connection settings for both the 
 
 ## Run
 
+Build files:
+
+```bash
+$ yarn build
+```
+
 Run the server:
 
 ```bash
 $ yarn server
+
+# For development.
+$ yarn server:dev
+
+# For specifying config file.
+$ yarn server -f environments/local.toml
 ```
 
 Start the job runner:
 
 ```bash
 $ yarn job-runner
+
+# For development.
+$ yarn job-runner:dev
+
+# For specifying config file.
+$ yarn job-runner -f environments/local.toml
 ```
 
 Start watching the factory contract:
+
+```bash
+$ yarn watch:contract --address 0xContractAddress --kind <contract-kind> --startingBlock <start-block>
+
+# For specifying config file.
+$ yarn watch:contract -f environments/local.toml --address 0xContractAddress --kind <contract-kind> --startingBlock <start-block>
+```
 
 Example:
 
@@ -68,7 +93,10 @@ $ yarn watch:contract --address 0xB171168C0df9457Ff3E3D795aE25Bf4f41e2FFE3 --kin
 To fill a block range:
 
 ```bash
-$ yarn fill --startBlock <from-block> --endBlock <to-block>
+yarn fill --startBlock <from-block> --endBlock <to-block>
+
+# For specifying config file.
+$ yarn fill -f environments/local.toml --startBlock <from-block> --endBlock <to-block>
 ```
 
 Example:

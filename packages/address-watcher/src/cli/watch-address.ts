@@ -7,7 +7,7 @@ import yargs from 'yargs';
 import 'reflect-metadata';
 import { ethers } from 'ethers';
 
-import { Config, getConfig } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
 
 import { Database } from '../database';
 
@@ -19,7 +19,8 @@ import { Database } from '../database';
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'configuration file path (toml)'
+      describe: 'configuration file path (toml)',
+      default: DEFAULT_CONFIG_PATH
     },
     address: {
       type: 'string',
