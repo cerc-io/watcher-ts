@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "depcheck": "^1.4.2",
     "lerna": "^4.0.0"
   },
   "scripts": {
@@ -15,8 +16,5 @@
     "build:watch": "lerna run build --stream --parallel -- -w",
     "build:contracts": "lerna run build:contracts",
     "db:reset": "sudo ./scripts/reset-dbs.sh"
-  },
-  "dependencies": {
-    "depcheck": "^1.4.2"
   }
 }
