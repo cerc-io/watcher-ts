@@ -17,7 +17,7 @@ export class BlockProgress implements BlockProgressInterface {
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
-  @Column('varchar', { length: 66 })
+  @Column('varchar', { length: 66, nullable: true })
   parentHash!: string;
 
   @Column('integer')

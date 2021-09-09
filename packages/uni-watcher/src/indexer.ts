@@ -474,7 +474,7 @@ export class Indexer implements IndexerInterface {
         blockHash,
         blockNumber: block.number,
         blockTimestamp: block.timestamp,
-        parentHash: block.parent.hash
+        parentHash: block.parent?.hash
       };
 
       await this._db.saveEvents(dbTx, block, dbEvents);

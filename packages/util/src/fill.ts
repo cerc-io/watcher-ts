@@ -35,6 +35,12 @@ export const fillBlocks = async (
       if (blockProgress) {
         log(`Block number ${blockNumber}, block hash ${blockHash} already known, skip filling`);
       } else {
+        const syncStatus = await indexer.getSyncStatus();
+
+        if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
+          await indexer.updateSyncStatusChainHead(blockHash, blockNumber);
+        }
+
         await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
       }
     }

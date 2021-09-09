@@ -83,9 +83,7 @@ export class EthClient {
       block: {
         number: blockNumHex,
         timestamp: timestampHex,
-        parent: {
-          hash: parentHash
-        }
+        parent
       }
     } = result;
 
@@ -93,9 +91,7 @@ export class EthClient {
       hash: vars.blockHash,
       number: parseInt(blockNumHex, 16),
       timestamp: parseInt(timestampHex, 16),
-      parent: {
-        hash: parentHash
-      }
+      parent
     };
 
     const logs = resultLogs.map((logEntry: any) => _.merge({}, logEntry, { transaction: { block } }));

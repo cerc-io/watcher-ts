@@ -197,9 +197,10 @@ export class Database {
     } = block;
 
     assert(blockHash);
-    assert(blockNumber);
-    assert(blockTimestamp);
-    assert(parentHash);
+    assert(blockNumber !== undefined);
+    assert(blockNumber > -1);
+    assert(blockTimestamp !== undefined);
+    assert(blockTimestamp > -1);
 
     // In a transaction:
     // (1) Save all the events in the database.

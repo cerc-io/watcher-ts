@@ -139,7 +139,7 @@ export class JobRunner {
       const parent = await this._indexer.getBlockProgress(parentHash);
 
       if (!parent) {
-        const { number: parentBlockNumber, parent: { hash: grandparentHash }, timestamp: parentTimestamp } = await this._indexer.getBlock(parentHash);
+        const { number: parentBlockNumber, parent: grandparent, timestamp: parentTimestamp } = await this._indexer.getBlock(parentHash);
 
         // Create a higher priority job to index parent block and then abort.
         // We don't have to worry about aborting as this job will get retried later.
@@ -148,7 +148,7 @@ export class JobRunner {
           kind: JOB_KIND_INDEX,
           blockHash: parentHash,
           blockNumber: parentBlockNumber,
-          parentHash: grandparentHash,
+          parentHash: grandparent?.hash,
           timestamp: parentTimestamp,
           priority: newPriority
         }, { priority: newPriority });
