@@ -1,0 +1,44 @@
+{
+  "name": "@vulcanize/codegen",
+  "version": "0.1.0",
+  "description": "Code generator",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "codegen:gql": "ts-node src/generate-schema.ts",
+    "codegen:flatten": "poa-solidity-flattener"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+  },
+  "author": "",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/vulcanize/watcher-ts/issues"
+  },
+  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "dependencies": {
+    "@poanet/solidity-flattener": "https://github.com/vulcanize/solidity-flattener.git#pm-make-compatible",
+    "@solidity-parser/parser": "^0.13.2",
+    "graphql": "^15.5.0",
+    "graphql-compose": "^9.0.3",
+    "node-fetch": "^2",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.2",
+    "yargs": "^17.1.1"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.3.2",
+    "@types/node": "^16.9.0",
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "eslint": "^7.32.0",
+    "eslint-config-semistandard": "^16.0.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0"
+  }
+}
