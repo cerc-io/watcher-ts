@@ -7,6 +7,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { flatten } from '@poanet/solidity-flattener';
 
 import { parse, visit } from '@solidity-parser/parser';
 
@@ -30,20 +31,31 @@ const main = async (): Promise<void> => {
     })
     .option('mode', {
       alias: 'm',
+      describe: 'Code generation mode.',
       type: 'string',
       default: MODE_STORAGE,
       choices: [MODE_ETH_CALL, MODE_STORAGE]
+    })
+    .option('flatten', {
+      alias: 'f',
+      describe: 'Flatten the input contract file.',
+      type: 'boolean',
+      default: true
     })
     .argv;
 
   let data: string;
   if (argv['input-file'].startsWith('http')) {
+    // Assume flattened file in case of URL.
     const response = await fetch(argv['input-file']);
     data = await response.text();
   } else {
-    data = readFileSync(path.resolve(argv['input-file'])).toString();
+    data = argv.flatten
+      ? await flatten(path.resolve(argv['input-file']))
+      : readFileSync(path.resolve(argv['input-file'])).toString();
   }
 
+  // Get the abstract syntax tree for the flattened contract.
   const ast = parse(data);
 
   // Filter out library nodes.
@@ -63,7 +75,9 @@ const main = async (): Promise<void> => {
     });
   }
 
-  const outStream = argv['output-file'] ? createWriteStream(path.resolve(argv['output-file'])) : process.stdout;
+  const outStream = argv['output-file']
+    ? createWriteStream(path.resolve(argv['output-file']))
+    : process.stdout;
   visitor.exportSchema(outStream);
 };
 

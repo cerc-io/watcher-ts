@@ -166,25 +166,43 @@ export class Schema {
    * Adds types 'ResultEvent' and 'WatchedEvent' to the schema.
    */
   _addEventsRelatedTypes (): void {
+    // Create Ethereum types.
+    // Create the Block type.
+    const blockName = 'Block';
+    this._composer.createObjectTC({
+      name: blockName,
+      fields: {
+        hash: 'String!',
+        number: 'Int!',
+        timestamp: 'Int!',
+        parentHash: 'String!'
+      }
+    });
+
+    // Create the Transaction type.
+    const transactionName = 'Transaction';
+    this._composer.createObjectTC({
+      name: transactionName,
+      fields: {
+        hash: 'String!',
+        index: 'Int!',
+        from: 'String!',
+        to: 'String!'
+      }
+    });
+
     // Create the ResultEvent type.
     const resultEventName = 'ResultEvent';
     this._composer.createObjectTC({
       name: resultEventName,
       fields: {
-        // Get type composer object for Event union from the schema composer.
+        // Get type composer object for 'blockName' type from the schema composer.
+        block: () => this._composer.getOTC(blockName).NonNull,
+        tx: () => this._composer.getOTC(transactionName).NonNull,
+        contract: 'String!',
+        eventIndex: 'Int!',
         event: () => this._composer.getUTC('Event').NonNull,
         proof: () => this._composer.getOTC('Proof')
-      }
-    });
-
-    // Create the WatchedEvent type.
-    const watchedEventName = 'WatchedEvent';
-    this._composer.createObjectTC({
-      name: watchedEventName,
-      fields: {
-        blockHash: 'String!',
-        contractAddress: 'String!',
-        event: () => this._composer.getOTC(resultEventName).NonNull
       }
     });
   }
@@ -211,7 +229,7 @@ export class Schema {
   _addEventSubscription (): void {
     // Add a subscription to the schema composer.
     this._composer.Subscription.addFields({
-      onEvent: () => this._composer.getOTC('WatchedEvent').NonNull
+      onEvent: () => this._composer.getOTC('ResultEvent').NonNull
     });
   }
 

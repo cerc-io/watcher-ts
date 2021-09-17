@@ -2018,9 +2018,9 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.2.tgz#ff80affd6d352dbe1bbc5b4e1833c41afd6283b6"
   integrity sha512-AybF1cesONZStg5kWf6ao9OlqTZuPqddvprc0ky7lrUVOjXeKpmQ2Y9FK+6ygxasb+4aic4O5pneFBfwVsRRRg==
 
-"@poanet/solidity-flattener@https://github.com/vulcanize/solidity-flattener.git#pm-make-compatible":
+"@poanet/solidity-flattener@https://github.com/vulcanize/solidity-flattener.git":
   version "3.0.6"
-  resolved "https://github.com/vulcanize/solidity-flattener.git#2fddc0eb439b558861e16288f970b24dab7df245"
+  resolved "https://github.com/vulcanize/solidity-flattener.git#397f7295acff78eb039e479a85e8c3a9d78a96dd"
   dependencies:
     bunyan "^1.8.12"
     decomment "^0.9.1"
