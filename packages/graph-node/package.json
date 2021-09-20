@@ -21,9 +21,9 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "asbuild:untouched": "asc assembly/index.ts --target debug",
-    "asbuild:optimized": "asc assembly/index.ts --target release",
-    "asbuild": "yarn asbuild:untouched && yarn asbuild:optimized",
+    "asbuild:debug": "asc assembly/index.ts --target debug",
+    "asbuild:release": "asc assembly/index.ts --target release",
+    "asbuild": "yarn asbuild:debug && yarn asbuild:release",
     "test": "mocha src/**/*.test.ts"
   },
   "dependencies": {
