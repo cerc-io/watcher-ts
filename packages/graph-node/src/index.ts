@@ -7,8 +7,7 @@ import loader from '@assemblyscript/loader';
 
 const imports = { /* imports go here */ };
 
-export const getExports = async (filePath: string): Promise<loader.ResultObject> => {
+export const getExports = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
-  const { instance, module } = loader.instantiateSync(buffer, imports);
-  return { instance, module };
+  return loader.instantiate(buffer, imports);
 };
