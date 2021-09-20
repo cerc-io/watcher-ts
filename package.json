@@ -7,6 +7,7 @@
   ],
   "devDependencies": {
     "depcheck": "^1.4.2",
+    "husky": "^7.0.2",
     "lerna": "^4.0.0"
   },
   "scripts": {
@@ -15,6 +16,7 @@
     "build": "lerna run build --stream",
     "build:watch": "lerna run build --stream --parallel -- -w",
     "build:contracts": "lerna run build:contracts",
-    "db:reset": "sudo ./scripts/reset-dbs.sh"
+    "db:reset": "sudo ./scripts/reset-dbs.sh",
+    "prepare": "husky install"
   }
 }
