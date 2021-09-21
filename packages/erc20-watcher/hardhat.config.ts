@@ -6,6 +6,8 @@ import '@nomiclabs/hardhat-waffle';
 
 import './test/tasks/token-deploy';
 import './test/tasks/token-transfer';
+import './test/tasks/token-approve';
+import './test/tasks/token-transfer-from';
 import './test/tasks/block-latest';
 
 // You need to export an object to set up your config

@@ -43,7 +43,7 @@ export interface ContractInterface {
   id: number;
   address: string;
   startingBlock: number;
-  kind?: string;
+  kind: string;
 }
 
 export interface IndexerInterface {
@@ -72,7 +72,7 @@ export interface DatabaseInterface {
   createTransactionRunner(): Promise<QueryRunner>;
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>;
-  getBlockEvents (blockHash: string): Promise<EventInterface[]>;
+  getBlockEvents (blockHash: string, where?: FindConditions<EventInterface>): Promise<EventInterface[]>;
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatusInterface | undefined>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
@@ -86,4 +86,5 @@ export interface DatabaseInterface {
   saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void>;
+  getContract?: (address: string) => Promise<ContractInterface | undefined>
 }

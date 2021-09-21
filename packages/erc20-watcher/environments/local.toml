@@ -23,3 +23,8 @@
     name = "requests"
     enabled = false
     deleteOnStart = false
+
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/erc20-watcher-job-queue"
+  maxCompletionLagInSecs = 300
+  jobDelayInMilliSecs = 100

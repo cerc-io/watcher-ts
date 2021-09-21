@@ -133,6 +133,12 @@ type Query {
     token: String!
     name: String
   ): [ResultEvent!]
+
+  # Get token events in a given block range.
+  eventsInRange(
+    fromBlockNumber: Int!
+    toBlockNumber: Int!
+  ): [ResultEvent!]
 }
 
 #

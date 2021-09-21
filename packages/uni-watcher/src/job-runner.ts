@@ -59,13 +59,13 @@ export class JobRunner {
       let dbEvent;
       const { data: { id } } = job;
 
-      const uniContract = await this._indexer.isUniswapContract(event.contract);
-      if (uniContract) {
+      const watchedContract = await this._indexer.isWatchedContract(event.contract);
+      if (watchedContract) {
         // We might not have parsed this event yet. This can happen if the contract was added
         // as a result of a previous event in the same block.
         if (event.eventName === UNKNOWN_EVENT_NAME) {
           const logObj = JSON.parse(event.extraInfo);
-          const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(uniContract.kind, logObj);
+          const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
           event.eventName = eventName;
           event.eventInfo = JSON.stringify(eventInfo);
           dbEvent = await this._indexer.saveEventEntity(event);

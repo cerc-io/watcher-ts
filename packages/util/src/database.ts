@@ -18,9 +18,8 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
 
 import { BlockProgressInterface, ContractInterface, EventInterface, SyncStatusInterface } from './types';
-import { MAX_REORG_DEPTH } from './constants';
+import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
 
-const UNKNOWN_EVENT_NAME = '__unknown__';
 const DEFAULT_LIMIT = 100;
 const DEFAULT_SKIP = 0;
 
@@ -180,12 +179,19 @@ export class Database {
     return repo.findOne(id, { relations: ['block'] });
   }
 
-  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string): Promise<EventInterface[]> {
-    return repo.createQueryBuilder('event')
-      .innerJoinAndSelect('event.block', 'block')
-      .where('block_hash = :blockHash', { blockHash })
-      .addOrderBy('event.id', 'ASC')
-      .getMany();
+  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string, where: FindConditions<EventInterface> = {}): Promise<EventInterface[]> {
+    where.block = {
+      ...where.block,
+      blockHash
+    };
+
+    return repo.find({
+      where,
+      relations: ['block'],
+      order: {
+        id: 'ASC'
+      }
+    });
   }
 
   async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void> {
@@ -538,6 +544,12 @@ export class Database {
     const canonicalBlockNumber = blocks[blocks.length - 1].block_number + 1;
 
     return { canonicalBlockNumber, blockHashes };
+  }
+
+  async getContract (repo: Repository<ContractInterface>, address: string): Promise<ContractInterface | undefined> {
+    return repo.createQueryBuilder('contract')
+      .where('address = :address', { address })
+      .getOne();
   }
 
   async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<void> {

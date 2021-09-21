@@ -3,24 +3,36 @@
 //
 
 import assert from 'assert';
-import { DeepPartial } from 'typeorm';
+import { DeepPartial, FindConditions, Not } from 'typeorm';
 import debug from 'debug';
+import { ethers } from 'ethers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
 
-import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusInterface } from './types';
+import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusInterface, ContractInterface } from './types';
+import { UNKNOWN_EVENT_NAME } from './constants';
 
 const MAX_EVENTS_BLOCK_RANGE = 1000;
 
 const log = debug('vulcanize:indexer');
 
+export interface ValueResult {
+  value: any;
+  proof?: {
+    data: string;
+  }
+}
+
 export class Indexer {
   _db: DatabaseInterface;
   _ethClient: EthClient;
+  _getStorageAt: GetStorageAt
 
   constructor (db: DatabaseInterface, ethClient: EthClient) {
     this._db = db;
     this._ethClient = ethClient;
+    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
@@ -158,6 +170,32 @@ export class Indexer {
     return this._db.getBlockEvents(blockHash);
   }
 
+  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<EventInterface>> {
+    if (contract) {
+      const watchedContract = await this.isWatchedContract(contract);
+      if (!watchedContract) {
+        throw new Error('Not a watched contract');
+      }
+    }
+
+    const where: FindConditions<EventInterface> = {
+      eventName: Not(UNKNOWN_EVENT_NAME)
+    };
+
+    if (contract) {
+      where.contract = contract;
+    }
+
+    if (name) {
+      where.eventName = name;
+    }
+
+    const events = await this._db.getBlockEvents(blockHash, where);
+    log(`getEvents: db hit, num events: ${events.length}`);
+
+    return events;
+  }
+
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._db.getAncestorAtDepth(blockHash, depth);
   }
@@ -193,5 +231,22 @@ export class Indexer {
     }
 
     return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
+  }
+
+  async isWatchedContract (address : string): Promise<ContractInterface | undefined> {
+    assert(this._db.getContract);
+
+    return this._db.getContract(ethers.utils.getAddress(address));
+  }
+
+  async getStorageValue (storageLayout: StorageLayout, blockHash: string, token: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
+    return getStorageValue(
+      storageLayout,
+      this._getStorageAt,
+      blockHash,
+      token,
+      variable,
+      ...mappingKeys
+    );
   }
 }

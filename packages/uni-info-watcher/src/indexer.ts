@@ -37,13 +37,6 @@ const SYNC_DELTA = 5;
 
 const log = debug('vulcanize:indexer');
 
-export interface ValueResult {
-  value: string | bigint;
-  proof: {
-    data: string;
-  }
-}
-
 export { OrderDirection, BlockHeight };
 
 export class Indexer implements IndexerInterface {

@@ -21,7 +21,7 @@ The default config files used by the watchers assume the following services are 
 #### Note
 
 * In `vulcanize/ipld-eth-server`, add the following statement to `[ethereum]` section in `environments/config.toml`:
-  
+
   `chainConfig = "./chain.json" # ETH_CHAIN_CONFIG`
 
 ### Databases
@@ -46,9 +46,22 @@ createdb uni-info-watcher
 Create the databases for the job queues and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
 ```
+createdb erc20-watcher-job-queue
 createdb address-watcher-job-queue
 createdb uni-watcher-job-queue
 createdb uni-info-watcher-job-queue
+```
+
+```
+postgres@tesla:~$ psql -U postgres -h localhost erc20-watcher-job-queue
+Password for user postgres:
+psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+erc20-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+CREATE EXTENSION
+erc20-watcher-job-queue=# exit
 ```
 
 ```

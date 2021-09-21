@@ -9,7 +9,6 @@ import { ethers } from 'ethers';
 import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
 import { IndexerInterface, Indexer as BaseIndexer } from '@vulcanize/util';
 
 import { Database } from './database';
@@ -36,18 +35,10 @@ type ResultEvent = {
   proof: string;
 };
 
-interface ValueResult {
-  value: any;
-  proof: {
-    data: string;
-  }
-}
-
 export class Indexer implements IndexerInterface {
   _db: Database
   _ethClient: EthClient
   _postgraphileClient: EthClient
-  _getStorageAt: GetStorageAt
   _baseIndexer: BaseIndexer
 
   _factoryContract: ethers.utils.Interface
@@ -58,7 +49,6 @@ export class Indexer implements IndexerInterface {
     this._db = db;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
-    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
@@ -99,27 +89,6 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
-    if (contract) {
-      const uniContract = await this.isUniswapContract(contract);
-      if (!uniContract) {
-        throw new Error('Not a uniswap contract');
-      }
-    }
-
-    const events = await this._db.getBlockEvents(blockHash);
-    log(`getEvents: db hit, num events: ${events.length}`);
-
-    // Filtering.
-    const result = events
-      // TODO: Filter using db WHERE condition on contract.
-      .filter(event => !contract || contract === event.contract)
-      // TODO: Filter using db WHERE condition when name is not empty.
-      .filter(event => !name || name === event.eventName);
-
-    return result;
-  }
-
   async triggerIndexingOnEvent (dbTx: QueryRunner, dbEvent: Event): Promise<void> {
     const re = this.getResultEvent(dbEvent);
 
@@ -129,10 +98,6 @@ export class Indexer implements IndexerInterface {
         await this._db.saveContract(dbTx, poolContract, KIND_POOL, dbEvent.block.blockNumber);
       }
     }
-  }
-
-  async isUniswapContract (address: string): Promise<Contract | undefined> {
-    return this._db.getContract(ethers.utils.getAddress(address));
   }
 
   async processEvent (event: Event): Promise<void> {
@@ -295,7 +260,7 @@ export class Indexer implements IndexerInterface {
   async position (blockHash: string, tokenId: string): Promise<any> {
     const nfpmContract = await this._db.getLatestContract('nfpm');
     assert(nfpmContract, 'No NFPM contract watched.');
-    const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_positions', BigInt(tokenId));
+    const { value, proof } = await this._baseIndexer.getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_positions', BigInt(tokenId));
 
     return {
       ...value,
@@ -306,7 +271,7 @@ export class Indexer implements IndexerInterface {
   async poolIdToPoolKey (blockHash: string, poolId: string): Promise<any> {
     const nfpmContract = await this._db.getLatestContract('nfpm');
     assert(nfpmContract, 'No NFPM contract watched.');
-    const { value, proof } = await this._getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_poolIdToPoolKey', BigInt(poolId));
+    const { value, proof } = await this._baseIndexer.getStorageValue(nfpmStorageLayout, blockHash, nfpmContract.address, '_poolIdToPoolKey', BigInt(poolId));
 
     return {
       ...value,
@@ -317,7 +282,7 @@ export class Indexer implements IndexerInterface {
   async getPool (blockHash: string, token0: string, token1: string, fee: string): Promise<any> {
     const factoryContract = await this._db.getLatestContract('factory');
     assert(factoryContract, 'No Factory contract watched.');
-    const { value, proof } = await this._getStorageValue(factoryStorageLayout, blockHash, factoryContract.address, 'getPool', token0, token1, BigInt(fee));
+    const { value, proof } = await this._baseIndexer.getStorageValue(factoryStorageLayout, blockHash, factoryContract.address, 'getPool', token0, token1, BigInt(fee));
 
     return {
       pool: value,
@@ -328,6 +293,14 @@ export class Indexer implements IndexerInterface {
   async getContract (type: string): Promise<any> {
     const contract = await this._db.getLatestContract(type);
     return contract;
+  }
+
+  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
+    return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
+  }
+
+  async isWatchedContract (address: string): Promise<Contract | undefined> {
+    return this._baseIndexer.isWatchedContract(address);
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {
@@ -431,40 +404,47 @@ export class Indexer implements IndexerInterface {
         },
         transaction: {
           hash: txHash
-        }
+        },
+        receiptCID,
+        status
       } = logObj;
 
-      let eventName = UNKNOWN_EVENT_NAME;
-      let eventInfo = {};
-      const tx = transactionMap[txHash];
-      const extraInfo = { topics, data, tx };
+      if (status) {
+        let eventName = UNKNOWN_EVENT_NAME;
+        let eventInfo = {};
+        const tx = transactionMap[txHash];
+        const extraInfo = { topics, data, tx };
 
-      const contract = ethers.utils.getAddress(address);
-      const uniContract = await this.isUniswapContract(contract);
+        const contract = ethers.utils.getAddress(address);
+        const uniContract = await this.isWatchedContract(contract);
 
-      if (uniContract) {
-        const eventDetails = this.parseEventNameAndArgs(uniContract.kind, logObj);
-        eventName = eventDetails.eventName;
-        eventInfo = eventDetails.eventInfo;
-      }
+        if (uniContract) {
+          const eventDetails = this.parseEventNameAndArgs(uniContract.kind, logObj);
+          eventName = eventDetails.eventName;
+          eventInfo = eventDetails.eventInfo;
+        }
 
-      dbEvents.push({
-        index: logIndex,
-        txHash,
-        contract,
-        eventName,
-        eventInfo: JSONbig.stringify(eventInfo),
-        extraInfo: JSONbig.stringify(extraInfo),
-        proof: JSONbig.stringify({
-          data: JSONbig.stringify({
-            blockHash,
-            receipt: {
-              cid,
-              ipldBlock
-            }
+        dbEvents.push({
+          index: logIndex,
+          txHash,
+          contract,
+          eventName,
+          eventInfo: JSONbig.stringify(eventInfo),
+          extraInfo: JSONbig.stringify(extraInfo),
+          proof: JSONbig.stringify({
+            data: JSONbig.stringify({
+              blockHash,
+              receiptCID,
+              log: {
+                cid,
+                ipldBlock
+              }
+            })
           })
-        })
-      });
+        });
+      } else {
+        log(`Skipping event for receipt ${receiptCID} due to failed transaction.`);
+      }
     }
 
     const dbTx = await this._db.createTransactionRunner();
@@ -485,17 +465,5 @@ export class Indexer implements IndexerInterface {
     } finally {
       await dbTx.release();
     }
-  }
-
-  // TODO: Move into base/class or framework package.
-  async _getStorageValue (storageLayout: StorageLayout, blockHash: string, token: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
-    return getStorageValue(
-      storageLayout,
-      this._getStorageAt,
-      blockHash,
-      token,
-      variable,
-      ...mappingKeys
-    );
   }
 }

@@ -116,54 +116,61 @@ export class Indexer {
         },
         transaction: {
           hash: txHash
-        }
+        },
+        receiptCID,
+        status
       } = logObj;
 
-      const tx = transactionMap[txHash];
-      assert(ethers.utils.getAddress(address) === contract);
+      if (status) {
+        const tx = transactionMap[txHash];
+        assert(ethers.utils.getAddress(address) === contract);
 
-      const eventDetails = this.parseEventNameAndArgs(logObj);
-      const eventName = eventDetails.eventName;
-      const eventInfo = eventDetails.eventInfo;
+        const eventDetails = this.parseEventNameAndArgs(logObj);
+        const eventName = eventDetails.eventName;
+        const eventInfo = eventDetails.eventInfo;
 
-      const {
-        hash,
-        number,
-        timestamp,
-        parent: {
-          hash: parentHash
-        }
-      } = block;
-
-      events.push({
-        block: {
+        const {
           hash,
           number,
           timestamp,
-          parentHash
-        },
-        eventIndex: logIndex,
-        tx: {
-          hash: txHash,
-          index: tx.index,
-          from: tx.src,
-          to: tx.dst
-        },
-        contract,
-        event: {
-          __typename: `${eventName}Event`,
-          ...eventInfo
-        },
-        proof: {
-          data: JSONbig.stringify({
-            blockHash: hash,
-            receipt: {
-              cid,
-              ipldBlock
-            }
-          })
-        }
-      });
+          parent: {
+            hash: parentHash
+          }
+        } = block;
+
+        events.push({
+          block: {
+            hash,
+            number,
+            timestamp,
+            parentHash
+          },
+          eventIndex: logIndex,
+          tx: {
+            hash: txHash,
+            index: tx.index,
+            from: tx.src,
+            to: tx.dst
+          },
+          contract,
+          event: {
+            __typename: `${eventName}Event`,
+            ...eventInfo
+          },
+          proof: {
+            data: JSONbig.stringify({
+              blockHash,
+              receiptCID,
+              log: {
+                cid,
+                ipldBlock
+              }
+            })
+          }
+        });
+      } else {
+        log(`Skipping event for receipt ${receiptCID} due to failed transaction.`);
+      }
     }
 
     return events;

@@ -37,19 +37,18 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.close();
   }
 
-  async getContract (address: string): Promise<Contract | undefined> {
-    return this._conn.getRepository(Contract)
-      .createQueryBuilder('contract')
-      .where('address = :address', { address })
-      .getOne();
-  }
-
   async getLatestContract (kind: string): Promise<Contract | undefined> {
     return this._conn.getRepository(Contract)
       .createQueryBuilder('contract')
       .where('kind = :kind', { kind })
       .orderBy('id', 'DESC')
       .getOne();
+  }
+
+  async getContract (address: string): Promise<Contract | undefined> {
+    const repo = this._conn.getRepository(Contract);
+
+    return this._baseDatabase.getContract(repo, address);
   }
 
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<void> {
@@ -79,10 +78,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.saveEventEntity(repo, entity);
   }
 
-  async getBlockEvents (blockHash: string): Promise<Event[]> {
+  async getBlockEvents (blockHash: string, where: FindConditions<Event>): Promise<Event[]> {
     const repo = this._conn.getRepository(Event);
 
-    return this._baseDatabase.getBlockEvents(repo, blockHash);
+    return this._baseDatabase.getBlockEvents(repo, blockHash, where);
   }
 
   async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {

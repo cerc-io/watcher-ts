@@ -124,7 +124,7 @@ describe('uni-watcher', () => {
 
     // Verifying with the db.
     const indexer = new Indexer(db, ethClient, postgraphileClient);
-    assert(await indexer.isUniswapContract(factory.address), 'Factory contract not added to the database.');
+    assert(await indexer.isWatchedContract(factory.address), 'Factory contract not added to the database.');
   });
 
   it('should deploy 2 tokens', async () => {
@@ -259,7 +259,7 @@ describe('uni-watcher', () => {
 
     // Verifying with the db.
     const indexer = new Indexer(db, ethClient, postgraphileClient);
-    assert(await indexer.isUniswapContract(nfpm.address), 'NFPM contract not added to the database.');
+    assert(await indexer.isWatchedContract(nfpm.address), 'NFPM contract not added to the database.');
   });
 
   it('should mint specified amount: nfpm', done => {

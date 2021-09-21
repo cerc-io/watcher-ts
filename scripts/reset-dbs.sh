@@ -17,6 +17,7 @@ then
   createdb uni-watcher
   createdb uni-info-watcher
 
+  psql -d erc20-watcher-job-queue -c "delete from pgboss.job;"
   psql -d address-watcher-job-queue -c "delete from pgboss.job;"
   psql -d uni-watcher-job-queue -c "delete from pgboss.job;"
   psql -d uni-info-watcher-job-queue -c "delete from pgboss.job;"

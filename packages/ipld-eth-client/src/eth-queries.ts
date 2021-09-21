@@ -28,6 +28,8 @@ query getLogs($blockHash: Bytes32!, $contract: Address) {
     index
     cid
     ipldBlock
+    receiptCID
+    status
   }
   block(hash: $blockHash) {
     number
@@ -75,31 +77,6 @@ query block($blockHash: Bytes32) {
 }
 `;
 
-export const subscribeLogs = gql`
-subscription SubscriptionReceipt {
-  listen(topic: "receipt_cids") {
-    relatedNode {
-      ... on ReceiptCid {
-        logContracts
-        topic0S
-        topic1S
-        topic2S
-        topic3S
-        contract
-        ethTransactionCidByTxId {
-          txHash
-          ethHeaderCidByHeaderId {
-            blockHash
-            blockNumber
-            parentHash
-          }
-        }
-      }
-    }
-  }
-}
-`;
-
 export const subscribeBlocks = gql`
 subscription {
   listen(topic: "header_cids") {
@@ -137,7 +114,6 @@ export default {
   getLogs,
   getBlockWithTransactions,
   getBlockByHash,
-  subscribeLogs,
   subscribeBlocks,
   subscribeTransactions
 };

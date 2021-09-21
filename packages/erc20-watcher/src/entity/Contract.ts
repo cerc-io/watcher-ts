@@ -13,6 +13,9 @@ export class Contract {
   @Column('varchar', { length: 42 })
   address!: string;
 
+  @Column('varchar', { length: 8 })
+  kind!: string;
+
   @Column('integer')
   startingBlock!: number;
 }

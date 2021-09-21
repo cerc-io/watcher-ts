@@ -103,10 +103,6 @@ export class EthClient {
     return this._graphqlClient.subscribe(ethQueries.subscribeBlocks, onNext);
   }
 
-  async watchLogs (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    return this._graphqlClient.subscribe(ethQueries.subscribeLogs, onNext);
-  }
-
   async watchTransactions (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
     return this._graphqlClient.subscribe(ethQueries.subscribeTransactions, onNext);
   }

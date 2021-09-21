@@ -2,14 +2,37 @@
 
 ## Setup
 
-Create a postgres12 database and provide connection settings in `environments/local.toml`.
+Create a postgres12 database for the job queue:
 
-For example:
+```
+sudo su - postgres
+createdb erc20-watcher-job-queue
+```
+
+Enable the `pgcrypto` extension on the job queue database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
+
+Example:
+
+```
+postgres@tesla:~$ psql -U postgres -h localhost erc20-watcher-job-queue
+Password for user postgres:
+psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+erc20-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+CREATE EXTENSION
+erc20-watcher-job-queue=# exit
+```
+
+Create a postgres12 database for the erc20 watcher:
 
 ```
 sudo su - postgres
 createdb erc20-watcher
 ```
+
+Update `environments/local.toml` with database connection settings for both the databases.
 
 Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
 
@@ -24,16 +47,58 @@ yarn build
 Run the watcher:
 
 ```bash
-yarn run server
+$ yarn server
 
 # For development.
-yarn run server:dev
+$ yarn server:dev
 
 # For specifying config file.
-yarn run server -f environments/local.toml
+$ yarn server -f environments/local.toml
+```
+
+Start the job runner:
+
+```bash
+$ yarn job-runner
+
+# For development.
+$ yarn job-runner:dev
+
+# For specifying config file.
+$ yarn job-runner -f environments/local.toml
 ```
 
 GQL console: http://localhost:3001/graphql
+
+Start watching a token:
+
+```bash
+$ yarn watch:contract --address 0xTokenAddress --startingBlock <start-block>
+
+# For specifying config file.
+$ yarn watch:contract -f environments/local.toml --address 0xTokenAddress --startingBlock <start-block>
+```
+
+Example:
+
+```bash
+$ yarn watch:contract --address 0xfE0034a874c2707c23F91D7409E9036F5e08ac34 --startingBlock 100
+```
+
+To fill a block range:
+
+```bash
+yarn fill --startBlock <from-block> --endBlock <to-block>
+
+# For specifying config file.
+$ yarn fill -f environments/local.toml --startBlock <from-block> --endBlock <to-block>
+```
+
+Example:
+
+```bash
+$ yarn fill --startBlock 1000 --endBlock 2000
+```
 
 ### Example GQL Queries
 
