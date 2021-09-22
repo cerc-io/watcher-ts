@@ -2,9 +2,10 @@
   "name": "watcher-ts",
   "license": "AGPL-3.0",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": ["packages/*"],
+    "nohoist": ["**/@graphprotocol/graph-ts"]
+  },
   "devDependencies": {
     "depcheck": "^1.4.2",
     "husky": "^7.0.2",
