@@ -1,5 +1,39 @@
-// The entry file of your WebAssembly module.
+import {
+  // ethereum,
+  // store,
+  log
+  // ipfs,
+  // json,
+  // crypto,
 
-export function add (a: i32, b: i32): i32 {
-  return a + b;
+  // dataSource,
+  // ens,
+
+  // typeConversion,
+
+  // bigDecimal,
+  // bigInt,
+
+  // Address,
+  // BigDecimal,
+  // BigInt,
+  // ByteArray,
+  // Bytes,
+  // DataSourceContext,
+  // DataSourceTemplate,
+  // Entity,
+  // JSONValue,
+  // JSONValueKind,
+  // JSONValuePayload,
+  // Result,
+  // TypedMap,
+  // TypedMapEntry,
+  // Value,
+  // ValueKind,
+  // ValuePayload,
+  // Wrapped
+} from '@graphprotocol/graph-ts';
+
+export function callGraphAPI (): void {
+  log.debug('hello {}', ['world']);
 }
