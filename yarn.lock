@@ -1100,6 +1100,13 @@
     "@ethersproject/properties" "^5.3.0"
     "@ethersproject/strings" "^5.3.0"
 
+"@graphprotocol/graph-ts@^0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@graphprotocol/graph-ts/-/graph-ts-0.22.0.tgz#5280513d1c8a162077f82ce7f9a492bb5783d6f4"
+  integrity sha512-kJIBL73xBxj0+NJdRABukAtcrc3Mb8jt31s0tCLPe6c57rQXEf7KR9oYrFdzE1ZsJCP6j+MX+A2+sj1Pj3aJtQ==
+  dependencies:
+    assemblyscript "0.19.10"
+
 "@graphql-typed-document-node/core@^3.0.0":
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.1.0.tgz#0eee6373e11418bfe0b5638f654df7a4ca6a3950"
@@ -3432,6 +3439,14 @@ asn1@~0.2.3:
   dependencies:
     safer-buffer "~2.1.0"
 
+assemblyscript@0.19.10:
+  version "0.19.10"
+  resolved "https://registry.yarnpkg.com/assemblyscript/-/assemblyscript-0.19.10.tgz#7ede6d99c797a219beb4fa4614c3eab9e6343c8e"
+  integrity sha512-HavcUBXB3mBTRGJcpvaQjmnmaqKHBGREjSPNsIvnAk2f9dj78y4BkMaSSdvBQYWcDDzsHQjyUC8stICFkD1Odg==
+  dependencies:
+    binaryen "101.0.0-nightly.20210723"
+    long "^4.0.0"
+
 assemblyscript@^0.19.16:
   version "0.19.16"
   resolved "https://registry.yarnpkg.com/assemblyscript/-/assemblyscript-0.19.16.tgz#fc06c9892755775e8e31a59249fbc361fd49e1d1"
@@ -4120,6 +4135,11 @@ binary-extensions@^2.0.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
+
+binaryen@101.0.0-nightly.20210723:
+  version "101.0.0-nightly.20210723"
+  resolved "https://registry.yarnpkg.com/binaryen/-/binaryen-101.0.0-nightly.20210723.tgz#b6bb7f3501341727681a03866c0856500eec3740"
+  integrity sha512-eioJNqhHlkguVSbblHOtLqlhtC882SOEPKmNFZaDuz1hzQjolxZ+eu3/kaS10n3sGPONsIZsO7R9fR00UyhEUA==
 
 binaryen@101.0.0-nightly.20210904:
   version "101.0.0-nightly.20210904"
