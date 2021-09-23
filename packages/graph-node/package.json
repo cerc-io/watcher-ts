@@ -22,8 +22,8 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --target debug",
-    "asbuild:release": "asc assembly/index.ts --lib ./node_modules --target release",
+    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug",
+    "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
     "test": "yarn asbuild:debug && mocha src/**/*.test.ts"
   },
