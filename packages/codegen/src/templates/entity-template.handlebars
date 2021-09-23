@@ -1,0 +1,30 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
+import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+
+@Entity()
+{{#if indexOn.columns}}
+@Index(['blockHash', 'contractAddress'
+{{~#each indexOn.columns}}, '{{this}}'
+{{~/each}}], { unique: {{indexOn.unique}} })
+{{/if}}
+export class {{className}} {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column('varchar', { length: 66 })
+  blockHash!: string;
+
+  @Column('varchar', { length: 42 })
+  contractAddress!: string;
+
+  {{#each columns as | column |}}
+  @Column('{{column.pgType}}' {{~#if column.length}}, { length: {{column.length}} } {{~/if}})
+  {{column.name}}!: {{column.tsType}};
+
+  {{/each}}
+  @Column('text', { nullable: true })
+  proof!: string;
+}

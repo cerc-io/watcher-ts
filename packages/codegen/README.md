@@ -10,14 +10,15 @@
 
 ## Run
 
-* Run the following command to generate schema from a contract file:
+* Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen:gql --input-file <input-file-path> --output-file [output-file-path] --mode [eth_call | storage] --flatten [true | false]
+  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage] --flatten [true | false]
   ```
 
     * `input-file`(alias: `i`): Input contract file path or an URL (required).
-    * `output-file`(alias: `o`): Schema output file path (logs output using `stdout` if not provided).
+    * `contract-name`(alias: `c`): Main contract name (required).
+    * `output-folder`(alias: `o`): Output folder path. (logs output using `stdout` if not provided).
     * `mode`(alias: `m`): Code generation mode (default: `storage`).
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
 
@@ -26,11 +27,11 @@
   Examples:
   
   ```bash
-  yarn codegen:gql --input-file ./test/examples/contracts/ERC20.sol --output-file ./ERC20-schema.gql --mode eth_call
+  yarn codegen --input-file ./test/examples/contracts/ERC20.sol --contract-name ERC20 --output-folder ../my-erc20-watcher --mode eth_call
   ```
 
   ```bash
-  yarn codegen:gql --input-file https://git.io/Jupci --output-file ./ERC721-schema.gql --mode storage
+  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../my-erc721-watcher --mode eth_call
   ```
 
 ## Demo
@@ -41,16 +42,18 @@
   yarn
   ```
 
-* Generate schema from a contract file:
+* Generate a watcher from a contract file:
   
   ```bash
-  yarn codegen:gql --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --output-file ./ERC20-schema.gql --mode storage
+  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode eth_call
   ```
 
-* Generate schema from a flattened contract file from an URL:
+  This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in `demo-erc20-watcher/README.md` to setup and run the generated watcher.
+
+* Generate a watcher from a flattened contract file from an URL:
   
   ```bash
-  yarn codegen:gql --input-file https://git.io/Jupci --output-file ./ERC721-schema.gql --mode eth_call
+  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode eth_call
   ```
 
 ## References

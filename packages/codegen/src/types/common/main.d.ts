@@ -3,3 +3,4 @@
 //
 
 declare module '@poanet/solidity-flattener';
+declare module 'solc';

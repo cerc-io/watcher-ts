@@ -1,0 +1,72 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
+import assert from 'assert';
+import { Connection, ConnectionOptions, DeepPartial } from 'typeorm';
+import path from 'path';
+
+import { Database as BaseDatabase } from '@vulcanize/util';
+
+{{#each queries as | query |}}
+import { {{capitalize query.name tillIndex=1}} } from './entity/{{capitalize query.name tillIndex=1}}';
+{{/each}}
+
+export class Database {
+  _config: ConnectionOptions
+  _conn!: Connection
+  _baseDatabase: BaseDatabase;
+
+  constructor (config: ConnectionOptions) {
+    assert(config);
+
+    this._config = {
+      ...config,
+      entities: [path.join(__dirname, 'entity/*')]
+    };
+
+    this._baseDatabase = new BaseDatabase(this._config);
+  }
+
+  async init (): Promise<void> {
+    this._conn = await this._baseDatabase.init();
+  }
+
+  async close (): Promise<void> {
+    return this._baseDatabase.close();
+  }
+
+  {{#each queries as | query |}}
+  async get{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
+  {{~#each query.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
+  {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{capitalize query.name tillIndex=1}} | undefined> {
+    return this._conn.getRepository({{capitalize query.name tillIndex=1}})
+      .createQueryBuilder('{{query.name}}')
+      .where(`${this._getColumn('{{capitalize query.name tillIndex=1}}', 'blockHash')} = :blockHash AND ${this._getColumn('{{capitalize query.name tillIndex=1}}', 'contractAddress')} = :contractAddress
+      {{~#each query.params}} AND ${this._getColumn('{{capitalize query.name tillIndex=1}}', '{{this.name}}')} = :{{this.name~}} {{/each}}`, {
+        blockHash,
+        contractAddress
+        {{~#each query.params}},
+        {{this.name}}
+        {{~/each}}
+
+      })
+      .getOne();
+  }
+
+  {{/each}}
+
+  {{~#each queries as | query |}}
+  async save{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
+  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof}: DeepPartial<{{capitalize query.name tillIndex=1}}>): Promise<{{capitalize query.name tillIndex=1}}> {
+    const repo = this._conn.getRepository({{capitalize query.name tillIndex=1}});
+    const entity = repo.create({ blockHash, contractAddress
+    {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof });
+    return repo.save(entity);
+  }
+
+  {{/each}}
+  _getColumn (entityName: string, propertyName: string) {
+    return this._conn.getMetadata(entityName).findColumnWithPropertyName(propertyName)?.databaseName
+  }
+}

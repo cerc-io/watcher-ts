@@ -3,13 +3,27 @@
 //
 
 import { Writable } from 'stream';
-import { Schema, Param } from './schema';
+
+import { Database } from './database';
+import { Entity } from './entity';
+import { Indexer } from './indexer';
+import { Resolvers } from './resolvers';
+import { Schema } from './schema';
+import { Param } from './utils/types';
 
 export class Visitor {
   _schema: Schema;
+  _resolvers: Resolvers;
+  _indexer: Indexer;
+  _entity: Entity;
+  _database: Database;
 
   constructor () {
     this._schema = new Schema();
+    this._resolvers = new Resolvers();
+    this._indexer = new Indexer();
+    this._entity = new Entity();
+    this._database = new Database();
   }
 
   /**
@@ -27,6 +41,10 @@ export class Visitor {
       const returnType = node.returnParameters[0].typeName.name;
 
       this._schema.addQuery(name, params, returnType);
+      this._resolvers.addQuery(name, params, returnType);
+      this._indexer.addQuery(name, params, returnType);
+      this._entity.addQuery(name, params, returnType);
+      this._database.addQuery(name, params, returnType);
     }
   }
 
@@ -56,6 +74,10 @@ export class Visitor {
     const returnType = typeName.name;
 
     this._schema.addQuery(name, params, returnType);
+    this._resolvers.addQuery(name, params, returnType);
+    this._indexer.addQuery(name, params, returnType);
+    this._entity.addQuery(name, params, returnType);
+    this._database.addQuery(name, params, returnType);
   }
 
   /**
@@ -77,5 +99,38 @@ export class Visitor {
    */
   exportSchema (outStream: Writable): void {
     this._schema.exportSchema(outStream);
+  }
+
+  /**
+   * Writes the resolvers file generated from a template to a stream.
+   * @param outStream A writable output stream to write the resolvers file to.
+   */
+  exportResolvers (outStream: Writable): void {
+    this._resolvers.exportResolvers(outStream);
+  }
+
+  /**
+   * Writes the indexer file generated from a template to a stream.
+   * @param outStream A writable output stream to write the indexer file to.
+   * @param inputFileName Input contract file name to be passed to the template.
+   */
+  exportIndexer (outStream: Writable, inputFileName: string): void {
+    this._indexer.exportIndexer(outStream, inputFileName);
+  }
+
+  /**
+   * Writes the generated entity files in the given directory.
+   * @param entityDir Directory to write the entities to.
+   */
+  exportEntities (entityDir: string): void {
+    this._entity.exportEntities(entityDir);
+  }
+
+  /**
+   * Writes the database file generated from a template to a stream.
+   * @param outStream A writable output stream to write the database file to.
+   */
+  exportDatabase (outStream: Writable): void {
+    this._database.exportDatabase(outStream);
   }
 }

@@ -1,0 +1,51 @@
+# {{contractName}} Watcher
+
+## Setup
+
+* Run the following command to install required packages:
+
+  ```bash
+  yarn
+  ```
+
+* Create a postgres12 database for the watcher:
+
+  ```bash
+  sudo su - postgres
+  createdb {{folderName}}
+  ```
+
+* Update `environments/local.toml` with database connection settings.
+
+* Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+
+## Run
+
+* Run the watcher:
+
+  ```bash
+  yarn server
+  ```
+
+GQL console: http://localhost:3008/graphql
+
+## Demo
+
+* Install required packages:
+
+  ```bash
+  yarn
+  ```
+
+* Create the database:
+
+  ```bash
+  sudo su - postgres
+  createdb {{folderName}}
+  ```
+
+* Run the watcher:
+
+  ```bash
+  yarn server
+  ```

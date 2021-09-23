@@ -1,0 +1,98 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
+import assert from 'assert';
+import debug from 'debug';
+import { JsonFragment } from '@ethersproject/abi';
+import JSONbig from 'json-bigint';
+import { BigNumber, ethers, Contract } from 'ethers';
+import { BaseProvider } from '@ethersproject/providers';
+
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { StorageLayout } from '@vulcanize/solidity-mapper';
+import { ValueResult } from '@vulcanize/util';
+
+import { Database } from './database';
+import artifacts from './artifacts/{{inputFileName}}.json';
+
+const log = debug('vulcanize:indexer');
+
+export class Indexer {
+  _db: Database
+  _ethClient: EthClient
+  _ethProvider: BaseProvider
+
+  _abi: JsonFragment[]
+  _storageLayout: StorageLayout
+  _contract: ethers.utils.Interface
+  _serverMode: string
+
+  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
+    assert(db);
+    assert(ethClient);
+
+    this._db = db;
+    this._ethClient = ethClient;
+    this._ethProvider = ethProvider;
+    this._serverMode = serverMode;
+
+    const { abi, storageLayout } = artifacts;
+
+    assert(abi);
+    assert(storageLayout);
+
+    this._abi = abi;
+    this._storageLayout = storageLayout;
+
+    this._contract = new ethers.utils.Interface(this._abi);
+  }
+
+  {{#each queries as | query |}}
+  async {{query.name}} (blockHash: string, contractAddress: string
+    {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}): Promise<ValueResult> {
+    const entity = await this._db.get{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
+    {{~#each query.params}}, {{this.name~}} {{~/each}} });
+    if (entity) {
+      log('{{query.name}}: db hit.');
+
+      return {
+        value: entity.value,
+        proof: JSON.parse(entity.proof)
+      };
+    }
+
+    log('{{query.name}}: db miss, fetching from upstream server');
+
+    const contract = new Contract(contractAddress, this._abi, this._ethProvider);
+    let value = null;
+
+    {{~#if query.params}}
+
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = BigNumber.from(number).toNumber();
+    value = await contract.{{query.name}}(
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
+    {{else}}
+
+    value = await contract.{{query.name}}();
+    {{/if}}
+
+    {{~#if (compare query.returnType 'bigint')}}
+
+    value = value.toString();
+    value = BigInt(value);
+    {{/if}}
+
+    const result: ValueResult = { value };
+    const { proof } = result;
+    await this._db.save{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
+    {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof: JSONbig.stringify(proof) });
+  
+    return result;
+  }
+  {{#unless @last}}
+
+  {{/unless}}
+  {{/each}}
+}

@@ -1,0 +1,25 @@
+[server]
+  host = "127.0.0.1"
+  port = 3008
+  mode = "eth_call"
+
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "{{folderName}}"
+  username = "postgres"
+  password = "postgres"
+  synchronize = true
+  logging = false
+
+[upstream]
+  [upstream.ethServer]
+    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
+    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8081"
+
+  [upstream.cache]
+    name = "requests"
+    enabled = false
+    deleteOnStart = false

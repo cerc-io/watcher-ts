@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
-    "codegen:gql": "ts-node src/generate-schema.ts"
+    "codegen": "ts-node src/generate-code.ts"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,9 @@
     "@solidity-parser/parser": "^0.13.2",
     "graphql": "^15.5.0",
     "graphql-compose": "^9.0.3",
+    "handlebars": "^4.7.7",
     "node-fetch": "^2",
+    "solc": "^0.8.7-fixed",
     "ts-node": "^10.2.1",
     "typescript": "^4.3.2",
     "yargs": "^17.1.1"

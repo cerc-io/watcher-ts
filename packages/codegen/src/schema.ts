@@ -2,23 +2,20 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import { GraphQLSchema, printSchema } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 
-export interface Param {
-  name: string;
-  type: string;
-}
+import { getTsForSol, getGqlForTs } from './utils/type-mappings';
+import { Param } from './utils/types';
 
 export class Schema {
   _composer: SchemaComposer;
-  _typeMapping: Map<string, string>;
   _events: Array<string>;
 
   constructor () {
     this._composer = new SchemaComposer();
-    this._typeMapping = new Map();
     this._events = [];
 
     this._addBasicTypes();
@@ -32,10 +29,13 @@ export class Schema {
    */
   addQuery (name: string, params: Array<Param>, returnType: string): void {
     // TODO: Handle cases where returnType/params type is an array.
+    const tsReturnType = getTsForSol(returnType);
+    assert(tsReturnType);
+
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
       // Get type composer object for return type from the schema composer.
-      type: this._composer.getOTC(`Result${this._typeMapping.get(returnType)}`).NonNull,
+      type: this._composer.getOTC(`Result${getGqlForTs(tsReturnType)}`).NonNull,
       args: {
         blockHash: 'String!',
         contractAddress: 'String!'
@@ -44,7 +44,9 @@ export class Schema {
 
     if (params.length > 0) {
       queryObject[name].args = params.reduce((acc, curr) => {
-        acc[curr.name] = this._typeMapping.get(curr.type) + '!';
+        const tsCurrType = getTsForSol(curr.type);
+        assert(tsCurrType);
+        acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
         return acc;
       }, queryObject[name].args);
     }
@@ -67,7 +69,9 @@ export class Schema {
 
     if (params.length > 0) {
       typeObject.fields = params.reduce((acc, curr) => {
-        acc[curr.name] = this._typeMapping.get(curr.type) + '!';
+        const tsCurrType = getTsForSol(curr.type);
+        assert(tsCurrType);
+        acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
         return acc;
       }, typeObject.fields);
     }
@@ -99,8 +103,8 @@ export class Schema {
    */
   exportSchema (outStream: Writable): void {
     // Get schema as a string from GraphQLSchema.
-    const schema = printSchema(this.buildSchema());
-    outStream.write(schema);
+    const schemaString = printSchema(this.buildSchema());
+    outStream.write(schemaString);
   }
 
   /**
@@ -152,14 +156,6 @@ export class Schema {
         proof: () => this._composer.getOTC('Proof')
       }
     });
-
-    // TODO Get typemapping from ethersjs.
-    this._typeMapping.set('string', 'String');
-    this._typeMapping.set('uint8', 'Int');
-    this._typeMapping.set('uint256', 'BigInt');
-    this._typeMapping.set('address', 'String');
-    this._typeMapping.set('bool', 'Boolean');
-    this._typeMapping.set('bytes4', 'String');
   }
 
   /**
