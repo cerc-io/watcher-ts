@@ -37,3 +37,15 @@ import {
 export function callGraphAPI (): void {
   log.debug('hello {}', ['world']);
 }
+
+export class Foo {
+  static getFoo (): Foo {
+    return new Foo();
+  }
+
+  getString (): string {
+    return 'hello world!';
+  }
+}
+
+export const FooID = idof<Foo>();
