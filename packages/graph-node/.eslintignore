@@ -3,3 +3,6 @@ node_modules
 
 # Don't lint build output.
 dist
+
+# Don't lint generated code from graph-cli.
+generated
