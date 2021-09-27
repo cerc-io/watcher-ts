@@ -1,0 +1,330 @@
+type Producer @entity {
+    # Address
+    id: ID!
+
+    # Currently added (true) or removed (false)
+    active: Boolean!
+
+    # Address of collector
+    rewardCollector: Bytes
+
+    # Total rewards, does not include pending rewards
+    rewards: BigInt!
+
+    # Total number of blocks produced by this producer, not including in the pending epoch
+    confirmedBlocks: BigInt!
+
+    # Blocks produced in pending epoch
+    pendingEpochBlocks: BigInt!
+}
+
+type ProducerSet @entity {
+    # Governance address
+    id: ID!
+
+    # All registered (active and inactive) producers
+    producers: [Producer!]!
+}
+
+enum ProducerSetChangeType {
+    Added
+    Removed
+}
+
+type ProducerSetChange @entity {
+    # Transaction 
+    id: ID!
+
+    # Block change occured in (effective next block)
+    blockNumber: BigInt!
+
+    # Producer address
+    producer: Bytes!
+
+    # Set change type
+    changeType: ProducerSetChangeType!
+}
+
+type ProducerRewardCollectorChange @entity {
+    # Transaction
+    id: ID!
+
+    # Block change occured in (effective next block)
+    blockNumber: BigInt!
+
+    # Producer address
+    producer: Bytes!
+
+    # Address of collector
+    rewardCollector: Bytes!
+}
+
+type RewardScheduleEntry @entity {
+    # ID of transaction applying schedule plus index (e.g. 0xfoo+index1)
+    id: ID!
+
+    # Timestamp of reward start
+    startTime: BigInt!
+
+    # Duration of epochs
+    epochDuration: BigInt!
+
+    # Rewards per epoch
+    rewardsPerEpoch: BigInt!
+}
+
+type RewardSchedule @entity {
+    # Governance address
+    id: ID!
+
+    # Current block reward schedule
+    rewardScheduleEntries: [RewardScheduleEntry!]!
+
+    # Last finished epoch
+    lastEpoch: Epoch
+
+    # Current pending epoch
+    pendingEpoch: Epoch
+
+    # Active reward schedule entry
+    activeRewardScheduleEntry: RewardScheduleEntry
+}
+
+type ProducerEpoch @entity {
+    # Producer address + epoch, e.g. 0xf00+epochX
+    id: ID!
+
+    # Producer address
+    address: Bytes!
+
+    # Epoch
+    epoch: Epoch!
+
+    # Total cumulative rewards for producer (replicated to merkle tree)
+    totalRewards: BigInt!
+
+    # Blocks produced by this producer during this epoch
+    blocksProduced: BigInt!
+
+    # Ratio of blocks produced compared to those by all registered producers [0.0, 1.0]
+    blocksProducedRatio: BigDecimal!
+}
+
+type Block @entity {
+    # Block hash
+    id: ID!
+
+    # If produced by an active producer
+    fromActiveProducer: Boolean!
+
+    # Block properties
+    hash: Bytes!
+    parentHash: Bytes!
+    unclesHash: Bytes!
+    author: Bytes!
+    stateRoot: Bytes!
+    transactionsRoot: Bytes!
+    receiptsRoot: Bytes!
+    number: BigInt!
+    gasUsed: BigInt!
+    gasLimit: BigInt!
+    timestamp: BigInt!
+    difficulty: BigInt!
+    totalDifficulty: BigInt!
+    size: BigInt
+}
+
+type Epoch @entity {
+    # Governance address + epoch e.g. 0xf00+epochX
+    id: ID!
+
+    # If epoch has been finished
+    finalized: Boolean!
+
+    # Epoch number
+    epochNumber: BigInt!
+
+    # Start block
+    startBlock: Block
+
+    # End block
+    endBlock: Block
+
+    # Producer blocks
+    producerBlocks: BigInt!
+    
+    # All blocks
+    allBlocks: BigInt!
+
+    # Ratio of producer blocks to all blocks [0.0, 1.0]
+    producerBlocksRatio: BigDecimal!
+
+    # Snapshot of rewards
+    producerRewards: [ProducerEpoch!]! @derivedFrom(field: "epoch")
+}
+
+type SlotClaim @entity {
+    # Transaction
+    id: ID!
+
+    # Slot
+    slot: Slot!
+
+    # Owner address
+    owner: Bytes!
+
+    # Winning bid
+    winningBid: BigInt!
+
+    # Old bid
+    oldBid: BigInt!
+
+    # Timestamp of when slot ownership started
+    startTime: BigInt!
+
+    # Timestamp of when slot ownership expires
+    expirationTime: BigInt!
+
+    # Tax rate per day
+    taxRatePerDay: BigDecimal!
+}
+
+type Slot @entity {
+    # Address of network contract + slot index, e.g. "0xF00-0"
+    id: ID!
+
+    # Owner address
+    owner: Bytes!
+
+    # Delegate address
+    delegate: Bytes!
+
+    # Winning bid
+    winningBid: BigInt!
+
+    # Old bid
+    oldBid: BigInt!
+
+    # Timestamp of when slot ownership started
+    startTime: BigInt!
+
+    # Timestamp of when slot ownership expires
+    expirationTime: BigInt!
+
+    # Tax rate per day
+    taxRatePerDay: BigDecimal!
+
+    # Slot claims
+    claims: [SlotClaim]! @derivedFrom(field: "slot")
+}
+
+type Staker @entity {
+    # Address of staker
+    id: ID!
+
+    # Amount staked
+    staked: BigInt!
+
+    # Zero-based (zero being highest) rank of non-zero stakers, or null for a zero stake
+    rank: BigInt
+}
+
+type Network @entity {
+    # Address of contract 
+    id: ID!
+
+    slot0: Slot
+    slot1: Slot
+    slot2: Slot
+
+    stakers: [Staker!]!
+
+    # Number of non-zero stakers
+    numStakers: BigInt
+
+    # Total amount staked
+    totalStaked: BigInt!
+
+    # Percentiles (0-99) of staker amounts
+    stakedPercentiles: [BigInt!]!
+}
+
+type Distributor @entity {
+    # Address of distributor contract
+    id: ID!
+
+    # The current distribution
+    currentDistribution: Distribution
+}
+
+type Distribution @entity {
+    # Transaction 
+    id: ID!
+
+    # Distributor
+    distributor: Distributor!
+
+    # Timestamp distribution was applied
+    timestamp: BigInt!
+
+    # Distribution number
+    distributionNumber: BigInt!
+
+    # Root of the merkle tree containing total earned rewards
+    merkleRoot: Bytes!
+
+    # Metadata URI
+    metadataURI: String!
+}
+
+type Claim @entity {
+    # Transaction 
+    id: ID!
+
+    # Timestamp claim was made
+    timestamp: BigInt!
+
+    # Index in the merkle tree
+    index: BigInt!
+
+    # Account
+    account: Account!
+
+    # Total amount earned
+    totalEarned: BigInt!
+
+    # Claimed amount by this claim
+    claimed: BigInt!
+}
+
+type Slash @entity {
+    # Transaction 
+    id: ID!
+
+    # Timestamp slash was made
+    timestamp: BigInt!
+
+    # Account
+    account: Account!
+
+    # Slashed amount by this slash
+    slashed: BigInt!
+}
+
+type Account @entity {
+    # Account address
+    id: ID!
+
+    # Total amount claimed
+    totalClaimed: BigInt!
+
+    # Total amount slashed
+    totalSlashed: BigInt!
+
+    # All claims
+    claims: [Claim!]! @derivedFrom(field: "account")
+
+    # All slashes
+    slashes: [Slash!]! @derivedFrom(field: "account")
+}
+

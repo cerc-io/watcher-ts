@@ -1,0 +1,100 @@
+specVersion: 0.0.2
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: EdenNetworkGovernance
+    network: mainnet
+    source:
+      address: "0x726aDC632871Ff796379da14F9D5aeb199bEd505"
+      abi: Governance
+      startBlock: 12948292
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyScript
+      entities:
+        - Producer
+        - ProducerSet
+        - ProducerSetChange
+        - ProducerRewardCollectorChange
+        - RewardScheduleEntry
+        - RewardSchedule
+        - ProducerEpoch
+        - Block
+        - Epoch
+      abis:
+        - name: Governance
+          file: EdenNetworkGovernance/abis/DistributorGovernance.json
+      eventHandlers:
+        - event: BlockProducerAdded(indexed address)
+          handler: blockProducerAdded
+        - event: BlockProducerRemoved(indexed address)
+          handler: blockProducerRemoved
+        - event: BlockProducerRewardCollectorChanged(indexed address,indexed address)
+          handler: blockProducerRewardCollectorChanged
+        - event: RewardScheduleChanged()
+          handler: rewardScheduleChanged
+      blockHandlers:
+        - handler: handleBlock
+      file: EdenNetworkGovernance/EdenNetworkGovernance.wasm
+  - kind: ethereum/contract
+    name: EdenNetwork
+    network: mainnet
+    source:
+      address: "0x9E3382cA57F4404AC7Bf435475EAe37e87D1c453"
+      abi: EdenNetwork
+      startBlock: 12948381
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyScript
+      entities:
+        - Slot
+        - Staker
+        - Network
+        - SlotClaim
+      abis:
+        - name: EdenNetwork
+          file: EdenNetwork/abis/EdenNetwork.json
+      eventHandlers:
+        - event: SlotClaimed(indexed uint8,indexed address,indexed
+            address,uint128,uint128,uint16,uint16)
+          handler: slotClaimed
+        - event: SlotDelegateUpdated(indexed uint8,indexed address,indexed address,address)
+          handler: slotDelegateUpdated
+        - event: Stake(indexed address,uint256)
+          handler: stake
+        - event: Unstake(indexed address,uint256)
+          handler: unstake
+      file: EdenNetwork/EdenNetwork.wasm
+  - kind: ethereum/contract
+    name: EdenNetworkDistribution
+    network: mainnet
+    source:
+      address: "0x2Ae0f92498346B9e011ED15d8C98142DCF62F774"
+      abi: Distribution
+      startBlock: 12948356
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyScript
+      entities:
+        - Distributor
+        - Distribution
+        - Claim
+        - Slash
+        - Account
+      abis:
+        - name: Distribution
+          file: EdenNetworkDistribution/abis/MerkleDistributor.json
+      eventHandlers:
+        - event: Claimed(uint256,uint256,indexed address,uint256)
+          handler: claimed
+        - event: Slashed(indexed address,uint256)
+          handler: slashed
+        - event: MerkleRootUpdated(bytes32,uint256,string)
+          handler: merkleRootUpdated
+        - event: AccountUpdated(indexed address,uint256,uint256)
+          handler: accountUpdated
+      file: EdenNetworkDistribution/EdenNetworkDistribution.wasm
