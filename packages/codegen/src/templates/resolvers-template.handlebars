@@ -35,12 +35,20 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
         {{~#each this.params}}, {{this.name~}} {{/each}});
         return indexer.{{this.name}}(blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
-      }
-      {{~#unless @last}},
+      },
 
-      {{/unless}}
       {{/each}}
+      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name: string }) => {
+        log('events', blockHash, contractAddress, name || '');
 
+        const block = await indexer.getBlockProgress(blockHash);
+        if (!block || !block.isComplete) {
+          throw new Error(`Block hash ${blockHash} number ${block?.blockNumber} not processed yet`);
+        }
+
+        const events = await indexer.getEventsByFilter(blockHash, contractAddress, name);
+        return events.map(event => indexer.getResultEvent(event));
+      }
     }
   };
 };

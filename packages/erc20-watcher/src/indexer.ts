@@ -12,10 +12,10 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, ValueResult } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
 
 import { Database } from './database';
-import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
+import { Event } from './entity/Event';
 import { fetchTokenDecimals, fetchTokenName, fetchTokenSymbol, fetchTokenTotalSupply } from './utils';
 import { SyncStatus } from './entity/SyncStatus';
 import artifacts from './artifacts/ERC20.json';

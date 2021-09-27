@@ -5,8 +5,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
 import { BlockProgress } from './BlockProgress';
 
-export const UNKNOWN_EVENT_NAME = '__unknown__';
-
 @Entity()
 // Index to query all events for a contract efficiently.
 @Index(['block', 'contract'])

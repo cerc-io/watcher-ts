@@ -12,7 +12,7 @@ import { ValueTransformer } from 'typeorm';
 export const wait = async (time: number): Promise<void> => new Promise(resolve => setTimeout(resolve, time));
 
 /**
- * Transformer used by typeorm entity for Decimal type fields
+ * Transformer used by typeorm entity for Decimal type fields.
  */
 export const decimalTransformer: ValueTransformer = {
   to: (value?: Decimal) => {
@@ -25,6 +25,26 @@ export const decimalTransformer: ValueTransformer = {
   from: (value?: string) => {
     if (value) {
       return new Decimal(value);
+    }
+
+    return value;
+  }
+};
+
+/**
+ * Transformer used by typeorm entity for bigint type fields.
+ */
+export const bigintTransformer: ValueTransformer = {
+  to: (value?: bigint) => {
+    if (value) {
+      return value.toString();
+    }
+
+    return value;
+  },
+  from: (value?: string) => {
+    if (value) {
+      return BigInt(value);
     }
 
     return value;

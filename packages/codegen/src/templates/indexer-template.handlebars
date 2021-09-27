@@ -5,37 +5,60 @@
 import assert from 'assert';
 import debug from 'debug';
 import { JsonFragment } from '@ethersproject/abi';
+import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { BigNumber, ethers, Contract } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { ValueResult } from '@vulcanize/util';
+import { getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
 
 import { Database } from './database';
+import { Contract } from './entity/Contract';
+import { Event } from './entity/Event';
+import { SyncStatus } from './entity/SyncStatus';
+import { BlockProgress } from './entity/BlockProgress';
 import artifacts from './artifacts/{{inputFileName}}.json';
 
 const log = debug('vulcanize:indexer');
 
+{{#each events as | event |}}
+const {{capitalize event.name}}_EVENT = '{{event.name}}';
+{{/each}}
+
+interface ResultEvent {
+  block: any;
+  tx: any;
+
+  contract: string;
+
+  eventIndex: number;
+  event: any;
+
+  proof: string;
+}
+
 export class Indexer {
   _db: Database
   _ethClient: EthClient
+  _getStorageAt: GetStorageAt
   _ethProvider: BaseProvider
+  _baseIndexer: BaseIndexer
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
   _contract: ethers.utils.Interface
-  _serverMode: string
 
-  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
+  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider) {
     assert(db);
     assert(ethClient);
 
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
-    this._serverMode = serverMode;
+    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
 
     const { abi, storageLayout } = artifacts;
 
@@ -48,9 +71,43 @@ export class Indexer {
     this._contract = new ethers.utils.Interface(this._abi);
   }
 
+  getResultEvent (event: Event): ResultEvent {
+    const block = event.block;
+    const eventFields = JSON.parse(event.eventInfo);
+    const { tx } = JSON.parse(event.extraInfo);
+
+    return {
+      block: {
+        hash: block.blockHash,
+        number: block.blockNumber,
+        timestamp: block.blockTimestamp,
+        parentHash: block.parentHash
+      },
+
+      tx: {
+        hash: event.txHash,
+        from: tx.src,
+        to: tx.dst,
+        index: tx.index
+      },
+
+      contract: event.contract,
+
+      eventIndex: event.index,
+      event: {
+        __typename: `${event.eventName}Event`,
+        ...eventFields
+      },
+
+      // TODO: Return proof only if requested.
+      proof: JSON.parse(event.proof)
+    };
+  }
+
   {{#each queries as | query |}}
   async {{query.name}} (blockHash: string, contractAddress: string
     {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}): Promise<ValueResult> {
+
     const entity = await this._db.get{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -64,19 +121,13 @@ export class Indexer {
 
     log('{{query.name}}: db miss, fetching from upstream server');
 
-    const contract = new Contract(contractAddress, this._abi, this._ethProvider);
-    let value = null;
-
-    {{~#if query.params}}
+    {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
+    const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
 
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = BigNumber.from(number).toNumber();
-    value = await contract.{{query.name}}(
+    let value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
-    {{else}}
-
-    value = await contract.{{query.name}}();
-    {{/if}}
 
     {{~#if (compare query.returnType 'bigint')}}
 
@@ -85,14 +136,203 @@ export class Indexer {
     {{/if}}
 
     const result: ValueResult = { value };
-    const { proof } = result;
+    {{/if}}
+
+    {{~#if (compare query.mode @root.constants.MODE_STORAGE)}}
+
+    const result = await this._getStorageValue(
+      this._storageLayout,
+      blockHash,
+      contractAddress,
+      '{{query.name}}'{{#if query.params.length}},{{/if}}
+      {{#each query.params}}
+      {{this.name}}{{#unless @last}},{{/unless}}
+      {{/each}}
+    );
+    {{/if}}
+
     await this._db.save{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
-    {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof: JSONbig.stringify(proof) });
-  
+    {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbig.stringify(result.proof) });
+
     return result;
   }
-  {{#unless @last}}
 
-  {{/unless}}
   {{/each}}
+  async _getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
+    return getStorageValue(
+      storageLayout,
+      this._getStorageAt,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
+  }
+
+  parseEventNameAndArgs (kind: string, logObj: any): any {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
+
+    const { topics, data } = logObj;
+    const logDescription = this._contract.parseLog({ data, topics });
+
+    switch (logDescription.name) {
+      {{#each events as | event |}}
+      case {{capitalize event.name}}_EVENT: {
+        eventName = logDescription.name;
+        const { {{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}} } = logDescription.args;
+        eventInfo = {
+          {{#each event.params}}
+          {{this.name}} {{~#unless @last}},{{/unless}}
+          {{/each}}
+        };
+
+        break;
+      }
+      {{/each}}
+    }
+
+    return { eventName, eventInfo };
+  }
+
+  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
+    return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
+  }
+
+  async isWatchedContract (address : string): Promise<Contract | undefined> {
+    return this._baseIndexer.isWatchedContract(address);
+  }
+
+  async getSyncStatus (): Promise<SyncStatus | undefined> {
+    return this._baseIndexer.getSyncStatus();
+  }
+
+  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+  }
+
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
+  }
+
+  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
+  }
+
+  async getBlock (blockHash: string): Promise<any> {
+    return this._baseIndexer.getBlock(blockHash);
+  }
+
+  async getEvent (id: string): Promise<Event | undefined> {
+    return this._baseIndexer.getEvent(id);
+  }
+
+  async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
+    return this._baseIndexer.getBlockProgress(blockHash);
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
+    return this._baseIndexer.getBlocksAtHeight(height, isPruned);
+  }
+
+  async getOrFetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<Array<EventInterface>> {
+    return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
+  }
+
+  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
+    return this._baseIndexer.getBlockEvents(blockHash);
+  }
+
+  async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
+    return this._baseIndexer.markBlocksAsPruned(blocks);
+  }
+
+  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  }
+
+  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+    return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<void> {
+    assert(blockHash);
+    let { block, logs } = await this._ethClient.getLogs({ blockHash });
+
+    const dbEvents: Array<DeepPartial<Event>> = [];
+
+    for (let li = 0; li < logs.length; li++) {
+      const logObj = logs[li];
+      const {
+        topics,
+        data,
+        index: logIndex,
+        cid,
+        ipldBlock,
+        account: {
+          address
+        },
+        transaction: {
+          hash: txHash
+        },
+        receiptCID,
+        status
+      } = logObj;
+
+      if (status) {
+        let eventName = UNKNOWN_EVENT_NAME;
+        let eventInfo = {};
+        const extraInfo = { topics, data };
+
+        const contract = ethers.utils.getAddress(address);
+        const watchedContract = await this.isWatchedContract(contract);
+
+        if (watchedContract) {
+          const eventDetails = this.parseEventNameAndArgs(watchedContract.kind, logObj);
+          eventName = eventDetails.eventName;
+          eventInfo = eventDetails.eventInfo;
+        }
+
+        dbEvents.push({
+          index: logIndex,
+          txHash,
+          contract,
+          eventName,
+          eventInfo: JSONbig.stringify(eventInfo),
+          extraInfo: JSONbig.stringify(extraInfo),
+          proof: JSONbig.stringify({
+            data: JSONbig.stringify({
+              blockHash,
+              receiptCID,
+              log: {
+                cid,
+                ipldBlock
+              }
+            })
+          })
+        });
+      } else {
+        log(`Skipping event for receipt ${receiptCID} due to failed transaction.`);
+      }
+    }
+
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      block = {
+        blockHash,
+        blockNumber: block.number,
+        blockTimestamp: block.timestamp,
+        parentHash: block.parent.hash
+      };
+
+      await this._db.saveEvents(dbTx, block, dbEvents);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
 }

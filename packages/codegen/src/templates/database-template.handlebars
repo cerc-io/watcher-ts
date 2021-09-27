@@ -3,19 +3,24 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase } from '@vulcanize/util';
 
+import { Contract } from './entity/Contract';
+import { Event } from './entity/Event';
+import { SyncStatus } from './entity/SyncStatus';
+import { BlockProgress } from './entity/BlockProgress';
 {{#each queries as | query |}}
 import { {{capitalize query.name tillIndex=1}} } from './entity/{{capitalize query.name tillIndex=1}}';
 {{/each}}
 
 export class Database {
-  _config: ConnectionOptions
-  _conn!: Connection
+  _config: ConnectionOptions;
+  _conn!: Connection;
   _baseDatabase: BaseDatabase;
+  _propColMaps: { [key: string]: Map<string, string>; }
 
   constructor (config: ConnectionOptions) {
     assert(config);
@@ -26,10 +31,12 @@ export class Database {
     };
 
     this._baseDatabase = new BaseDatabase(this._config);
+    this._propColMaps = {};
   }
 
   async init (): Promise<void> {
     this._conn = await this._baseDatabase.init();
+    this._setPropColMaps();
   }
 
   async close (): Promise<void> {
@@ -41,17 +48,13 @@ export class Database {
   {{~#each query.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
   {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{capitalize query.name tillIndex=1}} | undefined> {
     return this._conn.getRepository({{capitalize query.name tillIndex=1}})
-      .createQueryBuilder('{{query.name}}')
-      .where(`${this._getColumn('{{capitalize query.name tillIndex=1}}', 'blockHash')} = :blockHash AND ${this._getColumn('{{capitalize query.name tillIndex=1}}', 'contractAddress')} = :contractAddress
-      {{~#each query.params}} AND ${this._getColumn('{{capitalize query.name tillIndex=1}}', '{{this.name}}')} = :{{this.name~}} {{/each}}`, {
+      .findOne({
         blockHash,
-        contractAddress
-        {{~#each query.params}},
-        {{this.name}}
-        {{~/each}}
-
+        contractAddress{{#if query.params.length}},{{/if}}
+        {{#each query.params}}
+        {{this.name}}{{#unless @last}},{{/unless}}
+        {{/each}}
       })
-      .getOne();
   }
 
   {{/each}}
@@ -66,7 +69,124 @@ export class Database {
   }
 
   {{/each}}
-  _getColumn (entityName: string, propertyName: string) {
-    return this._conn.getMetadata(entityName).findColumnWithPropertyName(propertyName)?.databaseName
+  async getContract (address: string): Promise<Contract | undefined> {
+    const repo = this._conn.getRepository(Contract);
+
+    return this._baseDatabase.getContract(repo, address);
+  }
+
+  async createTransactionRunner (): Promise<QueryRunner> {
+    return this._baseDatabase.createTransactionRunner();
+  }
+
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getProcessedBlockCountForRange(repo, fromBlockNumber, toBlockNumber);
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getEventsInRange(repo, fromBlockNumber, toBlockNumber);
+  }
+
+  async saveEventEntity (queryRunner: QueryRunner, entity: Event): Promise<Event> {
+    const repo = queryRunner.manager.getRepository(Event);
+    return this._baseDatabase.saveEventEntity(repo, entity);
+  }
+
+  async getBlockEvents (blockHash: string, where: FindConditions<Event>): Promise<Event[]> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getBlockEvents(repo, blockHash, where);
+  }
+
+  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
+    const blockRepo = queryRunner.manager.getRepository(BlockProgress);
+    const eventRepo = queryRunner.manager.getRepository(Event);
+
+    return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
+  }
+
+  async saveContract (address: string, kind: string, startingBlock: number): Promise<void> {
+    await this._conn.transaction(async (tx) => {
+      const repo = tx.getRepository(Contract);
+
+      return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
+    });
+  }
+
+  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber);
+  }
+
+  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber);
+  }
+
+  async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber);
+  }
+
+  async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.getSyncStatus(repo);
+  }
+
+  async getEvent (id: string): Promise<Event | undefined> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getEvent(repo, id);
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
+  }
+
+  async markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgress[]): Promise<void> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.markBlocksAsPruned(repo, blocks);
+  }
+
+  async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
+    const repo = this._conn.getRepository(BlockProgress);
+    return this._baseDatabase.getBlockProgress(repo, blockHash);
+  }
+
+  async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
+  }
+
+  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void> {
+    return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
+  }
+
+  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+    return this._baseDatabase.getAncestorAtDepth(blockHash, depth);
+  }
+
+  _getPropertyColumnMapForEntity (entityName: string): Map<string, string> {
+    return this._conn.getMetadata(entityName).ownColumns.reduce((acc, curr) => {
+      return acc.set(curr.propertyName, curr.databaseName);
+    }, new Map<string, string>());
+  }
+
+  _setPropColMaps () {
+    {{#each queries as | query |}}
+    this._propColMaps['{{capitalize query.name tillIndex=1}}'] = this._getPropertyColumnMapForEntity('{{capitalize query.name tillIndex=1}}');
+    {{/each}}
   }
 }

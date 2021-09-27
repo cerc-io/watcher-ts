@@ -2,29 +2,41 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+{{#each imports as | import |}}
+import { {{~#each import.toImport}} {{this}} {{~#unless @last}}, {{~/unless}} {{~/each}} } from '{{import.from}}';
+{{/each}}
+
+import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
-{{#if indexOn.columns}}
-@Index(['blockHash', 'contractAddress'
-{{~#each indexOn.columns}}, '{{this}}'
-{{~/each}}], { unique: {{indexOn.unique}} })
+{{#each indexOn as | index |}}
+{{#if index.columns}}
+@Index([
+{{~#each index.columns}}'{{this}}'
+{{~#unless @last}}, {{/unless}}
+{{~/each}}]
+{{~#if index.unique}}, { unique: true }{{/if}})
 {{/if}}
-export class {{className}} {
+{{/each}}
+export class {{className}} {{~#if implements}} implements {{implements}} {{~/if}} {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column('varchar', { length: 66 })
-  blockHash!: string;
-
-  @Column('varchar', { length: 42 })
-  contractAddress!: string;
-
   {{#each columns as | column |}}
-  @Column('{{column.pgType}}' {{~#if column.length}}, { length: {{column.length}} } {{~/if}})
+  {{#if (compare column.columnType 'ManyToOne')}}
+  @{{column.columnType}}({{column.lhs}} => {{column.rhs}}
+  {{~else}}
+  @{{column.columnType}}('{{column.pgType}}'
+  {{~/if}}
+  {{~#if column.columnOptions}}, {
+  {{~#each column.columnOptions}} {{this.option}}: {{this.value}}
+  {{~#unless @last}}, {{/unless}}
+  {{~/each}} }
+  {{~/if}})
   {{column.name}}!: {{column.tsType}};
+  {{~#unless @last}}
+
+  {{/unless}}
 
   {{/each}}
-  @Column('text', { nullable: true })
-  proof!: string;
 }

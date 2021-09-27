@@ -11,7 +11,6 @@ import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { capitalizeHelper } from './utils/handlebar-helpers';
 
 const TEMPLATE_FILE = './templates/database-template.handlebars';
 
@@ -22,8 +21,6 @@ export class Database {
   constructor () {
     this._queries = [];
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
-
-    Handlebars.registerHelper('capitalize', capitalizeHelper);
   }
 
   /**

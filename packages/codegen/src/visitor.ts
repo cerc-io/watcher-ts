@@ -5,11 +5,12 @@
 import { Writable } from 'stream';
 
 import { Database } from './database';
+import { Param } from './utils/types';
+import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { Entity } from './entity';
 import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
-import { Param } from './utils/types';
 
 export class Visitor {
   _schema: Schema;
@@ -42,7 +43,7 @@ export class Visitor {
 
       this._schema.addQuery(name, params, returnType);
       this._resolvers.addQuery(name, params, returnType);
-      this._indexer.addQuery(name, params, returnType);
+      this._indexer.addQuery(MODE_ETH_CALL, name, params, returnType);
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
     }
@@ -55,8 +56,7 @@ export class Visitor {
   stateVariableDeclarationVisitor (node: any): void {
     // TODO Handle multiples variables in a single line.
     // TODO Handle array types.
-    let name: string = node.variables[0].name;
-    name = name.startsWith('_') ? name.substring(1) : name;
+    const name: string = node.variables[0].name;
 
     const params: Param[] = [];
 
@@ -75,7 +75,7 @@ export class Visitor {
 
     this._schema.addQuery(name, params, returnType);
     this._resolvers.addQuery(name, params, returnType);
-    this._indexer.addQuery(name, params, returnType);
+    this._indexer.addQuery(MODE_STORAGE, name, params, returnType);
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
   }
@@ -91,6 +91,7 @@ export class Visitor {
     });
 
     this._schema.addEventType(name, params);
+    this._indexer.addEvent(name, params);
   }
 
   /**

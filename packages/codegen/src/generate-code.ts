@@ -11,6 +11,7 @@ import { flatten } from '@poanet/solidity-flattener';
 
 import { parse, visit } from '@solidity-parser/parser';
 
+import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL } from './utils/constants';
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
@@ -18,9 +19,8 @@ import { exportArtifacts } from './artifacts';
 import { exportPackage } from './package';
 import { exportTSConfig } from './tsconfig';
 import { exportReadme } from './readme';
-
-const MODE_ETH_CALL = 'eth_call';
-const MODE_STORAGE = 'storage';
+import { exportEvents } from './events';
+import { registerHandlebarHelpers } from './utils/handlebar-helpers';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -45,8 +45,8 @@ const main = async (): Promise<void> => {
       alias: 'm',
       describe: 'Code generation mode.',
       type: 'string',
-      default: MODE_STORAGE,
-      choices: [MODE_ETH_CALL, MODE_STORAGE]
+      default: MODE_ALL,
+      choices: [MODE_ETH_CALL, MODE_STORAGE, MODE_ALL]
     })
     .option('flatten', {
       alias: 'f',
@@ -81,12 +81,14 @@ function parseAndVisit (data: string, visitor: Visitor, mode: string) {
   // Filter out library nodes.
   ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
 
-  if (mode === MODE_ETH_CALL) {
+  if ([MODE_ALL, MODE_ETH_CALL].some(value => value === mode)) {
     visit(ast, {
       FunctionDefinition: visitor.functionDefinitionVisitor.bind(visitor),
       EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
     });
-  } else {
+  }
+
+  if ([MODE_ALL, MODE_STORAGE].some(value => value === mode)) {
     visit(ast, {
       StateVariableDeclaration: visitor.stateVariableDeclarationVisitor.bind(visitor),
       EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
@@ -112,6 +114,8 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   }
 
   const inputFileName = path.basename(argv['input-file'], '.sol');
+
+  registerHandlebarHelpers();
 
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
@@ -172,6 +176,11 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
     : process.stdout;
   exportReadme(path.basename(outputDir), argv['contract-name'], outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/events.ts'))
+    : process.stdout;
+  exportEvents(outStream);
 }
 
 main().catch(err => {

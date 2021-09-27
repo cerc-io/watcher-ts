@@ -217,6 +217,16 @@ export class Schema {
         }
       }
     });
+
+    this._composer.Query.addFields({
+      eventsInRange: {
+        type: [this._composer.getOTC('ResultEvent').NonNull],
+        args: {
+          fromBlockNumber: 'Int!',
+          toBlockNumber: 'Int!'
+        }
+      }
+    });
   }
 
   /**

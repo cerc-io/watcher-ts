@@ -11,38 +11,39 @@ import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { compareHelper, capitalizeHelper } from './utils/handlebar-helpers';
+import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 
 const TEMPLATE_FILE = './templates/indexer-template.handlebars';
 
 export class Indexer {
   _queries: Array<any>;
+  _events: Array<any>;
   _templateString: string;
 
   constructor () {
     this._queries = [];
+    this._events = [];
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
-
-    Handlebars.registerHelper('compare', compareHelper);
-    Handlebars.registerHelper('capitalize', capitalizeHelper);
   }
 
   /**
    * Stores the query to be passed to the template.
+   * @param mode Code generation mode.
    * @param name Name of the query.
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (mode: string, name: string, params: Array<Param>, returnType: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
 
     const queryObject = {
-      name: name,
+      name,
       params: _.cloneDeep(params),
-      returnType: returnType
+      returnType,
+      mode
     };
 
     queryObject.params = queryObject.params.map((param) => {
@@ -59,6 +60,18 @@ export class Indexer {
     this._queries.push(queryObject);
   }
 
+  addEvent (name: string, params: Array<Param>): void {
+    // Check if the event is already added.
+    if (this._events.some(event => event.name === name)) {
+      return;
+    }
+
+    this._events.push({
+      name,
+      params
+    });
+  }
+
   /**
    * Writes the indexer file generated from a template to a stream.
    * @param outStream A writable output stream to write the indexer file to.
@@ -66,10 +79,17 @@ export class Indexer {
    */
   exportIndexer (outStream: Writable, inputFileName: string): void {
     const template = Handlebars.compile(this._templateString);
+
     const obj = {
       inputFileName,
-      queries: this._queries
+      queries: this._queries,
+      constants: {
+        MODE_ETH_CALL,
+        MODE_STORAGE
+      },
+      events: this._events
     };
+
     const indexer = template(obj);
     outStream.write(indexer);
   }

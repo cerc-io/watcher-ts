@@ -3,6 +3,12 @@
 //
 
 import assert from 'assert';
+import Handlebars from 'handlebars';
+
+export function registerHandlebarHelpers (): void {
+  Handlebars.registerHelper('compare', compareHelper);
+  Handlebars.registerHelper('capitalize', capitalizeHelper);
+}
 
 /**
  * Helper function to compare two values using the given operator.
@@ -11,7 +17,7 @@ import assert from 'assert';
  * @param options Handlebars options parameter. `options.hash.operator`: operator to be used for comparison.
  * @returns Result of the comparison.
  */
-export function compareHelper (lvalue: string, rvalue: string, options: any): boolean {
+function compareHelper (lvalue: string, rvalue: string, options: any): boolean {
   assert(lvalue && rvalue, "Handlerbars Helper 'compare' needs at least 2 parameters");
 
   const operator = options.hash.operator || '===';
@@ -38,7 +44,7 @@ export function compareHelper (lvalue: string, rvalue: string, options: any): bo
  * @param options Handlebars options parameter. `options.hash.tillIndex`: index till which to capitalize the string.
  * @returns The modified string.
  */
-export function capitalizeHelper (value: string, options: any): string {
+function capitalizeHelper (value: string, options: any): string {
   const tillIndex = options.hash.tillIndex || value.length;
   const result = `${value.slice(0, tillIndex).toUpperCase()}${value.slice(tillIndex, value.length)}`;
 
