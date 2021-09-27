@@ -42,7 +42,6 @@ interface ResultEvent {
 export class Indexer {
   _db: Database
   _ethClient: EthClient
-  _getStorageAt: GetStorageAt
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
 
@@ -57,7 +56,6 @@ export class Indexer {
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
-    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
 
     const { abi, storageLayout } = artifacts;
@@ -73,8 +71,7 @@ export class Indexer {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSON.parse(event.eventInfo);
-    const { tx } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbig.parse(event.eventInfo);
 
     return {
       block: {
@@ -85,10 +82,7 @@ export class Indexer {
       },
 
       tx: {
-        hash: event.txHash,
-        from: tx.src,
-        to: tx.dst,
-        index: tx.index
+        hash: event.txHash
       },
 
       contract: event.contract,
@@ -140,7 +134,7 @@ export class Indexer {
 
     {{~#if (compare query.mode @root.constants.MODE_STORAGE)}}
 
-    const result = await this._getStorageValue(
+    const result = await this._baseIndexer.getStorageValue(
       this._storageLayout,
       blockHash,
       contractAddress,
@@ -158,15 +152,14 @@ export class Indexer {
   }
 
   {{/each}}
-  async _getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
-    return getStorageValue(
-      storageLayout,
-      this._getStorageAt,
-      blockHash,
-      contractAddress,
-      variable,
-      ...mappingKeys
-    );
+
+  async triggerIndexingOnEvent (event: Event): Promise<void> {
+    // TODO: Implement custom hooks.
+  }
+
+  async processEvent (event: Event): Promise<void> {
+    // Trigger indexing of data based on the event.
+    await this.triggerIndexingOnEvent(event);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -183,7 +176,12 @@ export class Indexer {
         const { {{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}} } = logDescription.args;
         eventInfo = {
           {{#each event.params}}
-          {{this.name}} {{~#unless @last}},{{/unless}}
+          {{#if (compare this.type 'bigint')}}
+          {{this.name}}: BigInt(ethers.BigNumber.from({{this.name}}).toString())
+          {{else}}
+          {{this.name}}
+          {{~/if}}
+          {{~#unless @last}},{{/unless}}
           {{/each}}
         };
 

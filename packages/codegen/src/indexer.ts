@@ -66,10 +66,19 @@ export class Indexer {
       return;
     }
 
-    this._events.push({
+    const eventObject = {
       name,
-      params
+      params: _.cloneDeep(params)
+    };
+
+    eventObject.params = eventObject.params.map((param) => {
+      const tsParamType = getTsForSol(param.type);
+      assert(tsParamType);
+      param.type = tsParamType;
+      return param;
     });
+
+    this._events.push(eventObject);
   }
 
   /**

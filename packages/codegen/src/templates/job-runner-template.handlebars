@@ -2,29 +2,69 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import fs from 'fs';
-import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
-import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import 'graphql-import-node';
-import { createServer } from 'http';
 import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@vulcanize/util';
+import {
+  getConfig,
+  JobQueue,
+  JobRunner as BaseJobRunner,
+  QUEUE_BLOCK_PROCESSING,
+  QUEUE_EVENT_PROCESSING,
+  JobQueueConfig,
+  DEFAULT_CONFIG_PATH
+} from '@vulcanize/util';
 
-import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database } from './database';
-import { EventWatcher } from './events';
 
-const log = debug('vulcanize:server');
+const log = debug('vulcanize:job-runner');
+
+export class JobRunner {
+  _indexer: Indexer
+  _jobQueue: JobQueue
+  _baseJobRunner: BaseJobRunner
+  _jobQueueConfig: JobQueueConfig
+
+  constructor (jobQueueConfig: JobQueueConfig, indexer: Indexer, jobQueue: JobQueue) {
+    this._indexer = indexer;
+    this._jobQueue = jobQueue;
+    this._jobQueueConfig = jobQueueConfig;
+    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this._jobQueue);
+  }
+
+  async start (): Promise<void> {
+    await this.subscribeBlockProcessingQueue();
+    await this.subscribeEventProcessingQueue();
+  }
+
+  async subscribeBlockProcessingQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
+      await this._baseJobRunner.processBlock(job);
+
+      await this._jobQueue.markComplete(job);
+    });
+  }
+
+  async subscribeEventProcessingQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
+      const event = await this._baseJobRunner.processEvent(job);
+
+      const watchedContract = await this._indexer.isWatchedContract(event.contract);
+      if (watchedContract) {
+        await this._indexer.processEvent(event);
+      }
+
+      await this._jobQueue.markComplete(job);
+    });
+  }
+}
 
 export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv))
@@ -40,8 +80,6 @@ export const main = async (): Promise<any> => {
   const config = await getConfig(argv.f);
 
   assert(config.server, 'Missing server config');
-
-  const { host, port } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -63,46 +101,26 @@ export const main = async (): Promise<any> => {
   });
 
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
-
-  // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
-  // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-  const pubsub = new PubSub();
   const indexer = new Indexer(db, ethClient, ethProvider);
 
   assert(jobQueueConfig, 'Missing job queue config');
+
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-  await eventWatcher.start();
-
-  const resolvers = await createResolvers(indexer);
-
-  const app: Application = express();
-  const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
-
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
-
-  return { app, server };
+  const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
+  await jobRunner.start();
 };
 
 main().then(() => {
-  log('Starting server...');
+  log('Starting job runner...');
 }).catch(err => {
   log(err);
+});
+
+process.on('uncaughtException', err => {
+  log('uncaughtException', err);
 });

@@ -20,6 +20,8 @@ import { exportPackage } from './package';
 import { exportTSConfig } from './tsconfig';
 import { exportReadme } from './readme';
 import { exportEvents } from './events';
+import { exportJobRunner } from './job-runner';
+import { exportWatchContract } from './watch-contract';
 import { registerHandlebarHelpers } from './utils/handlebar-helpers';
 
 const main = async (): Promise<void> => {
@@ -111,6 +113,9 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
 
     const entitiesFolder = path.join(outputDir, 'src/entity');
     if (!fs.existsSync(entitiesFolder)) fs.mkdirSync(entitiesFolder, { recursive: true });
+
+    const cliFolder = path.join(outputDir, 'src/cli');
+    if (!fs.existsSync(cliFolder)) fs.mkdirSync(cliFolder, { recursive: true });
   }
 
   const inputFileName = path.basename(argv['input-file'], '.sol');
@@ -181,6 +186,16 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/events.ts'))
     : process.stdout;
   exportEvents(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
+    : process.stdout;
+  exportJobRunner(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
+    : process.stdout;
+  exportWatchContract(outStream);
 }
 
 main().catch(err => {

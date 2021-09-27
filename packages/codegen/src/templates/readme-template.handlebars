@@ -15,6 +15,24 @@
   createdb {{folderName}}
   ```
 
+* Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+
+  ```
+  createdb {{folderName}}-job-queue
+  ```
+
+  ```
+  postgres@tesla:~$ psql -U postgres -h localhost {{folderName}}-job-queue
+  Password for user postgres:
+  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+  Type "help" for help.
+
+  {{folderName}}-job-queue=# CREATE EXTENSION pgcrypto;
+  CREATE EXTENSION
+  {{folderName}}-job-queue=# exit
+  ```
+
 * Update `environments/local.toml` with database connection settings.
 
 * Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
@@ -27,25 +45,16 @@
   yarn server
   ```
 
+* Run the job-runner:
+
+  ```bash
+  yarn job-runner
+  ```
+
 GQL console: http://localhost:3008/graphql
 
-## Demo
-
-* Install required packages:
+* To watch a contract:
 
   ```bash
-  yarn
-  ```
-
-* Create the database:
-
-  ```bash
-  sudo su - postgres
-  createdb {{folderName}}
-  ```
-
-* Run the watcher:
-
-  ```bash
-  yarn server
+  yarn watch:contract --address CONTRACT_ADDRESS --kind {{contractName}} --starting-block BLOCK_NUMBER
   ```

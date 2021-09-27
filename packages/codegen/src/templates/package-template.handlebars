@@ -6,7 +6,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "server": "DEBUG=vulcanize:* ts-node src/server.ts"
+    "server": "DEBUG=vulcanize:* ts-node src/server.ts",
+    "job-runner": "DEBUG=vulcanize:* ts-node src/job-runner.ts",
+    "watch:contract": "DEBUG=vulcanize:* ts-node src/cli/watch-contract.ts"
   },
   "repository": {
     "type": "git",
