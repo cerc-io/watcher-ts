@@ -20,28 +20,28 @@ const imports = {
     'typeConversion.bytesToHex': () => {
       console.log('typeConversion.bytesToHex');
     },
-    'typeConversion.bytesToString': () => {
-      console.log('typeConversion.bytesToString');
-    },
+    // 'typeConversion.bytesToString': () => {
+    //   console.log('typeConversion.bytesToString');
+    // },
     'typeConversion.bigIntToString': () => {
       console.log('typeConversion.bigIntToString');
     },
 
-    'bigDecimal.fromString': () => {
-      console.log('bigDecimal.fromString');
-    },
-    'bigDecimal.times': () => {
-      console.log('bigDecimal.times');
-    },
+    // 'bigDecimal.fromString': () => {
+    //   console.log('bigDecimal.fromString');
+    // },
+    // 'bigDecimal.times': () => {
+    //   console.log('bigDecimal.times');
+    // },
     'bigDecimal.dividedBy': () => {
       console.log('bigDecimal.dividedBy');
     },
-    'bigDecimal.plus': () => {
-      console.log('bigDecimal.plus');
-    },
-    'bigDecimal.minus': () => {
-      console.log('bigDecimal.minus');
-    },
+    // 'bigDecimal.plus': () => {
+    //   console.log('bigDecimal.plus');
+    // },
+    // 'bigDecimal.minus': () => {
+    //   console.log('bigDecimal.minus');
+    // },
 
     'bigInt.plus': () => {
       console.log('bigInt.plus');
@@ -55,16 +55,22 @@ const imports = {
     'bigInt.dividedBy': () => {
       console.log('bigInt.dividedBy');
     },
-    'bigInt.mod': () => {
-      console.log('bigInt.mod');
+    // 'bigInt.mod': () => {
+    //   console.log('bigInt.mod');
+    // },
+    'bigInt.fromString': () => {
+      console.log('bigInt.fromString');
     },
 
     'log.log': () => {
       console.log('log.log');
     },
 
-    'dataSource.create': () => {
-      console.log('dataSource.create');
+    // 'dataSource.create': () => {
+    //   console.log('dataSource.create');
+    // },
+    'dataSource.address': () => {
+      console.log('dataSource.address');
     }
   },
   ethereum: {
