@@ -22,6 +22,7 @@ import { exportReadme } from './readme';
 import { exportEvents } from './events';
 import { exportJobRunner } from './job-runner';
 import { exportWatchContract } from './watch-contract';
+import { exportLint } from './lint';
 import { registerHandlebarHelpers } from './utils/handlebar-helpers';
 
 const main = async (): Promise<void> => {
@@ -196,6 +197,17 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
   exportWatchContract(outStream);
+
+  let rcOutStream;
+  let ignoreOutStream;
+  if (outputDir) {
+    rcOutStream = fs.createWriteStream(path.join(outputDir, '.eslintrc.json'));
+    ignoreOutStream = fs.createWriteStream(path.join(outputDir, '.eslintignore'));
+  } else {
+    rcOutStream = process.stdout;
+    ignoreOutStream = process.stdout;
+  }
+  exportLint(rcOutStream, ignoreOutStream);
 }
 
 main().catch(err => {

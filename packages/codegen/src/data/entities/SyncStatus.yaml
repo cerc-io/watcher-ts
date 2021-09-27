@@ -1,0 +1,46 @@
+className: SyncStatus
+implements: SyncStatusInterface
+indexOn: []
+columns:
+  - name: chainHeadBlockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: chainHeadBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: latestIndexedBlockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: latestIndexedBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: latestCanonicalBlockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: latestCanonicalBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+    from: typeorm
+  - toImport:
+      - SyncStatusInterface
+    from: '@vulcanize/util'

@@ -1,0 +1,63 @@
+className: Event
+indexOn:
+  - columns:
+      - block
+      - contract
+  - columns:
+      - block
+      - contract
+      - eventName
+columns:
+  - name: block
+    tsType: BlockProgress
+    columnType: ManyToOne
+    lhs: ()
+    rhs: BlockProgress
+  - name: txHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: index
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: contract
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 42
+  - name: eventName
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 256
+  - name: eventInfo
+    pgType: text
+    tsType: string
+    columnType: Column
+  - name: extraInfo
+    pgType: text
+    tsType: string
+    columnType: Column
+  - name: proof
+    pgType: text
+    tsType: string
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+      - Index
+      - ManyToOne
+    from: typeorm
+  - toImport:
+      - BlockProgress
+    from: ./BlockProgress

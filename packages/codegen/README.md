@@ -43,11 +43,19 @@
 
 ## Demo
 
-* Install required packages:
+* In root of the repository:
 
-  ```bash
-  yarn
-  ```
+  * Install required packages:
+
+      ```bash
+      yarn
+      ```
+
+  * Build files:
+
+      ```bash
+      yarn build
+      ```
 
 * Generate a watcher from a contract file:
 

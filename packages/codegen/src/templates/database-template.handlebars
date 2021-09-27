@@ -44,6 +44,10 @@ export class Database {
   }
 
   {{#each queries as | query |}}
+  // eslint-disable-next-line camelcase
+  {{#if (banTypeCheck (capitalize query.name tillIndex=1)) }}
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  {{/if}}
   async get{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
   {{~#each query.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
   {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{capitalize query.name tillIndex=1}} | undefined> {
@@ -54,14 +58,18 @@ export class Database {
         {{#each query.params}}
         {{this.name}}{{#unless @last}},{{/unless}}
         {{/each}}
-      })
+      });
   }
 
   {{/each}}
 
   {{~#each queries as | query |}}
+  // eslint-disable-next-line camelcase
+  {{#if (banTypeCheck (capitalize query.name tillIndex=1)) }}
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  {{/if}}
   async save{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
-  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof}: DeepPartial<{{capitalize query.name tillIndex=1}}>): Promise<{{capitalize query.name tillIndex=1}}> {
+  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{capitalize query.name tillIndex=1}}>): Promise<{{capitalize query.name tillIndex=1}}> {
     const repo = this._conn.getRepository({{capitalize query.name tillIndex=1}});
     const entity = repo.create({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof });
@@ -184,9 +192,9 @@ export class Database {
     }, new Map<string, string>());
   }
 
-  _setPropColMaps () {
+  _setPropColMaps (): void {
     {{#each queries as | query |}}
-    this._propColMaps['{{capitalize query.name tillIndex=1}}'] = this._getPropertyColumnMapForEntity('{{capitalize query.name tillIndex=1}}');
+    this._propColMaps.{{capitalize query.name tillIndex=1}} = this._getPropertyColumnMapForEntity('{{capitalize query.name tillIndex=1}}');
     {{/each}}
   }
 }

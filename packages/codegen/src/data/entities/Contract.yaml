@@ -1,0 +1,31 @@
+className: Contract
+indexOn:
+  - columns:
+      - address
+    unique: true
+columns:
+  - name: address
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 42
+  - name: kind
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 8
+  - name: startingBlock
+    pgType: integer
+    tsType: number
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+      - Index
+    from: typeorm

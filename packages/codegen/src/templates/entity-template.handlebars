@@ -6,8 +6,6 @@
 import { {{~#each import.toImport}} {{this}} {{~#unless @last}}, {{~/unless}} {{~/each}} } from '{{import.from}}';
 {{/each}}
 
-import { bigintTransformer } from '@vulcanize/util';
-
 @Entity()
 {{#each indexOn as | index |}}
 {{#if index.columns}}

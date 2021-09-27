@@ -5,9 +5,12 @@
 import assert from 'assert';
 import Handlebars from 'handlebars';
 
+import { bannedTypes } from './types';
+
 export function registerHandlebarHelpers (): void {
   Handlebars.registerHelper('compare', compareHelper);
   Handlebars.registerHelper('capitalize', capitalizeHelper);
+  Handlebars.registerHelper('banTypeCheck', banTypeCheckHelper);
 }
 
 /**
@@ -49,4 +52,8 @@ function capitalizeHelper (value: string, options: any): string {
   const result = `${value.slice(0, tillIndex).toUpperCase()}${value.slice(tillIndex, value.length)}`;
 
   return result;
+}
+
+function banTypeCheckHelper (value: string): boolean {
+  return bannedTypes.has(value);
 }

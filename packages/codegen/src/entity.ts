@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
+import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
@@ -12,6 +13,7 @@ import { getTsForSol, getPgForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
+const TABLES_DIR = './data/entities';
 
 export class Entity {
   _entities: Array<any>;
@@ -44,7 +46,7 @@ export class Entity {
 
     entityObject.imports.push(
       {
-        toImport: ['Entity', 'PrimaryGeneratedColumn', 'Column', 'Index'],
+        toImport: new Set(['Entity', 'PrimaryGeneratedColumn', 'Column', 'Index']),
         from: 'typeorm'
       }
     );
@@ -106,16 +108,6 @@ export class Entity {
           );
         }
 
-        // Use bigintTransformer for bigint types.
-        if (tsType === 'bigint') {
-          columnOptions.push(
-            {
-              option: 'transformer',
-              value: 'bigintTransformer'
-            }
-          );
-        }
-
         return {
           name,
           pgType,
@@ -136,7 +128,8 @@ export class Entity {
       name: 'value',
       pgType: pgReturnType,
       tsType: tsReturnType,
-      columnType: 'Column'
+      columnType: 'Column',
+      columnOptions: []
     });
 
     entityObject.columns.push({
@@ -150,6 +143,31 @@ export class Entity {
           value: true
         }
       ]
+    });
+
+    entityObject.columns.forEach((column: any) => {
+      if (column.tsType === 'bigint') {
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'bigintTransformer'
+          }
+        );
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === '@vulcanize/util';
+        });
+
+        if (importObject) {
+          importObject.toImport.add('bigintTransformer');
+        } else {
+          entityObject.imports.push(
+            {
+              toImport: new Set(['bigintTransformer']),
+              from: '@vulcanize/util'
+            }
+          );
+        }
+      }
     });
 
     this._entities.push(entityObject);
@@ -176,362 +194,22 @@ export class Entity {
   }
 
   _addEventEntity (): void {
-    const entity: any = {
-      className: 'Event',
-      indexOn: [],
-      columns: [],
-      imports: []
-    };
-
-    entity.imports.push(
-      {
-        toImport: ['Entity', 'PrimaryGeneratedColumn', 'Column', 'Index', 'ManyToOne'],
-        from: 'typeorm'
-      },
-      {
-        toImport: ['BlockProgress'],
-        from: './BlockProgress'
-      }
-    );
-
-    entity.indexOn.push(
-      {
-        columns: ['block', 'contract']
-      },
-      {
-        columns: ['block', 'contract', 'eventName']
-      }
-    );
-
-    entity.columns.push({
-      name: 'block',
-      tsType: 'BlockProgress',
-      columnType: 'ManyToOne',
-      lhs: '()',
-      rhs: 'BlockProgress'
-    });
-
-    entity.columns.push({
-      name: 'txHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'index',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'contract',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 42
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'eventName',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 256
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'eventInfo',
-      pgType: 'text',
-      tsType: 'string',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'extraInfo',
-      pgType: 'text',
-      tsType: 'string',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'proof',
-      pgType: 'text',
-      tsType: 'string',
-      columnType: 'Column'
-    });
-
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Event.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 
   _addSyncStatusEntity (): void {
-    const entity: any = {
-      className: 'SyncStatus',
-      implements: 'SyncStatusInterface',
-      indexOn: [],
-      columns: [],
-      imports: []
-    };
-
-    entity.imports.push({
-      toImport: ['Entity', 'PrimaryGeneratedColumn', 'Column'],
-      from: 'typeorm'
-    });
-
-    entity.imports.push({
-      toImport: ['SyncStatusInterface'],
-      from: '@vulcanize/util'
-    });
-
-    entity.columns.push({
-      name: 'chainHeadBlockHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'chainHeadBlockNumber',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'latestIndexedBlockHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'latestIndexedBlockNumber',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'latestCanonicalBlockHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'latestCanonicalBlockNumber',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'SyncStatus.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 
   _addContractEntity (): void {
-    const entity: any = {
-      className: 'Contract',
-      indexOn: [],
-      columns: [],
-      imports: []
-    };
-
-    entity.imports.push({
-      toImport: ['Entity', 'PrimaryGeneratedColumn', 'Column', 'Index'],
-      from: 'typeorm'
-    });
-
-    entity.indexOn.push(
-      {
-        columns: ['address'],
-        unique: true
-      }
-    );
-
-    entity.columns.push({
-      name: 'address',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 42
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'kind',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 8
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'startingBlock',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Contract.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 
   _addBlockProgressEntity (): void {
-    const entity: any = {
-      className: 'BlockProgress',
-      implements: 'BlockProgressInterface',
-      indexOn: [],
-      columns: [],
-      imports: []
-    };
-
-    entity.imports.push({
-      toImport: ['Entity', 'PrimaryGeneratedColumn', 'Column', 'Index'],
-      from: 'typeorm'
-    });
-
-    entity.imports.push({
-      toImport: ['BlockProgressInterface'],
-      from: '@vulcanize/util'
-    });
-
-    entity.indexOn.push(
-      {
-        columns: ['blockHash'],
-        unique: true
-      },
-      {
-        columns: ['blockNumber']
-      },
-      {
-        columns: ['parentHash']
-      }
-    );
-
-    entity.columns.push({
-      name: 'blockHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'parentHash',
-      pgType: 'varchar',
-      tsType: 'string',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'length',
-          value: 66
-        }
-      ]
-    });
-
-    entity.columns.push({
-      name: 'blockNumber',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'blockTimestamp',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'numEvents',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'numProcessedEvents',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'lastProcessedEventIndex',
-      pgType: 'integer',
-      tsType: 'number',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'isComplete',
-      pgType: 'boolean',
-      tsType: 'boolean',
-      columnType: 'Column'
-    });
-
-    entity.columns.push({
-      name: 'isPruned',
-      pgType: 'boolean',
-      tsType: 'boolean',
-      columnType: 'Column',
-      columnOptions: [
-        {
-          option: 'default',
-          value: false
-        }
-      ]
-    });
-
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'BlockProgress.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 }

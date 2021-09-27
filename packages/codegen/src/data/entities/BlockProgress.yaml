@@ -1,0 +1,66 @@
+className: BlockProgress
+implements: BlockProgressInterface
+indexOn:
+  - columns:
+      - blockHash
+    unique: true
+  - columns:
+      - blockNumber
+  - columns:
+      - parentHash
+columns:
+  - name: blockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: parentHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: blockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: blockTimestamp
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: numEvents
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: numProcessedEvents
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: lastProcessedEventIndex
+    pgType: integer
+    tsType: number
+    columnType: Column
+  - name: isComplete
+    pgType: boolean
+    tsType: boolean
+    columnType: Column
+  - name: isPruned
+    pgType: boolean
+    tsType: boolean
+    columnType: Column
+    columnOptions:
+      - option: default
+        value: false
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+      - Index
+    from: typeorm
+  - toImport:
+      - BlockProgressInterface
+    from: '@vulcanize/util'

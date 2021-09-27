@@ -24,6 +24,8 @@
     "graphql": "^15.5.0",
     "graphql-compose": "^9.0.3",
     "handlebars": "^4.7.7",
+    "js-yaml": "^4.0.0",
+    "lodash": "^4.17.21",
     "node-fetch": "^2",
     "solc": "^0.8.7-fixed",
     "ts-node": "^10.2.1",
@@ -32,6 +34,7 @@
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^4.3.2",
+    "@types/js-yaml": "^4.0.3",
     "@types/node": "^16.9.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",

@@ -7,11 +7,11 @@ import debug from 'debug';
 import { JsonFragment } from '@ethersproject/abi';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getStorageValue, GetStorageAt, StorageLayout } from '@vulcanize/solidity-mapper';
+import { StorageLayout } from '@vulcanize/solidity-mapper';
 import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
 
 import { Database } from './database';
@@ -101,7 +101,6 @@ export class Indexer {
   {{#each queries as | query |}}
   async {{query.name}} (blockHash: string, contractAddress: string
     {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}): Promise<ValueResult> {
-
     const entity = await this._db.get{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -119,21 +118,22 @@ export class Indexer {
     const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
 
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = BigNumber.from(number).toNumber();
+    const blockNumber = ethers.BigNumber.from(number).toNumber();
+
+    {{#if (compare query.returnType 'bigint')}}
     let value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
-
-    {{~#if (compare query.returnType 'bigint')}}
-
     value = value.toString();
     value = BigInt(value);
+    {{else}}
+    const value = await contract.{{query.name}}(
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
     {{/if}}
 
     const result: ValueResult = { value };
     {{/if}}
 
     {{~#if (compare query.mode @root.constants.MODE_STORAGE)}}
-
     const result = await this._baseIndexer.getStorageValue(
       this._storageLayout,
       blockHash,
@@ -152,9 +152,9 @@ export class Indexer {
   }
 
   {{/each}}
-
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     // TODO: Implement custom hooks.
+    assert(event);
   }
 
   async processEvent (event: Event): Promise<void> {

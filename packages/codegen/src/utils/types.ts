@@ -6,3 +6,7 @@ export interface Param {
   name: string;
   type: string;
 }
+
+export const bannedTypes = new Set([
+  'Symbol'
+]);
