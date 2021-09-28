@@ -45,7 +45,7 @@ export class Database {
 
   {{#each queries as | query |}}
   // eslint-disable-next-line camelcase
-  {{#if (banTypeCheck (capitalize query.name tillIndex=1)) }}
+  {{#if (reservedNameCheck (capitalize query.name tillIndex=1)) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
   async get{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
@@ -65,7 +65,7 @@ export class Database {
 
   {{~#each queries as | query |}}
   // eslint-disable-next-line camelcase
-  {{#if (banTypeCheck (capitalize query.name tillIndex=1)) }}
+  {{#if (reservedNameCheck (capitalize query.name tillIndex=1)) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
   async save{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress

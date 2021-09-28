@@ -10,6 +10,7 @@ import { hideBin } from 'yargs/helpers';
 import { flatten } from '@poanet/solidity-flattener';
 
 import { parse, visit } from '@solidity-parser/parser';
+import { KIND_ACTIVE, KIND_LAZY } from '@vulcanize/util';
 
 import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL } from './utils/constants';
 import { Visitor } from './visitor';
@@ -50,6 +51,13 @@ const main = async (): Promise<void> => {
       type: 'string',
       default: MODE_ALL,
       choices: [MODE_ETH_CALL, MODE_STORAGE, MODE_ALL]
+    })
+    .option('kind', {
+      alias: 'k',
+      describe: 'Watcher kind.',
+      type: 'string',
+      default: KIND_ACTIVE,
+      choices: [KIND_ACTIVE, KIND_LAZY]
     })
     .option('flatten', {
       alias: 'f',
@@ -146,7 +154,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
-  exportConfig(path.basename(outputDir), outStream);
+  exportConfig(argv.kind, path.basename(outputDir), outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))

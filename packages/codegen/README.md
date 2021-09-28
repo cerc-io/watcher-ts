@@ -13,7 +13,7 @@
 * Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false]
+  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active]
   ```
 
     * `input-file`(alias: `i`): Input contract file path or an URL (required).
@@ -21,24 +21,25 @@
     * `output-folder`(alias: `o`): Output folder path. (logs output using `stdout` if not provided).
     * `mode`(alias: `m`): Code generation mode (default: `all`).
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
+    * `kind` (alias: `k`): Kind of watcher (default; `active`).
 
   **Note**: When passed an *URL* as `input-file`, it is assumed that it points to an already flattened contract file.
 
   Examples:
 
-  Generate code in both eth_call and storage mode.
+  Generate code in both `eth_call` and `storage` mode, `active` kind.
   ```bash
-  yarn codegen --input-file ./test/examples/contracts/ERC20.sol --contract-name ERC20 --output-folder ../my-erc20-watcher --mode all
+  yarn codegen --input-file ./test/examples/contracts/ERC20.sol --contract-name ERC20 --output-folder ../my-erc20-watcher --mode all --kind active
   ```
 
-  Generate code in eth_call mode using a contract provided by URL.
+  Generate code in `eth_call` mode using a contract provided by an URL.
   ```bash
   yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../my-erc721-watcher --mode eth_call
   ```
 
-  Generate code in storage mode.
+  Generate code in `storage` mode, `lazy` kind.
   ```bash
-  yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage
+  yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
   ```
 
 ## Demo
@@ -60,7 +61,7 @@
 * Generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode eth_call
+  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode eth_call --kind active
   ```
 
   This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in `demo-erc20-watcher/README.md` to setup and run the generated watcher.
@@ -68,7 +69,7 @@
 * Generate a watcher from a flattened contract file from an URL:
 
   ```bash
-  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode eth_call
+  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
   ```
 
 ## References

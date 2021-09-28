@@ -201,6 +201,14 @@ export class Indexer {
     return this._baseIndexer.isWatchedContract(address);
   }
 
+  async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
+    return this._baseIndexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
+  }
+
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
+    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber);
+  }
+
   async getSyncStatus (): Promise<SyncStatus | undefined> {
     return this._baseIndexer.getSyncStatus();
   }

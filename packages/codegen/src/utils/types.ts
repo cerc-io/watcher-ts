@@ -7,6 +7,6 @@ export interface Param {
   type: string;
 }
 
-export const bannedTypes = new Set([
+export const reservedNames = new Set([
   'Symbol'
 ]);

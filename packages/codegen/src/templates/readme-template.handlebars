@@ -15,7 +15,9 @@
   createdb {{folderName}}
   ```
 
-* Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+* If the watcher is an `active` watcher:
+
+  Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
   ```
   createdb {{folderName}}-job-queue
@@ -45,16 +47,18 @@
   yarn server
   ```
 
-* Run the job-runner:
-
-  ```bash
-  yarn job-runner
-  ```
-
 GQL console: http://localhost:3008/graphql
 
-* To watch a contract:
+* If the watcher is an `active` watcher:
 
-  ```bash
-  yarn watch:contract --address CONTRACT_ADDRESS --kind {{contractName}} --starting-block BLOCK_NUMBER
-  ```
+  * Run the job-runner:
+
+    ```bash
+    yarn job-runner
+    ```
+
+  * To watch a contract:
+
+    ```bash
+    yarn watch:contract --address CONTRACT_ADDRESS --kind {{contractName}} --starting-block BLOCK_NUMBER
+    ```

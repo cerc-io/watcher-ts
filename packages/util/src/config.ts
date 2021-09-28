@@ -23,6 +23,7 @@ export interface Config {
     host: string;
     port: number;
     mode: string;
+    kind: string;
   };
   database: ConnectionOptions;
   upstream: {

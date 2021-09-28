@@ -17,7 +17,7 @@ import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE } from '@vulcanize/util';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -41,7 +41,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port } = config.server;
+  const { host, port, kind: watcherKind } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -64,20 +64,23 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
-  // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
-  // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-  const pubsub = new PubSub();
   const indexer = new Indexer(db, ethClient, ethProvider);
 
-  assert(jobQueueConfig, 'Missing job queue config');
-  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
-  assert(dbConnectionString, 'Missing job queue db connection string');
+  if (watcherKind === KIND_ACTIVE) {
+    // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
+    // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+    const pubsub = new PubSub();
 
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-  await jobQueue.start();
+    assert(jobQueueConfig, 'Missing job queue config');
+    const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+    assert(dbConnectionString, 'Missing job queue db connection string');
 
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-  await eventWatcher.start();
+    const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+    await jobQueue.start();
+
+    const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
+    await eventWatcher.start();
+  }
 
   const resolvers = await createResolvers(indexer);
 

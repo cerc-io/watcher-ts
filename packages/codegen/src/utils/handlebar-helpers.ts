@@ -5,12 +5,12 @@
 import assert from 'assert';
 import Handlebars from 'handlebars';
 
-import { bannedTypes } from './types';
+import { reservedNames } from './types';
 
 export function registerHandlebarHelpers (): void {
   Handlebars.registerHelper('compare', compareHelper);
   Handlebars.registerHelper('capitalize', capitalizeHelper);
-  Handlebars.registerHelper('banTypeCheck', banTypeCheckHelper);
+  Handlebars.registerHelper('reservedNameCheck', reservedNameCheckHelper);
 }
 
 /**
@@ -54,6 +54,6 @@ function capitalizeHelper (value: string, options: any): string {
   return result;
 }
 
-function banTypeCheckHelper (value: string): boolean {
-  return bannedTypes.has(value);
+function reservedNameCheckHelper (value: string): boolean {
+  return reservedNames.has(value);
 }
