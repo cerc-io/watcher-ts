@@ -65,10 +65,35 @@ export function testEthCall (): void {
   }
 }
 
-export function testTypeConversions (): void {
-  log.debug('In test typeConversions', []);
+export function testBytesToHex (): string {
+  log.debug('In test bytesToHex', []);
 
-  const byteArray = Bytes.fromHexString('0x231a');
-  const hexString = byteArray.toHexString();
-  log.debug('typeConversion.bytesToHex result {}', [hexString]);
+  const hexString = '0x231a';
+  log.debug('Using hexString: {}', [hexString]);
+  const byteArray = Bytes.fromHexString(hexString);
+  const res = byteArray.toHexString();
+  log.debug('typeConversion.bytesToHex result: {}', [res]);
+  return res;
+}
+
+export function testBigIntToString (): string {
+  log.debug('In test bigIntToString', []);
+
+  const hexString = '0x231a';
+  log.debug('Using hexString: {}', [hexString]);
+  const byteArray = Bytes.fromHexString(hexString);
+  const bigInt = BigInt.fromByteArray(byteArray);
+  const res = bigInt.toString();
+  log.debug('typeConversion.bigIntToString from hex result: {}', [res]);
+  return res;
+}
+
+export function testStringToH160 (): string {
+  log.debug('In test stringToH160', []);
+
+  const addressString = '0xafAd925B5eAE1E370196cBa39893E858ff7257d5';
+  const address = Address.fromString(addressString);
+  const res = address.toHexString();
+  log.debug('typeConversion.stringToH160 result: {}', [res]);
+  return res;
 }

@@ -4,7 +4,12 @@
 
 import fs from 'fs/promises';
 import loader from '@assemblyscript/loader';
-import { utils } from 'ethers';
+import { utils, BigNumber } from 'ethers';
+
+type idOfType = (TypeId: number) => number
+
+// TODO: Get type id for uint8Array from @graphprotocol/graph-ts/global/global.ts
+const UINT_8_ARRAY_TYPE_ID = 6;
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
@@ -28,7 +33,7 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       //   console.log('typeConversion.bytesToString');
       // },
       'typeConversion.bigIntToString': () => {
-        console.log('typeConversion.bigIntToString');
+        console.log('index typeConversion.bigIntToString');
       },
 
       // 'bigDecimal.fromString': () => {
@@ -84,8 +89,14 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     conversion: {
-      'typeConversion.stringToH160': () => {
+      'typeConversion.stringToH160': (s: number) => {
         console.log('conversion typeConversion.stringToH160');
+        const string = __getString(s);
+        const address = utils.getAddress(string);
+        const byteArray = utils.arrayify(address);
+        const uint8ArrayId = getId(UINT_8_ARRAY_TYPE_ID);
+        const ptr = __newArray(uint8ArrayId, byteArray);
+        return ptr;
       },
 
       'typeConversion.bytesToHex': (bytes: number) => {
@@ -94,6 +105,14 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         const hexString = utils.hexlify(byteArray);
         const ptr = __newString(hexString);
         return ptr;
+      },
+
+      'typeConversion.bigIntToString': (bigInt: number) => {
+        console.log('conversion typeConversion.bigIntToString');
+        const bigIntByteArray = __getArray(bigInt);
+        const bigNumber = BigNumber.from(bigIntByteArray);
+        const ptr = __newString(bigNumber.toString());
+        return ptr;
       }
     }
   };
@@ -101,7 +120,8 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
   const instance = await loader.instantiate(buffer, imports);
 
   const exports = instance.exports;
-  const { __getString, __newString, __getArray } = exports;
+  const { __getString, __newString, __getArray, __newArray } = exports;
+  const getId: idOfType = exports.id_of_type as idOfType;
 
   return instance;
 };
