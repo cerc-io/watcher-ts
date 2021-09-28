@@ -34,15 +34,13 @@ describe('typeConversion wasm tests', () => {
     const { testBigIntToString, __getString } = exports;
 
     const ptr = testBigIntToString();
-    expect(__getString(ptr)).to.equal('8986');
+    expect(__getString(ptr)).to.equal('1000000000000000000');
   });
 
   it('should execute typeConversion stringToH160 API', () => {
     const { testStringToH160, __getString } = exports;
 
     const ptr = testStringToH160();
-    // TODO: Fix result string converted to lower case.
-    // Actual value: 0xafAd925B5eAE1E370196cBa39893E858ff7257d5
     expect(__getString(ptr)).to.equal('0xafad925b5eae1e370196cba39893e858ff7257d5');
   });
 });

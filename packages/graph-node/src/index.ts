@@ -6,10 +6,9 @@ import fs from 'fs/promises';
 import loader from '@assemblyscript/loader';
 import { utils, BigNumber } from 'ethers';
 
-type idOfType = (TypeId: number) => number
+import { TypeId } from './types';
 
-// TODO: Get type id for uint8Array from @graphprotocol/graph-ts/global/global.ts
-const UINT_8_ARRAY_TYPE_ID = 6;
+type idOfType = (TypeId: number) => number
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
@@ -91,27 +90,34 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
     conversion: {
       'typeConversion.stringToH160': (s: number) => {
         console.log('conversion typeConversion.stringToH160');
+
         const string = __getString(s);
         const address = utils.getAddress(string);
         const byteArray = utils.arrayify(address);
-        const uint8ArrayId = getId(UINT_8_ARRAY_TYPE_ID);
+
+        const uint8ArrayId = getId(TypeId.Uint8Array);
         const ptr = __newArray(uint8ArrayId, byteArray);
+
         return ptr;
       },
 
       'typeConversion.bytesToHex': (bytes: number) => {
         console.log('conversion typeConversion.bytesToHex');
+
         const byteArray = __getArray(bytes);
         const hexString = utils.hexlify(byteArray);
         const ptr = __newString(hexString);
+
         return ptr;
       },
 
       'typeConversion.bigIntToString': (bigInt: number) => {
         console.log('conversion typeConversion.bigIntToString');
+
         const bigIntByteArray = __getArray(bigInt);
         const bigNumber = BigNumber.from(bigIntByteArray);
         const ptr = __newString(bigNumber.toString());
+
         return ptr;
       }
     }
