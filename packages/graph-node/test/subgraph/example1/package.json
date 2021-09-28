@@ -1,0 +1,16 @@
+{
+  "name": "example1",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ example1",
+    "create-local": "graph create --node http://localhost:8020/ example1",
+    "remove-local": "graph remove --node http://localhost:8020/ example1",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 example1"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.22.0",
+    "@graphprotocol/graph-ts": "0.22.0"
+  }
+}
