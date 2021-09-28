@@ -10,68 +10,68 @@ import {
   Bytes,
   BigInt,
   BigDecimal
-} from '@graphprotocol/graph-ts';
+} from "@graphprotocol/graph-ts";
 
 export class ExampleEntity extends Entity {
-  constructor (id: string) {
+  constructor(id: string) {
     super();
-    this.set('id', Value.fromString(id));
+    this.set("id", Value.fromString(id));
 
-    this.set('count', Value.fromBigInt(BigInt.zero()));
-    this.set('param1', Value.fromString(''));
-    this.set('param2', Value.fromBigInt(BigInt.zero()));
+    this.set("count", Value.fromBigInt(BigInt.zero()));
+    this.set("param1", Value.fromString(""));
+    this.set("param2", Value.fromBigInt(BigInt.zero()));
   }
 
-  save (): void {
-    const id = this.get('id');
-    assert(id != null, 'Cannot save ExampleEntity entity without an ID');
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save ExampleEntity entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        'Cannot save ExampleEntity entity with non-string ID. ' +
+        "Cannot save ExampleEntity entity with non-string ID. " +
           'Considering using .toHex() to convert the "id" to a string.'
       );
-      store.set('ExampleEntity', id.toString(), this);
+      store.set("ExampleEntity", id.toString(), this);
     }
   }
 
-  static load (id: string): ExampleEntity | null {
-    return changetype<ExampleEntity | null>(store.get('ExampleEntity', id));
+  static load(id: string): ExampleEntity | null {
+    return changetype<ExampleEntity | null>(store.get("ExampleEntity", id));
   }
 
-  get id (): string {
-    const value = this.get('id');
+  get id(): string {
+    let value = this.get("id");
     return value!.toString();
   }
 
-  set id (value: string) {
-    this.set('id', Value.fromString(value));
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
   }
 
-  get count (): BigInt {
-    const value = this.get('count');
+  get count(): BigInt {
+    let value = this.get("count");
     return value!.toBigInt();
   }
 
-  set count (value: BigInt) {
-    this.set('count', Value.fromBigInt(value));
+  set count(value: BigInt) {
+    this.set("count", Value.fromBigInt(value));
   }
 
-  get param1 (): string {
-    const value = this.get('param1');
+  get param1(): string {
+    let value = this.get("param1");
     return value!.toString();
   }
 
-  set param1 (value: string) {
-    this.set('param1', Value.fromString(value));
+  set param1(value: string) {
+    this.set("param1", Value.fromString(value));
   }
 
-  get param2 (): BigInt {
-    const value = this.get('param2');
+  get param2(): BigInt {
+    let value = this.get("param2");
     return value!.toBigInt();
   }
 
-  set param2 (value: BigInt) {
-    this.set('param2', Value.fromBigInt(value));
+  set param2(value: BigInt) {
+    this.set("param2", Value.fromBigInt(value));
   }
 }
