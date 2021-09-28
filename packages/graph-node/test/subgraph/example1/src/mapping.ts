@@ -55,6 +55,10 @@ export function testEthCall (): void {
   const contract = Example1.bind(contractAddress);
 
   // Access functions by calling them.
-  const res = contract.getMethod();
-  log.debug('Contract eth call result: {}', [res]);
+  const res = contract.try_getMethod();
+  if (res.reverted) {
+    log.debug('Contract eth call reverted', []);
+  } else {
+    log.debug('Contract eth call result', []);
+  }
 }
