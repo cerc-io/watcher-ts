@@ -4,6 +4,7 @@
 
 import fs from 'fs/promises';
 import loader from '@assemblyscript/loader';
+import { utils } from 'ethers';
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
@@ -18,10 +19,10 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       },
 
       'typeConversion.stringToH160': () => {
-        console.log('typeConversion.stringToH160');
+        console.log('index typeConversion.stringToH160');
       },
       'typeConversion.bytesToHex': () => {
-        console.log('typeConversion.bytesToHex');
+        console.log('index typeConversion.bytesToHex');
       },
       // 'typeConversion.bytesToString': () => {
       //   console.log('typeConversion.bytesToString');
@@ -84,7 +85,15 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
     },
     conversion: {
       'typeConversion.stringToH160': () => {
-        console.log('typeConversion.stringToH160');
+        console.log('conversion typeConversion.stringToH160');
+      },
+
+      'typeConversion.bytesToHex': (bytes: number) => {
+        console.log('conversion typeConversion.bytesToHex');
+        const byteArray = __getArray(bytes);
+        const hexString = utils.hexlify(byteArray);
+        const ptr = __newString(hexString);
+        return ptr;
       }
     }
   };
@@ -92,7 +101,7 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
   const instance = await loader.instantiate(buffer, imports);
 
   const exports = instance.exports;
-  const { __getString } = exports;
+  const { __getString, __newString, __getArray } = exports;
 
   return instance;
 };
