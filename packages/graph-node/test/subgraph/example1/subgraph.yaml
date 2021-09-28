@@ -1,0 +1,23 @@
+specVersion: 0.0.2
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Example1
+    network: mainnet
+    source:
+      address: "0xafAd925B5eAE1E370196cBa39893E858ff7257d5"
+      abi: Example1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Test
+      abis:
+        - name: Example1
+          file: ./abis/Example1.json
+      eventHandlers:
+        - event: Test(string,uint256)
+          handler: handleTest
+      file: ./src/mapping.ts

@@ -36,10 +36,10 @@ describe('wasm loader tests', () => {
   it('should instantiate a class in wasm from JS', async () => {
     const { Foo, FooID, __getString, __new, __pin, __unpin } = exports;
 
-    const newFooPtr = __pin(__new(FooID));
-    const newFoo = Foo.wrap(newFooPtr);
-    const newStrPtr = newFoo.getString();
-    expect(__getString(newStrPtr)).to.equal('hello world!');
-    __unpin(newFooPtr);
+    const fooPtr = __pin(__new(FooID));
+    const foo = Foo.wrap(fooPtr);
+    const strPtr = foo.getString();
+    expect(__getString(strPtr)).to.equal('hello world!');
+    __unpin(fooPtr);
   });
 });
