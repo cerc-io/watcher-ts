@@ -1,4 +1,4 @@
-import { Address, log, BigInt, Bytes } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -71,7 +71,7 @@ export function testBytesToHex (): string {
   const hexString = '0x231a';
   log.debug('Using hexString: {}', [hexString]);
 
-  const byteArray = Bytes.fromHexString(hexString);
+  const byteArray = ByteArray.fromHexString(hexString);
   const res = byteArray.toHexString();
   log.debug('typeConversion.bytesToHex result: {}', [res]);
 
@@ -81,11 +81,7 @@ export function testBytesToHex (): string {
 export function testBigIntToString (): string {
   log.debug('In test bigIntToString', []);
 
-  const hexString = '0x0de0b6b3a7640000';
-  log.debug('Using hexString for 1000000000000000000: {}', [hexString]);
-
-  const byteArray = Bytes.fromHexString(hexString);
-  const bigInt = BigInt.fromByteArray(byteArray);
+  const bigInt = BigInt.fromString('1000000000000000000');
   const res = bigInt.toString();
   log.debug('typeConversion.bigIntToString from hex result: {}', [res]);
 
@@ -102,3 +98,53 @@ export function testStringToH160 (): string {
 
   return res;
 }
+
+export function testBigDecimalDividedBy (): string {
+  log.debug('In test bigDecimal.dividedBy', []);
+
+  const bigInt1 = BigInt.fromString('1000000000000000000');
+  const bigInt2 = BigInt.fromString('100');
+
+  const bigDecimal1 = new BigDecimal(bigInt1);
+  const bigDecimal2 = new BigDecimal(bigInt2);
+  const res = bigDecimal1 / bigDecimal2;
+  log.debug('bigDecimal.dividedBy result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigIntPlus (): string {
+  log.debug('In test bigInt.plus', []);
+
+  const bigInt1 = BigInt.fromString('100');
+  const bigInt2 = BigInt.fromString('100');
+
+  const res = bigInt1 + bigInt2;
+  log.debug('bigInt.plus result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntMinus (): string {
+  log.debug('In test bigInt.minus', []);
+
+  const bigInt1 = BigInt.fromString('200');
+  const bigInt2 = BigInt.fromString('100');
+
+  const res = bigInt1 - bigInt2;
+  log.debug('bigInt.minus result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntFromString (): string {
+  log.debug('In test bigInt.fromString', []);
+
+  const string = '123';
+  const bigInt = BigInt.fromString(string);
+  const res = bigInt.toString();
+  log.debug('bigInt.FromString result: {}', [res]);
+
+  return res;
+}
+
+// TODO: Export it automatically using graph-cli.
+export { BigDecimal, BigInt };
