@@ -95,18 +95,13 @@ export class EventWatcher {
 
   async publishEventToSubscribers (dbEvent: Event, timeElapsedInSeconds: number): Promise<void> {
     if (dbEvent && dbEvent.eventName !== UNKNOWN_EVENT_NAME) {
-      const { block: { blockHash }, contract: contractAddress } = dbEvent;
       const resultEvent = this._indexer.getResultEvent(dbEvent);
 
       log(`pushing event to GQL subscribers (${timeElapsedInSeconds}s elapsed): ${resultEvent.event.__typename}`);
 
       // Publishing the event here will result in pushing the payload to GQL subscribers for `onEvent`.
       await this._pubsub.publish(EVENT, {
-        onEvent: {
-          blockHash,
-          contractAddress,
-          event: resultEvent
-        }
+        onEvent: resultEvent
       });
     }
   }

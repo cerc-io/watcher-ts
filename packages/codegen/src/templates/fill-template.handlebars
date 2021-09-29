@@ -2,46 +2,50 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import fs from 'fs';
-import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
-import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import 'graphql-import-node';
-import { createServer } from 'http';
+import { PubSub } from 'apollo-server-express';
 import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
 
-import { createResolvers } from './resolvers';
-import { Indexer } from './indexer';
 import { Database } from './database';
+import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
 const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
-  const argv = await yargs(hideBin(process.argv))
-    .option('f', {
-      alias: 'config-file',
+  const argv = await yargs(hideBin(process.argv)).parserConfiguration({
+    'parse-numbers': false
+  }).options({
+    configFile: {
+      alias: 'f',
+      type: 'string',
       demandOption: true,
       describe: 'configuration file path (toml)',
-      type: 'string',
       default: DEFAULT_CONFIG_PATH
-    })
-    .argv;
+    },
+    startBlock: {
+      type: 'number',
+      demandOption: true,
+      describe: 'Block number to start processing at'
+    },
+    endBlock: {
+      type: 'number',
+      demandOption: true,
+      describe: 'Block number to stop processing at'
+    }
+  }).argv;
 
-  const config = await getConfig(argv.f);
+  const config = await getConfig(argv.configFile);
 
   assert(config.server, 'Missing server config');
-
-  const { host, port, kind: watcherKind } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -51,62 +55,38 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
+  const { ethServer: { gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
   const cache = await getCache(cacheConfig);
   const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
+    gqlEndpoint: gqlPostgraphileEndpoint,
     gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
     cache
   });
 
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, ethClient, ethProvider);
-
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
+  const indexer = new Indexer(db, ethClient, ethProvider);
 
-  assert(jobQueueConfig, 'Missing job queue config');
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+  await jobQueue.start();
 
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
 
-  if (watcherKind === KIND_ACTIVE) {
-    await jobQueue.start();
-    await eventWatcher.start();
-  }
+  assert(jobQueueConfig, 'Missing job queue config');
 
-  const resolvers = await createResolvers(indexer, eventWatcher);
-
-  const app: Application = express();
-  const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
-
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
-
-  return { app, server };
+  await fillBlocks(jobQueue, indexer, ethClient, eventWatcher, argv);
 };
 
 main().then(() => {
-  log('Starting server...');
+  process.exit();
 }).catch(err => {
   log(err);
 });

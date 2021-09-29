@@ -25,6 +25,8 @@ import { exportJobRunner } from './job-runner';
 import { exportWatchContract } from './watch-contract';
 import { exportLint } from './lint';
 import { registerHandlebarHelpers } from './utils/handlebar-helpers';
+import { exportHooks } from './hooks';
+import { exportFill } from './fill';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -205,6 +207,22 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
   exportWatchContract(outStream);
+
+  let hooksOutStream;
+  let exampleOutStream;
+  if (outputDir) {
+    hooksOutStream = fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'));
+    exampleOutStream = fs.createWriteStream(path.join(outputDir, 'src/hooks.example.ts'));
+  } else {
+    hooksOutStream = process.stdout;
+    exampleOutStream = process.stdout;
+  }
+  exportHooks(hooksOutStream, exampleOutStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
+    : process.stdout;
+  exportFill(outStream);
 
   let rcOutStream;
   let ignoreOutStream;

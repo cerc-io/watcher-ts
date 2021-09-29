@@ -9,10 +9,11 @@ import debug from 'debug';
 import { ValueResult } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
+import { EventWatcher } from './events';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexer: Indexer): Promise<any> => {
+export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
   assert(indexer);
 
   return {
@@ -23,6 +24,12 @@ export const createResolvers = async (indexer: Indexer): Promise<any> => {
         assert(obj.__typename);
 
         return obj.__typename;
+      }
+    },
+
+    Subscription: {
+      onEvent: {
+        subscribe: () => eventWatcher.getEventIterator()
       }
     },
 
