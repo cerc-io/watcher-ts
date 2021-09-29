@@ -115,8 +115,8 @@ export class Visitor {
    * @param outStream A writable output stream to write the indexer file to.
    * @param inputFileName Input contract file name to be passed to the template.
    */
-  exportIndexer (outStream: Writable, inputFileName: string): void {
-    this._indexer.exportIndexer(outStream, inputFileName);
+  exportIndexer (outStream: Writable, inputFileName: string, contractName: string): void {
+    this._indexer.exportIndexer(outStream, inputFileName, contractName);
   }
 
   /**

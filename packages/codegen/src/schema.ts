@@ -94,6 +94,9 @@ export class Schema {
    * @returns GraphQLSchema object.
    */
   buildSchema (): GraphQLSchema {
+    // Add a mutation for watching a contract.
+    this._addWatchContractMutation();
+
     return this._composer.buildSchema();
   }
 
@@ -236,6 +239,22 @@ export class Schema {
     // Add a subscription to the schema composer.
     this._composer.Subscription.addFields({
       onEvent: () => this._composer.getOTC('ResultEvent').NonNull
+    });
+  }
+
+  /**
+   * Adds a watchContract mutation to the schema.
+   */
+  _addWatchContractMutation (): void {
+    // Add a mutation to the schema composer.
+    this._composer.Mutation.addFields({
+      watchContract: {
+        type: 'Boolean!',
+        args: {
+          contractAddress: 'String!',
+          startingBlock: 'Int'
+        }
+      }
     });
   }
 

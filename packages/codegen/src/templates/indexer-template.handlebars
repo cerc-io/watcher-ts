@@ -203,6 +203,13 @@ export class Indexer {
     return { eventName, eventInfo };
   }
 
+  async watchContract (address: string, startingBlock: number): Promise<boolean> {
+    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
+    await this._db.saveContract(ethers.utils.getAddress(address), '{{contractName}}', startingBlock);
+
+    return true;
+  }
+
   async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }

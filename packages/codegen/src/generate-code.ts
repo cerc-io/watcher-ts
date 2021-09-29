@@ -146,7 +146,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/indexer.ts'))
     : process.stdout;
-  visitor.exportIndexer(outStream, inputFileName);
+  visitor.exportIndexer(outStream, inputFileName, argv['contract-name']);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))

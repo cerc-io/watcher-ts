@@ -86,11 +86,12 @@ export class Indexer {
    * @param outStream A writable output stream to write the indexer file to.
    * @param inputFileName Input contract file name to be passed to the template.
    */
-  exportIndexer (outStream: Writable, inputFileName: string): void {
+  exportIndexer (outStream: Writable, inputFileName: string, contractName: string): void {
     const template = Handlebars.compile(this._templateString);
 
     const obj = {
       inputFileName,
+      contractName,
       queries: this._queries,
       constants: {
         MODE_ETH_CALL,

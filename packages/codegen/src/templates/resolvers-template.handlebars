@@ -33,6 +33,13 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       }
     },
 
+    Mutation: {
+      watchContract: (_: any, { contractAddress, startingBlock = 1 }: { contractAddress: string, startingBlock: number }): Promise<boolean> => {
+        log('watchContract', contractAddress, startingBlock);
+        return indexer.watchContract(contractAddress, startingBlock);
+      }
+    },
+
     Query: {
       {{#each queries}}
       {{this.name}}: (_: any, { blockHash, contractAddress
