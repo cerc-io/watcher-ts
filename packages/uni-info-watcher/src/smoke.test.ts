@@ -972,7 +972,7 @@ describe('uni-info-watcher', () => {
     });
   });
 
-  xdescribe('CollectEvent', () => {
+  describe('CollectEvent', () => {
     // Checked entities: Transaction.
     // Unchecked entities: Position.
 

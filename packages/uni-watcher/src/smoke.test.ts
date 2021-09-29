@@ -425,7 +425,7 @@ describe('uni-watcher', () => {
     });
   });
 
-  xit('should collect fees', done => {
+  it('should collect fees', done => {
     (async () => {
       const amount0Max = 15;
       const amount1Max = 15;
