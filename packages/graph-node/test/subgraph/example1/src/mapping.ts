@@ -53,7 +53,7 @@ export function testEthCall (): void {
 
   // Bind the contract to the address that emitted the event.
   // TODO: Address.fromString throws error in WASM module instantiation.
-  const contractAddress = Address.fromString('0xafAd925B5eAE1E370196cBa39893E858ff7257d5');
+  const contractAddress = Address.fromString('0x3ebd8bb51fF52aDAc490117B31F5F137BB125A9D');
   const contract = Example1.bind(contractAddress);
 
   // Access functions by calling them.
