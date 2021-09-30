@@ -4,18 +4,23 @@
 
 import fs from 'fs/promises';
 import loader from '@assemblyscript/loader';
-import { utils, BigNumber, getDefaultProvider, Contract } from 'ethers';
+import {
+  utils,
+  BigNumber
+  // getDefaultProvider,
+  // Contract
+} from 'ethers';
 
 import { TypeId } from './types';
-import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+// import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 
-const NETWORK_URL = 'http://127.0.0.1:8545';
+// const NETWORK_URL = 'http://127.0.0.1:8545';
 
 type idOfType = (TypeId: number) => number
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
-  const provider = getDefaultProvider(NETWORK_URL);
+  // const provider = getDefaultProvider(NETWORK_URL);
 
   const imports = {
     index: {
@@ -86,41 +91,43 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     ethereum: {
-      'ethereum.call': async (call: number) => {
-        console.log('ethereum.call');
-
+      'ethereum.call': (call: number) => {
         const smartContractCall = ethereum.SmartContractCall.wrap(call);
-        const contractName = __getString(smartContractCall.contractName);
+
         const contractAddress = Address.wrap(smartContractCall.contractAddress);
+        const contractName = __getString(smartContractCall.contractName);
         const functionName = __getString(smartContractCall.functionName);
         const functionSignature = __getString(smartContractCall.functionSignature);
         const functionParams = __getArray(smartContractCall.functionParams);
-        console.log('contract values', contractName, __getString(contractAddress.toHexString()), functionName, functionSignature, functionParams);
+        console.log('ethereum.call params', __getString(contractAddress.toHexString()), contractName, functionName, functionSignature, functionParams);
 
         // TODO: Get ABI according to contractName.
-        const contract = new Contract(__getString(contractAddress.toHexString()), exampleAbi, provider);
+        // const contract = new Contract(__getString(contractAddress.toHexString()), exampleAbi, provider);
 
         try {
-          let result = await contract[functionName](...functionParams);
+          // TODO: Implement async function to perform eth_call.
+          // let result = await contract[functionName](...functionParams);
+          let result: any = 'test';
 
           if (!Array.isArray(result)) {
             result = [result];
           }
 
-          console.log('result', result);
           const resultPtrArray = result.map((value: any) => {
             // TODO: Create Value instance according to type.
-            const ethValue = Value.fromString(__newString(value));
+            const ethValue = ethereum.Value.fromString(__newString(value));
 
             return ethValue;
           });
 
-          return __newArray(getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
+          console.log(resultPtrArray);
+          const res = __newArray(getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
+
+          return res;
         } catch (err) {
           console.log('eth_call error', err);
+          return null;
         }
-
-        return null;
       }
     },
     conversion: {
@@ -267,7 +274,6 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
   const BigDecimal: any = exports.BigDecimal as any;
   const BigInt: any = exports.BigInt as any;
   const Address: any = exports.Address as any;
-  const Value: any = exports.Value as any;
   const ethereum: any = exports.ethereum as any;
 
   return instance;

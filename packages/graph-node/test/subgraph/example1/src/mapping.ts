@@ -61,7 +61,7 @@ export function testEthCall (): void {
   if (res.reverted) {
     log.debug('Contract eth call reverted', []);
   } else {
-    log.debug('Contract eth call result', []);
+    log.debug('Contract eth call result: {}', [res.value]);
   }
 }
 
