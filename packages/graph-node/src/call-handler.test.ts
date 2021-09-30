@@ -34,6 +34,7 @@ describe('call handler in mapping code', () => {
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
     _start();
 
+    // Create dummy block data.
     const block = new ethereum.Block(
       Bytes.empty(),
       Bytes.empty(),
@@ -51,6 +52,7 @@ describe('call handler in mapping code', () => {
       null
     );
 
+    // Create dummy transaction data.
     const transaction = new ethereum.Transaction(
       Bytes.empty(),
       BigInt.fromI32(0),
@@ -62,11 +64,52 @@ describe('call handler in mapping code', () => {
       Bytes.empty()
     );
 
-    // TODO: Fill eventParams with values.
-    const eventParams = __newArray(idOfType(TypeId.ArrayEventParam), []);
+    // Create event params data.
+    const eventParamsData = [
+      {
+        name: 'param1',
+        value: 'abc',
+        kind: 'string'
+      },
+      {
+        name: 'param2',
+        value: 123,
+        kind: 'uint'
+      }
+    ];
 
+    const eventParamArray = eventParamsData.map(data => {
+      const { name, value, kind } = data;
+      let ethValue;
+
+      switch (kind) {
+        case 'uint': {
+          const bigIntString = __newString(value.toString());
+          ethValue = ethereum.Value.fromUnsignedBigInt(BigInt.fromString(bigIntString));
+          break;
+        }
+
+        case 'string': {
+          ethValue = ethereum.Value.fromString(__newString(value));
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      return new ethereum.EventParam(
+        __newString(name),
+        ethValue
+      );
+    });
+
+    const eventParams = __newArray(idOfType(TypeId.ArrayEventParam), eventParamArray);
+
+    // Dummy contract address string.
     const addStrPtr = __newString('0xCA6D29232D1435D8198E3E5302495417dD073d61');
 
+    // Create Test event to be passed to handler.
     const test = new Test(
       Address.fromString(addStrPtr),
       BigInt.fromI32(0),

@@ -8,7 +8,8 @@ import {
 
 export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
-  // log.debug('event.params: {}', [event.params.param1]);
+  log.debug('event.params.param1: {}', [event.params.param1]);
+  log.debug('event.params.param2: {}', [event.params.param2.toString()]);
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
