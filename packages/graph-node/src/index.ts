@@ -120,7 +120,6 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
             return ethValue;
           });
 
-          console.log(resultPtrArray);
           const res = __newArray(getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
 
           return res;

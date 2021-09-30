@@ -5,6 +5,7 @@
 import path from 'path';
 
 import { instantiate } from './index';
+import { TypeId } from './types';
 
 describe('call handler in mapping code', () => {
   let exports: any;
@@ -15,23 +16,66 @@ describe('call handler in mapping code', () => {
     exports = instance.exports;
   });
 
-  xit('should execute the handler function', () => {
-    const { _start, handleTest, Test, TestEventId, Block, Address, __new, __newString, BigInt } = exports;
+  it('should execute the handler function', () => {
+    const {
+      _start,
+      __newString,
+      __newArray,
+      handleTest,
+      Address,
+      BigInt,
+      ethereum,
+      Bytes,
+      id_of_type: idOfType
+    } = exports;
 
     // Important to call _start for built subgraphs on instantiation!
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
     _start();
 
-    const eventPtr = __new(TestEventId);
-    const event = Test.wrap(eventPtr);
+    const block = new ethereum.Block(
+      Bytes.empty(),
+      Bytes.empty(),
+      Bytes.empty(),
+      Address.zero(),
+      Bytes.empty(),
+      Bytes.empty(),
+      Bytes.empty(),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      null
+    );
+
+    const transaction = new ethereum.Transaction(
+      Bytes.empty(),
+      BigInt.fromI32(0),
+      Address.zero(),
+      null,
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      Bytes.empty()
+    );
+
+    // TODO: Fill eventParams with values.
+    const eventParams = __newArray(idOfType(TypeId.ArrayEventParam), []);
+
     const addStrPtr = __newString('0xCA6D29232D1435D8198E3E5302495417dD073d61');
-    event.address = Address.fromString(addStrPtr);
-    event.logIndex = BigInt.fromI32(0);
-    event.transactionLogIndex = BigInt.fromI32(0);
 
-    const blockPtr = __new(Block);
-    event.block = blockPtr;
+    const test = new ethereum.Event(
+      Address.fromString(addStrPtr),
+      BigInt.fromI32(0),
+      BigInt.fromI32(0),
+      null,
+      block,
+      transaction,
+      eventParams
+    );
 
-    handleTest(eventPtr);
+    handleTest(test);
   });
 });

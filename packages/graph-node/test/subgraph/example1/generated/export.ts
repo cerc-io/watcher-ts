@@ -6,14 +6,9 @@ import {
   BigInt,
   ethereum,
   Value,
-  Address
+  Address,
+  Bytes
 } from '@graphprotocol/graph-ts';
-
-import {
-  Test
-} from './Example1/Example1';
-
-const TestEventId = idof<Test>();
 
 export {
   BigDecimal,
@@ -23,7 +18,5 @@ export {
 
   Value,
   Address,
-
-  Test,
-  TestEventId,
+  Bytes
 }
