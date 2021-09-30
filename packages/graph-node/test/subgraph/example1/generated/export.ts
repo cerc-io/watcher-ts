@@ -9,10 +9,21 @@ import {
   Address
 } from '@graphprotocol/graph-ts';
 
+import {
+  Test
+} from './Example1/Example1';
+
+const TestEventId = idof<Test>();
+
 export {
   BigDecimal,
   BigInt,
+
   ethereum,
+
   Value,
-  Address
+  Address,
+
+  Test,
+  TestEventId,
 }
