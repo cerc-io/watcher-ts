@@ -2,11 +2,19 @@
 
 ## Setup
 
-* Run the following command to install required packages:
+* In root of the repository:
 
-  ```bash
-  yarn
-  ```
+  * Install required packages:
+
+      ```bash
+      yarn
+      ```
+
+  * Build files:
+
+      ```bash
+      yarn build
+      ```
 
 ## Run
 
@@ -28,56 +36,84 @@
   Examples:
 
   Generate code in both `eth_call` and `storage` mode, `active` kind.
+
   ```bash
   yarn codegen --input-file ./test/examples/contracts/ERC20.sol --contract-name ERC20 --output-folder ../my-erc20-watcher --mode all --kind active
   ```
 
   Generate code in `eth_call` mode using a contract provided by an URL.
+
   ```bash
   yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../my-erc721-watcher --mode eth_call
   ```
 
   Generate code in `storage` mode, `lazy` kind.
+
   ```bash
   yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
   ```
 
-## Demo
-
-* In root of the repository:
-
-  * Install required packages:
-
-      ```bash
-      yarn
-      ```
-
-  * Build files:
-
-      ```bash
-      yarn build
-      ```
-
-* Generate a watcher from a contract file:
+  Generate code for `ERC721` contract in both `eth_call` and `storage` mode, `active` kind:
 
   ```bash
-  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode eth_call --kind active
+  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
   ```
 
-  This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in `demo-erc20-watcher/README.md` to setup and run the generated watcher.
+  This will create a folder called `demo-erc721-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
-* Generate a watcher from a flattened contract file from an URL:
+## Run Generated Watcher
+
+### Setup
+
+* Run the following command to install required packages:
 
   ```bash
-  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
+  yarn
   ```
 
-## References
+* Create the databases configured in `environments/local.toml`.
 
-* [ERC20 schema generation (eth_call mode).](https://git.io/JuhN2)
-* [ERC20 schema generation (storage mode).](https://git.io/JuhNr)
-* [ERC721 schema generation (eth_call mode).](https://git.io/JuhNK)
-* [ERC721 schema generation (storage mode).](https://git.io/JuhN1)
+### Customize
+
+* Indexing on an event:
+
+  * Edit the custom hook function `handleEvent` (triggered on an event) in `src/hooks.ts` to perform corresponding indexing using the `Indexer` object.
+
+  * Refer to `src/hooks.example.ts` for an example hook function for events in an ERC20 contract.
+
+### Run
+
+* Run lint:
+
+  ```bash
+  yarn lint
+  ```
+
+* Run the watcher:
+
+  ```bash
+  yarn server
+  ```
+
+* If the watcher is an `active` watcher:
+
+  * Run the job-runner:
+
+    ```bash
+    yarn job-runner
+    ```
+
+  * To watch a contract:
+
+    ```bash
+    yarn watch:contract --address <contract-address> --kind ERC721 --starting-block [block-number]
+    ```
+
+  * To fill a block range:
+
+    ```bash
+    yarn fill --startBlock <from-block> --endBlock <to-block>
+    ```
 
 ## Known Issues
 
