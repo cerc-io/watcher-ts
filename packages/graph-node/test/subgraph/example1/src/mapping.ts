@@ -145,6 +145,3 @@ export function testBigIntFromString (): string {
 
   return res;
 }
-
-// TODO: Export it automatically using graph-cli.
-export { BigDecimal, BigInt };
