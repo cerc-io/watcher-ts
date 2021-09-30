@@ -26,6 +26,7 @@ describe('call handler in mapping code', () => {
       BigInt,
       ethereum,
       Bytes,
+      Test,
       id_of_type: idOfType
     } = exports;
 
@@ -66,7 +67,7 @@ describe('call handler in mapping code', () => {
 
     const addStrPtr = __newString('0xCA6D29232D1435D8198E3E5302495417dD073d61');
 
-    const test = new ethereum.Event(
+    const test = new Test(
       Address.fromString(addStrPtr),
       BigInt.fromI32(0),
       BigInt.fromI32(0),
