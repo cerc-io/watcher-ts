@@ -3,10 +3,26 @@
 // Re-exports
 import {
   BigDecimal,
-  BigInt
+  BigInt,
+  ethereum,
+  Value,
+  Address,
+  Bytes
 } from '@graphprotocol/graph-ts';
+
+import {
+  Test
+} from './Example1/Example1';
 
 export {
   BigDecimal,
-  BigInt
+  BigInt,
+
+  ethereum,
+
+  Value,
+  Address,
+  Bytes,
+
+  Test
 }
