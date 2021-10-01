@@ -44,7 +44,7 @@ describe('numbers wasm tests', () => {
     expect(__getString(ptr)).to.equal('100');
   });
 
-  it('should execute bigDecimal dividedBy API', () => {
+  xit('should execute bigDecimal dividedBy API', () => {
     const { testBigDecimalDividedBy, __getString } = exports;
 
     const ptr = testBigDecimalDividedBy();

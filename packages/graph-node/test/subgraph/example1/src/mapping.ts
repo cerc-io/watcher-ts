@@ -4,31 +4,35 @@ import {
   Example1,
   Test
 } from '../generated/Example1/Example1';
-import { ExampleEntity } from '../generated/schema';
+// import { ExampleEntity } from '../generated/schema';
 
 export function handleTest (event: Test): void {
+  log.debug('event.address: {}', [event.address.toHexString()]);
+  log.debug('event.params.param1: {}', [event.params.param1]);
+  log.debug('event.params.param2: {}', [event.params.param2.toString()]);
+
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex());
+  // let entity = ExampleEntity.load(event.transaction.from.toHex());
 
   // Entities only exist after they have been saved to the store;
   // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex());
+  // if (!entity) {
+  //   entity = new ExampleEntity(event.transaction.from.toHex());
 
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0);
-  }
+  //   // Entity fields can be set using simple assignments
+  //   entity.count = BigInt.fromI32(0);
+  // }
 
   // BigInt and BigDecimal math are supported
   // entity.count = entity.count + BigInt.fromI32(1)
 
   // Entity fields can be set based on event parameters
-  entity.param1 = event.params.param1;
-  entity.param2 = event.params.param2;
+  // entity.param1 = event.params.param1;
+  // entity.param2 = event.params.param2;
 
   // Entities can be written to the store with `.save()`
-  entity.save();
+  // entity.save();
 
   // Note: If a handler doesn't require existing field values, it is faster
   // _not_ to load the entity from the store. Instead, create it fresh with
@@ -53,7 +57,7 @@ export function testEthCall (): void {
 
   // Bind the contract to the address that emitted the event.
   // TODO: Address.fromString throws error in WASM module instantiation.
-  const contractAddress = Address.fromString('0xafAd925B5eAE1E370196cBa39893E858ff7257d5');
+  const contractAddress = Address.fromString('0x3ebd8bb51fF52aDAc490117B31F5F137BB125A9D');
   const contract = Example1.bind(contractAddress);
 
   // Access functions by calling them.
@@ -61,7 +65,7 @@ export function testEthCall (): void {
   if (res.reverted) {
     log.debug('Contract eth call reverted', []);
   } else {
-    log.debug('Contract eth call result', []);
+    log.debug('Contract eth call result: {}', [res.value]);
   }
 }
 
