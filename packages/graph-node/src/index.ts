@@ -10,6 +10,7 @@ import {
   // getDefaultProvider,
   // Contract
 } from 'ethers';
+import { instantiate as asyncInstantiate } from 'asyncify-wasm';
 
 import { TypeId } from './types';
 // import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
@@ -18,7 +19,7 @@ import { TypeId } from './types';
 
 type idOfType = (TypeId: number) => number
 
-export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
+export const instantiate = async (filePath: string): Promise<WebAssembly.Instance> => {
   const buffer = await fs.readFile(filePath);
   // const provider = getDefaultProvider(NETWORK_URL);
 
@@ -80,7 +81,8 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       },
 
       'log.log': (_: number, msg: number) => {
-        console.log('console.log', __getString(msg));
+        console.log('log.log', msg);
+        // console.log('console.log', __getString(msg));
       },
 
       // 'dataSource.create': () => {
@@ -88,6 +90,18 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       // },
       'dataSource.address': () => {
         console.log('dataSource.address');
+      },
+
+      'test.asyncMethod': async () => {
+        console.log('before timer start');
+        await new Promise(resolve => {
+          setTimeout(() => {
+            resolve(1);
+          }, 3000);
+        });
+        console.log('after timer complete');
+
+        return 123;
       }
     },
     ethereum: {
@@ -261,12 +275,18 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       'bigInt.pow': () => {
         console.log('bigInt.pow');
       }
+    },
+    env: {
+      abort: () => {
+        console.log('env.abort');
+      }
     }
   };
 
-  const instance = await loader.instantiate(buffer, imports);
+  const { module, exports } = await loader.instantiate(buffer, imports);
 
-  const exports = instance.exports;
+  const instance = await asyncInstantiate(module, imports);
+
   const { __getString, __newString, __getArray, __newArray } = exports;
 
   const getIdOfType: idOfType = exports.id_of_type as idOfType;

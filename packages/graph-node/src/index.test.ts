@@ -18,12 +18,17 @@ describe('wasm loader tests', () => {
     exports = instance.exports;
   });
 
-  it('should execute exported function', async () => {
+  xit('should execute exported function', async () => {
     const { callGraphAPI } = exports;
     callGraphAPI();
   });
 
-  it('should use a class/instance created in wasm from JS', async () => {
+  it('should execute async function', async () => {
+    const { callAsyncMethod } = exports;
+    await callAsyncMethod();
+  });
+
+  xit('should use a class/instance created in wasm from JS', async () => {
     const { Foo, __getString, __pin, __unpin } = exports;
 
     const fooPtr = __pin(Foo.getFoo());
@@ -33,7 +38,7 @@ describe('wasm loader tests', () => {
     __unpin(fooPtr);
   });
 
-  it('should instantiate a class in wasm from JS', async () => {
+  xit('should instantiate a class in wasm from JS', async () => {
     const { Foo, FooID, __getString, __new, __pin, __unpin } = exports;
 
     const fooPtr = __pin(__new(FooID));

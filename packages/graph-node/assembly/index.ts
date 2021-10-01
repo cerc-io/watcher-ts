@@ -34,8 +34,19 @@ import {
   // Wrapped
 } from '@graphprotocol/graph-ts';
 
+/* eslint-disable @typescript-eslint/no-namespace */
+export declare namespace test {
+  export function asyncMethod(): i32;
+}
+
 export function callGraphAPI (): void {
   log.debug('hello {}', ['world']);
+}
+
+export function callAsyncMethod (): void {
+  log.debug('calling async method', []);
+  test.asyncMethod();
+  log.debug('res after async', []);
 }
 
 export class Foo {

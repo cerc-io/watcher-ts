@@ -23,12 +23,13 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug",
-    "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release",
+    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
+    "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
-    "test": "yarn asbuild:debug && mocha src/**/*.test.ts"
+    "test": "yarn asbuild:debug && mocha src/index.test.ts"
   },
   "dependencies": {
-    "@assemblyscript/loader": "^0.19.16"
+    "@assemblyscript/loader": "^0.19.16",
+    "asyncify-wasm": "^1.2.1"
   }
 }
