@@ -4,14 +4,23 @@
 
 import fs from 'fs/promises';
 import loader from '@assemblyscript/loader';
-import { utils, BigNumber } from 'ethers';
+import {
+  utils,
+  BigNumber
+  // getDefaultProvider,
+  // Contract
+} from 'ethers';
 
 import { TypeId } from './types';
+// import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+
+// const NETWORK_URL = 'http://127.0.0.1:8545';
 
 type idOfType = (TypeId: number) => number
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
+  // const provider = getDefaultProvider(NETWORK_URL);
 
   const imports = {
     index: {
@@ -82,9 +91,42 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     ethereum: {
-      'ethereum.call': () => {
-        console.log('ethereum.call');
-        return null;
+      'ethereum.call': (call: number) => {
+        const smartContractCall = ethereum.SmartContractCall.wrap(call);
+
+        const contractAddress = Address.wrap(smartContractCall.contractAddress);
+        const contractName = __getString(smartContractCall.contractName);
+        const functionName = __getString(smartContractCall.functionName);
+        const functionSignature = __getString(smartContractCall.functionSignature);
+        const functionParams = __getArray(smartContractCall.functionParams);
+        console.log('ethereum.call params', __getString(contractAddress.toHexString()), contractName, functionName, functionSignature, functionParams);
+
+        // TODO: Get ABI according to contractName.
+        // const contract = new Contract(__getString(contractAddress.toHexString()), exampleAbi, provider);
+
+        try {
+          // TODO: Implement async function to perform eth_call.
+          // let result = await contract[functionName](...functionParams);
+          let result: any = 'test';
+
+          if (!Array.isArray(result)) {
+            result = [result];
+          }
+
+          const resultPtrArray = result.map((value: any) => {
+            // TODO: Create Value instance according to type.
+            const ethValue = ethereum.Value.fromString(__newString(value));
+
+            return ethValue;
+          });
+
+          const res = __newArray(getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
+
+          return res;
+        } catch (err) {
+          console.log('eth_call error', err);
+          return null;
+        }
       }
     },
     conversion: {
@@ -230,6 +272,8 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
   const getIdOfType: idOfType = exports.id_of_type as idOfType;
   const BigDecimal: any = exports.BigDecimal as any;
   const BigInt: any = exports.BigInt as any;
+  const Address: any = exports.Address as any;
+  const ethereum: any = exports.ethereum as any;
 
   return instance;
 };
