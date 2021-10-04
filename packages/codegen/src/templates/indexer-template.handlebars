@@ -37,6 +37,9 @@ export type ResultEvent = {
   };
   tx: {
     hash: string;
+    from: string;
+    to: string;
+    index: number;
   };
 
   contract: string;
@@ -51,19 +54,21 @@ export class Indexer {
   _db: Database
   _ethClient: EthClient
   _ethProvider: BaseProvider
+  _postgraphileClient: EthClient;
   _baseIndexer: BaseIndexer
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
   _contract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider) {
+  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider) {
     assert(db);
     assert(ethClient);
 
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
+    this._postgraphileClient = postgraphileClient;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
 
     const { abi, storageLayout } = artifacts;
@@ -80,6 +85,7 @@ export class Indexer {
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSONbig.parse(event.eventInfo);
+    const { tx } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -90,7 +96,10 @@ export class Indexer {
       },
 
       tx: {
-        hash: event.txHash
+        hash: event.txHash,
+        from: tx.src,
+        to: tx.dst,
+        index: tx.index
       },
 
       contract: event.contract,
@@ -282,6 +291,23 @@ export class Indexer {
     assert(blockHash);
     let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          {
+            ethTransactionCidsByHeaderId: {
+              nodes: transactions
+            }
+          }
+        ]
+      }
+    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+
+    const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
+      acc[transaction.txHash] = transaction;
+      return acc;
+    }, {});
+
     const dbEvents: Array<DeepPartial<Event>> = [];
 
     for (let li = 0; li < logs.length; li++) {
@@ -305,7 +331,8 @@ export class Indexer {
       if (status) {
         let eventName = UNKNOWN_EVENT_NAME;
         let eventInfo = {};
-        const extraInfo = { topics, data };
+        const tx = transactionMap[txHash];
+        const extraInfo = { topics, data, tx };
 
         const contract = ethers.utils.getAddress(address);
         const watchedContract = await this.isWatchedContract(contract);

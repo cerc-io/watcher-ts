@@ -136,7 +136,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
-  visitor.exportSchema(outStream);
+  const schemaContent = visitor.exportSchema(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/resolvers.ts'))
@@ -234,6 +234,11 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ignoreOutStream = process.stdout;
   }
   exportLint(rcOutStream, ignoreOutStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/client.ts'))
+    : process.stdout;
+  visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
 }
 
 main().catch(err => {

@@ -8,13 +8,14 @@ import assert from 'assert';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
+import { gqlGenerate } from 'gql-generator';
 
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 
-const TEMPLATE_FILE = './templates/database-template.handlebars';
+const TEMPLATE_FILE = './templates/client-template.handlebars';
 
-export class Database {
+export class Client {
   _queries: Array<any>;
   _templateString: string;
 
@@ -25,6 +26,7 @@ export class Database {
 
   /**
    * Stores the query to be passed to the template.
+   * @param mode Code generation mode.
    * @param name Name of the query.
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
@@ -37,16 +39,9 @@ export class Database {
 
     const queryObject = {
       name,
-      entityName: '',
       params: _.cloneDeep(params),
       returnType
     };
-
-    // eth_call mode: Capitalize first letter of entity name (balanceOf -> BalanceOf).
-    // storage mode: Capiltalize second letter of entity name (_balances -> _Balances).
-    queryObject.entityName = (name.charAt(0) === '_')
-      ? `_${name.charAt(1).toUpperCase()}${name.slice(2)}`
-      : `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 
     queryObject.params = queryObject.params.map((param) => {
       const tsParamType = getTsForSol(param.type);
@@ -63,15 +58,22 @@ export class Database {
   }
 
   /**
-   * Writes the database file generated from a template to a stream.
-   * @param outStream A writable output stream to write the database file to.
+   * Writes the client file generated from a template to a stream and export quries.
+   * @param outStream A writable output stream to write the client file to.
+   * @param schemaContent Content of the schema for generating the queries, mutations and subscriptions.
+   * @param gqlDir Directory to store the generated gql queries, mutations and subscriptions.
    */
-  exportDatabase (outStream: Writable): void {
+  exportClient (outStream: Writable, schemaContent: string, gqlDir: string): void {
+    this._exportGql(schemaContent, gqlDir);
+
     const template = Handlebars.compile(this._templateString);
-    const obj = {
+    const client = template({
       queries: this._queries
-    };
-    const database = template(obj);
-    outStream.write(database);
+    });
+    outStream.write(client);
+  }
+
+  _exportGql (schemaContent: string, gqlDir: string): void {
+    gqlGenerate(schemaContent, gqlDir);
   }
 }

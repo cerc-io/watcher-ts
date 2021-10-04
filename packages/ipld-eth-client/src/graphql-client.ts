@@ -112,4 +112,10 @@ export class GraphQLClient {
 
     return result;
   }
+
+  async mutate (mutation: DocumentNode | TypedDocumentNode, variables: { [key: string]: any }): Promise<any> {
+    const { data: result } = await this._client.mutate({ mutation, variables });
+
+    return result;
+  }
 }

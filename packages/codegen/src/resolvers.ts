@@ -36,9 +36,9 @@ export class Resolvers {
     }
 
     const queryObject = {
-      name: name,
+      name,
       params: _.cloneDeep(params),
-      returnType: returnType
+      returnType
     };
 
     queryObject.params = queryObject.params.map((param) => {

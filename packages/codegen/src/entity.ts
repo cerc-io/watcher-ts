@@ -38,11 +38,17 @@ export class Entity {
 
     const entityObject: any = {
       // Capitalize the first letter of name.
-      className: `${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+      className: '',
       indexOn: [],
       columns: [],
       imports: []
     };
+
+    // eth_call mode: Capitalize first letter of entity name (balanceOf -> BalanceOf).
+    // storage mode: Capiltalize second letter of entity name (_balances -> _Balances).
+    entityObject.className = (name.charAt(0) === '_')
+      ? `_${name.charAt(1).toUpperCase()}${name.slice(2)}`
+      : `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 
     entityObject.imports.push(
       {

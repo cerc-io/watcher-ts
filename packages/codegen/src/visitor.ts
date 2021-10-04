@@ -11,6 +11,7 @@ import { Entity } from './entity';
 import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
+import { Client } from './client';
 
 export class Visitor {
   _schema: Schema;
@@ -18,6 +19,7 @@ export class Visitor {
   _indexer: Indexer;
   _entity: Entity;
   _database: Database;
+  _client: Client;
 
   constructor () {
     this._schema = new Schema();
@@ -25,6 +27,7 @@ export class Visitor {
     this._indexer = new Indexer();
     this._entity = new Entity();
     this._database = new Database();
+    this._client = new Client();
   }
 
   /**
@@ -46,6 +49,7 @@ export class Visitor {
       this._indexer.addQuery(MODE_ETH_CALL, name, params, returnType);
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
+      this._client.addQuery(name, params, returnType);
     }
   }
 
@@ -78,6 +82,7 @@ export class Visitor {
     this._indexer.addQuery(MODE_STORAGE, name, params, returnType);
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
+    this._client.addQuery(name, params, returnType);
   }
 
   /**
@@ -97,9 +102,10 @@ export class Visitor {
   /**
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
+   * @returns The schema string.
    */
-  exportSchema (outStream: Writable): void {
-    this._schema.exportSchema(outStream);
+  exportSchema (outStream: Writable): string {
+    return this._schema.exportSchema(outStream);
   }
 
   /**
@@ -133,5 +139,15 @@ export class Visitor {
    */
   exportDatabase (outStream: Writable): void {
     this._database.exportDatabase(outStream);
+  }
+
+  /**
+   * Writes the client file generated from a template to a stream and export quries.
+   * @param outStream A writable output stream to write the client file to.
+   * @param schemaContent Content of the schema for generating the queries, mutations and subscriptions.
+   * @param gqlDir Directory to store the generated gql queries, mutations and subscriptions.
+   */
+  exportClient (outStream: Writable, schemaContent: string, gqlDir: string): void {
+    this._client.exportClient(outStream, schemaContent, gqlDir);
   }
 }

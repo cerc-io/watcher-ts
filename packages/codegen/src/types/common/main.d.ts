@@ -4,3 +4,4 @@
 
 declare module '@poanet/solidity-flattener';
 declare module 'solc';
+declare module 'gql-generator';

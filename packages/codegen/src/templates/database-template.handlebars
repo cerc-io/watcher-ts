@@ -12,8 +12,9 @@ import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
+
 {{#each queries as | query |}}
-import { {{capitalize query.name tillIndex=1}} } from './entity/{{capitalize query.name tillIndex=1}}';
+import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/each}}
 
 export class Database {
@@ -50,8 +51,8 @@ export class Database {
   {{/if}}
   async get{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
   {{~#each query.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
-  {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{capitalize query.name tillIndex=1}} | undefined> {
-    return this._conn.getRepository({{capitalize query.name tillIndex=1}})
+  {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{query.entityName}} | undefined> {
+    return this._conn.getRepository({{query.entityName}})
       .findOne({
         blockHash,
         contractAddress{{#if query.params.length}},{{/if}}
@@ -69,8 +70,8 @@ export class Database {
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
   async save{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
-  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{capitalize query.name tillIndex=1}}>): Promise<{{capitalize query.name tillIndex=1}}> {
-    const repo = this._conn.getRepository({{capitalize query.name tillIndex=1}});
+  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{query.entityName}}>): Promise<{{query.entityName}}> {
+    const repo = this._conn.getRepository({{query.entityName}});
     const entity = repo.create({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof });
     return repo.save(entity);
@@ -194,7 +195,7 @@ export class Database {
 
   _setPropColMaps (): void {
     {{#each queries as | query |}}
-    this._propColMaps.{{capitalize query.name tillIndex=1}} = this._getPropertyColumnMapForEntity('{{capitalize query.name tillIndex=1}}');
+    this._propColMaps.{{query.entityName}} = this._getPropertyColumnMapForEntity('{{query.entityName}}');
     {{/each}}
   }
 }

@@ -104,10 +104,12 @@ export class Schema {
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
    */
-  exportSchema (outStream: Writable): void {
+  exportSchema (outStream: Writable): string {
     // Get schema as a string from GraphQLSchema.
     const schemaString = printSchema(this.buildSchema());
     outStream.write(schemaString);
+
+    return schemaString;
   }
 
   /**
