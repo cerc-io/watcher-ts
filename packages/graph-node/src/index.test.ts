@@ -23,23 +23,31 @@ describe('wasm loader tests', () => {
     callGraphAPI();
   });
 
+  it('should execute async function', async () => {
+    const { callAsyncMethod } = exports;
+    await callAsyncMethod();
+  });
+
   it('should use a class/instance created in wasm from JS', async () => {
     const { Foo, __getString, __pin, __unpin } = exports;
 
-    const fooPtr = __pin(Foo.getFoo());
+    const fooPtr = await __pin(await Foo.getFoo());
     const foo = Foo.wrap(fooPtr);
-    const strPtr = foo.getString();
+    const strPtr = await foo.getString();
     expect(__getString(strPtr)).to.equal('hello world!');
-    __unpin(fooPtr);
+    await __unpin(fooPtr);
   });
 
   it('should instantiate a class in wasm from JS', async () => {
-    const { Foo, FooID, __getString, __new, __pin, __unpin } = exports;
+    const { Foo, FooID, Bar, __getString, __new, __pin, __unpin, __newString } = exports;
 
-    const fooPtr = __pin(__new(FooID));
+    const fooPtr = await __pin(await __new(FooID));
     const foo = Foo.wrap(fooPtr);
-    const strPtr = foo.getString();
+    const strPtr = await foo.getString();
     expect(__getString(strPtr)).to.equal('hello world!');
     __unpin(fooPtr);
+
+    const bar = await Bar.__new(await __newString('test'));
+    expect(__getString(await bar.prop)).to.equal('test');
   });
 });
