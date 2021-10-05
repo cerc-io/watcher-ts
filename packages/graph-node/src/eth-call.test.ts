@@ -15,13 +15,13 @@ describe('eth-call wasm tests', () => {
     exports = instance.exports;
   });
 
-  it('should execute exported function', () => {
+  it('should execute exported function', async () => {
     const { _start, testEthCall } = exports;
 
     // Important to call _start for built subgraphs on instantiation!
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
     _start();
 
-    testEthCall();
+    await testEthCall();
   });
 });

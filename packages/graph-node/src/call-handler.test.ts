@@ -16,7 +16,7 @@ describe('call handler in mapping code', () => {
     exports = instance.exports;
   });
 
-  it('should execute the handler function', () => {
+  it('should execute the handler function', async () => {
     const {
       _start,
       __newString,
@@ -35,33 +35,33 @@ describe('call handler in mapping code', () => {
     _start();
 
     // Create dummy block data.
-    const block = new ethereum.Block(
-      Bytes.empty(),
-      Bytes.empty(),
-      Bytes.empty(),
-      Address.zero(),
-      Bytes.empty(),
-      Bytes.empty(),
-      Bytes.empty(),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
+    const block = await ethereum.Block.__new(
+      await Bytes.empty(),
+      await Bytes.empty(),
+      await Bytes.empty(),
+      await Address.zero(),
+      await Bytes.empty(),
+      await Bytes.empty(),
+      await Bytes.empty(),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
       null
     );
 
     // Create dummy transaction data.
-    const transaction = new ethereum.Transaction(
-      Bytes.empty(),
-      BigInt.fromI32(0),
-      Address.zero(),
+    const transaction = await ethereum.Transaction.__new(
+      await Bytes.empty(),
+      await BigInt.fromI32(0),
+      await Address.zero(),
       null,
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
-      Bytes.empty()
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
+      await Bytes.empty()
     );
 
     // Create event params data.
@@ -78,19 +78,20 @@ describe('call handler in mapping code', () => {
       }
     ];
 
-    const eventParamArray = eventParamsData.map(data => {
+    const eventParamArrayPromise = eventParamsData.map(async data => {
       const { name, value, kind } = data;
       let ethValue;
 
       switch (kind) {
         case 'uint': {
-          const bigIntString = __newString(value.toString());
-          ethValue = ethereum.Value.fromUnsignedBigInt(BigInt.fromString(bigIntString));
+          const bigIntString = await (await __newString(value.toString()));
+          const bigInt = await BigInt.fromString(bigIntString);
+          ethValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
           break;
         }
 
         case 'string': {
-          ethValue = ethereum.Value.fromString(__newString(value));
+          ethValue = await ethereum.Value.fromString(await __newString(value));
           break;
         }
 
@@ -98,28 +99,29 @@ describe('call handler in mapping code', () => {
           break;
       }
 
-      return new ethereum.EventParam(
-        __newString(name),
+      return ethereum.EventParam.__new(
+        await __newString(name),
         ethValue
       );
     });
 
-    const eventParams = __newArray(idOfType(TypeId.ArrayEventParam), eventParamArray);
+    const eventParamArray = await Promise.all(eventParamArrayPromise);
+    const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), eventParamArray);
 
     // Dummy contract address string.
-    const addStrPtr = __newString('0xCA6D29232D1435D8198E3E5302495417dD073d61');
+    const addStrPtr = await __newString('0xCA6D29232D1435D8198E3E5302495417dD073d61');
 
     // Create Test event to be passed to handler.
-    const test = new Test(
-      Address.fromString(addStrPtr),
-      BigInt.fromI32(0),
-      BigInt.fromI32(0),
+    const test = await Test.__new(
+      await Address.fromString(addStrPtr),
+      await BigInt.fromI32(0),
+      await BigInt.fromI32(0),
       null,
       block,
       transaction,
       eventParams
     );
 
-    handleTest(test);
+    await handleTest(test);
   });
 });
