@@ -3,14 +3,13 @@
 //
 
 import fs from 'fs/promises';
-import loader from '@assemblyscript/loader';
+import loader from 'assemblyscript/lib/loader';
 import {
   utils,
   BigNumber
   // getDefaultProvider,
   // Contract
 } from 'ethers';
-import { instantiate as asyncInstantiate } from 'asyncify-wasm';
 
 import { TypeId } from './types';
 // import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
@@ -19,11 +18,11 @@ import { TypeId } from './types';
 
 type idOfType = (TypeId: number) => number
 
-export const instantiate = async (filePath: string): Promise<WebAssembly.Instance> => {
+export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
   // const provider = getDefaultProvider(NETWORK_URL);
 
-  const imports = {
+  const imports: WebAssembly.Imports = {
     index: {
       'store.get': () => {
         console.log('store.get');
@@ -81,8 +80,7 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
       },
 
       'log.log': (_: number, msg: number) => {
-        console.log('log.log', msg);
-        // console.log('console.log', __getString(msg));
+        console.log('log.log', __getString(msg));
       },
 
       // 'dataSource.create': () => {
@@ -105,15 +103,23 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
       }
     },
     ethereum: {
-      'ethereum.call': (call: number) => {
-        const smartContractCall = ethereum.SmartContractCall.wrap(call);
+      'ethereum.call': async (call: number) => {
+        const smartContractCall = await ethereum.SmartContractCall.wrap(call);
 
-        const contractAddress = Address.wrap(smartContractCall.contractAddress);
-        const contractName = __getString(smartContractCall.contractName);
-        const functionName = __getString(smartContractCall.functionName);
-        const functionSignature = __getString(smartContractCall.functionSignature);
-        const functionParams = __getArray(smartContractCall.functionParams);
-        console.log('ethereum.call params', __getString(contractAddress.toHexString()), contractName, functionName, functionSignature, functionParams);
+        const contractAddress = await Address.wrap(await smartContractCall.contractAddress);
+        const contractName = __getString(await smartContractCall.contractName);
+        const functionName = __getString(await smartContractCall.functionName);
+        const functionSignature = __getString(await smartContractCall.functionSignature);
+        const functionParams = __getArray(await smartContractCall.functionParams);
+
+        console.log(
+          'ethereum.call params',
+          __getString(await contractAddress.toHexString()),
+          contractName,
+          functionName,
+          functionSignature,
+          functionParams
+        );
 
         // TODO: Get ABI according to contractName.
         // const contract = new Contract(__getString(contractAddress.toHexString()), exampleAbi, provider);
@@ -127,14 +133,15 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
             result = [result];
           }
 
-          const resultPtrArray = result.map((value: any) => {
+          const resultPtrArrayPromise = result.map(async (value: any) => {
             // TODO: Create Value instance according to type.
-            const ethValue = ethereum.Value.fromString(__newString(value));
+            const ethValue = await ethereum.Value.fromString(await __newString(value));
 
             return ethValue;
           });
 
-          const res = __newArray(getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
+          const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);
+          const res = await __newArray(await getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
 
           return res;
         } catch (err) {
@@ -144,12 +151,12 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
       }
     },
     conversion: {
-      'typeConversion.stringToH160': (s: number) => {
+      'typeConversion.stringToH160': async (s: number) => {
         const string = __getString(s);
         const address = utils.getAddress(string);
         const byteArray = utils.arrayify(address);
 
-        const uint8ArrayId = getIdOfType(TypeId.Uint8Array);
+        const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
         const ptr = __newArray(uint8ArrayId, byteArray);
 
         return ptr;
@@ -166,10 +173,10 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
         console.log('index typeConversion.bigIntToHex');
       },
 
-      'typeConversion.bytesToHex': (bytes: number) => {
+      'typeConversion.bytesToHex': async (bytes: number) => {
         const byteArray = __getArray(bytes);
         const hexString = utils.hexlify(byteArray);
-        const ptr = __newString(hexString);
+        const ptr = await __newString(hexString);
 
         return ptr;
       },
@@ -210,19 +217,19 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
         console.log('bigDecimal.times');
       },
 
-      'bigInt.fromString': (s: number) => {
+      'bigInt.fromString': async (s: number) => {
         const string = __getString(s);
         const bigNumber = BigNumber.from(string);
         const hex = bigNumber.toHexString();
         const bytes = utils.arrayify(hex);
 
-        const uint8ArrayId = getIdOfType(TypeId.Uint8Array);
-        const ptr = __newArray(uint8ArrayId, bytes);
-        const bigInt = BigInt.fromSignedBytes(ptr);
+        const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
+        const ptr = await __newArray(uint8ArrayId, bytes);
+        const bigInt = await BigInt.fromSignedBytes(ptr);
 
         return bigInt;
       },
-      'bigInt.plus': (x: number, y: number) => {
+      'bigInt.plus': async (x: number, y: number) => {
         const xBigIntArray = __getArray(x);
         const xBigNumber = BigNumber.from(xBigIntArray);
 
@@ -230,12 +237,12 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
         const yBigNumber = BigNumber.from(yBigIntArray);
 
         const sum = xBigNumber.add(yBigNumber);
-        const ptr = __newString(sum.toString());
-        const sumBigInt = BigInt.fromString(ptr);
+        const ptr = await __newString(sum.toString());
+        const sumBigInt = await BigInt.fromString(ptr);
 
         return sumBigInt;
       },
-      'bigInt.minus': (x: number, y: number) => {
+      'bigInt.minus': async (x: number, y: number) => {
         const xBigIntArray = __getArray(x);
         const xBigNumber = BigNumber.from(xBigIntArray);
 
@@ -243,7 +250,7 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
         const yBigNumber = BigNumber.from(yBigIntArray);
 
         const diff = xBigNumber.sub(yBigNumber);
-        const ptr = __newString(diff.toString());
+        const ptr = await __newString(diff.toString());
         const sumBigInt = BigInt.fromString(ptr);
 
         return sumBigInt;
@@ -275,17 +282,11 @@ export const instantiate = async (filePath: string): Promise<WebAssembly.Instanc
       'bigInt.pow': () => {
         console.log('bigInt.pow');
       }
-    },
-    env: {
-      abort: () => {
-        console.log('env.abort');
-      }
     }
   };
 
-  const { module, exports } = await loader.instantiate(buffer, imports);
-
-  const instance = await asyncInstantiate(module, imports);
+  const instance = await loader.instantiate(buffer, imports);
+  const { exports } = instance;
 
   const { __getString, __newString, __getArray, __newArray } = exports;
 

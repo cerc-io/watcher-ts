@@ -45,8 +45,8 @@ export function callGraphAPI (): void {
 
 export function callAsyncMethod (): void {
   log.debug('calling async method', []);
-  test.asyncMethod();
-  log.debug('res after async', []);
+  const res = test.asyncMethod();
+  log.debug('res after async: {}', [res.toString()]);
 }
 
 export class Foo {
@@ -60,3 +60,15 @@ export class Foo {
 }
 
 export const FooID = idof<Foo>();
+
+export class Bar {
+  prop: string
+
+  constructor (prop: string) {
+    this.prop = prop;
+  }
+
+  getProp (): string {
+    return this.prop;
+  }
+}

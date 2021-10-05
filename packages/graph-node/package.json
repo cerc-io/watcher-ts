@@ -7,7 +7,6 @@
     "@graphprotocol/graph-ts": "^0.22.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
-    "assemblyscript": "^0.19.16",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
     "eslint-config-standard": "^16.0.3",
@@ -26,10 +25,9 @@
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
-    "test": "yarn asbuild:debug && mocha src/index.test.ts"
+    "test": "yarn asbuild:debug && mocha src/**/*.test.ts"
   },
   "dependencies": {
-    "@assemblyscript/loader": "^0.19.16",
-    "asyncify-wasm": "^1.2.1"
+    "assemblyscript": "https://github.com/vulcanize/assemblyscript.git#ng-integrate-asyncify"
   }
 }
