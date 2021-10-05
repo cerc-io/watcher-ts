@@ -34,8 +34,19 @@ import {
   // Wrapped
 } from '@graphprotocol/graph-ts';
 
+/* eslint-disable @typescript-eslint/no-namespace */
+export declare namespace test {
+  export function asyncMethod(): i32;
+}
+
 export function callGraphAPI (): void {
   log.debug('hello {}', ['world']);
+}
+
+export function callAsyncMethod (): void {
+  log.debug('calling async method', []);
+  const res = test.asyncMethod();
+  log.debug('res after async: {}', [res.toString()]);
 }
 
 export class Foo {
@@ -49,3 +60,15 @@ export class Foo {
 }
 
 export const FooID = idof<Foo>();
+
+export class Bar {
+  prop: string
+
+  constructor (prop: string) {
+    this.prop = prop;
+  }
+
+  getProp (): string {
+    return this.prop;
+  }
+}

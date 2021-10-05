@@ -23,24 +23,24 @@ describe('typeConversion wasm tests', () => {
     _start();
   });
 
-  it('should execute typeConversion bytesToHex API', () => {
+  it('should execute typeConversion bytesToHex API', async () => {
     const { testBytesToHex, __getString } = exports;
 
-    const ptr = testBytesToHex();
+    const ptr = await testBytesToHex();
     expect(__getString(ptr)).to.equal('0x231a');
   });
 
-  it('should execute typeConversion bigIntToString API', () => {
+  it('should execute typeConversion bigIntToString API', async () => {
     const { testBigIntToString, __getString } = exports;
 
-    const ptr = testBigIntToString();
+    const ptr = await testBigIntToString();
     expect(__getString(ptr)).to.equal('1000000000000000000');
   });
 
-  it('should execute typeConversion stringToH160 API', () => {
+  it('should execute typeConversion stringToH160 API', async () => {
     const { testStringToH160, __getString } = exports;
 
-    const ptr = testStringToH160();
+    const ptr = await testStringToH160();
     expect(__getString(ptr)).to.equal('0xafad925b5eae1e370196cba39893e858ff7257d5');
   });
 });
