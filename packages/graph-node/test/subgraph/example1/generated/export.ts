@@ -5,7 +5,6 @@ import {
   BigDecimal,
   BigInt,
   ethereum,
-  Value,
   Address,
   Bytes
 } from '@graphprotocol/graph-ts';
@@ -20,7 +19,6 @@ export {
 
   ethereum,
 
-  Value,
   Address,
   Bytes,
 

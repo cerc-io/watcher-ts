@@ -23,24 +23,24 @@ describe('numbers wasm tests', () => {
     _start();
   });
 
-  it('should execute bigInt fromString API', () => {
+  it('should execute bigInt fromString API', async () => {
     const { testBigIntFromString, __getString } = exports;
 
-    const ptr = testBigIntFromString();
+    const ptr = await testBigIntFromString();
     expect(__getString(ptr)).to.equal('123');
   });
 
-  it('should execute bigInt plus API', () => {
+  it('should execute bigInt plus API', async () => {
     const { testBigIntPlus, __getString } = exports;
 
-    const ptr = testBigIntPlus();
+    const ptr = await testBigIntPlus();
     expect(__getString(ptr)).to.equal('200');
   });
 
-  it('should execute bigInt minus API', () => {
+  it('should execute bigInt minus API', async () => {
     const { testBigIntMinus, __getString } = exports;
 
-    const ptr = testBigIntMinus();
+    const ptr = await testBigIntMinus();
     expect(__getString(ptr)).to.equal('100');
   });
 
