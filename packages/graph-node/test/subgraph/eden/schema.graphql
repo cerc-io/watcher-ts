@@ -32,7 +32,7 @@ enum ProducerSetChangeType {
 }
 
 type ProducerSetChange @entity {
-    # Transaction 
+    # Transaction
     id: ID!
 
     # Block change occured in (effective next block)
@@ -152,7 +152,7 @@ type Epoch @entity {
 
     # Producer blocks
     producerBlocks: BigInt!
-    
+
     # All blocks
     allBlocks: BigInt!
 
@@ -215,7 +215,8 @@ type Slot @entity {
     taxRatePerDay: BigDecimal!
 
     # Slot claims
-    claims: [SlotClaim]! @derivedFrom(field: "slot")
+    # https://thegraph.com/docs/developer/assemblyscript-migration-guide#graphql-schema
+    claims: [SlotClaim!]! @derivedFrom(field: "slot")
 }
 
 type Staker @entity {
@@ -230,7 +231,7 @@ type Staker @entity {
 }
 
 type Network @entity {
-    # Address of contract 
+    # Address of contract
     id: ID!
 
     slot0: Slot
@@ -258,7 +259,7 @@ type Distributor @entity {
 }
 
 type Distribution @entity {
-    # Transaction 
+    # Transaction
     id: ID!
 
     # Distributor
@@ -278,7 +279,7 @@ type Distribution @entity {
 }
 
 type Claim @entity {
-    # Transaction 
+    # Transaction
     id: ID!
 
     # Timestamp claim was made
@@ -298,7 +299,7 @@ type Claim @entity {
 }
 
 type Slash @entity {
-    # Transaction 
+    # Transaction
     id: ID!
 
     # Timestamp slash was made
