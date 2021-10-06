@@ -276,6 +276,11 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       'bigInt.pow': () => {
         console.log('bigInt.pow');
       }
+    },
+    datasource: {
+      'dataSource.address': () => {
+        console.log('dataSource.address');
+      }
     }
   };
 
