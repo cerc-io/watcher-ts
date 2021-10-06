@@ -11,7 +11,7 @@ dataSources:
       startBlock: 12948292
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.4
+      apiVersion: 0.0.5
       language: wasm/assemblyScript
       entities:
         - Producer
@@ -47,7 +47,7 @@ dataSources:
       startBlock: 12948381
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.4
+      apiVersion: 0.0.5
       language: wasm/assemblyScript
       entities:
         - Slot
@@ -77,7 +77,7 @@ dataSources:
       startBlock: 12948356
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.4
+      apiVersion: 0.0.5
       language: wasm/assemblyScript
       entities:
         - Distributor
