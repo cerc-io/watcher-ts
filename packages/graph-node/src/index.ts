@@ -6,21 +6,21 @@ import fs from 'fs/promises';
 import loader from 'assemblyscript/lib/loader';
 import {
   utils,
-  BigNumber
-  // getDefaultProvider,
-  // Contract
+  BigNumber,
+  getDefaultProvider,
+  Contract
 } from 'ethers';
 
 import { TypeId } from './types';
-// import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 
-// const NETWORK_URL = 'http://127.0.0.1:8545';
+const NETWORK_URL = 'http://127.0.0.1:8081';
 
 type idOfType = (TypeId: number) => number
 
 export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
-  // const provider = getDefaultProvider(NETWORK_URL);
+  const provider = getDefaultProvider(NETWORK_URL);
 
   const imports: WebAssembly.Imports = {
     index: {
@@ -112,29 +112,23 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         const functionSignature = __getString(await smartContractCall.functionSignature);
         const functionParams = __getArray(await smartContractCall.functionParams);
 
-        console.log(
-          'ethereum.call params',
-          __getString(await contractAddress.toHexString()),
-          contractName,
-          functionName,
-          functionSignature,
-          functionParams
-        );
+        console.log('ethereum.call params');
+        console.log('contractName:', contractName);
+        console.log('functionSignature:', functionSignature);
 
         // TODO: Get ABI according to contractName.
-        // const contract = new Contract(__getString(contractAddress.toHexString()), exampleAbi, provider);
+        const contract = new Contract(__getString(await contractAddress.toHexString()), exampleAbi, provider);
 
         try {
-          // TODO: Implement async function to perform eth_call.
-          // let result = await contract[functionName](...functionParams);
-          let result: any = 'test';
+          // TODO: Check for function overloading.
+          let result = await contract[functionName](...functionParams);
 
           if (!Array.isArray(result)) {
             result = [result];
           }
 
           const resultPtrArrayPromise = result.map(async (value: any) => {
-            // TODO: Create Value instance according to type.
+            // TODO: Create Value instance according to return type.
             const ethValue = await ethereum.Value.fromString(await __newString(value));
 
             return ethValue;
@@ -281,6 +275,11 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       },
       'bigInt.pow': () => {
         console.log('bigInt.pow');
+      }
+    },
+    datasource: {
+      'dataSource.address': () => {
+        console.log('dataSource.address');
       }
     }
   };
