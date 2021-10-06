@@ -23,9 +23,9 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@graphprotocol/graph-cli@ssh://git@github.com:vulcanize/graph-cli.git#ng-export-graph-ts":
+"@graphprotocol/graph-cli@ssh://git@github.com:vulcanize/graph-cli.git#graph-watcher-v0.22.1":
   version "0.22.1"
-  resolved "ssh://git@github.com:vulcanize/graph-cli.git#a7c51114fc6fab9445a315110338f2e93476d989"
+  resolved "ssh://git@github.com:vulcanize/graph-cli.git#4241570e91578a0128deccc518d52eca00bd587c"
   dependencies:
     assemblyscript "0.19.10"
     binary-install-raw "0.0.13"
@@ -80,14 +80,14 @@
   integrity sha512-XmdEOrKQ8a1Y/yxQFOMbC47G/V2VDO1GvMRnl4O75M4GW/abC5tnfzadQYkqEveqRM1dEJGFFegfPNA2vvx2iw==
 
 "@types/node@*":
-  version "16.10.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.10.2.tgz#5764ca9aa94470adb4e1185fe2e9f19458992b2e"
-  integrity sha512-zCclL4/rx+W5SQTzFs9wyvvyCwoK9QtBpratqz2IYJ3O8Umrn0m3nsTv0wQBk9sRGpvUe9CwPDrQFB10f1FIjQ==
+  version "16.10.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.10.3.tgz#7a8f2838603ea314d1d22bb3171d899e15c57bd5"
+  integrity sha512-ho3Ruq+fFnBrZhUYI46n/bV2GjwzSkwuT4dTf0GkuNFmnb8nq4ny2z9JEVemFi6bdEJanHLlYfy9c6FN9B9McQ==
 
 "@types/node@^12.12.54":
-  version "12.20.27"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.27.tgz#4141fcad57c332a120591de883e26fe4bb14aaea"
-  integrity sha512-qZdePUDSLAZRXXV234bLBEUM0nAQjoxbcSwp1rqSMUe1rZ47mwU6OjciR/JvF1Oo8mc0ys6GE0ks0HGgqAZoGg==
+  version "12.20.28"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.28.tgz#4b20048c6052b5f51a8d5e0d2acbf63d5a17e1e2"
+  integrity sha512-cBw8gzxUPYX+/5lugXIPksioBSbE42k0fZ39p+4yRzfYjN6++eq9kAPdlY9qm+MXyfbk9EmvCYAYRn380sF46w==
 
 "@types/parse-json@^4.0.0":
   version "4.0.0"
@@ -182,11 +182,11 @@ anymatch@~3.1.2:
     picomatch "^2.0.4"
 
 apisauce@^2.0.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/apisauce/-/apisauce-2.1.1.tgz#0b8bc7f2544e6ef710a6fa1d6f49583856940dd2"
-  integrity sha512-P4SsLvmsH8BLLruBn/nsO+65j+ChZlGQ2zC5avCIjbWstYS4PgjxeVWtbeVwFGEWX7dEkLp85OvdapGXy1zS8g==
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/apisauce/-/apisauce-2.1.2.tgz#4cd988d5612a34f051523ef7b2b75338afd37a55"
+  integrity sha512-2/9tz9uR/56UfZpzeMkGyX33tNjYpBNjhwvT/yyYIItulboxzTqZTD3F3Q7WJVXl8fvX6PZDMaxoFH4r/sXkEA==
   dependencies:
-    axios "^0.21.1"
+    axios "^0.21.4"
     ramda "^0.25.0"
 
 app-module-path@^2.2.0:
@@ -263,7 +263,7 @@ aws4@^1.8.0:
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.11.0.tgz#d61f46d83b2519250e2784daf5b09479a8b41c59"
   integrity sha512-xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==
 
-axios@^0.21.1:
+axios@^0.21.1, axios@^0.21.4:
   version "0.21.4"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
   integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
@@ -575,9 +575,9 @@ cli-cursor@^3.1.0:
     restore-cursor "^3.1.0"
 
 cli-spinners@^2.2.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/cli-spinners/-/cli-spinners-2.6.0.tgz#36c7dc98fb6a9a76bd6238ec3f77e2425627e939"
-  integrity sha512-t+4/y50K/+4xcCRosKkA7W4gTr1MySvLV0q+PxmG7FJ5g+66ChKurYjxBCjHggHH3HA5Hh9cy+lcUGWDqVH+4Q==
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/cli-spinners/-/cli-spinners-2.6.1.tgz#adc954ebe281c37a6319bfa401e6dd2488ffb70d"
+  integrity sha512-x/5fWmGMnbKQAaNwN+UZlV79qBLM9JFnJuJ03gIi5whrob0xV0ofNVHy9DhwGdsMJQc2OKv0oGmLzvaqvAVv+g==
 
 cli-table3@~0.5.0:
   version "0.5.1"
@@ -1107,9 +1107,9 @@ graceful-fs@^4.1.6, graceful-fs@^4.2.0:
   integrity sha512-qkIilPUYcNhJpd33n0GBXTB1MMPp14TxEsEs0pTrsSVucApsYzW5V+Q8Qxhik6KU3evy+qkAAowTByymK0avdg==
 
 graphql@^15.5.0:
-  version "15.6.0"
-  resolved "https://registry.yarnpkg.com/graphql/-/graphql-15.6.0.tgz#e69323c6a9780a1a4b9ddf7e35ca8904bb04df02"
-  integrity sha512-WJR872Zlc9hckiEPhXgyUftXH48jp2EjO5tgBBOyNMRJZ9fviL2mJBD6CAysk6N5S0r9BTs09Qk39nnJBkvOXQ==
+  version "15.6.1"
+  resolved "https://registry.yarnpkg.com/graphql/-/graphql-15.6.1.tgz#9125bdf057553525da251e19e96dab3d3855ddfc"
+  integrity sha512-3i5lu0z6dRvJ48QP9kFxBkJ7h4Kso7PS8eahyTFz5Jm6CvQfLtNIE8LX9N6JLnXTuwR+sIYnXzaWp6anOg0QQw==
 
 har-schema@^2.0.0:
   version "2.0.0"
@@ -1808,17 +1808,17 @@ merge-stream@^2.0.0:
   resolved "https://registry.yarnpkg.com/merge-stream/-/merge-stream-2.0.0.tgz#52823629a14dd00c9770fb6ad47dc6310f2c1f60"
   integrity sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==
 
-mime-db@1.49.0:
-  version "1.49.0"
-  resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.49.0.tgz#f3dfde60c99e9cf3bc9701d687778f537001cbed"
-  integrity sha512-CIc8j9URtOVApSFCQIF+VBkX1RwXp/oMMOrqdyXSBXq5RWNEsRfyj1kiRnQgmNXmHxPoFIxOroKA3zcU9P+nAA==
+mime-db@1.50.0:
+  version "1.50.0"
+  resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.50.0.tgz#abd4ac94e98d3c0e185016c67ab45d5fde40c11f"
+  integrity sha512-9tMZCDlYHqeERXEHO9f/hKfNXhre5dK2eE/krIvUjZbS2KPcqGDfNShIWS1uW9XOTKQKqK6qbeOci18rbfW77A==
 
 mime-types@^2.1.12, mime-types@~2.1.19:
-  version "2.1.32"
-  resolved "https://registry.yarnpkg.com/mime-types/-/mime-types-2.1.32.tgz#1d00e89e7de7fe02008db61001d9e02852670fd5"
-  integrity sha512-hJGaVS4G4c9TSMYh2n6SQAGrC4RnfU+daP8G7cSCmaqNjiOoUY0VHCMS42pxnQmVF1GWwFhbHWn3RIxCqTmZ9A==
+  version "2.1.33"
+  resolved "https://registry.yarnpkg.com/mime-types/-/mime-types-2.1.33.tgz#1fa12a904472fafd068e48d9e8401f74d3f70edb"
+  integrity sha512-plLElXp7pRDd0bNZHw+nMd52vRYjLwQjygaNg7ddJ2uJtTlmnTCjWuPKxVu6//AdaRuME84SvLW91sIkBqGT0g==
   dependencies:
-    mime-db "1.49.0"
+    mime-db "1.50.0"
 
 mimic-fn@^2.1.0:
   version "2.1.0"
