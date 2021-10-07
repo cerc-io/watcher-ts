@@ -21,11 +21,11 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "tsc",
+    "build": "yarn asbuild:debug && yarn build:example",
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
-    "test": "yarn asbuild:debug && mocha src/**/*.test.ts",
+    "test": "yarn build && mocha src/**/*.test.ts",
     "build:example": "cd test/subgraph/example1 && yarn && yarn build"
   },
   "dependencies": {
