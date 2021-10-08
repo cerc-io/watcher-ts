@@ -139,6 +139,28 @@ export function testBigIntMinus (): string {
   return res.toString();
 }
 
+export function testBigIntTimes (): string {
+  log.debug('In test bigInt.times', []);
+
+  const bigInt1 = BigInt.fromString('100');
+  const bigInt2 = BigInt.fromString('10');
+
+  const res = bigInt1 * bigInt2;
+  log.debug('bigInt.times result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntDividedBy (): string {
+  log.debug('In test bigInt.dividedBy', []);
+
+  const bigInt1 = BigInt.fromString('1000');
+  const bigInt2 = BigInt.fromString('10');
+
+  const res = bigInt1 / bigInt2;
+  log.debug('bigInt.dividedBy result: {}', [res.toString()]);
+  return res.toString();
+}
+
 export function testBigIntFromString (): string {
   log.debug('In test bigInt.fromString', []);
 
