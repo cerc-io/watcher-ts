@@ -163,7 +163,7 @@ describe('eden wasm loader tests', () => {
   describe('EdenNetworkDistribution wasm', () => {
     let exports: any;
 
-    // EdenNetwork contract address string.
+    // EdenNetworkDistribution contract address string.
     const contractAddress = '0x2Ae0f92498346B9e011ED15d8C98142DCF62F774';
 
     it('should load the subgraph network distribution wasm', async () => {
@@ -294,15 +294,98 @@ describe('eden wasm loader tests', () => {
     });
   });
 
-  it('should load the subgraph network distribution wasm', async () => {
-    const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-    const { exports: { _start } } = await instantiate(filePath);
-    _start();
-  });
+  describe('EdenNetworkGovernance wasm', () => {
+    let exports: any;
 
-  it('should load the subgraph network governance wasm', async () => {
-    const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-    const { exports: { _start } } = await instantiate(filePath);
-    _start();
+    // EdenNetworkGovernance contract address string.
+    const contractAddress = '0x726aDC632871Ff796379da14F9D5aeb199bEd505';
+
+    it('should load the subgraph network governance wasm', async () => {
+      const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
+      ({ exports } = await instantiate(filePath));
+      const { _start } = exports;
+      _start();
+    });
+
+    it('should call the blockProducerAdded handler', async () => {
+      const {
+        blockProducerAdded
+      } = exports;
+
+      // Create dummy BlockProducerAddedEvent params.
+      const eventParamsData = [
+        {
+          name: 'produces',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        }
+      ];
+
+      // Create dummy BlockProducerAddedEvent to be passed to handler.
+      const blockProducerAddedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await blockProducerAdded(blockProducerAddedEvent);
+    });
+
+    it('should call the blockProducerRemoved handler', async () => {
+      const {
+        blockProducerRemoved
+      } = exports;
+
+      // Create dummy BlockProducerRemovedEvent params.
+      const eventParamsData = [
+        {
+          name: 'producer',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        }
+      ];
+
+      // Create dummy BlockProducerRemovedEvent to be passed to handler.
+      const blockProducerRemovedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await blockProducerRemoved(blockProducerRemovedEvent);
+    });
+
+    it('should call the blockProducerRewardCollectorChanged handler', async () => {
+      const {
+        blockProducerRewardCollectorChanged
+      } = exports;
+
+      // Create dummy BlockProducerRewardCollectorChangedEvent params.
+      const eventParamsData = [
+        {
+          name: 'producer',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'collector',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'metadataURI',
+          kind: 'string',
+          value: 'abc'
+        }
+      ];
+
+      // Create dummy BlockProducerRewardCollectorChangedEvent to be passed to handler.
+      const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await blockProducerRewardCollectorChanged(blockProducerRewardCollectorChangedEvent);
+    });
+
+    xit('should call the rewardScheduleChanged handler', async () => {
+      const {
+        rewardScheduleChanged
+      } = exports;
+
+      // Create dummy RewardScheduleChangedEvent to be passed to handler.
+      const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, []);
+
+      await rewardScheduleChanged(rewardScheduleChangedEvent);
+    });
   });
 });
