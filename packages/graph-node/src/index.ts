@@ -224,11 +224,11 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         return bigInt;
       },
       'bigInt.plus': async (x: number, y: number) => {
-        const xBigIntArray = __getArray(x);
-        const xBigNumber = BigNumber.from(xBigIntArray);
+        const xBigInt = await BigInt.wrap(x);
+        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
 
-        const yBigIntArray = __getArray(y);
-        const yBigNumber = BigNumber.from(yBigIntArray);
+        const yBigInt = await BigInt.wrap(y);
+        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
 
         const sum = xBigNumber.add(yBigNumber);
         const ptr = await __newString(sum.toString());
@@ -237,23 +237,43 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         return sumBigInt;
       },
       'bigInt.minus': async (x: number, y: number) => {
-        const xBigIntArray = __getArray(x);
-        const xBigNumber = BigNumber.from(xBigIntArray);
+        const xBigInt = await BigInt.wrap(x);
+        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
 
-        const yBigIntArray = __getArray(y);
-        const yBigNumber = BigNumber.from(yBigIntArray);
+        const yBigInt = await BigInt.wrap(y);
+        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
 
         const diff = xBigNumber.sub(yBigNumber);
         const ptr = await __newString(diff.toString());
-        const sumBigInt = BigInt.fromString(ptr);
+        const diffBigInt = BigInt.fromString(ptr);
 
-        return sumBigInt;
+        return diffBigInt;
       },
-      'bigInt.dividedBy': () => {
-        console.log('bigInt.dividedBy');
+      'bigInt.times': async (x: number, y: number) => {
+        const xBigInt = await BigInt.wrap(x);
+        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+
+        const yBigInt = await BigInt.wrap(y);
+        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+
+        const product = xBigNumber.mul(yBigNumber);
+        const ptr = await __newString(product.toString());
+        const productBigInt = BigInt.fromString(ptr);
+
+        return productBigInt;
       },
-      'bigInt.times': () => {
-        console.log('bigInt.times');
+      'bigInt.dividedBy': async (x: number, y: number) => {
+        const xBigInt = await BigInt.wrap(x);
+        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+
+        const yBigInt = await BigInt.wrap(y);
+        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+
+        const quotient = xBigNumber.div(yBigNumber);
+        const ptr = await __newString(quotient.toString());
+        const quotientBigInt = BigInt.fromString(ptr);
+
+        return quotientBigInt;
       },
       'bigInt.dividedByDecimal': () => {
         console.log('bigInt.dividedByDecimal');
