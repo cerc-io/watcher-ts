@@ -44,6 +44,20 @@ describe('numbers wasm tests', () => {
     expect(__getString(ptr)).to.equal('100');
   });
 
+  it('should execute bigInt times API', async () => {
+    const { testBigIntTimes, __getString } = exports;
+
+    const ptr = await testBigIntTimes();
+    expect(__getString(ptr)).to.equal('1000');
+  });
+
+  it('should execute bigInt dividedBy API', async () => {
+    const { testBigIntDividedBy, __getString } = exports;
+
+    const ptr = await testBigIntDividedBy();
+    expect(__getString(ptr)).to.equal('100');
+  });
+
   xit('should execute bigDecimal dividedBy API', () => {
     const { testBigDecimalDividedBy, __getString } = exports;
 
