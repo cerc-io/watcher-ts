@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import { ethers } from 'ethers';
 import path from 'path';
 
 import { instantiate } from './index';
@@ -156,6 +157,140 @@ describe('eden wasm loader tests', () => {
       const unstakeEvent = await createEvent(exports, contractAddress, eventParamsData);
 
       await unstake(unstakeEvent);
+    });
+  });
+
+  describe('EdenNetworkDistribution wasm', () => {
+    let exports: any;
+
+    // EdenNetwork contract address string.
+    const contractAddress = '0x2Ae0f92498346B9e011ED15d8C98142DCF62F774';
+
+    it('should load the subgraph network distribution wasm', async () => {
+      const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
+      ({ exports } = await instantiate(filePath));
+      const { _start } = exports;
+      _start();
+    });
+
+    it('should call the claimed handler', async () => {
+      const {
+        claimed
+      } = exports;
+
+      // Create dummy ClaimedEvent params.
+      const eventParamsData = [
+        {
+          name: 'index',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'totalEarned',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'account',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'claimed',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        }
+      ];
+
+      // Create dummy ClaimedEvent to be passed to handler.
+      const claimedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await claimed(claimedEvent);
+    });
+
+    it('should call the slashed handler', async () => {
+      const {
+        slashed
+      } = exports;
+
+      // Create dummy SlashedEvent params.
+      const eventParamsData = [
+        {
+          name: 'account',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'slashed',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        }
+      ];
+
+      // Create dummy SlashedEvent to be passed to handler.
+      const slashedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await slashed(slashedEvent);
+    });
+
+    it('should call the merkleRootUpdated handler', async () => {
+      const {
+        merkleRootUpdated
+      } = exports;
+
+      // Create dummy MerkleRootUpdatedEvent params.
+      const eventParamsData = [
+        {
+          name: 'merkleRoot',
+          kind: 'bytes',
+          value: ethers.utils.hexlify(ethers.utils.randomBytes(32))
+        },
+        {
+          name: 'distributionNumber',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'metadataURI',
+          kind: 'string',
+          value: 'abc'
+        }
+      ];
+
+      // Create dummy MerkleRootUpdatedEvent to be passed to handler.
+      const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await merkleRootUpdated(merkleRootUpdatedEvent);
+    });
+
+    it('should call the accountUpdated handler', async () => {
+      const {
+        accountUpdated
+      } = exports;
+
+      // Create dummy AccountUpdatedEvent params.
+      const eventParamsData = [
+        {
+          name: 'account',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'totalClaimed',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'totalSlashed',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        }
+      ];
+
+      // Create dummy AccountUpdatedEvent to be passed to handler.
+      const accountUpdatedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await accountUpdated(accountUpdatedEvent);
     });
   });
 

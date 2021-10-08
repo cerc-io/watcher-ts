@@ -21,6 +21,7 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
     BigInt,
     ethereum,
     Bytes,
+    ByteArray,
     id_of_type: idOfType
   } = exports;
 
@@ -78,6 +79,12 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
 
       case 'address': {
         ethValue = await ethereum.Value.fromAddress(await Address.fromString(await __newString(value)));
+        break;
+      }
+
+      case 'bytes': {
+        const byteArray = await ByteArray.fromHexString(await __newString(value));
+        ethValue = await ethereum.Value.fromBytes(await Bytes.fromByteArray(byteArray));
         break;
       }
 
