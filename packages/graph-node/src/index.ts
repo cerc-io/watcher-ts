@@ -46,7 +46,7 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         const idString = __getString(id);
         console.log('id:', idString);
         const entityInstance = await Entity.wrap(data);
-        const entityInstanceId = __getString(entityInstance.getString(await __newString('id')));
+        const entityInstanceId = __getString(await entityInstance.getString(await __newString('id')));
         console.log('entity instance id:', entityInstanceId);
 
         // TODO: Implement store set to save entity in db with values from entityInstance.
@@ -203,15 +203,15 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     numbers: {
-      'bigDecimal.dividedBy': (x: number, y: number) => {
+      'bigDecimal.dividedBy': async (x: number, y: number) => {
         console.log('numbers bigDecimal.dividedBy');
 
         const bigDecimaly = BigDecimal.wrap(y);
 
-        const yDigitsBigIntArray = __getArray(bigDecimaly.digits);
+        const yDigitsBigIntArray = __getArray(await bigDecimaly.digits);
         const yDigits = BigNumber.from(yDigitsBigIntArray);
 
-        const yExpBigIntArray = __getArray(bigDecimaly.exp);
+        const yExpBigIntArray = __getArray(await bigDecimaly.exp);
         const yExp = BigNumber.from(yExpBigIntArray);
 
         console.log('y digits and exp', yDigits, yExp);

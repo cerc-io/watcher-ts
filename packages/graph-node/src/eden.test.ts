@@ -5,11 +5,16 @@
 import path from 'path';
 
 import { instantiate } from './index';
-import { TypeId } from './types';
+import { createEvent } from './utils';
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 describe('eden wasm loader tests', () => {
   describe('EdenNetwork wasm', () => {
     let exports: any;
+
+    // EdenNetwork contract address string.
+    const contractAddress = '0x9E3382cA57F4404AC7Bf435475EAe37e87D1c453';
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
@@ -18,66 +23,139 @@ describe('eden wasm loader tests', () => {
       _start();
     });
 
-    it('should call the slotClaimed handler', async () => {
+    xit('should call the slotClaimed handler', async () => {
       const {
-        __newString,
-        __newArray,
-        slotClaimed,
-        Address,
-        BigInt,
-        ethereum,
-        Bytes,
-        SlotClaimed,
-        id_of_type: idOfType
+        slotClaimed
       } = exports;
 
-      // Create dummy block data.
-      const block = await ethereum.Block.__new(
-        await Bytes.empty(),
-        await Bytes.empty(),
-        await Bytes.empty(),
-        await Address.zero(),
-        await Bytes.empty(),
-        await Bytes.empty(),
-        await Bytes.empty(),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        null
-      );
+      // Create dummy SlotClaimedEvent params.
+      const eventParamsData = [
+        {
+          name: 'slot',
+          kind: 'i32',
+          value: 0
+        },
+        {
+          name: 'owner',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'delegate',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'newBidAmount',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'oldBidAmount',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        },
+        {
+          name: 'taxNumerator',
+          kind: 'i32',
+          value: 1
+        },
+        {
+          name: 'taxDenominator',
+          kind: 'i32',
+          value: 1
+        }
+      ];
 
-      // Create dummy transaction data.
-      const transaction = await ethereum.Transaction.__new(
-        await Bytes.empty(),
-        await BigInt.fromI32(0),
-        await Address.zero(),
-        null,
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        await Bytes.empty()
-      );
-
-      const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), []);
-
-      // Dummy contract address string.
-      const addStrPtr = await __newString('0x9E3382cA57F4404AC7Bf435475EAe37e87D1c453');
-
-      // Create SlotClaimed event to be passed to handler.
-      const slotClaimedEvent = await SlotClaimed.__new(
-        await Address.fromString(addStrPtr),
-        await BigInt.fromI32(0),
-        await BigInt.fromI32(0),
-        null,
-        block,
-        transaction,
-        eventParams
-      );
+      // Create dummy SlotClaimedEvent to be passed to handler.
+      const slotClaimedEvent = await createEvent(exports, contractAddress, eventParamsData);
 
       await slotClaimed(slotClaimedEvent);
+    });
+
+    it('should call the slotDelegateUpdated handler', async () => {
+      const {
+        slotDelegateUpdated
+      } = exports;
+
+      // Create dummy SlotDelegateUpdatedEvent params.
+      const eventParamsData = [
+        {
+          name: 'slot',
+          kind: 'i32',
+          value: 0
+        },
+        {
+          name: 'owner',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'newDelegate',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'oldDelegate',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        }
+      ];
+
+      // Create dummy SlotDelegateUpdatedEvent to be passed to handler.
+      const slotClaimedEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await slotDelegateUpdated(slotClaimedEvent);
+    });
+
+    xit('should call the stake handler', async () => {
+      const {
+        stake
+      } = exports;
+
+      // Create dummy StakeEvent params.
+      const eventParamsData = [
+        {
+          name: 'staker',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'stakeAmount',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        }
+      ];
+
+      // Create dummy StakeEvent to be passed to handler.
+      const stakeEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await stake(stakeEvent);
+    });
+
+    xit('should call the unstake handler', async () => {
+      const {
+        unstake
+      } = exports;
+
+      // Create dummy UnstakeEvent params.
+      const eventParamsData = [
+        {
+          name: 'staker',
+          kind: 'address',
+          value: ZERO_ADDRESS
+        },
+        {
+          name: 'unstakedAmount',
+          kind: 'unsignedBigInt',
+          value: BigInt(1)
+        }
+      ];
+
+      // Create dummy UnstakeEvent to be passed to handler.
+      const unstakeEvent = await createEvent(exports, contractAddress, eventParamsData);
+
+      await unstake(unstakeEvent);
     });
   });
 
