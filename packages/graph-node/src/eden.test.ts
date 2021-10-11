@@ -118,7 +118,7 @@ describe('eden wasm loader tests', () => {
       await slotDelegateUpdated(slotClaimedEvent);
     });
 
-    xit('should call the stake handler', async () => {
+    it('should call the stake handler', async () => {
       const {
         stake
       } = exports;
@@ -128,7 +128,7 @@ describe('eden wasm loader tests', () => {
         {
           name: 'staker',
           kind: 'address',
-          value: ZERO_ADDRESS
+          value: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc'
         },
         {
           name: 'stakeAmount',

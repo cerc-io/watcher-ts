@@ -1,4 +1,5 @@
-import { TypeId } from './types';
+import { BigNumber } from 'ethers';
+import { TypeId, ValueKind } from './types';
 
 interface EventParam {
   name: string;
@@ -114,4 +115,51 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
     transaction,
     eventParams
   );
+};
+
+/**
+ * Method to get value from graph-ts ethereum.Value wasm instance.
+ * @param exports
+ * @param value
+ * @returns
+ */
+export const fromEthereumValue = async (exports: any, value: any): Promise<any> => {
+  const {
+    __getString,
+    BigInt,
+    Address
+  } = exports;
+
+  const kind = await value.kind;
+
+  switch (kind) {
+    case ValueKind.ADDRESS: {
+      const address = Address.wrap(await value.toAddress());
+      const addressStringPtr = await address.toHexString();
+      return __getString(addressStringPtr);
+    }
+
+    case ValueKind.BOOL: {
+      const bool = await value.toBoolean();
+      return Boolean(bool);
+    }
+
+    case ValueKind.BYTES:
+    case ValueKind.FIXED_BYTES: {
+      const bytes = await value.toBytes();
+      const bytesStringPtr = await bytes.toHexString();
+      return __getString(bytesStringPtr);
+    }
+
+    case ValueKind.INT:
+    case ValueKind.UINT: {
+      const bigInt = BigInt.wrap(await value.toBigInt());
+      const bigIntStringPtr = await bigInt.toString();
+      const bigIntString = __getString(bigIntStringPtr);
+      return BigNumber.from(bigIntString);
+    }
+
+    default:
+      break;
+  }
 };

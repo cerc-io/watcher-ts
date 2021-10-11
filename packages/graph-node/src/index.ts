@@ -13,6 +13,7 @@ import {
 } from 'ethers';
 
 import { TypeId } from './types';
+import { fromEthereumValue } from './utils';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
@@ -131,7 +132,7 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
         const contractName = __getString(await smartContractCall.contractName);
         const functionName = __getString(await smartContractCall.functionName);
         const functionSignature = __getString(await smartContractCall.functionSignature);
-        const functionParams = __getArray(await smartContractCall.functionParams);
+        let functionParams = __getArray(await smartContractCall.functionParams);
 
         console.log('ethereum.call params');
         console.log('functionSignature:', functionSignature);
@@ -140,6 +141,14 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
         const contract = new Contract(__getString(await contractAddress.toHexString()), abi, provider);
 
         try {
+          const functionParamsPromise = functionParams.map(async param => {
+            const ethereumValue = await ethereum.Value.wrap(param);
+            return fromEthereumValue(exports, ethereumValue);
+          });
+
+          functionParams = await Promise.all(functionParamsPromise);
+          console.log('functionParams', functionParams);
+
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
 
@@ -178,6 +187,7 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
 
       'typeConversion.bigIntToString': (bigInt: number) => {
         const bigIntByteArray = __getArray(bigInt);
+        // console.log('bigIntByteArray', bigIntByteArray)
         const bigNumber = BigNumber.from(bigIntByteArray);
         const ptr = __newString(bigNumber.toString());
 
