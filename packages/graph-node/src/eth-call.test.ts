@@ -5,13 +5,18 @@
 import path from 'path';
 
 import { instantiate } from './index';
+import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+
+const ABIS = {
+  Example1: exampleAbi
+};
 
 describe('eth-call wasm tests', () => {
   let exports: any;
 
   it('should load the subgraph example wasm', async () => {
     const filePath = path.resolve(__dirname, '../test/subgraph/example1/build/Example1/Example1.wasm');
-    const instance = await instantiate(filePath);
+    const instance = await instantiate(filePath, ABIS);
     exports = instance.exports;
   });
 

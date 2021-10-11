@@ -7,8 +7,17 @@ import path from 'path';
 
 import { instantiate } from './index';
 import { createEvent } from './utils';
+import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
+import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
+import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const ABIS = {
+  EdenNetwork: edenNetworkAbi,
+  Distribution: merkleDistributorAbi,
+  Governance: distributorGovernanceAbi
+};
 
 describe('eden wasm loader tests', () => {
   describe('EdenNetwork wasm', () => {
@@ -19,7 +28,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
-      ({ exports } = await instantiate(filePath));
+      ({ exports } = await instantiate(filePath, ABIS));
       const { _start } = exports;
       _start();
     });
@@ -168,7 +177,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-      ({ exports } = await instantiate(filePath));
+      ({ exports } = await instantiate(filePath, ABIS));
       const { _start } = exports;
       _start();
     });
@@ -302,7 +311,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-      ({ exports } = await instantiate(filePath));
+      ({ exports } = await instantiate(filePath, ABIS));
       const { _start } = exports;
       _start();
     });

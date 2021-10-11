@@ -8,17 +8,17 @@ import {
   utils,
   BigNumber,
   getDefaultProvider,
-  Contract
+  Contract,
+  ContractInterface
 } from 'ethers';
 
 import { TypeId } from './types';
-import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
 type idOfType = (TypeId: number) => number
 
-export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
+export const instantiate = async (filePath: string, abis: {[key: string]: ContractInterface} = {}): Promise<loader.ResultObject & { exports: any }> => {
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
 
@@ -134,11 +134,10 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         const functionParams = __getArray(await smartContractCall.functionParams);
 
         console.log('ethereum.call params');
-        console.log('contractName:', contractName);
         console.log('functionSignature:', functionSignature);
 
-        // TODO: Get ABI according to contractName.
-        const contract = new Contract(__getString(await contractAddress.toHexString()), exampleAbi, provider);
+        const abi = abis[contractName];
+        const contract = new Contract(__getString(await contractAddress.toHexString()), abi, provider);
 
         try {
           // TODO: Check for function overloading.
