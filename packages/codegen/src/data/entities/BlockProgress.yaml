@@ -9,6 +9,10 @@ indexOn:
   - columns:
       - parentHash
 columns:
+  - name: cid
+    pgType: varchar
+    tsType: string
+    columnType: Column
   - name: blockHash
     pgType: varchar
     tsType: string
