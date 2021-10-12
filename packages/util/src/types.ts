@@ -6,6 +6,7 @@ import { DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeo
 
 export interface BlockProgressInterface {
   id: number;
+  cid: string;
   blockHash: string;
   parentHash: string;
   blockNumber: number;
@@ -61,6 +62,7 @@ export interface IndexerInterface {
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>;
+  processBlock(blockHash: string): Promise<void>;
 }
 
 export interface EventWatcherInterface {

@@ -92,6 +92,7 @@ export interface TransferEvent {
 }
 
 export interface Block {
+  cid: string;
   number: number;
   hash: string;
   timestamp: number;

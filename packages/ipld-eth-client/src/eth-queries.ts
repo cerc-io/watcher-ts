@@ -64,9 +64,9 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 }
 `;
 
-export const getBlocksByNumber = gql`
-query allEthHeaderCids($blockNumber: BigInt) {
-  allEthHeaderCids(condition: { blockNumber: $blockNumber }) {
+export const getBlocks = gql`
+query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
+  allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {
     nodes {
       cid
       blockNumber
@@ -96,6 +96,7 @@ subscription {
   listen(topic: "header_cids") {
     relatedNode {
       ... on EthHeaderCid {
+        cid
         blockHash
         blockNumber
         parentHash
@@ -127,7 +128,7 @@ export default {
   getStorageAt,
   getLogs,
   getBlockWithTransactions,
-  getBlocksByNumber,
+  getBlocks,
   getBlockByHash,
   subscribeBlocks,
   subscribeTransactions

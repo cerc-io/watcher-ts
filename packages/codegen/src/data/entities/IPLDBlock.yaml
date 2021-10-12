@@ -1,0 +1,41 @@
+className: IPLDBlock
+indexOn:
+  - columns:
+      - block
+      - contractAddress
+columns:
+  - name: block
+    tsType: BlockProgress
+    columnType: ManyToOne
+    lhs: ()
+    rhs: BlockProgress
+  - name: contractAddress
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 42
+  - name: cid
+    pgType: varchar
+    tsType: string
+    columnType: Column
+  - name: kind
+    pgType: varchar
+    tsType: string
+    columnType: Column
+  - name: data
+    pgType: text
+    tsType: string
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+      - Index
+      - ManyToOne
+    from: typeorm
+  - toImport:
+      - BlockProgress
+    from: ./BlockProgress

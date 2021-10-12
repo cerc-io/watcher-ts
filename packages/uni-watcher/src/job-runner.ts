@@ -16,6 +16,7 @@ import {
   JobRunner as BaseJobRunner,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
+  QUEUE_HOOKS,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
   getCustomProvider
@@ -82,6 +83,14 @@ export class JobRunner {
       await this._jobQueue.markComplete(job);
     });
   }
+
+  async subscribeHooksQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
+      await this._indexer.processBlock(job);
+
+      await this._jobQueue.markComplete(job);
+    });
+  }
 }
 
 export const main = async (): Promise<any> => {
@@ -97,11 +106,11 @@ export const main = async (): Promise<any> => {
 
   const config = await getConfig(argv.f);
 
-  assert(config.server, 'Missing server config');
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
+  assert(upstream, 'Missing upstream config');
   assert(dbConfig, 'Missing database config');
+  assert(serverConfig, 'Missing server config');
 
   const db = new Database(dbConfig);
   await db.init();

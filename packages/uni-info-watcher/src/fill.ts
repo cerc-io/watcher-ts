@@ -63,6 +63,7 @@ export const main = async (): Promise<any> => {
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
   const cache = await getCache(cacheConfig);
+
   const ethClient = new EthClient({
     gqlEndpoint: gqlApiEndpoint,
     gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,

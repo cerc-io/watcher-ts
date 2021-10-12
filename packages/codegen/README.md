@@ -53,13 +53,13 @@
   yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
   ```
 
-  Generate code for `ERC721` contract in both `eth_call` and `storage` mode, `active` kind:
+  Generate code for `ERC20` contract in both `eth_call` and `storage` mode, `active` kind:
 
   ```bash
-  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
+  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode all --kind active
   ```
 
-  This will create a folder called `demo-erc721-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
+  This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
 ## Run Generated Watcher
 
@@ -79,7 +79,9 @@
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in `src/hooks.ts` to perform corresponding indexing using the `Indexer` object.
 
-  * Refer to `src/hooks.example.ts` for an example hook function for events in an ERC20 contract.
+  * Edit the custom hook function `handleBlock` (triggered on a block) in `src/hooks.ts` to save `IPLDBlock`s using the `Indexer` object.
+
+  * The existing example hooks in `src/hooks.ts` are for an `ERC20` contract.
 
 ### Run
 
@@ -106,7 +108,7 @@
   * To watch a contract:
 
     ```bash
-    yarn watch:contract --address <contract-address> --kind ERC721 --starting-block [block-number]
+    yarn watch:contract --address <contract-address> --kind <contract-kind> --starting-block [block-number]
     ```
 
   * To fill a block range:
