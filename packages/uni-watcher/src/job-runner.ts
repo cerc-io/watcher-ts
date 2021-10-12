@@ -16,9 +16,11 @@ import {
   JobRunner as BaseJobRunner,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
+  QUEUE_HOOKS,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  getCustomProvider
+  getCustomProvider,
+  ServerConfig
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -31,12 +33,14 @@ export class JobRunner {
   _jobQueue: JobQueue
   _baseJobRunner: BaseJobRunner
   _jobQueueConfig: JobQueueConfig
+  _serverConfig: ServerConfig
 
-  constructor (jobQueueConfig: JobQueueConfig, indexer: Indexer, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, serverConfig: ServerConfig, indexer: Indexer, jobQueue: JobQueue) {
     this._jobQueueConfig = jobQueueConfig;
     this._indexer = indexer;
     this._jobQueue = jobQueue;
-    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this._jobQueue);
+    this._serverConfig = serverConfig;
+    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._serverConfig, this._indexer, this._jobQueue);
   }
 
   async start (): Promise<void> {
@@ -55,6 +59,14 @@ export class JobRunner {
       await this._baseJobRunner.processEvent(job);
     });
   }
+
+  async subscribeHooksQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
+      await this._indexer.processBlock(job);
+
+      await this._jobQueue.markComplete(job);
+    });
+  }
 }
 
 export const main = async (): Promise<any> => {
@@ -70,11 +82,11 @@ export const main = async (): Promise<any> => {
 
   const config = await getConfig(argv.f);
 
-  assert(config.server, 'Missing server config');
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
+  assert(upstream, 'Missing upstream config');
   assert(dbConfig, 'Missing database config');
+  assert(serverConfig, 'Missing server config');
 
   const db = new Database(dbConfig);
   await db.init();
@@ -109,7 +121,7 @@ export const main = async (): Promise<any> => {
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
   await indexer.init();
 
-  const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
+  const jobRunner = new JobRunner(jobQueueConfig, serverConfig, indexer, jobQueue);
   await jobRunner.start();
 };
 

@@ -69,6 +69,7 @@ export class Indexer implements IndexerInterface {
 
     return {
       block: {
+        cid: block.cid,
         hash: block.blockHash,
         number: block.blockNumber,
         timestamp: block.blockTimestamp,
@@ -119,6 +120,11 @@ export class Indexer implements IndexerInterface {
     } finally {
       await dbTx.release();
     }
+  }
+
+  async processBlock (blockHash: string): Promise<void> {
+    // Empty post-block method.
+    assert(blockHash);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -339,7 +345,7 @@ export class Indexer implements IndexerInterface {
     return contract;
   }
 
-  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
+  async getEventsByFilter (blockHash: string, contract: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
@@ -428,7 +434,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
 
     const logsPromise = this._ethClient.getLogs({ blockHash });
@@ -516,6 +522,7 @@ export class Indexer implements IndexerInterface {
 
     try {
       block = {
+        cid: blockCid,
         blockHash,
         blockNumber: block.number,
         blockTimestamp: block.timestamp,
