@@ -4,23 +4,28 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { JsonFragment } from '@ethersproject/abi';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
-import { BaseProvider } from '@ethersproject/providers';
+import { sha256 } from 'multiformats/hashes/sha2';
+import { CID } from 'multiformats/cid';
+import _ from 'lodash';
 
+import { JsonFragment } from '@ethersproject/abi';
+import { BaseProvider } from '@ethersproject/providers';
+import * as codec from '@ipld/dag-json';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
+import { IPLDBlock } from './entity/IPLDBlock';
 import artifacts from './artifacts/{{inputFileName}}.json';
-import { handleEvent } from './hooks';
+import { genesisHook, handleEvent, postBlockHook } from './hooks';
 
 const log = debug('vulcanize:indexer');
 
@@ -30,6 +35,7 @@ const {{capitalize event.name}}_EVENT = '{{event.name}}';
 
 export type ResultEvent = {
   block: {
+    cid: string;
     hash: string;
     number: number;
     timestamp: number;
@@ -48,7 +54,21 @@ export type ResultEvent = {
   event: any;
 
   proof: string;
-}
+};
+
+export type ResultIPLDBlock = {
+  block: {
+    cid: string;
+    hash: string;
+    number: number;
+    timestamp: number;
+    parentHash: string;
+  };
+  contractAddress: string;
+  cid: string;
+  kind: string;
+  data: string;
+};
 
 export class Indexer {
   _db: Database
@@ -56,12 +76,13 @@ export class Indexer {
   _ethProvider: BaseProvider
   _postgraphileClient: EthClient;
   _baseIndexer: BaseIndexer
+  _serverConfig: ServerConfig
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
   _contract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider) {
     assert(db);
     assert(ethClient);
 
@@ -89,6 +110,7 @@ export class Indexer {
 
     return {
       block: {
+        cid: block.cid,
         hash: block.blockHash,
         number: block.blockNumber,
         timestamp: block.blockTimestamp,
@@ -112,6 +134,24 @@ export class Indexer {
 
       // TODO: Return proof only if requested.
       proof: JSON.parse(event.proof)
+    };
+  }
+
+  getResultIPLDBlock (ipldBlock: IPLDBlock): ResultIPLDBlock {
+    const block = ipldBlock.block;
+
+    return {
+      block: {
+        cid: block.cid,
+        hash: block.blockHash,
+        number: block.blockNumber,
+        timestamp: block.blockTimestamp,
+        parentHash: block.parentHash
+      },
+      contractAddress: ipldBlock.contractAddress,
+      cid: ipldBlock.cid,
+      kind: ipldBlock.kind,
+      data: ipldBlock.data
     };
   }
 
@@ -166,6 +206,175 @@ export class Indexer {
   }
 
   {{/each}}
+  async processBlock (job: any): Promise<void> {
+    const { data: { blockHash } } = job;
+
+    // Call custom post-block hook.
+    await postBlockHook(this, blockHash);
+  }
+
+  async processCheckpoint (job: any): Promise<void> {
+    // Create a checkpoint IPLDBlock for contracts that were checkpointed checkPointInterval blocks before.
+
+    // Return if checkpointInterval is <= 0.
+    const checkpointInterval = this._serverConfig.checkpointInterval;
+    if (checkpointInterval <= 0) return;
+
+    const { data: { blockNumber: currentBlockNumber, blockHash: currentBlockHash } } = job;
+
+    // Get latest checkpoints for all the contracts.
+    // Assuming checkPointInterval > MAX_REORG_DEPTH.
+    const latestCheckpointBlocks = await this.getLatestCheckpoints();
+
+    // For each contractAddress, merge the diff till now.
+    for (const checkpointBlock of latestCheckpointBlocks) {
+      // Check if it is time for a new checkpoint.
+      if (checkpointBlock.block.blockNumber > currentBlockNumber - checkpointInterval) {
+        continue;
+      }
+
+      const { contractAddress, block: { blockNumber: checkpointBlockNumber } } = checkpointBlock;
+
+      // Fetching all diff blocks after checkpoint.
+      const diffBlocks = await this.getPrevIPLDBlocksAfterCheckpoint(currentBlockHash, checkpointBlockNumber, contractAddress);
+
+      let checkPoint = codec.decode(Buffer.from(checkpointBlock.data)) as any;
+
+      for (const diffBlock of diffBlocks) {
+        const diff = codec.decode(Buffer.from(diffBlock.data));
+        checkPoint = _.merge(checkPoint, diff);
+      }
+
+      // Getting the current block.
+      const block = await this.getBlockProgress(currentBlockHash);
+      assert(block);
+
+      const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, checkPoint, 'checkpoint');
+      await this.saveOrUpdateIPLDBlock(ipldBlock);
+    }
+  }
+
+  async getLatestCheckpoints (): Promise<IPLDBlock[]> {
+    // Get the latest checkpoints for all the contracts.
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.getLatestCheckpoints(dbTx);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+    return res;
+  }
+
+  async getIPLDBlock (block: BlockProgress, contractAddress: string): Promise<IPLDBlock | undefined> {
+    const ipldBlocks = await this._db.getIPLDBlocks({ block, contractAddress });
+
+    // There can be only one IPLDBlock for a { block, contractAddress } combination.
+    assert(ipldBlocks.length <= 1);
+
+    return ipldBlocks[0];
+  }
+
+  async getIPLDBlockByCid (cid: string): Promise<IPLDBlock | undefined> {
+    const ipldBlocks = await this._db.getIPLDBlocks({ cid });
+
+    // There can be only one IPLDBlock with a particular cid.
+    assert(ipldBlocks.length <= 1);
+
+    return ipldBlocks[0];
+  }
+
+  async getPrevIPLDBlock (blockHash: string, contractAddress: string): Promise<IPLDBlock | undefined> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.getPrevIPLDBlock(dbTx, blockHash, contractAddress);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+    return res;
+  }
+
+  async getPrevIPLDBlocksAfterCheckpoint (blockHash: string, checkpointBlockNumber: number, contractAddress: string): Promise<IPLDBlock[]> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.getPrevIPLDBlocksAfterCheckpoint(dbTx, blockHash, checkpointBlockNumber, contractAddress);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
+    return this._db.saveOrUpdateIPLDBlock(ipldBlock);
+  }
+
+  async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind?: string):Promise<any> {
+    // Get an existing IPLDBlock for current block and contractAddress.
+    const currentIPLDBlock = await this.getIPLDBlock(block, contractAddress);
+
+    // If an IPLDBlock for { block, contractAddress } already exists, update the data field.
+    if (currentIPLDBlock) {
+      const oldData = codec.decode(Buffer.from(currentIPLDBlock.data));
+      data = _.merge(oldData, data);
+    } else {
+      // Fetch the parent IPLDBlock.
+      const parentIPLDBlock = await this.getPrevIPLDBlock(block.blockHash, contractAddress);
+
+      // Setting the meta-data for an IPLDBlock (done only once per block).
+      data.meta = {
+        id: contractAddress,
+        kind: kind || 'diff',
+        parent: {
+          '/': parentIPLDBlock ? parentIPLDBlock.cid : null
+        },
+        ethBlock: {
+          cid: {
+            '/': block.cid
+          },
+          num: block.blockNumber
+        }
+      };
+    }
+
+    // Encoding the data using dag-json codec.
+    const bytes = codec.encode(data);
+
+    // Calculating sha256 (multi)hash of the encoded data.
+    const hash = await sha256.digest(bytes);
+
+    // Calculating the CID: v1, code: dag-json, hash.
+    const cid = CID.create(1, codec.code, hash);
+
+    let ipldBlock = currentIPLDBlock || new IPLDBlock();
+    ipldBlock = Object.assign(ipldBlock, {
+      block,
+      contractAddress,
+      cid: cid.toString(),
+      kind: data.meta.kind,
+      data: bytes
+    });
+
+    return ipldBlock;
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
@@ -209,14 +418,21 @@ export class Indexer {
     return { eventName, eventInfo };
   }
 
-  async watchContract (address: string, startingBlock: number): Promise<boolean> {
+  async watchContract (address: string, kind: string, startingBlock: number): Promise<boolean> {
     // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-    await this._db.saveContract(ethers.utils.getAddress(address), '{{contractName}}', startingBlock);
+    await this._db.saveContract(ethers.utils.getAddress(address), kind, startingBlock);
+
+    // Getting the current block.
+    const currentBlock = await this._db.getLatestBlockProgress();
+    assert(currentBlock);
+
+    // Call custom genesis hook.
+    await genesisHook(this, currentBlock, address);
 
     return true;
   }
 
-  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
+  async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
@@ -288,7 +504,7 @@ export class Indexer {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<void> {
+  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<void> {
     assert(blockHash);
     let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
@@ -371,6 +587,7 @@ export class Indexer {
 
     try {
       block = {
+        cid: blockCid,
         blockHash,
         blockNumber: block.number,
         blockTimestamp: block.timestamp,

@@ -113,17 +113,20 @@ export class EventWatcher {
       if (blockProgress.isComplete) {
         await this._indexer.removeUnknownEvents(blockProgress);
       }
+
+      dbEvent.block = blockProgress;
     }
 
     return dbEvent;
   }
 
   async publishBlockProgressToSubscribers (blockProgress: BlockProgressInterface): Promise<void> {
-    const { blockHash, blockNumber, numEvents, numProcessedEvents, isComplete } = blockProgress;
+    const { cid, blockHash, blockNumber, numEvents, numProcessedEvents, isComplete } = blockProgress;
 
     // Publishing the event here will result in pushing the payload to GQL subscribers for `onAddressEvent(address)`.
     await this._pubsub.publish(BlockProgressEvent, {
       onBlockProgressEvent: {
+        cid,
         blockHash,
         blockNumber,
         numEvents,

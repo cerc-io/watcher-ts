@@ -197,6 +197,7 @@ export class Database {
 
   async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void> {
     const {
+      cid,
       blockHash,
       blockNumber,
       blockTimestamp,
@@ -217,6 +218,7 @@ export class Database {
 
     if (!blockProgress) {
       const entity = blockRepo.create({
+        cid,
         blockHash,
         parentHash,
         blockNumber,
@@ -493,6 +495,7 @@ export class Database {
       // If entity not found in frothy region get latest entity in the pruned region.
       // Filter out entities from pruned blocks.
       const canonicalBlockNumber = blockNumber + 1;
+
       const entityInPrunedRegion:any = await repo.createQueryBuilder('entity')
         .innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
         .where('block.is_pruned = false')

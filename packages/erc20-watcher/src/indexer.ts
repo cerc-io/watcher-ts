@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
+import { EventInterface, IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -41,7 +41,7 @@ interface EventResult {
   proof?: string;
 }
 
-export class Indexer {
+export class Indexer implements IndexerInterface {
   _db: Database
   _ethClient: EthClient
   _postgraphileClient: EthClient
@@ -255,6 +255,11 @@ export class Indexer {
     await this.triggerIndexingOnEvent(event);
   }
 
+  async processBlock (blockHash: string): Promise<void> {
+    // Empty post-block method.
+    assert(blockHash);
+  }
+
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};
@@ -297,7 +302,7 @@ export class Indexer {
     return true;
   }
 
-  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
+  async getEventsByFilter (blockHash: string, contract: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
@@ -373,7 +378,7 @@ export class Indexer {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<void> {
+  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<void> {
     assert(blockHash);
     let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
@@ -438,6 +443,7 @@ export class Indexer {
 
     try {
       block = {
+        cid: blockCid,
         blockHash,
         blockNumber: block.number,
         blockTimestamp: block.timestamp,

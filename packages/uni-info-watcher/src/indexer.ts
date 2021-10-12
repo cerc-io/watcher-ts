@@ -70,6 +70,7 @@ export class Indexer implements IndexerInterface {
 
     return {
       block: {
+        cid: block.cid,
         hash: block.blockHash,
         number: block.blockNumber,
         timestamp: block.blockTimestamp,

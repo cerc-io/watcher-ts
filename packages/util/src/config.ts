@@ -23,11 +23,13 @@ export interface JobQueueConfig {
   jobDelayInMilliSecs?: number;
 }
 
-interface ServerConfig {
+export interface ServerConfig {
   host: string;
   port: number;
   mode: string;
   kind: string;
+  checkpointing: boolean;
+  checkpointInterval: number;
 }
 
 export interface UpstreamConfig {

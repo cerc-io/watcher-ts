@@ -38,18 +38,17 @@ export const main = async (): Promise<any> => {
 
   const config = await getConfig(argv.f);
 
-  assert(config.server, 'Missing server config');
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
 
-  const { host, port, kind: watcherKind } = config.server;
-
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
+  assert(upstream, 'Missing upstream config');
   assert(dbConfig, 'Missing database config');
+  assert(serverConfig, 'Missing server config');
+
+  const { host, port, kind: watcherKind } = serverConfig;
 
   const db = new Database(dbConfig);
   await db.init();
 
-  assert(upstream, 'Missing upstream config');
   const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
@@ -69,7 +68,7 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
+  const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries

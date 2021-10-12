@@ -7,8 +7,16 @@ import debug from 'debug';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 
-import { JobQueueConfig } from './config';
-import { JOB_KIND_INDEX, JOB_KIND_PRUNE, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
+import { JobQueueConfig, ServerConfig } from './config';
+import {
+  JOB_KIND_INDEX,
+  JOB_KIND_PRUNE,
+  MAX_REORG_DEPTH,
+  QUEUE_BLOCK_PROCESSING,
+  QUEUE_EVENT_PROCESSING,
+  QUEUE_BLOCK_CHECKPOINT,
+  QUEUE_HOOKS
+} from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 
@@ -18,11 +26,13 @@ export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
+  _serverConfig: ServerConfig
 
-  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
-    this._jobQueueConfig = jobQueueConfig;
+  constructor (jobQueueConfig: JobQueueConfig, serverConfig: ServerConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
+    this._jobQueueConfig = jobQueueConfig;
+    this._serverConfig = serverConfig;
   }
 
   async processBlock (job: any): Promise<void> {
@@ -113,7 +123,7 @@ export class JobRunner {
   }
 
   async _indexBlock (job: any, syncStatus: SyncStatusInterface): Promise<void> {
-    const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
+    const { data: { cid, blockHash, blockNumber, parentHash, priority, timestamp } } = job;
     log(`Processing block number ${blockNumber} hash ${blockHash} `);
 
     // Check if chain pruning is caught up.
@@ -140,13 +150,14 @@ export class JobRunner {
           throw new Error(message);
         }
 
-        const [{ blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
+        const [{ cid: parentCid, blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
 
         // Create a higher priority job to index parent block and then abort.
         // We don't have to worry about aborting as this job will get retried later.
         const newPriority = (priority || 0) + 1;
         await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
           kind: JOB_KIND_INDEX,
+          cid: parentCid,
           blockHash: parentHash,
           blockNumber: parentBlockNumber,
           parentHash: grandparentHash,
@@ -177,10 +188,20 @@ export class JobRunner {
 
       // Delay required to process block.
       await wait(jobDelayInMilliSecs);
-      const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+      const events = await this._indexer.getOrFetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
       for (let ei = 0; ei < events.length; ei++) {
         await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
+      }
+
+      // Push post-block hook and checkpointing jobs if there are no events as the block is already marked as complete.
+      if (!events.length) {
+        await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash });
+
+        // Push checkpointing job only if checkpointing is on.
+        if (this._serverConfig.checkpointing) {
+          await this._jobQueue.pushJob(QUEUE_BLOCK_CHECKPOINT, { blockHash, blockNumber });
+        }
       }
     }
   }

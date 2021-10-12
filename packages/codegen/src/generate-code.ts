@@ -7,8 +7,8 @@ import fetch from 'node-fetch';
 import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { flatten } from '@poanet/solidity-flattener';
 
+import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
 import { KIND_ACTIVE, KIND_LAZY } from '@vulcanize/util';
 
@@ -209,15 +209,12 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   exportWatchContract(outStream);
 
   let hooksOutStream;
-  let exampleOutStream;
   if (outputDir) {
     hooksOutStream = fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'));
-    exampleOutStream = fs.createWriteStream(path.join(outputDir, 'src/hooks.example.ts'));
   } else {
     hooksOutStream = process.stdout;
-    exampleOutStream = process.stdout;
   }
-  exportHooks(hooksOutStream, exampleOutStream);
+  exportHooks(hooksOutStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))

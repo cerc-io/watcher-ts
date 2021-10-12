@@ -97,6 +97,9 @@ export class Schema {
     // Add a mutation for watching a contract.
     this._addWatchContractMutation();
 
+    this._addIPLDType();
+    this._addIPLDQuery();
+
     return this._composer.buildSchema();
   }
 
@@ -173,6 +176,7 @@ export class Schema {
     this._composer.createObjectTC({
       name: blockName,
       fields: {
+        cid: 'String!',
         hash: 'String!',
         number: 'Int!',
         timestamp: 'Int!',
@@ -234,6 +238,40 @@ export class Schema {
     });
   }
 
+  _addIPLDType (): void {
+    this._composer.createObjectTC({
+      name: 'ResultIPLDBlock',
+      fields: {
+        block: () => this._composer.getOTC('Block').NonNull,
+        contractAddress: 'String!',
+        cid: 'String!',
+        kind: 'String!',
+        data: 'String!'
+      }
+    });
+  }
+
+  _addIPLDQuery (): void {
+    this._composer.Query.addFields({
+      getStateByCID: {
+        type: this._composer.getOTC('ResultIPLDBlock'),
+        args: {
+          cid: 'String!'
+        }
+      }
+    });
+
+    this._composer.Query.addFields({
+      getState: {
+        type: this._composer.getOTC('ResultIPLDBlock'),
+        args: {
+          blockHash: 'String!',
+          contractAddress: 'String!'
+        }
+      }
+    });
+  }
+
   /**
    * Adds an event subscription to the schema.
    */
@@ -254,6 +292,7 @@ export class Schema {
         type: 'Boolean!',
         args: {
           contractAddress: 'String!',
+          kind: 'String!',
           startingBlock: 'Int'
         }
       }
