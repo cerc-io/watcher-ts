@@ -24,11 +24,13 @@ export interface JobQueueConfig {
   eventsInBatch: number;
 }
 
-interface ServerConfig {
+export interface ServerConfig {
   host: string;
   port: number;
   mode: string;
   kind: string;
+  checkpointing: boolean;
+  checkpointInterval: number;
 }
 
 export interface UpstreamConfig {

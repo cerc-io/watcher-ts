@@ -3,8 +3,103 @@
 //
 
 import assert from 'assert';
+import _ from 'lodash';
+
+import { UNKNOWN_EVENT_NAME } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
+import { BlockProgress } from './entity/BlockProgress';
+
+const ACCOUNTS = [
+  '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc'
+];
+
+/**
+ * Genesis hook function.
+ * @param indexer Indexer instance.
+ * @param block Concerned block.
+ * @param contractAddress Address of the concerned contract.
+ */
+export async function genesisHook (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
+  // Store the genesis state values in an IPLDBlock.
+  const ipldBlockData: any = {};
+
+  // Setting the initial balances of accounts.
+  for (const account of ACCOUNTS) {
+    const balance = await indexer._balances(block.blockHash, contractAddress, account);
+    _.set(ipldBlockData, `state._balances[${account}]`, balance.value.toString());
+  }
+
+  const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData, 'checkpoint');
+  await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+}
+
+/**
+ * Post-block hook function.
+ * @param indexer Indexer instance that contains methods to fetch the contract varaiable values.
+ * @param blockHash Block hash of the concerned block.
+ */
+export async function postBlockHook (indexer: Indexer, blockHash: string): Promise<void> {
+  // Get events for current block and make an entry of updated values in IPLDBlock.
+  const events = await indexer.getEventsByFilter(blockHash);
+
+  // No IPLDBlock entry if there are no events.
+  if (!events) {
+    return;
+  }
+
+  for (const event of events) {
+    if (event.eventName === UNKNOWN_EVENT_NAME) {
+      continue;
+    }
+
+    const block = event.block;
+    const contractAddress = event.contract;
+
+    const eventData = indexer.getResultEvent(event);
+
+    const ipldBlockData: any = {};
+
+    switch (event.eventName) {
+      case 'Transfer': {
+        const { from, to } = eventData.event;
+
+        const fromBalance = await indexer._balances(blockHash, contractAddress, from);
+        const toBalance = await indexer._balances(blockHash, contractAddress, to);
+
+        // {
+        //   "_balances": {
+        //      "0xCA6D29232D1435D8198E3E5302495417dD073d61": "100",
+        //      "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc": "999999999999999999900"
+        //   }
+        // }
+        _.set(ipldBlockData, `state._balances[${from}]`, fromBalance.value.toString());
+        _.set(ipldBlockData, `state._balances[${to}]`, toBalance.value.toString());
+
+        break;
+      }
+
+      case 'Approval': {
+        const { owner, spender } = eventData.event;
+        const allowance = await indexer._allowances(blockHash, contractAddress, owner, spender);
+
+        // {
+        //   "_allowances": {
+        //      "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc": {
+        //         "0xCA6D29232D1435D8198E3E5302495417dD073d61": "10"
+        //      }
+        //   }
+        // }
+        _.set(ipldBlockData, `state._allowances[${owner}][${spender}]`, allowance.value.toString());
+
+        break;
+      }
+    }
+
+    const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData);
+    await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+  }
+}
 
 /**
  * Event hook function.
@@ -15,5 +110,37 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
   assert(indexer);
   assert(eventData);
 
+  // The following code is for ERC20 contract implementation.
+
   // Perform indexing based on the type of event.
+  switch (eventData.event.__typename) {
+    // In case of ERC20 'Transfer' event.
+    case 'TransferEvent': {
+      // On a transfer, balances for both parties change.
+      // Therefore, trigger indexing for both sender and receiver.
+
+      // Get event fields from eventData.
+      // const { from, to } = eventData.event;
+
+      // Update balance entry for sender in the database.
+      // await indexer.balanceOf(eventData.block.hash, eventData.contract, from);
+
+      // Update balance entry for receiver in the database.
+      // await indexer.balanceOf(eventData.block.hash, eventData.contract, to);
+
+      break;
+    }
+    // In case of ERC20 'Approval' event.
+    case 'ApprovalEvent': {
+      // On an approval, allowance for (owner, spender) combination changes.
+
+      // Get event fields from eventData.
+      // const { owner, spender } = eventData.event;
+
+      // Update allowance entry for (owner, spender) combination in the database.
+      // await indexer.allowance(eventData.block.hash, eventData.contract, owner, spender);
+
+      break;
+    }
+  }
 }

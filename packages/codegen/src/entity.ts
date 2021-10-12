@@ -37,7 +37,6 @@ export class Entity {
     }
 
     const entityObject: any = {
-      // Capitalize the first letter of name.
       className: '',
       indexOn: [],
       columns: [],
@@ -188,6 +187,7 @@ export class Entity {
     this._addSyncStatusEntity();
     this._addContractEntity();
     this._addBlockProgressEntity();
+    this._addIPLDBlockEntity();
 
     const template = Handlebars.compile(this._templateString);
     this._entities.forEach(entityObj => {
@@ -216,6 +216,11 @@ export class Entity {
 
   _addBlockProgressEntity (): void {
     const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'BlockProgress.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addIPLDBlockEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'IPLDBlock.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 }

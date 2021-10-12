@@ -5,10 +5,14 @@
 import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
+import { getDefaultProvider } from 'ethers';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
+import { getCache } from '@vulcanize/cache';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { Database } from '../database';
+import { Indexer } from '../indexer';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -42,14 +46,37 @@ import { Database } from '../database';
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
-  const { database: dbConfig } = config;
 
-  assert(dbConfig);
+  const { upstream, database: dbConfig, server: serverConfig } = config;
+
+  assert(upstream, 'Missing upstream config');
+  assert(dbConfig, 'Missing database config');
+  assert(serverConfig, 'Missing server config');
 
   const db = new Database(dbConfig);
   await db.init();
 
-  await db.saveContract(argv.address, argv.kind, argv.startingBlock);
+  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
+  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
+  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
+
+  const cache = await getCache(cacheConfig);
+
+  const ethClient = new EthClient({
+    gqlEndpoint: gqlApiEndpoint,
+    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+
+  const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
+  await indexer.watchContract(argv.address, argv.kind, argv.startingBlock);
 
   await db.close();
 })();
