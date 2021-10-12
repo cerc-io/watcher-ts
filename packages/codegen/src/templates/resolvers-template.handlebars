@@ -34,9 +34,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Mutation: {
-      watchContract: (_: any, { contractAddress, startingBlock = 1 }: { contractAddress: string, startingBlock: number }): Promise<boolean> => {
-        log('watchContract', contractAddress, startingBlock);
-        return indexer.watchContract(contractAddress, startingBlock);
+      watchContract: (_: any, { contractAddress, kind, startingBlock = 1 }: { contractAddress: string, kind: string, startingBlock: number }): Promise<boolean> => {
+        log('watchContract', contractAddress, kind, startingBlock);
+        return indexer.watchContract(contractAddress, kind, startingBlock);
       }
     },
 
@@ -52,8 +52,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       {{/each}}
-      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name: string }) => {
-        log('events', blockHash, contractAddress, name || '');
+      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
+        log('events', blockHash, contractAddress, name);
 
         const block = await indexer.getBlockProgress(blockHash);
         if (!block || !block.isComplete) {
@@ -74,6 +74,22 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
+      },
+
+      getStateByCID: async (_: any, { cid }: { cid: string }) => {
+        log('getStateByCID', cid);
+
+        const ipldBlock = await indexer.getIPLDBlockByCid(cid);
+
+        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
+      },
+
+      getState: async (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }) => {
+        log('getState', blockHash, contractAddress);
+
+        const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress);
+
+        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
       }
     }
   };

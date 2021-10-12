@@ -208,7 +208,7 @@ export class Indexer {
     return this._db.getBlockEvents(blockHash, where, queryOptions);
   }
 
-  async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<EventInterface>> {
+  async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<EventInterface>> {
     if (contract) {
       const watchedContract = await this.isWatchedContract(contract);
       if (!watchedContract) {

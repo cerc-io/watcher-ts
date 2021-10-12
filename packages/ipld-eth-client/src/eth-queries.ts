@@ -100,6 +100,7 @@ subscription {
   listen(topic: "header_cids") {
     relatedNode {
       ... on EthHeaderCid {
+        cid
         blockHash
         blockNumber
         parentHash

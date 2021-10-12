@@ -8,6 +8,7 @@ import { Where, QueryOptions } from './database';
 
 export interface BlockProgressInterface {
   id: number;
+  cid: string;
   blockHash: string;
   parentHash: string;
   blockNumber: number;
@@ -70,6 +71,7 @@ export interface IndexerInterface {
   parseEventNameAndArgs?: (kind: string, logObj: any) => any;
   isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
   cacheContract?: (contract: ContractInterface) => void;
+  processBlock(blockHash: string): Promise<void>;
 }
 
 export interface EventWatcherInterface {
