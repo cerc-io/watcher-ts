@@ -862,8 +862,8 @@ describe('uni-info-watcher', () => {
       eventType = 'IncreaseLiquidityEvent';
       eventValue = await watchEvent(uniClient, eventType);
 
-      // Sleeping for 10 sec for the events to be processed.
-      await wait(10000);
+      // Sleeping for 15 sec for the events to be processed.
+      await wait(15000);
     });
 
     it('should create a Transaction entity', async () => {
@@ -936,8 +936,8 @@ describe('uni-info-watcher', () => {
       eventType = 'DecreaseLiquidityEvent';
       eventValue = await watchEvent(uniClient, eventType);
 
-      // Sleeping for 10 sec for the events to be processed.
-      await wait(10000);
+      // Sleeping for 15 sec for the events to be processed.
+      await wait(15000);
     });
 
     it('should create a Transaction entity', async () => {
