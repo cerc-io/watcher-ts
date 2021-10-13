@@ -45,7 +45,6 @@ import {
 } from '../test/utils';
 
 const CONFIG_FILE = './environments/local.toml';
-const NETWORK_RPC_URL = 'http://localhost:8545';
 
 describe('uni-watcher', () => {
   let factory: Contract;
@@ -77,9 +76,10 @@ describe('uni-watcher', () => {
     assert(host, 'Missing host.');
     assert(port, 'Missing port.');
 
-    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint }, cache: cacheConfig } = upstream;
+    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
     assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint.');
     assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint.');
+    assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint.');
     assert(cacheConfig, 'Missing dbConfig.');
 
     db = new Database(dbConfig);
@@ -105,7 +105,7 @@ describe('uni-watcher', () => {
       gqlSubscriptionEndpoint
     });
 
-    const provider = new ethers.providers.JsonRpcProvider(NETWORK_RPC_URL);
+    const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
     signer = provider.getSigner();
     recipient = await signer.getAddress();
   });

@@ -43,7 +43,6 @@ import {
 } from '../test/utils';
 
 const CONFIG_FILE = './environments/local.toml';
-const NETWORK_RPC_URL = 'http://localhost:8545';
 
 describe('uni-info-watcher', () => {
   let factory: Contract;
@@ -64,16 +63,12 @@ describe('uni-info-watcher', () => {
   let client: Client;
 
   before(async () => {
-    const provider = new ethers.providers.JsonRpcProvider(NETWORK_RPC_URL);
-    signer = provider.getSigner();
-    recipient = await signer.getAddress();
-
     config = await getConfig(CONFIG_FILE);
 
     const { upstream, server: { host, port } } = config;
     const endpoint = `http://${host}:${port}/graphql`;
 
-    let { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint } } = upstream;
+    let { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint }, ethServer: { rpcProviderEndpoint } } = upstream;
     uniClient = new UniClient({
       gqlEndpoint,
       gqlSubscriptionEndpoint
@@ -85,6 +80,10 @@ describe('uni-info-watcher', () => {
       gqlEndpoint,
       gqlSubscriptionEndpoint
     });
+
+    const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
+    signer = provider.getSigner();
+    recipient = await signer.getAddress();
   });
 
   it('should have a Factory entity', async () => {

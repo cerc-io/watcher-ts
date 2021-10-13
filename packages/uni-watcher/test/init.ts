@@ -22,7 +22,6 @@ import { Database } from '../src/database';
 import { watchContract } from '../src/utils/index';
 
 const CONFIG_FILE = './environments/local.toml';
-const NETWORK_RPC_URL = 'http://localhost:8545';
 
 const deployFactoryContract = async (db: Database, signer: Signer): Promise<Contract> => {
   // Deploy factory from uniswap package.
@@ -53,10 +52,11 @@ const main = async () => {
   // Get config.
   const config = await getConfig(CONFIG_FILE);
 
-  const { database: dbConfig, server: { host, port } } = config;
+  const { database: dbConfig, server: { host, port }, upstream: { ethServer: { rpcProviderEndpoint } } } = config;
   assert(dbConfig, 'Missing dbConfig.');
   assert(host, 'Missing host.');
   assert(port, 'Missing port.');
+  assert(rpcProviderEndpoint, 'Missing rpcProviderEndpoint.');
 
   // Initialize uniClient.
   const endpoint = `http://${host}:${port}/graphql`;
@@ -71,7 +71,7 @@ const main = async () => {
   const db = new Database(dbConfig);
   await db.init();
 
-  const provider = new ethers.providers.JsonRpcProvider(NETWORK_RPC_URL);
+  const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
   const signer = provider.getSigner();
 
   let factory: Contract;
