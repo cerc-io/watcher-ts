@@ -27,6 +27,7 @@ import { exportLint } from './lint';
 import { registerHandlebarHelpers } from './utils/handlebar-helpers';
 import { exportHooks } from './hooks';
 import { exportFill } from './fill';
+import { exportCheckpoint } from './checkpoint';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -207,6 +208,11 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
   exportWatchContract(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint.ts'))
+    : process.stdout;
+  exportCheckpoint(outStream);
 
   let hooksOutStream;
   if (outputDir) {

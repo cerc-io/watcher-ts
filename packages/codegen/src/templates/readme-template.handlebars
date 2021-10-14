@@ -39,6 +39,8 @@
 
 * Update the `upstream` config in the [config file](./environments/local.toml) and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
 
+* Update the [config](./environments/local.toml) with derived state checkpoint settings.
+
 ## Customize
 
 * Indexing on an event:
@@ -46,6 +48,8 @@
   * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
 
   * Edit the custom hook function `handleBlock` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save `IPLDBlock`s using the `Indexer` object.
+
+  * Edit the custom hook function `genesisHook` (triggered on watch-contract) in [hooks.ts](./src/hooks.ts) to save a genesis checkpoint `IPLDBlock` using the `Indexer` object.
 
   * The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
 
@@ -76,5 +80,11 @@ GQL console: http://localhost:3008/graphql
   * To fill a block range:
 
     ```bash
-    yarn fill --startBlock <from-block> --endBlock <to-block>
+    yarn fill --start-block <from-block> --end-block <to-block>
+    ```
+
+  * To create a checkpoint for a contract:
+
+    ```bash
+    yarn checkpoint --address <contract-address> --block-hash [block-hash]
     ```

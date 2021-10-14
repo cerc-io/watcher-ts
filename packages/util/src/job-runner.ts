@@ -16,7 +16,6 @@ import {
   UNKNOWN_EVENT_NAME,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
-  QUEUE_BLOCK_CHECKPOINT,
   QUEUE_HOOKS
 } from './constants';
 import { JobQueue } from './job-queue';
@@ -199,13 +198,8 @@ export class JobRunner {
       if (blockProgress.numEvents) {
         await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
       } else {
-        // Push post-block hook and checkpointing jobs if there are no events as the block is already marked as complete.
-        await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash });
-
-        // Push checkpointing job only if checkpointing is on.
-        if (this._serverConfig.checkpointing) {
-          await this._jobQueue.pushJob(QUEUE_BLOCK_CHECKPOINT, { blockHash, blockNumber });
-        }
+        // Push post-block hook job if there are no events as the block is already marked as complete.
+        await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash, blockNumber });
       }
     }
   }

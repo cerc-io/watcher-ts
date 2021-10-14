@@ -1,0 +1,13 @@
+className: HooksStatus
+indexOn: []
+columns:
+  - name: latestProcessedBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryGeneratedColumn
+      - Column
+    from: typeorm
