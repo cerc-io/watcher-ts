@@ -39,9 +39,14 @@ export class Client {
 
     const queryObject = {
       name,
+      getQueryName: '',
       params: _.cloneDeep(params),
       returnType
     };
+
+    queryObject.getQueryName = (name.charAt(0) === '_')
+      ? `_get${name.charAt(1).toUpperCase()}${name.slice(2)}`
+      : `get${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 
     queryObject.params = queryObject.params.map((param) => {
       const tsParamType = getTsForSol(param.type);

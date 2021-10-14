@@ -41,10 +41,20 @@ export class Indexer {
 
     const queryObject = {
       name,
+      getQueryName: '',
+      saveQueryName: '',
       params: _.cloneDeep(params),
       returnType,
       mode
     };
+
+    if (name.charAt(0) === '_') {
+      queryObject.getQueryName = `_get${name.charAt(1).toUpperCase()}${name.slice(2)}`;
+      queryObject.saveQueryName = `_save${name.charAt(1).toUpperCase()}${name.slice(2)}`;
+    } else {
+      queryObject.getQueryName = `get${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+      queryObject.saveQueryName = `save${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    }
 
     queryObject.params = queryObject.params.map((param) => {
       const tsParamType = getTsForSol(param.type);
