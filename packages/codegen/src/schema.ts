@@ -266,7 +266,8 @@ export class Schema {
         type: this._composer.getOTC('ResultIPLDBlock'),
         args: {
           blockHash: 'String!',
-          contractAddress: 'String!'
+          contractAddress: 'String!',
+          kind: 'String'
         }
       }
     });

@@ -96,7 +96,7 @@ export async function postBlockHook (indexer: Indexer, blockHash: string): Promi
       }
     }
 
-    const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData);
+    const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData, 'diff');
     await indexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
 }
