@@ -72,18 +72,28 @@ export class JobRunner {
     });
   }
 
-  async subscribeBlockCheckpointQueue (): Promise<void> {
-    await this._jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
-      await this._indexer.processCheckpoint(job);
+  async subscribeHooksQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
+      const { data: { blockNumber } } = job;
+
+      const hooksStatus = await this._indexer.getHooksStatus();
+
+      if (hooksStatus && hooksStatus.latestProcessedBlockNumber !== blockNumber - 1) {
+        const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
+        log(message);
+
+        throw new Error(message);
+      }
+
+      await this._indexer.processBlock(job);
 
       await this._jobQueue.markComplete(job);
     });
   }
 
-  // TODO: Make sure the hooks run in order.
-  async subscribeHooksQueue (): Promise<void> {
-    await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
-      await this._indexer.processBlock(job);
+  async subscribeBlockCheckpointQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
+      await this._indexer.processCheckpoint(job);
 
       await this._jobQueue.markComplete(job);
     });

@@ -1,8 +1,16 @@
 className: IPLDBlock
 indexOn:
   - columns:
+      - cid
+    unique: true
+  - columns:
       - block
       - contractAddress
+  - columns:
+      - block
+      - contractAddress
+      - kind
+    unique: true
 columns:
   - name: block
     tsType: BlockProgress

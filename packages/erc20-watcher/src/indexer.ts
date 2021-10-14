@@ -257,9 +257,9 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
-  async processBlock (blockHash: string): Promise<void> {
+  async processBlock (job: any): Promise<void> {
     // Empty post-block method.
-    assert(blockHash);
+    assert(job);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {

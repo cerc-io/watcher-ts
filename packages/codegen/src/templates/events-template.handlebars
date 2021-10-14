@@ -57,6 +57,7 @@ export class EventWatcher {
 
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
+    await this.initHooksOnCompleteHandler();
     this._baseEventWatcher.startBlockProcessing();
   }
 
@@ -91,16 +92,9 @@ export class EventWatcher {
       if (dbEvents.length > 0) {
         const dbEvent = dbEvents[0];
 
-        // If the block is marked as complete:
-        // a. Push a post-block hook job.
-        // b. Push a block checkpointing job.
+        // If the block is marked as complete, push a post-block hook job.
         if (dbEvent.block.isComplete) {
-          await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash: dbEvent.block.blockHash });
-
-          // Push checkpointing job if checkpointing is on.
-          if (this._indexer._serverConfig.checkpointing) {
-            await this._jobQueue.pushJob(QUEUE_BLOCK_CHECKPOINT, { blockHash: dbEvent.block.blockHash, blockNumber: dbEvent.block.blockNumber });
-          }
+          await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash: dbEvent.block.blockHash, blockNumber: dbEvent.block.blockNumber });
         }
       }
 
@@ -120,6 +114,19 @@ export class EventWatcher {
             log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
           }
         }
+      }
+    });
+  }
+
+  async initHooksOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_HOOKS, async (job) => {
+      const { data: { request: { data: { blockHash, blockNumber } } } } = job;
+
+      await this._indexer.updateHooksStatusProcessedBlock(blockNumber);
+
+      // Push checkpointing job only after post-block hook job is marked complete and checkpointing is on.
+      if (this._indexer._serverConfig.checkpointing) {
+        this._jobQueue.pushJob(QUEUE_BLOCK_CHECKPOINT, { blockHash });
       }
     });
   }
