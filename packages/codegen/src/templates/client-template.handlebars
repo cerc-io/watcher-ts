@@ -18,8 +18,7 @@ export class Client {
   }
 
   {{#each queries as | query |}}
-  // eslint-disable-next-line camelcase
-  async get{{capitalize query.name tillIndex=1}} (blockHash: string, contractAddress: string
+  async {{query.getQueryName}} (blockHash: string, contractAddress: string
   {{~#each query.params}}, {{this.name}}: {{this.type~}} {{/each}}): Promise<any> {
     const { {{query.name}} } = await this._client.query(
       gql(queries.{{query.name}}),

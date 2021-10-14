@@ -11,6 +11,7 @@ import { Database as BaseDatabase, MAX_REORG_DEPTH } from '@vulcanize/util';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
+import { HooksStatus } from './entity/HooksStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 
@@ -46,11 +47,10 @@ export class Database {
   }
 
   {{#each queries as | query |}}
-  // eslint-disable-next-line camelcase
-  {{#if (reservedNameCheck (capitalize query.name tillIndex=1)) }}
+  {{#if (reservedNameCheck query.entityName) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
-  async get{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
+  async {{query.getQueryName}} ({ blockHash, contractAddress
   {{~#each query.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
   {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}} }): Promise<{{query.entityName}} | undefined> {
     return this._conn.getRepository({{query.entityName}})
@@ -66,11 +66,10 @@ export class Database {
   {{/each}}
 
   {{~#each queries as | query |}}
-  // eslint-disable-next-line camelcase
-  {{#if (reservedNameCheck (capitalize query.name tillIndex=1)) }}
+  {{#if (reservedNameCheck query.entityName) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
-  async save{{capitalize query.name tillIndex=1}} ({ blockHash, contractAddress
+  async {{query.saveQueryName}} ({ blockHash, contractAddress
   {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{query.entityName}}>): Promise<{{query.entityName}}> {
     const repo = this._conn.getRepository({{query.entityName}});
     const entity = repo.create({ blockHash, contractAddress
@@ -84,22 +83,20 @@ export class Database {
     return repo.find({ where, relations: ['block'] });
   }
 
-  async getLatestCheckpoints (queryRunner: QueryRunner): Promise<IPLDBlock[]> {
-    // Get the latest checkpoints for all the contracts.
+  async getLatestCheckpoint (queryRunner: QueryRunner, contractAddress: string): Promise<IPLDBlock | undefined> {
+    // Get the latest checkpoints for a contract.
     const result = await queryRunner.manager.createQueryBuilder(IPLDBlock, 'ipld_block')
-      .distinctOn(['contract_address'])
-      .orderBy('contract_address')
-      .innerJoinAndSelect(Contract, 'contract', 'contract_address = contract.address')
       .leftJoinAndSelect('ipld_block.block', 'block')
       .where('block.is_pruned = false')
+      .andWhere('ipld_block.contractAddress = :contractAddress', { contractAddress })
       .andWhere('ipld_block.kind = :kind', { kind: 'checkpoint' })
-      .addOrderBy('ipld_block.block_id', 'DESC')
-      .getMany();
+      .orderBy('ipld_block.block_id', 'DESC')
+      .getOne();
 
     return result;
   }
 
-  async getPrevIPLDBlock (queryRunner: QueryRunner, blockHash: string, contractAddress: string): Promise<IPLDBlock | undefined> {
+  async getPrevIPLDBlock (queryRunner: QueryRunner, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
       (
@@ -108,11 +105,13 @@ export class Database {
           b.block_number,
           b.parent_hash,
           1 as depth,
-          i.id
+          i.id,
+          i.kind
         FROM
           block_progress b
           LEFT JOIN
             ipld_block i ON i.block_id = b.id
+            AND i.contract_address = $2
         WHERE
           b.block_hash = $1
         UNION ALL
@@ -121,7 +120,8 @@ export class Database {
             b.block_number,
             b.parent_hash,
             c.depth + 1,
-            i.id
+            i.id,
+            i.kind
           FROM
             block_progress b
             LEFT JOIN
@@ -131,35 +131,42 @@ export class Database {
             INNER JOIN
               cte_query c ON c.parent_hash = b.block_hash
             WHERE
-              c.id IS NULL AND c.depth < $3
+              c.depth < $3
       )
       SELECT
-        block_number, id
+        block_number, id, kind
       FROM
         cte_query
-      ORDER BY block_number ASC
-      LIMIT 1;
+      ORDER BY block_number DESC, id DESC
     `;
 
     // Fetching block and id for previous IPLDBlock in frothy region.
-    const [{ block_number: blockNumber, id }] = await queryRunner.query(heirerchicalQuery, [blockHash, contractAddress, MAX_REORG_DEPTH]);
+    const queryResult = await queryRunner.query(heirerchicalQuery, [blockHash, contractAddress, MAX_REORG_DEPTH]);
+    const latestRequiredResult = kind
+      ? queryResult.find((obj: any) => obj.kind === kind)
+      : queryResult.find((obj: any) => obj.id);
 
     let result: IPLDBlock | undefined;
-    if (id) {
-      result = await queryRunner.manager.findOne(IPLDBlock, { id }, { relations: ['block'] });
+    if (latestRequiredResult) {
+      result = await queryRunner.manager.findOne(IPLDBlock, { id: latestRequiredResult.id }, { relations: ['block'] });
     } else {
       // If IPLDBlock not found in frothy region get latest IPLDBlock in the pruned region.
       // Filter out IPLDBlocks from pruned blocks.
-      const canonicalBlockNumber = blockNumber + 1;
+      const canonicalBlockNumber = queryResult.pop().block_number + 1;
 
-      result = await queryRunner.manager.createQueryBuilder(IPLDBlock, 'ipld_block')
+      let queryBuilder = queryRunner.manager.createQueryBuilder(IPLDBlock, 'ipld_block')
         .leftJoinAndSelect('ipld_block.block', 'block')
         .where('block.is_pruned = false')
         .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
         .andWhere('block.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
-        .orderBy('block.block_number', 'DESC')
-        .limit(1)
-        .getOne();
+        .orderBy('block.block_number', 'DESC');
+
+      // Filter using kind if specified else order by id to give preference to checkpoint.
+      queryBuilder = kind
+        ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
+        : queryBuilder.addOrderBy('ipld_block.id', 'DESC');
+
+      result = await queryBuilder.getOne();
     }
 
     return result;
@@ -179,6 +186,7 @@ export class Database {
           block_progress b
           LEFT JOIN
             ipld_block i ON i.block_id = b.id
+            AND i.contract_address = $2
         WHERE
           b.block_hash = $1
         UNION ALL
@@ -230,6 +238,34 @@ export class Database {
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
     const repo = this._conn.getRepository(IPLDBlock);
     return repo.save(ipldBlock);
+  }
+
+  async getHooksStatus (queryRunner: QueryRunner): Promise<HooksStatus | undefined> {
+    const repo = queryRunner.manager.getRepository(HooksStatus);
+
+    return repo.findOne();
+  }
+
+  async updateHooksStatusProcessedBlock (queryRunner: QueryRunner, blockNumber: number): Promise<HooksStatus> {
+    const repo = queryRunner.manager.getRepository(HooksStatus);
+    let entity = await repo.findOne();
+
+    if (!entity) {
+      entity = repo.create({
+        latestProcessedBlockNumber: blockNumber
+      });
+    }
+
+    if (blockNumber > entity.latestProcessedBlockNumber) {
+      entity.latestProcessedBlockNumber = blockNumber;
+    }
+
+    return repo.save(entity);
+  }
+
+  async getContracts (where: FindConditions<Contract>): Promise<Contract[]> {
+    const repo = this._conn.getRepository(Contract);
+    return repo.find({ where });
   }
 
   async getContract (address: string): Promise<Contract | undefined> {
