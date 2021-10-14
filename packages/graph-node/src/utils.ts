@@ -163,3 +163,55 @@ export const fromEthereumValue = async (exports: any, value: any): Promise<any> 
       break;
   }
 };
+
+/**
+ * Method to get ethereum value for passing to wasm instance.
+ * @param exports
+ * @param value
+ * @param type
+ * @returns
+ */
+export const toEthereumValue = async (exports: any, value: any, type: string): Promise<any> => {
+  const {
+    __newString,
+    ByteArray,
+    Bytes,
+    Address,
+    ethereum,
+    BigInt
+  } = exports;
+
+  // For boolean type.
+  if (type === 'bool') {
+    return ethereum.Value.fromBoolean(value ? 1 : 0);
+  }
+
+  const [isIntegerOrEnum, isInteger, isUnsigned] = type.match(/^enum|((u?)int([0-9]+))/) || [false];
+
+  // For uint/int type or enum type.
+  if (isIntegerOrEnum) {
+    const valueString = await __newString(value.toString());
+    const bigInt = await BigInt.fromString(valueString);
+    let ethereumValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
+
+    if (Boolean(isInteger) && !isUnsigned) {
+      ethereumValue = await ethereum.Value.fromSignedBigInt(bigInt);
+    }
+
+    return ethereumValue;
+  }
+
+  if (type.startsWith('address')) {
+    return ethereum.Value.fromAddress(await Address.fromString(await __newString(value)));
+  }
+
+  // TODO: Check between fixed bytes and dynamic bytes.
+  if (type.startsWith('bytes')) {
+    const byteArray = await ByteArray.fromHexString(await __newString(value));
+    const bytes = await Bytes.fromByteArray(byteArray);
+    return ethereum.Value.fromBytes(bytes);
+  }
+
+  // For string type.
+  return ethereum.Value.fromString(await __newString(value));
+};

@@ -13,27 +13,30 @@ import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernanc
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-const ABIS = {
-  EdenNetwork: edenNetworkAbi,
-  Distribution: merkleDistributorAbi,
-  Governance: distributorGovernanceAbi
-};
-
 describe('eden wasm loader tests', () => {
   describe('EdenNetwork wasm', () => {
     let exports: any;
 
     // EdenNetwork contract address string.
-    const contractAddress = '0x9E3382cA57F4404AC7Bf435475EAe37e87D1c453';
+    const contractAddress = '0x9C4fb488d7B505E6C26Abe63F49535f869Ae400B';
+
+    const data = {
+      abis: {
+        EdenNetwork: edenNetworkAbi
+      },
+      dataSource: {
+        address: contractAddress
+      }
+    };
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
-      ({ exports } = await instantiate(filePath, ABIS));
+      ({ exports } = await instantiate(filePath, data));
       const { _start } = exports;
       _start();
     });
 
-    xit('should call the slotClaimed handler', async () => {
+    it('should call the slotClaimed handler', async () => {
       const {
         slotClaimed
       } = exports;
@@ -118,7 +121,7 @@ describe('eden wasm loader tests', () => {
       await slotDelegateUpdated(slotClaimedEvent);
     });
 
-    it('should call the stake handler', async () => {
+    xit('should call the stake handler', async () => {
       const {
         stake
       } = exports;
@@ -173,11 +176,20 @@ describe('eden wasm loader tests', () => {
     let exports: any;
 
     // EdenNetworkDistribution contract address string.
-    const contractAddress = '0x2Ae0f92498346B9e011ED15d8C98142DCF62F774';
+    const contractAddress = '0x817Dc2250294253594241Cd9fdd9B5efFdeB2Ff7';
+
+    const data = {
+      abis: {
+        Distribution: merkleDistributorAbi
+      },
+      dataSource: {
+        address: contractAddress
+      }
+    };
 
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-      ({ exports } = await instantiate(filePath, ABIS));
+      ({ exports } = await instantiate(filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -307,11 +319,20 @@ describe('eden wasm loader tests', () => {
     let exports: any;
 
     // EdenNetworkGovernance contract address string.
-    const contractAddress = '0x726aDC632871Ff796379da14F9D5aeb199bEd505';
+    const contractAddress = '0x0214233A869fc0B9E0b863A56dbE65b04B9cBA64';
+
+    const data = {
+      abis: {
+        Governance: distributorGovernanceAbi
+      },
+      dataSource: {
+        address: contractAddress
+      }
+    };
 
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-      ({ exports } = await instantiate(filePath, ABIS));
+      ({ exports } = await instantiate(filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -386,7 +407,7 @@ describe('eden wasm loader tests', () => {
       await blockProducerRewardCollectorChanged(blockProducerRewardCollectorChangedEvent);
     });
 
-    xit('should call the rewardScheduleChanged handler', async () => {
+    it('should call the rewardScheduleChanged handler', async () => {
       const {
         rewardScheduleChanged
       } = exports;

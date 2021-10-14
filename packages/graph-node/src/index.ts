@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import fs from 'fs/promises';
 import loader from 'assemblyscript/lib/loader';
 import {
@@ -13,13 +14,23 @@ import {
 } from 'ethers';
 
 import { TypeId } from './types';
-import { fromEthereumValue } from './utils';
+import { fromEthereumValue, toEthereumValue } from './utils';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
 type idOfType = (TypeId: number) => number
 
-export const instantiate = async (filePath: string, abis: {[key: string]: ContractInterface} = {}): Promise<loader.ResultObject & { exports: any }> => {
+interface DataSource {
+  address: string
+}
+
+interface GraphData {
+  abis?: {[key: string]: ContractInterface};
+  dataSource?: DataSource;
+}
+
+export const instantiate = async (filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+  const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
 
@@ -147,7 +158,6 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
           });
 
           functionParams = await Promise.all(functionParamsPromise);
-          console.log('functionParams', functionParams);
 
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
@@ -156,11 +166,13 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
             result = [result];
           }
 
-          const resultPtrArrayPromise = result.map(async (value: any) => {
-            // TODO: Create Value instance according to return type.
-            const ethValue = await ethereum.Value.fromString(await __newString(value));
+          // TODO: Check for function overloading.
+          // Using function signature does not work.
+          const outputs = contract.interface.getFunction(functionName).outputs;
 
-            return ethValue;
+          const resultPtrArrayPromise = result.map(async (value: any, index: number) => {
+            assert(outputs);
+            return toEthereumValue(exports, value, outputs[index].type);
           });
 
           const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);
@@ -329,10 +341,8 @@ export const instantiate = async (filePath: string, abis: {[key: string]: Contra
     },
     datasource: {
       'dataSource.address': async () => {
-        console.log('dataSource.address');
-        // TODO: Return address of the data source that invoked the handler.
-
-        return Address.zero();
+        assert(dataSource);
+        return Address.fromString(await __newString(dataSource.address));
       }
     }
   };
