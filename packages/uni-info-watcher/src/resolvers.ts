@@ -63,7 +63,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       burns: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
         log('burns', first, orderBy, orderDirection, where);
 
-        return indexer.getEntities(Burn, {}, where, { limit: first, orderBy, orderDirection }, ['burn.pool', 'burn.transaction']);
+        return indexer.getEntities(Burn, {}, where, { limit: first, orderBy, orderDirection }, ['burn.pool', 'burn.transaction', 'pool.token0', 'pool.token1']);
       },
 
       factories: async (_: any, { block = {}, first }: { first: number, block: BlockHeight }) => {
@@ -75,7 +75,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       mints: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
         log('mints', first, orderBy, orderDirection, where);
 
-        return indexer.getEntities(Mint, {}, where, { limit: first, orderBy, orderDirection }, ['mint.pool', 'mint.transaction']);
+        return indexer.getEntities(Mint, {}, where, { limit: first, orderBy, orderDirection }, ['mint.pool', 'mint.transaction', 'pool.token0', 'pool.token1']);
       },
 
       pool: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
@@ -99,7 +99,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       swaps: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
         log('swaps', first, orderBy, orderDirection, where);
 
-        return indexer.getEntities(Swap, {}, where, { limit: first, orderBy, orderDirection }, ['swap.pool', 'swap.transaction']);
+        return indexer.getEntities(Swap, {}, where, { limit: first, orderBy, orderDirection }, ['swap.pool', 'swap.transaction', 'pool.token0', 'pool.token1']);
       },
 
       ticks: async (_: any, { block = {}, first, skip, where = {} }: { block: BlockHeight, first: number, skip: number, where: { [key: string]: any } }) => {
