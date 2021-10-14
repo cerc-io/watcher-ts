@@ -382,7 +382,7 @@ export class Database {
     Object.entries(where).forEach(([field, filters]) => {
       filters.forEach((filter, index) => {
         // Form the where clause.
-        const { not, operator, value } = filter;
+        let { not, operator, value } = filter;
         const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
         assert(columnMetadata);
         let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
@@ -402,6 +402,9 @@ export class Database {
         } else if (operator === 'in') {
           whereClause += '(:...';
         } else {
+          // Convert to string type value as bigint type throws error in query.
+          value = value.toString();
+
           whereClause += ':';
         }
 
