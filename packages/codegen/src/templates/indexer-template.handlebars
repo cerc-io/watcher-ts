@@ -22,6 +22,7 @@ import { Database } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
+import { HooksStatus } from './entity/HooksStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 import artifacts from './artifacts/{{inputFileName}}.json';
@@ -158,7 +159,7 @@ export class Indexer {
   {{#each queries as | query |}}
   async {{query.name}} (blockHash: string, contractAddress: string
     {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}): Promise<ValueResult> {
-    const entity = await this._db.get{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
+    const entity = await this._db.{{query.getQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
       log('{{query.name}}: db hit.');
@@ -199,7 +200,7 @@ export class Indexer {
     );
     {{/if}}
 
-    await this._db.save{{capitalize query.name tillIndex=1}}({ blockHash, contractAddress
+    await this._db.{{query.saveQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbig.stringify(result.proof) });
 
     return result;
@@ -220,47 +221,63 @@ export class Indexer {
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
-    const { data: { blockNumber: currentBlockNumber, blockHash: currentBlockHash } } = job;
+    const { data: { blockHash: currentBlockHash } } = job;
 
-    // Get latest checkpoints for all the contracts.
-    // Assuming checkPointInterval > MAX_REORG_DEPTH.
-    const latestCheckpointBlocks = await this.getLatestCheckpoints();
+    // Get all the contracts.
+    const contracts = await this._db.getContracts({});
+    const contractAddresses = contracts.map(contract => contract.address);
 
-    // For each contractAddress, merge the diff till now.
-    for (const checkpointBlock of latestCheckpointBlocks) {
-      // Check if it is time for a new checkpoint.
-      if (checkpointBlock.block.blockNumber > currentBlockNumber - checkpointInterval) {
-        continue;
-      }
-
-      const { contractAddress, block: { blockNumber: checkpointBlockNumber } } = checkpointBlock;
-
-      // Fetching all diff blocks after checkpoint.
-      const diffBlocks = await this.getPrevIPLDBlocksAfterCheckpoint(currentBlockHash, checkpointBlockNumber, contractAddress);
-
-      let checkPoint = codec.decode(Buffer.from(checkpointBlock.data)) as any;
-
-      for (const diffBlock of diffBlocks) {
-        const diff = codec.decode(Buffer.from(diffBlock.data));
-        checkPoint = _.merge(checkPoint, diff);
-      }
-
-      // Getting the current block.
-      const block = await this.getBlockProgress(currentBlockHash);
-      assert(block);
-
-      const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, checkPoint, 'checkpoint');
-      await this.saveOrUpdateIPLDBlock(ipldBlock);
+    // For each contractAddress, merge the diff till now to create a checkpoint.
+    for (const contractAddress of contractAddresses) {
+      await this.createCheckpoint(contractAddress, currentBlockHash, checkpointInterval);
     }
   }
 
-  async getLatestCheckpoints (): Promise<IPLDBlock[]> {
-    // Get the latest checkpoints for all the contracts.
+  async createCheckpoint (contractAddress: string, currentBlockHash?: string, checkpointInterval?: number): Promise<string | undefined> {
+    // Getting the current block.
+    let currentBlock;
+    if (currentBlockHash) {
+      currentBlock = await this.getBlockProgress(currentBlockHash);
+    } else {
+      currentBlock = await this._db.getLatestBlockProgress();
+    }
+    assert(currentBlock);
+
+    // Fetching the latest checkpoint for a contract.
+    // Assuming checkPointInterval > MAX_REORG_DEPTH.
+    const checkpointBlock = await this.getLatestCheckpoint(contractAddress);
+    assert(checkpointBlock);
+
+    // Check if it is time for a new checkpoint.
+    if (checkpointInterval && checkpointBlock.block.blockNumber > (currentBlock.blockNumber - checkpointInterval)) {
+      return;
+    }
+
+    const { block: { blockNumber: checkpointBlockNumber } } = checkpointBlock;
+
+    // Fetching all diff blocks after checkpoint.
+    const diffBlocks = await this.getPrevIPLDBlocksAfterCheckpoint(currentBlock.blockHash, checkpointBlockNumber, contractAddress);
+
+    let checkPoint = codec.decode(Buffer.from(checkpointBlock.data)) as any;
+
+    for (const diffBlock of diffBlocks) {
+      const diff = codec.decode(Buffer.from(diffBlock.data));
+      checkPoint = _.merge(checkPoint, diff);
+    }
+
+    const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, checkPoint, 'checkpoint');
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
+
+    return currentBlock.blockHash;
+  }
+
+  async getLatestCheckpoint (contractAddress: string): Promise<IPLDBlock | undefined> {
+    // Get the latest checkpoints for a contract.
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.getLatestCheckpoints(dbTx);
+      res = await this._db.getLatestCheckpoint(dbTx, contractAddress);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -271,13 +288,10 @@ export class Indexer {
     return res;
   }
 
-  async getIPLDBlock (block: BlockProgress, contractAddress: string): Promise<IPLDBlock | undefined> {
-    const ipldBlocks = await this._db.getIPLDBlocks({ block, contractAddress });
+  async getIPLDBlocks (block: BlockProgress, contractAddress: string, kind?: string): Promise<IPLDBlock[]> {
+    const ipldBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind });
 
-    // There can be only one IPLDBlock for a { block, contractAddress } combination.
-    assert(ipldBlocks.length <= 1);
-
-    return ipldBlocks[0];
+    return ipldBlocks;
   }
 
   async getIPLDBlockByCid (cid: string): Promise<IPLDBlock | undefined> {
@@ -289,12 +303,12 @@ export class Indexer {
     return ipldBlocks[0];
   }
 
-  async getPrevIPLDBlock (blockHash: string, contractAddress: string): Promise<IPLDBlock | undefined> {
+  async getPrevIPLDBlock (blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.getPrevIPLDBlock(dbTx, blockHash, contractAddress);
+      res = await this._db.getPrevIPLDBlock(dbTx, blockHash, contractAddress, kind);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -326,15 +340,24 @@ export class Indexer {
     return this._db.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
-  async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind?: string):Promise<any> {
+  async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind: string):Promise<any> {
     // Get an existing IPLDBlock for current block and contractAddress.
-    const currentIPLDBlock = await this.getIPLDBlock(block, contractAddress);
+    const currentIPLDBlocks = await this.getIPLDBlocks(block, contractAddress, 'diff');
+    // There can be only one IPLDBlock for a (block, contractAddress, 'diff') combination.
+    assert(currentIPLDBlocks.length <= 1);
+    const currentIPLDBlock = currentIPLDBlocks[0];
 
-    // If an IPLDBlock for { block, contractAddress } already exists, update the data field.
-    if (currentIPLDBlock) {
+    // Update currentIPLDBlock if it exists and is of same kind.
+    let ipldBlock;
+    if (currentIPLDBlock && currentIPLDBlock.kind === kind) {
+      ipldBlock = currentIPLDBlock;
+
+      // Update the data field.
       const oldData = codec.decode(Buffer.from(currentIPLDBlock.data));
       data = _.merge(oldData, data);
     } else {
+      ipldBlock = new IPLDBlock();
+
       // Fetch the parent IPLDBlock.
       const parentIPLDBlock = await this.getPrevIPLDBlock(block.blockHash, contractAddress);
 
@@ -363,7 +386,7 @@ export class Indexer {
     // Calculating the CID: v1, code: dag-json, hash.
     const cid = CID.create(1, codec.code, hash);
 
-    let ipldBlock = currentIPLDBlock || new IPLDBlock();
+    // Update ipldBlock with new data.
     ipldBlock = Object.assign(ipldBlock, {
       block,
       contractAddress,
@@ -430,6 +453,40 @@ export class Indexer {
     await genesisHook(this, currentBlock, address);
 
     return true;
+  }
+
+  async getHooksStatus (): Promise<HooksStatus | undefined> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.getHooksStatus(dbTx);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateHooksStatusProcessedBlock (blockNumber: number): Promise<HooksStatus> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateHooksStatusProcessedBlock(dbTx, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {

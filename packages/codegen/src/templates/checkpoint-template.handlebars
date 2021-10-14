@@ -15,7 +15,7 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { Database } from '../database';
 import { Indexer } from '../indexer';
 
-const log = debug('vulcanize:watch-contract');
+const log = debug('vulcanize:checkpoint');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -33,18 +33,11 @@ const main = async (): Promise<void> => {
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'Address of the deployed contract'
+      describe: 'Contract address to create the checkpoint for.'
     },
-    kind: {
+    blockHash: {
       type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Kind of contract'
-    },
-    startingBlock: {
-      type: 'number',
-      default: 1,
-      describe: 'Starting block'
+      describe: 'Blockhash at which to create the checkpoint.'
     }
   }).argv;
 
@@ -79,7 +72,9 @@ const main = async (): Promise<void> => {
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
-  await indexer.watchContract(argv.address, argv.kind, argv.startingBlock);
+  const blockHash = await indexer.createCheckpoint(argv.address, argv.blockHash);
+
+  log(`Created a checkpoint for contract ${argv.address} at block-hash ${blockHash}`);
 
   await db.close();
 };
