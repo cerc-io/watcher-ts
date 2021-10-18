@@ -11,7 +11,7 @@ import { Database as BaseDatabase, MAX_REORG_DEPTH } from '@vulcanize/util';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { HooksStatus } from './entity/HooksStatus';
+import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 
@@ -240,14 +240,14 @@ export class Database {
     return repo.save(ipldBlock);
   }
 
-  async getHooksStatus (queryRunner: QueryRunner): Promise<HooksStatus | undefined> {
-    const repo = queryRunner.manager.getRepository(HooksStatus);
+  async getHookStatus (queryRunner: QueryRunner): Promise<HookStatus | undefined> {
+    const repo = queryRunner.manager.getRepository(HookStatus);
 
     return repo.findOne();
   }
 
-  async updateHooksStatusProcessedBlock (queryRunner: QueryRunner, blockNumber: number): Promise<HooksStatus> {
-    const repo = queryRunner.manager.getRepository(HooksStatus);
+  async updateHookStatusProcessedBlock (queryRunner: QueryRunner, blockNumber: number): Promise<HookStatus> {
+    const repo = queryRunner.manager.getRepository(HookStatus);
     let entity = await repo.findOne();
 
     if (!entity) {
