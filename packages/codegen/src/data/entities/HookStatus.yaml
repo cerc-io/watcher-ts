@@ -1,4 +1,4 @@
-className: HooksStatus
+className: HookStatus
 indexOn: []
 columns:
   - name: latestProcessedBlockNumber

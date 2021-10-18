@@ -22,11 +22,11 @@ import { Database } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { HooksStatus } from './entity/HooksStatus';
+import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 import artifacts from './artifacts/{{inputFileName}}.json';
-import { genesisHook, handleEvent, postBlockHook } from './hooks';
+import { initialCheckpointHook, handleEvent, postBlockHook } from './hooks';
 
 const log = debug('vulcanize:indexer');
 
@@ -449,18 +449,18 @@ export class Indexer {
     const currentBlock = await this._db.getLatestBlockProgress();
     assert(currentBlock);
 
-    // Call custom genesis hook.
-    await genesisHook(this, currentBlock, address);
+    // Call custom initial checkpoint hook.
+    await initialCheckpointHook(this, currentBlock, address);
 
     return true;
   }
 
-  async getHooksStatus (): Promise<HooksStatus | undefined> {
+  async getHookStatus (): Promise<HookStatus | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.getHooksStatus(dbTx);
+      res = await this._db.getHookStatus(dbTx);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -472,12 +472,12 @@ export class Indexer {
     return res;
   }
 
-  async updateHooksStatusProcessedBlock (blockNumber: number): Promise<HooksStatus> {
+  async updateHookStatusProcessedBlock (blockNumber: number): Promise<HookStatus> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.updateHooksStatusProcessedBlock(dbTx, blockNumber);
+      res = await this._db.updateHookStatusProcessedBlock(dbTx, blockNumber);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
