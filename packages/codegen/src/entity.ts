@@ -188,7 +188,7 @@ export class Entity {
     this._addContractEntity();
     this._addBlockProgressEntity();
     this._addIPLDBlockEntity();
-    this._addHooksStatusEntity();
+    this._addHookStatusEntity();
 
     const template = Handlebars.compile(this._templateString);
     this._entities.forEach(entityObj => {
@@ -225,8 +225,8 @@ export class Entity {
     this._entities.push(entity);
   }
 
-  _addHooksStatusEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HooksStatus.yaml'), 'utf8'));
+  _addHookStatusEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HookStatus.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 }

@@ -113,7 +113,7 @@ export class EventWatcher {
     this._jobQueue.onComplete(QUEUE_HOOKS, async (job) => {
       const { data: { request: { data: { blockHash, blockNumber } } } } = job;
 
-      await this._indexer.updateHooksStatusProcessedBlock(blockNumber);
+      await this._indexer.updateHookStatusProcessedBlock(blockNumber);
 
       // Push checkpointing job only after post-block hook job is marked complete and checkpointing is on.
       if (this._indexer._serverConfig.checkpointing) {

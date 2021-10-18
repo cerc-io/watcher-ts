@@ -81,9 +81,9 @@
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in `src/hooks.ts` to perform corresponding indexing using the `Indexer` object.
 
-  * Edit the custom hook function `handleBlock` (triggered on a block) in `src/hooks.ts` to save `IPLDBlock`s using the `Indexer` object.
+  * Edit the custom hook function `postBlockHook` (triggered on a block) in `src/hooks.ts` to save `IPLDBlock`s using the `Indexer` object.
 
-  * Edit the custom hook function `genesisHook` (triggered on watch-contract) in `src/hooks.ts` to save a genesis checkpoint `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `initialCheckpointHook` (triggered on watch-contract) in `src/hooks.ts` to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
 
   * The existing example hooks in `src/hooks.ts` are for an `ERC20` contract.
 
