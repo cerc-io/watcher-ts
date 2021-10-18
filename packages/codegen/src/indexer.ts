@@ -49,11 +49,13 @@ export class Indexer {
     };
 
     if (name.charAt(0) === '_') {
-      queryObject.getQueryName = `_get${name.charAt(1).toUpperCase()}${name.slice(2)}`;
-      queryObject.saveQueryName = `_save${name.charAt(1).toUpperCase()}${name.slice(2)}`;
+      const capitalizedName = `${name.charAt(1).toUpperCase()}${name.slice(2)}`;
+      queryObject.getQueryName = `_get${capitalizedName}`;
+      queryObject.saveQueryName = `_save${capitalizedName}`;
     } else {
-      queryObject.getQueryName = `get${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-      queryObject.saveQueryName = `save${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+      const capitalizedName = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+      queryObject.getQueryName = `get${capitalizedName}`;
+      queryObject.saveQueryName = `save${capitalizedName}`;
     }
 
     queryObject.params = queryObject.params.map((param) => {

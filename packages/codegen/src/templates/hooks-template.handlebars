@@ -15,13 +15,13 @@ const ACCOUNTS = [
 ];
 
 /**
- * Genesis hook function.
+ * Initial checkpoint hook function.
  * @param indexer Indexer instance.
  * @param block Concerned block.
  * @param contractAddress Address of the concerned contract.
  */
-export async function genesisHook (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
-  // Store the genesis state values in an IPLDBlock.
+export async function initialCheckpointHook (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
+  // Store the initial state values in an IPLDBlock.
   const ipldBlockData: any = {};
 
   // Setting the initial balances of accounts.
@@ -120,13 +120,13 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       // Therefore, trigger indexing for both sender and receiver.
 
       // Get event fields from eventData.
-      // const { from, to } = eventData.event;
+      const { from, to } = eventData.event;
 
       // Update balance entry for sender in the database.
-      // await indexer.balanceOf(eventData.block.hash, eventData.contract, from);
+      await indexer.balanceOf(eventData.block.hash, eventData.contract, from);
 
       // Update balance entry for receiver in the database.
-      // await indexer.balanceOf(eventData.block.hash, eventData.contract, to);
+      await indexer.balanceOf(eventData.block.hash, eventData.contract, to);
 
       break;
     }
@@ -135,10 +135,10 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       // On an approval, allowance for (owner, spender) combination changes.
 
       // Get event fields from eventData.
-      // const { owner, spender } = eventData.event;
+      const { owner, spender } = eventData.event;
 
       // Update allowance entry for (owner, spender) combination in the database.
-      // await indexer.allowance(eventData.block.hash, eventData.contract, owner, spender);
+      await indexer.allowance(eventData.block.hash, eventData.contract, owner, spender);
 
       break;
     }
