@@ -61,6 +61,7 @@ describe('uni-info-watcher', () => {
   let config: Config;
   let uniClient: UniClient;
   let client: Client;
+  let deadline: number;
 
   before(async () => {
     config = await getConfig(CONFIG_FILE);
@@ -84,6 +85,11 @@ describe('uni-info-watcher', () => {
     const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
     signer = provider.getSigner();
     recipient = await signer.getAddress();
+
+    // Deadline set to 2 days from current date.
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 2);
+    deadline = Math.floor(deadlineDate.getTime() / 1000);
   });
 
   it('should have a Factory entity', async () => {
@@ -702,7 +708,6 @@ describe('uni-info-watcher', () => {
     const amount1Desired = 15;
     const amount0Min = 0;
     const amount1Min = 0;
-    const deadline = 1634367993;
 
     before(async () => {
       // Get the NFPM contract address.
@@ -833,7 +838,6 @@ describe('uni-info-watcher', () => {
     const amount1Desired = 15;
     const amount0Min = 0;
     const amount1Min = 0;
-    const deadline = 1634367993;
 
     before(async () => {
       // Get initial entity values.
@@ -908,7 +912,6 @@ describe('uni-info-watcher', () => {
     const liquidity = 5;
     const amount0Min = 0;
     const amount1Min = 0;
-    const deadline = 1634367993;
 
     before(async () => {
       // Get initial entity values.

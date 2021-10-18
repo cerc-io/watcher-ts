@@ -15,7 +15,7 @@ import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -42,7 +42,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port, mode } = config.server;
+  const { host, port, mode, kind: watcherKind } = config.server;
 
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
@@ -76,10 +76,12 @@ export const main = async (): Promise<any> => {
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-  await jobQueue.start();
-
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-  await eventWatcher.start();
+
+  if (watcherKind === KIND_ACTIVE) {
+    await jobQueue.start();
+    await eventWatcher.start();
+  }
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
 

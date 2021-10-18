@@ -66,6 +66,7 @@ describe('uni-watcher', () => {
   let postgraphileClient: EthClient;
   let signer: Signer;
   let recipient: string;
+  let deadline: number;
 
   before(async () => {
     config = await getConfig(CONFIG_FILE);
@@ -108,6 +109,11 @@ describe('uni-watcher', () => {
     const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
     signer = provider.getSigner();
     recipient = await signer.getAddress();
+
+    // Deadline set to 2 days from current date.
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 2);
+    deadline = Math.floor(deadlineDate.getTime() / 1000);
   });
 
   after(async () => {
@@ -279,7 +285,6 @@ describe('uni-watcher', () => {
       const amount1Desired = 15;
       const amount0Min = 0;
       const amount1Min = 0;
-      const deadline = 1634367993;
 
       // Approving tokens for NonfungiblePositionManager contract.
       // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/test/NonfungiblePositionManager.spec.ts#L44
@@ -344,7 +349,6 @@ describe('uni-watcher', () => {
       const amount1Desired = 15;
       const amount0Min = 0;
       const amount1Min = 0;
-      const deadline = 1634367993;
 
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
@@ -388,7 +392,6 @@ describe('uni-watcher', () => {
       const liquidity = 5;
       const amount0Min = 0;
       const amount1Min = 0;
-      const deadline = 1634367993;
 
       // Subscribe using UniClient.
       const subscription = await uniClient.watchEvents((value: any) => {
