@@ -29,6 +29,11 @@ import { Database } from '../database';
       demandOption: true,
       describe: 'Address of the deployed contract'
     },
+    checkpoint: {
+      type: 'boolean',
+      default: false,
+      describe: 'Turn checkpointing on'
+    },
     startingBlock: {
       type: 'number',
       default: 1,
@@ -47,6 +52,6 @@ import { Database } from '../database';
   // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
   const address = ethers.utils.getAddress(argv.address);
 
-  await db.saveContract(address, argv.startingBlock);
+  await db.saveContract(address, argv.checkpoint, argv.startingBlock);
   await db.close();
 })();

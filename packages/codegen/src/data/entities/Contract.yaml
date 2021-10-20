@@ -15,9 +15,10 @@ columns:
     pgType: varchar
     tsType: string
     columnType: Column
-    columnOptions:
-      - option: length
-        value: 8
+  - name: checkpoint
+    pgType: boolean
+    tsType: boolean
+    columnType: Column
   - name: startingBlock
     pgType: integer
     tsType: number

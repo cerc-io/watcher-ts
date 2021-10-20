@@ -559,14 +559,14 @@ export class Database {
       .getOne();
   }
 
-  async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<void> {
+  async saveContract (repo: Repository<ContractInterface>, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     const numRows = await repo
       .createQueryBuilder()
       .where('address = :address', { address })
       .getCount();
 
     if (numRows === 0) {
-      const entity = repo.create({ address, kind, startingBlock });
+      const entity = repo.create({ address, kind, checkpoint, startingBlock });
       await repo.save(entity);
     }
   }

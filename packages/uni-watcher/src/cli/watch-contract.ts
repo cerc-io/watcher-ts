@@ -35,6 +35,11 @@ import { watchContract } from '../utils/index';
       demandOption: true,
       describe: 'Kind of contract (factory|pool|nfpm)'
     },
+    checkpoint: {
+      type: 'boolean',
+      default: false,
+      describe: 'Turn checkpointing on'
+    },
     startingBlock: {
       type: 'number',
       default: 1,
@@ -50,7 +55,7 @@ import { watchContract } from '../utils/index';
   const db = new Database(dbConfig);
   await db.init();
 
-  await watchContract(db, argv.address, argv.kind, argv.startingBlock);
+  await watchContract(db, argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
 
   await db.close();
 })();
