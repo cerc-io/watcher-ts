@@ -45,6 +45,7 @@ export interface ContractInterface {
   address: string;
   startingBlock: number;
   kind: string;
+  checkpoint: boolean;
 }
 
 export interface IndexerInterface {

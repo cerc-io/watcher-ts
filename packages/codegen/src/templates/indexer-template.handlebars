@@ -16,7 +16,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-json';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, updateStateForElementaryType, updateStateForMappingType } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Contract } from './entity/Contract';
@@ -26,7 +26,7 @@ import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 import artifacts from './artifacts/{{inputFileName}}.json';
-import { initialCheckpointHook, handleEvent, postBlockHook } from './hooks';
+import { createInitialCheckpoint, handleEvent, createStateDiff } from './hooks';
 
 const log = debug('vulcanize:indexer');
 
@@ -75,7 +75,7 @@ export class Indexer {
   _db: Database
   _ethClient: EthClient
   _ethProvider: BaseProvider
-  _postgraphileClient: EthClient;
+  _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
 
@@ -158,7 +158,14 @@ export class Indexer {
 
   {{#each queries as | query |}}
   async {{query.name}} (blockHash: string, contractAddress: string
-    {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}): Promise<ValueResult> {
+    {{~#each query.params}}, {{this.name~}}: {{this.type~}} {{/each}}
+    {{~#if query.stateVariableType~}}
+    , state = 'none'): Promise<ValueResult> {
+    assert(_.includes(['diff', 'checkpoint', 'none'], state));
+
+    {{else~}}
+    ): Promise<ValueResult> {
+    {{/if}}
     const entity = await this._db.{{query.getQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -203,6 +210,28 @@ export class Indexer {
     await this._db.{{query.saveQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbig.stringify(result.proof) });
 
+    {{#if query.stateVariableType}}
+    {{#if (compare query.stateVariableType 'Mapping')}}
+    if (state !== 'none') {
+      const stateUpdate = updateStateForMappingType({}, '{{query.name}}', [
+      {{~#each query.params}}
+      {{~this.name}}.toString() {{~#unless @last}}, {{/unless~}}
+      {{/each~}}
+      ], result.value.toString());
+      await this.storeIPLDData(blockHash, contractAddress, stateUpdate, state);
+    }
+
+    {{else if (compare query.stateVariableType 'ElementaryTypeName')}}
+    if (state !== 'none') {
+      const stateUpdate = updateStateForElementaryType({}, '{{query.name}}', result.value.toString());
+      await this.storeIPLDData(blockHash, contractAddress, stateUpdate, state);
+    }
+
+    {{else}}
+    assert(state === 'none', 'Type not supported for default state.');
+
+    {{/if}}
+    {{/if}}
     return result;
   }
 
@@ -210,8 +239,8 @@ export class Indexer {
   async processBlock (job: any): Promise<void> {
     const { data: { blockHash } } = job;
 
-    // Call custom post-block hook.
-    await postBlockHook(this, blockHash);
+    // Call custom stateDiff hook.
+    await createStateDiff(this, blockHash);
   }
 
   async processCheckpoint (job: any): Promise<void> {
@@ -225,11 +254,12 @@ export class Indexer {
 
     // Get all the contracts.
     const contracts = await this._db.getContracts({});
-    const contractAddresses = contracts.map(contract => contract.address);
 
-    // For each contractAddress, merge the diff till now to create a checkpoint.
-    for (const contractAddress of contractAddresses) {
-      await this.createCheckpoint(contractAddress, currentBlockHash, checkpointInterval);
+    // For each contract, merge the diff till now to create a checkpoint.
+    for (const contract of contracts) {
+      if (contract.checkpoint) {
+        await this.createCheckpoint(contract.address, currentBlockHash, checkpointInterval);
+      }
     }
   }
 
@@ -303,6 +333,15 @@ export class Indexer {
     return ipldBlocks[0];
   }
 
+  async getPrevState (blockHash: string, contractAddress: string, kind?: string): Promise<any> {
+    const ipldBlock = await this.getPrevIPLDBlock(blockHash, contractAddress, kind);
+
+    if (ipldBlock) {
+      const data = codec.decode(Buffer.from(ipldBlock.data)) as any;
+      return data.state;
+    }
+  }
+
   async getPrevIPLDBlock (blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
@@ -336,11 +375,21 @@ export class Indexer {
     return res;
   }
 
+  async storeIPLDData (blockHash: string, contractAddress: string, data: any, kind: string): Promise<void> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, kind);
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
+  }
+
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
     return this._db.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind: string):Promise<any> {
+    assert(_.includes(['diff', 'checkpoint'], kind));
+
     // Get an existing IPLDBlock for current block and contractAddress.
     const currentIPLDBlocks = await this.getIPLDBlocks(block, contractAddress, 'diff');
     // There can be only one IPLDBlock for a (block, contractAddress, 'diff') combination.
@@ -364,7 +413,7 @@ export class Indexer {
       // Setting the meta-data for an IPLDBlock (done only once per block).
       data.meta = {
         id: contractAddress,
-        kind: kind || 'diff',
+        kind,
         parent: {
           '/': parentIPLDBlock ? parentIPLDBlock.cid : null
         },
@@ -441,16 +490,21 @@ export class Indexer {
     return { eventName, eventInfo };
   }
 
-  async watchContract (address: string, kind: string, startingBlock: number): Promise<boolean> {
-    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-    await this._db.saveContract(ethers.utils.getAddress(address), kind, startingBlock);
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<boolean> {
+    // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
+    // If a contract identifier is passed as address instead, no need to convert to checksum address.
+    // Customize: use the kind input to filter out non-contract-address input to address.
+    const formattedAddress = (kind === '__protocol__') ? address : ethers.utils.getAddress(address);
+    await this._db.saveContract(formattedAddress, kind, checkpoint, startingBlock);
 
-    // Getting the current block.
-    const currentBlock = await this._db.getLatestBlockProgress();
-    assert(currentBlock);
+    if (checkpoint) {
+      // Getting the current block.
+      const currentBlock = await this._db.getLatestBlockProgress();
+      assert(currentBlock);
 
-    // Call custom initial checkpoint hook.
-    await initialCheckpointHook(this, currentBlock, address);
+      // Call custom initial checkpoint hook.
+      await createInitialCheckpoint(this, currentBlock, address);
+    }
 
     return true;
   }

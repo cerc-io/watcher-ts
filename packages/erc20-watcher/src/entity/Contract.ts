@@ -16,6 +16,9 @@ export class Contract {
   @Column('varchar', { length: 8 })
   kind!: string;
 
+  @Column('boolean')
+  checkpoint!: boolean;
+
   @Column('integer')
   startingBlock!: number;
 }

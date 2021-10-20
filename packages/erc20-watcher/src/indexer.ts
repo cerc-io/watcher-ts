@@ -295,9 +295,9 @@ export class Indexer implements IndexerInterface {
     return { eventName, eventInfo };
   }
 
-  async watchContract (address: string, startingBlock: number): Promise<boolean> {
+  async watchContract (address: string, checkpoint: boolean, startingBlock: number): Promise<boolean> {
     // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-    await this._db.saveContract(ethers.utils.getAddress(address), startingBlock);
+    await this._db.saveContract(ethers.utils.getAddress(address), checkpoint, startingBlock);
 
     return true;
   }

@@ -116,11 +116,11 @@ export class Database {
     return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
-  async saveContract (address: string, startingBlock: number): Promise<void> {
+  async saveContract (address: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Contract);
 
-      return this._baseDatabase.saveContract(repo, address, startingBlock, CONTRACT_KIND);
+      return this._baseDatabase.saveContract(repo, address, CONTRACT_KIND, checkpoint, startingBlock);
     });
   }
 

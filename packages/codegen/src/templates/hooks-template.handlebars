@@ -3,9 +3,8 @@
 //
 
 import assert from 'assert';
-import _ from 'lodash';
 
-import { UNKNOWN_EVENT_NAME } from '@vulcanize/util';
+import { UNKNOWN_EVENT_NAME, updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
 import { BlockProgress } from './entity/BlockProgress';
@@ -15,19 +14,23 @@ const ACCOUNTS = [
 ];
 
 /**
- * Initial checkpoint hook function.
+ * Hook function to create an initial checkpoint.
  * @param indexer Indexer instance.
  * @param block Concerned block.
  * @param contractAddress Address of the concerned contract.
  */
-export async function initialCheckpointHook (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
+export async function createInitialCheckpoint (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
+  assert(indexer);
+  assert(block);
+  assert(contractAddress);
+
   // Store the initial state values in an IPLDBlock.
-  const ipldBlockData: any = {};
+  let ipldBlockData: any = {};
 
   // Setting the initial balances of accounts.
   for (const account of ACCOUNTS) {
     const balance = await indexer._balances(block.blockHash, contractAddress, account);
-    _.set(ipldBlockData, `state._balances[${account}]`, balance.value.toString());
+    ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [account], balance.value.toString());
   }
 
   const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData, 'checkpoint');
@@ -35,11 +38,14 @@ export async function initialCheckpointHook (indexer: Indexer, block: BlockProgr
 }
 
 /**
- * Post-block hook function.
+ * Hook function to create and store state diffs.
  * @param indexer Indexer instance that contains methods to fetch the contract varaiable values.
  * @param blockHash Block hash of the concerned block.
  */
-export async function postBlockHook (indexer: Indexer, blockHash: string): Promise<void> {
+export async function createStateDiff (indexer: Indexer, blockHash: string): Promise<void> {
+  assert(indexer);
+  assert(blockHash);
+
   // Get events for current block and make an entry of updated values in IPLDBlock.
   const events = await indexer.getEventsByFilter(blockHash);
 
@@ -58,7 +64,7 @@ export async function postBlockHook (indexer: Indexer, blockHash: string): Promi
 
     const eventData = indexer.getResultEvent(event);
 
-    const ipldBlockData: any = {};
+    let ipldBlockData: any = {};
 
     switch (event.eventName) {
       case 'Transfer': {
@@ -73,8 +79,8 @@ export async function postBlockHook (indexer: Indexer, blockHash: string): Promi
         //      "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc": "999999999999999999900"
         //   }
         // }
-        _.set(ipldBlockData, `state._balances[${from}]`, fromBalance.value.toString());
-        _.set(ipldBlockData, `state._balances[${to}]`, toBalance.value.toString());
+        ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [from], fromBalance.value.toString());
+        ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [to], toBalance.value.toString());
 
         break;
       }
@@ -90,7 +96,7 @@ export async function postBlockHook (indexer: Indexer, blockHash: string): Promi
         //      }
         //   }
         // }
-        _.set(ipldBlockData, `state._allowances[${owner}][${spender}]`, allowance.value.toString());
+        ipldBlockData = updateStateForMappingType(ipldBlockData, '_allowances', [owner, spender], allowance.value.toString());
 
         break;
       }
@@ -123,10 +129,10 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       const { from, to } = eventData.event;
 
       // Update balance entry for sender in the database.
-      await indexer.balanceOf(eventData.block.hash, eventData.contract, from);
+      await indexer._balances(eventData.block.hash, eventData.contract, from);
 
       // Update balance entry for receiver in the database.
-      await indexer.balanceOf(eventData.block.hash, eventData.contract, to);
+      await indexer._balances(eventData.block.hash, eventData.contract, to);
 
       break;
     }
@@ -138,7 +144,7 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       const { owner, spender } = eventData.event;
 
       // Update allowance entry for (owner, spender) combination in the database.
-      await indexer.allowance(eventData.block.hash, eventData.contract, owner, spender);
+      await indexer._allowances(eventData.block.hash, eventData.contract, owner, spender);
 
       break;
     }

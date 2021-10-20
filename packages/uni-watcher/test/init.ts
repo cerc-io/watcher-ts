@@ -30,7 +30,7 @@ const deployFactoryContract = async (db: Database, signer: Signer): Promise<Cont
   assert(factory.address, 'Factory contract not deployed.');
 
   // Watch factory contract.
-  await watchContract(db, factory.address, 'factory', 100);
+  await watchContract(db, factory.address, 'factory', false, 100);
 
   return factory;
 };
@@ -45,7 +45,7 @@ const deployNFPMContract = async (db: Database, signer: Signer, factory: Contrac
   assert(nfpm.address, 'NFPM contract not deployed.');
 
   // Watch NFPM contract.
-  await watchContract(db, nfpm.address, 'nfpm', 100);
+  await watchContract(db, nfpm.address, 'nfpm', false, 100);
 };
 
 const main = async () => {
