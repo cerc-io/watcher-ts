@@ -32,8 +32,9 @@ export class Indexer {
    * @param name Name of the query.
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
+   * @param stateVariableTypeName Type of the state variable in case of state variable query.
    */
-  addQuery (mode: string, name: string, params: Array<Param>, returnType: string): void {
+  addQuery (mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
@@ -45,7 +46,8 @@ export class Indexer {
       saveQueryName: '',
       params: _.cloneDeep(params),
       returnType,
-      mode
+      mode,
+      stateVariableType
     };
 
     if (name.charAt(0) === '_') {
@@ -68,6 +70,10 @@ export class Indexer {
     const tsReturnType = getTsForSol(returnType);
     assert(tsReturnType);
     queryObject.returnType = tsReturnType;
+
+    if (stateVariableType) {
+      queryObject.stateVariableType = stateVariableType;
+    }
 
     this._queries.push(queryObject);
   }

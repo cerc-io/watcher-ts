@@ -29,6 +29,11 @@ import { Indexer } from '../indexer';
       demandOption: true,
       describe: 'Address of the deployed contract'
     },
+    checkpoint: {
+      type: 'boolean',
+      default: false,
+      describe: 'Turn checkpointing on'
+    },
     startingBlock: {
       type: 'number',
       default: 1,
@@ -55,7 +60,7 @@ import { Indexer } from '../indexer';
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
 
-  await indexer.watchContract(argv.address, argv.startingBlock);
+  await indexer.watchContract(argv.address, argv.checkpoint, argv.startingBlock);
 
   await db.close();
   await jobQueue.stop();

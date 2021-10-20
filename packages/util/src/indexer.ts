@@ -308,7 +308,7 @@ export class Indexer {
     return this._watchedContracts[address];
   }
 
-  async watchContract (address: string, kind: string, startingBlock: number): Promise<void> {
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     assert(this._db.saveContract);
     const dbTx = await this._db.createTransactionRunner();
 
@@ -316,7 +316,7 @@ export class Indexer {
     const contractAddress = ethers.utils.getAddress(address);
 
     try {
-      const contract = await this._db.saveContract(dbTx, contractAddress, kind, startingBlock);
+      const contract = await this._db.saveContract(dbTx, contractAddress, kind, checkpoint, startingBlock);
       this.cacheContract(contract);
       await dbTx.commitTransaction();
 

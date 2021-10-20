@@ -305,8 +305,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isWatchedContract(address);
   }
 
-  async watchContract (address: string, startingBlock: number): Promise<void> {
-    return this._baseIndexer.watchContract(address, CONTRACT_KIND, startingBlock);
+  async watchContract (address: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, CONTRACT_KIND, checkpoint, startingBlock);
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {
