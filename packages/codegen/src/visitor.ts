@@ -60,11 +60,13 @@ export class Visitor {
   stateVariableDeclarationVisitor (node: any): void {
     // TODO Handle multiples variables in a single line.
     // TODO Handle array types.
-    const name: string = node.variables[0].name;
+    const variable = node.variables[0];
+    const name: string = variable.name;
+    const stateVariableType: string = variable.typeName.type;
 
     const params: Param[] = [];
 
-    let typeName = node.variables[0].typeName;
+    let typeName = variable.typeName;
     let numParams = 0;
 
     // If the variable type is mapping, extract key as a param:
@@ -79,7 +81,7 @@ export class Visitor {
 
     this._schema.addQuery(name, params, returnType);
     this._resolvers.addQuery(name, params, returnType);
-    this._indexer.addQuery(MODE_STORAGE, name, params, returnType);
+    this._indexer.addQuery(MODE_STORAGE, name, params, returnType, stateVariableType);
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
     this._client.addQuery(name, params, returnType);

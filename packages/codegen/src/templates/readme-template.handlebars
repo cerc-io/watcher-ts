@@ -39,7 +39,7 @@
 
 * Update the `upstream` config in the [config file](./environments/local.toml) and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
 
-* Update the [config](./environments/local.toml) with derived state checkpoint settings.
+* Update the [config](./environments/local.toml) with state checkpoint settings.
 
 ## Customize
 
@@ -47,11 +47,15 @@
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
 
-  * Edit the custom hook function `postBlockHook` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save `IPLDBlock`s using the `Indexer` object.
+  * While using the indexer storage methods for indexing, pass the optional arg. `state` as `diff` or `checkpoint` if default state is desired to be generated using the state variables being indexed else pass `none`.
 
-  * Edit the custom hook function `initialCheckpointHook` (triggered on watch-contract) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+* Generating state:
 
-  * The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
+  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in an `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+
+* The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
 
 ## Run
 
@@ -74,7 +78,26 @@ GQL console: http://localhost:3008/graphql
   * To watch a contract:
 
     ```bash
-    yarn watch:contract --address <contract-address> --kind {{contractName}} --starting-block [block-number]
+    yarn watch:contract --address <contract-address> --kind <contract-kind> --checkpoint <true | false> --starting-block [block-number]
+    ```
+
+    * `address`: Address or identifier of the contract to be watched.
+    * `kind`: Kind of the contract.
+    * `checkpoint`: Turn checkpointing on (`true` | `false`).
+    * `starting-block`: Starting block for the contract (default: `1`).
+
+    Examples:
+    
+    Watch a contract with its address and checkpointing on:
+
+    ```bash
+    yarn watch:contract --address 0x1F78641644feB8b64642e833cE4AFE93DD6e7833 --kind ERC20 --checkpoint true
+    ```
+
+    Watch a contract with its identifier and checkpointing on:
+
+    ```bash
+    yarn watch:contract --address MyProtocol --kind protocol --checkpoint true
     ```
 
   * To fill a block range:
@@ -83,8 +106,14 @@ GQL console: http://localhost:3008/graphql
     yarn fill --start-block <from-block> --end-block <to-block>
     ```
 
+    * `start-block`: Block number to start filling from.
+    * `end-block`: Block number till which to fill. 
+
   * To create a checkpoint for a contract:
 
     ```bash
     yarn checkpoint --address <contract-address> --block-hash [block-hash]
     ```
+
+    * `address`: Address or identifier of the contract for which to create a checkpoint.
+    * `block-hash`: Hash of the block at which to create the checkpoint (default: current block hash).

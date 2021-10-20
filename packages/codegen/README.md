@@ -29,16 +29,16 @@
     * `output-folder`(alias: `o`): Output folder path. (logs output using `stdout` if not provided).
     * `mode`(alias: `m`): Code generation mode (default: `all`).
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
-    * `kind` (alias: `k`): Kind of watcher (default; `active`).
+    * `kind` (alias: `k`): Kind of watcher (default: `active`).
 
   **Note**: When passed an *URL* as `input-file`, it is assumed that it points to an already flattened contract file.
 
   Examples:
 
-  Generate code in both `eth_call` and `storage` mode, `active` kind.
+  Generate code in `storage` mode, `lazy` kind.
 
   ```bash
-  yarn codegen --input-file ./test/examples/contracts/ERC20.sol --contract-name ERC20 --output-folder ../my-erc20-watcher --mode all --kind active
+  yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
   ```
 
   Generate code in `eth_call` mode using a contract provided by an URL.
@@ -47,10 +47,10 @@
   yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../my-erc721-watcher --mode eth_call
   ```
 
-  Generate code in `storage` mode, `lazy` kind.
+  Generate code for `ERC721` in both `eth_call` and `storage` mode, `active` kind.
 
   ```bash
-  yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
+  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
   ```
 
   Generate code for `ERC20` contract in both `eth_call` and `storage` mode, `active` kind:
@@ -73,7 +73,7 @@
 
 * Create the databases configured in `environments/local.toml`.
 
-* Update the derived state checkpoint settings in `environments/local.toml`.
+* Update the state checkpoint settings in `environments/local.toml`.
 
 ### Customize
 
@@ -81,11 +81,15 @@
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in `src/hooks.ts` to perform corresponding indexing using the `Indexer` object.
 
-  * Edit the custom hook function `postBlockHook` (triggered on a block) in `src/hooks.ts` to save `IPLDBlock`s using the `Indexer` object.
+  * While using the indexer storage methods for indexing, pass the optional arg. `state` as `diff` or `checkpoint` if default state is desired to be generated using the state variables being indexed else pass `none`.
 
-  * Edit the custom hook function `initialCheckpointHook` (triggered on watch-contract) in `src/hooks.ts` to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+* Generating state:
 
-  * The existing example hooks in `src/hooks.ts` are for an `ERC20` contract.
+  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in `src/hooks.ts` to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in `src/hooks.ts` to save the state in an `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+
+* The existing example hooks in `src/hooks.ts` are for an `ERC20` contract.
 
 ### Run
 
@@ -112,7 +116,7 @@
   * To watch a contract:
 
     ```bash
-    yarn watch:contract --address <contract-address> --kind <contract-kind> --starting-block [block-number]
+    yarn watch:contract --address <contract-address> --kind <contract-kind> --checkpoint <true | false> --starting-block [block-number]
     ```
 
   * To fill a block range:

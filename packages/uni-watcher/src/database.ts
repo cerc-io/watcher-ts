@@ -51,10 +51,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getContract(repo, address);
   }
 
-  async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<void> {
+  async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     const repo = queryRunner.manager.getRepository(Contract);
 
-    return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
+    return this._baseDatabase.saveContract(repo, address, kind, checkpoint, startingBlock);
   }
 
   async createTransactionRunner (): Promise<QueryRunner> {
