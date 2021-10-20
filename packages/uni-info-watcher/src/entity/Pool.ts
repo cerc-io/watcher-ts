@@ -20,10 +20,10 @@ export class Pool {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token0!: Token;
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token1!: Token;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

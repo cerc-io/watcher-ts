@@ -39,7 +39,9 @@
     "fill:dev": "DEBUG=vulcanize:* ts-node src/fill.ts",
     "generate:schema": "get-graphql-schema https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt > docs/analysis/schema/full-schema.graphql",
     "generate:health-schema": "get-graphql-schema https://api.thegraph.com/index-node/graphql > docs/analysis/schema/health-schema.graphql",
-    "lint:schema": "graphql-schema-linter"
+    "lint:schema": "graphql-schema-linter",
+    "reset": "DEBUG=vulcanize:* node --enable-source-maps dist/cli/reset.js",
+    "reset:dev": "DEBUG=vulcanize:* ts-node src/cli/reset.ts"
   },
   "devDependencies": {
     "@types/chance": "^1.1.2",

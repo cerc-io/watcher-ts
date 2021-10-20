@@ -5,13 +5,16 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 @Entity()
-@Index(['blockHash', 'token', 'owner'], { unique: true })
+@Index(['blockHash', 'blockNumber', 'token', 'owner'], { unique: true })
 export class Balance {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column('varchar', { length: 66 })
   blockHash!: string;
+
+  @Column('integer')
+  blockNumber!: number;
 
   @Column('varchar', { length: 42 })
   token!: string;

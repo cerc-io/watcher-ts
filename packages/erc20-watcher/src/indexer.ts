@@ -117,10 +117,11 @@ export class Indexer {
     log('balanceOf: db miss, fetching from upstream server');
     let result: ValueResult;
 
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = BigNumber.from(number).toNumber();
+
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);
-      const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-      const blockNumber = BigNumber.from(number).toNumber();
 
       // eth_call doesnt support calling method by blockHash https://eth.wiki/json-rpc/API#the-default-block-parameter
       const value = await contract.balanceOf(owner, { blockTag: blockNumber });
@@ -135,7 +136,7 @@ export class Indexer {
     log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveBalance({ blockHash, token, owner, value: BigInt(value), proof: JSONbig.stringify(proof) });
+    await this._db.saveBalance({ blockHash, blockNumber, token, owner, value: BigInt(value), proof: JSONbig.stringify(proof) });
 
     return result;
   }
@@ -154,10 +155,11 @@ export class Indexer {
     log('allowance: db miss, fetching from upstream server');
     let result: ValueResult;
 
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = BigNumber.from(number).toNumber();
+
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);
-      const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-      const blockNumber = BigNumber.from(number).toNumber();
       const value = await contract.allowance(owner, spender, { blockTag: blockNumber });
 
       result = {
@@ -170,7 +172,7 @@ export class Indexer {
     // log(JSONbig.stringify(result, null, 2));
 
     const { value, proof } = result;
-    await this._db.saveAllowance({ blockHash, token, owner, spender, value: BigInt(value), proof: JSONbig.stringify(proof) });
+    await this._db.saveAllowance({ blockHash, blockNumber, token, owner, spender, value: BigInt(value), proof: JSONbig.stringify(proof) });
 
     return result;
   }
@@ -315,16 +317,16 @@ export class Indexer {
     return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber);
   }
 
-  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
   }
 
-  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
+  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {

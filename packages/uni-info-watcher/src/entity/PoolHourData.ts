@@ -23,7 +23,7 @@ export class PoolHourData {
   @Column('integer')
   periodStartUnix!: number;
 
-  @ManyToOne(() => Pool)
+  @ManyToOne(() => Pool, { onDelete: 'CASCADE' })
   pool!: Pool;
 
   @Column('numeric', { transformer: decimalTransformer })

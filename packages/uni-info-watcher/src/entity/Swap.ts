@@ -22,19 +22,19 @@ export class Swap {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Transaction, transaction => transaction.swaps)
+  @ManyToOne(() => Transaction, transaction => transaction.swaps, { onDelete: 'CASCADE' })
   transaction!: Transaction
 
   @Column('bigint')
   timestamp!: BigInt;
 
-  @ManyToOne(() => Pool)
+  @ManyToOne(() => Pool, { onDelete: 'CASCADE' })
   pool!: Pool
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token0!: Token
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token1!: Token
 
   @Column('varchar', { length: 42 })

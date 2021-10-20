@@ -56,12 +56,12 @@ export class PositionSnapshot {
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   collectedFeesToken1!: Decimal
 
-  @ManyToOne(() => Pool)
+  @ManyToOne(() => Pool, { onDelete: 'CASCADE' })
   pool!: Pool
 
-  @ManyToOne(() => Position)
+  @ManyToOne(() => Position, { onDelete: 'CASCADE' })
   position!: Position
 
-  @ManyToOne(() => Transaction)
+  @ManyToOne(() => Transaction, { onDelete: 'CASCADE' })
   transaction!: Transaction
 }

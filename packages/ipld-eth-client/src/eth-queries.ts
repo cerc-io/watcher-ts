@@ -64,6 +64,20 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 }
 `;
 
+export const getBlocksByNumber = gql`
+query allEthHeaderCids($blockNumber: BigInt) {
+  allEthHeaderCids(condition: { blockNumber: $blockNumber }) {
+    nodes {
+      cid
+      blockNumber
+      blockHash
+      parentHash
+      timestamp
+    }
+  }
+}
+`;
+
 export const getBlockByHash = gql`
 query block($blockHash: Bytes32) {
   block(hash: $blockHash) {
@@ -113,6 +127,7 @@ export default {
   getStorageAt,
   getLogs,
   getBlockWithTransactions,
+  getBlocksByNumber,
   getBlockByHash,
   subscribeBlocks,
   subscribeTransactions

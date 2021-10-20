@@ -157,12 +157,26 @@ export class EventWatcher implements EventWatcherInterface {
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
+      const { id, data: { failed } } = job;
+
+      if (failed) {
+        log(`Job ${id} for queue ${QUEUE_BLOCK_PROCESSING} failed`);
+        return;
+      }
+
       await this._baseEventWatcher.blockProcessingCompleteHandler(job);
     });
   }
 
   async initEventProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
+      const { id, data: { failed } } = job;
+
+      if (failed) {
+        log(`Job ${id} for queue ${QUEUE_EVENT_PROCESSING} failed`);
+        return;
+      }
+
       await this._baseEventWatcher.eventProcessingCompleteHandler(job);
     });
   }

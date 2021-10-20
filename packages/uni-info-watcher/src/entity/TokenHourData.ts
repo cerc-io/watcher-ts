@@ -23,7 +23,7 @@ export class TokenHourData {
   @Column('integer')
   periodStartUnix!: number
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token!: Token
 
   @Column('numeric', { transformer: decimalTransformer })

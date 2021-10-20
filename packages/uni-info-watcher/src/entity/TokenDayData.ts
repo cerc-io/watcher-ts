@@ -23,7 +23,7 @@ export class TokenDayData {
   @Column('integer')
   date!: number
 
-  @ManyToOne(() => Token)
+  @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token!: Token
 
   @Column('numeric', { transformer: decimalTransformer })

@@ -23,7 +23,7 @@ export class Tick {
   @Column('bigint')
   tickIdx!: BigInt;
 
-  @ManyToOne(() => Pool)
+  @ManyToOne(() => Pool, { onDelete: 'CASCADE' })
   pool!: Pool
 
   @Column('varchar', { length: 42 })

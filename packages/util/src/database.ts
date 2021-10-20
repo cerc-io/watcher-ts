@@ -97,11 +97,11 @@ export class Database {
     return repo.findOne();
   }
 
-  async updateSyncStatusIndexedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusIndexedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     const entity = await repo.findOne();
     assert(entity);
 
-    if (blockNumber >= entity.latestIndexedBlockNumber) {
+    if (force || blockNumber >= entity.latestIndexedBlockNumber) {
       entity.latestIndexedBlockHash = blockHash;
       entity.latestIndexedBlockNumber = blockNumber;
     }
@@ -109,11 +109,11 @@ export class Database {
     return await repo.save(entity);
   }
 
-  async updateSyncStatusCanonicalBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusCanonicalBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     const entity = await repo.findOne();
     assert(entity);
 
-    if (blockNumber >= entity.latestCanonicalBlockNumber) {
+    if (force || blockNumber >= entity.latestCanonicalBlockNumber) {
       entity.latestCanonicalBlockHash = blockHash;
       entity.latestCanonicalBlockNumber = blockNumber;
     }

@@ -12,7 +12,7 @@ export class Event {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => BlockProgress)
+  @ManyToOne(() => BlockProgress, { onDelete: 'CASCADE' })
   block!: BlockProgress;
 
   @Column('varchar', { length: 66 })
