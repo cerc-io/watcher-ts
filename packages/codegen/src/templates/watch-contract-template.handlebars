@@ -41,6 +41,12 @@ const main = async (): Promise<void> => {
       demandOption: true,
       describe: 'Kind of contract'
     },
+    checkpoint: {
+      type: 'boolean',
+      require: true,
+      demandOption: true,
+      describe: 'Turn checkpointing on'
+    },
     startingBlock: {
       type: 'number',
       default: 1,
@@ -79,7 +85,7 @@ const main = async (): Promise<void> => {
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
-  await indexer.watchContract(argv.address, argv.kind, argv.startingBlock);
+  await indexer.watchContract(argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
 
   await db.close();
 };

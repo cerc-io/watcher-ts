@@ -528,13 +528,13 @@ export class Database {
       .getMany();
   }
 
-  async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<ContractInterface> {
+  async saveContract (repo: Repository<ContractInterface>, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<ContractInterface> {
     const contract = await repo
       .createQueryBuilder()
       .where('address = :address', { address })
       .getOne();
 
-    const entity = repo.create({ address, kind, startingBlock });
+    const entity = repo.create({ address, kind, checkpoint, startingBlock });
 
     // If contract already present, overwrite fields.
     if (contract) {

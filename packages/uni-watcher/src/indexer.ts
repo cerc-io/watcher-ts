@@ -102,7 +102,7 @@ export class Indexer implements IndexerInterface {
     switch (re.event.__typename) {
       case 'PoolCreatedEvent': {
         const poolContract = ethers.utils.getAddress(re.event.pool);
-        await this.watchContract(poolContract, KIND_POOL, dbEvent.block.blockNumber);
+        await this.watchContract(poolContract, KIND_POOL, false, dbEvent.block.blockNumber);
       }
     }
   }
@@ -353,8 +353,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isWatchedContract(address);
   }
 
-  async watchContract (address: string, kind: string, startingBlock: number): Promise<void> {
-    return this._baseIndexer.watchContract(address, kind, startingBlock);
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 
   cacheContract (contract: Contract): void {

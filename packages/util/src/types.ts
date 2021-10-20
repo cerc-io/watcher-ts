@@ -47,6 +47,7 @@ export interface ContractInterface {
   address: string;
   startingBlock: number;
   kind: string;
+  checkpoint: boolean;
 }
 
 export interface IndexerInterface {
@@ -100,5 +101,5 @@ export interface DatabaseInterface {
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContracts?: () => Promise<ContractInterface[]>
-  saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, startingBlock: number) => Promise<ContractInterface>
+  saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
 }
