@@ -158,6 +158,7 @@ type Mutation {
   # Actively watch and index data for the token.
   watchToken(
     token: String!
+    checkpoint: Boolean
     startingBlock: Int
   ): Boolean!
 }

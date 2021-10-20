@@ -114,10 +114,10 @@ export class Database {
     return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
-  async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<Contract> {
+  async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {
     const repo = queryRunner.manager.getRepository(Contract);
 
-    return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
+    return this._baseDatabase.saveContract(repo, address, kind, checkpoint, startingBlock);
   }
 
   async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
