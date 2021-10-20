@@ -10,6 +10,7 @@ import {
   createConnection,
   DeepPartial,
   FindConditions,
+  FindManyOptions,
   In,
   QueryRunner,
   Repository
@@ -261,7 +262,7 @@ export class Database {
     }
   }
 
-  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void> {
+  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void> {
     const repo = queryRunner.manager.getRepository(entity);
 
     const entities = await repo.find(findConditions);

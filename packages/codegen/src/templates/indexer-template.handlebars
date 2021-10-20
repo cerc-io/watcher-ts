@@ -275,6 +275,10 @@ export class Indexer {
     return this._baseIndexer.getBlockEvents(blockHash);
   }
 
+  async removeUnknownEvents (block: BlockProgress): Promise<void> {
+    return this._baseIndexer.removeUnknownEvents(Event, block);
+  }
+
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }

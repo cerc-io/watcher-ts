@@ -196,6 +196,31 @@ export class Indexer {
     return events;
   }
 
+  async removeUnknownEvents (eventEntityClass: new () => EventInterface, block: BlockProgressInterface): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      await this._db.removeEntities(
+        dbTx,
+        eventEntityClass,
+        {
+          where: {
+            block: { id: block.id },
+            eventName: UNKNOWN_EVENT_NAME
+          },
+          relations: ['block']
+        }
+      );
+
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._db.getAncestorAtDepth(blockHash, depth);
   }

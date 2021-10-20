@@ -324,6 +324,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlockEvents(blockHash);
   }
 
+  async removeUnknownEvents (block: BlockProgress): Promise<void> {
+    return this._baseIndexer.removeUnknownEvents(Event, block);
+  }
+
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }

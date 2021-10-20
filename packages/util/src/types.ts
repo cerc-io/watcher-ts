@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { DeepPartial, FindConditions, QueryRunner } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 
 export interface BlockProgressInterface {
   id: number;
@@ -55,6 +55,7 @@ export interface IndexerInterface {
   getBlockEvents (blockHash: string): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   getOrFetchBlockEvents (block: DeepPartial<BlockProgressInterface>): Promise<Array<EventInterface>>
+  removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void>
   updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatusInterface>
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
@@ -85,6 +86,6 @@ export interface DatabaseInterface {
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
-  removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void>;
+  removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContract?: (address: string) => Promise<ContractInterface | undefined>
 }

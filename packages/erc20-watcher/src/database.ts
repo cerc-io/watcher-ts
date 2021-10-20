@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase } from '@vulcanize/util';
@@ -177,7 +177,7 @@ export class Database {
     return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
   }
 
-  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<void> {
+  async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void> {
     return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
   }
 

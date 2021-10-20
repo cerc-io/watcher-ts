@@ -72,8 +72,13 @@ export class EventWatcher {
 
     await this._indexer.updateBlockProgress(dbEvent.block.blockHash, dbEvent.index);
     const blockProgress = await this._indexer.getBlockProgress(dbEvent.block.blockHash);
+
     if (blockProgress) {
       await this.publishBlockProgressToSubscribers(blockProgress);
+
+      if (blockProgress.isComplete) {
+        await this._indexer.removeUnknownEvents(blockProgress);
+      }
     }
 
     return dbEvent;

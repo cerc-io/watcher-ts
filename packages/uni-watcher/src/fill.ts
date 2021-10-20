@@ -90,8 +90,8 @@ export const main = async (): Promise<any> => {
   await fillBlocks(jobQueue, indexer, ethClient, eventWatcher, argv);
 };
 
-main().then(() => {
-  process.exit();
-}).catch(err => {
+main().catch(err => {
   log(err);
+}).finally(() => {
+  process.exit();
 });
