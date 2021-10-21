@@ -94,8 +94,6 @@ export class EventWatcher {
         await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash: dbEvent.block.blockHash, blockNumber: dbEvent.block.blockNumber });
       }
 
-      const { data: { request, failed, state, createdOn } } = job;
-
       const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
       log(`Job onComplete event ${request.data.id} publish ${!!request.data.publish}`);
       if (!failed && state === 'completed' && request.data.publish) {

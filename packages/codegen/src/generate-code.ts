@@ -126,8 +126,8 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     const entitiesFolder = path.join(outputDir, 'src/entity');
     if (!fs.existsSync(entitiesFolder)) fs.mkdirSync(entitiesFolder, { recursive: true });
 
-    const cliFolder = path.join(outputDir, 'src/cli');
-    if (!fs.existsSync(cliFolder)) fs.mkdirSync(cliFolder, { recursive: true });
+    const resetCmdsFolder = path.join(outputDir, 'src/cli/reset-cmds');
+    if (!fs.existsSync(resetCmdsFolder)) fs.mkdirSync(resetCmdsFolder, { recursive: true });
   }
 
   const inputFileName = path.basename(argv['input-file'], '.sol');
@@ -214,21 +214,17 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     : process.stdout;
   exportCheckpoint(outStream);
 
-  let hooksOutStream;
-  if (outputDir) {
-    hooksOutStream = fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'));
-  } else {
-    hooksOutStream = process.stdout;
-  }
-  exportHooks(hooksOutStream);
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'))
+    : process.stdout;
+  exportHooks(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
   exportFill(outStream);
 
-  let rcOutStream;
-  let ignoreOutStream;
+  let rcOutStream, ignoreOutStream;
   if (outputDir) {
     rcOutStream = fs.createWriteStream(path.join(outputDir, '.eslintrc.json'));
     ignoreOutStream = fs.createWriteStream(path.join(outputDir, '.eslintignore'));
@@ -242,6 +238,18 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/client.ts'))
     : process.stdout;
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
+
+  let resetOutStream, resetJQOutStream, resetStateOutStream;
+  if (outputDir) {
+    resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
+    resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
+    resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
+  } else {
+    resetOutStream = process.stdout;
+    resetJQOutStream = process.stdout;
+    resetStateOutStream = process.stdout;
+  }
+  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
 }
 
 main().catch(err => {

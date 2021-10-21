@@ -80,6 +80,12 @@ export class Entity {
       ]
     });
     entityObject.columns.push({
+      name: 'blockNumber',
+      pgType: 'integer',
+      tsType: 'number',
+      columnType: 'Column'
+    });
+    entityObject.columns.push({
       name: 'contractAddress',
       pgType: 'varchar',
       tsType: 'string',

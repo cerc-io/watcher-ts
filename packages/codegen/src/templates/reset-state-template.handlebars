@@ -11,8 +11,10 @@ import { getConfig, getResetConfig, resetJobs } from '@vulcanize/util';
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
 import { BlockProgress } from '../../entity/BlockProgress';
-import { Allowance } from '../../entity/Allowance';
-import { Balance } from '../../entity/Balance';
+
+{{#each queries as | query |}}
+import { {{query.entityName}} } from '../../entity/{{query.entityName}}';
+{{/each}}
 
 const log = debug('vulcanize:reset-state');
 
@@ -35,7 +37,7 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(dbConfig);
   await db.init();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, serverConfig.mode);
+  const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
@@ -48,7 +50,13 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const removeEntitiesPromise = [BlockProgress, Allowance, Balance].map(async entityClass => {
+    const entities = [BlockProgress
+    {{~#each queries as | query |~}}
+    , {{query.entityName}}
+    {{~/each~}}
+    ];
+
+    const removeEntitiesPromise = entities.map(async entityClass => {
       return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });
     });
 
