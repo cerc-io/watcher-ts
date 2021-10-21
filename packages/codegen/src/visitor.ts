@@ -12,6 +12,7 @@ import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
+import { Reset } from './reset';
 
 export class Visitor {
   _schema: Schema;
@@ -20,6 +21,7 @@ export class Visitor {
   _entity: Entity;
   _database: Database;
   _client: Client;
+  _reset: Reset;
 
   constructor () {
     this._schema = new Schema();
@@ -28,6 +30,7 @@ export class Visitor {
     this._entity = new Entity();
     this._database = new Database();
     this._client = new Client();
+    this._reset = new Reset();
   }
 
   /**
@@ -50,6 +53,7 @@ export class Visitor {
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
       this._client.addQuery(name, params, returnType);
+      this._reset.addQuery(name);
     }
   }
 
@@ -85,6 +89,7 @@ export class Visitor {
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
     this._client.addQuery(name, params, returnType);
+    this._reset.addQuery(name);
   }
 
   /**
@@ -151,5 +156,15 @@ export class Visitor {
    */
   exportClient (outStream: Writable, schemaContent: string, gqlDir: string): void {
     this._client.exportClient(outStream, schemaContent, gqlDir);
+  }
+
+  /**
+   * Writes the reset.ts, job-queue.ts, state.ts files generated from templates to respective streams.
+   * @param resetOutStream A writable output stream to write the reset file to.
+   * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
+   * @param resetStateOutStream A writable output stream to write the reset state file to.
+   */
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable): void {
+    this._reset.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
   }
 }
