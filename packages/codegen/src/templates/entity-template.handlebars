@@ -27,7 +27,7 @@ export class {{className}} {{~#if implements}} implements {{implements}} {{~/if}
   @{{column.columnType}}('{{column.pgType}}'
   {{~/if}}
   {{~#if column.columnOptions}}, {
-  {{~#each column.columnOptions}} {{this.option}}: {{this.value}}
+  {{~#each column.columnOptions}} {{this.option}}: {{{this.value}}}
   {{~#unless @last}}, {{/unless}}
   {{~/each}} }
   {{~/if}})
