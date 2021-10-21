@@ -69,10 +69,10 @@ export class Database {
   {{#if (reservedNameCheck query.entityName) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
-  async {{query.saveQueryName}} ({ blockHash, contractAddress
+  async {{query.saveQueryName}} ({ blockHash, blockNumber, contractAddress
   {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{query.entityName}}>): Promise<{{query.entityName}}> {
     const repo = this._conn.getRepository({{query.entityName}});
-    const entity = repo.create({ blockHash, contractAddress
+    const entity = repo.create({ blockHash, blockNumber, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof });
     return repo.save(entity);
   }
@@ -316,16 +316,16 @@ export class Database {
     });
   }
 
-  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber, force);
   }
 
   async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {

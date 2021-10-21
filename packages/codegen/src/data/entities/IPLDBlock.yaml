@@ -17,6 +17,9 @@ columns:
     columnType: ManyToOne
     lhs: ()
     rhs: BlockProgress
+    columnOptions:
+      - option: onDelete
+        value: "'CASCADE'"
   - name: contractAddress
     pgType: varchar
     tsType: string
