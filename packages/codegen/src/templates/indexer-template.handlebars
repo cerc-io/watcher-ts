@@ -134,17 +134,14 @@ export class Indexer {
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
     const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
     {{#if (compare query.returnType 'bigint')}}
     let value = await contract.{{query.name}}(
-    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
     value = value.toString();
     value = BigInt(value);
     {{else}}
     const value = await contract.{{query.name}}(
-    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockNumber });
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
     {{/if}}
 
     const result: ValueResult = { value };

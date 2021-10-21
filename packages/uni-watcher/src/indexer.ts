@@ -295,11 +295,8 @@ export class Indexer implements IndexerInterface {
   async callGetPool (blockHash: string, contractAddress: string, key0: string, key1: string, key2: number): Promise<ValueResult> {
     const contract = new ethers.Contract(contractAddress, factoryABI, this._ethProvider);
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
     try {
-      const value = await contract.getPool(key0, key1, key2, { blockTag: blockNumber });
+      const value = await contract.getPool(key0, key1, key2, { blockTag: blockHash });
 
       return { value };
     } catch (error: any) {
@@ -317,11 +314,8 @@ export class Indexer implements IndexerInterface {
   async positions (blockHash: string, contractAddress: string, tokenId: string): Promise<ValueResult> {
     const contract = new ethers.Contract(contractAddress, nfpmABI, this._ethProvider);
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
     try {
-      const value = await contract.positions(tokenId, { blockTag: blockNumber });
+      const value = await contract.positions(tokenId, { blockTag: blockHash });
 
       return { value };
     } catch (error: any) {
