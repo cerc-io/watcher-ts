@@ -13,6 +13,9 @@ columns:
     columnType: ManyToOne
     lhs: ()
     rhs: BlockProgress
+    columnOptions:
+      - option: onDelete
+        value: "'CASCADE'"
   - name: txHash
     pgType: varchar
     tsType: string
