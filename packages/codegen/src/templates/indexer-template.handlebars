@@ -179,9 +179,11 @@ export class Indexer {
 
     log('{{query.name}}: db miss, fetching from upstream server');
 
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = ethers.BigNumber.from(number).toNumber();
+
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
     const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
-
     {{#if (compare query.returnType 'bigint')}}
     let value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
@@ -207,7 +209,7 @@ export class Indexer {
     );
     {{/if}}
 
-    await this._db.{{query.saveQueryName}}({ blockHash, contractAddress
+    await this._db.{{query.saveQueryName}}({ blockHash, blockNumber, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbig.stringify(result.proof) });
 
     {{#if query.stateVariableType}}
@@ -563,16 +565,16 @@ export class Indexer {
     return this._baseIndexer.getSyncStatus();
   }
 
-  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+  async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
   }
 
-  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber);
+  async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
   }
 
   async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
