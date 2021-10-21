@@ -44,7 +44,7 @@ import {
   checksCollectEvent
 } from '../test/utils';
 
-const CONFIG_FILE = './environments/local.toml';
+const CONFIG_FILE = './environments/test.toml';
 
 describe('uni-watcher', () => {
   let factory: Contract;
@@ -64,6 +64,7 @@ describe('uni-watcher', () => {
   let uniClient: UniClient;
   let ethClient: EthClient;
   let postgraphileClient: EthClient;
+  let ethProvider: ethers.providers.JsonRpcProvider;
   let signer: Signer;
   let recipient: string;
   let deadline: number;
@@ -106,8 +107,8 @@ describe('uni-watcher', () => {
       gqlSubscriptionEndpoint
     });
 
-    const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
-    signer = provider.getSigner();
+    ethProvider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
+    signer = ethProvider.getSigner();
     recipient = await signer.getAddress();
 
     // Deadline set to 2 days from current date.
@@ -129,7 +130,7 @@ describe('uni-watcher', () => {
     factory = new Contract(factoryContract.address, FACTORY_ABI, signer);
 
     // Verifying with the db.
-    const indexer = new Indexer(db, ethClient, postgraphileClient);
+    const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
     assert(await indexer.isWatchedContract(factory.address), 'Factory contract not added to the database.');
   });
 
@@ -264,7 +265,7 @@ describe('uni-watcher', () => {
     nfpm = new Contract(nfpmContract.address, NFPM_ABI, signer);
 
     // Verifying with the db.
-    const indexer = new Indexer(db, ethClient, postgraphileClient);
+    const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
     assert(await indexer.isWatchedContract(nfpm.address), 'NFPM contract not added to the database.');
   });
 

@@ -8,6 +8,7 @@ import debug from 'debug';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+import { ValueResult } from '@vulcanize/util';
 
 const log = debug('vulcanize:resolver');
 
@@ -83,6 +84,11 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.position(blockHash, tokenId);
       },
 
+      positions: (_: any, { blockHash, contractAddress, tokenId }: { blockHash: string, contractAddress: string, tokenId: string }): Promise<ValueResult> => {
+        log('positions', blockHash, contractAddress, tokenId);
+        return indexer.positions(blockHash, contractAddress, tokenId);
+      },
+
       poolIdToPoolKey: (_: any, { blockHash, poolId }: { blockHash: string, poolId: string }) => {
         log('poolIdToPoolKey', blockHash, poolId);
         return indexer.poolIdToPoolKey(blockHash, poolId);
@@ -91,6 +97,11 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       getPool: (_: any, { blockHash, token0, token1, fee }: { blockHash: string, token0: string, token1: string, fee: string }) => {
         log('getPool', blockHash, token0, token1, fee);
         return indexer.getPool(blockHash, token0, token1, fee);
+      },
+
+      callGetPool: (_: any, { blockHash, contractAddress, key0, key1, key2 }: { blockHash: string, contractAddress: string, key0: string, key1: string, key2: number }): Promise<ValueResult> => {
+        log('callGetPool', blockHash, contractAddress, key0, key1, key2);
+        return indexer.callGetPool(blockHash, contractAddress, key0, key1, key2);
       },
 
       getContract: (_: any, { type }: { type: string }) => {

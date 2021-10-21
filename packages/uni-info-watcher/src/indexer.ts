@@ -1231,16 +1231,26 @@ export class Indexer implements IndexerInterface {
     let position = await this._db.getPosition({ id: tokenId.toString(), blockHash });
 
     if (!position) {
-      const nfpmPosition = await this._uniClient.getPosition(blockHash, tokenId);
+      let positionResult;
 
-      // The contract call reverts in situations where the position is minted and deleted in the same block.
-      // From my investigation this happens in calls from BancorSwap.
-      // (e.g. 0xf7867fa19aa65298fadb8d4f72d0daed5e836f3ba01f0b9b9631cdc6c36bed40)
+      try {
+        ({ value: positionResult } = await this._uniClient.positions(blockHash, contractAddress, tokenId));
+      } catch (error: any) {
+        // The contract call reverts in situations where the position is minted and deleted in the same block.
+        // From my investigation this happens in calls from BancorSwap.
+        // (e.g. 0xf7867fa19aa65298fadb8d4f72d0daed5e836f3ba01f0b9b9631cdc6c36bed40)
 
-      if (nfpmPosition) {
-        const { token0: token0Address, token1: token1Address, fee } = await this._uniClient.poolIdToPoolKey(blockHash, nfpmPosition.poolId);
+        if (error.message !== utils.Logger.errors.CALL_EXCEPTION) {
+          log('nfpm positions eth_call failed');
+          throw error;
+        }
+      }
 
-        const { pool: poolAddress } = await this._uniClient.getPool(blockHash, token0Address, token1Address, fee);
+      if (positionResult) {
+        // TODO: In subgraph factory is fetched by hardcoded factory address.
+        // Currently fetching first factory in database as only one exists.
+        const [factory] = await this._db.getModelEntitiesNoTx(Factory, { hash: blockHash }, {}, { limit: 1 });
+        const { value: poolAddress } = await this._uniClient.callGetPool(blockHash, factory.id, positionResult.token0, positionResult.token1, positionResult.fee);
 
         position = new Position();
         position.id = tokenId.toString();
@@ -1250,23 +1260,23 @@ export class Indexer implements IndexerInterface {
         position.pool = pool;
 
         const [token0, token1] = await Promise.all([
-          this._db.getTokenNoTx({ id: token0Address, blockHash }),
-          this._db.getTokenNoTx({ id: token1Address, blockHash })
+          this._db.getTokenNoTx({ id: positionResult.token0, blockHash }),
+          this._db.getTokenNoTx({ id: positionResult.token1, blockHash })
         ]);
         assert(token0 && token1);
         position.token0 = token0;
         position.token1 = token1;
 
         const [tickLower, tickUpper] = await Promise.all([
-          this._db.getTickNoTx({ id: poolAddress.concat('#').concat(nfpmPosition.tickLower.toString()), blockHash }),
-          this._db.getTickNoTx({ id: poolAddress.concat('#').concat(nfpmPosition.tickUpper.toString()), blockHash })
+          this._db.getTickNoTx({ id: poolAddress.concat('#').concat(positionResult.tickLower.toString()), blockHash }),
+          this._db.getTickNoTx({ id: poolAddress.concat('#').concat(positionResult.tickUpper.toString()), blockHash })
         ]);
         assert(tickLower && tickUpper);
         position.tickLower = tickLower;
         position.tickUpper = tickUpper;
 
-        position.feeGrowthInside0LastX128 = BigInt(nfpmPosition.feeGrowthInside0LastX128.toString());
-        position.feeGrowthInside1LastX128 = BigInt(nfpmPosition.feeGrowthInside1LastX128.toString());
+        position.feeGrowthInside0LastX128 = BigInt(positionResult.feeGrowthInside0LastX128.toString());
+        position.feeGrowthInside1LastX128 = BigInt(positionResult.feeGrowthInside1LastX128.toString());
       }
     }
 
@@ -1274,11 +1284,16 @@ export class Indexer implements IndexerInterface {
   }
 
   async _updateFeeVars (position: Position, block: Block, contractAddress: string, tokenId: bigint): Promise<Position> {
-    const nfpmPosition = await this._uniClient.getPosition(block.hash, tokenId);
+    try {
+      const { value: positionResult } = await this._uniClient.positions(block.hash, contractAddress, tokenId);
 
-    if (nfpmPosition) {
-      position.feeGrowthInside0LastX128 = BigInt(nfpmPosition.feeGrowthInside0LastX128.toString());
-      position.feeGrowthInside1LastX128 = BigInt(nfpmPosition.feeGrowthInside1LastX128.toString());
+      if (positionResult) {
+        position.feeGrowthInside0LastX128 = BigInt(positionResult.feeGrowthInside0LastX128.toString());
+        position.feeGrowthInside1LastX128 = BigInt(positionResult.feeGrowthInside1LastX128.toString());
+      }
+    } catch (error) {
+      log('nfpm positions eth_call failed');
+      log(error);
     }
 
     return position;

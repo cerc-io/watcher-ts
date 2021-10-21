@@ -32,6 +32,12 @@ type ResultGetPool {
   proof: Proof
 }
 
+type ResultCallGetPool {
+  value: String!
+
+  proof: Proof
+}
+
 # Factory Events
 
 # event PoolCreated(address indexed token0, address indexed token1, uint24 indexed fee, int24 tickSpacing, address pool);
@@ -68,6 +74,26 @@ type ResultPoolKey {
   token1: String!
   fee: BigInt!
 
+  proof: Proof
+}
+
+type PositionsValue {
+  nonce: BigInt!
+  operator: String!
+  token0: String!,
+  token1: String!,
+  fee: Int!,
+  tickLower: BigInt!
+  tickUpper: BigInt!
+  liquidity: BigInt!
+  feeGrowthInside0LastX128: BigInt!
+  feeGrowthInside1LastX128: BigInt!
+  tokensOwed0: BigInt!
+  tokensOwed1: BigInt!
+}
+
+type ResultPositions {
+  value: PositionsValue!
   proof: Proof
 }
 
@@ -223,6 +249,12 @@ type Query {
     poolId: String!
   ): ResultPoolKey
 
+  positions(
+    blockHash: String!,
+    contractAddress: String!,
+    tokenId: String!
+  ): ResultPositions!
+
   # Factory
 
   getPool(
@@ -231,6 +263,14 @@ type Query {
     token1: String!
     fee: String!
   ): ResultGetPool
+
+  callGetPool(
+    blockHash: String!
+    contractAddress: String!
+    key0: String!
+    key1: String!
+    key2: Int!
+  ): ResultCallGetPool
 
   # Pool
 

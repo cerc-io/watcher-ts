@@ -102,7 +102,7 @@ const resultEvent = `
 
 export const subscribeEvents = gql`
   subscription SubscriptionEvents {
-    onEvent 
+    onEvent
       ${resultEvent}
   }
 `;
@@ -135,13 +135,38 @@ query getPosition($blockHash: String!, $tokenId: String!) {
 }
 `;
 
+export const queryPositions = gql`
+query getPosition($blockHash: String!, $contractAddress: String!, $tokenId: String!) {
+  positions(blockHash: $blockHash, contractAddress: $contractAddress, tokenId: $tokenId) {
+    value {
+      nonce,
+      operator,
+      token0,
+      token1,
+      fee,
+      tickLower,
+      tickUpper,
+      liquidity,
+      feeGrowthInside0LastX128,
+      feeGrowthInside1LastX128,
+      tokensOwed0,
+      tokensOwed1,
+    }
+
+    proof {
+      data
+    }
+  }
+}
+`;
+
 export const queryPoolIdToPoolKey = gql`
 query poolIdToPoolKey($blockHash: String!, $poolId: String!) {
   poolIdToPoolKey(blockHash: $blockHash, poolId: $poolId) {
     token0
     token1
     fee
-    
+
     proof {
       data
     }
@@ -153,6 +178,17 @@ export const queryGetPool = gql`
 query getPool($blockHash: String!, $token0: String!, $token1: String!, $fee: String!) {
   getPool(blockHash: $blockHash, token0: $token0, token1: $token1, fee: $fee) {
     pool
+    proof {
+      data
+    }
+  }
+}
+`;
+
+export const queryCallGetPool = gql`
+query callGetPool($blockHash: String!, $contractAddress: String!, $key0: String!, $key1: String!, $key2: Int!) {
+  callGetPool(blockHash: $blockHash, contractAddress: $contractAddress, key0: $key0, key1: $key1, key2: $key2) {
+    value
     proof {
       data
     }

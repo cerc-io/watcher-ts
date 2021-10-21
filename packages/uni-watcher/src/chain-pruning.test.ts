@@ -6,6 +6,7 @@ import { expect, assert } from 'chai';
 import { AssertionError } from 'assert';
 import 'mocha';
 import _ from 'lodash';
+import { getDefaultProvider } from 'ethers';
 
 import { getConfig, JobQueue, JobRunner, JOB_KIND_PRUNE } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
@@ -17,7 +18,7 @@ import { Database } from './database';
 import { BlockProgress } from './entity/BlockProgress';
 import { SyncStatus } from './entity/SyncStatus';
 
-const CONFIG_FILE = './environments/local.toml';
+const CONFIG_FILE = './environments/test.toml';
 
 describe('chain pruning', () => {
   let db: Database;
@@ -45,7 +46,7 @@ describe('chain pruning', () => {
 
     // Create an Indexer object.
     assert(upstream, 'Missing upstream config');
-    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint }, cache: cacheConfig } = upstream;
+    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
     assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
     assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
@@ -61,7 +62,9 @@ describe('chain pruning', () => {
       cache
     });
 
-    indexer = new Indexer(db, ethClient, postgraphileClient);
+    const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+
+    indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
     assert(indexer, 'Could not create indexer object.');
 
     const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;

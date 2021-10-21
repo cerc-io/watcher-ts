@@ -12,7 +12,9 @@ import {
   queryEvents,
   subscribeEvents,
   queryGetContract,
-  queryEventsInRange
+  queryEventsInRange,
+  queryCallGetPool,
+  queryPositions
 } from './queries';
 
 export class Client {
@@ -82,6 +84,34 @@ export class Client {
     );
 
     return getPool;
+  }
+
+  async callGetPool (blockHash: string, contractAddress: string, key0: string, key1: string, key2: number): Promise<any> {
+    const { callGetPool } = await this._client.query(
+      gql(queryCallGetPool),
+      {
+        blockHash,
+        contractAddress,
+        key0,
+        key1,
+        key2
+      }
+    );
+
+    return callGetPool;
+  }
+
+  async positions (blockHash: string, contractAddress: string, tokenId: bigint): Promise<any> {
+    const { positions } = await this._client.query(
+      gql(queryPositions),
+      {
+        blockHash,
+        contractAddress,
+        tokenId: tokenId.toString()
+      }
+    );
+
+    return positions;
   }
 
   async getContract (type: string): Promise<any> {

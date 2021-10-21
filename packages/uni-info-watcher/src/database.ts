@@ -424,6 +424,20 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getModelEntities(queryRunner, entity, block, where, queryOptions, relations);
   }
 
+  async getModelEntitiesNoTx<Entity> (entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: Relation[] = []): Promise<Entity[]> {
+    const queryRunner = this._conn.createQueryRunner();
+    let res;
+
+    try {
+      await queryRunner.connect();
+      res = await this.getModelEntities(queryRunner, entity, block, where, queryOptions, relations);
+    } finally {
+      await queryRunner.release();
+    }
+
+    return res;
+  }
+
   async saveFactory (queryRunner: QueryRunner, factory: Factory, block: Block): Promise<Factory> {
     const repo = queryRunner.manager.getRepository(Factory);
     factory.blockNumber = block.number;

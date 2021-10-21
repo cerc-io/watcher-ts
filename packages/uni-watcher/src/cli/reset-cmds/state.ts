@@ -27,13 +27,13 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { dbConfig, ethClient, postgraphileClient } = await getResetConfig(config);
+  const { dbConfig, ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
 
   // Initialize database.
   const db = new Database(dbConfig);
   await db.init();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient);
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');

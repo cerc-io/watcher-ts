@@ -21,7 +21,7 @@ import { Client as UniClient } from '../src/client';
 import { Database } from '../src/database';
 import { watchContract } from '../src/utils/index';
 
-const CONFIG_FILE = './environments/local.toml';
+const CONFIG_FILE = './environments/test.toml';
 
 const deployFactoryContract = async (db: Database, signer: Signer): Promise<Contract> => {
   // Deploy factory from uniswap package.

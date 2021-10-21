@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -105,7 +106,7 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint }, cache: cacheConfig } = upstream;
+  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
@@ -121,7 +122,9 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient);
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

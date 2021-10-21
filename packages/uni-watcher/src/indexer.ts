@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
@@ -40,16 +40,18 @@ export class Indexer implements IndexerInterface {
   _ethClient: EthClient
   _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
+  _ethProvider: ethers.providers.BaseProvider
 
   _factoryContract: ethers.utils.Interface
   _poolContract: ethers.utils.Interface
   _nfpmContract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient) {
+  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
     this._db = db;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
+    this._ethProvider = ethProvider;
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
@@ -288,6 +290,50 @@ export class Indexer implements IndexerInterface {
       pool: value,
       proof
     };
+  }
+
+  async callGetPool (blockHash: string, contractAddress: string, key0: string, key1: string, key2: number): Promise<ValueResult> {
+    const contract = new ethers.Contract(contractAddress, factoryABI, this._ethProvider);
+
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = ethers.BigNumber.from(number).toNumber();
+
+    try {
+      const value = await contract.getPool(key0, key1, key2, { blockTag: blockNumber });
+
+      return { value };
+    } catch (error: any) {
+      if (error.code === ethers.utils.Logger.errors.CALL_EXCEPTION) {
+        log('eth_call error');
+        log(error);
+
+        throw new Error(error.code);
+      }
+
+      throw error;
+    }
+  }
+
+  async positions (blockHash: string, contractAddress: string, tokenId: string): Promise<ValueResult> {
+    const contract = new ethers.Contract(contractAddress, nfpmABI, this._ethProvider);
+
+    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const blockNumber = ethers.BigNumber.from(number).toNumber();
+
+    try {
+      const value = await contract.positions(tokenId, { blockTag: blockNumber });
+
+      return { value };
+    } catch (error: any) {
+      if (error.code === ethers.utils.Logger.errors.CALL_EXCEPTION) {
+        log('eth_call error');
+        log(error);
+
+        throw new Error(error.code);
+      }
+
+      throw error;
+    }
   }
 
   async getContract (type: string): Promise<any> {
