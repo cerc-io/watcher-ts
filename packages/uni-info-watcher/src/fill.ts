@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -59,7 +60,7 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlPostgraphileEndpoint }, cache: cacheConfig, uniWatcher, tokenWatcher } = upstream;
+  const { ethServer: { gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig, uniWatcher, tokenWatcher } = upstream;
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
   const cache = await getCache(cacheConfig);
@@ -71,11 +72,12 @@ export const main = async (): Promise<any> => {
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;

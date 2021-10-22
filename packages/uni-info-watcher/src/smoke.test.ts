@@ -42,7 +42,7 @@ import {
   fetchTransaction
 } from '../test/utils';
 
-const CONFIG_FILE = './environments/local.toml';
+const CONFIG_FILE = './environments/test.toml';
 
 describe('uni-info-watcher', () => {
   let factory: Contract;

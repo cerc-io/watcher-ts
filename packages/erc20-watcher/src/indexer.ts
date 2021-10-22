@@ -7,7 +7,7 @@ import debug from 'debug';
 import { JsonFragment } from '@ethersproject/abi';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -60,7 +60,7 @@ export class Indexer {
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._serverMode = serverMode;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider);
 
     const { abi, storageLayout } = artifacts;
 
@@ -117,8 +117,7 @@ export class Indexer {
     log('balanceOf: db miss, fetching from upstream server');
     let result: ValueResult;
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = BigNumber.from(number).toNumber();
+    const { block: { number: blockNumber } } = await this._ethClient.getBlockByHash(blockHash);
 
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);
@@ -155,8 +154,7 @@ export class Indexer {
     log('allowance: db miss, fetching from upstream server');
     let result: ValueResult;
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
-    const blockNumber = BigNumber.from(number).toNumber();
+    const { block: { number: blockNumber } } = await this._ethClient.getBlockByHash(blockHash);
 
     if (this._serverMode === ETH_CALL_MODE) {
       const contract = new ethers.Contract(token, this._abi, this._ethProvider);

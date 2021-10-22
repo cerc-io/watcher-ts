@@ -11,6 +11,7 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
+import { getDefaultProvider } from 'ethers';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
@@ -56,7 +57,8 @@ export const main = async (): Promise<any> => {
   const {
     ethServer: {
       gqlApiEndpoint,
-      gqlPostgraphileEndpoint
+      gqlPostgraphileEndpoint,
+      rpcProviderEndpoint
     },
     uniWatcher,
     tokenWatcher,
@@ -75,7 +77,8 @@ export const main = async (): Promise<any> => {
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, mode);
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

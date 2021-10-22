@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { DeepPartial, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { utils } from 'ethers';
+import { providers, utils } from 'ethers';
 
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
@@ -47,7 +47,7 @@ export class Indexer implements IndexerInterface {
   _baseIndexer: BaseIndexer
   _isDemo: boolean
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, mode: string) {
+  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, ethProvider: providers.BaseProvider, mode: string) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
@@ -57,7 +57,7 @@ export class Indexer implements IndexerInterface {
     this._uniClient = uniClient;
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, ethProvider);
     this._isDemo = mode === 'demo';
   }
 

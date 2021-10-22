@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import { getDefaultProvider } from 'ethers';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
@@ -90,7 +91,21 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { uniWatcher: { gqlEndpoint, gqlSubscriptionEndpoint }, tokenWatcher, cache: cacheConfig, ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint } } = upstream;
+
+  const {
+    uniWatcher: {
+      gqlEndpoint,
+      gqlSubscriptionEndpoint
+    },
+    tokenWatcher,
+    cache: cacheConfig,
+    ethServer: {
+      gqlApiEndpoint,
+      gqlPostgraphileEndpoint,
+      rpcProviderEndpoint
+    }
+  } = upstream;
+
   assert(gqlEndpoint, 'Missing upstream uniWatcher.gqlEndpoint');
   assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
 
@@ -107,8 +122,9 @@ export const main = async (): Promise<any> => {
   });
 
   const erc20Client = new ERC20Client(tokenWatcher);
+  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

@@ -50,8 +50,8 @@ export class Indexer implements IndexerInterface {
     this._db = db;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient);
     this._ethProvider = ethProvider;
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
