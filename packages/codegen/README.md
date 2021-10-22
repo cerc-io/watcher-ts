@@ -21,7 +21,7 @@
 * Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active]
+  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port]
   ```
 
     * `input-file`(alias: `i`): Input contract file path or an URL (required).
@@ -30,6 +30,7 @@
     * `mode`(alias: `m`): Code generation mode (default: `all`).
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
     * `kind` (alias: `k`): Kind of watcher (default: `active`).
+    * `port` (alias: `p`): Server port (default: `3008`).
 
   **Note**: When passed an *URL* as `input-file`, it is assumed that it points to an already flattened contract file.
 
