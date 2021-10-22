@@ -62,6 +62,12 @@ const main = async (): Promise<void> => {
       default: KIND_ACTIVE,
       choices: [KIND_ACTIVE, KIND_LAZY]
     })
+    .option('port', {
+      alias: 'p',
+      describe: 'Server port.',
+      type: 'number',
+      default: 3008
+    })
     .option('flatten', {
       alias: 'f',
       describe: 'Flatten the input contract file.',
@@ -157,7 +163,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
-  exportConfig(argv.kind, path.basename(outputDir), outStream);
+  exportConfig(argv.kind, argv.port, path.basename(outputDir), outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))
