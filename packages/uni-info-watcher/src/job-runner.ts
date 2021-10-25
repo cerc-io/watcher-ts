@@ -7,7 +7,6 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { getDefaultProvider } from 'ethers';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
@@ -20,7 +19,8 @@ import {
   QUEUE_EVENT_PROCESSING,
   JobRunner as BaseJobRunner,
   JobQueueConfig,
-  DEFAULT_CONFIG_PATH
+  DEFAULT_CONFIG_PATH,
+  getCustomProvider
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -122,7 +122,7 @@ export const main = async (): Promise<any> => {
   });
 
   const erc20Client = new ERC20Client(tokenWatcher);
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
 

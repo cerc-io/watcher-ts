@@ -8,11 +8,12 @@ import path from 'path';
 import toml from 'toml';
 import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
-import { getDefaultProvider } from 'ethers';
 
 import { BaseProvider } from '@ethersproject/providers';
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+
+import { getCustomProvider } from './index';
 
 const log = debug('vulcanize:config');
 
@@ -99,7 +100,7 @@ export const getResetConfig = async (config: Config): Promise<{
     cache
   });
 
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   return {
     dbConfig,

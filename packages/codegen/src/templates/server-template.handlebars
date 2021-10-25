@@ -13,11 +13,10 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
-import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE, getCustomProvider } from '@vulcanize/util';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -68,7 +67,7 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 

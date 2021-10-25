@@ -6,9 +6,8 @@ import { expect, assert } from 'chai';
 import { AssertionError } from 'assert';
 import 'mocha';
 import _ from 'lodash';
-import { getDefaultProvider } from 'ethers';
 
-import { getConfig, JobQueue, JobRunner, JOB_KIND_PRUNE } from '@vulcanize/util';
+import { getConfig, getCustomProvider, JobQueue, JobRunner, JOB_KIND_PRUNE } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { insertNDummyBlocks, removeEntities } from '@vulcanize/util/test';
@@ -62,7 +61,7 @@ describe('chain pruning', () => {
       cache
     });
 
-    const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+    const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
     indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
     assert(indexer, 'Could not create indexer object.');

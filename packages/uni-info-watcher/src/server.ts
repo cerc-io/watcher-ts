@@ -11,12 +11,11 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
-import { getDefaultProvider } from 'ethers';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, getCustomProvider, JobQueue } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
 
 import typeDefs from './schema';
@@ -77,7 +76,7 @@ export const main = async (): Promise<any> => {
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider(rpcProviderEndpoint);
   const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');

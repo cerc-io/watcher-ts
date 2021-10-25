@@ -90,7 +90,7 @@ export class Indexer {
     let result: ValueResult;
 
     if (this._serverMode === ETH_CALL_MODE) {
-      const value = await fetchTokenTotalSupply(this._ethProvider, token);
+      const value = await fetchTokenTotalSupply(this._ethProvider, blockHash, token);
 
       result = { value };
     } else {
@@ -179,7 +179,7 @@ export class Indexer {
     let result: ValueResult;
 
     if (this._serverMode === ETH_CALL_MODE) {
-      const value = await fetchTokenName(this._ethProvider, token);
+      const value = await fetchTokenName(this._ethProvider, blockHash, token);
 
       result = { value };
     } else {
@@ -195,7 +195,7 @@ export class Indexer {
     let result: ValueResult;
 
     if (this._serverMode === ETH_CALL_MODE) {
-      const value = await fetchTokenSymbol(this._ethProvider, token);
+      const value = await fetchTokenSymbol(this._ethProvider, blockHash, token);
 
       result = { value };
     } else {
@@ -211,7 +211,7 @@ export class Indexer {
     let result: ValueResult;
 
     if (this._serverMode === ETH_CALL_MODE) {
-      const value = await fetchTokenDecimals(this._ethProvider, token);
+      const value = await fetchTokenDecimals(this._ethProvider, blockHash, token);
 
       result = { value };
     } else {

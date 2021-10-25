@@ -10,18 +10,18 @@ import ERC20SymbolBytesABI from '../artifacts/ERC20SymbolBytes.json';
 import ERC20NameBytesABI from '../artifacts/ERC20NameBytes.json';
 import { StaticTokenDefinition } from './static-token-definition';
 
-export const fetchTokenSymbol = async (ethProvider: BaseProvider, tokenAddress: string): Promise<string> => {
+export const fetchTokenSymbol = async (ethProvider: BaseProvider, blockHash: string, tokenAddress: string): Promise<string> => {
   const contract = new Contract(tokenAddress, abi, ethProvider);
   const contractSymbolBytes = new Contract(tokenAddress, ERC20SymbolBytesABI, ethProvider);
   let symbolValue = 'unknown';
 
   // Try types string and bytes32 for symbol.
   try {
-    const result = await contract.symbol();
+    const result = await contract.symbol({ blockTag: blockHash });
     symbolValue = result;
   } catch (error) {
     try {
-      const result = await contractSymbolBytes.symbol();
+      const result = await contractSymbolBytes.symbol({ blockTag: blockHash });
 
       // For broken pairs that have no symbol function exposed.
       if (!isNullEthValue(result)) {
@@ -42,18 +42,18 @@ export const fetchTokenSymbol = async (ethProvider: BaseProvider, tokenAddress: 
   return symbolValue;
 };
 
-export const fetchTokenName = async (ethProvider: BaseProvider, tokenAddress: string): Promise<string> => {
+export const fetchTokenName = async (ethProvider: BaseProvider, blockHash: string, tokenAddress: string): Promise<string> => {
   const contract = new Contract(tokenAddress, abi, ethProvider);
   const contractNameBytes = new Contract(tokenAddress, ERC20NameBytesABI, ethProvider);
   let nameValue = 'unknown';
 
   // Try types string and bytes32 for name.
   try {
-    const result = await contract.name();
+    const result = await contract.name({ blockTag: blockHash });
     nameValue = result;
   } catch (error) {
     try {
-      const result = await contractNameBytes.name();
+      const result = await contractNameBytes.name({ blockTag: blockHash });
 
       // For broken pairs that have no name function exposed.
       if (!isNullEthValue(result)) {
@@ -74,12 +74,12 @@ export const fetchTokenName = async (ethProvider: BaseProvider, tokenAddress: st
   return nameValue;
 };
 
-export const fetchTokenTotalSupply = async (ethProvider: BaseProvider, tokenAddress: string): Promise<bigint> => {
+export const fetchTokenTotalSupply = async (ethProvider: BaseProvider, blockHash: string, tokenAddress: string): Promise<bigint> => {
   const contract = new Contract(tokenAddress, abi, ethProvider);
   let totalSupplyValue = null;
 
   try {
-    const result = await contract.totalSupply();
+    const result = await contract.totalSupply({ blockTag: blockHash });
     totalSupplyValue = result.toString();
   } catch (error) {
     totalSupplyValue = 0;
@@ -88,14 +88,14 @@ export const fetchTokenTotalSupply = async (ethProvider: BaseProvider, tokenAddr
   return BigInt(totalSupplyValue);
 };
 
-export const fetchTokenDecimals = async (ethProvider: BaseProvider, tokenAddress: string): Promise<bigint> => {
+export const fetchTokenDecimals = async (ethProvider: BaseProvider, blockHash: string, tokenAddress: string): Promise<bigint> => {
   const contract = new Contract(tokenAddress, abi, ethProvider);
 
   // Try types uint8 for decimals.
   let decimalValue = null;
 
   try {
-    const result = await contract.decimals();
+    const result = await contract.decimals({ blockTag: blockHash });
     decimalValue = result.toString();
   } catch (error) {
     // Try with the static definition.

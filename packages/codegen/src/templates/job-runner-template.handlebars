@@ -7,7 +7,6 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { getDefaultProvider } from 'ethers';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -18,7 +17,8 @@ import {
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   JobQueueConfig,
-  DEFAULT_CONFIG_PATH
+  DEFAULT_CONFIG_PATH,
+  getCustomProvider
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -106,7 +106,7 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider(rpcProviderEndpoint);
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 
   assert(jobQueueConfig, 'Missing job queue config');

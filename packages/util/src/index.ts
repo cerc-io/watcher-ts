@@ -7,6 +7,7 @@ import Decimal from 'decimal.js';
 import { ValueTransformer } from 'typeorm';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { utils, getDefaultProvider, providers } from 'ethers';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
 import { Config } from './config';
@@ -84,3 +85,32 @@ export const getResetYargs = (): yargs.Argv => {
       }
     });
 };
+
+export const getCustomProvider = (network?: providers.Network | string, options?: any): providers.BaseProvider => {
+  const provider = getDefaultProvider(network, options);
+  provider.formatter = new CustomFormatter();
+  return provider;
+};
+
+class CustomFormatter extends providers.Formatter {
+  blockTag (blockTag: any): string {
+    if (blockTag == null) { return 'latest'; }
+
+    if (blockTag === 'earliest') { return '0x0'; }
+
+    if (blockTag === 'latest' || blockTag === 'pending') {
+      return blockTag;
+    }
+
+    if (typeof (blockTag) === 'number' || utils.isHexString(blockTag)) {
+      // Return value if hex string is of block hash length.
+      if (utils.isHexString(blockTag) && utils.hexDataLength(blockTag) === 32) {
+        return blockTag;
+      }
+
+      return utils.hexValue(<number | string>blockTag);
+    }
+
+    throw new Error('invalid blockTag');
+  }
+}
