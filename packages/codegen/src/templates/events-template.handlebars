@@ -16,6 +16,7 @@ import {
   QUEUE_HOOKS,
   UNKNOWN_EVENT_NAME,
   UpstreamConfig
+  JOB_KIND_PRUNE
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -75,6 +76,23 @@ export class EventWatcher {
       }
 
       await this._baseEventWatcher.blockProcessingCompleteHandler(job);
+
+      const { data: { request: { data: { kind } } } } = job;
+
+      // If it's a pruning job:
+      // Create a hook job for the latest canonical block.
+      if (kind === JOB_KIND_PRUNE) {
+        const syncStatus = await this._indexer.getSyncStatus();
+        assert(syncStatus);
+
+        this._jobQueue.pushJob(
+          QUEUE_HOOKS,
+          {
+            blockHash: syncStatus.latestCanonicalBlockHash,
+            blockNumber: syncStatus.latestCanonicalBlockNumber
+          }
+        );
+      }
     });
   }
 
@@ -88,11 +106,6 @@ export class EventWatcher {
       }
 
       const dbEvent = await this._baseEventWatcher.eventProcessingCompleteHandler(job);
-
-      // If the block is marked as complete, push a post-block hook job.
-      if (dbEvent.block.isComplete) {
-        await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash: dbEvent.block.blockHash, blockNumber: dbEvent.block.blockNumber });
-      }
 
       const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
       log(`Job onComplete event ${request.data.id} publish ${!!request.data.publish}`);
@@ -109,14 +122,18 @@ export class EventWatcher {
 
   async initHooksOnCompleteHandler (): Promise<void> {
     this._jobQueue.onComplete(QUEUE_HOOKS, async (job) => {
-      const { data: { request: { data: { blockHash, blockNumber } } } } = job;
+      const { data: { request: { data: { blockNumber, blockHash } } } } = job;
 
       await this._indexer.updateHookStatusProcessedBlock(blockNumber);
 
-      // Push checkpointing job only after post-block hook job is marked complete and checkpointing is on.
-      if (this._indexer._serverConfig.checkpointing) {
-        this._jobQueue.pushJob(QUEUE_BLOCK_CHECKPOINT, { blockHash });
-      }
+      // Create a checkpoint job after completion of a hook job.
+      this._jobQueue.pushJob(
+        QUEUE_BLOCK_CHECKPOINT,
+        {
+          blockHash,
+          blockNumber
+        }
+      );
     });
   }
 

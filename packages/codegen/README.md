@@ -82,7 +82,7 @@
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in `src/hooks.ts` to perform corresponding indexing using the `Indexer` object.
 
-  * While using the indexer storage methods for indexing, pass the optional arg. `state` as `diff` or `checkpoint` if default state is desired to be generated using the state variables being indexed else pass `none`.
+  * While using the indexer storage methods for indexing, pass `diff` as true if default state is desired to be generated using the state variables being indexed.
 
 * Generating state:
 
@@ -131,6 +131,20 @@
     ```bash
     yarn checkpoint --address <contract-address> --block-hash [block-hash]
     ```
+  
+  * To reset the watcher to a previous block number:
+
+    * Reset state:
+
+      ```bash
+      yarn reset state --block-number <previous-block-number>
+      ```
+
+    * Reset job-queue:
+
+      ```bash
+      yarn reset job-queue --block-number <previous-block-number>
+      ```
 
 ## Known Issues
 
