@@ -74,6 +74,11 @@ export const main = async (): Promise<any> => {
     cache
   });
 
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
@@ -88,7 +93,7 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   const pubSub = new PubSub();
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubSub, jobQueue);
+  const eventWatcher = new EventWatcher(upstream, ethClient, postgraphileClient, indexer, pubSub, jobQueue);
   await eventWatcher.start();
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);

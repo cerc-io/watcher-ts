@@ -2,22 +2,20 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import debug from 'debug';
 import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
-import { JOB_KIND_INDEX, QUEUE_BLOCK_PROCESSING } from './constants';
 import { EventWatcherInterface, IndexerInterface } from './types';
-
-const log = debug('vulcanize:fill');
+import { processBlockByNumber } from './common';
 
 export const fillBlocks = async (
   jobQueue: JobQueue,
   indexer: IndexerInterface,
   ethClient: EthClient,
   eventWatcher: EventWatcherInterface,
+  blockDelayInMilliSecs: number,
   { startBlock, endBlock }: { startBlock: number, endBlock: number}
 ): Promise<any> => {
   assert(startBlock < endBlock, 'endBlock should be greater than startBlock');
@@ -36,7 +34,7 @@ export const fillBlocks = async (
     currentBlockNumber = syncStatus.latestIndexedBlockNumber + 1;
   }
 
-  processBlockByNumber(jobQueue, indexer, ethClient, currentBlockNumber);
+  processBlockByNumber(jobQueue, indexer, ethClient, blockDelayInMilliSecs, currentBlockNumber);
 
   // Creating an AsyncIterable from AsyncIterator to iterate over the values.
   // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -57,39 +55,7 @@ export const fillBlocks = async (
       }
 
       currentBlockNumber++;
-      processBlockByNumber(jobQueue, indexer, ethClient, currentBlockNumber);
-    }
-  }
-};
-
-/**
- * Method to fetch block by number and push to job queue.
- * @param jobQueue
- * @param indexer
- * @param ethClient
- * @param blockNumber
- */
-const processBlockByNumber = async (
-  jobQueue: JobQueue,
-  indexer: IndexerInterface,
-  ethClient: EthClient,
-  blockNumber: number
-) => {
-  log(`Fill block ${blockNumber}`);
-
-  const result = await ethClient.getBlocksByNumber(blockNumber);
-  const { allEthHeaderCids: { nodes: blockNodes } } = result;
-
-  for (let bi = 0; bi < blockNodes.length; bi++) {
-    const { blockHash, blockNumber, parentHash, timestamp } = blockNodes[bi];
-    const blockProgress = await indexer.getBlockProgress(blockHash);
-
-    if (blockProgress) {
-      log(`Block number ${blockNumber}, block hash ${blockHash} already known, skip filling`);
-    } else {
-      await indexer.updateSyncStatusChainHead(blockHash, blockNumber);
-
-      await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
+      processBlockByNumber(jobQueue, indexer, ethClient, blockDelayInMilliSecs, currentBlockNumber);
     }
   }
 };

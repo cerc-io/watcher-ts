@@ -1,5 +1,13 @@
-import { JOB_KIND_PRUNE, QUEUE_BLOCK_PROCESSING } from './constants';
+import debug from 'debug';
+
+import { EthClient } from '@vulcanize/ipld-eth-client';
+
+import { JOB_KIND_PRUNE, QUEUE_BLOCK_PROCESSING, JOB_KIND_INDEX } from './constants';
 import { JobQueue } from './job-queue';
+import { IndexerInterface } from './types';
+import { wait } from './misc';
+
+const log = debug('vulcanize:common');
 
 /**
  * Create pruning job in QUEUE_BLOCK_PROCESSING.
@@ -23,4 +31,47 @@ export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockN
       priority: newPriority
     }
   );
+};
+
+/**
+ * Method to fetch block by number and push to job queue.
+ * @param jobQueue
+ * @param indexer
+ * @param ethClient
+ * @param blockNumber
+ */
+export const processBlockByNumber = async (
+  jobQueue: JobQueue,
+  indexer: IndexerInterface,
+  ethClient: EthClient,
+  blockDelayInMilliSecs: number,
+  blockNumber: number
+): Promise<void> => {
+  log(`Process block ${blockNumber}`);
+
+  while (true) {
+    const result = await ethClient.getBlocksByNumber(blockNumber);
+    const { allEthHeaderCids: { nodes: blockNodes } } = result;
+
+    if (blockNodes.length) {
+      for (let bi = 0; bi < blockNodes.length; bi++) {
+        const { blockHash, blockNumber, parentHash, timestamp } = blockNodes[bi];
+        const blockProgress = await indexer.getBlockProgress(blockHash);
+
+        if (blockProgress) {
+          log(`Block number ${blockNumber}, block hash ${blockHash} already processed`);
+        } else {
+          await indexer.updateSyncStatusChainHead(blockHash, blockNumber);
+
+          await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
+        }
+      }
+
+      return;
+    }
+
+    log(`No blocks fetched for block number ${blockNumber}, retrying after ${blockDelayInMilliSecs} ms delay.`);
+
+    await wait(blockDelayInMilliSecs);
+  }
 };

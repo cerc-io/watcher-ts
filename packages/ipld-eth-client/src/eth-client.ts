@@ -76,7 +76,7 @@ export class EthClient {
     return this._graphqlClient.query(ethQueries.getBlocksByNumber, { blockNumber });
   }
 
-  async getBlockByHash (blockHash: string): Promise<any> {
+  async getBlockByHash (blockHash?: string): Promise<any> {
     const { block } = await this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
     block.number = parseInt(block.number, 16);
     block.timestamp = parseInt(block.timestamp, 16);

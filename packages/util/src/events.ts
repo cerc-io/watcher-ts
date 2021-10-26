@@ -5,14 +5,14 @@
 import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
-import _ from 'lodash';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
-import { QUEUE_BLOCK_PROCESSING, MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX } from './constants';
-import { createPruningJob } from './common';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX } from './constants';
+import { createPruningJob, processBlockByNumber } from './common';
+import { UpstreamConfig } from './config';
 
 const log = debug('vulcanize:events');
 
@@ -20,13 +20,17 @@ export const BlockProgressEvent = 'block-progress-event';
 
 export class EventWatcher {
   _ethClient: EthClient
+  _postgraphileClient: EthClient
   _indexer: IndexerInterface
   _subscription?: ZenObservable.Subscription
   _pubsub: PubSub
   _jobQueue: JobQueue
+  _upstreamConfig: UpstreamConfig
 
-  constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+  constructor (upstreamConfig: UpstreamConfig, ethClient: EthClient, postgraphileClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+    this._upstreamConfig = upstreamConfig;
     this._ethClient = ethClient;
+    this._postgraphileClient = postgraphileClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
@@ -36,14 +40,45 @@ export class EventWatcher {
     return this._pubsub.asyncIterator([BlockProgressEvent]);
   }
 
-  async blocksHandler (value: any): Promise<void> {
-    const { blockHash, blockNumber, parentHash, timestamp } = _.get(value, 'data.listen.relatedNode');
+  async stop (): Promise<void> {
+    if (this._subscription) {
+      log('Stopped watching upstream blocks');
+      this._subscription.unsubscribe();
+    }
+  }
 
-    await this._indexer.updateSyncStatusChainHead(blockHash, blockNumber);
+  async startBlockProcessing (): Promise<void> {
+    const syncStatus = await this._indexer.getSyncStatus();
+    let blockNumber;
 
-    log('watchBlock', blockHash, blockNumber);
+    if (!syncStatus) {
+      // Get latest block in chain.
+      const { block: currentBlock } = await this._ethClient.getBlockByHash();
+      blockNumber = currentBlock.number + 1;
+    } else {
+      blockNumber = syncStatus.latestIndexedBlockNumber + 1;
+    }
 
-    await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
+    const { ethServer: { blockDelayInMilliSecs } } = this._upstreamConfig;
+
+    processBlockByNumber(this._jobQueue, this._indexer, this._postgraphileClient, blockDelayInMilliSecs, blockNumber + 1);
+
+    // Creating an AsyncIterable from AsyncIterator to iterate over the values.
+    // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
+    const blockProgressEventIterable = {
+      // getBlockProgressEventIterator returns an AsyncIterator which can be used to listen to BlockProgress events.
+      [Symbol.asyncIterator]: this.getBlockProgressEventIterator.bind(this)
+    };
+
+    // Iterate over async iterable.
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of
+    for await (const data of blockProgressEventIterable) {
+      const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
+
+      if (isComplete) {
+        processBlockByNumber(this._jobQueue, this._indexer, this._postgraphileClient, blockDelayInMilliSecs, blockNumber + 1);
+      }
+    }
   }
 
   async blockProcessingCompleteHandler (job: any): Promise<void> {
@@ -129,12 +164,5 @@ export class EventWatcher {
     const [block] = blocks;
 
     await this._indexer.updateSyncStatusCanonicalBlock(block.blockHash, block.blockNumber);
-  }
-
-  async stop (): Promise<void> {
-    if (this._subscription) {
-      log('Stopped watching upstream blocks');
-      this._subscription.unsubscribe();
-    }
   }
 }

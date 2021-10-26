@@ -34,8 +34,8 @@ export class Indexer {
   constructor (db: DatabaseInterface, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
     this._db = db;
     this._ethClient = ethClient;
-    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
     this._ethProvider = ethProvider;
+    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {

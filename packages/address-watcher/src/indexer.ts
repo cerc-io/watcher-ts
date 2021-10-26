@@ -31,8 +31,8 @@ export class Indexer {
 
     this._db = db;
     this._ethClient = ethClient;
-    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
     this._tracingClient = tracingClient;
+    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
   async isWatchedAddress (address : string): Promise<boolean> {

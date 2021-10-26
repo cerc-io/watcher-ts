@@ -12,7 +12,8 @@ import {
   EventWatcher as BaseEventWatcher,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
-  EventWatcherInterface
+  EventWatcherInterface,
+  UpstreamConfig
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -30,12 +31,12 @@ export class EventWatcher implements EventWatcherInterface {
   _jobQueue: JobQueue
   _baseEventWatcher: BaseEventWatcher
 
-  constructor (ethClient: EthClient, indexer: Indexer, pubsub: PubSub, jobQueue: JobQueue) {
+  constructor (upstreamConfig: UpstreamConfig, ethClient: EthClient, postgraphileClient: EthClient, indexer: Indexer, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
-    this._baseEventWatcher = new BaseEventWatcher(this._ethClient, this._indexer, this._pubsub, this._jobQueue);
+    this._baseEventWatcher = new BaseEventWatcher(upstreamConfig, this._ethClient, postgraphileClient, this._indexer, this._pubsub, this._jobQueue);
   }
 
   getEventIterator (): AsyncIterator<any> {
@@ -49,20 +50,13 @@ export class EventWatcher implements EventWatcherInterface {
   async start (): Promise<void> {
     assert(!this._subscription, 'subscription already started');
 
-    await this.watchBlocksAtChainHead();
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
+    this._baseEventWatcher.startBlockProcessing();
   }
 
   async stop (): Promise<void> {
     this._baseEventWatcher.stop();
-  }
-
-  async watchBlocksAtChainHead (): Promise<void> {
-    log('Started watching upstream blocks...');
-    this._subscription = await this._ethClient.watchBlocks(async (value) => {
-      await this._baseEventWatcher.blocksHandler(value);
-    });
   }
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {

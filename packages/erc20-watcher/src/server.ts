@@ -62,6 +62,11 @@ export const main = async (): Promise<any> => {
     cache
   });
 
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
@@ -75,7 +80,7 @@ export const main = async (): Promise<any> => {
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();

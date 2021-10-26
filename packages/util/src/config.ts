@@ -13,7 +13,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
-import { getCustomProvider } from './index';
+import { getCustomProvider } from './misc';
 
 const log = debug('vulcanize:config');
 
@@ -30,12 +30,13 @@ interface ServerConfig {
   kind: string;
 }
 
-interface UpstreamConfig {
+export interface UpstreamConfig {
   cache: CacheConfig,
   ethServer: {
     gqlApiEndpoint: string;
     gqlPostgraphileEndpoint: string;
-    rpcProviderEndpoint: string
+    rpcProviderEndpoint: string;
+    blockDelayInMilliSecs: number;
   }
   traceProviderEndpoint: string;
   uniWatcher: {

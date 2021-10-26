@@ -35,9 +35,9 @@ export class JobRunner {
   _jobQueueConfig: JobQueueConfig
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: Indexer, jobQueue: JobQueue) {
+    this._jobQueueConfig = jobQueueConfig;
     this._indexer = indexer;
     this._jobQueue = jobQueue;
-    this._jobQueueConfig = jobQueueConfig;
     this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this._jobQueue);
   }
 
