@@ -15,8 +15,7 @@ import {
   MAX_REORG_DEPTH,
   UNKNOWN_EVENT_NAME,
   QUEUE_BLOCK_PROCESSING,
-  QUEUE_EVENT_PROCESSING,
-  QUEUE_HOOKS
+  QUEUE_EVENT_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
@@ -233,11 +232,6 @@ export class JobRunner {
     // Check if block has unprocessed events.
     if (blockProgress.numProcessedEvents < blockProgress.numEvents) {
       await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
-    }
-
-    if (!blockProgress.numEvents) {
-      // Push post-block hook and checkpointing jobs if there are no events as the block is already marked as complete.
-      await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash, blockNumber });
     }
 
     const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();

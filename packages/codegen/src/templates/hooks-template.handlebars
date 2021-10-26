@@ -7,7 +7,6 @@ import assert from 'assert';
 import { UNKNOWN_EVENT_NAME, updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
-import { BlockProgress } from './entity/BlockProgress';
 
 const ACCOUNTS = [
   '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc'
@@ -19,9 +18,9 @@ const ACCOUNTS = [
  * @param block Concerned block.
  * @param contractAddress Address of the concerned contract.
  */
-export async function createInitialCheckpoint (indexer: Indexer, block: BlockProgress, contractAddress: string): Promise<void> {
+export async function createInitialCheckpoint (indexer: Indexer, contractAddress: string, blockHash: string): Promise<void> {
   assert(indexer);
-  assert(block);
+  assert(blockHash);
   assert(contractAddress);
 
   // Store the initial state values in an IPLDBlock.
@@ -29,12 +28,11 @@ export async function createInitialCheckpoint (indexer: Indexer, block: BlockPro
 
   // Setting the initial balances of accounts.
   for (const account of ACCOUNTS) {
-    const balance = await indexer._balances(block.blockHash, contractAddress, account);
+    const balance = await indexer._balances(blockHash, contractAddress, account);
     ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [account], balance.value.toString());
   }
 
-  const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData, 'checkpoint');
-  await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+  await indexer.createCheckpoint(contractAddress, blockHash, ipldBlockData);
 }
 
 /**
@@ -59,7 +57,6 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
       continue;
     }
 
-    const block = event.block;
     const contractAddress = event.contract;
 
     const eventData = indexer.getResultEvent(event);
@@ -102,8 +99,7 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
       }
     }
 
-    const ipldBlock = await indexer.prepareIPLDBlock(block, contractAddress, ipldBlockData, 'diff');
-    await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+    await indexer.createDiff(contractAddress, blockHash, ipldBlockData);
   }
 }
 
