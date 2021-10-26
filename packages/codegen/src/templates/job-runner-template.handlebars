@@ -78,14 +78,14 @@ export class JobRunner {
 
       const hookStatus = await this._indexer.getHookStatus();
 
-      if (hookStatus && hookStatus.latestProcessedBlockNumber !== blockNumber - 1) {
+      if (hookStatus && hookStatus.latestProcessedBlockNumber < (blockNumber - 1)) {
         const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
         log(message);
 
         throw new Error(message);
       }
 
-      await this._indexer.processBlock(job);
+      await this._indexer.processCanonicalBlock(job);
 
       await this._jobQueue.markComplete(job);
     });
