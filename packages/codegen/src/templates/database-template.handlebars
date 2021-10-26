@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, In, Between } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, MoreThan } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase, MAX_REORG_DEPTH } from '@vulcanize/util';
@@ -83,17 +83,22 @@ export class Database {
     return repo.find({ where, relations: ['block'] });
   }
 
-  async getLatestCheckpoint (queryRunner: QueryRunner, contractAddress: string): Promise<IPLDBlock | undefined> {
-    // Get the latest checkpoints for a contract.
-    const result = await queryRunner.manager.createQueryBuilder(IPLDBlock, 'ipld_block')
+  async getLastIPLDBlock (contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    let queryBuilder = repo.createQueryBuilder('ipld_block')
       .leftJoinAndSelect('ipld_block.block', 'block')
       .where('block.is_pruned = false')
-      .andWhere('ipld_block.contractAddress = :contractAddress', { contractAddress })
-      .andWhere('ipld_block.kind = :kind', { kind: 'checkpoint' })
-      .orderBy('ipld_block.block_id', 'DESC')
-      .getOne();
+      .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
+      .orderBy('block.block_number', 'DESC');
 
-    return result;
+    // Filter using kind if specified else order by id to give preference to checkpoint.
+    queryBuilder = kind
+      ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: 'diff_staged' })
+        .addOrderBy('ipld_block.id', 'DESC');
+
+    return queryBuilder.getOne();
   }
 
   async getPrevIPLDBlock (queryRunner: QueryRunner, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
@@ -172,67 +177,23 @@ export class Database {
     return result;
   }
 
-  async getPrevIPLDBlocksAfterCheckpoint (queryRunner: QueryRunner, blockHash: string, checkpointBlockNumber: number, contractAddress: string): Promise<IPLDBlock[]> {
-    const heirerchicalQuery = `
-      WITH RECURSIVE cte_query AS
-      (
-        SELECT
-          b.block_hash,
-          b.block_number,
-          b.parent_hash,
-          1 as depth,
-          i.id
-        FROM
-          block_progress b
-          LEFT JOIN
-            ipld_block i ON i.block_id = b.id
-            AND i.contract_address = $2
-        WHERE
-          b.block_hash = $1
-        UNION ALL
-          SELECT
-            b.block_hash,
-            b.block_number,
-            b.parent_hash,
-            c.depth + 1,
-            i.id
-          FROM
-            block_progress b
-            LEFT JOIN
-              ipld_block i
-              ON i.block_id = b.id
-              AND i.contract_address = $2
-            INNER JOIN
-              cte_query c ON c.parent_hash = b.block_hash
-            WHERE
-              c.depth < $3
-      )
-      SELECT
-        block_number, id
-      FROM
-        cte_query
-      ORDER BY block_number ASC
-    `;
+  async getPrevIPLDBlocksAfterCheckpoint (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
+    const repo = this._conn.getRepository(IPLDBlock);
 
-    // Fetching ids for previous IPLDBlocks in the frothy region.
-    const queryResult = await queryRunner.query(heirerchicalQuery, [blockHash, contractAddress, MAX_REORG_DEPTH]);
-
-    let frothyIds = queryResult.map((obj: any) => obj.id);
-    frothyIds = frothyIds.filter((id: any) => id !== null);
-
-    const frothyBlockNumber = queryResult[0].block_number;
-
-    // Fetching all diff blocks after checkpoint till current blockNumber.
-    const ipldBlocks = await queryRunner.manager.find(IPLDBlock, {
+    return repo.find({
       relations: ['block'],
-      where: [
-        { contractAddress, block: { isPruned: false, blockNumber: Between(checkpointBlockNumber + 1, frothyBlockNumber - 1) } },
-        { id: In(frothyIds) }
-      ],
-      order: { block: 'ASC' }
+      where: {
+        contractAddress,
+        kind: 'diff',
+        block: {
+          isPruned: false,
+          blockNumber: MoreThan(checkpointBlockNumber)
+        }
+      },
+      order: {
+        block: 'ASC'
+      }
     });
-
-    return ipldBlocks;
   }
 
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
@@ -266,6 +227,11 @@ export class Database {
   async getContracts (where: FindConditions<Contract>): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
     return repo.find({ where });
+  }
+
+  async getLastCompleteBlock (): Promise<BlockProgress | undefined> {
+    const repo = this._conn.getRepository(BlockProgress);
+    return repo.findOne({ where: { isComplete: true }, order: { blockNumber: 'DESC' } });
   }
 
   async getContract (address: string): Promise<Contract | undefined> {
@@ -361,11 +327,6 @@ export class Database {
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
     const repo = this._conn.getRepository(BlockProgress);
     return this._baseDatabase.getBlockProgress(repo, blockHash);
-  }
-
-  async getLatestBlockProgress (): Promise<BlockProgress | undefined> {
-    const repo = this._conn.getRepository(BlockProgress);
-    return repo.findOne({ order: { blockNumber: 'DESC' } });
   }
 
   async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {

@@ -13,8 +13,7 @@ import {
   JOB_KIND_PRUNE,
   MAX_REORG_DEPTH,
   QUEUE_BLOCK_PROCESSING,
-  QUEUE_EVENT_PROCESSING,
-  QUEUE_HOOKS
+  QUEUE_EVENT_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
@@ -191,11 +190,6 @@ export class JobRunner {
 
       for (let ei = 0; ei < events.length; ei++) {
         await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
-      }
-
-      // Push post-block hook job if there are no events as the block is already marked as complete.
-      if (!events.length) {
-        await this._jobQueue.pushJob(QUEUE_HOOKS, { blockHash, blockNumber });
       }
     }
   }
