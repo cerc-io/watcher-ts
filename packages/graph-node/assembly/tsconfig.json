@@ -1,5 +1,5 @@
 {
-  "extends": "@deep-stack/assemblyscript/std/assembly.json",
+  "extends": "@vulcanize/assemblyscript/std/assembly.json",
   "include": [
     "./**/*.ts"
   ]

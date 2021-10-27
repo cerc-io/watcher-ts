@@ -29,6 +29,6 @@
     "build:example": "cd test/subgraph/example1 && yarn && yarn build"
   },
   "dependencies": {
-    "@deep-stack/assemblyscript": "0.0.1"
+    "@vulcanize/assemblyscript": "0.0.1"
   }
 }

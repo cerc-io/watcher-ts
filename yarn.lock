@@ -202,15 +202,6 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@deep-stack/assemblyscript@0.0.1":
-  version "0.0.1"
-  resolved "https://npm.pkg.github.com/download/@deep-stack/assemblyscript/0.0.1/09ffe8303d6f218b38e03a8f01a2083e7a9487565c2757a326c977e632460ff2#6320be42edd039000556b70700713143a520bd75"
-  integrity sha512-3hKePGYImMkPq2dPnbctCvistY58FqDBuH2OBp/1CELbSrajPqbtZ0JJ/NHRPq2/btfXYHdckAKJM6Qyn1UJBw==
-  dependencies:
-    asyncify-wasm "^1.2.1"
-    binaryen "101.0.0-nightly.20210723"
-    long "^4.0.0"
-
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.yarnpkg.com/@ensdomains/ens/-/ens-0.4.5.tgz#e0aebc005afdc066447c6e22feb4eda89a5edbfc"
@@ -2837,6 +2828,15 @@
   version "3.2.7"
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.2.7.tgz#c792bf92d19025e7940358536d468218a11eeedb"
   integrity sha512-YwGOcNZjOY/MmadpzFBXWyHEwZSf0lVU4XF5zpD7tXC9dmqjdo38Jkk06wATu4LYHDPW4emXKMB5YLFPWPkwFA==
+
+"@vulcanize/assemblyscript@0.0.1":
+  version "0.0.1"
+  resolved "https://npm.pkg.github.com/download/@vulcanize/assemblyscript/0.0.1/f1dc67712e8582a0748a9eeac772920b4a33baf03aba382b5086a8d0054e43b5#c98f2a706f797ba205f49b86a9de7093e7033726"
+  integrity sha512-CCTyGjUH9NPASd3YRx2YeJQquEeiPRcQ5DaZjQn2c/PHOdSAoKStU/9JkO1+oKTDhuF/eEX7LZh09NeojWjibg==
+  dependencies:
+    asyncify-wasm "^1.2.1"
+    binaryen "101.0.0-nightly.20210723"
+    long "^4.0.0"
 
 "@wry/context@^0.6.0":
   version "0.6.0"
