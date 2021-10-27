@@ -1,5 +1,12 @@
 import { BigNumber } from 'ethers';
+import path from 'path';
+import fs from 'fs-extra';
+import toml from 'toml';
+import debug from 'debug';
+
 import { TypeId, ValueKind } from './types';
+
+const log = debug('vulcanize:utils');
 
 interface EventParam {
   name: string;
@@ -214,4 +221,18 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
 
   // For string type.
   return ethereum.Value.fromString(await __newString(value));
+};
+
+export const getSubgraphConfig = async (filePath: string): Promise<any> => {
+  const configFilePath = path.resolve(filePath);
+  const fileExists = await fs.pathExists(configFilePath);
+
+  if (!fileExists) {
+    throw new Error(`Config file not found: ${configFilePath}`);
+  }
+
+  const config = toml.parse(await fs.readFile(configFilePath, 'utf8'));
+  log('config', JSON.stringify(config, null, 2));
+
+  return config;
 };
