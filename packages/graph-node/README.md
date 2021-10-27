@@ -23,7 +23,7 @@
 
 3. To deploy contracts for eden subgraph use https://github.com/vulcanize/governance
 
-4. Follow the steps in https://github.com/vulcanize/governance/tree/ng-deploy-contracts#instructions
+4. Follow the steps in https://github.com/vulcanize/governance/tree/watcher-ts#instructions
 
 5. Set the contract addresses for eden contracts in .env file from `deployments/localhost` directory in the governance repository.
 
