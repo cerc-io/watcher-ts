@@ -2,6 +2,16 @@
 
 ## Setup
 
+There are packages used from github so we need to follow the following steps to install them:
+
+* To install this package we need to follow steps required to install github packages.
+
+  https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#installing-a-package
+
+* We will need to authenticate to github packages. Follow the steps in https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages.
+
+  Use personal access token to authenticate to github packages ( https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token).
+
 This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
 
 Install packages (Node.JS v15.11.0):

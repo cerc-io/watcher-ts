@@ -2,33 +2,66 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import fs from 'fs/promises';
-import loader from 'assemblyscript/lib/loader';
+import loader from '@vulcanize/assemblyscript/lib/loader';
 import {
   utils,
   BigNumber,
   getDefaultProvider,
-  Contract
+  Contract,
+  ContractInterface
 } from 'ethers';
 
 import { TypeId } from './types';
-import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+import { fromEthereumValue, toEthereumValue } from './utils';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
 type idOfType = (TypeId: number) => number
 
-export const instantiate = async (filePath: string): Promise<loader.ResultObject & { exports: any }> => {
+interface DataSource {
+  address: string
+}
+
+interface GraphData {
+  abis?: {[key: string]: ContractInterface};
+  dataSource?: DataSource;
+}
+
+export const instantiate = async (filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+  const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
 
   const imports: WebAssembly.Imports = {
     index: {
-      'store.get': () => {
+      'store.get': async (entity: number, id: number) => {
         console.log('store.get');
+
+        const entityString = __getString(entity);
+        console.log('entity:', entityString);
+        const idString = __getString(id);
+        console.log('id:', idString);
+
+        // TODO: Implement store get to fetch from DB using entity and id.
+
+        // TODO: Fill entity with field values.
+        // return Entity.__new()
+        return null;
       },
-      'store.set': () => {
+      'store.set': async (entity: number, id: number, data: number) => {
         console.log('store.set');
+
+        const entityString = __getString(entity);
+        console.log('entity:', entityString);
+        const idString = __getString(id);
+        console.log('id:', idString);
+        const entityInstance = await Entity.wrap(data);
+        const entityInstanceId = __getString(await entityInstance.getString(await __newString('id')));
+        console.log('entity instance id:', entityInstanceId);
+
+        // TODO: Implement store set to save entity in db with values from entityInstance.
       },
 
       'typeConversion.stringToH160': () => {
@@ -110,16 +143,22 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
         const contractName = __getString(await smartContractCall.contractName);
         const functionName = __getString(await smartContractCall.functionName);
         const functionSignature = __getString(await smartContractCall.functionSignature);
-        const functionParams = __getArray(await smartContractCall.functionParams);
+        let functionParams = __getArray(await smartContractCall.functionParams);
 
         console.log('ethereum.call params');
-        console.log('contractName:', contractName);
         console.log('functionSignature:', functionSignature);
 
-        // TODO: Get ABI according to contractName.
-        const contract = new Contract(__getString(await contractAddress.toHexString()), exampleAbi, provider);
+        const abi = abis[contractName];
+        const contract = new Contract(__getString(await contractAddress.toHexString()), abi, provider);
 
         try {
+          const functionParamsPromise = functionParams.map(async param => {
+            const ethereumValue = await ethereum.Value.wrap(param);
+            return fromEthereumValue(exports, ethereumValue);
+          });
+
+          functionParams = await Promise.all(functionParamsPromise);
+
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
 
@@ -127,11 +166,13 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
             result = [result];
           }
 
-          const resultPtrArrayPromise = result.map(async (value: any) => {
-            // TODO: Create Value instance according to return type.
-            const ethValue = await ethereum.Value.fromString(await __newString(value));
+          // TODO: Check for function overloading.
+          // Using function signature does not work.
+          const outputs = contract.interface.getFunction(functionName).outputs;
 
-            return ethValue;
+          const resultPtrArrayPromise = result.map(async (value: any, index: number) => {
+            assert(outputs);
+            return toEthereumValue(exports, value, outputs[index].type);
           });
 
           const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);
@@ -182,15 +223,15 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     numbers: {
-      'bigDecimal.dividedBy': (x: number, y: number) => {
+      'bigDecimal.dividedBy': async (x: number, y: number) => {
         console.log('numbers bigDecimal.dividedBy');
 
         const bigDecimaly = BigDecimal.wrap(y);
 
-        const yDigitsBigIntArray = __getArray(bigDecimaly.digits);
+        const yDigitsBigIntArray = __getArray(await bigDecimaly.digits);
         const yDigits = BigNumber.from(yDigitsBigIntArray);
 
-        const yExpBigIntArray = __getArray(bigDecimaly.exp);
+        const yExpBigIntArray = __getArray(await bigDecimaly.exp);
         const yExp = BigNumber.from(yExpBigIntArray);
 
         console.log('y digits and exp', yDigits, yExp);
@@ -298,8 +339,9 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
       }
     },
     datasource: {
-      'dataSource.address': () => {
-        console.log('dataSource.address');
+      'dataSource.address': async () => {
+        assert(dataSource);
+        return Address.fromString(await __newString(dataSource.address));
       }
     }
   };
@@ -309,11 +351,13 @@ export const instantiate = async (filePath: string): Promise<loader.ResultObject
 
   const { __getString, __newString, __getArray, __newArray } = exports;
 
+  // TODO: Assign from types file generated by graph-cli
   const getIdOfType: idOfType = exports.id_of_type as idOfType;
   const BigDecimal: any = exports.BigDecimal as any;
   const BigInt: any = exports.BigInt as any;
   const Address: any = exports.Address as any;
   const ethereum: any = exports.ethereum as any;
+  const Entity: any = exports.Entity as any;
 
   return instance;
 };
