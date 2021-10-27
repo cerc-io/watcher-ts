@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -57,7 +57,7 @@ export function testEthCall (): void {
 
   // Bind the contract to the address that emitted the event.
   // TODO: Address.fromString throws error in WASM module instantiation.
-  const contractAddress = Address.fromString('0x3ebd8bb51fF52aDAc490117B31F5F137BB125A9D');
+  const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);
 
   // Access functions by calling them.
