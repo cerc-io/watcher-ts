@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import { ethers } from 'ethers';
 import path from 'path';
 
@@ -18,7 +19,8 @@ describe('eden wasm loader tests', () => {
     let exports: any;
 
     // EdenNetwork contract address string.
-    const contractAddress = '0x9C4fb488d7B505E6C26Abe63F49535f869Ae400B';
+    const contractAddress = process.env.EDEN_NETWORK_CONTRACT_ADDRESS;
+    assert(contractAddress);
 
     const data = {
       abis: {
@@ -176,7 +178,8 @@ describe('eden wasm loader tests', () => {
     let exports: any;
 
     // EdenNetworkDistribution contract address string.
-    const contractAddress = '0x817Dc2250294253594241Cd9fdd9B5efFdeB2Ff7';
+    const contractAddress = process.env.EDEN_NETWORK_DISTRIBUTION_CONTRACT_ADDRESS;
+    assert(contractAddress);
 
     const data = {
       abis: {
@@ -319,7 +322,8 @@ describe('eden wasm loader tests', () => {
     let exports: any;
 
     // EdenNetworkGovernance contract address string.
-    const contractAddress = '0x0214233A869fc0B9E0b863A56dbE65b04B9cBA64';
+    const contractAddress = process.env.EDEN_NETWORK_GOVERNANCE_CONTRACT_ADDRESS;
+    assert(contractAddress);
 
     const data = {
       abis: {

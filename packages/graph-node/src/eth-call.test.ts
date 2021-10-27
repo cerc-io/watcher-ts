@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import path from 'path';
 
 import { instantiate } from './index';
@@ -10,12 +11,15 @@ import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.j
 describe('eth-call wasm tests', () => {
   let exports: any;
 
+  const contractAddress = process.env.EXAMPLE_CONTRACT_ADDRESS;
+  assert(contractAddress);
+
   const data = {
     abis: {
       Example1: exampleAbi
     },
     dataSource: {
-      address: '0xCA6D29232D1435D8198E3E5302495417dD073d61'
+      address: contractAddress
     }
   };
 

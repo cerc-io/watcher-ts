@@ -199,7 +199,6 @@ export const instantiate = async (filePath: string, data: GraphData = {}): Promi
 
       'typeConversion.bigIntToString': (bigInt: number) => {
         const bigIntByteArray = __getArray(bigInt);
-        // console.log('bigIntByteArray', bigIntByteArray)
         const bigNumber = BigNumber.from(bigIntByteArray);
         const ptr = __newString(bigNumber.toString());
 
