@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import fs from 'fs/promises';
-import loader from 'assemblyscript/lib/loader';
+import loader from '@deep-stack/assemblyscript/lib/loader';
 import {
   utils,
   BigNumber,

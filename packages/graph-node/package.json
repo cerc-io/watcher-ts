@@ -29,6 +29,6 @@
     "build:example": "cd test/subgraph/example1 && yarn && yarn build"
   },
   "dependencies": {
-    "assemblyscript": "https://github.com/vulcanize/assemblyscript.git#ng-integrate-asyncify"
+    "@deep-stack/assemblyscript": "0.0.1"
   }
 }
