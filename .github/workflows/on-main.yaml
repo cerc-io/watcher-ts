@@ -18,6 +18,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn
+        # https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#use-private-packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Linter check
         run: yarn lint
   build:
