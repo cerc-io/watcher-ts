@@ -2,87 +2,75 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface } from 'ethers';
 
-import { Client } from './client';
-import { createEvent, getSubgraphConfig } from './utils';
+import { getSubgraphConfig } from './utils';
 import { instantiate } from './index';
+import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 
-const log = debug('vulcanize:watcher');
+const log = debug('vulcanize:graph-watcher');
 
-const main = async () => {
-  const argv = await yargs.parserConfiguration({
-    'parse-numbers': false
-  }).options({
-    url: {
-      type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'URL of the watcher'
-    },
-    subgraph: {
-      type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Path to subgraph build'
+export class GraphWatcher {
+  _subgraphPath: string;
+  _dataSources: any[] = []
+  _instanceMap: { [key: string]: ResultObject & { exports: any } } = {};
+
+  constructor (subgraphPath: string) {
+    this._subgraphPath = subgraphPath;
+  }
+
+  async init () {
+    const { dataSources } = await getSubgraphConfig(this._subgraphPath);
+    this._dataSources = dataSources;
+
+    this._instanceMap = this._dataSources.reduce(async (acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any) => {
+      const { source: { address }, mapping } = dataSource;
+      const { abis, file } = mapping;
+
+      const data = {
+        abis: abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
+          const { name, file } = abi;
+          const abiFilePath = path.join(this._subgraphPath, file);
+          acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
+          return acc;
+        }, {}),
+        dataSource: {
+          address
+        }
+      };
+
+      const filePath = path.join(this._subgraphPath, file);
+      const instance = await instantiate(filePath, data);
+
+      acc[address] = instance;
+      return acc;
+    }, {});
+  }
+
+  async handleEvent (eventData: any) {
+    const { contract } = eventData;
+
+    const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
+
+    if (!dataSource) {
+      log(`Subgraph doesnt have configuration for contract ${contract}`);
+      return;
     }
-  }).argv;
 
-  const { subgraph: subgraphPath, url: watcherUrl } = argv;
+    // TODO: Call instance methods based on event signature.
+    // value should contain event signature.
 
-  const client = new Client({
-    gqlEndpoint: watcherUrl,
-    gqlSubscriptionEndpoint: watcherUrl
-  });
+    const [{ handler }] = dataSource.mapping.eventHandlers;
+    const { exports } = this._instanceMap[contract];
 
-  const { dataSources } = await getSubgraphConfig(subgraphPath);
+    // Create ethereum event to be passed to handler.
+    // TODO: Create ethereum event to be passed to handler.
+    // const ethereumEvent = await createEvent(exports, address, event);
 
-  const watcherPromises = dataSources.map(async (dataSource: any) => {
-    const { source: { address }, mapping } = dataSource;
-    const { abis, file, eventHandlers } = mapping;
-
-    const data = {
-      abis: abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
-        const { name, file } = abi;
-        const abiFilePath = path.join(subgraphPath, file);
-        acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
-        return acc;
-      }, {}),
-      dataSource: {
-        address
-      }
-    };
-
-    const filePath = path.join(subgraphPath, file);
-    const { exports } = await instantiate(filePath, data);
-
-    return client.watchEvents(async value => {
-      const { onEvent: { contract, event } } = value;
-
-      if (contract === address) {
-        // TODO: Call instance methods based on event signature.
-        // value should contain event signature.
-
-        const [{ handler }] = eventHandlers;
-
-        // Create ethereum event to be passed to handler.
-        // TODO: Create ethereum event to be passed to handler.
-        const ethereumEvent = await createEvent(exports, address, event);
-
-        await exports[handler]()
-      }
-    });
-  });
-
-  await Promise.all(watcherPromises);
-};
-
-main().catch(error => {
-  log(error);
-  process.exit();
-});
+    await exports[handler]();
+  }
+}

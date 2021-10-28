@@ -1,7 +1,6 @@
 import { BigNumber } from 'ethers';
 import path from 'path';
 import fs from 'fs-extra';
-import toml from 'toml';
 import debug from 'debug';
 import yaml from 'js-yaml';
 
@@ -232,7 +231,7 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  console.log(configFilePath)
+  console.log(configFilePath);
   const config = yaml.load(await fs.readFile(configFilePath, 'utf8'));
   log('config', JSON.stringify(config, null, 2));
 
