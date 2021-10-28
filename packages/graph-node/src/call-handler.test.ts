@@ -4,7 +4,7 @@
 
 import path from 'path';
 
-import { instantiate } from './index';
+import { instantiate } from './loader';
 import { createEvent } from './utils';
 
 describe('call handler in mapping code', () => {

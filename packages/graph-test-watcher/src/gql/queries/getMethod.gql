@@ -1,0 +1,8 @@
+query getMethod($blockHash: String!, $contractAddress: String!){
+    getMethod(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}
