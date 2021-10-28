@@ -6,7 +6,7 @@ import assert from 'assert';
 import { ethers } from 'ethers';
 import path from 'path';
 
-import { instantiate } from './index';
+import { instantiate } from './loader';
 import { createEvent } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';

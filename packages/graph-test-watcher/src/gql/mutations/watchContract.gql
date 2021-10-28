@@ -1,0 +1,3 @@
+mutation watchContract($contractAddress: String!, $startingBlock: Int){
+    watchContract(contractAddress: $contractAddress, startingBlock: $startingBlock)
+}

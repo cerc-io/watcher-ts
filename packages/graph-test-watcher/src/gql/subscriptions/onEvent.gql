@@ -1,0 +1,27 @@
+subscription onEvent{
+    onEvent{
+        block{
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        tx{
+            hash
+            index
+            from
+            to
+        }
+        contract
+        eventIndex
+        event{
+            ... on TestEvent {
+                param1
+                param2
+            }
+        }
+        proof{
+            data
+        }
+    }
+}

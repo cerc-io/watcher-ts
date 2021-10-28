@@ -1,10 +1,11 @@
 {
   "name": "@vulcanize/graph-node",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@graphprotocol/graph-ts": "^0.22.0",
+    "@types/js-yaml": "^4.0.4",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint": "^7.27.0",
@@ -21,14 +22,16 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "yarn asbuild && yarn build:example",
+    "build": "tsc",
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
     "test": "yarn asbuild:debug && mocha src/**/*.test.ts",
-    "build:example": "cd test/subgraph/example1 && yarn && yarn build"
+    "build:example": "cd test/subgraph/example1 && yarn && yarn build",
+    "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts"
   },
   "dependencies": {
-    "@vulcanize/assemblyscript": "0.0.1"
+    "@vulcanize/assemblyscript": "0.0.1",
+    "js-yaml": "^4.1.0"
   }
 }
