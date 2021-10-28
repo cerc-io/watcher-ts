@@ -1,7 +1,7 @@
 {
   "name": "@vulcanize/graph-node",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@graphprotocol/graph-ts": "^0.22.0",
@@ -22,7 +22,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "yarn asbuild && yarn build:example",
+    "build": "tsc",
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",

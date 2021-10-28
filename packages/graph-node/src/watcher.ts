@@ -9,7 +9,7 @@ import fs from 'fs';
 import { ContractInterface } from 'ethers';
 
 import { getSubgraphConfig } from './utils';
-import { instantiate } from './index';
+import { instantiate } from './loader';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 
 const log = debug('vulcanize:graph-watcher');
