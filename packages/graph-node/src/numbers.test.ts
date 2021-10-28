@@ -5,7 +5,7 @@
 import path from 'path';
 import { expect } from 'chai';
 
-import { instantiate } from './index';
+import { instantiate } from './loader';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 

@@ -1,10 +1,19 @@
-pragma solidity >=0.4.22 <0.8.0;
+// SPDX-License-Identifier: UNLICENSED
 
-contract Example  {
-    event Test(string param1, uint param2);
+pragma solidity ^0.8.0;
+
+contract Example {
+    uint256 private _test;
+
+    event Test(string param1, uint8 param2);
 
     function getMethod() public view virtual returns (string memory)
     {
         return 'test';
+    }
+
+    function emitEvent() public virtual returns (bool) {
+        emit Test('abc', 123);
+        return true;
     }
 }

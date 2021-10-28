@@ -28,6 +28,7 @@ interface ServerConfig {
   port: number;
   mode: string;
   kind: string;
+  subgraphPath: string;
 }
 
 export interface UpstreamConfig {
