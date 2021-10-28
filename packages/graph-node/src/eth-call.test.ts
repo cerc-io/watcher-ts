@@ -5,7 +5,7 @@
 import assert from 'assert';
 import path from 'path';
 
-import { instantiate } from './index';
+import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 
 describe('eth-call wasm tests', () => {
