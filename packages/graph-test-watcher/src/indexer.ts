@@ -67,8 +67,8 @@ export class Indexer {
 
     this._db = db;
     this._ethClient = ethClient;
-    this._ethProvider = ethProvider;
     this._postgraphileClient = postgraphileClient;
+    this._ethProvider = ethProvider;
     this._graphWatcher = graphWatcher;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider);
 
@@ -168,7 +168,7 @@ export class Indexer {
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
-    this._graphWatcher.handleEvent(resultEvent);
+    await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);

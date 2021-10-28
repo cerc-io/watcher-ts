@@ -8,9 +8,10 @@ import path from 'path';
 import fs from 'fs';
 import { ContractInterface } from 'ethers';
 
-import { getSubgraphConfig } from './utils';
-import { instantiate } from './loader';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+
+import { createEvent, getSubgraphConfig } from './utils';
+import { instantiate } from './loader';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -27,7 +28,7 @@ export class GraphWatcher {
     const { dataSources } = await getSubgraphConfig(this._subgraphPath);
     this._dataSources = dataSources;
 
-    this._instanceMap = this._dataSources.reduce(async (acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any) => {
+    const instancePromises = this._dataSources.map(async (dataSource: any) => {
       const { source: { address }, mapping } = dataSource;
       const { abis, file } = mapping;
 
@@ -44,15 +45,22 @@ export class GraphWatcher {
       };
 
       const filePath = path.join(this._subgraphPath, file);
-      const instance = await instantiate(filePath, data);
+      return instantiate(filePath, data);
+    }, {});
 
-      acc[address] = instance;
+    const instances = await Promise.all(instancePromises);
+
+    this._instanceMap = this._dataSources.reduce((acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any, index: number) => {
+      const { source: { address } } = dataSource;
+
+      acc[address] = instances[index];
+
       return acc;
     }, {});
   }
 
   async handleEvent (eventData: any) {
-    const { contract } = eventData;
+    const { contract, event } = eventData;
 
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
 
@@ -67,10 +75,22 @@ export class GraphWatcher {
     const [{ handler }] = dataSource.mapping.eventHandlers;
     const { exports } = this._instanceMap[contract];
 
-    // Create ethereum event to be passed to handler.
-    // TODO: Create ethereum event to be passed to handler.
-    // const ethereumEvent = await createEvent(exports, address, event);
+    // TODO: Create event params based on abi to be passed to handler.
+    const eventParamsData = [
+      {
+        name: 'param1',
+        value: event.param1,
+        kind: 'string'
+      },
+      {
+        name: 'param2',
+        value: event.param2,
+        kind: 'unsignedBigInt'
+      }
+    ];
 
-    await exports[handler]();
+    const ethereumEvent = await createEvent(exports, contract, eventParamsData);
+
+    await exports[handler](ethereumEvent);
   }
 }
