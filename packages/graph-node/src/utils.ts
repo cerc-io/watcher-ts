@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import toml from 'toml';
 import debug from 'debug';
+import yaml from 'js-yaml';
 
 import { TypeId, ValueKind } from './types';
 
@@ -223,15 +224,16 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
   return ethereum.Value.fromString(await __newString(value));
 };
 
-export const getSubgraphConfig = async (filePath: string): Promise<any> => {
-  const configFilePath = path.resolve(filePath);
+export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
+  const configFilePath = path.resolve(path.join(subgraphPath, 'subgraph.yaml'));
   const fileExists = await fs.pathExists(configFilePath);
 
   if (!fileExists) {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  const config = toml.parse(await fs.readFile(configFilePath, 'utf8'));
+  console.log(configFilePath)
+  const config = yaml.load(await fs.readFile(configFilePath, 'utf8'));
   log('config', JSON.stringify(config, null, 2));
 
   return config;

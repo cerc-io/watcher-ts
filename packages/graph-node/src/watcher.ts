@@ -10,7 +10,7 @@ import fs from 'fs';
 import { ContractInterface } from 'ethers';
 
 import { Client } from './client';
-import { getSubgraphConfig } from './utils';
+import { createEvent, getSubgraphConfig } from './utils';
 import { instantiate } from './index';
 
 const log = debug('vulcanize:watcher');
@@ -59,12 +59,23 @@ const main = async () => {
     };
 
     const filePath = path.join(subgraphPath, file);
-    const instance = await instantiate(filePath, data);
+    const { exports } = await instantiate(filePath, data);
 
-    return client.watchEvents(value => {
+    return client.watchEvents(async value => {
       const { onEvent: { contract, event } } = value;
 
-      // TODO: Call instance methods based on event and eventHandlers from subgraph yaml.
+      if (contract === address) {
+        // TODO: Call instance methods based on event signature.
+        // value should contain event signature.
+
+        const [{ handler }] = eventHandlers;
+
+        // Create ethereum event to be passed to handler.
+        // TODO: Create ethereum event to be passed to handler.
+        const ethereumEvent = await createEvent(exports, address, event);
+
+        await exports[handler]()
+      }
     });
   });
 
@@ -73,6 +84,5 @@ const main = async () => {
 
 main().catch(error => {
   log(error);
-}).finally(() => {
   process.exit();
 });
