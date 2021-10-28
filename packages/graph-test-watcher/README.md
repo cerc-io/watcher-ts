@@ -1,0 +1,78 @@
+# Example Watcher
+
+## Setup
+
+* Run the following command to install required packages:
+
+  ```bash
+  yarn
+  ```
+
+* Create a postgres12 database for the watcher:
+
+  ```bash
+  sudo su - postgres
+  createdb graph-test-watcher
+  ```
+
+* If the watcher is an `active` watcher:
+
+  Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+
+  ```
+  createdb graph-test-watcher-job-queue
+  ```
+
+  ```
+  postgres@tesla:~$ psql -U postgres -h localhost graph-test-watcher-job-queue
+  Password for user postgres:
+  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+  Type "help" for help.
+
+  graph-test-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  CREATE EXTENSION
+  graph-test-watcher-job-queue=# exit
+  ```
+
+* Update the [config](./environments/local.toml) with database connection settings.
+
+* Update the `upstream` config in the [config file](./environments/local.toml) and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+
+## Customize
+
+* Indexing on an event:
+
+  * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
+
+  * Refer to [hooks.example.ts](./src/hooks.example.ts) for an example hook function for events in an ERC20 contract.
+
+## Run
+
+* Run the watcher:
+
+  ```bash
+  yarn server
+  ```
+
+GQL console: http://localhost:3008/graphql
+
+* If the watcher is an `active` watcher:
+
+  * Run the job-runner:
+
+    ```bash
+    yarn job-runner
+    ```
+
+  * To watch a contract:
+
+    ```bash
+    yarn watch:contract --address <contract-address> --kind Example --starting-block [block-number]
+    ```
+
+  * To fill a block range:
+
+    ```bash
+    yarn fill --startBlock <from-block> --endBlock <to-block>
+    ```

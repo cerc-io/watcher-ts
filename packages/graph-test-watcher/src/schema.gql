@@ -1,0 +1,60 @@
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  getMethod(blockHash: String!, contractAddress: String!): ResultString!
+  _test(blockHash: String!, contractAddress: String!): ResultBigInt!
+}
+
+type ResultEvent {
+  block: Block!
+  tx: Transaction!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
+type Block {
+  hash: String!
+  number: Int!
+  timestamp: Int!
+  parentHash: String!
+}
+
+type Transaction {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+union Event = TestEvent
+
+type TestEvent {
+  param1: String!
+  param2: Int!
+}
+
+type Proof {
+  data: String!
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
+  proof: Proof
+}
+
+scalar BigInt
+
+type Mutation {
+  watchContract(contractAddress: String!, startingBlock: Int): Boolean!
+}
+
+type Subscription {
+  onEvent: ResultEvent!
+}
