@@ -9,6 +9,7 @@ export const QUEUE_EVENT_PROCESSING = 'event-processing';
 export const QUEUE_CHAIN_PRUNING = 'chain-pruning';
 export const QUEUE_BLOCK_CHECKPOINT = 'block-checkpoint';
 export const QUEUE_HOOKS = 'hooks';
+export const QUEUE_IPFS = 'ipfs';
 
 export const JOB_KIND_INDEX = 'index';
 export const JOB_KIND_PRUNE = 'prune';

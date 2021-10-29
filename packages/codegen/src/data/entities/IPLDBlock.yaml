@@ -36,8 +36,8 @@ columns:
     tsType: string
     columnType: Column
   - name: data
-    pgType: text
-    tsType: string
+    pgType: bytea
+    tsType: Buffer
     columnType: Column
 imports:
   - toImport:

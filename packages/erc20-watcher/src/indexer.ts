@@ -255,11 +255,6 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
-  async processBlock (job: any): Promise<void> {
-    // Empty post-block method.
-    assert(job);
-  }
-
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};
