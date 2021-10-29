@@ -69,6 +69,8 @@ export interface EventWatcherInterface {
   getBlockProgressEventIterator (): AsyncIterator<any>
   initBlockProcessingOnCompleteHandler (): Promise<void>
   initEventProcessingOnCompleteHandler (): Promise<void>
+  initHooksOnCompleteHandler?: () => Promise<void>
+  initBlockCheckpointOnCompleteHandler?: () => Promise<void>
 }
 
 export interface DatabaseInterface {

@@ -9,7 +9,8 @@ import { UNKNOWN_EVENT_NAME, updateStateForMappingType, updateStateForElementary
 import { Indexer, ResultEvent } from './indexer';
 
 const ACCOUNTS = [
-  '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc'
+  '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
+  '0xCA6D29232D1435D8198E3E5302495417dD073d61'
 ];
 
 /**
@@ -36,7 +37,7 @@ export async function createInitialCheckpoint (indexer: Indexer, contractAddress
 }
 
 /**
- * Hook function to create and store state diffs.
+ * Hook function to create state diffs.
  * @param indexer Indexer instance that contains methods to fetch the contract varaiable values.
  * @param blockHash Block hash of the concerned block.
  */
@@ -101,6 +102,31 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
 
     await indexer.createDiff(contractAddress, blockHash, ipldBlockData);
   }
+}
+
+/**
+ * Hook function to create state checkpoint
+ * @param indexer Indexer instance.
+ * @param contractAddress Address of the concerned contract.
+ * @param blockHash Block hash of the concerned block.
+ * @returns Whether to disable default checkpoint. If false, the state from this hook is updated with that from default checkpoint.
+ */
+export async function createStateCheckpoint (indexer: Indexer, contractAddress: string, blockHash: string): Promise<boolean> {
+  assert(indexer);
+  assert(blockHash);
+  assert(contractAddress);
+
+  let ipldBlockData: any = {};
+
+  // Setting the balances of accounts.
+  for (const account of ACCOUNTS) {
+    const balance = await indexer._balances(blockHash, contractAddress, account);
+    ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [account], balance.value.toString());
+  }
+
+  await indexer.createCheckpoint(contractAddress, blockHash, ipldBlockData);
+
+  return false;
 }
 
 /**

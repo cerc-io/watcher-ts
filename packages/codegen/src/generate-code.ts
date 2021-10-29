@@ -28,6 +28,10 @@ import { registerHandlebarHelpers } from './utils/handlebar-helpers';
 import { exportHooks } from './hooks';
 import { exportFill } from './fill';
 import { exportCheckpoint } from './checkpoint';
+import { exportState } from './export-state';
+import { importState } from './import-state';
+import { exportIPFS } from './ipfs';
+import { exportInspectCID } from './inspect-cid';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -256,6 +260,26 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     resetStateOutStream = process.stdout;
   }
   visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))
+    : process.stdout;
+  exportState(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))
+    : process.stdout;
+  importState(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/ipfs.ts'))
+    : process.stdout;
+  exportIPFS(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
+    : process.stdout;
+  exportInspectCID(outStream);
 }
 
 main().catch(err => {

@@ -18,10 +18,18 @@ export const fillBlocks = async (
   blockDelayInMilliSecs: number,
   { startBlock, endBlock }: { startBlock: number, endBlock: number}
 ): Promise<any> => {
-  assert(startBlock < endBlock, 'endBlock should be greater than startBlock');
+  assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
 
   await eventWatcher.initBlockProcessingOnCompleteHandler();
   await eventWatcher.initEventProcessingOnCompleteHandler();
+
+  if (eventWatcher.initHooksOnCompleteHandler) {
+    await eventWatcher.initHooksOnCompleteHandler();
+  }
+
+  if (eventWatcher.initBlockCheckpointOnCompleteHandler) {
+    await eventWatcher.initBlockCheckpointOnCompleteHandler();
+  }
 
   let currentBlockNumber = startBlock;
   const syncStatus = await indexer.getSyncStatus();
