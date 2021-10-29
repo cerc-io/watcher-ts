@@ -15,10 +15,15 @@ import { instantiate } from './loader';
 
 const log = debug('vulcanize:graph-watcher');
 
+interface DataSource {
+  instance: ResultObject & { exports: any },
+  contractInterface: utils.Interface
+}
+
 export class GraphWatcher {
   _subgraphPath: string;
-  _dataSources: any[] = []
-  _instanceMap: { [key: string]: ResultObject & { exports: any } } = {};
+  _dataSources: any[] = [];
+  _dataSourceMap: { [key: string]: DataSource } = {};
 
   constructor (subgraphPath: string) {
     this._subgraphPath = subgraphPath;
@@ -28,37 +33,45 @@ export class GraphWatcher {
     const { dataSources } = await getSubgraphConfig(this._subgraphPath);
     this._dataSources = dataSources;
 
-    const instancePromises = this._dataSources.map(async (dataSource: any) => {
-      const { source: { address }, mapping } = dataSource;
+    const dataPromises = this._dataSources.map(async (dataSource: any) => {
+      const { source: { address, abi }, mapping } = dataSource;
       const { abis, file } = mapping;
 
+      const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
+        const { name, file } = abi;
+        const abiFilePath = path.join(this._subgraphPath, file);
+        acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
+        return acc;
+      }, {});
+
+      const contractInterface = new utils.Interface(abisMap[abi]);
+
       const data = {
-        abis: abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
-          const { name, file } = abi;
-          const abiFilePath = path.join(this._subgraphPath, file);
-          acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
-          return acc;
-        }, {}),
+        abis: abisMap,
         dataSource: {
           address
         }
       };
 
       const filePath = path.join(this._subgraphPath, file);
-      return instantiate(filePath, data);
+
+      return {
+        instance: await instantiate(filePath, data),
+        contractInterface
+      };
     }, {});
 
-    const instances = await Promise.all(instancePromises);
+    const data = await Promise.all(dataPromises);
 
-    this._instanceMap = this._dataSources.reduce((acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any, index: number) => {
-      const instance = instances[index];
+    this._dataSourceMap = this._dataSources.reduce((acc: { [key: string]: DataSource }, dataSource: any, index: number) => {
+      const { instance } = data[index];
 
       // Important to call _start for built subgraphs on instantiation!
       // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
       instance.exports._start();
 
       const { source: { address } } = dataSource;
-      acc[address] = instance;
+      acc[address] = data[index];
 
       return acc;
     }, {});
@@ -78,17 +91,14 @@ export class GraphWatcher {
     // value should contain event signature.
 
     const [{ handler, event: eventSignature }] = dataSource.mapping.eventHandlers;
-    const { exports } = this._instanceMap[contract];
+    const { instance: { exports }, contractInterface } = this._dataSourceMap[contract];
 
-    const eventFragment = utils.EventFragment.from(eventSignature);
+    const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const eventParamsData = eventFragment.inputs.map((input, index) => {
-      // TODO: Pass event params in order as array.
-      const paramNames = ['param1', 'param2'];
-
+    const eventParamsData = eventFragment.inputs.map((input) => {
       return {
         name: input.name,
-        value: event[paramNames[index]],
+        value: event[input.name],
         kind: input.type
       };
     });

@@ -47,7 +47,7 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'slot',
-          kind: 'unit8',
+          kind: 'uint8',
           value: 0
         },
         {
@@ -77,7 +77,7 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'taxDenominator',
-          kind: 'unit16',
+          kind: 'uint16',
           value: 1
         }
       ];
@@ -97,7 +97,7 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'slot',
-          kind: 'uiny8',
+          kind: 'uint8',
           value: 0
         },
         {

@@ -16,16 +16,16 @@ interface EventParam {
 
 /**
  * Method to get value from graph-ts ethereum.Value wasm instance.
- * @param exports
+ * @param instanceExports
  * @param value
  * @returns
  */
-export const fromEthereumValue = async (exports: any, value: any): Promise<any> => {
+export const fromEthereumValue = async (instanceExports: any, value: any): Promise<any> => {
   const {
     __getString,
     BigInt,
     Address
-  } = exports;
+  } = instanceExports;
 
   const kind = await value.kind;
 
@@ -63,12 +63,12 @@ export const fromEthereumValue = async (exports: any, value: any): Promise<any> 
 
 /**
  * Method to get ethereum value for passing to wasm instance.
- * @param exports
+ * @param instanceExports
  * @param value
  * @param type
  * @returns
  */
-export const toEthereumValue = async (exports: any, value: any, type: string): Promise<any> => {
+export const toEthereumValue = async (instanceExports: any, value: any, type: string): Promise<any> => {
   const {
     __newString,
     ByteArray,
@@ -76,7 +76,7 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
     Address,
     ethereum,
     BigInt
-  } = exports;
+  } = instanceExports;
 
   // For boolean type.
   if (type === 'bool') {
@@ -115,12 +115,12 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
 
 /**
  * Method to create ethereum event.
- * @param exports
+ * @param instanceExports
  * @param contractAddress
  * @param eventParamsData
  * @returns
  */
-export const createEvent = async (exports: any, contractAddress: string, eventParamsData: EventParam[]): Promise<any> => {
+export const createEvent = async (instanceExports: any, contractAddress: string, eventParamsData: EventParam[]): Promise<any> => {
   const {
     __newString,
     __newArray,
@@ -129,7 +129,7 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
     ethereum,
     Bytes,
     id_of_type: idOfType
-  } = exports;
+  } = instanceExports;
 
   // Create dummy block data.
   const block = await ethereum.Block.__new(
@@ -164,8 +164,7 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
   const eventParamArrayPromise = eventParamsData.map(async data => {
     const { name, value, kind } = data;
 
-    console.log('toEthereumValue', toEthereumValue);
-    const ethValue = await toEthereumValue(exports, value, kind);
+    const ethValue = await toEthereumValue(instanceExports, value, kind);
 
     return ethereum.EventParam.__new(
       await __newString(name),
@@ -199,7 +198,6 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  console.log(configFilePath);
   const config = yaml.load(await fs.readFile(configFilePath, 'utf8'));
   log('config', JSON.stringify(config, null, 2));
 
