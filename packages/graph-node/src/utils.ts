@@ -14,6 +14,27 @@ interface EventParam {
   kind: string;
 }
 
+interface Block {
+  hash: string;
+  number: number;
+  timestamp: number;
+  parentHash: string;
+}
+
+interface Transaction {
+  hash: string;
+  index: number;
+  from: string;
+  to: string;
+}
+
+export interface EventData {
+  block: Block;
+  tx: Transaction;
+  eventParams: EventParam[];
+  eventIndex: number;
+}
+
 /**
  * Method to get value from graph-ts ethereum.Value wasm instance.
  * @param instanceExports
@@ -120,7 +141,14 @@ export const toEthereumValue = async (instanceExports: any, value: any, type: st
  * @param eventParamsData
  * @returns
  */
-export const createEvent = async (instanceExports: any, contractAddress: string, eventParamsData: EventParam[]): Promise<any> => {
+export const createEvent = async (instanceExports: any, contractAddress: string, eventData: EventData): Promise<any> => {
+  const {
+    tx,
+    eventIndex,
+    eventParams: eventParamsData,
+    block: blockData
+  } = eventData;
+
   const {
     __newString,
     __newArray,
@@ -128,33 +156,53 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     BigInt,
     ethereum,
     Bytes,
+    ByteArray,
     id_of_type: idOfType
   } = instanceExports;
 
-  // TODO: Fill block data.
+  // Fill block data.
+  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.hash));
+  const blockHash = await Bytes.fromByteArray(blockHashByteArray);
+
+  const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
+  const parentHash = await Bytes.fromByteArray(parentHashByteArray);
+
+  const blockNumber = await BigInt.fromI32(blockData.number);
+
+  const blockTimestamp = await BigInt.fromI32(blockData.timestamp);
+
   const block = await ethereum.Block.__new(
-    await Bytes.empty(),
-    await Bytes.empty(),
+    blockHash,
+    parentHash,
     await Bytes.empty(),
     await Address.zero(),
     await Bytes.empty(),
     await Bytes.empty(),
     await Bytes.empty(),
+    blockNumber,
     await BigInt.fromI32(0),
     await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
+    blockTimestamp,
     await BigInt.fromI32(0),
     await BigInt.fromI32(0),
     null
   );
 
-  // TODO: Fill transaction data.
+  // Fill transaction data.
+  const txHashByteArray = await ByteArray.fromHexString(await __newString(tx.hash));
+  const txHash = await Bytes.fromByteArray(txHashByteArray);
+
+  const txIndex = await BigInt.fromI32(tx.index);
+
+  const txFrom = await Address.fromString(await __newString(tx.from));
+
+  const txTo = tx.to && await Address.fromString(await __newString(tx.to));
+
   const transaction = await ethereum.Transaction.__new(
-    await Bytes.empty(),
-    await BigInt.fromI32(0),
-    await Address.zero(),
-    null,
+    txHash,
+    txIndex,
+    txFrom,
+    txTo,
     await BigInt.fromI32(0),
     await BigInt.fromI32(0),
     await BigInt.fromI32(0),
@@ -180,7 +228,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   // Create event to be passed to handler.
   return ethereum.Event.__new(
     await Address.fromString(addStrPtr),
-    await BigInt.fromI32(0),
+    await BigInt.fromI32(eventIndex),
     await BigInt.fromI32(0),
     null,
     block,

@@ -11,10 +11,13 @@ import { createEvent } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
+import { getDummyEventData } from '../test/utils';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 describe('eden wasm loader tests', () => {
+  const eventData = getDummyEventData();
+
   describe('EdenNetwork wasm', () => {
     let exports: any;
 
@@ -44,7 +47,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy SlotClaimedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'slot',
           kind: 'uint8',
@@ -83,7 +86,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy SlotClaimedEvent to be passed to handler.
-      const slotClaimedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const slotClaimedEvent = await createEvent(exports, contractAddress, eventData);
 
       await slotClaimed(slotClaimedEvent);
     });
@@ -94,7 +97,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy SlotDelegateUpdatedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'slot',
           kind: 'uint8',
@@ -118,7 +121,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy SlotDelegateUpdatedEvent to be passed to handler.
-      const slotClaimedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const slotClaimedEvent = await createEvent(exports, contractAddress, eventData);
 
       await slotDelegateUpdated(slotClaimedEvent);
     });
@@ -129,7 +132,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy StakeEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'staker',
           kind: 'address',
@@ -143,7 +146,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy StakeEvent to be passed to handler.
-      const stakeEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const stakeEvent = await createEvent(exports, contractAddress, eventData);
 
       await stake(stakeEvent);
     });
@@ -154,7 +157,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy UnstakeEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'staker',
           kind: 'address',
@@ -168,7 +171,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy UnstakeEvent to be passed to handler.
-      const unstakeEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const unstakeEvent = await createEvent(exports, contractAddress, eventData);
 
       await unstake(unstakeEvent);
     });
@@ -203,7 +206,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy ClaimedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'index',
           kind: 'uint256',
@@ -227,7 +230,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy ClaimedEvent to be passed to handler.
-      const claimedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const claimedEvent = await createEvent(exports, contractAddress, eventData);
 
       await claimed(claimedEvent);
     });
@@ -238,7 +241,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy SlashedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'account',
           kind: 'address',
@@ -252,7 +255,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy SlashedEvent to be passed to handler.
-      const slashedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const slashedEvent = await createEvent(exports, contractAddress, eventData);
 
       await slashed(slashedEvent);
     });
@@ -263,7 +266,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy MerkleRootUpdatedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'merkleRoot',
           kind: 'bytes32',
@@ -282,7 +285,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy MerkleRootUpdatedEvent to be passed to handler.
-      const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, eventData);
 
       await merkleRootUpdated(merkleRootUpdatedEvent);
     });
@@ -293,7 +296,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy AccountUpdatedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'account',
           kind: 'address',
@@ -312,7 +315,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy AccountUpdatedEvent to be passed to handler.
-      const accountUpdatedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const accountUpdatedEvent = await createEvent(exports, contractAddress, eventData);
 
       await accountUpdated(accountUpdatedEvent);
     });
@@ -347,7 +350,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy BlockProducerAddedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'produces',
           kind: 'address',
@@ -356,7 +359,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy BlockProducerAddedEvent to be passed to handler.
-      const blockProducerAddedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const blockProducerAddedEvent = await createEvent(exports, contractAddress, eventData);
 
       await blockProducerAdded(blockProducerAddedEvent);
     });
@@ -367,7 +370,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy BlockProducerRemovedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'producer',
           kind: 'address',
@@ -376,7 +379,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy BlockProducerRemovedEvent to be passed to handler.
-      const blockProducerRemovedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const blockProducerRemovedEvent = await createEvent(exports, contractAddress, eventData);
 
       await blockProducerRemoved(blockProducerRemovedEvent);
     });
@@ -387,7 +390,7 @@ describe('eden wasm loader tests', () => {
       } = exports;
 
       // Create dummy BlockProducerRewardCollectorChangedEvent params.
-      const eventParamsData = [
+      eventData.eventParams = [
         {
           name: 'producer',
           kind: 'address',
@@ -406,7 +409,7 @@ describe('eden wasm loader tests', () => {
       ];
 
       // Create dummy BlockProducerRewardCollectorChangedEvent to be passed to handler.
-      const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, eventParamsData);
+      const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, eventData);
 
       await blockProducerRewardCollectorChanged(blockProducerRewardCollectorChangedEvent);
     });
@@ -416,8 +419,10 @@ describe('eden wasm loader tests', () => {
         rewardScheduleChanged
       } = exports;
 
+      eventData.eventParams = [];
+
       // Create dummy RewardScheduleChangedEvent to be passed to handler.
-      const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, []);
+      const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, eventData);
 
       await rewardScheduleChanged(rewardScheduleChangedEvent);
     });

@@ -81,7 +81,7 @@ export class GraphWatcher {
   }
 
   async handleEvent (eventData: any) {
-    const { contract, event, eventSignature } = eventData;
+    const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
@@ -103,7 +103,7 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const eventParamsData = eventFragment.inputs.map((input) => {
+    const eventParams = eventFragment.inputs.map((input) => {
       return {
         name: input.name,
         value: event[input.name],
@@ -111,8 +111,15 @@ export class GraphWatcher {
       };
     });
 
+    const data = {
+      eventParams: eventParams,
+      block,
+      tx,
+      eventIndex
+    };
+
     // Create ethereum event to be passed to the wasm event handler.
-    const ethereumEvent = await createEvent(exports, contract, eventParamsData);
+    const ethereumEvent = await createEvent(exports, contract, data);
 
     await exports[eventHandler.handler](ethereumEvent);
   }

@@ -23,9 +23,9 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@graphprotocol/graph-cli@ssh://git@github.com:vulcanize/graph-cli.git#graph-watcher-v0.22.1":
+"@graphprotocol/graph-cli@ssh://git@github.com:vulcanize/graph-cli.git#ng-add-exports":
   version "0.22.1"
-  resolved "ssh://git@github.com:vulcanize/graph-cli.git#4241570e91578a0128deccc518d52eca00bd587c"
+  resolved "ssh://git@github.com:vulcanize/graph-cli.git#d70ae40a7517a666f550b25a0fa4ae0d3758e7d0"
   dependencies:
     assemblyscript "0.19.10"
     binary-install-raw "0.0.13"

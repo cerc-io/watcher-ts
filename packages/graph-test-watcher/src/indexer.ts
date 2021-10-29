@@ -170,6 +170,7 @@ export class Indexer {
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
+    // Call subgraph handler for event.
     await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
