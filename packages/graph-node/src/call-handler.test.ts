@@ -36,7 +36,7 @@ describe('call handler in mapping code', () => {
       {
         name: 'param2',
         value: BigInt(123),
-        kind: 'unsignedBigInt'
+        kind: 'uint256'
       }
     ];
 

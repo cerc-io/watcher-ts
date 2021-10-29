@@ -47,7 +47,7 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'slot',
-          kind: 'i32',
+          kind: 'unit8',
           value: 0
         },
         {
@@ -62,22 +62,22 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'newBidAmount',
-          kind: 'unsignedBigInt',
+          kind: 'uint128',
           value: BigInt(1)
         },
         {
           name: 'oldBidAmount',
-          kind: 'unsignedBigInt',
+          kind: 'uint128',
           value: BigInt(1)
         },
         {
           name: 'taxNumerator',
-          kind: 'i32',
+          kind: 'uint16',
           value: 1
         },
         {
           name: 'taxDenominator',
-          kind: 'i32',
+          kind: 'unit16',
           value: 1
         }
       ];
@@ -97,7 +97,7 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'slot',
-          kind: 'i32',
+          kind: 'uiny8',
           value: 0
         },
         {
@@ -137,7 +137,7 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'stakeAmount',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         }
       ];
@@ -162,7 +162,7 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'unstakedAmount',
-          kind: 'unsignedBigInt',
+          kind: 'uin256',
           value: BigInt(1)
         }
       ];
@@ -206,12 +206,12 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'index',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         },
         {
           name: 'totalEarned',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         },
         {
@@ -221,7 +221,7 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'claimed',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         }
       ];
@@ -246,7 +246,7 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'slashed',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         }
       ];
@@ -266,12 +266,12 @@ describe('eden wasm loader tests', () => {
       const eventParamsData = [
         {
           name: 'merkleRoot',
-          kind: 'bytes',
+          kind: 'bytes32',
           value: ethers.utils.hexlify(ethers.utils.randomBytes(32))
         },
         {
           name: 'distributionNumber',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         },
         {
@@ -301,12 +301,12 @@ describe('eden wasm loader tests', () => {
         },
         {
           name: 'totalClaimed',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         },
         {
           name: 'totalSlashed',
-          kind: 'unsignedBigInt',
+          kind: 'uint256',
           value: BigInt(1)
         }
       ];

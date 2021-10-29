@@ -26,7 +26,7 @@
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
-    "test": "yarn asbuild:debug && mocha src/**/*.test.ts",
+    "test": "yarn asbuild:debug && mocha src/call-handler.test.ts",
     "build:example": "cd test/subgraph/example1 && yarn && yarn build",
     "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts"
   },

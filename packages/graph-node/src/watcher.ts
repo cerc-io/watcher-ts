@@ -6,7 +6,7 @@ import 'reflect-metadata';
 import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
-import { ContractInterface } from 'ethers';
+import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 
@@ -77,22 +77,21 @@ export class GraphWatcher {
     // TODO: Call instance methods based on event signature.
     // value should contain event signature.
 
-    const [{ handler }] = dataSource.mapping.eventHandlers;
+    const [{ handler, event: eventSignature }] = dataSource.mapping.eventHandlers;
     const { exports } = this._instanceMap[contract];
 
-    // TODO: Create event params based on abi to be passed to handler.
-    const eventParamsData = [
-      {
-        name: 'param1',
-        value: event.param1,
-        kind: 'string'
-      },
-      {
-        name: 'param2',
-        value: event.param2,
-        kind: 'unsignedBigInt'
-      }
-    ];
+    const eventFragment = utils.EventFragment.from(eventSignature);
+
+    const eventParamsData = eventFragment.inputs.map((input, index) => {
+      // TODO: Pass event params in order as array.
+      const paramNames = ['param1', 'param2'];
+
+      return {
+        name: input.name,
+        value: event[paramNames[index]],
+        kind: input.type
+      };
+    });
 
     const ethereumEvent = await createEvent(exports, contract, eventParamsData);
 
