@@ -7,6 +7,7 @@ import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
 import { getDefaultProvider } from 'ethers';
+import util from 'util';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
 import { getCache } from '@vulcanize/cache';
@@ -15,7 +16,7 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { Database } from '../database';
 import { Indexer } from '../indexer';
 
-const log = debug('vulcanize:checkpoint');
+const log = debug('vulcanize:inspect-cid');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -29,15 +30,11 @@ const main = async (): Promise<void> => {
       describe: 'Configuration file path (toml)',
       default: DEFAULT_CONFIG_PATH
     },
-    address: {
+    cid: {
+      alias: 'c',
       type: 'string',
-      require: true,
       demandOption: true,
-      describe: 'Contract address to create the checkpoint for.'
-    },
-    blockHash: {
-      type: 'string',
-      describe: 'Blockhash at which to create the checkpoint.'
+      describe: 'CID to be inspected'
     }
   }).argv;
 
@@ -72,11 +69,13 @@ const main = async (): Promise<void> => {
   const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
-  const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
 
-  log(`Created a checkpoint for contract ${argv.address} at block-hash ${blockHash}`);
+  const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
+  assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');
 
-  await db.close();
+  const ipldData = await indexer.getIPLDData(ipldBlock);
+
+  log(util.inspect(ipldData, false, null));
 };
 
 main().catch(err => {
