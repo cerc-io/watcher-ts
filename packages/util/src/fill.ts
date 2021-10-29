@@ -25,8 +25,7 @@ export const fillBlocks = async (
   }
 ): Promise<any> => {
   let { startBlock, endBlock, prefetch, batchBlocks } = argv;
-  assert(startBlock < endBlock, 'endBlock should be greater than startBlock');
-
+  assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
   const syncStatus = await indexer.getSyncStatus();
 
   if (syncStatus) {
@@ -44,6 +43,14 @@ export const fillBlocks = async (
 
   await eventWatcher.initBlockProcessingOnCompleteHandler();
   await eventWatcher.initEventProcessingOnCompleteHandler();
+
+  if (eventWatcher.initHooksOnCompleteHandler) {
+    await eventWatcher.initHooksOnCompleteHandler();
+  }
+
+  if (eventWatcher.initBlockCheckpointOnCompleteHandler) {
+    await eventWatcher.initBlockCheckpointOnCompleteHandler();
+  }
 
   const numberOfBlocks = endBlock - startBlock + 1;
 

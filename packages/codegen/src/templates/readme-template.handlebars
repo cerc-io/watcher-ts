@@ -8,6 +8,12 @@
   yarn
   ```
 
+* Run the IPFS (go-ipfs version 0.9.0) daemon:
+
+  ```bash
+  ipfs daemon
+  ```
+
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -39,7 +45,7 @@
 
 * Update the `upstream` config in the [config file](./environments/local.toml) and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
 
-* Update the [config](./environments/local.toml) with state checkpoint settings.
+* Update the `server` config in the [config file](./environments/local.toml) with state checkpoint settings and provide the IPFS API address.
 
 ## Customize
 
@@ -53,7 +59,9 @@
 
   * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
 
-  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in an `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+
+  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
 
 * The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
 
@@ -132,4 +140,50 @@ GQL console: http://localhost:3008/graphql
       yarn reset job-queue --block-number <previous-block-number>
       ```
     
-    * `block-number`: Block number to reset the watcher to.
+    * `block-number`: Block number to which to reset the watcher.
+
+  * To export and import the watcher state:
+
+    * In source watcher, export watcher state:
+
+      ```bash
+      yarn export-state --export-file [export-file-path]
+      ```
+
+      * `export-file`: Path of JSON file to which to export the watcher data.
+
+    * In target watcher, run job-runner:
+
+      ```bash
+      yarn job-runner
+      ```
+    
+    * Import watcher state:
+
+      ```bash
+      yarn import-state --import-file <import-file-path>
+      ```
+
+      * `import-file`: Path of JSON file from which to import the watcher data.
+    
+    * Run fill:
+
+      ```bash
+      yarn fill --start-block <snapshot-block> --end-block <to-block>
+      ```
+
+      * `snapshot-block`: Block number at which the watcher state was exported.
+
+    * Run server:
+
+      ```bash
+      yarn server
+      ```
+
+  * To inspect a CID:
+
+    ```bash
+    yarn inspect-cid --cid <cid>
+    ```
+
+    * `cid`: CID to be inspected.

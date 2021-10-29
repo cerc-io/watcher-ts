@@ -31,6 +31,7 @@ export interface ServerConfig {
   kind: string;
   checkpointing: boolean;
   checkpointInterval: number;
+  ipfsApiAddr: string;
 }
 
 export interface UpstreamConfig {
