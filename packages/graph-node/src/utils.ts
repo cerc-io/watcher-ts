@@ -69,7 +69,7 @@ export const createEvent = async (exports: any, contractAddress: string, eventPa
 
     switch (kind) {
       case 'unsignedBigInt': {
-        const bigIntString = await (await __newString(value.toString()));
+        const bigIntString = await __newString(value.toString());
         const bigInt = await BigInt.fromString(bigIntString);
         ethValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
         break;

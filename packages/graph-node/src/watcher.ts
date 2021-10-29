@@ -51,9 +51,14 @@ export class GraphWatcher {
     const instances = await Promise.all(instancePromises);
 
     this._instanceMap = this._dataSources.reduce((acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any, index: number) => {
-      const { source: { address } } = dataSource;
+      const instance = instances[index];
 
-      acc[address] = instances[index];
+      // Important to call _start for built subgraphs on instantiation!
+      // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
+      instance.exports._start();
+
+      const { source: { address } } = dataSource;
+      acc[address] = instance;
 
       return acc;
     }, {});

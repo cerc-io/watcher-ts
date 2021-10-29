@@ -11,6 +11,6 @@
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "ssh://git@github.com:vulcanize/graph-cli.git#graph-watcher-v0.22.1",
-    "@graphprotocol/graph-ts": "0.22.0"
+    "@graphprotocol/graph-ts": "^0.22.1"
   }
 }

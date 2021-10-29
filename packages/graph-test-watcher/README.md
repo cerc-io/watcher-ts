@@ -44,7 +44,7 @@
 * Indexing on an event:
 
   * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
-  
+
   * Refer to [hooks.example.ts](./src/hooks.example.ts) for an example hook function for events in an ERC20 contract.
 
 ## Run
