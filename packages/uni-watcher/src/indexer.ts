@@ -118,11 +118,6 @@ export class Indexer implements IndexerInterface {
     }
   }
 
-  async processBlock (job: any): Promise<void> {
-    // Empty post-block method.
-    assert(job);
-  }
-
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};

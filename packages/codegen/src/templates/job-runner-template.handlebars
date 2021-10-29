@@ -18,6 +18,7 @@ import {
   QUEUE_EVENT_PROCESSING,
   QUEUE_BLOCK_CHECKPOINT,
   QUEUE_HOOKS,
+  QUEUE_IPFS,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
   getCustomProvider
@@ -46,6 +47,7 @@ export class JobRunner {
     await this.subscribeEventProcessingQueue();
     await this.subscribeBlockCheckpointQueue();
     await this.subscribeHooksQueue();
+    await this.subscribeIPFSQueue();
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
@@ -94,6 +96,16 @@ export class JobRunner {
   async subscribeBlockCheckpointQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
       await this._indexer.processCheckpoint(job);
+
+      await this._jobQueue.markComplete(job);
+    });
+  }
+
+  async subscribeIPFSQueue (): Promise<void> {
+    await this._jobQueue.subscribe(QUEUE_IPFS, async (job) => {
+      const { data: { data } } = job;
+
+      await this._indexer.pushToIPFS(data);
 
       await this._jobQueue.markComplete(job);
     });

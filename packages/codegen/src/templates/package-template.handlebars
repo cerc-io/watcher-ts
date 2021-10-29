@@ -12,7 +12,10 @@
     "watch:contract": "DEBUG=vulcanize:* ts-node src/cli/watch-contract.ts",
     "fill": "DEBUG=vulcanize:* ts-node src/fill.ts",
     "reset": "DEBUG=vulcanize:* ts-node src/cli/reset.ts",
-    "checkpoint": "DEBUG=vulcanize:* ts-node src/cli/checkpoint.ts"
+    "checkpoint": "DEBUG=vulcanize:* ts-node src/cli/checkpoint.ts",
+    "export-state": "DEBUG=vulcanize:* ts-node src/cli/export-state.ts",
+    "import-state": "DEBUG=vulcanize:* ts-node src/cli/import-state.ts",
+    "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts"
   },
   "repository": {
     "type": "git",
@@ -27,7 +30,7 @@
   "dependencies": {
     "@apollo/client": "^3.3.19",
     "@ethersproject/providers": "5.3.0",
-    "@ipld/dag-json": "^8.0.1",
+    "@ipld/dag-cbor": "^6.0.12",
     "@vulcanize/cache": "^0.1.0",
     "@vulcanize/ipld-eth-client": "^0.1.0",
     "@vulcanize/solidity-mapper": "^0.1.0",
@@ -39,6 +42,7 @@
     "express": "^4.17.1",
     "graphql": "^15.5.0",
     "graphql-import-node": "^0.0.4",
+    "ipfs-http-client": "^53.0.1",
     "json-bigint": "^1.0.0",
     "lodash": "^4.17.21",
     "multiformats": "^9.4.8",
