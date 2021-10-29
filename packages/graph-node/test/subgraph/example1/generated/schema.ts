@@ -19,7 +19,7 @@ export class ExampleEntity extends Entity {
 
     this.set("count", Value.fromBigInt(BigInt.zero()));
     this.set("param1", Value.fromString(""));
-    this.set("param2", Value.fromBigInt(BigInt.zero()));
+    this.set("param2", Value.fromI32(0));
   }
 
   save(): void {
@@ -66,12 +66,12 @@ export class ExampleEntity extends Entity {
     this.set("param1", Value.fromString(value));
   }
 
-  get param2(): BigInt {
+  get param2(): i32 {
     let value = this.get("param2");
-    return value!.toBigInt();
+    return value!.toI32();
   }
 
-  set param2(value: BigInt) {
-    this.set("param2", Value.fromBigInt(value));
+  set param2(value: i32) {
+    this.set("param2", Value.fromI32(value));
   }
 }

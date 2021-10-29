@@ -131,7 +131,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     id_of_type: idOfType
   } = instanceExports;
 
-  // Create dummy block data.
+  // TODO: Fill block data.
   const block = await ethereum.Block.__new(
     await Bytes.empty(),
     await Bytes.empty(),
@@ -149,7 +149,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     null
   );
 
-  // Create dummy transaction data.
+  // TODO: Fill transaction data.
   const transaction = await ethereum.Transaction.__new(
     await Bytes.empty(),
     await BigInt.fromI32(0),
@@ -175,10 +175,9 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const eventParamArray = await Promise.all(eventParamArrayPromise);
   const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), eventParamArray);
 
-  // Dummy contract address string.
   const addStrPtr = await __newString(contractAddress);
 
-  // Create Test event to be passed to handler.
+  // Create event to be passed to handler.
   return ethereum.Event.__new(
     await Address.fromString(addStrPtr),
     await BigInt.fromI32(0),

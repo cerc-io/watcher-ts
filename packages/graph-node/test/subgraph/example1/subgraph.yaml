@@ -18,6 +18,6 @@ dataSources:
         - name: Example1
           file: ./abis/Example1.json
       eventHandlers:
-        - event: Test(string,uint256)
+        - event: Test(string,uint8)
           handler: handleTest
       file: ./src/mapping.ts

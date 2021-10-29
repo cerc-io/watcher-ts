@@ -33,6 +33,7 @@ export class GraphWatcher {
     const { dataSources } = await getSubgraphConfig(this._subgraphPath);
     this._dataSources = dataSources;
 
+    // Create wasm instance and contract interface for each dataSource in subgraph yaml.
     const dataPromises = this._dataSources.map(async (dataSource: any) => {
       const { source: { address, abi }, mapping } = dataSource;
       const { abis, file } = mapping;
@@ -41,6 +42,7 @@ export class GraphWatcher {
         const { name, file } = abi;
         const abiFilePath = path.join(this._subgraphPath, file);
         acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
+
         return acc;
       }, {});
 
@@ -63,6 +65,7 @@ export class GraphWatcher {
 
     const data = await Promise.all(dataPromises);
 
+    // Create a map from dataSource contract address to instance and contract interface.
     this._dataSourceMap = this._dataSources.reduce((acc: { [key: string]: DataSource }, dataSource: any, index: number) => {
       const { instance } = data[index];
 
@@ -78,8 +81,9 @@ export class GraphWatcher {
   }
 
   async handleEvent (eventData: any) {
-    const { contract, event } = eventData;
+    const { contract, event, eventSignature } = eventData;
 
+    // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
 
     if (!dataSource) {
@@ -87,10 +91,14 @@ export class GraphWatcher {
       return;
     }
 
-    // TODO: Call instance methods based on event signature.
-    // value should contain event signature.
+    // Get event handler based on event signature.
+    const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => eventHandler.event === eventSignature);
 
-    const [{ handler, event: eventSignature }] = dataSource.mapping.eventHandlers;
+    if (!eventHandler) {
+      log(`No handler configured in subgraph for event ${eventSignature}`);
+      return;
+    }
+
     const { instance: { exports }, contractInterface } = this._dataSourceMap[contract];
 
     const eventFragment = contractInterface.getEvent(eventSignature);
@@ -103,8 +111,9 @@ export class GraphWatcher {
       };
     });
 
+    // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(exports, contract, eventParamsData);
 
-    await exports[handler](ethereumEvent);
+    await exports[eventHandler.handler](ethereumEvent);
   }
 }
