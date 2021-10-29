@@ -89,10 +89,8 @@ const main = async (): Promise<void> => {
   await db.close();
 };
 
-main()
-  .catch(err => {
-    log(err);
-  })
-  .finally(() => {
-    process.exit(0);
-  });
+main().catch(err => {
+  log(err);
+}).finally(() => {
+  process.exit(0);
+});

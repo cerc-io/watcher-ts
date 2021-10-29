@@ -42,6 +42,9 @@ export const handler = async (argv: any): Promise<void> => {
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
 
+  const hooksStatus = await indexer.getHookStatus();
+  assert(hooksStatus, 'Missing hooksStatus');
+
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
   assert(!blockProgresses.some(block => !block.isComplete), `Incomplete block at block number ${argv.blockNumber} with unprocessed events`);
@@ -68,6 +71,10 @@ export const handler = async (argv: any): Promise<void> => {
 
     if (syncStatus.latestCanonicalBlockNumber > blockProgress.blockNumber) {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
+    }
+
+    if (hooksStatus.latestProcessedBlockNumber > blockProgress.blockNumber) {
+      await indexer.updateHookStatusProcessedBlock(blockProgress.blockNumber, true);
     }
 
     dbTx.commitTransaction();
