@@ -10,6 +10,7 @@ type ResultEvent {
   tx: Transaction!
   contract: String!
   eventIndex: Int!
+  eventSignature: String!
   event: Event!
   proof: Proof
 }
