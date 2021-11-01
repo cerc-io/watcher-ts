@@ -52,6 +52,7 @@ export class Indexer implements IndexerInterface {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
+    assert(ethClient);
     assert(postgraphileClient);
 
     this._db = db;
