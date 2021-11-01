@@ -171,6 +171,17 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
 
   const blockTimestamp = await BigInt.fromI32(blockData.timestamp);
 
+  // Missing fields from watcher in block data:
+  // unclesHash
+  // author
+  // stateRoot
+  // transactionsRoot
+  // receiptsRoot
+  // gasUsed
+  // gasLimit
+  // difficulty
+  // totalDifficulty
+  // size
   const block = await ethereum.Block.__new(
     blockHash,
     parentHash,
@@ -198,6 +209,11 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
 
   const txTo = tx.to && await Address.fromString(await __newString(tx.to));
 
+  // Missing fields from watcher in transaction data:
+  // value
+  // gasLimit
+  // gasPrice
+  // input
   const transaction = await ethereum.Transaction.__new(
     txHash,
     txIndex,
