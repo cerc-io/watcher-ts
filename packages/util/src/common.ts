@@ -51,7 +51,7 @@ export const processBlockByNumber = async (
 
     if (blocks.length) {
       for (let bi = 0; bi < blocks.length; bi++) {
-        const { blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
+        const { cid, blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
         const blockProgress = await indexer.getBlockProgress(blockHash);
 
         if (blockProgress) {
@@ -59,7 +59,7 @@ export const processBlockByNumber = async (
         } else {
           await indexer.updateSyncStatusChainHead(blockHash, blockNumber);
 
-          await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
+          await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, cid, blockHash, blockNumber, parentHash, timestamp });
         }
       }
 

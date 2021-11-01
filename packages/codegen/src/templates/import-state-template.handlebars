@@ -60,7 +60,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
   // Import data.
   const importFilePath = path.resolve(argv.importFile);
@@ -71,8 +71,9 @@ export const main = async (): Promise<any> => {
   await fillBlocks(
     jobQueue,
     indexer,
-    ethClient,
+    postgraphileClient,
     eventWatcher,
+    config.upstream.ethServer.blockDelayInMilliSecs,
     {
       startBlock: importData.snapshotBlock.blockNumber,
       endBlock: importData.snapshotBlock.blockNumber
