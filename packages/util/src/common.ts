@@ -70,7 +70,7 @@ export const processBlockByNumber = async (
 
     if (blocks.length) {
       for (let bi = 0; bi < blocks.length; bi++) {
-        const { blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
+        const { cid, blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
 
         // Stop blocks already pushed to job queue. They are already retried after fail.
         if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
@@ -79,6 +79,7 @@ export const processBlockByNumber = async (
             {
               kind: JOB_KIND_INDEX,
               blockNumber: Number(blockNumber),
+              cid,
               blockHash,
               parentHash,
               timestamp
