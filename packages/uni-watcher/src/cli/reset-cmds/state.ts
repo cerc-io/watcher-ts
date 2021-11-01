@@ -6,7 +6,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, getResetConfig, JobQueue, resetJobs } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs, JobQueue } from '@vulcanize/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
@@ -27,16 +27,15 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { jobQueue: jobQueueConfig } = config;
-  const { dbConfig, ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize database.
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  assert(jobQueueConfig, 'Missing job queue config');
+  assert(config.jobQueue, 'Missing job queue config');
 
-  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+  const { dbConnectionString, maxCompletionLagInSecs } = config.jobQueue;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });

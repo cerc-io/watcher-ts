@@ -6,7 +6,7 @@ import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, getResetConfig, JobQueue } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
@@ -49,7 +49,7 @@ import { Indexer } from '../indexer';
 
   const config: Config = await getConfig(argv.configFile);
   const { database: dbConfig, jobQueue: jobQueueConfig } = config;
-  const { ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   assert(dbConfig);
 

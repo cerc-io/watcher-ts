@@ -10,18 +10,17 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
+
 import {
   getConfig,
+  Config,
   JobQueue,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   JobRunner as BaseJobRunner,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  getCustomProvider,
-  ServerConfig
+  initClients
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -34,14 +33,12 @@ export class JobRunner {
   _jobQueue: JobQueue
   _baseJobRunner: BaseJobRunner
   _jobQueueConfig: JobQueueConfig
-  _serverConfig: ServerConfig
 
-  constructor (jobQueueConfig: JobQueueConfig, serverConfig: ServerConfig, indexer: Indexer, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, indexer: Indexer, jobQueue: JobQueue) {
     this._jobQueueConfig = jobQueueConfig;
     this._indexer = indexer;
     this._jobQueue = jobQueue;
-    this._serverConfig = serverConfig;
-    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._serverConfig, this._indexer, this._jobQueue);
+    this._baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this._jobQueue);
   }
 
   async start (): Promise<void> {
@@ -73,58 +70,21 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
-
-  assert(upstream, 'Missing upstream config');
-  assert(dbConfig, 'Missing database config');
-  assert(serverConfig, 'Missing server config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  assert(upstream, 'Missing upstream config');
-
   const {
-    uniWatcher: {
-      gqlEndpoint,
-      gqlSubscriptionEndpoint
-    },
-    tokenWatcher,
-    cache: cacheConfig,
-    ethServer: {
-      gqlApiEndpoint,
-      gqlPostgraphileEndpoint,
-      rpcProviderEndpoint
-    }
-  } = upstream;
+    uniWatcher,
+    tokenWatcher
+  } = config.upstream;
 
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlEndpoint, 'Missing upstream uniWatcher.gqlEndpoint');
-  assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const uniClient = new UniClient({
-    gqlEndpoint,
-    gqlSubscriptionEndpoint
-  });
-
+  const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -133,9 +93,9 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, jobQueue, serverConfig.mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, jobQueue, config.server.mode);
 
-  const jobRunner = new JobRunner(jobQueueConfig, serverConfig, indexer, jobQueue);
+  const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
 };
 
