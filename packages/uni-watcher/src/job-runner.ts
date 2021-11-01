@@ -8,17 +8,16 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
 import {
   getConfig,
+  Config,
   JobQueue,
   JobRunner as BaseJobRunner,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  getCustomProvider
+  initClients
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -95,38 +94,15 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient } = await initClients(config);
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
-
-  assert(upstream, 'Missing upstream config');
-  assert(dbConfig, 'Missing database config');
-  assert(serverConfig, 'Missing server config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
-
-  assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;

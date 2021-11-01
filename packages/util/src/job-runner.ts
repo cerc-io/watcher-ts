@@ -7,7 +7,7 @@ import debug from 'debug';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 
-import { JobQueueConfig, ServerConfig } from './config';
+import { JobQueueConfig } from './config';
 import {
   JOB_KIND_INDEX,
   JOB_KIND_PRUNE,
@@ -24,13 +24,11 @@ export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
-  _serverConfig: ServerConfig
 
-  constructor (jobQueueConfig: JobQueueConfig, serverConfig: ServerConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
-    this._serverConfig = serverConfig;
   }
 
   async processBlock (job: any): Promise<void> {

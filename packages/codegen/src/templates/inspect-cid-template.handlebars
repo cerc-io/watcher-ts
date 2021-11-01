@@ -6,12 +6,9 @@ import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
-import { getDefaultProvider } from 'ethers';
 import util from 'util';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients } from '@vulcanize/util';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
@@ -39,36 +36,12 @@ const main = async (): Promise<void> => {
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
-  const { upstream, database: dbConfig, server: serverConfig } = config;
-
-  assert(upstream, 'Missing upstream config');
-  assert(dbConfig, 'Missing database config');
-  assert(serverConfig, 'Missing server config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
-
-  const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider);
 
   const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
   assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');

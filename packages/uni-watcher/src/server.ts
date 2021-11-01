@@ -12,9 +12,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, getCustomProvider, JobQueue } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, initClients } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -37,43 +35,20 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
-
-  assert(config.server, 'Missing server config');
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   const { host, port } = config.server;
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
-  assert(dbConfig, 'Missing database config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
-
-  assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
 
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -82,7 +57,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const eventWatcher = new EventWatcher(upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
   await eventWatcher.start();
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
