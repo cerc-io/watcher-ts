@@ -6,21 +6,19 @@ import {
   BigInt,
   ethereum,
   Address,
-  Bytes
+  ByteArray,
+  Bytes,
+  Entity
 } from '@graphprotocol/graph-ts';
-
-import {
-  Test
-} from './Example1/Example1';
 
 export {
   BigDecimal,
   BigInt,
 
   ethereum,
+  Entity,
 
   Address,
-  Bytes,
-
-  Test
+  ByteArray,
+  Bytes
 }
