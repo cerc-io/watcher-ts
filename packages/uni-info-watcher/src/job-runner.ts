@@ -10,17 +10,17 @@ import debug from 'debug';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
+
 import {
   getConfig,
+  Config,
   JobQueue,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   JobRunner as BaseJobRunner,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  getCustomProvider
+  initClients
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -80,60 +80,23 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
-
-  assert(upstream, 'Missing upstream config');
-  assert(dbConfig, 'Missing database config');
-  assert(serverConfig, 'Missing server config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  assert(upstream, 'Missing upstream config');
-
   const {
-    uniWatcher: {
-      gqlEndpoint,
-      gqlSubscriptionEndpoint
-    },
-    tokenWatcher,
-    cache: cacheConfig,
-    ethServer: {
-      gqlApiEndpoint,
-      gqlPostgraphileEndpoint,
-      rpcProviderEndpoint
-    }
-  } = upstream;
+    uniWatcher,
+    tokenWatcher
+  } = config.upstream;
 
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlEndpoint, 'Missing upstream uniWatcher.gqlEndpoint');
-  assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const uniClient = new UniClient({
-    gqlEndpoint,
-    gqlSubscriptionEndpoint
-  });
-
+  const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, serverConfig.mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, config.server.mode);
 
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;

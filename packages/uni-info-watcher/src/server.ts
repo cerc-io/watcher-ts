@@ -14,9 +14,7 @@ import { createServer } from 'http';
 
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, getCustomProvider, JobQueue } from '@vulcanize/util';
-import { getCache } from '@vulcanize/cache';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, getCustomProvider, JobQueue, initClients } from '@vulcanize/util';
 
 import typeDefs from './schema';
 
@@ -39,52 +37,22 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
-
-  assert(config.server, 'Missing server config');
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient } = await initClients(config);
 
   const { host, port, mode } = config.server;
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
-  assert(dbConfig, 'Missing database config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  assert(upstream, 'Missing upstream config');
-  const {
-    ethServer: {
-      gqlApiEndpoint,
-      gqlPostgraphileEndpoint,
-      rpcProviderEndpoint
-    },
-    uniWatcher,
-    tokenWatcher,
-    cache: cacheConfig
-  } = upstream;
-
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
+  const { uniWatcher, tokenWatcher, ethServer: { rpcProviderEndpoint } } = config.upstream;
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
   const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, mode);
 
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -94,7 +62,7 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   const pubSub = new PubSub();
-  const eventWatcher = new EventWatcher(upstream, ethClient, postgraphileClient, indexer, pubSub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubSub, jobQueue);
   await eventWatcher.start();
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);

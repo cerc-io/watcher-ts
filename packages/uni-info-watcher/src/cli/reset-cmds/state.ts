@@ -6,7 +6,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, getResetConfig, resetJobs } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs } from '@vulcanize/util';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 
@@ -38,21 +38,21 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { dbConfig, serverConfig, upstreamConfig, ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize database.
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
   const {
     uniWatcher,
     tokenWatcher
-  } = upstreamConfig;
+  } = config.upstream;
 
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, serverConfig.mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, config.server.mode);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');

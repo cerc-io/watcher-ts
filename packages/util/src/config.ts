@@ -9,9 +9,9 @@ import toml from 'toml';
 import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
 
-import { BaseProvider } from '@ethersproject/providers';
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
+import { BaseProvider } from '@ethersproject/providers';
 
 import { getCustomProvider } from './misc';
 
@@ -72,10 +72,7 @@ export const getConfig = async (configFile: string): Promise<Config> => {
   return config;
 };
 
-export const getResetConfig = async (config: Config): Promise<{
-  dbConfig: ConnectionOptions,
-  serverConfig: ServerConfig,
-  upstreamConfig: UpstreamConfig,
+export const initClients = async (config: Config): Promise<{
   ethClient: EthClient,
   postgraphileClient: EthClient,
   ethProvider: BaseProvider
@@ -84,9 +81,10 @@ export const getResetConfig = async (config: Config): Promise<{
 
   assert(serverConfig, 'Missing server config');
   assert(dbConfig, 'Missing database config');
-
   assert(upstreamConfig, 'Missing upstream config');
+
   const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstreamConfig;
+
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
   assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint');
@@ -107,9 +105,6 @@ export const getResetConfig = async (config: Config): Promise<{
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
   return {
-    dbConfig,
-    serverConfig,
-    upstreamConfig,
     ethClient,
     postgraphileClient,
     ethProvider
