@@ -6,7 +6,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, getResetConfig, JobQueue, resetJobs } from '@vulcanize/util';
+import { getConfig, initClients, JobQueue, resetJobs } from '@vulcanize/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
@@ -29,13 +29,13 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { jobQueue: jobQueueConfig } = config;
-  const { dbConfig, serverConfig, ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize database.
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
+  const { jobQueue: jobQueueConfig } = config;
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -43,7 +43,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, serverConfig.mode);
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, config.server.mode);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
