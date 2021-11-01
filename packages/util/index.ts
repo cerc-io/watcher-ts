@@ -12,4 +12,4 @@ export * from './src/events';
 export * from './src/types';
 export * from './src/indexer';
 export * from './src/job-runner';
-export * from './src/ipldHelper';
+export * from './src/ipld-helper';

@@ -6,7 +6,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, getResetConfig, resetJobs } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs } from '@vulcanize/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
@@ -27,10 +27,10 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { dbConfig, ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize database.
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);

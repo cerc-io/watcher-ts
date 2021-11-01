@@ -8,13 +8,10 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
-import { getDefaultProvider } from 'ethers';
 import fs from 'fs';
 import path from 'path';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients } from '@vulcanize/util';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';
@@ -43,40 +40,19 @@ export const main = async (): Promise<any> => {
     }
   }).argv;
 
-  const config = await getConfig(argv.configFile);
+  const config: Config = await getConfig(argv.configFile);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: serverConfig } = config;
-
-  assert(upstream, 'Missing upstream config');
-  assert(dbConfig, 'Missing database config');
-  assert(serverConfig, 'Missing server config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
-
-  assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const ethProvider = getDefaultProvider(rpcProviderEndpoint);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(serverConfig, db, ethClient, postgraphileClient, ethProvider);
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider);
+
+  const jobQueueConfig = config.jobQueue;
+  assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
@@ -85,8 +61,6 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-
-  assert(jobQueueConfig, 'Missing job queue config');
 
   // Import data.
   const importFilePath = path.resolve(argv.importFile);
