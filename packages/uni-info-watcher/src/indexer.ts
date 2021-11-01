@@ -44,20 +44,23 @@ export class Indexer implements IndexerInterface {
   _uniClient: UniClient
   _erc20Client: ERC20Client
   _ethClient: EthClient
+  _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
   _isDemo: boolean
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, ethProvider: providers.BaseProvider, mode: string) {
+  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, mode: string) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
     assert(ethClient);
+    assert(postgraphileClient);
 
     this._db = db;
     this._uniClient = uniClient;
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, ethProvider);
+    this._postgraphileClient = postgraphileClient;
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, ethProvider);
     this._isDemo = mode === 'demo';
   }
 

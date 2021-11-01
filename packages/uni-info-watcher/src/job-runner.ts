@@ -81,7 +81,7 @@ export const main = async (): Promise<any> => {
     .argv;
 
   const config: Config = await getConfig(argv.f);
-  const { ethClient } = await initClients(config);
+  const { ethClient, postgraphileClient } = await initClients(config);
 
   const db = new Database(config.database);
   await db.init();
@@ -96,7 +96,7 @@ export const main = async (): Promise<any> => {
   const erc20Client = new ERC20Client(tokenWatcher);
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, config.server.mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, config.server.mode);
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');

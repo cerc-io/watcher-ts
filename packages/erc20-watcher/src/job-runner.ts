@@ -82,7 +82,7 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const indexer = new Indexer(db, ethClient, ethProvider, config.server.mode);
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, config.server.mode);
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
