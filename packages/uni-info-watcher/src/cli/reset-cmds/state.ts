@@ -38,7 +38,7 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { ethClient, ethProvider } = await initClients(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize database.
   const db = new Database(config.database);
@@ -52,7 +52,7 @@ export const handler = async (argv: any): Promise<void> => {
   const uniClient = new UniClient(uniWatcher);
   const erc20Client = new ERC20Client(tokenWatcher);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, config.server.mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, config.server.mode);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');

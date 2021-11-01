@@ -95,7 +95,7 @@ export const main = async (): Promise<any> => {
     .argv;
 
   const config: Config = await getConfig(argv.f);
-  const { ethClient, postgraphileClient } = await initClients(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   const db = new Database(config.database);
   await db.init();

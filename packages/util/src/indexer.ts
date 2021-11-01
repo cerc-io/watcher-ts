@@ -28,12 +28,14 @@ export interface ValueResult {
 export class Indexer {
   _db: DatabaseInterface;
   _ethClient: EthClient;
+  _postgraphileClient: EthClient;
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
 
-  constructor (db: DatabaseInterface, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
+  constructor (db: DatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
     this._db = db;
     this._ethClient = ethClient;
+    this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
@@ -108,9 +110,27 @@ export class Indexer {
 
   async getBlock (blockHash: string): Promise<any> {
     try {
-      const { block } = await this._ethClient.getBlockByHash(blockHash);
+      const {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              cid,
+              blockNumber,
+              parentHash,
+              timestamp
+            }
+          ]
+        }
+      } = await this._postgraphileClient.getBlocks({ blockHash });
 
-      return block;
+      return {
+        cid,
+        number: blockNumber,
+        parent: {
+          hash: parentHash
+        },
+        timestamp
+      };
     } catch (error) {
       // If block is not present in header_cids, eth_getBlockByHash call is made to update statediff.
       if (error instanceof Error && error.message === MISSING_BLOCKS_ERROR) {
