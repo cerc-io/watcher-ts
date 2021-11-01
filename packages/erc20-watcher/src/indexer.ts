@@ -56,6 +56,7 @@ export class Indexer implements IndexerInterface {
   constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
     assert(db);
     assert(ethClient);
+    assert(postgraphileClient);
 
     this._db = db;
     this._ethClient = ethClient;

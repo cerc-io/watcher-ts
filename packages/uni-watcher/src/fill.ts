@@ -65,7 +65,7 @@ export const main = async (): Promise<any> => {
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
-  await fillBlocks(jobQueue, indexer, postgraphileClient, eventWatcher, argv);
+  await fillBlocks(jobQueue, indexer, postgraphileClient, eventWatcher, config.upstream.ethServer.blockDelayInMilliSecs, argv);
 };
 
 main().catch(err => {
