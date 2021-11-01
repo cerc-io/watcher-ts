@@ -6,18 +6,24 @@ import 'reflect-metadata';
 import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
-import { ContractInterface } from 'ethers';
+import { ContractInterface, utils } from 'ethers';
 
-import { getSubgraphConfig } from './utils';
-import { instantiate } from './loader';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+
+import { createEvent, getSubgraphConfig } from './utils';
+import { instantiate } from './loader';
 
 const log = debug('vulcanize:graph-watcher');
 
+interface DataSource {
+  instance: ResultObject & { exports: any },
+  contractInterface: utils.Interface
+}
+
 export class GraphWatcher {
   _subgraphPath: string;
-  _dataSources: any[] = []
-  _instanceMap: { [key: string]: ResultObject & { exports: any } } = {};
+  _dataSources: any[] = [];
+  _dataSourceMap: { [key: string]: DataSource } = {};
 
   constructor (subgraphPath: string) {
     this._subgraphPath = subgraphPath;
@@ -27,33 +33,57 @@ export class GraphWatcher {
     const { dataSources } = await getSubgraphConfig(this._subgraphPath);
     this._dataSources = dataSources;
 
-    this._instanceMap = this._dataSources.reduce(async (acc: { [key: string]: ResultObject & { exports: any } }, dataSource: any) => {
-      const { source: { address }, mapping } = dataSource;
+    // Create wasm instance and contract interface for each dataSource in subgraph yaml.
+    const dataPromises = this._dataSources.map(async (dataSource: any) => {
+      const { source: { address, abi }, mapping } = dataSource;
       const { abis, file } = mapping;
 
+      const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
+        const { name, file } = abi;
+        const abiFilePath = path.join(this._subgraphPath, file);
+        acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
+
+        return acc;
+      }, {});
+
+      const contractInterface = new utils.Interface(abisMap[abi]);
+
       const data = {
-        abis: abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
-          const { name, file } = abi;
-          const abiFilePath = path.join(this._subgraphPath, file);
-          acc[name] = JSON.parse(fs.readFileSync(abiFilePath).toString());
-          return acc;
-        }, {}),
+        abis: abisMap,
         dataSource: {
           address
         }
       };
 
       const filePath = path.join(this._subgraphPath, file);
-      const instance = await instantiate(filePath, data);
 
-      acc[address] = instance;
+      return {
+        instance: await instantiate(filePath, data),
+        contractInterface
+      };
+    }, {});
+
+    const data = await Promise.all(dataPromises);
+
+    // Create a map from dataSource contract address to instance and contract interface.
+    this._dataSourceMap = this._dataSources.reduce((acc: { [key: string]: DataSource }, dataSource: any, index: number) => {
+      const { instance } = data[index];
+
+      // Important to call _start for built subgraphs on instantiation!
+      // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
+      instance.exports._start();
+
+      const { source: { address } } = dataSource;
+      acc[address] = data[index];
+
       return acc;
     }, {});
   }
 
   async handleEvent (eventData: any) {
-    const { contract } = eventData;
+    const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
+    // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
 
     if (!dataSource) {
@@ -61,16 +91,36 @@ export class GraphWatcher {
       return;
     }
 
-    // TODO: Call instance methods based on event signature.
-    // value should contain event signature.
+    // Get event handler based on event signature.
+    const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => eventHandler.event === eventSignature);
 
-    const [{ handler }] = dataSource.mapping.eventHandlers;
-    const { exports } = this._instanceMap[contract];
+    if (!eventHandler) {
+      log(`No handler configured in subgraph for event ${eventSignature}`);
+      return;
+    }
 
-    // Create ethereum event to be passed to handler.
-    // TODO: Create ethereum event to be passed to handler.
-    // const ethereumEvent = await createEvent(exports, address, event);
+    const { instance: { exports }, contractInterface } = this._dataSourceMap[contract];
 
-    await exports[handler]();
+    const eventFragment = contractInterface.getEvent(eventSignature);
+
+    const eventParams = eventFragment.inputs.map((input) => {
+      return {
+        name: input.name,
+        value: event[input.name],
+        kind: input.type
+      };
+    });
+
+    const data = {
+      eventParams: eventParams,
+      block,
+      tx,
+      eventIndex
+    };
+
+    // Create ethereum event to be passed to the wasm event handler.
+    const ethereumEvent = await createEvent(exports, contract, data);
+
+    await exports[eventHandler.handler](ethereumEvent);
   }
 }

@@ -14,128 +14,39 @@ interface EventParam {
   kind: string;
 }
 
-/**
- * Method to create ethereum event.
- * @param exports
- * @param contractAddress
- * @param eventParamsData
- * @returns
- */
-export const createEvent = async (exports: any, contractAddress: string, eventParamsData: EventParam[]): Promise<any> => {
-  const {
-    __newString,
-    __newArray,
-    Address,
-    BigInt,
-    ethereum,
-    Bytes,
-    ByteArray,
-    id_of_type: idOfType
-  } = exports;
+interface Block {
+  hash: string;
+  number: number;
+  timestamp: number;
+  parentHash: string;
+}
 
-  // Create dummy block data.
-  const block = await ethereum.Block.__new(
-    await Bytes.empty(),
-    await Bytes.empty(),
-    await Bytes.empty(),
-    await Address.zero(),
-    await Bytes.empty(),
-    await Bytes.empty(),
-    await Bytes.empty(),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    null
-  );
+interface Transaction {
+  hash: string;
+  index: number;
+  from: string;
+  to: string;
+}
 
-  // Create dummy transaction data.
-  const transaction = await ethereum.Transaction.__new(
-    await Bytes.empty(),
-    await BigInt.fromI32(0),
-    await Address.zero(),
-    null,
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await Bytes.empty()
-  );
-
-  const eventParamArrayPromise = eventParamsData.map(async data => {
-    const { name, value, kind } = data;
-    let ethValue;
-
-    switch (kind) {
-      case 'unsignedBigInt': {
-        const bigIntString = await (await __newString(value.toString()));
-        const bigInt = await BigInt.fromString(bigIntString);
-        ethValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
-        break;
-      }
-
-      case 'string': {
-        ethValue = await ethereum.Value.fromString(await __newString(value));
-        break;
-      }
-
-      case 'i32': {
-        ethValue = await ethereum.Value.fromI32(value);
-        break;
-      }
-
-      case 'address': {
-        ethValue = await ethereum.Value.fromAddress(await Address.fromString(await __newString(value)));
-        break;
-      }
-
-      case 'bytes': {
-        const byteArray = await ByteArray.fromHexString(await __newString(value));
-        ethValue = await ethereum.Value.fromBytes(await Bytes.fromByteArray(byteArray));
-        break;
-      }
-
-      default:
-        break;
-    }
-
-    return ethereum.EventParam.__new(
-      await __newString(name),
-      ethValue
-    );
-  });
-
-  const eventParamArray = await Promise.all(eventParamArrayPromise);
-  const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), eventParamArray);
-
-  // Dummy contract address string.
-  const addStrPtr = await __newString(contractAddress);
-
-  // Create Test event to be passed to handler.
-  return ethereum.Event.__new(
-    await Address.fromString(addStrPtr),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    null,
-    block,
-    transaction,
-    eventParams
-  );
-};
+export interface EventData {
+  block: Block;
+  tx: Transaction;
+  eventParams: EventParam[];
+  eventIndex: number;
+}
 
 /**
  * Method to get value from graph-ts ethereum.Value wasm instance.
- * @param exports
+ * @param instanceExports
  * @param value
  * @returns
  */
-export const fromEthereumValue = async (exports: any, value: any): Promise<any> => {
+export const fromEthereumValue = async (instanceExports: any, value: any): Promise<any> => {
   const {
     __getString,
     BigInt,
     Address
-  } = exports;
+  } = instanceExports;
 
   const kind = await value.kind;
 
@@ -173,12 +84,12 @@ export const fromEthereumValue = async (exports: any, value: any): Promise<any> 
 
 /**
  * Method to get ethereum value for passing to wasm instance.
- * @param exports
+ * @param instanceExports
  * @param value
  * @param type
  * @returns
  */
-export const toEthereumValue = async (exports: any, value: any, type: string): Promise<any> => {
+export const toEthereumValue = async (instanceExports: any, value: any, type: string): Promise<any> => {
   const {
     __newString,
     ByteArray,
@@ -186,7 +97,7 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
     Address,
     ethereum,
     BigInt
-  } = exports;
+  } = instanceExports;
 
   // For boolean type.
   if (type === 'bool') {
@@ -223,6 +134,125 @@ export const toEthereumValue = async (exports: any, value: any, type: string): P
   return ethereum.Value.fromString(await __newString(value));
 };
 
+/**
+ * Method to create ethereum event.
+ * @param instanceExports
+ * @param contractAddress
+ * @param eventParamsData
+ * @returns
+ */
+export const createEvent = async (instanceExports: any, contractAddress: string, eventData: EventData): Promise<any> => {
+  const {
+    tx,
+    eventIndex,
+    eventParams: eventParamsData,
+    block: blockData
+  } = eventData;
+
+  const {
+    __newString,
+    __newArray,
+    Address,
+    BigInt,
+    ethereum,
+    Bytes,
+    ByteArray,
+    id_of_type: idOfType
+  } = instanceExports;
+
+  // Fill block data.
+  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.hash));
+  const blockHash = await Bytes.fromByteArray(blockHashByteArray);
+
+  const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
+  const parentHash = await Bytes.fromByteArray(parentHashByteArray);
+
+  const blockNumber = await BigInt.fromI32(blockData.number);
+
+  const blockTimestamp = await BigInt.fromI32(blockData.timestamp);
+
+  // Missing fields from watcher in block data:
+  // unclesHash
+  // author
+  // stateRoot
+  // transactionsRoot
+  // receiptsRoot
+  // gasUsed
+  // gasLimit
+  // difficulty
+  // totalDifficulty
+  // size
+  const block = await ethereum.Block.__new(
+    blockHash,
+    parentHash,
+    await Bytes.empty(),
+    await Address.zero(),
+    await Bytes.empty(),
+    await Bytes.empty(),
+    await Bytes.empty(),
+    blockNumber,
+    await BigInt.fromI32(0),
+    await BigInt.fromI32(0),
+    blockTimestamp,
+    await BigInt.fromI32(0),
+    await BigInt.fromI32(0),
+    null
+  );
+
+  // Fill transaction data.
+  const txHashByteArray = await ByteArray.fromHexString(await __newString(tx.hash));
+  const txHash = await Bytes.fromByteArray(txHashByteArray);
+
+  const txIndex = await BigInt.fromI32(tx.index);
+
+  const txFrom = await Address.fromString(await __newString(tx.from));
+
+  const txTo = tx.to && await Address.fromString(await __newString(tx.to));
+
+  // Missing fields from watcher in transaction data:
+  // value
+  // gasLimit
+  // gasPrice
+  // input
+  const transaction = await ethereum.Transaction.__new(
+    txHash,
+    txIndex,
+    txFrom,
+    txTo,
+    await BigInt.fromI32(0),
+    await BigInt.fromI32(0),
+    await BigInt.fromI32(0),
+    await Bytes.empty()
+  );
+
+  const eventParamArrayPromise = eventParamsData.map(async data => {
+    const { name, value, kind } = data;
+
+    const ethValue = await toEthereumValue(instanceExports, value, kind);
+
+    return ethereum.EventParam.__new(
+      await __newString(name),
+      ethValue
+    );
+  });
+
+  const eventParamArray = await Promise.all(eventParamArrayPromise);
+  const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), eventParamArray);
+
+  const addStrPtr = await __newString(contractAddress);
+
+  // Create event to be passed to handler.
+  return ethereum.Event.__new(
+    await Address.fromString(addStrPtr),
+    await BigInt.fromI32(eventIndex),
+    await BigInt.fromI32(0),
+    null,
+    block,
+    transaction,
+    eventParams
+  );
+};
+
 export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   const configFilePath = path.resolve(path.join(subgraphPath, 'subgraph.yaml'));
   const fileExists = await fs.pathExists(configFilePath);
@@ -231,7 +261,6 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  console.log(configFilePath);
   const config = yaml.load(await fs.readFile(configFilePath, 'utf8'));
   log('config', JSON.stringify(config, null, 2));
 
