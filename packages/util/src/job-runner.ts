@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { In } from 'typeorm';
 
-import { JobQueueConfig, ServerConfig } from './config';
+import { JobQueueConfig } from './config';
 import {
   JOB_KIND_INDEX,
   JOB_KIND_PRUNE,
@@ -32,13 +32,11 @@ export class JobRunner {
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
-  _serverConfig: ServerConfig
 
-  constructor (jobQueueConfig: JobQueueConfig, serverConfig: ServerConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
+  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
     this._jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
-    this._serverConfig = serverConfig;
   }
 
   async processBlock (job: any): Promise<void> {
