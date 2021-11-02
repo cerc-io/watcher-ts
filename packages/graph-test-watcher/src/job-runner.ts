@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import path from 'path';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -107,7 +108,7 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const graphWatcher = new GraphWatcher(subgraphPath);
+  const graphWatcher = new GraphWatcher(config, path.resolve(__dirname, 'entity/*'), subgraphPath);
   await graphWatcher.init();
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);

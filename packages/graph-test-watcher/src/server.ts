@@ -70,7 +70,7 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const graphWatcher = new GraphWatcher(subgraphPath);
+  const graphWatcher = new GraphWatcher(config, path.resolve(__dirname, 'entity/*'), subgraphPath);
   await graphWatcher.init();
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, graphWatcher);

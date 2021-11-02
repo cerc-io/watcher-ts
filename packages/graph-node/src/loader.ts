@@ -15,6 +15,7 @@ import {
 
 import { TypeId } from './types';
 import { fromEthereumValue, toEthereumValue } from './utils';
+import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
@@ -29,7 +30,7 @@ interface GraphData {
   dataSource?: DataSource;
 }
 
-export const instantiate = async (filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+export const instantiate = async (database: Database, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
@@ -40,15 +41,17 @@ export const instantiate = async (filePath: string, data: GraphData = {}): Promi
         console.log('store.get');
 
         const entityString = __getString(entity);
-        console.log('entity:', entityString);
         const idString = __getString(id);
-        console.log('id:', idString);
 
-        // TODO: Implement store get to fetch from DB using entity and id.
+        const entityData = await database.getEntity(entityString, idString);
+        console.log('entity', entityData);
+
+        if (!entityData) {
+          return null;
+        }
 
         // TODO: Fill entity with field values.
         // return Entity.__new()
-        return null;
       },
       'store.set': async (entity: number, id: number, data: number) => {
         console.log('store.set');
