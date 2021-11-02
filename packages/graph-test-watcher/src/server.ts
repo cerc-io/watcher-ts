@@ -17,7 +17,7 @@ import { createServer } from 'http';
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE, getCustomProvider } from '@vulcanize/util';
-import { GraphWatcher } from '@vulcanize/graph-node';
+import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -70,7 +70,10 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const graphWatcher = new GraphWatcher(config, path.resolve(__dirname, 'entity/*'), subgraphPath);
+  const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, subgraphPath);
   await graphWatcher.init();
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, graphWatcher);

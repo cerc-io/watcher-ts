@@ -9,7 +9,6 @@ import fs from 'fs';
 import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
-import { Config } from '@vulcanize/util';
 
 import { createEvent, getSubgraphConfig } from './utils';
 import { instantiate } from './loader';
@@ -28,14 +27,12 @@ export class GraphWatcher {
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
-  constructor (config: Config, entitiesPath: string, subgraphPath: string) {
-    this._database = new Database(config.database, entitiesPath);
+  constructor (database: Database, subgraphPath: string) {
+    this._database = database;
     this._subgraphPath = subgraphPath;
   }
 
   async init () {
-    await this._database.init();
-
     const { dataSources } = await getSubgraphConfig(this._subgraphPath);
     this._dataSources = dataSources;
 
