@@ -3,6 +3,10 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
+import {
+  Repository
+
+} from 'typeorm';
 
 import { TypeId, ValueKind } from './types';
 
@@ -265,4 +269,46 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   log('config', JSON.stringify(config, null, 2));
 
   return config;
+};
+
+export const getEntityData = async (exports: any, repo: Repository<any>, entityInstance: any): Promise<{ [key: string]: any } > => {
+  const entityFields = repo.metadata.columns;
+
+  const entityValuePromises = entityFields.map(async (field) => {
+    const { type, propertyName } = field;
+
+    return fromEntityValue(exports, entityInstance, type.toString(), propertyName);
+  }, {});
+
+  const entityValues = await Promise.all(entityValuePromises);
+
+  return entityFields.reduce((acc: { [key: string]: any }, field, index) => {
+    const { propertyName } = field;
+    acc[propertyName] = entityValues[index];
+
+    return acc;
+  }, {});
+};
+
+const fromEntityValue = async (exports: any, entityInstance: any, type: string, key: string): Promise<any> => {
+  const { __newString, __getString, BigInt: ExportBigInt } = exports;
+  const entityKey = await __newString(key);
+
+  switch (type) {
+    case 'varchar': {
+      return __getString(await entityInstance.getString(entityKey));
+    }
+
+    case 'integer': {
+      return entityInstance.getI32(entityKey);
+    }
+
+    case 'bigint': {
+      const bigInt = ExportBigInt.wrap(await entityInstance.getBigInt(entityKey));
+      return BigInt(__getString(await bigInt.toString()));
+    }
+
+    default:
+      break;
+  }
 };

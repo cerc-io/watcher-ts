@@ -12,6 +12,8 @@ import {
   Database as BaseDatabase
 } from '@vulcanize/util';
 
+import { getEntityData } from './utils';
+
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
@@ -40,5 +42,12 @@ export class Database {
   async getEntity (entity: string, id: string): Promise<any> {
     return this._conn.getRepository(entity)
       .findOne(id);
+  }
+
+  async saveEntity (exports: any, entity: string, instance: any): Promise<void> {
+    const repo = this._conn.getRepository(entity);
+    const data = await getEntityData(exports, repo, instance);
+    const dbEntity: any = await repo.create(data);
+    await repo.save(dbEntity);
   }
 }

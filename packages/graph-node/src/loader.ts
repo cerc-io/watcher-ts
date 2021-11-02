@@ -43,6 +43,7 @@ export const instantiate = async (database: Database, filePath: string, data: Gr
         const entityString = __getString(entity);
         const idString = __getString(id);
 
+        // TODO: Fetch latest entity based on current block.
         const entityData = await database.getEntity(entityString, idString);
         console.log('entity', entityData);
 
@@ -57,14 +58,12 @@ export const instantiate = async (database: Database, filePath: string, data: Gr
         console.log('store.set');
 
         const entityString = __getString(entity);
-        console.log('entity:', entityString);
         const idString = __getString(id);
         console.log('id:', idString);
         const entityInstance = await Entity.wrap(data);
-        const entityInstanceId = __getString(await entityInstance.getString(await __newString('id')));
-        console.log('entity instance id:', entityInstanceId);
 
-        // TODO: Implement store set to save entity in db with values from entityInstance.
+        // TODO: Implement store set to save entity with blockHash and blockNumber.
+        await database.saveEntity(exports, entityString, entityInstance);
       },
 
       'typeConversion.stringToH160': () => {
