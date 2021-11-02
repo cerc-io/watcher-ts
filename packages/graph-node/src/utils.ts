@@ -3,9 +3,6 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import {
-  Repository
-} from 'typeorm';
 
 import { TypeId, ValueKind } from './types';
 
@@ -270,35 +267,35 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   return config;
 };
 
-export const getEntityData = async (exports: any, repo: Repository<any>, block: Block, entityInstance: any): Promise<{ [key: string]: any } > => {
-  const entityFields = repo.metadata.columns;
+export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, type: string, key: string) => {
+  const { __newString, BigInt: ExportBigInt } = instanceExports;
+  const entityKey = await __newString(key);
+  const value = data[key];
 
-  const entityValuePromises = entityFields.map(async (field) => {
-    const { type, propertyName } = field;
+  switch (type) {
+    case 'varchar': {
+      const entityValue = await __newString(value);
 
-    if (propertyName === 'blockHash') {
-      return block.hash;
+      return entityInstance.setString(entityKey, entityValue);
     }
 
-    if (propertyName === 'blockNumber') {
-      return block.number;
+    case 'integer': {
+      return entityInstance.setI32(entityKey, value);
     }
 
-    return fromEntityValue(exports, entityInstance, type.toString(), propertyName);
-  }, {});
+    case 'bigint': {
+      const bigInt = await ExportBigInt.fromString(await __newString(value.toString()));
 
-  const entityValues = await Promise.all(entityValuePromises);
+      return entityInstance.setBigInt(entityKey, bigInt);
+    }
 
-  return entityFields.reduce((acc: { [key: string]: any }, field, index) => {
-    const { propertyName } = field;
-    acc[propertyName] = entityValues[index];
-
-    return acc;
-  }, {});
+    default:
+      break;
+  }
 };
 
-const fromEntityValue = async (exports: any, entityInstance: any, type: string, key: string): Promise<any> => {
-  const { __newString, __getString, BigInt: ExportBigInt } = exports;
+export const fromEntityValue = async (instanceExports: any, entityInstance: any, type: string, key: string): Promise<any> => {
+  const { __newString, __getString, BigInt: ExportBigInt } = instanceExports;
   const entityKey = await __newString(key);
 
   switch (type) {

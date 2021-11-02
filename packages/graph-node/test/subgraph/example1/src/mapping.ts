@@ -22,11 +22,11 @@ export function handleTest (event: Test): void {
     entity = new ExampleEntity(event.transaction.from.toHex());
 
     // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0);
+    entity.count = BigInt.fromString('0');
   }
 
   // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1);
+  entity.count = entity.count + BigInt.fromString('1');
 
   // Entity fields can be set based on event parameters
   entity.param1 = event.params.param1;

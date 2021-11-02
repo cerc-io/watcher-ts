@@ -13,7 +13,7 @@ import {
   Database as BaseDatabase
 } from '@vulcanize/util';
 
-import { Block, getEntityData } from './utils';
+import { Block, fromEntityValue, toEntityValue } from './utils';
 
 export class Database {
   _config: ConnectionOptions
@@ -65,10 +65,63 @@ export class Database {
     return entityData;
   }
 
-  async saveEntity (exports: any, block: Block, entity: string, instance: any): Promise<void> {
+  async saveEntity (entity: string, data: any): Promise<void> {
     const repo = this._conn.getRepository(entity);
-    const data = await getEntityData(exports, repo, block, instance);
     const dbEntity: any = await repo.create(data);
     await repo.save(dbEntity);
+  }
+
+  async toGraphEntity (instanceExports: any, entity: string, data: any): Promise<any> {
+    const repo = this._conn.getRepository(entity);
+    const entityFields = repo.metadata.columns;
+
+    const { Entity } = instanceExports;
+    const entityInstance = await Entity.__new();
+
+    const entityValuePromises = entityFields.filter(field => {
+      const { propertyName } = field;
+
+      if (propertyName === 'blockHash' || propertyName === 'blockNumber') {
+        return false;
+      }
+
+      return true;
+    }).map(async (field) => {
+      const { type, propertyName } = field;
+
+      return toEntityValue(instanceExports, entityInstance, data, type.toString(), propertyName);
+    }, {});
+
+    await Promise.all(entityValuePromises);
+
+    return entityInstance;
+  }
+
+  async fromGraphEntity (instanceExports: any, block: Block, entity: string, entityInstance: any): Promise<{ [key: string]: any } > {
+    const repo = this._conn.getRepository(entity);
+    const entityFields = repo.metadata.columns;
+
+    const entityValuePromises = entityFields.map(async (field) => {
+      const { type, propertyName } = field;
+
+      if (propertyName === 'blockHash') {
+        return block.hash;
+      }
+
+      if (propertyName === 'blockNumber') {
+        return block.number;
+      }
+
+      return fromEntityValue(instanceExports, entityInstance, type.toString(), propertyName);
+    }, {});
+
+    const entityValues = await Promise.all(entityValuePromises);
+
+    return entityFields.reduce((acc: { [key: string]: any }, field, index) => {
+      const { propertyName } = field;
+      acc[propertyName] = entityValues[index];
+
+      return acc;
+    }, {});
   }
 }

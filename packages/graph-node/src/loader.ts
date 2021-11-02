@@ -57,8 +57,7 @@ export const instantiate = async (database: Database, context: Context, filePath
           return null;
         }
 
-        // TODO: Fill entity with field values.
-        // return Entity.__new()
+        return database.toGraphEntity(exports, entityString, entityData);
       },
       'store.set': async (entity: number, id: number, data: number) => {
         console.log('store.set');
@@ -71,7 +70,8 @@ export const instantiate = async (database: Database, context: Context, filePath
         const entityInstance = await Entity.wrap(data);
 
         assert(context.event.block);
-        await database.saveEntity(exports, context.event.block, entityString, entityInstance);
+        const dbData = await database.fromGraphEntity(exports, context.event.block, entityString, entityInstance);
+        await database.saveEntity(entityString, dbData);
       },
 
       'typeConversion.stringToH160': () => {
