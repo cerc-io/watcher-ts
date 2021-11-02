@@ -11,7 +11,7 @@ import { ContractInterface, utils } from 'ethers';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 
 import { createEvent, getSubgraphConfig } from './utils';
-import { instantiate } from './loader';
+import { Context, instantiate } from './loader';
 import { Database } from './database';
 
 const log = debug('vulcanize:graph-watcher');
@@ -26,6 +26,10 @@ export class GraphWatcher {
   _database: Database;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
+
+  _context: Context = {
+    event: {}
+  }
 
   constructor (database: Database, subgraphPath: string) {
     this._database = database;
@@ -61,7 +65,7 @@ export class GraphWatcher {
       const filePath = path.join(this._subgraphPath, file);
 
       return {
-        instance: await instantiate(this._database, filePath, data),
+        instance: await instantiate(this._database, this._context, filePath, data),
         contractInterface
       };
     }, {});
@@ -85,6 +89,8 @@ export class GraphWatcher {
 
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
+
+    this._context.event.block = block;
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);

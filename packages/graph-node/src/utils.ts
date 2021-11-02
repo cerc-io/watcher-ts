@@ -5,7 +5,6 @@ import debug from 'debug';
 import yaml from 'js-yaml';
 import {
   Repository
-
 } from 'typeorm';
 
 import { TypeId, ValueKind } from './types';
@@ -18,18 +17,18 @@ interface EventParam {
   kind: string;
 }
 
-interface Block {
-  hash: string;
-  number: number;
-  timestamp: number;
-  parentHash: string;
-}
-
 interface Transaction {
   hash: string;
   index: number;
   from: string;
   to: string;
+}
+
+export interface Block {
+  hash: string;
+  number: number;
+  timestamp: number;
+  parentHash: string;
 }
 
 export interface EventData {
@@ -271,11 +270,19 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   return config;
 };
 
-export const getEntityData = async (exports: any, repo: Repository<any>, entityInstance: any): Promise<{ [key: string]: any } > => {
+export const getEntityData = async (exports: any, repo: Repository<any>, block: Block, entityInstance: any): Promise<{ [key: string]: any } > => {
   const entityFields = repo.metadata.columns;
 
   const entityValuePromises = entityFields.map(async (field) => {
     const { type, propertyName } = field;
+
+    if (propertyName === 'blockHash') {
+      return block.hash;
+    }
+
+    if (propertyName === 'blockNumber') {
+      return block.number;
+    }
 
     return fromEntityValue(exports, entityInstance, type.toString(), propertyName);
   }, {});

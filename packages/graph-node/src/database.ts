@@ -5,14 +5,15 @@
 import assert from 'assert';
 import {
   Connection,
-  ConnectionOptions
+  ConnectionOptions,
+  FindOneOptions
 } from 'typeorm';
 
 import {
   Database as BaseDatabase
 } from '@vulcanize/util';
 
-import { getEntityData } from './utils';
+import { Block, getEntityData } from './utils';
 
 export class Database {
   _config: ConnectionOptions
@@ -39,14 +40,34 @@ export class Database {
     return this._baseDatabase.close();
   }
 
-  async getEntity (entity: string, id: string): Promise<any> {
-    return this._conn.getRepository(entity)
-      .findOne(id);
+  async getEntity (block: Block, entity: string, id: string): Promise<any> {
+    const queryRunner = this._conn.createQueryRunner();
+    const repo = queryRunner.manager.getRepository(entity);
+    const whereOptions: { [key: string]: any } = { id };
+
+    if (block.hash) {
+      whereOptions.blockHash = block.hash;
+    }
+
+    const findOptions = {
+      where: whereOptions,
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    let entityData = await repo.findOne(findOptions as FindOneOptions<any>);
+
+    if (!entityData && findOptions.where.blockHash) {
+      entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+    }
+
+    return entityData;
   }
 
-  async saveEntity (exports: any, entity: string, instance: any): Promise<void> {
+  async saveEntity (exports: any, block: Block, entity: string, instance: any): Promise<void> {
     const repo = this._conn.getRepository(entity);
-    const data = await getEntityData(exports, repo, instance);
+    const data = await getEntityData(exports, repo, block, instance);
     const dbEntity: any = await repo.create(data);
     await repo.save(dbEntity);
   }

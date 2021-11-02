@@ -14,7 +14,7 @@ import {
 } from 'ethers';
 
 import { TypeId } from './types';
-import { fromEthereumValue, toEthereumValue } from './utils';
+import { Block, fromEthereumValue, toEthereumValue } from './utils';
 import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -30,7 +30,13 @@ interface GraphData {
   dataSource?: DataSource;
 }
 
-export const instantiate = async (database: Database, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+export interface Context {
+  event: {
+    block?: Block
+  }
+}
+
+export const instantiate = async (database: Database, context: Context, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
@@ -43,8 +49,8 @@ export const instantiate = async (database: Database, filePath: string, data: Gr
         const entityString = __getString(entity);
         const idString = __getString(id);
 
-        // TODO: Fetch latest entity based on current block.
-        const entityData = await database.getEntity(entityString, idString);
+        assert(context.event.block);
+        const entityData = await database.getEntity(context.event.block, entityString, idString);
         console.log('entity', entityData);
 
         if (!entityData) {
@@ -58,12 +64,14 @@ export const instantiate = async (database: Database, filePath: string, data: Gr
         console.log('store.set');
 
         const entityString = __getString(entity);
+
         const idString = __getString(id);
         console.log('id:', idString);
+
         const entityInstance = await Entity.wrap(data);
 
-        // TODO: Implement store set to save entity with blockHash and blockNumber.
-        await database.saveEntity(exports, entityString, entityInstance);
+        assert(context.event.block);
+        await database.saveEntity(exports, context.event.block, entityString, entityInstance);
       },
 
       'typeConversion.stringToH160': () => {
