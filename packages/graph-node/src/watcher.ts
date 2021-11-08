@@ -11,7 +11,7 @@ import { ContractInterface, utils } from 'ethers';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
-import { createEvent, getSubgraphConfig } from './utils';
+import { createEvent, getSubgraphConfig, Block } from './utils';
 import { Context, instantiate } from './loader';
 import { Database } from './database';
 
@@ -142,5 +142,10 @@ export class GraphWatcher {
     const ethereumEvent = await createEvent(exports, contract, data);
 
     await exports[eventHandler.handler](ethereumEvent);
+  }
+
+  async getEntity (block: Block, entity: string, id: string): Promise<any> {
+    // TODO Make id param optional to get multiple entities. Make corresponding changes in database getEntity().
+    return this._database.getEntity(block, entity, id);
   }
 }

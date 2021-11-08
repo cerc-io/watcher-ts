@@ -167,6 +167,22 @@ export class Indexer {
     return result;
   }
 
+  async getExampleEntity (blockHash: string, id: string): Promise<string> {
+    const blockProgress = await this.getBlockProgress(blockHash);
+    assert(blockProgress);
+
+    const block = {
+      hash: blockProgress.blockHash,
+      number: blockProgress.blockNumber,
+      timestamp: blockProgress.blockTimestamp,
+      parentHash: blockProgress.parentHash
+    };
+
+    const entity = await this._graphWatcher.getEntity(block, 'ExampleEntity', id);
+
+    return JSON.stringify(entity, undefined, 2);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
