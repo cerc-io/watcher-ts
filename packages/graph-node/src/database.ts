@@ -67,6 +67,8 @@ export class Database {
 
   async saveEntity (entity: string, data: any): Promise<void> {
     const repo = this._conn.getRepository(entity);
+
+    // Is the await here necessary?
     const dbEntity: any = await repo.create(data);
     await repo.save(dbEntity);
   }
@@ -101,7 +103,11 @@ export class Database {
     const repo = this._conn.getRepository(entity);
     const entityFields = repo.metadata.columns;
 
-    const entityValuePromises = entityFields.map(async (field) => {
+    return this.getEntityValues(instanceExports, block, entityInstance, entityFields);
+  }
+
+  async getEntityValues (instanceExports: any, block: Block, entityInstance: any, entityFields: any): Promise<{ [key: string]: any } > {
+    const entityValuePromises = entityFields.map(async (field: any) => {
       const { type, propertyName } = field;
 
       if (propertyName === 'blockHash') {
@@ -117,7 +123,7 @@ export class Database {
 
     const entityValues = await Promise.all(entityValuePromises);
 
-    return entityFields.reduce((acc: { [key: string]: any }, field, index) => {
+    return entityFields.reduce((acc: { [key: string]: any }, field: any, index: number) => {
       const { propertyName } = field;
       acc[propertyName] = entityValues[index];
 

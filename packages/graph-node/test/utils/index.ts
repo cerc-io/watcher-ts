@@ -1,8 +1,12 @@
 //
 // Copyright 2021 Vulcanize, Inc.
 //
+import { getConfig } from '@vulcanize/util';
 
 import { EventData } from '../../src/utils';
+import { Database } from '../../src/database';
+
+const CONFIG_PATH = 'test/config/local.toml';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -28,4 +32,12 @@ export const getDummyEventData = (): EventData => {
     eventParams: [],
     eventIndex: 0
   };
+};
+
+export const getTestDatabase = async (): Promise<Database> => {
+  const config = await getConfig(CONFIG_PATH);
+  const { database: dbConfig } = config;
+  const db = new Database(dbConfig, '');
+
+  return db;
 };

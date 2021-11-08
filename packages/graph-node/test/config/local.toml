@@ -1,0 +1,9 @@
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "graph-test-watcher"
+  username = "postgres"
+  password = "postgres"
+  synchronize = true
+  logging = false

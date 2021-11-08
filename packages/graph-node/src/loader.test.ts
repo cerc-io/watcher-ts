@@ -6,15 +6,21 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { instantiate } from './loader';
+import { getTestDatabase } from '../test/utils';
+import { Database } from './database';
 
 const WASM_FILE_PATH = '../build/debug.wasm';
 
 describe('wasm loader tests', () => {
   let exports: any;
+  let db: Database;
 
   before(async () => {
+    db = await getTestDatabase();
+
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
-    const instance = await instantiate(filePath);
+    const instance = await instantiate(db, { event: {} }, filePath);
+
     exports = instance.exports;
   });
 
