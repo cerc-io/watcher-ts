@@ -77,7 +77,7 @@ export const main = async (): Promise<any> => {
   const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, subgraphPath);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, subgraphPath);
   await graphWatcher.init();
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.

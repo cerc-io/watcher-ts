@@ -45,8 +45,8 @@ export class Database {
     const repo = queryRunner.manager.getRepository(entity);
     const whereOptions: { [key: string]: any } = { id };
 
-    if (block.hash) {
-      whereOptions.blockHash = block.hash;
+    if (block.blockHash) {
+      whereOptions.blockHash = block.blockHash;
     }
 
     const findOptions = {
@@ -105,11 +105,11 @@ export class Database {
       const { type, propertyName } = field;
 
       if (propertyName === 'blockHash') {
-        return block.hash;
+        return block.blockHash;
       }
 
       if (propertyName === 'blockNumber') {
-        return block.number;
+        return block.blockNumber;
       }
 
       return fromEntityValue(instanceExports, entityInstance, type.toString(), propertyName);

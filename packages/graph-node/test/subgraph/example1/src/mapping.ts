@@ -11,6 +11,7 @@ export function handleTest (event: Test): void {
   log.debug('event.params.param1: {}', [event.params.param1]);
   log.debug('event.params.param2: {}', [event.params.param2.toString()]);
   log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
+  log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type

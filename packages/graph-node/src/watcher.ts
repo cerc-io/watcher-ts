@@ -9,6 +9,7 @@ import fs from 'fs';
 import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { createEvent, getSubgraphConfig } from './utils';
 import { Context, instantiate } from './loader';
@@ -22,8 +23,9 @@ interface DataSource {
 }
 
 export class GraphWatcher {
-  _subgraphPath: string;
   _database: Database;
+  _postgraphileClient: EthClient;
+  _subgraphPath: string;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
@@ -31,8 +33,9 @@ export class GraphWatcher {
     event: {}
   }
 
-  constructor (database: Database, subgraphPath: string) {
+  constructor (database: Database, postgraphileClient: EthClient, subgraphPath: string) {
     this._database = database;
+    this._postgraphileClient = postgraphileClient;
     this._subgraphPath = subgraphPath;
   }
 
@@ -90,7 +93,15 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
-    this._context.event.block = block;
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          blockData
+        ]
+      }
+    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash: block.hash });
+
+    this._context.event.block = blockData;
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
@@ -122,7 +133,7 @@ export class GraphWatcher {
 
     const data = {
       eventParams: eventParams,
-      block,
+      block: blockData,
       tx,
       eventIndex
     };

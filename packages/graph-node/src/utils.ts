@@ -22,10 +22,14 @@ interface Transaction {
 }
 
 export interface Block {
-  hash: string;
-  number: number;
-  timestamp: number;
+  blockHash: string;
+  blockNumber: string;
+  timestamp: string;
   parentHash: string;
+  stateRoot: string;
+  td: string;
+  txRoot: string;
+  receiptRoot: string;
 }
 
 export interface EventData {
@@ -161,41 +165,48 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   } = instanceExports;
 
   // Fill block data.
-  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.hash));
+  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.blockHash));
   const blockHash = await Bytes.fromByteArray(blockHashByteArray);
 
   const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
   const parentHash = await Bytes.fromByteArray(parentHashByteArray);
 
-  const blockNumber = await BigInt.fromI32(blockData.number);
+  const blockNumber = await BigInt.fromString(await __newString(blockData.blockNumber));
 
-  const blockTimestamp = await BigInt.fromI32(blockData.timestamp);
+  const blockTimestamp = await BigInt.fromString(await __newString(blockData.timestamp));
+
+  const stateRootByteArray = await ByteArray.fromHexString(await __newString(blockData.stateRoot));
+  const stateRoot = await Bytes.fromByteArray(stateRootByteArray);
+
+  const transactionsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.txRoot));
+  const transactionsRoot = await Bytes.fromByteArray(transactionsRootByteArray);
+
+  const receiptsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.receiptRoot));
+  const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
+
+  const totalDifficulty = await BigInt.fromString(await __newString(blockData.td));
 
   // Missing fields from watcher in block data:
   // unclesHash
   // author
-  // stateRoot
-  // transactionsRoot
-  // receiptsRoot
   // gasUsed
   // gasLimit
   // difficulty
-  // totalDifficulty
   // size
   const block = await ethereum.Block.__new(
     blockHash,
     parentHash,
     await Bytes.empty(),
     await Address.zero(),
-    await Bytes.empty(),
-    await Bytes.empty(),
-    await Bytes.empty(),
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
     blockNumber,
     await BigInt.fromI32(0),
     await BigInt.fromI32(0),
     blockTimestamp,
     await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
+    totalDifficulty,
     null
   );
 

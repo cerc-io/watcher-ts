@@ -50,6 +50,10 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
       blockHash
       parentHash
       timestamp
+      stateRoot
+      td
+      txRoot
+      receiptRoot
       ethTransactionCidsByHeaderId {
         nodes {
           cid

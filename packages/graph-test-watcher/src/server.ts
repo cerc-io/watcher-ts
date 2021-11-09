@@ -73,7 +73,7 @@ export const main = async (): Promise<any> => {
   const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, subgraphPath);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, subgraphPath);
   await graphWatcher.init();
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, graphWatcher);
