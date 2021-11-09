@@ -40,13 +40,13 @@ export class Database {
     return this._baseDatabase.close();
   }
 
-  async getEntity (block: Block, entity: string, id: string): Promise<any> {
+  async getEntity (blockHash: string, entity: string, id: string): Promise<any> {
     const queryRunner = this._conn.createQueryRunner();
     const repo = queryRunner.manager.getRepository(entity);
     const whereOptions: { [key: string]: any } = { id };
 
-    if (block.blockHash) {
-      whereOptions.blockHash = block.blockHash;
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
     }
 
     const findOptions = {

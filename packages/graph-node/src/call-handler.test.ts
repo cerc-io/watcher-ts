@@ -24,8 +24,8 @@ describe('call handler in mapping code', () => {
   before(async () => {
     db = await getTestDatabase();
 
-    sandbox.on(db, 'getEntity', (block: Block, entityString: string, idString: string) => {
-      assert(block);
+    sandbox.on(db, 'getEntity', (blockHash: string, entityString: string, idString: string) => {
+      assert(blockHash);
       assert(entityString);
       assert(idString);
     });

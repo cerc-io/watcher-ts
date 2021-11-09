@@ -50,7 +50,7 @@ export const instantiate = async (database: Database, context: Context, filePath
         const idString = __getString(id);
 
         assert(context.event.block);
-        const entityData = await database.getEntity(context.event.block, entityString, idString);
+        const entityData = await database.getEntity(context.event.block.blockHash, entityString, idString);
         console.log('entity', entityData);
 
         if (!entityData) {

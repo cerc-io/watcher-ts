@@ -29,8 +29,8 @@ describe('eden wasm loader tests', async () => {
   before(async () => {
     db = await getTestDatabase();
 
-    sandbox.on(db, 'getEntity', (block: Block, entityString: string, idString: string) => {
-      assert(block);
+    sandbox.on(db, 'getEntity', (blockHash: string, entityString: string, idString: string) => {
+      assert(blockHash);
       assert(entityString);
       assert(idString);
     });
