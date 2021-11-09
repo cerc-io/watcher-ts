@@ -68,8 +68,7 @@ export class Database {
   async saveEntity (entity: string, data: any): Promise<void> {
     const repo = this._conn.getRepository(entity);
 
-    // Is the await here necessary?
-    const dbEntity: any = await repo.create(data);
+    const dbEntity: any = repo.create(data);
     await repo.save(dbEntity);
   }
 

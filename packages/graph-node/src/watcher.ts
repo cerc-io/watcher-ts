@@ -145,7 +145,6 @@ export class GraphWatcher {
   }
 
   async getEntity (block: Block, entity: string, id: string): Promise<any> {
-    // TODO Make id param optional to get multiple entities. Make corresponding changes in database getEntity().
     return this._database.getEntity(block, entity, id);
   }
 }
