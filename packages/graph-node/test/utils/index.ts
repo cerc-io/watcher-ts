@@ -13,10 +13,14 @@ export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000
 
 export const getDummyEventData = (): EventData => {
   const block = {
-    hash: ZERO_HASH,
-    number: 0,
-    timestamp: 0,
-    parentHash: ZERO_HASH
+    blockHash: ZERO_HASH,
+    blockNumber: '0',
+    timestamp: '0',
+    parentHash: ZERO_HASH,
+    stateRoot: ZERO_HASH,
+    td: ZERO_HASH,
+    txRoot: ZERO_HASH,
+    receiptRoot: ZERO_HASH
   };
 
   const tx = {
