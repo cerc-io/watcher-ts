@@ -78,6 +78,11 @@ const main = async (): Promise<void> => {
       type: 'boolean',
       default: true
     })
+    .option('subgraph-schema', {
+      alias: 'ss',
+      describe: 'Subgraph schema path.',
+      type: 'string'
+    })
     .argv;
 
   let data: string;
@@ -147,7 +152,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
-  const schemaContent = visitor.exportSchema(outStream);
+  const schemaContent = visitor.exportSchema(outStream, argv['subgraph-schema']);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/resolvers.ts'))

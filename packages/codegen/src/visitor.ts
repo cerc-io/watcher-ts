@@ -109,10 +109,11 @@ export class Visitor {
   /**
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
+   * @param subgraphSchemaPath Subgraph schema path.
    * @returns The schema string.
    */
-  exportSchema (outStream: Writable): string {
-    return this._schema.exportSchema(outStream);
+  exportSchema (outStream: Writable, subgraphSchemaPath?: string): string {
+    return this._schema.exportSchema(outStream, subgraphSchemaPath);
   }
 
   /**

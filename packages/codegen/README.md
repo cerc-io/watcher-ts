@@ -21,7 +21,7 @@
 * Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port]
+  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-schema [subgraph-schema-path]
   ```
 
     * `input-file`(alias: `i`): Input contract file path or an URL (required).
@@ -31,6 +31,7 @@
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
     * `kind` (alias: `k`): Kind of watcher (default: `active`).
     * `port` (alias: `p`): Server port (default: `3008`).
+    * `subgraph-schema` (alias: `ss`): Subgraph schema path.
 
   **Note**: When passed an *URL* as `input-file`, it is assumed that it points to an already flattened contract file.
 
@@ -78,11 +79,15 @@
   ipfs daemon
   ```
 
+* In the config file (`environments/local.toml`):
+
+  * Update the state checkpoint settings.
+
+  * Update the IPFS API address in `environments/local.toml`.
+  
+  * Provide the subgraph path (if any) as `subgraphPath` property in `server` config.
+
 * Create the databases configured in `environments/local.toml`.
-
-* Update the state checkpoint settings in `environments/local.toml`.
-
-* Update the IPFS API address in `environments/local.toml`.
 
 ### Customize
 
