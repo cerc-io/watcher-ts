@@ -300,8 +300,9 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
       return entityInstance.setBigInt(entityKey, bigInt);
     }
 
+    // TODO: Support more types.
     default:
-      break;
+      throw new Error(`Unsupported type: ${type}`);
   }
 };
 
@@ -323,7 +324,8 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
       return BigInt(__getString(await bigInt.toString()));
     }
 
+    // TODO: Support more types.
     default:
-      break;
+      throw new Error(`Unsupported type: ${type}`);
   }
 };

@@ -44,34 +44,26 @@ export const instantiate = async (database: Database, context: Context, filePath
   const imports: WebAssembly.Imports = {
     index: {
       'store.get': async (entity: number, id: number) => {
-        console.log('store.get');
-
-        const entityString = __getString(entity);
-        const idString = __getString(id);
+        const entityName = __getString(entity);
+        const entityId = __getString(id);
 
         assert(context.event.block);
-        const entityData = await database.getEntity(context.event.block.blockHash, entityString, idString);
-        console.log('entity', entityData);
+        const entityData = await database.getEntity(context.event.block.blockHash, entityName, entityId);
 
         if (!entityData) {
           return null;
         }
 
-        return database.toGraphEntity(exports, entityString, entityData);
+        return database.toGraphEntity(exports, entityName, entityData);
       },
       'store.set': async (entity: number, id: number, data: number) => {
-        console.log('store.set');
-
-        const entityString = __getString(entity);
-
-        const idString = __getString(id);
-        console.log('id:', idString);
+        const entityName = __getString(entity);
 
         const entityInstance = await Entity.wrap(data);
 
         assert(context.event.block);
-        const dbData = await database.fromGraphEntity(exports, context.event.block, entityString, entityInstance);
-        await database.saveEntity(entityString, dbData);
+        const dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
+        await database.saveEntity(entityName, dbData);
       },
 
       'typeConversion.stringToH160': () => {

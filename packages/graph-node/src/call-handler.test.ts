@@ -22,7 +22,7 @@ describe('call handler in mapping code', () => {
   const eventData = getDummyEventData();
 
   before(async () => {
-    db = await getTestDatabase();
+    db = getTestDatabase();
 
     sandbox.on(db, 'getEntity', (blockHash: string, entityString: string, idString: string) => {
       assert(blockHash);

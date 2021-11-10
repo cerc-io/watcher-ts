@@ -99,7 +99,7 @@ export class GraphWatcher {
           blockData
         ]
       }
-    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash: block.hash });
+    } = await this._postgraphileClient.getBlocks({ blockHash: block.hash });
 
     this._context.event.block = blockData;
 

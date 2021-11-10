@@ -168,9 +168,7 @@ export class Indexer {
   }
 
   async getExampleEntity (blockHash: string, id: string): Promise<string> {
-    const entity = await this._graphWatcher.getEntity(blockHash, 'ExampleEntity', id);
-
-    return JSON.stringify(entity, undefined, 2);
+    return this._graphWatcher.getEntity(blockHash, 'ExampleEntity', id);
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {

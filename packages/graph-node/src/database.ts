@@ -73,6 +73,7 @@ export class Database {
   }
 
   async toGraphEntity (instanceExports: any, entity: string, data: any): Promise<any> {
+    // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entity);
     const entityFields = repo.metadata.columns;
 
@@ -82,6 +83,7 @@ export class Database {
     const entityValuePromises = entityFields.filter(field => {
       const { propertyName } = field;
 
+      // TODO: Will clash if entity has blockHash and blockNumber fields.
       if (propertyName === 'blockHash' || propertyName === 'blockNumber') {
         return false;
       }
@@ -99,6 +101,7 @@ export class Database {
   }
 
   async fromGraphEntity (instanceExports: any, block: Block, entity: string, entityInstance: any): Promise<{ [key: string]: any } > {
+    // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entity);
     const entityFields = repo.metadata.columns;
 
@@ -109,6 +112,7 @@ export class Database {
     const entityValuePromises = entityFields.map(async (field: any) => {
       const { type, propertyName } = field;
 
+      // TODO: Will clash if entity has blockHash and blockNumber fields.
       if (propertyName === 'blockHash') {
         return block.blockHash;
       }

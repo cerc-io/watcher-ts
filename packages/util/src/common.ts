@@ -50,7 +50,7 @@ export const processBlockByNumber = async (
   log(`Process block ${blockNumber}`);
 
   while (true) {
-    const result = await ethClient.getBlocksByNumber(blockNumber);
+    const result = await ethClient.getBlocks({ blockNumber });
     const { allEthHeaderCids: { nodes: blockNodes } } = result;
 
     if (blockNodes.length) {

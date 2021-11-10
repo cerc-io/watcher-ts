@@ -27,7 +27,7 @@ describe('eth-call wasm tests', () => {
   };
 
   before(async () => {
-    db = await getTestDatabase();
+    db = getTestDatabase();
   });
 
   it('should load the subgraph example wasm', async () => {

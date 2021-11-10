@@ -16,7 +16,7 @@ describe('wasm loader tests', () => {
   let db: Database;
 
   before(async () => {
-    db = await getTestDatabase();
+    db = getTestDatabase();
 
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
     const instance = await instantiate(db, { event: {} }, filePath);
