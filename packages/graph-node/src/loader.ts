@@ -14,7 +14,8 @@ import {
 } from 'ethers';
 
 import { TypeId } from './types';
-import { fromEthereumValue, toEthereumValue } from './utils';
+import { Block, fromEthereumValue, toEthereumValue } from './utils';
+import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
@@ -29,7 +30,13 @@ interface GraphData {
   dataSource?: DataSource;
 }
 
-export const instantiate = async (filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+export interface Context {
+  event: {
+    block?: Block
+  }
+}
+
+export const instantiate = async (database: Database, context: Context, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
@@ -37,31 +44,26 @@ export const instantiate = async (filePath: string, data: GraphData = {}): Promi
   const imports: WebAssembly.Imports = {
     index: {
       'store.get': async (entity: number, id: number) => {
-        console.log('store.get');
+        const entityName = __getString(entity);
+        const entityId = __getString(id);
 
-        const entityString = __getString(entity);
-        console.log('entity:', entityString);
-        const idString = __getString(id);
-        console.log('id:', idString);
+        assert(context.event.block);
+        const entityData = await database.getEntity(context.event.block.blockHash, entityName, entityId);
 
-        // TODO: Implement store get to fetch from DB using entity and id.
+        if (!entityData) {
+          return null;
+        }
 
-        // TODO: Fill entity with field values.
-        // return Entity.__new()
-        return null;
+        return database.toGraphEntity(exports, entityName, entityData);
       },
       'store.set': async (entity: number, id: number, data: number) => {
-        console.log('store.set');
+        const entityName = __getString(entity);
 
-        const entityString = __getString(entity);
-        console.log('entity:', entityString);
-        const idString = __getString(id);
-        console.log('id:', idString);
         const entityInstance = await Entity.wrap(data);
-        const entityInstanceId = __getString(await entityInstance.getString(await __newString('id')));
-        console.log('entity instance id:', entityInstanceId);
 
-        // TODO: Implement store set to save entity in db with values from entityInstance.
+        assert(context.event.block);
+        const dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
+        await database.saveEntity(entityName, dbData);
       },
 
       'typeConversion.stringToH160': () => {
