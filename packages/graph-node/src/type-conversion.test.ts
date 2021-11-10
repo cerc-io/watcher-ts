@@ -6,15 +6,20 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { instantiate } from './loader';
+import { getTestDatabase } from '../test/utils';
+import { Database } from './database';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
 describe('typeConversion wasm tests', () => {
   let exports: any;
+  let db: Database;
 
   before(async () => {
+    db = getTestDatabase();
+
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
-    const instance = await instantiate(filePath);
+    const instance = await instantiate(db, { event: {} }, filePath);
     exports = instance.exports;
     const { _start } = exports;
 
