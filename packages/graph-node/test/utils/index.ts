@@ -3,16 +3,21 @@
 //
 
 import { EventData } from '../../src/utils';
+import { Database } from '../../src/database';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 export const getDummyEventData = (): EventData => {
   const block = {
-    hash: ZERO_HASH,
-    number: 0,
-    timestamp: 0,
-    parentHash: ZERO_HASH
+    blockHash: ZERO_HASH,
+    blockNumber: '0',
+    timestamp: '0',
+    parentHash: ZERO_HASH,
+    stateRoot: ZERO_HASH,
+    td: ZERO_HASH,
+    txRoot: ZERO_HASH,
+    receiptRoot: ZERO_HASH
   };
 
   const tx = {
@@ -28,4 +33,8 @@ export const getDummyEventData = (): EventData => {
     eventParams: [],
     eventIndex: 0
   };
+};
+
+export const getTestDatabase = (): Database => {
+  return new Database({ type: 'postgres' }, '');
 };

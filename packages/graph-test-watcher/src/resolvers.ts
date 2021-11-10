@@ -73,6 +73,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
+      },
+
+      exampleEntity: async (_: any, { blockHash, id }: { blockHash: string, id: string }) => {
+        log('exampleEntity', blockHash, id);
+
+        const exampleEntity = await indexer.getExampleEntity(blockHash, id);
+
+        return JSON.stringify(exampleEntity, undefined, 2);
       }
     }
   };

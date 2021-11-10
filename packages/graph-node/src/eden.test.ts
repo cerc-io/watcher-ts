@@ -5,18 +5,47 @@
 import assert from 'assert';
 import { ethers } from 'ethers';
 import path from 'path';
+import chai from 'chai';
+import spies from 'chai-spies';
 
 import { instantiate } from './loader';
-import { createEvent } from './utils';
+import { createEvent, Block } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
-import { getDummyEventData } from '../test/utils';
+import { getDummyEventData, getTestDatabase } from '../test/utils';
+import { Database } from './database';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-describe('eden wasm loader tests', () => {
+chai.use(spies);
+
+const sandbox = chai.spy.sandbox();
+
+describe('eden wasm loader tests', async () => {
+  let db: Database;
   const eventData = getDummyEventData();
+
+  before(async () => {
+    db = getTestDatabase();
+
+    sandbox.on(db, 'getEntity', (blockHash: string, entityString: string, idString: string) => {
+      assert(blockHash);
+      assert(entityString);
+      assert(idString);
+    });
+
+    sandbox.on(db, 'fromGraphEntity', async (instanceExports: any, block: Block, entity: string, entityInstance: any) => {
+      const entityFields: any = [];
+
+      return db.getEntityValues(instanceExports, block, entityInstance, entityFields);
+    });
+
+    sandbox.on(db, 'saveEntity', (entity: string, data: any) => {
+      assert(entity);
+      assert(data);
+    });
+  });
 
   describe('EdenNetwork wasm', () => {
     let exports: any;
@@ -36,7 +65,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
-      ({ exports } = await instantiate(filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -195,7 +224,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-      ({ exports } = await instantiate(filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -339,7 +368,7 @@ describe('eden wasm loader tests', () => {
 
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-      ({ exports } = await instantiate(filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -426,5 +455,9 @@ describe('eden wasm loader tests', () => {
 
       await rewardScheduleChanged(rewardScheduleChangedEvent);
     });
+  });
+
+  after(() => {
+    sandbox.restore();
   });
 });
