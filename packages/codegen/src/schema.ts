@@ -4,11 +4,10 @@
 
 import assert from 'assert';
 import path from 'path';
-import { GraphQLSchema, parse, printSchema, print, buildSchema } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 
-import { mergeTypeDefs } from '@graphql-tools/merge';
 import { loadFilesSync } from '@graphql-tools/load-files';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
@@ -112,8 +111,11 @@ export class Schema {
       return schema;
     }
 
-    // Add subgraph schema types if path provided.
-    return this._addSubgraphSchema(schema, subgraphSchemaPath);
+    // Add subgraph schema types to the schema composer if path provided.
+    this._addSubgraphSchema(schema, subgraphSchemaPath);
+
+    // Rebuild the schema.
+    return this._composer.buildSchema();
   }
 
   /**
@@ -130,7 +132,7 @@ export class Schema {
     return schemaString;
   }
 
-  _addSubgraphSchema (schema: GraphQLSchema, subgraphSchemaPath: string): GraphQLSchema {
+  _addSubgraphSchema (schema: GraphQLSchema, subgraphSchemaPath: string): void {
     const schemaString = printSchema(schema);
 
     // Parse the schema into a DocumentNode.
@@ -142,12 +144,12 @@ export class Schema {
     // Generate the subgraph schema DocumentNode.
     const subgraphSchemaDocument = this._parseSubgraphSchema(schemaTypes, subgraphSchemaPath);
 
-    // Merging the schema and subgraph-schema types.
-    const typeDefs = mergeTypeDefs([schemaDocument, subgraphSchemaDocument]);
-    const typeDefsString = print(typeDefs);
+    // Adding subgraph-schema types to the schema composer.
+    const subgraphTypeDefs = print(subgraphSchemaDocument);
+    this._composer.addTypeDefs(subgraphTypeDefs);
 
-    // Build a GraphQLSchema object.
-    return buildSchema(typeDefsString);
+    // Add subgraph-schema entity queries to the schema composer.
+    this._addSubgraphSchemaQueries(subgraphSchemaDocument);
   }
 
   _parseSubgraphSchema (schemaTypes: string[], schemaPath: string): any {
@@ -206,6 +208,35 @@ export class Schema {
     }
 
     return typeNode;
+  }
+
+  _addSubgraphSchemaQueries (subgraphSchemaDocument: any): void {
+    // Get the subgraph type names.
+    const subgraphTypes: string[] = subgraphSchemaDocument.definitions.reduce((acc: any, curr: any) => {
+      // Filtering out enums.
+      if (curr.kind === 'ObjectTypeDefinition') {
+        acc.push(curr.name.value);
+      }
+
+      return acc;
+    }, []);
+
+    for (const subgraphType of subgraphTypes) {
+      // Lowercase first letter for query name.
+      const queryName = `${subgraphType.charAt(0).toLowerCase()}${subgraphType.slice(1)}`;
+
+      const queryObject: { [key: string]: any; } = {};
+      queryObject[queryName] = {
+        // Get type composer object for return type from the schema composer.
+        type: this._composer.getAnyTC(subgraphType).NonNull,
+        args: {
+          id: 'String!',
+          blockHash: 'String!'
+        }
+      };
+
+      this._composer.Query.addFields(queryObject);
+    }
   }
 
   /**
