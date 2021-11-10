@@ -7,6 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+import path from 'path';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -20,7 +21,7 @@ import {
   DEFAULT_CONFIG_PATH,
   getCustomProvider
 } from '@vulcanize/util';
-import { GraphWatcher } from '@vulcanize/graph-node';
+import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
@@ -107,7 +108,10 @@ export const main = async (): Promise<any> => {
     cache
   });
 
-  const graphWatcher = new GraphWatcher(subgraphPath);
+  const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, subgraphPath);
   await graphWatcher.init();
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);

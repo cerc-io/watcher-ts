@@ -167,6 +167,10 @@ export class Indexer {
     return result;
   }
 
+  async getExampleEntity (blockHash: string, id: string): Promise<string> {
+    return this._graphWatcher.getEntity(blockHash, 'ExampleEntity', id);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 

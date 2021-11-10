@@ -72,8 +72,14 @@ export class EthClient {
     );
   }
 
-  async getBlocksByNumber (blockNumber: number): Promise<any> {
-    return this._graphqlClient.query(ethQueries.getBlocksByNumber, { blockNumber });
+  async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    return this._graphqlClient.query(
+      ethQueries.getBlocks,
+      {
+        blockNumber,
+        blockHash
+      }
+    );
   }
 
   async getBlockByHash (blockHash?: string): Promise<any> {
