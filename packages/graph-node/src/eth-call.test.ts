@@ -7,9 +7,12 @@ import path from 'path';
 
 import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+import { getTestDatabase } from '../test/utils';
+import { Database } from './database';
 
 describe('eth-call wasm tests', () => {
   let exports: any;
+  let db: Database;
 
   const contractAddress = process.env.EXAMPLE_CONTRACT_ADDRESS;
   assert(contractAddress);
@@ -23,9 +26,13 @@ describe('eth-call wasm tests', () => {
     }
   };
 
+  before(async () => {
+    db = getTestDatabase();
+  });
+
   it('should load the subgraph example wasm', async () => {
     const filePath = path.resolve(__dirname, '../test/subgraph/example1/build/Example1/Example1.wasm');
-    const instance = await instantiate(filePath, data);
+    const instance = await instantiate(db, { event: {} }, filePath, data);
     exports = instance.exports;
   });
 

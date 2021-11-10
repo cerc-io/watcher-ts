@@ -76,7 +76,7 @@ export class EthClient {
     return this._graphqlClient.query(
       ethQueries.getBlocks,
       {
-        blockNumber: blockNumber,
+        blockNumber,
         blockHash
       }
     );
