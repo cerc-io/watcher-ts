@@ -3,6 +3,7 @@ type Query {
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   getMethod(blockHash: String!, contractAddress: String!): ResultString!
   _test(blockHash: String!, contractAddress: String!): ResultBigInt!
+  exampleEntity(blockHash: String!, id: String!): String!
 }
 
 type ResultEvent {

@@ -9,9 +9,11 @@ import fs from 'fs';
 import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { createEvent, getSubgraphConfig } from './utils';
-import { instantiate } from './loader';
+import { Context, instantiate } from './loader';
+import { Database } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -21,11 +23,19 @@ interface DataSource {
 }
 
 export class GraphWatcher {
+  _database: Database;
+  _postgraphileClient: EthClient;
   _subgraphPath: string;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
-  constructor (subgraphPath: string) {
+  _context: Context = {
+    event: {}
+  }
+
+  constructor (database: Database, postgraphileClient: EthClient, subgraphPath: string) {
+    this._database = database;
+    this._postgraphileClient = postgraphileClient;
     this._subgraphPath = subgraphPath;
   }
 
@@ -58,7 +68,7 @@ export class GraphWatcher {
       const filePath = path.join(this._subgraphPath, file);
 
       return {
-        instance: await instantiate(filePath, data),
+        instance: await instantiate(this._database, this._context, filePath, data),
         contractInterface
       };
     }, {});
@@ -82,6 +92,16 @@ export class GraphWatcher {
 
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
+
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          blockData
+        ]
+      }
+    } = await this._postgraphileClient.getBlocks({ blockHash: block.hash });
+
+    this._context.event.block = blockData;
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
@@ -113,7 +133,7 @@ export class GraphWatcher {
 
     const data = {
       eventParams: eventParams,
-      block,
+      block: blockData,
       tx,
       eventIndex
     };
@@ -122,5 +142,9 @@ export class GraphWatcher {
     const ethereumEvent = await createEvent(exports, contract, data);
 
     await exports[eventHandler.handler](ethereumEvent);
+  }
+
+  async getEntity (blockHash: string, entity: string, id: string): Promise<any> {
+    return this._database.getEntity(blockHash, entity, id);
   }
 }

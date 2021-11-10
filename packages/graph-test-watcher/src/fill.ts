@@ -8,10 +8,12 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
+import path from 'path';
 
 import { getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, getCustomProvider } from '@vulcanize/util';
+import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from './database';
 import { Indexer } from './indexer';
@@ -46,7 +48,7 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
+  const { upstream, database: dbConfig, jobQueue: jobQueueConfig, server: { subgraphPath } } = config;
 
   assert(dbConfig, 'Missing database config');
 
@@ -72,10 +74,16 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
+  const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, subgraphPath);
+  await graphWatcher.init();
+
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, graphWatcher);
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
