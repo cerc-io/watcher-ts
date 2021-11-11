@@ -24,4 +24,7 @@ export class ExampleEntity {
 
   @Column('integer')
   param2!: number
+
+  @Column('boolean')
+  param3!: boolean
 }

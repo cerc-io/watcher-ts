@@ -300,6 +300,10 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
       return entityInstance.setBigInt(entityKey, bigInt);
     }
 
+    case 'boolean': {
+      return entityInstance.setBoolean(entityKey, value ? 1 : 0);
+    }
+
     // TODO: Support more types.
     default:
       throw new Error(`Unsupported type: ${type}`);
@@ -322,6 +326,10 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
     case 'bigint': {
       const bigInt = ExportBigInt.wrap(await entityInstance.getBigInt(entityKey));
       return BigInt(__getString(await bigInt.toString()));
+    }
+
+    case 'boolean': {
+      return Boolean(await entityInstance.getBoolean(entityKey));
     }
 
     // TODO: Support more types.

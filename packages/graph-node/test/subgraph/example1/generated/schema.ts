@@ -20,6 +20,7 @@ export class ExampleEntity extends Entity {
     this.set("count", Value.fromBigInt(BigInt.zero()));
     this.set("param1", Value.fromString(""));
     this.set("param2", Value.fromI32(0));
+    this.set("param3", Value.fromBoolean(false));
   }
 
   save(): void {
@@ -73,5 +74,14 @@ export class ExampleEntity extends Entity {
 
   set param2(value: i32) {
     this.set("param2", Value.fromI32(value));
+  }
+
+  get param3(): boolean {
+    let value = this.get("param3");
+    return value!.toBoolean();
+  }
+
+  set param3(value: boolean) {
+    this.set("param3", Value.fromBoolean(value));
   }
 }
