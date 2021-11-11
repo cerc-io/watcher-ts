@@ -54,6 +54,7 @@ export type ResultEvent = {
   contract: string;
 
   eventIndex: number;
+  eventSignature: string;
   event: any;
 
   proof: string;
@@ -117,7 +118,7 @@ export class Indexer implements IndexerInterface {
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx } = JSON.parse(event.extraInfo);
+    const { tx, eventSignature } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -138,6 +139,7 @@ export class Indexer implements IndexerInterface {
       contract: event.contract,
 
       eventIndex: event.index,
+      eventSignature,
       event: {
         __typename: `${event.eventName}Event`,
         ...eventFields
@@ -602,7 +604,11 @@ export class Indexer implements IndexerInterface {
       {{/each}}
     }
 
-    return { eventName, eventInfo };
+    return {
+      eventName,
+      eventInfo,
+      eventSignature: logDescription.signature
+    };
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock?: number): Promise<boolean> {
@@ -781,7 +787,7 @@ export class Indexer implements IndexerInterface {
         let eventName = UNKNOWN_EVENT_NAME;
         let eventInfo = {};
         const tx = transactionMap[txHash];
-        const extraInfo = { topics, data, tx };
+        const extraInfo: { [key: string]: any } = { topics, data, tx };
 
         const contract = ethers.utils.getAddress(address);
         const watchedContract = await this.isWatchedContract(contract);
@@ -790,6 +796,7 @@ export class Indexer implements IndexerInterface {
           const eventDetails = this.parseEventNameAndArgs(watchedContract.kind, logObj);
           eventName = eventDetails.eventName;
           eventInfo = eventDetails.eventInfo;
+          extraInfo.eventSignature = eventDetails.eventSignature;
         }
 
         dbEvents.push({
