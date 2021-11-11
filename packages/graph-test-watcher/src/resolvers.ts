@@ -80,7 +80,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const exampleEntity = await indexer.getExampleEntity(blockHash, id);
 
-        return JSON.stringify(exampleEntity, undefined, 2);
+        return JSON.stringify(exampleEntity);
       }
     }
   };
