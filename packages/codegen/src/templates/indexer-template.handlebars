@@ -17,6 +17,7 @@ import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
 import { EventInterface, Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, updateStateForElementaryType, updateStateForMappingType } from '@vulcanize/util';
+import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
 import { Contract } from './entity/Contract';
@@ -79,6 +80,7 @@ export class Indexer implements IndexerInterface {
   _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
+  _graphWatcher: GraphWatcher;
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
@@ -86,7 +88,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
     assert(postgraphileClient);
@@ -97,6 +99,7 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._graphWatcher = graphWatcher;
 
     const { abi, storageLayout } = artifacts;
 
@@ -554,6 +557,9 @@ export class Indexer implements IndexerInterface {
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
+
+    // Call subgraph handler for event.
+    await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);

@@ -2,11 +2,13 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import path from 'path';
 import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
 import { getConfig, initClients, resetJobs } from '@vulcanize/util';
+import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
@@ -37,7 +39,13 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider);
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
+  await graphWatcher.init();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
