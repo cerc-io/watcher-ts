@@ -11,7 +11,6 @@ import { Writable } from 'stream';
 
 import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { parseSubgraphSchema } from './utils/subgraph';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -196,18 +195,13 @@ export class Entity {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string, schemaTypes: string[], subgraphSchemaPath?: string): void {
+  exportEntities (entityDir: string): void {
     this._addEventEntity();
     this._addSyncStatusEntity();
     this._addContractEntity();
     this._addBlockProgressEntity();
     this._addIPLDBlockEntity();
     this._addHookStatusEntity();
-
-    // Add subgraph entities if path provided.
-    if (subgraphSchemaPath) {
-      this._addSubgraphEntities(schemaTypes, subgraphSchemaPath);
-    }
 
     const template = Handlebars.compile(this._templateString);
     this._entities.forEach(entityObj => {
@@ -249,10 +243,7 @@ export class Entity {
     this._entities.push(entity);
   }
 
-  _addSubgraphEntities (schemaTypes: string[], subgraphSchemaPath: string): void {
-    // Generate the subgraph schema DocumentNode.
-    const subgraphSchemaDocument = parseSubgraphSchema(schemaTypes, subgraphSchemaPath);
-
+  addSubgraphEntities (subgraphSchemaDocument: any): void {
     const subgraphTypeDefs = subgraphSchemaDocument.definitions;
 
     subgraphTypeDefs.forEach((def: any) => {

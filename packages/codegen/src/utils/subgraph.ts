@@ -1,26 +1,23 @@
 import path from 'path';
+import assert from 'assert';
+import fs from 'fs';
 
 import { loadFilesSync } from '@graphql-tools/load-files';
 
-export function parseSubgraphSchema (schemaTypes: string[], schemaPath: string): any {
-  const typesArray = loadFilesSync(path.resolve(schemaPath));
+const SCALAR_MAPPING: any = {
+  BigDecimal: 'String',
+  Bytes: 'String'
+};
+
+export function parseSubgraphSchema (schemaPath: string): any {
+  const resolvedSchemaPath = path.resolve(schemaPath);
+  assert(fs.existsSync(resolvedSchemaPath));
+
+  const typesArray = loadFilesSync(resolvedSchemaPath);
 
   // Get a subgraph-schema DocumentNode with existing types.
   const subgraphSchemaDocument = typesArray[0];
-  let subgraphTypeDefs = subgraphSchemaDocument.definitions;
-
-  // Remove duplicates.
-  subgraphTypeDefs = subgraphTypeDefs.filter((def: any) => {
-    return !schemaTypes.includes(def.name.value);
-  });
-
-  const subgraphTypes: string[] = subgraphTypeDefs.map((def: any) => {
-    return def.name.value;
-  });
-
-  const defaultTypes = ['Int', 'Float', 'String', 'Boolean', 'ID'];
-
-  const knownTypes = schemaTypes.concat(subgraphTypes, defaultTypes);
+  const subgraphTypeDefs = subgraphSchemaDocument.definitions;
 
   subgraphTypeDefs.forEach((def: any) => {
     // Remove type directives.
@@ -32,7 +29,7 @@ export function parseSubgraphSchema (schemaTypes: string[], schemaPath: string):
         field.directives = [];
 
         // Parse the field type.
-        field.type = parseType(knownTypes, field.type);
+        field.type = parseType(field.type);
       });
     }
   });
@@ -43,18 +40,18 @@ export function parseSubgraphSchema (schemaTypes: string[], schemaPath: string):
   return subgraphSchemaDocument;
 }
 
-function parseType (knownTypes: string[], typeNode: any): any {
+function parseType (typeNode: any): any {
   // Check if 'NamedType' is reached.
   if (typeNode.kind === 'NamedType') {
-    const typeName = typeNode.name.value;
+    const typeName: string = typeNode.name.value;
 
     // TODO Handle extra types provided by the graph.
-    // Replace unknown types with 'String'.
-    if (!knownTypes.includes(typeName)) {
-      typeNode.name.value = 'String';
+    // Replace unknown scalars using SCALAR_MAPPING.
+    if (typeName in SCALAR_MAPPING) {
+      typeNode.name.value = SCALAR_MAPPING[typeName];
     }
   } else {
-    typeNode.type = parseType(knownTypes, typeNode.type);
+    typeNode.type = parseType(typeNode.type);
   }
 
   return typeNode;

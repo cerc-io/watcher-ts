@@ -149,10 +149,12 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
 
   registerHandlebarHelpers();
 
+  visitor.subgraphVisitor(argv['subgraph-schema']);
+
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
-  const schemaContent = visitor.exportSchema(outStream, argv['subgraph-schema']);
+  const schemaContent = visitor.exportSchema(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/resolvers.ts'))
@@ -202,7 +204,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   const entityDir = outputDir
     ? path.join(outputDir, 'src/entity')
     : '';
-  visitor.exportEntities(entityDir, argv['subgraph-schema']);
+  visitor.exportEntities(entityDir);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))

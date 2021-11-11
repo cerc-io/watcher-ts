@@ -6,19 +6,16 @@ import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
+import _ from 'lodash';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { parseSubgraphSchema } from './utils/subgraph';
 
 export class Schema {
-  schemaTypes: string[];
   _composer: SchemaComposer;
   _events: Array<string>;
 
   constructor () {
-    this.schemaTypes = [];
-
     this._composer = new SchemaComposer();
     this._events = [];
 
@@ -108,7 +105,7 @@ export class Schema {
    * @param subgraphSchemaPath Subgraph schema path.
    * @returns GraphQLSchema object.
    */
-  buildSchema (subgraphSchemaPath?: string): GraphQLSchema {
+  buildSchema (): GraphQLSchema {
     // Add a mutation for watching a contract.
     this._addWatchContractMutation();
 
@@ -116,26 +113,7 @@ export class Schema {
     this._addIPLDType();
     this._addIPLDQuery();
 
-    const schema = this._composer.buildSchema();
-
-    const schemaString = printSchema(schema);
-
-    // Parse the schema into a DocumentNode.
-    const schemaDocument = parse(schemaString);
-
-    // Get schema types.
-    this.schemaTypes = schemaDocument.definitions.map((def: any) => {
-      return def.name.value;
-    });
-
-    if (!subgraphSchemaPath) {
-      return schema;
-    }
-
-    // Add subgraph schema types to the schema composer if path provided.
-    this._addSubgraphSchema(subgraphSchemaPath);
-
-    // Rebuild the schema.
+    // Build the schema.
     return this._composer.buildSchema();
   }
 
@@ -145,38 +123,54 @@ export class Schema {
    * @param subgraphSchemaPath Subgraph schema path.
    * @returns The schema string.
    */
-  exportSchema (outStream: Writable, subgraphSchemaPath?: string): string {
+  exportSchema (outStream: Writable): string {
     // Get schema as a string from GraphQLSchema.
-    const schemaString = printSchema(this.buildSchema(subgraphSchemaPath));
+    const schemaString = printSchema(this.buildSchema());
     outStream.write(schemaString);
 
     return schemaString;
   }
 
-  _addSubgraphSchema (subgraphSchemaPath: string): void {
-    // Generate the subgraph schema DocumentNode.
-    const subgraphSchemaDocument = parseSubgraphSchema(this.schemaTypes, subgraphSchemaPath);
+  addSubgraphSchema (subgraphSchemaDocument: any): void {
+    // Generating the current types.
+    const schema = this._composer.buildSchema();
+
+    const schemaString = printSchema(schema);
+
+    // Parse the schema into a DocumentNode.
+    const schemaDocument = parse(schemaString);
+
+    // Get schema types.
+    const schemaTypes = schemaDocument.definitions.map((def: any) => {
+      return def.name.value;
+    });
+
+    // Filtering out existing types from subgraph types.
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions.filter((def: any) => {
+      return !schemaTypes.includes(def.name.value);
+    });
+
+    // Re-assigning the typeDefs.
+    const modifiedSchemaDocument = _.cloneDeep(subgraphSchemaDocument);
+    modifiedSchemaDocument.definitions = subgraphTypeDefs;
 
     // Adding subgraph-schema types to the schema composer.
-    const subgraphTypeDefs = print(subgraphSchemaDocument);
-    this._composer.addTypeDefs(subgraphTypeDefs);
+    const subgraphTypeDefsString = print(modifiedSchemaDocument);
+    this._composer.addTypeDefs(subgraphTypeDefsString);
 
     // Add subgraph-schema entity queries to the schema composer.
-    this._addSubgraphSchemaQueries(subgraphSchemaDocument);
+    this._addSubgraphSchemaQueries(subgraphTypeDefs);
   }
 
-  _addSubgraphSchemaQueries (subgraphSchemaDocument: any): void {
-    // Get the subgraph type names.
-    const subgraphTypes: string[] = subgraphSchemaDocument.definitions.reduce((acc: any, curr: any) => {
+  _addSubgraphSchemaQueries (subgraphTypeDefs: any): void {
+    for (const subgraphTypeDef of subgraphTypeDefs) {
       // Filtering out enums.
-      if (curr.kind === 'ObjectTypeDefinition') {
-        acc.push(curr.name.value);
+      if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
+        continue;
       }
 
-      return acc;
-    }, []);
+      const subgraphType = subgraphTypeDef.name.value;
 
-    for (const subgraphType of subgraphTypes) {
       // Lowercase first letter for query name.
       const queryName = `${subgraphType.charAt(0).toLowerCase()}${subgraphType.slice(1)}`;
 

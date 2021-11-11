@@ -5,14 +5,15 @@
 import { Writable } from 'stream';
 
 import { Database } from './database';
-import { Param } from './utils/types';
-import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { Entity } from './entity';
 import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
 import { Reset } from './reset';
+import { Param } from './utils/types';
+import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
+import { parseSubgraphSchema } from './utils/subgraph';
 
 export class Visitor {
   _schema: Schema;
@@ -106,14 +107,25 @@ export class Visitor {
     this._indexer.addEvent(name, params);
   }
 
+  subgraphVisitor (subgraphSchemaPath?: string): void {
+    // Parse subgraph schema to get subgraphSchemaDocument.
+    if (!subgraphSchemaPath) {
+      return;
+    }
+
+    const subgraphSchemaDocument = parseSubgraphSchema(subgraphSchemaPath);
+
+    this._schema.addSubgraphSchema(subgraphSchemaDocument);
+    this._entity.addSubgraphEntities(subgraphSchemaDocument);
+  }
+
   /**
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
-   * @param subgraphSchemaPath Subgraph schema path.
    * @returns The schema string.
    */
-  exportSchema (outStream: Writable, subgraphSchemaPath?: string): string {
-    return this._schema.exportSchema(outStream, subgraphSchemaPath);
+  exportSchema (outStream: Writable): string {
+    return this._schema.exportSchema(outStream);
   }
 
   /**
@@ -137,8 +149,8 @@ export class Visitor {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string, subgraphSchemaPath?: string): void {
-    this._entity.exportEntities(entityDir, this._schema.schemaTypes, subgraphSchemaPath);
+  exportEntities (entityDir: string): void {
+    this._entity.exportEntities(entityDir);
   }
 
   /**
