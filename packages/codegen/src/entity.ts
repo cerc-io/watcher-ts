@@ -385,15 +385,17 @@ export class Entity {
   }
 
   _getFieldType (typeNode: any): { typeName: string, array: boolean, nullable: boolean } {
-    if (typeNode.kind === 'NamedType') {
-      return { typeName: typeNode.name.value, array: false, nullable: true };
-    } else if (typeNode.kind === 'ListType') {
+    if (typeNode.kind === 'ListType') {
       return { typeName: this._getFieldType(typeNode.type).typeName, array: true, nullable: true };
-    } else {
-      // NonNullable type.
+    }
+
+    if (typeNode.kind === 'NonNullType') {
       const fieldType = this._getFieldType(typeNode.type);
 
       return { typeName: fieldType.typeName, array: fieldType.array, nullable: false };
     }
+
+    // If 'NamedType'.
+    return { typeName: typeNode.name.value, array: false, nullable: true };
   }
 }
