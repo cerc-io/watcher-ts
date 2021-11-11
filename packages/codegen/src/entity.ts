@@ -162,31 +162,8 @@ export class Entity {
       ]
     });
 
-    entityObject.columns.forEach((column: any) => {
-      if (column.tsType === 'bigint') {
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'bigintTransformer'
-          }
-        );
-
-        const importObject = entityObject.imports.find((element: any) => {
-          return element.from === '@vulcanize/util';
-        });
-
-        if (importObject) {
-          importObject.toImport.add('bigintTransformer');
-        } else {
-          entityObject.imports.push(
-            {
-              toImport: new Set(['bigintTransformer']),
-              from: '@vulcanize/util'
-            }
-          );
-        }
-      }
-    });
+    // Add bigintTransformer column option if required.
+    this._addBigIntTransformerOption(entityObject);
 
     this._entities.push(entityObject);
   }
@@ -211,36 +188,6 @@ export class Entity {
         : process.stdout;
       outStream.write(entity);
     });
-  }
-
-  _addEventEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Event.yaml'), 'utf8'));
-    this._entities.push(entity);
-  }
-
-  _addSyncStatusEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'SyncStatus.yaml'), 'utf8'));
-    this._entities.push(entity);
-  }
-
-  _addContractEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Contract.yaml'), 'utf8'));
-    this._entities.push(entity);
-  }
-
-  _addBlockProgressEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'BlockProgress.yaml'), 'utf8'));
-    this._entities.push(entity);
-  }
-
-  _addIPLDBlockEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'IPLDBlock.yaml'), 'utf8'));
-    this._entities.push(entity);
-  }
-
-  _addHookStatusEntity (): void {
-    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HookStatus.yaml'), 'utf8'));
-    this._entities.push(entity);
   }
 
   addSubgraphEntities (subgraphSchemaDocument: any): void {
@@ -297,33 +244,67 @@ export class Entity {
       entityObject = this._addSubgraphColumns(entityObject, def);
 
       // Add bigintTransformer column option if required.
-      entityObject.columns.forEach((column: any) => {
-        if (column.tsType === 'bigint') {
-          column.columnOptions.push(
-            {
-              option: 'transformer',
-              value: 'bigintTransformer'
-            }
-          );
-
-          const importObject = entityObject.imports.find((element: any) => {
-            return element.from === '@vulcanize/util';
-          });
-
-          if (importObject) {
-            importObject.toImport.add('bigintTransformer');
-          } else {
-            entityObject.imports.push(
-              {
-                toImport: new Set(['bigintTransformer']),
-                from: '@vulcanize/util'
-              }
-            );
-          }
-        }
-      });
+      this._addBigIntTransformerOption(entityObject);
 
       this._entities.push(entityObject);
+    });
+  }
+
+  _addEventEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Event.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addSyncStatusEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'SyncStatus.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addContractEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'Contract.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addBlockProgressEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'BlockProgress.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addIPLDBlockEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'IPLDBlock.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addHookStatusEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HookStatus.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addBigIntTransformerOption (entityObject: any): void {
+    entityObject.columns.forEach((column: any) => {
+      if (column.tsType === 'bigint') {
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'bigintTransformer'
+          }
+        );
+
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === '@vulcanize/util';
+        });
+
+        if (importObject) {
+          importObject.toImport.add('bigintTransformer');
+        } else {
+          entityObject.imports.push(
+            {
+              toImport: new Set(['bigintTransformer']),
+              from: '@vulcanize/util'
+            }
+          );
+        }
+      }
     });
   }
 
@@ -341,7 +322,7 @@ export class Entity {
         columnOptions: []
       };
 
-      const { typeName, array } = this._getTypeName(field.type);
+      const { typeName, array, nullable } = this._getFieldType(field.type);
       let tsType = getTsForGql(typeName);
 
       if (tsType) {
@@ -390,19 +371,29 @@ export class Entity {
         }
       }
 
+      if (nullable) {
+        columnObject.columnOptions.push({
+          option: 'nullable',
+          value: 'true'
+        });
+      }
+
       entityObject.columns.push(columnObject);
     });
 
     return entityObject;
   }
 
-  _getTypeName (typeNode: any): { typeName: string, array: boolean } {
+  _getFieldType (typeNode: any): { typeName: string, array: boolean, nullable: boolean } {
     if (typeNode.kind === 'NamedType') {
-      return { typeName: typeNode.name.value, array: false };
+      return { typeName: typeNode.name.value, array: false, nullable: true };
     } else if (typeNode.kind === 'ListType') {
-      return { typeName: this._getTypeName(typeNode.type).typeName, array: true };
+      return { typeName: this._getFieldType(typeNode.type).typeName, array: true, nullable: true };
     } else {
-      return this._getTypeName(typeNode.type);
+      // NonNullable type.
+      const fieldType = this._getFieldType(typeNode.type);
+
+      return { typeName: fieldType.typeName, array: fieldType.array, nullable: false };
     }
   }
 }

@@ -144,7 +144,7 @@ export class GraphWatcher {
     await exports[eventHandler.handler](ethereumEvent);
   }
 
-  async getEntity (blockHash: string, entity: string, id: string): Promise<any> {
-    return this._database.getEntity(blockHash, entity, id);
+  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
+    return this._database.getEntity(entity, id, blockHash);
   }
 }

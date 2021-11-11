@@ -27,7 +27,7 @@ export class {{className}} {{~#if implements}} implements {{implements}} {{~/if}
   {{~/if}}
   {{~#if column.columnOptions}}, {
   {{~#each column.columnOptions}} {{this.option}}: {{{this.value}}}
-  {{~#unless @last}}, {{/unless}}
+  {{~#unless @last}},{{/unless}}
   {{~/each}} }
   {{~/if}})
   {{column.name}}!: {{column.tsType}};

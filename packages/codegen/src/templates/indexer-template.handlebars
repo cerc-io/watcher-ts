@@ -555,6 +555,10 @@ export class Indexer implements IndexerInterface {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
+    return this._graphWatcher.getEntity(entity, id, blockHash);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 

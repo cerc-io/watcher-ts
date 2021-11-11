@@ -149,7 +149,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
 
   registerHandlebarHelpers();
 
-  visitor.subgraphVisitor(argv['subgraph-schema']);
+  visitor.visitSubgraph(argv['subgraph-schema']);
 
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
