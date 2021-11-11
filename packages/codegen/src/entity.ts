@@ -9,8 +9,9 @@ import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
-import { getTsForSol, getPgForTs } from './utils/type-mappings';
+import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { parseSubgraphSchema } from './utils/subgraph';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -67,6 +68,12 @@ export class Entity {
     );
     entityObject.indexOn.push(indexObject);
 
+    entityObject.columns.push({
+      name: 'id',
+      tsType: 'number',
+      columnType: 'PrimaryGeneratedColumn',
+      columnOptions: []
+    });
     entityObject.columns.push({
       name: 'blockHash',
       pgType: 'varchar',
@@ -164,6 +171,7 @@ export class Entity {
             value: 'bigintTransformer'
           }
         );
+
         const importObject = entityObject.imports.find((element: any) => {
           return element.from === '@vulcanize/util';
         });
@@ -188,13 +196,18 @@ export class Entity {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string): void {
+  exportEntities (entityDir: string, schemaTypes: string[], subgraphSchemaPath?: string): void {
     this._addEventEntity();
     this._addSyncStatusEntity();
     this._addContractEntity();
     this._addBlockProgressEntity();
     this._addIPLDBlockEntity();
     this._addHookStatusEntity();
+
+    // Add subgraph entities if path provided.
+    if (subgraphSchemaPath) {
+      this._addSubgraphEntities(schemaTypes, subgraphSchemaPath);
+    }
 
     const template = Handlebars.compile(this._templateString);
     this._entities.forEach(entityObj => {
@@ -234,5 +247,171 @@ export class Entity {
   _addHookStatusEntity (): void {
     const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HookStatus.yaml'), 'utf8'));
     this._entities.push(entity);
+  }
+
+  _addSubgraphEntities (schemaTypes: string[], subgraphSchemaPath: string): void {
+    // Generate the subgraph schema DocumentNode.
+    const subgraphSchemaDocument = parseSubgraphSchema(schemaTypes, subgraphSchemaPath);
+
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    subgraphTypeDefs.forEach((def: any) => {
+      // TODO Handle enum types.
+      if (def.kind !== 'ObjectTypeDefinition') {
+        return;
+      }
+
+      let entityObject: any = {
+        className: def.name.value,
+        indexOn: [],
+        columns: [],
+        imports: []
+      };
+
+      entityObject.imports.push(
+        {
+          toImport: new Set(['Entity', 'PrimaryColumn', 'Column']),
+          from: 'typeorm'
+        }
+      );
+
+      // Add common columns.
+      entityObject.columns.push({
+        name: 'id',
+        pgType: 'varchar',
+        tsType: 'string',
+        columnType: 'PrimaryColumn',
+        columnOptions: []
+      });
+      entityObject.columns.push({
+        name: 'blockHash',
+        pgType: 'varchar',
+        tsType: 'string',
+        columnType: 'PrimaryColumn',
+        columnOptions: [
+          {
+            option: 'length',
+            value: 66
+          }
+        ]
+      });
+      entityObject.columns.push({
+        name: 'blockNumber',
+        pgType: 'integer',
+        tsType: 'number',
+        columnType: 'Column'
+      });
+
+      // Add subgraph entity specific columns.
+      entityObject = this._addSubgraphColumns(entityObject, def);
+
+      // Add bigintTransformer column option if required.
+      entityObject.columns.forEach((column: any) => {
+        if (column.tsType === 'bigint') {
+          column.columnOptions.push(
+            {
+              option: 'transformer',
+              value: 'bigintTransformer'
+            }
+          );
+
+          const importObject = entityObject.imports.find((element: any) => {
+            return element.from === '@vulcanize/util';
+          });
+
+          if (importObject) {
+            importObject.toImport.add('bigintTransformer');
+          } else {
+            entityObject.imports.push(
+              {
+                toImport: new Set(['bigintTransformer']),
+                from: '@vulcanize/util'
+              }
+            );
+          }
+        }
+      });
+
+      this._entities.push(entityObject);
+    });
+  }
+
+  _addSubgraphColumns (entityObject: any, def: any): any {
+    def.fields.forEach((field: any) => {
+      const name = field.name.value;
+
+      // Filter out already added columns.
+      if (['id', 'blockHash', 'blockNumber'].includes(name)) {
+        return;
+      }
+
+      const columnObject: any = {
+        name,
+        columnOptions: []
+      };
+
+      const { typeName, array } = this._getTypeName(field.type);
+      let tsType = getTsForGql(typeName);
+
+      if (tsType) {
+        // Handle basic array types.
+        if (array) {
+          columnObject.columnOptions.push({
+            option: 'array',
+            value: 'true'
+          });
+
+          columnObject.tsType = `${tsType}[]`;
+        } else {
+          columnObject.tsType = tsType;
+        }
+      } else {
+        // TODO Handle array of custom types.
+        tsType = typeName;
+        columnObject.tsType = tsType;
+      }
+
+      const pgType = getPgForTs(tsType);
+
+      // If basic type: create a column. If unknown: create a relation.
+      if (pgType) {
+        columnObject.columnType = 'Column';
+        columnObject.pgType = pgType;
+      } else {
+        columnObject.columnType = 'ManyToOne';
+        columnObject.lhs = '()';
+        columnObject.rhs = tsType;
+
+        entityObject.imports[0].toImport.add('ManyToOne');
+
+        // Check if type import already added.
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === `./${tsType}`;
+        });
+
+        if (!importObject) {
+          entityObject.imports.push(
+            {
+              toImport: new Set([tsType]),
+              from: `./${tsType}`
+            }
+          );
+        }
+      }
+
+      entityObject.columns.push(columnObject);
+    });
+
+    return entityObject;
+  }
+
+  _getTypeName (typeNode: any): { typeName: string, array: boolean } {
+    if (typeNode.kind === 'NamedType') {
+      return { typeName: typeNode.name.value, array: false };
+    } else if (typeNode.kind === 'ListType') {
+      return { typeName: this._getTypeName(typeNode.type).typeName, array: true };
+    } else {
+      return this._getTypeName(typeNode.type);
+    }
   }
 }

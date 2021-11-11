@@ -3,21 +3,22 @@
 //
 
 import assert from 'assert';
-import path from 'path';
 import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 
-import { loadFilesSync } from '@graphql-tools/load-files';
-
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { parseSubgraphSchema } from './utils/subgraph';
 
 export class Schema {
+  schemaTypes: string[];
   _composer: SchemaComposer;
   _events: Array<string>;
 
   constructor () {
+    this.schemaTypes = [];
+
     this._composer = new SchemaComposer();
     this._events = [];
 
@@ -31,6 +32,11 @@ export class Schema {
    * @param returnType Return type for the query.
    */
   addQuery (name: string, params: Array<Param>, returnType: string): void {
+    // Check if the query is already added.
+    if (this._composer.Query.hasField(name)) {
+      return;
+    }
+
     // TODO: Handle cases where returnType/params type is an array.
     const tsReturnType = getTsForSol(returnType);
     assert(tsReturnType);
@@ -65,6 +71,11 @@ export class Schema {
    */
   addEventType (name: string, params: Array<Param>): void {
     name = `${name}Event`;
+
+    // Check if the type is already added.
+    if (this._composer.has(name)) {
+      return;
+    }
 
     const typeObject: any = {};
     typeObject.name = name;
@@ -107,12 +118,22 @@ export class Schema {
 
     const schema = this._composer.buildSchema();
 
+    const schemaString = printSchema(schema);
+
+    // Parse the schema into a DocumentNode.
+    const schemaDocument = parse(schemaString);
+
+    // Get schema types.
+    this.schemaTypes = schemaDocument.definitions.map((def: any) => {
+      return def.name.value;
+    });
+
     if (!subgraphSchemaPath) {
       return schema;
     }
 
     // Add subgraph schema types to the schema composer if path provided.
-    this._addSubgraphSchema(schema, subgraphSchemaPath);
+    this._addSubgraphSchema(subgraphSchemaPath);
 
     // Rebuild the schema.
     return this._composer.buildSchema();
@@ -132,17 +153,9 @@ export class Schema {
     return schemaString;
   }
 
-  _addSubgraphSchema (schema: GraphQLSchema, subgraphSchemaPath: string): void {
-    const schemaString = printSchema(schema);
-
-    // Parse the schema into a DocumentNode.
-    const schemaDocument = parse(schemaString);
-    const schemaTypes: string[] = schemaDocument.definitions.map((def: any) => {
-      return def.name.value;
-    });
-
+  _addSubgraphSchema (subgraphSchemaPath: string): void {
     // Generate the subgraph schema DocumentNode.
-    const subgraphSchemaDocument = this._parseSubgraphSchema(schemaTypes, subgraphSchemaPath);
+    const subgraphSchemaDocument = parseSubgraphSchema(this.schemaTypes, subgraphSchemaPath);
 
     // Adding subgraph-schema types to the schema composer.
     const subgraphTypeDefs = print(subgraphSchemaDocument);
@@ -150,64 +163,6 @@ export class Schema {
 
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphSchemaDocument);
-  }
-
-  _parseSubgraphSchema (schemaTypes: string[], schemaPath: string): any {
-    const typesArray = loadFilesSync(path.resolve(schemaPath));
-
-    // Get a subgraph-schema DocumentNode with existing types.
-    const subgraphSchemaDocument = typesArray[0];
-    let subgraphTypeDefs = subgraphSchemaDocument.definitions;
-
-    // Remove duplicates.
-    subgraphTypeDefs = subgraphTypeDefs.filter((def: any) => {
-      return !schemaTypes.includes(def.name.value);
-    });
-
-    const subgraphTypes: string[] = subgraphTypeDefs.map((def: any) => {
-      return def.name.value;
-    });
-
-    const defaultTypes = ['Int', 'Float', 'String', 'Boolean', 'ID'];
-
-    const knownTypes = schemaTypes.concat(subgraphTypes, defaultTypes);
-
-    subgraphTypeDefs.forEach((def: any) => {
-      // Remove type directives.
-      def.directives = [];
-
-      if (def.kind === 'ObjectTypeDefinition') {
-        def.fields.forEach((field: any) => {
-          // Remove field directives.
-          field.directives = [];
-
-          // Parse the field type.
-          field.type = this._parseType(knownTypes, field.type);
-        }, this);
-      }
-    }, this);
-
-    subgraphSchemaDocument.definitions = subgraphTypeDefs;
-
-    // Return a modified subgraph-schema DocumentNode.
-    return subgraphSchemaDocument;
-  }
-
-  _parseType (knownTypes: string[], typeNode: any): any {
-    // Check if 'NamedType' is reached.
-    if (typeNode.kind === 'NamedType') {
-      const typeName = typeNode.name.value;
-
-      // TODO Handle extra types provided by the graph.
-      // Replace unknown types with 'String'.
-      if (!knownTypes.includes(typeName)) {
-        typeNode.name.value = 'String';
-      }
-    } else {
-      typeNode.type = this._parseType(knownTypes, typeNode.type);
-    }
-
-    return typeNode;
   }
 
   _addSubgraphSchemaQueries (subgraphSchemaDocument: any): void {

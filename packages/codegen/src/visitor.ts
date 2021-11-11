@@ -137,8 +137,8 @@ export class Visitor {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string): void {
-    this._entity.exportEntities(entityDir);
+  exportEntities (entityDir: string, subgraphSchemaPath?: string): void {
+    this._entity.exportEntities(entityDir, this._schema.schemaTypes, subgraphSchemaPath);
   }
 
   /**

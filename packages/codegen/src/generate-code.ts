@@ -202,7 +202,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   const entityDir = outputDir
     ? path.join(outputDir, 'src/entity')
     : '';
-  visitor.exportEntities(entityDir);
+  visitor.exportEntities(entityDir, argv['subgraph-schema']);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))

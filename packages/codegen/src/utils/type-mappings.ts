@@ -5,6 +5,7 @@
 const _solToTs: Map<string, string> = new Map();
 const _tsToGql: Map<string, string> = new Map();
 const _tsToPg: Map<string, string> = new Map();
+const _gqlToTs: Map<string, string> = new Map();
 
 // TODO Get typemapping from ethersjs.
 // Solidity to Typescript type-mapping.
@@ -27,6 +28,12 @@ _tsToPg.set('number', 'numeric');
 _tsToPg.set('bigint', 'numeric');
 _tsToPg.set('boolean', 'boolean');
 
+// Graphql to Typescript type-mapping.
+_gqlToTs.set('String', 'string');
+_gqlToTs.set('Int', 'number');
+_gqlToTs.set('BigInt', 'bigint');
+_gqlToTs.set('Boolean', 'boolean');
+
 function getTsForSol (solType: string): string | undefined {
   return _solToTs.get(solType);
 }
@@ -39,4 +46,8 @@ function getPgForTs (tsType: string): string | undefined {
   return _tsToPg.get(tsType);
 }
 
-export { getTsForSol, getGqlForTs, getPgForTs };
+function getTsForGql (gqlType: string): string | undefined {
+  return _gqlToTs.get(gqlType);
+}
+
+export { getTsForSol, getGqlForTs, getPgForTs, getTsForGql };
