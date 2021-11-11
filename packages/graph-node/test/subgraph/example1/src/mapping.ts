@@ -32,6 +32,7 @@ export function handleTest (event: Test): void {
   // Entity fields can be set based on event parameters
   entity.param1 = event.params.param1;
   entity.param2 = event.params.param2;
+  entity.param3 = true;
 
   // Entities can be written to the store with `.save()`
   entity.save();

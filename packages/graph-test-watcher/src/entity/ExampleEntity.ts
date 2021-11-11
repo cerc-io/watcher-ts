@@ -23,5 +23,8 @@ export class ExampleEntity {
   param1!: string;
 
   @Column('integer')
-  param2!: number;
+  param2!: number
+
+  @Column('boolean')
+  param3!: boolean
 }

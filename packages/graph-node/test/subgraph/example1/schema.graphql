@@ -3,4 +3,5 @@ type ExampleEntity @entity {
   count: BigInt!
   param1: String! # string
   param2: Int! # uint8
+  param3: Boolean!
 }
