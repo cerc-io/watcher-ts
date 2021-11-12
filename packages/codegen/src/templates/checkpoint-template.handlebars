@@ -49,9 +49,12 @@ const main = async (): Promise<void> => {
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
-  await graphWatcher.init();
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
+
   const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
 
   log(`Created a checkpoint for contract ${argv.address} at block-hash ${blockHash}`);

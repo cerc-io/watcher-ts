@@ -47,9 +47,11 @@ const main = async (): Promise<void> => {
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
-  await graphWatcher.init();
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
 
   const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
   assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');
