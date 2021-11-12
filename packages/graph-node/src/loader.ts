@@ -13,6 +13,8 @@ import {
   ContractInterface
 } from 'ethers';
 
+import { IndexerInterface } from '@vulcanize/util';
+
 import { TypeId } from './types';
 import { Block, fromEthereumValue, toEthereumValue } from './utils';
 import { Database } from './database';
@@ -36,7 +38,7 @@ export interface Context {
   }
 }
 
-export const instantiate = async (database: Database, context: Context, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+export const instantiate = async (database: Database, indexer: IndexerInterface, context: Context, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
@@ -48,7 +50,7 @@ export const instantiate = async (database: Database, context: Context, filePath
         const entityId = __getString(id);
 
         assert(context.event.block);
-        const entityData = await database.getEntity(context.event.block.blockHash, entityName, entityId);
+        const entityData = await database.getEntity(entityName, entityId, context.event.block.blockHash);
 
         if (!entityData) {
           return null;
@@ -64,6 +66,19 @@ export const instantiate = async (database: Database, context: Context, filePath
         assert(context.event.block);
         const dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
+
+        // Remove blockNumber and blockHash from dbData for auto-diff.
+        delete dbData.blockNumber;
+        delete dbData.blockHash;
+
+        // Prepare the diff data.
+        const diffData: any = { state: {} };
+        diffData.state[entityName] = dbData;
+
+        // Create an auto-diff.
+        assert(indexer.createDiffStaged);
+        assert(dataSource?.address);
+        await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
       },
 
       'typeConversion.stringToH160': () => {
