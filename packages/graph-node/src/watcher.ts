@@ -11,7 +11,7 @@ import { ContractInterface, utils } from 'ethers';
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
-import { createEvent, getSubgraphConfig } from './utils';
+import { createBlock, createEvent, getSubgraphConfig } from './utils';
 import { Context, instantiate } from './loader';
 import { Database } from './database';
 
@@ -142,6 +142,35 @@ export class GraphWatcher {
     const ethereumEvent = await createEvent(exports, contract, data);
 
     await exports[eventHandler.handler](ethereumEvent);
+  }
+
+  async handleBlock (blockData: any, contract: string) {
+    // Assume we get everything from the watcher in blockData.
+    // If not, fetch from _postgraphileClient like above.
+
+    // Get dataSource in subgraph yaml based on contract address.
+    const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
+
+    if (!dataSource) {
+      log(`Subgraph doesnt have configuration for contract ${contract}`);
+      return;
+    }
+
+    // TODO Handle more than one block handlers.
+    // Get the first blockHandler.
+    const blockHandler = dataSource.mapping.blockHandlers[0];
+
+    if (!blockHandler) {
+      log('No block handler configured in subgraph');
+      return;
+    }
+
+    const { instance: { exports } } = this._dataSourceMap[contract];
+
+    // Create ethereum block to be passed to the wasm block handler.
+    const ethereumBlock = await createBlock(exports, blockData);
+
+    await exports[blockHandler.handler](ethereumBlock);
   }
 
   async getEntity (blockHash: string, entity: string, id: string): Promise<any> {

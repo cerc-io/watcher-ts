@@ -9,7 +9,7 @@ import chai from 'chai';
 import spies from 'chai-spies';
 
 import { instantiate } from './loader';
-import { createEvent, Block } from './utils';
+import { createEvent, Block, createBlock } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
@@ -454,6 +454,16 @@ describe('eden wasm loader tests', async () => {
       const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, eventData);
 
       await rewardScheduleChanged(rewardScheduleChangedEvent);
+    });
+
+    it('should call the block handler', async () => {
+      const { handleBlock } = exports;
+      const blockData = eventData.block;
+
+      // Create dummy block to be passed to handler.
+      const block = await createBlock(exports, blockData);
+
+      await handleBlock(block);
     });
   });
 
