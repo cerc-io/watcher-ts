@@ -102,7 +102,6 @@ export class Schema {
 
   /**
    * Builds the schema from the schema composer.
-   * @param subgraphSchemaPath Subgraph schema path.
    * @returns GraphQLSchema object.
    */
   buildSchema (): GraphQLSchema {
@@ -120,7 +119,6 @@ export class Schema {
   /**
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
-   * @param subgraphSchemaPath Subgraph schema path.
    * @returns The schema string.
    */
   exportSchema (outStream: Writable): string {

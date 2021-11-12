@@ -107,13 +107,13 @@ export class Visitor {
     this._indexer.addEvent(name, params);
   }
 
-  visitSubgraph (subgraphSchemaPath?: string): void {
-    if (!subgraphSchemaPath) {
+  visitSubgraph (subgraphPath?: string): void {
+    if (!subgraphPath) {
       return;
     }
 
     // Parse subgraph schema to get subgraphSchemaDocument.
-    const subgraphSchemaDocument = parseSubgraphSchema(subgraphSchemaPath);
+    const subgraphSchemaDocument = parseSubgraphSchema(subgraphPath);
 
     this._schema.addSubgraphSchema(subgraphSchemaDocument);
     this._entity.addSubgraphEntities(subgraphSchemaDocument);

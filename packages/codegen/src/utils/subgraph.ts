@@ -9,11 +9,11 @@ const SCALAR_MAPPING: any = {
   Bytes: 'String'
 };
 
-export function parseSubgraphSchema (schemaPath: string): any {
-  const resolvedSchemaPath = path.resolve(schemaPath);
-  assert(fs.existsSync(resolvedSchemaPath));
+export function parseSubgraphSchema (subgraphPath: string): any {
+  const subgraphSchemaPath = path.join(path.resolve(subgraphPath), '/schema.graphql');
 
-  const typesArray = loadFilesSync(resolvedSchemaPath);
+  assert(fs.existsSync(subgraphSchemaPath));
+  const typesArray = loadFilesSync(subgraphSchemaPath);
 
   // Get a subgraph-schema DocumentNode with existing types.
   const subgraphSchemaDocument = typesArray[0];
