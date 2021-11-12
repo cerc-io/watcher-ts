@@ -1,6 +1,9 @@
 className: HookStatus
 indexOn: []
 columns:
+  - name: id
+    tsType: number
+    columnType: PrimaryGeneratedColumn
   - name: latestProcessedBlockNumber
     pgType: integer
     tsType: number

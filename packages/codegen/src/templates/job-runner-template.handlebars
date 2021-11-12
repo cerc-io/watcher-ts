@@ -2,11 +2,13 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
+
 import {
   getConfig,
   Config,
@@ -21,6 +23,7 @@ import {
   DEFAULT_CONFIG_PATH,
   initClients
 } from '@vulcanize/util';
+import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Indexer } from './indexer';
 import { Database } from './database';
@@ -126,7 +129,15 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider);
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');

@@ -2,6 +2,9 @@ className: SyncStatus
 implements: SyncStatusInterface
 indexOn: []
 columns:
+  - name: id
+    tsType: number
+    columnType: PrimaryGeneratedColumn
   - name: chainHeadBlockHash
     pgType: varchar
     tsType: string

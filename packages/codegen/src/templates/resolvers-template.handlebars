@@ -11,6 +11,10 @@ import { ValueResult } from '@vulcanize/util';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
+{{#each subgraphQueries as | query |}}
+import { {{query.entityName}} } from './entity/{{query.entityName}}';
+{{/each}}
+
 const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
@@ -50,6 +54,15 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         {{~#each this.params}}, {{this.name~}} {{/each}});
         return indexer.{{this.name}}(blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
+      },
+
+      {{/each}}
+
+      {{~#each subgraphQueries}}
+      {{this.queryName}}: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<{{this.entityName}} | undefined> => {
+        log('{{this.queryName}}', id, blockHash);
+
+        return indexer.getSubgraphEntity({{this.entityName}}, id, blockHash);
       },
 
       {{/each}}

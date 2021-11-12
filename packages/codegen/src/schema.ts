@@ -3,9 +3,10 @@
 //
 
 import assert from 'assert';
-import { GraphQLSchema, printSchema } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
+import _ from 'lodash';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -28,6 +29,11 @@ export class Schema {
    * @param returnType Return type for the query.
    */
   addQuery (name: string, params: Array<Param>, returnType: string): void {
+    // Check if the query is already added.
+    if (this._composer.Query.hasField(name)) {
+      return;
+    }
+
     // TODO: Handle cases where returnType/params type is an array.
     const tsReturnType = getTsForSol(returnType);
     assert(tsReturnType);
@@ -63,6 +69,11 @@ export class Schema {
   addEventType (name: string, params: Array<Param>): void {
     name = `${name}Event`;
 
+    // Check if the type is already added.
+    if (this._composer.has(name)) {
+      return;
+    }
+
     const typeObject: any = {};
     typeObject.name = name;
     typeObject.fields = {};
@@ -97,15 +108,18 @@ export class Schema {
     // Add a mutation for watching a contract.
     this._addWatchContractMutation();
 
+    // Add IPLDBlock type and queries.
     this._addIPLDType();
     this._addIPLDQuery();
 
+    // Build the schema.
     return this._composer.buildSchema();
   }
 
   /**
    * Writes schema to a stream.
    * @param outStream A writable output stream to write the schema to.
+   * @returns The schema string.
    */
   exportSchema (outStream: Writable): string {
     // Get schema as a string from GraphQLSchema.
@@ -115,48 +129,112 @@ export class Schema {
     return schemaString;
   }
 
+  addSubgraphSchema (subgraphSchemaDocument: any): void {
+    // Generating the current types.
+    const schema = this._composer.buildSchema();
+
+    const schemaString = printSchema(schema);
+
+    // Parse the schema into a DocumentNode.
+    const schemaDocument = parse(schemaString);
+
+    // Get schema types.
+    const schemaTypes = schemaDocument.definitions.map((def: any) => {
+      return def.name.value;
+    });
+
+    // Filtering out existing types from subgraph types.
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions.filter((def: any) => {
+      return !schemaTypes.includes(def.name.value);
+    });
+
+    // Re-assigning the typeDefs.
+    const modifiedSchemaDocument = _.cloneDeep(subgraphSchemaDocument);
+    modifiedSchemaDocument.definitions = subgraphTypeDefs;
+
+    // Adding subgraph-schema types to the schema composer.
+    const subgraphTypeDefsString = print(modifiedSchemaDocument);
+    this._composer.addTypeDefs(subgraphTypeDefsString);
+
+    // Add subgraph-schema entity queries to the schema composer.
+    this._addSubgraphSchemaQueries(subgraphTypeDefs);
+  }
+
+  _addSubgraphSchemaQueries (subgraphTypeDefs: any): void {
+    for (const subgraphTypeDef of subgraphTypeDefs) {
+      // Filtering out enums.
+      if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
+        continue;
+      }
+
+      const subgraphType = subgraphTypeDef.name.value;
+
+      // Lowercase first letter for query name.
+      const queryName = `${subgraphType.charAt(0).toLowerCase()}${subgraphType.slice(1)}`;
+
+      const queryObject: { [key: string]: any; } = {};
+      queryObject[queryName] = {
+        // Get type composer object for return type from the schema composer.
+        type: this._composer.getAnyTC(subgraphType).NonNull,
+        args: {
+          id: 'String!',
+          blockHash: 'String!'
+        }
+      };
+
+      this._composer.Query.addFields(queryObject);
+    }
+  }
+
   /**
    * Adds basic types to the schema and typemapping.
    */
   _addBasicTypes (): void {
+    let typeComposer;
+
     // Create a scalar type composer to add the scalar BigInt in the schema composer.
-    this._composer.createScalarTC({
+    typeComposer = this._composer.createScalarTC({
       name: 'BigInt'
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
     // Create a type composer to add the type Proof in the schema composer.
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: 'Proof',
       fields: {
         data: 'String!'
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: 'ResultBoolean',
       fields: {
         value: 'Boolean!',
         proof: () => this._composer.getOTC('Proof')
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: 'ResultString',
       fields: {
         value: 'String!',
         proof: () => this._composer.getOTC('Proof')
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: 'ResultInt',
       fields: {
         value: () => 'Int!',
         proof: () => this._composer.getOTC('Proof')
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: 'ResultBigInt',
       fields: {
         // Get type composer object for BigInt scalar from the schema composer.
@@ -164,16 +242,19 @@ export class Schema {
         proof: () => this._composer.getOTC('Proof')
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
   }
 
   /**
    * Adds types 'ResultEvent' and 'WatchedEvent' to the schema.
    */
   _addEventsRelatedTypes (): void {
+    let typeComposer;
+
     // Create Ethereum types.
     // Create the Block type.
     const blockName = 'Block';
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: blockName,
       fields: {
         cid: 'String!',
@@ -183,10 +264,11 @@ export class Schema {
         parentHash: 'String!'
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
     // Create the Transaction type.
     const transactionName = 'Transaction';
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: transactionName,
       fields: {
         hash: 'String!',
@@ -195,10 +277,11 @@ export class Schema {
         to: 'String!'
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
 
     // Create the ResultEvent type.
     const resultEventName = 'ResultEvent';
-    this._composer.createObjectTC({
+    typeComposer = this._composer.createObjectTC({
       name: resultEventName,
       fields: {
         // Get type composer object for 'blockName' type from the schema composer.
@@ -210,6 +293,7 @@ export class Schema {
         proof: () => this._composer.getOTC('Proof')
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
   }
 
   /**
@@ -239,7 +323,7 @@ export class Schema {
   }
 
   _addIPLDType (): void {
-    this._composer.createObjectTC({
+    const typeComposer = this._composer.createObjectTC({
       name: 'ResultIPLDBlock',
       fields: {
         block: () => this._composer.getOTC('Block').NonNull,
@@ -249,6 +333,7 @@ export class Schema {
         data: 'String!'
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
   }
 
   _addIPLDQuery (): void {
