@@ -106,6 +106,27 @@ export function testStringToH160 (): string {
   return res;
 }
 
+export function testBigDecimalToString (): string {
+  log.debug('In test bigDecimalToString', []);
+
+  const bigInt = BigInt.fromString('1000000000000000000');
+  const bigDecimal = bigInt.toBigDecimal();
+  const res = bigDecimal.toString();
+  log.debug('typeConversion.bigIntToString from hex result: {}', [res]);
+
+  return res;
+}
+
+export function testBigDecimalFromString (value: string): string {
+  log.debug('In test bigDecimal.fromString', []);
+
+  const bigDecimal = BigDecimal.fromString(value);
+  const res = bigDecimal.toString();
+  log.debug('bigDecimal.FromString result: {}', [res]);
+
+  return res;
+}
+
 export function testBigDecimalDividedBy (): string {
   log.debug('In test bigDecimal.dividedBy', []);
 
@@ -164,11 +185,10 @@ export function testBigIntDividedBy (): string {
   return res.toString();
 }
 
-export function testBigIntFromString (): string {
+export function testBigIntFromString (value: string): string {
   log.debug('In test bigInt.fromString', []);
 
-  const string = '123';
-  const bigInt = BigInt.fromString(string);
+  const bigInt = BigInt.fromString(value);
   const res = bigInt.toString();
   log.debug('bigInt.FromString result: {}', [res]);
 
