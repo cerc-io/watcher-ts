@@ -35,7 +35,6 @@ interface GraphData {
 export interface Context {
   event: {
     block?: Block
-    contract?: string
   }
 }
 
@@ -78,8 +77,8 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
-        assert(context.event.contract);
-        await indexer.createDiffStaged(context.event.contract, context.event.block.blockHash, diffData);
+        assert(dataSource?.address);
+        await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
       },
 
       'typeConversion.stringToH160': () => {

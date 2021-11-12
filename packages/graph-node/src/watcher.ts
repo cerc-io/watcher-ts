@@ -107,7 +107,6 @@ export class GraphWatcher {
     } = await this._postgraphileClient.getBlocks({ blockHash: block.hash });
 
     this._context.event.block = blockData;
-    this._context.event.contract = contract;
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
