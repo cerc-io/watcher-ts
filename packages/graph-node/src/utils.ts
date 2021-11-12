@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
 
-import { TypeId, ValueKind } from './types';
+import { TypeId, EthereumValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
 
@@ -55,26 +55,26 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
   const kind = await value.kind;
 
   switch (kind) {
-    case ValueKind.ADDRESS: {
+    case EthereumValueKind.ADDRESS: {
       const address = Address.wrap(await value.toAddress());
       const addressStringPtr = await address.toHexString();
       return __getString(addressStringPtr);
     }
 
-    case ValueKind.BOOL: {
+    case EthereumValueKind.BOOL: {
       const bool = await value.toBoolean();
       return Boolean(bool);
     }
 
-    case ValueKind.BYTES:
-    case ValueKind.FIXED_BYTES: {
+    case EthereumValueKind.BYTES:
+    case EthereumValueKind.FIXED_BYTES: {
       const bytes = await value.toBytes();
       const bytesStringPtr = await bytes.toHexString();
       return __getString(bytesStringPtr);
     }
 
-    case ValueKind.INT:
-    case ValueKind.UINT: {
+    case EthereumValueKind.INT:
+    case EthereumValueKind.UINT: {
       const bigInt = BigInt.wrap(await value.toBigInt());
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
@@ -311,12 +311,25 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
 };
 
 export const fromEntityValue = async (instanceExports: any, entityInstance: any, type: string, key: string): Promise<any> => {
-  const { __newString, __getString, BigInt: ExportBigInt } = instanceExports;
+  const { __newString, __getString, BigInt: ExportBigInt, Value } = instanceExports;
   const entityKey = await __newString(key);
 
   switch (type) {
     case 'varchar': {
-      return __getString(await entityInstance.getString(entityKey));
+      const value = Value.wrap(await entityInstance.get(entityKey));
+
+      const kind = await value.kind;
+
+      switch (kind) {
+        case ValueKind.BYTES: {
+          const bytes = await value.toBytes();
+          const bytesStringPtr = await bytes.toHexString();
+          return __getString(bytesStringPtr);
+        }
+
+        default:
+          return __getString(await entityInstance.getString(entityKey));
+      }
     }
 
     case 'integer': {

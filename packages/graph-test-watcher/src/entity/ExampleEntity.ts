@@ -20,11 +20,14 @@ export class ExampleEntity {
   count!: bigint
 
   @Column('varchar')
-  param1!: string
+  paramString!: string
 
   @Column('integer')
-  param2!: number
+  paramInt!: number
 
   @Column('boolean')
-  param3!: boolean
+  paramBoolean!: boolean
+
+  @Column('varchar')
+  paramBytes!: string
 }
