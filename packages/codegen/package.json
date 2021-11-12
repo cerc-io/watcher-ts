@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/vulcanize/watcher-ts#readme",
   "dependencies": {
+    "@graphql-tools/load-files": "^6.5.2",
     "@poanet/solidity-flattener": "https://github.com/vulcanize/solidity-flattener.git",
     "@solidity-parser/parser": "^0.13.2",
     "@vulcanize/util": "^0.1.0",
