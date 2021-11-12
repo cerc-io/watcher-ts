@@ -1,7 +1,8 @@
 type ExampleEntity @entity {
   id: ID!
   count: BigInt!
-  param1: String! # string
-  param2: Int! # uint8
-  param3: Boolean!
+  paramString: String! # string
+  paramInt: Int! # uint8
+  paramBoolean: Boolean!
+  paramBytes: Bytes!
 }

@@ -30,9 +30,10 @@ export function handleTest (event: Test): void {
   entity.count = entity.count + BigInt.fromString('1');
 
   // Entity fields can be set based on event parameters
-  entity.param1 = event.params.param1;
-  entity.param2 = event.params.param2;
-  entity.param3 = true;
+  entity.paramString = event.params.param1;
+  entity.paramInt = event.params.param2;
+  entity.paramBoolean = true;
+  entity.paramBytes = event.address;
 
   // Entities can be written to the store with `.save()`
   entity.save();
