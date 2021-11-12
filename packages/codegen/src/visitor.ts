@@ -5,14 +5,15 @@
 import { Writable } from 'stream';
 
 import { Database } from './database';
-import { Param } from './utils/types';
-import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { Entity } from './entity';
 import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
 import { Reset } from './reset';
+import { Param } from './utils/types';
+import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
+import { parseSubgraphSchema } from './utils/subgraph';
 
 export class Visitor {
   _schema: Schema;
@@ -104,6 +105,19 @@ export class Visitor {
 
     this._schema.addEventType(name, params);
     this._indexer.addEvent(name, params);
+  }
+
+  visitSubgraph (subgraphPath?: string): void {
+    if (!subgraphPath) {
+      return;
+    }
+
+    // Parse subgraph schema to get subgraphSchemaDocument.
+    const subgraphSchemaDocument = parseSubgraphSchema(subgraphPath);
+
+    this._schema.addSubgraphSchema(subgraphSchemaDocument);
+    this._entity.addSubgraphEntities(subgraphSchemaDocument);
+    this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
   }
 
   /**

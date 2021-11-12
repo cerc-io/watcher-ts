@@ -16,10 +16,12 @@ const TEMPLATE_FILE = './templates/resolvers-template.handlebars';
 
 export class Resolvers {
   _queries: Array<any>;
+  _subgraphQueries: Array<any>;
   _templateString: string;
 
   constructor () {
     this._queries = [];
+    this._subgraphQueries = [];
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   }
 
@@ -51,6 +53,26 @@ export class Resolvers {
     this._queries.push(queryObject);
   }
 
+  addSubgraphResolvers (subgraphSchemaDocument: any): void {
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    for (const subgraphTypeDef of subgraphTypeDefs) {
+      if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
+        continue;
+      }
+
+      const entityName = subgraphTypeDef.name.value;
+      const queryName = `${entityName.charAt(0).toLowerCase()}${entityName.slice(1)}`;
+
+      const queryObject = {
+        entityName,
+        queryName
+      };
+
+      this._subgraphQueries.push(queryObject);
+    }
+  }
+
   /**
    * Writes the resolvers file generated from a template to a stream.
    * @param outStream A writable output stream to write the resolvers file to.
@@ -58,7 +80,8 @@ export class Resolvers {
   exportResolvers (outStream: Writable): void {
     const template = Handlebars.compile(this._templateString);
     const obj = {
-      queries: this._queries
+      queries: this._queries,
+      subgraphQueries: this._subgraphQueries
     };
     const resolvers = template(obj);
     outStream.write(resolvers);
