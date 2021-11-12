@@ -17,6 +17,7 @@ import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
 import { Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, Where, QueryOptions, updateStateForElementaryType, updateStateForMappingType } from '@vulcanize/util';
+import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
 import { Contract } from './entity/Contract';
@@ -53,6 +54,7 @@ export type ResultEvent = {
   contract: string;
 
   eventIndex: number;
+  eventSignature: string;
   event: any;
 
   proof: string;
@@ -79,6 +81,7 @@ export class Indexer implements IndexerInterface {
   _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
+  _graphWatcher: GraphWatcher;
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
@@ -86,7 +89,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
     assert(postgraphileClient);
@@ -97,6 +100,7 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._graphWatcher = graphWatcher;
 
     const { abi, storageLayout } = artifacts;
 
@@ -114,7 +118,7 @@ export class Indexer implements IndexerInterface {
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx } = JSON.parse(event.extraInfo);
+    const { tx, eventSignature } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -135,6 +139,7 @@ export class Indexer implements IndexerInterface {
       contract: event.contract,
 
       eventIndex: event.index,
+      eventSignature,
       event: {
         __typename: `${event.eventName}Event`,
         ...eventFields
@@ -552,8 +557,15 @@ export class Indexer implements IndexerInterface {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
+    return this._graphWatcher.getEntity(entity, id, blockHash);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
+
+    // Call subgraph handler for event.
+    await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
@@ -592,7 +604,11 @@ export class Indexer implements IndexerInterface {
       {{/each}}
     }
 
-    return { eventName, eventInfo };
+    return {
+      eventName,
+      eventInfo,
+      eventSignature: logDescription.signature
+    };
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock?: number): Promise<boolean> {
@@ -775,7 +791,7 @@ export class Indexer implements IndexerInterface {
         let eventName = UNKNOWN_EVENT_NAME;
         let eventInfo = {};
         const tx = transactionMap[txHash];
-        const extraInfo = { topics, data, tx };
+        const extraInfo: { [key: string]: any } = { topics, data, tx };
 
         const contract = ethers.utils.getAddress(address);
         const watchedContract = await this.isWatchedContract(contract);
@@ -784,6 +800,7 @@ export class Indexer implements IndexerInterface {
           const eventDetails = this.parseEventNameAndArgs(watchedContract.kind, logObj);
           eventName = eventDetails.eventName;
           eventInfo = eventDetails.eventInfo;
+          extraInfo.eventSignature = eventDetails.eventSignature;
         }
 
         dbEvents.push({

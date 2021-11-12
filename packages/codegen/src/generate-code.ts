@@ -78,6 +78,11 @@ const main = async (): Promise<void> => {
       type: 'boolean',
       default: true
     })
+    .option('subgraph-path', {
+      alias: 's',
+      describe: 'Path to the subgraph build.',
+      type: 'string'
+    })
     .argv;
 
   let data: string;
@@ -144,6 +149,8 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
 
   registerHandlebarHelpers();
 
+  visitor.visitSubgraph(argv['subgraph-path']);
+
   let outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
@@ -167,7 +174,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
-  exportConfig(argv.kind, argv.port, path.basename(outputDir), outStream);
+  exportConfig(argv.kind, argv.port, path.basename(outputDir), outStream, argv['subgraph-path']);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))

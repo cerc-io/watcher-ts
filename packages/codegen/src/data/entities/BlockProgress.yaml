@@ -9,6 +9,9 @@ indexOn:
   - columns:
       - parentHash
 columns:
+  - name: id
+    tsType: number
+    columnType: PrimaryGeneratedColumn
   - name: cid
     pgType: varchar
     tsType: string

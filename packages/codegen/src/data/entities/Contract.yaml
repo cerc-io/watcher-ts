@@ -4,6 +4,9 @@ indexOn:
       - address
     unique: true
 columns:
+  - name: id
+    tsType: number
+    columnType: PrimaryGeneratedColumn
   - name: address
     pgType: varchar
     tsType: string

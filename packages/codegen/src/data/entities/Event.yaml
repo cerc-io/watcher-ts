@@ -8,6 +8,9 @@ indexOn:
       - contract
       - eventName
 columns:
+  - name: id
+    tsType: number
+    columnType: PrimaryGeneratedColumn
   - name: block
     tsType: BlockProgress
     columnType: ManyToOne

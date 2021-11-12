@@ -72,6 +72,7 @@ export interface IndexerInterface {
   parseEventNameAndArgs?: (kind: string, logObj: any) => any;
   isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
   cacheContract?: (contract: ContractInterface) => void;
+  createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
 }
 
 export interface EventWatcherInterface {

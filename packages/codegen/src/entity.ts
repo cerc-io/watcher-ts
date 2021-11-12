@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
-import { getTsForSol, getPgForTs } from './utils/type-mappings';
+import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
@@ -67,6 +67,12 @@ export class Entity {
     );
     entityObject.indexOn.push(indexObject);
 
+    entityObject.columns.push({
+      name: 'id',
+      tsType: 'number',
+      columnType: 'PrimaryGeneratedColumn',
+      columnOptions: []
+    });
     entityObject.columns.push({
       name: 'blockHash',
       pgType: 'varchar',
@@ -156,30 +162,8 @@ export class Entity {
       ]
     });
 
-    entityObject.columns.forEach((column: any) => {
-      if (column.tsType === 'bigint') {
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'bigintTransformer'
-          }
-        );
-        const importObject = entityObject.imports.find((element: any) => {
-          return element.from === '@vulcanize/util';
-        });
-
-        if (importObject) {
-          importObject.toImport.add('bigintTransformer');
-        } else {
-          entityObject.imports.push(
-            {
-              toImport: new Set(['bigintTransformer']),
-              from: '@vulcanize/util'
-            }
-          );
-        }
-      }
-    });
+    // Add bigintTransformer column option if required.
+    this._addBigIntTransformerOption(entityObject);
 
     this._entities.push(entityObject);
   }
@@ -203,6 +187,66 @@ export class Entity {
         ? fs.createWriteStream(path.join(entityDir, `${entityObj.className}.ts`))
         : process.stdout;
       outStream.write(entity);
+    });
+  }
+
+  addSubgraphEntities (subgraphSchemaDocument: any): void {
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    subgraphTypeDefs.forEach((def: any) => {
+      // TODO Handle enum types.
+      if (def.kind !== 'ObjectTypeDefinition') {
+        return;
+      }
+
+      let entityObject: any = {
+        className: def.name.value,
+        indexOn: [],
+        columns: [],
+        imports: []
+      };
+
+      entityObject.imports.push(
+        {
+          toImport: new Set(['Entity', 'PrimaryColumn', 'Column']),
+          from: 'typeorm'
+        }
+      );
+
+      // Add common columns.
+      entityObject.columns.push({
+        name: 'id',
+        pgType: 'varchar',
+        tsType: 'string',
+        columnType: 'PrimaryColumn',
+        columnOptions: []
+      });
+      entityObject.columns.push({
+        name: 'blockHash',
+        pgType: 'varchar',
+        tsType: 'string',
+        columnType: 'PrimaryColumn',
+        columnOptions: [
+          {
+            option: 'length',
+            value: 66
+          }
+        ]
+      });
+      entityObject.columns.push({
+        name: 'blockNumber',
+        pgType: 'integer',
+        tsType: 'number',
+        columnType: 'Column'
+      });
+
+      // Add subgraph entity specific columns.
+      entityObject = this._addSubgraphColumns(entityObject, def);
+
+      // Add bigintTransformer column option if required.
+      this._addBigIntTransformerOption(entityObject);
+
+      this._entities.push(entityObject);
     });
   }
 
@@ -234,5 +278,124 @@ export class Entity {
   _addHookStatusEntity (): void {
     const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'HookStatus.yaml'), 'utf8'));
     this._entities.push(entity);
+  }
+
+  _addBigIntTransformerOption (entityObject: any): void {
+    entityObject.columns.forEach((column: any) => {
+      if (column.tsType === 'bigint') {
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'bigintTransformer'
+          }
+        );
+
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === '@vulcanize/util';
+        });
+
+        if (importObject) {
+          importObject.toImport.add('bigintTransformer');
+        } else {
+          entityObject.imports.push(
+            {
+              toImport: new Set(['bigintTransformer']),
+              from: '@vulcanize/util'
+            }
+          );
+        }
+      }
+    });
+  }
+
+  _addSubgraphColumns (entityObject: any, def: any): any {
+    def.fields.forEach((field: any) => {
+      const name = field.name.value;
+
+      // Filter out already added columns.
+      if (['id', 'blockHash', 'blockNumber'].includes(name)) {
+        return;
+      }
+
+      const columnObject: any = {
+        name,
+        columnOptions: []
+      };
+
+      const { typeName, array, nullable } = this._getFieldType(field.type);
+      let tsType = getTsForGql(typeName);
+
+      if (tsType) {
+        // Handle basic array types.
+        if (array) {
+          columnObject.columnOptions.push({
+            option: 'array',
+            value: 'true'
+          });
+
+          columnObject.tsType = `${tsType}[]`;
+        } else {
+          columnObject.tsType = tsType;
+        }
+      } else {
+        // TODO Handle array of custom types.
+        tsType = typeName;
+        columnObject.tsType = tsType;
+      }
+
+      const pgType = getPgForTs(tsType);
+
+      // If basic type: create a column. If unknown: create a relation.
+      if (pgType) {
+        columnObject.columnType = 'Column';
+        columnObject.pgType = pgType;
+      } else {
+        columnObject.columnType = 'ManyToOne';
+        columnObject.lhs = '()';
+        columnObject.rhs = tsType;
+
+        entityObject.imports[0].toImport.add('ManyToOne');
+
+        // Check if type import already added.
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === `./${tsType}`;
+        });
+
+        if (!importObject) {
+          entityObject.imports.push(
+            {
+              toImport: new Set([tsType]),
+              from: `./${tsType}`
+            }
+          );
+        }
+      }
+
+      if (nullable) {
+        columnObject.columnOptions.push({
+          option: 'nullable',
+          value: 'true'
+        });
+      }
+
+      entityObject.columns.push(columnObject);
+    });
+
+    return entityObject;
+  }
+
+  _getFieldType (typeNode: any): { typeName: string, array: boolean, nullable: boolean } {
+    if (typeNode.kind === 'ListType') {
+      return { typeName: this._getFieldType(typeNode.type).typeName, array: true, nullable: true };
+    }
+
+    if (typeNode.kind === 'NonNullType') {
+      const fieldType = this._getFieldType(typeNode.type);
+
+      return { typeName: fieldType.typeName, array: fieldType.array, nullable: false };
+    }
+
+    // If 'NamedType'.
+    return { typeName: typeNode.name.value, array: false, nullable: true };
   }
 }
