@@ -292,7 +292,7 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
 };
 
 export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, type: string, key: string) => {
-  const { __newString, BigInt: ExportBigInt } = instanceExports;
+  const { __newString, BigInt: ExportBigInt, Value, ByteArray, Bytes } = instanceExports;
   const entityKey = await __newString(key);
   const value = data[key];
 
@@ -300,7 +300,20 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
     case 'varchar': {
       const entityValue = await __newString(value);
 
-      return entityInstance.setString(entityKey, entityValue);
+      const graphValue = Value.wrap(await entityInstance.get(entityKey));
+
+      const kind = await graphValue.kind;
+
+      switch (kind) {
+        case ValueKind.BYTES: {
+          const byteArray = await ByteArray.fromHexString(entityValue);
+          const bytes = await Bytes.fromByteArray(byteArray);
+          return entityInstance.setBytes(entityKey, bytes);
+        }
+
+        default:
+          return entityInstance.setString(entityKey, entityValue);
+      }
     }
 
     case 'integer': {
@@ -315,6 +328,11 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
 
     case 'boolean': {
       return entityInstance.setBoolean(entityKey, value ? 1 : 0);
+    }
+
+    case 'enum': {
+      const entityValue = await __newString(value);
+      return entityInstance.setString(entityKey, entityValue);
     }
 
     // TODO: Support more types.
@@ -356,6 +374,10 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
 
     case 'boolean': {
       return Boolean(await entityInstance.getBoolean(entityKey));
+    }
+
+    case 'enum': {
+      return __getString(await entityInstance.getString(entityKey));
     }
 
     // TODO: Support more types.

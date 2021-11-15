@@ -1,3 +1,8 @@
+enum EnumType {
+  choice1
+  choice2
+}
+
 type ExampleEntity @entity {
   id: ID!
   count: BigInt!
@@ -5,4 +10,5 @@ type ExampleEntity @entity {
   paramInt: Int! # uint8
   paramBoolean: Boolean!
   paramBytes: Bytes!
+  paramEnum: EnumType!
 }
