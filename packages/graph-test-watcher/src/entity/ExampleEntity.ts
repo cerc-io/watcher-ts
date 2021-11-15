@@ -3,25 +3,25 @@
 //
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 export class ExampleEntity {
   @PrimaryColumn('varchar')
   id!: string;
 
-  // https://typeorm.io/#/entities/primary-columns
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string
+  blockHash!: string;
 
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint')
-  count!: bigint
+  @Column('bigint', { transformer: bigintTransformer })
+  count!: bigint;
 
   @Column('varchar')
-  param1!: string
+  param1!: string;
 
   @Column('integer')
-  param2!: number
+  param2!: number;
 }
