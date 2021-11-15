@@ -14,9 +14,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue, KIND_ACTIVE, getCustomProvider } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -37,58 +35,36 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
+  const config: Config = await getConfig(argv.f);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
-  assert(config.server, 'Missing server config');
+  const { host, port, kind: watcherKind } = config.server;
 
-  const { host, port, kind: watcherKind, subgraphPath } = config.server;
-
-  const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
-
-  assert(dbConfig, 'Missing database config');
-
-  const db = new Database(dbConfig);
+  const db = new Database(config.database);
   await db.init();
 
-  assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
-
-  const graphDb = new GraphDatabase(dbConfig, path.resolve(__dirname, 'entity/*'));
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, subgraphPath);
-  await graphWatcher.init();
-
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
 
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
+
+  const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
+
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
   assert(dbConnectionString, 'Missing job queue db connection string');
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const eventWatcher = new EventWatcher(upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();

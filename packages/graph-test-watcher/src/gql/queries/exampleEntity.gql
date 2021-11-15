@@ -1,0 +1,8 @@
+query exampleEntity($id: String!, $blockHash: String!){
+    exampleEntity(id: $id, blockHash: $blockHash){
+        id
+        count
+        param1
+        param2
+    }
+}

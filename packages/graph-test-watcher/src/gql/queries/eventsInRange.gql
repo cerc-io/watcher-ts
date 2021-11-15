@@ -1,6 +1,7 @@
 query eventsInRange($fromBlockNumber: Int!, $toBlockNumber: Int!){
     eventsInRange(fromBlockNumber: $fromBlockNumber, toBlockNumber: $toBlockNumber){
         block{
+            cid
             hash
             number
             timestamp
