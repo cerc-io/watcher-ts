@@ -20,4 +20,6 @@ dataSources:
       eventHandlers:
         - event: Test(string,uint8)
           handler: handleTest
+      blockHandlers:
+        - handler: handleBlock
       file: ./src/mapping.ts
