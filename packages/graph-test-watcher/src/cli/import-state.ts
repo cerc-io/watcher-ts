@@ -2,22 +2,25 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
+import fs from 'fs';
+import path from 'path';
 
-import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import * as codec from '@ipld/dag-cbor';
 
-import { Database } from './database';
-import { Indexer } from './indexer';
-import { EventWatcher } from './events';
+import { Database } from '../database';
+import { Indexer } from '../indexer';
+import { EventWatcher } from '../events';
+import { IPLDBlock } from '../entity/IPLDBlock';
 
-const log = debug('vulcanize:server');
+const log = debug('vulcanize:import-state');
 
 export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv)).parserConfiguration({
@@ -30,15 +33,11 @@ export const main = async (): Promise<any> => {
       describe: 'configuration file path (toml)',
       default: DEFAULT_CONFIG_PATH
     },
-    startBlock: {
-      type: 'number',
+    importFile: {
+      alias: 'i',
+      type: 'string',
       demandOption: true,
-      describe: 'Block number to start processing at'
-    },
-    endBlock: {
-      type: 'number',
-      demandOption: true,
-      describe: 'Block number to stop processing at'
+      describe: 'Import file path (JSON)'
     }
   }).argv;
 
@@ -72,11 +71,48 @@ export const main = async (): Promise<any> => {
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
-  await fillBlocks(jobQueue, indexer, postgraphileClient, eventWatcher, config.upstream.ethServer.blockDelayInMilliSecs, argv);
+  // Import data.
+  const importFilePath = path.resolve(argv.importFile);
+  const encodedImportData = fs.readFileSync(importFilePath);
+  const importData = codec.decode(Buffer.from(encodedImportData)) as any;
+
+  // Fill the snapshot block.
+  await fillBlocks(
+    jobQueue,
+    indexer,
+    postgraphileClient,
+    eventWatcher,
+    config.upstream.ethServer.blockDelayInMilliSecs,
+    {
+      startBlock: importData.snapshotBlock.blockNumber,
+      endBlock: importData.snapshotBlock.blockNumber
+    }
+  );
+
+  // Fill the Contracts.
+  for (const contract of importData.contracts) {
+    await db.saveContract(contract.address, contract.kind, contract.checkpoint, contract.startingBlock);
+  }
+
+  // Get the snapshot block.
+  const block = await indexer.getBlockProgress(importData.snapshotBlock.blockHash);
+  assert(block);
+
+  // Fill the IPLDBlocks.
+  for (const checkpoint of importData.ipldCheckpoints) {
+    let ipldBlock = new IPLDBlock();
+
+    ipldBlock = Object.assign(ipldBlock, checkpoint);
+    ipldBlock.block = block;
+
+    ipldBlock.data = Buffer.from(codec.encode(ipldBlock.data));
+
+    await db.saveOrUpdateIPLDBlock(ipldBlock);
+  }
 };
 
 main().catch(err => {
   log(err);
 }).finally(() => {
-  process.exit();
+  process.exit(0);
 });

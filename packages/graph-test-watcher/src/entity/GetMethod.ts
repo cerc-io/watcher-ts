@@ -13,6 +13,9 @@ export class GetMethod {
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
+  @Column('integer')
+  blockNumber!: number;
+
   @Column('varchar', { length: 42 })
   contractAddress!: string;
 

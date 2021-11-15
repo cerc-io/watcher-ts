@@ -1,6 +1,7 @@
 subscription onEvent{
     onEvent{
         block{
+            cid
             hash
             number
             timestamp

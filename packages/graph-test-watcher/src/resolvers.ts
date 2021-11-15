@@ -11,6 +11,8 @@ import { ValueResult } from '@vulcanize/util';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
+import { ExampleEntity } from './entity/ExampleEntity';
+
 const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
@@ -34,9 +36,10 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Mutation: {
-      watchContract: (_: any, { contractAddress, startingBlock = 1 }: { contractAddress: string, startingBlock: number }): Promise<boolean> => {
-        log('watchContract', contractAddress, startingBlock);
-        return indexer.watchContract(contractAddress, startingBlock);
+      watchContract: (_: any, { address, kind, checkpoint, startingBlock }: { address: string, kind: string, checkpoint: boolean, startingBlock: number }): Promise<boolean> => {
+        log('watchContract', address, kind, checkpoint, startingBlock);
+
+        return indexer.watchContract(address, kind, checkpoint, startingBlock);
       }
     },
 
@@ -51,8 +54,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer._test(blockHash, contractAddress);
       },
 
-      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name: string }) => {
-        log('events', blockHash, contractAddress, name || '');
+      exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
+        log('exampleEntity', id, blockHash);
+
+        return indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+      },
+
+      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
+        log('events', blockHash, contractAddress, name);
 
         const block = await indexer.getBlockProgress(blockHash);
         if (!block || !block.isComplete) {
@@ -75,12 +84,20 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return events.map(event => indexer.getResultEvent(event));
       },
 
-      exampleEntity: async (_: any, { blockHash, id }: { blockHash: string, id: string }) => {
-        log('exampleEntity', blockHash, id);
+      getStateByCID: async (_: any, { cid }: { cid: string }) => {
+        log('getStateByCID', cid);
 
-        const exampleEntity = await indexer.getExampleEntity(blockHash, id);
+        const ipldBlock = await indexer.getIPLDBlockByCid(cid);
 
-        return JSON.stringify(exampleEntity, undefined, 2);
+        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
+      },
+
+      getState: async (_: any, { blockHash, contractAddress, kind = 'diff' }: { blockHash: string, contractAddress: string, kind: string }) => {
+        log('getState', blockHash, contractAddress, kind);
+
+        const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
+
+        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
       }
     }
   };
