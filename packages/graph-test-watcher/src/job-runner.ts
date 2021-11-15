@@ -19,7 +19,8 @@ import {
   QUEUE_EVENT_PROCESSING,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  getCustomProvider
+  getCustomProvider,
+  JOB_KIND_INDEX
 } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
@@ -49,6 +50,12 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
+
+      const { data: { kind, blockHash } } = job;
+
+      if (kind === JOB_KIND_INDEX) {
+        await this._indexer.processBlock(blockHash);
+      }
 
       await this._jobQueue.markComplete(job);
     });

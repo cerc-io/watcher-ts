@@ -8,7 +8,7 @@ import spies from 'chai-spies';
 
 import { getDummyEventData, getTestDatabase } from '../test/utils';
 import { instantiate } from './loader';
-import { createEvent, Block } from './utils';
+import { createEvent, createBlock, Block } from './utils';
 import { Database } from './database';
 
 chai.use(spies);
@@ -19,7 +19,8 @@ describe('call handler in mapping code', () => {
   let exports: any;
   let db: Database;
 
-  const eventData = getDummyEventData();
+  // Create dummy event data.
+  const dummyEventData = getDummyEventData();
 
   before(async () => {
     db = getTestDatabase();
@@ -50,11 +51,11 @@ describe('call handler in mapping code', () => {
 
   it('should load the subgraph example wasm', async () => {
     const filePath = path.resolve(__dirname, '../test/subgraph/example1/build/Example1/Example1.wasm');
-    const instance = await instantiate(db, { event: { block: eventData.block } }, filePath);
+    const instance = await instantiate(db, { event: { block: dummyEventData.block } }, filePath);
     exports = instance.exports;
   });
 
-  it('should execute the handler function', async () => {
+  it('should execute the event handler function', async () => {
     const {
       _start,
       handleTest
@@ -65,7 +66,7 @@ describe('call handler in mapping code', () => {
     _start();
 
     // Create event params data.
-    eventData.eventParams = [
+    dummyEventData.eventParams = [
       {
         name: 'param1',
         value: 'abc',
@@ -81,14 +82,28 @@ describe('call handler in mapping code', () => {
     // Dummy contract address string.
     const contractAddress = '0xCA6D29232D1435D8198E3E5302495417dD073d61';
 
-    // Create Test event to be passed to handler.
-    const test = await createEvent(exports, contractAddress, eventData);
+    // Create an ethereum event Test to be passed to handler.
+    const test = await createEvent(exports, contractAddress, dummyEventData);
 
     await handleTest(test);
 
     expect(db.getEntity).to.have.been.called();
     expect(db.fromGraphEntity).to.have.been.called();
     expect(db.saveEntity).to.have.been.called();
+  });
+
+  it('should execute the block handler function', async () => {
+    const { _start, handleBlock } = exports;
+    const blockData = dummyEventData.block;
+
+    // Important to call _start for built subgraphs on instantiation!
+    // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
+    _start();
+
+    // Create an ethereum block to be passed to the handler.
+    const block = await createBlock(exports, blockData);
+
+    await handleBlock(block);
   });
 
   after(() => {

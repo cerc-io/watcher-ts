@@ -181,6 +181,11 @@ export class Indexer {
     await handleEvent(this, resultEvent);
   }
 
+  async processBlock (blockHash: string): Promise<void> {
+    // Call subgraph handler for block.
+    await this._graphWatcher.handleBlock(blockHash);
+  }
+
   async processEvent (event: Event): Promise<void> {
     // Trigger indexing of data based on the event.
     await this.triggerIndexingOnEvent(event);

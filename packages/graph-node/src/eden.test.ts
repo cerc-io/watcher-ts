@@ -9,7 +9,7 @@ import chai from 'chai';
 import spies from 'chai-spies';
 
 import { instantiate } from './loader';
-import { createEvent, Block } from './utils';
+import { createEvent, Block, createBlock } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
@@ -24,7 +24,9 @@ const sandbox = chai.spy.sandbox();
 
 describe('eden wasm loader tests', async () => {
   let db: Database;
-  const eventData = getDummyEventData();
+
+  // Create dummy event data.
+  const dummyEventData = getDummyEventData();
 
   before(async () => {
     db = getTestDatabase();
@@ -65,7 +67,7 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
-      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -76,7 +78,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotClaimedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'slot',
           kind: 'uint8',
@@ -114,8 +116,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy SlotClaimedEvent to be passed to handler.
-      const slotClaimedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event SlotClaimedEvent to be passed to handler.
+      const slotClaimedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await slotClaimed(slotClaimedEvent);
     });
@@ -126,7 +128,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotDelegateUpdatedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'slot',
           kind: 'uint8',
@@ -149,8 +151,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy SlotDelegateUpdatedEvent to be passed to handler.
-      const slotClaimedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event SlotDelegateUpdatedEvent to be passed to handler.
+      const slotClaimedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await slotDelegateUpdated(slotClaimedEvent);
     });
@@ -161,7 +163,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy StakeEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'staker',
           kind: 'address',
@@ -174,8 +176,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy StakeEvent to be passed to handler.
-      const stakeEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event StakeEvent to be passed to handler.
+      const stakeEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await stake(stakeEvent);
     });
@@ -186,7 +188,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy UnstakeEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'staker',
           kind: 'address',
@@ -199,8 +201,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy UnstakeEvent to be passed to handler.
-      const unstakeEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event UnstakeEvent to be passed to handler.
+      const unstakeEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await unstake(unstakeEvent);
     });
@@ -224,7 +226,7 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -235,7 +237,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy ClaimedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'index',
           kind: 'uint256',
@@ -258,8 +260,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy ClaimedEvent to be passed to handler.
-      const claimedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event ClaimedEvent to be passed to handler.
+      const claimedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await claimed(claimedEvent);
     });
@@ -270,7 +272,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlashedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'account',
           kind: 'address',
@@ -283,8 +285,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy SlashedEvent to be passed to handler.
-      const slashedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event SlashedEvent to be passed to handler.
+      const slashedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await slashed(slashedEvent);
     });
@@ -295,7 +297,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy MerkleRootUpdatedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'merkleRoot',
           kind: 'bytes32',
@@ -313,8 +315,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy MerkleRootUpdatedEvent to be passed to handler.
-      const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event MerkleRootUpdatedEvent to be passed to handler.
+      const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await merkleRootUpdated(merkleRootUpdatedEvent);
     });
@@ -325,7 +327,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy AccountUpdatedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'account',
           kind: 'address',
@@ -343,8 +345,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy AccountUpdatedEvent to be passed to handler.
-      const accountUpdatedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event AccountUpdatedEvent to be passed to handler.
+      const accountUpdatedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await accountUpdated(accountUpdatedEvent);
     });
@@ -368,7 +370,7 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-      ({ exports } = await instantiate(db, { event: { block: eventData.block } }, filePath, data));
+      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
       const { _start } = exports;
       _start();
     });
@@ -379,7 +381,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerAddedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'produces',
           kind: 'address',
@@ -387,8 +389,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy BlockProducerAddedEvent to be passed to handler.
-      const blockProducerAddedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event BlockProducerAddedEvent to be passed to handler.
+      const blockProducerAddedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await blockProducerAdded(blockProducerAddedEvent);
     });
@@ -399,7 +401,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRemovedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'producer',
           kind: 'address',
@@ -407,8 +409,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy BlockProducerRemovedEvent to be passed to handler.
-      const blockProducerRemovedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event BlockProducerRemovedEvent to be passed to handler.
+      const blockProducerRemovedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await blockProducerRemoved(blockProducerRemovedEvent);
     });
@@ -419,7 +421,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRewardCollectorChangedEvent params.
-      eventData.eventParams = [
+      dummyEventData.eventParams = [
         {
           name: 'producer',
           kind: 'address',
@@ -437,8 +439,8 @@ describe('eden wasm loader tests', async () => {
         }
       ];
 
-      // Create dummy BlockProducerRewardCollectorChangedEvent to be passed to handler.
-      const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event BlockProducerRewardCollectorChangedEvent to be passed to handler.
+      const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await blockProducerRewardCollectorChanged(blockProducerRewardCollectorChangedEvent);
     });
@@ -448,12 +450,22 @@ describe('eden wasm loader tests', async () => {
         rewardScheduleChanged
       } = exports;
 
-      eventData.eventParams = [];
+      dummyEventData.eventParams = [];
 
-      // Create dummy RewardScheduleChangedEvent to be passed to handler.
-      const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, eventData);
+      // Create an ethereum event RewardScheduleChangedEvent to be passed to handler.
+      const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, dummyEventData);
 
       await rewardScheduleChanged(rewardScheduleChangedEvent);
+    });
+
+    it('should call the block handler', async () => {
+      const { handleBlock } = exports;
+      const blockData = dummyEventData.block;
+
+      // Create an ethereum block to be passed to the handler.
+      const block = await createBlock(exports, blockData);
+
+      await handleBlock(block);
     });
   });
 
