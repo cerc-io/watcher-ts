@@ -22,6 +22,7 @@ export class ExampleEntity extends Entity {
     this.set("paramInt", Value.fromI32(0));
     this.set("paramBoolean", Value.fromBoolean(false));
     this.set("paramBytes", Value.fromBytes(Bytes.empty()));
+    this.set("paramEnum", Value.fromString(""));
   }
 
   save(): void {
@@ -93,5 +94,14 @@ export class ExampleEntity extends Entity {
 
   set paramBytes(value: Bytes) {
     this.set("paramBytes", Value.fromBytes(value));
+  }
+
+  get paramEnum(): string {
+    let value = this.get("paramEnum");
+    return value!.toString();
+  }
+
+  set paramEnum(value: string) {
+    this.set("paramEnum", Value.fromString(value));
   }
 }

@@ -34,6 +34,7 @@ export function handleTest (event: Test): void {
   entity.paramInt = event.params.param2;
   entity.paramBoolean = true;
   entity.paramBytes = event.address;
+  entity.paramEnum = 'choice1';
 
   // Entities can be written to the store with `.save()`
   entity.save();

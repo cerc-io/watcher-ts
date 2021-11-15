@@ -4,6 +4,11 @@
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
+enum EnumType {
+  choice1 = 'choice1',
+  choice2 = 'choice2'
+}
+
 @Entity()
 export class ExampleEntity {
   @PrimaryColumn('varchar')
@@ -30,4 +35,11 @@ export class ExampleEntity {
 
   @Column('varchar')
   paramBytes!: string
+
+  @Column({
+    type: 'enum',
+    enum: EnumType,
+    default: EnumType.choice1
+  })
+  paramEnum!: EnumType
 }
