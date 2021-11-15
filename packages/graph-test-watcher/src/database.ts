@@ -3,20 +3,22 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, MoreThan } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase } from '@vulcanize/util';
+import { Database as BaseDatabase, MAX_REORG_DEPTH, DatabaseInterface } from '@vulcanize/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
+import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
+import { IPLDBlock } from './entity/IPLDBlock';
 
 import { GetMethod } from './entity/GetMethod';
 import { _Test } from './entity/_Test';
 
-export class Database {
+export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
@@ -43,7 +45,6 @@ export class Database {
     return this._baseDatabase.close();
   }
 
-  // eslint-disable-next-line camelcase
   async getGetMethod ({ blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<GetMethod | undefined> {
     return this._conn.getRepository(GetMethod)
       .findOne({
@@ -52,8 +53,7 @@ export class Database {
       });
   }
 
-  // eslint-disable-next-line camelcase
-  async get_test ({ blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<_Test | undefined> {
+  async _getTest ({ blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<_Test | undefined> {
     return this._conn.getRepository(_Test)
       .findOne({
         blockHash,
@@ -61,18 +61,173 @@ export class Database {
       });
   }
 
-  // eslint-disable-next-line camelcase
-  async saveGetMethod ({ blockHash, contractAddress, value, proof }: DeepPartial<GetMethod>): Promise<GetMethod> {
+  async saveGetMethod ({ blockHash, blockNumber, contractAddress, value, proof }: DeepPartial<GetMethod>): Promise<GetMethod> {
     const repo = this._conn.getRepository(GetMethod);
-    const entity = repo.create({ blockHash, contractAddress, value, proof });
+    const entity = repo.create({ blockHash, blockNumber, contractAddress, value, proof });
     return repo.save(entity);
   }
 
-  // eslint-disable-next-line camelcase
-  async save_test ({ blockHash, contractAddress, value, proof }: DeepPartial<_Test>): Promise<_Test> {
+  async _saveTest ({ blockHash, blockNumber, contractAddress, value, proof }: DeepPartial<_Test>): Promise<_Test> {
     const repo = this._conn.getRepository(_Test);
-    const entity = repo.create({ blockHash, contractAddress, value, proof });
+    const entity = repo.create({ blockHash, blockNumber, contractAddress, value, proof });
     return repo.save(entity);
+  }
+
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    const repo = this._conn.getRepository(IPLDBlock);
+    return repo.find({ where, relations: ['block'] });
+  }
+
+  async getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    let queryBuilder = repo.createQueryBuilder('ipld_block')
+      .leftJoinAndSelect('ipld_block.block', 'block')
+      .where('block.is_pruned = false')
+      .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
+      .orderBy('block.block_number', 'DESC');
+
+    // Filter out blocks after the provided block number.
+    if (blockNumber) {
+      queryBuilder.andWhere('block.block_number <= :blockNumber', { blockNumber });
+    }
+
+    // Filter using kind if specified else order by id to give preference to checkpoint.
+    queryBuilder = kind
+      ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: 'diff_staged' })
+        .addOrderBy('ipld_block.id', 'DESC');
+
+    return queryBuilder.getOne();
+  }
+
+  async getPrevIPLDBlock (queryRunner: QueryRunner, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
+    const heirerchicalQuery = `
+      WITH RECURSIVE cte_query AS
+      (
+        SELECT
+          b.block_hash,
+          b.block_number,
+          b.parent_hash,
+          1 as depth,
+          i.id,
+          i.kind
+        FROM
+          block_progress b
+          LEFT JOIN
+            ipld_block i ON i.block_id = b.id
+            AND i.contract_address = $2
+        WHERE
+          b.block_hash = $1
+        UNION ALL
+          SELECT
+            b.block_hash,
+            b.block_number,
+            b.parent_hash,
+            c.depth + 1,
+            i.id,
+            i.kind
+          FROM
+            block_progress b
+            LEFT JOIN
+              ipld_block i
+              ON i.block_id = b.id
+              AND i.contract_address = $2
+            INNER JOIN
+              cte_query c ON c.parent_hash = b.block_hash
+            WHERE
+              c.depth < $3
+      )
+      SELECT
+        block_number, id, kind
+      FROM
+        cte_query
+      ORDER BY block_number DESC, id DESC
+    `;
+
+    // Fetching block and id for previous IPLDBlock in frothy region.
+    const queryResult = await queryRunner.query(heirerchicalQuery, [blockHash, contractAddress, MAX_REORG_DEPTH]);
+    const latestRequiredResult = kind
+      ? queryResult.find((obj: any) => obj.kind === kind)
+      : queryResult.find((obj: any) => obj.id);
+
+    let result: IPLDBlock | undefined;
+    if (latestRequiredResult) {
+      result = await queryRunner.manager.findOne(IPLDBlock, { id: latestRequiredResult.id }, { relations: ['block'] });
+    } else {
+      // If IPLDBlock not found in frothy region get latest IPLDBlock in the pruned region.
+      // Filter out IPLDBlocks from pruned blocks.
+      const canonicalBlockNumber = queryResult.pop().block_number + 1;
+
+      let queryBuilder = queryRunner.manager.createQueryBuilder(IPLDBlock, 'ipld_block')
+        .leftJoinAndSelect('ipld_block.block', 'block')
+        .where('block.is_pruned = false')
+        .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
+        .andWhere('block.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
+        .orderBy('block.block_number', 'DESC');
+
+      // Filter using kind if specified else order by id to give preference to checkpoint.
+      queryBuilder = kind
+        ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
+        : queryBuilder.addOrderBy('ipld_block.id', 'DESC');
+
+      result = await queryBuilder.getOne();
+    }
+
+    return result;
+  }
+
+  // Fetch all diff IPLDBlocks after the specified checkpoint.
+  async getDiffIPLDBlocksByCheckpoint (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    return repo.find({
+      relations: ['block'],
+      where: {
+        contractAddress,
+        kind: 'diff',
+        block: {
+          isPruned: false,
+          blockNumber: MoreThan(checkpointBlockNumber)
+        }
+      },
+      order: {
+        block: 'ASC'
+      }
+    });
+  }
+
+  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
+    const repo = this._conn.getRepository(IPLDBlock);
+    return repo.save(ipldBlock);
+  }
+
+  async getHookStatus (queryRunner: QueryRunner): Promise<HookStatus | undefined> {
+    const repo = queryRunner.manager.getRepository(HookStatus);
+
+    return repo.findOne();
+  }
+
+  async updateHookStatusProcessedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<HookStatus> {
+    const repo = queryRunner.manager.getRepository(HookStatus);
+    let entity = await repo.findOne();
+
+    if (!entity) {
+      entity = repo.create({
+        latestProcessedBlockNumber: blockNumber
+      });
+    }
+
+    if (force || blockNumber > entity.latestProcessedBlockNumber) {
+      entity.latestProcessedBlockNumber = blockNumber;
+    }
+
+    return repo.save(entity);
+  }
+
+  async getContracts (where: FindConditions<Contract>): Promise<Contract[]> {
+    const repo = this._conn.getRepository(Contract);
+    return repo.find({ where });
   }
 
   async getContract (address: string): Promise<Contract | undefined> {
@@ -115,24 +270,24 @@ export class Database {
     return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
-  async saveContract (address: string, kind: string, startingBlock: number): Promise<void> {
+  async saveContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     await this._conn.transaction(async (tx) => {
       const repo = tx.getRepository(Contract);
 
-      return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
+      return this._baseDatabase.saveContract(repo, address, kind, checkpoint, startingBlock);
     });
   }
 
-  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusIndexedBlock(repo, blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber, force);
   }
 
   async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {

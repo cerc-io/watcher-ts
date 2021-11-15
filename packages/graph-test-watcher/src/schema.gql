@@ -1,22 +1,31 @@
-type Query {
-  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
-  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
-  getMethod(blockHash: String!, contractAddress: String!): ResultString!
-  _test(blockHash: String!, contractAddress: String!): ResultBigInt!
-  exampleEntity(blockHash: String!, id: String!): String!
+scalar BigInt
+
+type Proof {
+  data: String!
 }
 
-type ResultEvent {
-  block: Block!
-  tx: Transaction!
-  contract: String!
-  eventIndex: Int!
-  eventSignature: String!
-  event: Event!
+type ResultBoolean {
+  value: Boolean!
+  proof: Proof
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultInt {
+  value: Int!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
   proof: Proof
 }
 
 type Block {
+  cid: String!
   hash: String!
   number: Int!
   timestamp: Int!
@@ -30,6 +39,15 @@ type Transaction {
   to: String!
 }
 
+type ResultEvent {
+  block: Block!
+  tx: Transaction!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
 union Event = TestEvent
 
 type TestEvent {
@@ -37,24 +55,33 @@ type TestEvent {
   param2: Int!
 }
 
-type Proof {
+type ResultIPLDBlock {
+  block: Block!
+  contractAddress: String!
+  cid: String!
+  kind: String!
   data: String!
 }
 
-type ResultString {
-  value: String!
-  proof: Proof
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  getMethod(blockHash: String!, contractAddress: String!): ResultString!
+  _test(blockHash: String!, contractAddress: String!): ResultBigInt!
+  exampleEntity(id: String!, blockHash: String!): ExampleEntity!
+  getStateByCID(cid: String!): ResultIPLDBlock
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }
 
-type ResultBigInt {
-  value: BigInt!
-  proof: Proof
+type ExampleEntity {
+  id: ID!
+  count: BigInt!
+  param1: String!
+  param2: Int!
 }
-
-scalar BigInt
 
 type Mutation {
-  watchContract(contractAddress: String!, startingBlock: Int): Boolean!
+  watchContract(address: String!, kind: String!, checkpoint: Boolean!, startingBlock: Int): Boolean!
 }
 
 type Subscription {
