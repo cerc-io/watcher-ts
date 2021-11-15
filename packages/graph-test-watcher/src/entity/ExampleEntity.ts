@@ -3,6 +3,9 @@
 //
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
+import Decimal from 'decimal.js';
+
+import { decimalTransformer } from '@vulcanize/util';
 
 enum EnumType {
   choice1 = 'choice1',
@@ -42,4 +45,7 @@ export class ExampleEntity {
     default: EnumType.choice1
   })
   paramEnum!: EnumType
+
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  paramBigDecimal!: Decimal
 }

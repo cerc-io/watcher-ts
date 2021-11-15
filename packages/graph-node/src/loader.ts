@@ -210,7 +210,6 @@ export const instantiate = async (database: Database, context: Context, filePath
 
         // Calculate exp after converting digits to BigInt above.
         const exp = decimal.e - digits.length + 1;
-        console.log('exp', exp);
         const expBigInt = await BigInt.fromString(await __newString(exp.toString()));
 
         const bigDecimal = await BigDecimal.__new(digitsBigInt);

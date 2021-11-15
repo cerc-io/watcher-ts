@@ -53,6 +53,10 @@ type ResultBigInt {
 
 scalar BigInt
 
+scalar Bytes
+
+scalar BigDecimal
+
 type Mutation {
   watchContract(contractAddress: String!, startingBlock: Int): Boolean!
 }

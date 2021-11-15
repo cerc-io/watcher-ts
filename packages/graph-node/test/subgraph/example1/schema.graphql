@@ -11,4 +11,5 @@ type ExampleEntity @entity {
   paramBoolean: Boolean!
   paramBytes: Bytes!
   paramEnum: EnumType!
+  paramBigDecimal: BigDecimal!
 }
