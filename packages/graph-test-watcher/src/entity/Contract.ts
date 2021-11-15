@@ -13,8 +13,11 @@ export class Contract {
   @Column('varchar', { length: 42 })
   address!: string;
 
-  @Column('varchar', { length: 8 })
+  @Column('varchar')
   kind!: string;
+
+  @Column('boolean')
+  checkpoint!: boolean;
 
   @Column('integer')
   startingBlock!: number;

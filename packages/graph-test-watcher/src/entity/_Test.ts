@@ -14,10 +14,13 @@ export class _Test {
   @Column('varchar', { length: 66 })
   blockHash!: string;
 
+  @Column('integer')
+  blockNumber!: number;
+
   @Column('varchar', { length: 42 })
   contractAddress!: string;
 
-  @Column('numeric', { transformer: bigintTransformer })
+  @Column('bigint', { transformer: bigintTransformer })
   value!: bigint;
 
   @Column('text', { nullable: true })
