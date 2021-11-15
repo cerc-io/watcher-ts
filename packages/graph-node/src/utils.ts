@@ -5,6 +5,7 @@ import debug from 'debug';
 import yaml from 'js-yaml';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
+import Decimal from 'decimal.js';
 
 const log = debug('vulcanize:utils');
 
@@ -292,7 +293,7 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
 };
 
 export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, type: string, key: string) => {
-  const { __newString, BigInt: ExportBigInt, Value, ByteArray, Bytes } = instanceExports;
+  const { __newString, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal } = instanceExports;
   const entityKey = await __newString(key);
   const value = data[key];
 
@@ -335,6 +336,11 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
       return entityInstance.setString(entityKey, entityValue);
     }
 
+    case 'numeric': {
+      const bigDecimal = await BigDecimal.fromString(await __newString(value.toString()));
+      return entityInstance.setBigDecimal(entityKey, bigDecimal);
+    }
+
     // TODO: Support more types.
     default:
       throw new Error(`Unsupported type: ${type}`);
@@ -342,7 +348,7 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
 };
 
 export const fromEntityValue = async (instanceExports: any, entityInstance: any, type: string, key: string): Promise<any> => {
-  const { __newString, __getString, BigInt: ExportBigInt, Value } = instanceExports;
+  const { __newString, __getString, BigInt: ExportBigInt, Value, BigDecimal, Bytes } = instanceExports;
   const entityKey = await __newString(key);
 
   switch (type) {
@@ -353,7 +359,7 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
 
       switch (kind) {
         case ValueKind.BYTES: {
-          const bytes = await value.toBytes();
+          const bytes = await Bytes.wrap(await value.toBytes());
           const bytesStringPtr = await bytes.toHexString();
           return __getString(bytesStringPtr);
         }
@@ -378,6 +384,11 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
 
     case 'enum': {
       return __getString(await entityInstance.getString(entityKey));
+    }
+
+    case 'numeric': {
+      const bigDecimal = BigDecimal.wrap(await entityInstance.getBigDecimal(entityKey));
+      return new Decimal(__getString(await bigDecimal.toString()));
     }
 
     // TODO: Support more types.

@@ -35,6 +35,7 @@ export function handleTest (event: Test): void {
   entity.paramBoolean = true;
   entity.paramBytes = event.address;
   entity.paramEnum = 'choice1';
+  entity.paramBigDecimal = BigDecimal.fromString('123');
 
   // Entities can be written to the store with `.save()`
   entity.save();

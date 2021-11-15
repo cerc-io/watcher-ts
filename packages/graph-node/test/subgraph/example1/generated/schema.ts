@@ -23,6 +23,7 @@ export class ExampleEntity extends Entity {
     this.set("paramBoolean", Value.fromBoolean(false));
     this.set("paramBytes", Value.fromBytes(Bytes.empty()));
     this.set("paramEnum", Value.fromString(""));
+    this.set("paramBigDecimal", Value.fromBigDecimal(BigDecimal.zero()));
   }
 
   save(): void {
@@ -103,5 +104,14 @@ export class ExampleEntity extends Entity {
 
   set paramEnum(value: string) {
     this.set("paramEnum", Value.fromString(value));
+  }
+
+  get paramBigDecimal(): BigDecimal {
+    let value = this.get("paramBigDecimal");
+    return value!.toBigDecimal();
+  }
+
+  set paramBigDecimal(value: BigDecimal) {
+    this.set("paramBigDecimal", Value.fromBigDecimal(value));
   }
 }
