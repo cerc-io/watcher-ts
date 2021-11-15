@@ -13,7 +13,7 @@ import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { IndexerInterface } from '@vulcanize/util';
 
-import { createEvent, getSubgraphConfig } from './utils';
+import { createBlock, createEvent, getSubgraphConfig } from './utils';
 import { Context, instantiate } from './loader';
 import { Database } from './database';
 
@@ -147,6 +147,36 @@ export class GraphWatcher {
     const ethereumEvent = await createEvent(exports, contract, data);
 
     await exports[eventHandler.handler](ethereumEvent);
+  }
+
+  async handleBlock (blockHash: string) {
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          blockData
+        ]
+      }
+    } = await this._postgraphileClient.getBlocks({ blockHash });
+
+    // Call block handler(s) for each contract.
+    for (const dataSource of this._dataSources) {
+      // Check if block handler(s) are configured.
+      if (!dataSource.mapping.blockHandlers) {
+        continue;
+      }
+
+      const { instance: { exports } } = this._dataSourceMap[dataSource.source.address];
+
+      // Create ethereum block to be passed to a wasm block handler.
+      const ethereumBlock = await createBlock(exports, blockData);
+
+      // Call all the block handlers one after the another for a contract.
+      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+        await exports[blockHandler.handler](ethereumBlock);
+      });
+
+      await Promise.all(blockHandlerPromises);
+    }
   }
 
   setIndexer (indexer: IndexerInterface): void {

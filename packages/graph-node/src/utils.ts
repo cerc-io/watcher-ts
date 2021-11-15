@@ -164,51 +164,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     id_of_type: idOfType
   } = instanceExports;
 
-  // Fill block data.
-  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.blockHash));
-  const blockHash = await Bytes.fromByteArray(blockHashByteArray);
-
-  const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
-  const parentHash = await Bytes.fromByteArray(parentHashByteArray);
-
-  const blockNumber = await BigInt.fromString(await __newString(blockData.blockNumber));
-
-  const blockTimestamp = await BigInt.fromString(await __newString(blockData.timestamp));
-
-  const stateRootByteArray = await ByteArray.fromHexString(await __newString(blockData.stateRoot));
-  const stateRoot = await Bytes.fromByteArray(stateRootByteArray);
-
-  const transactionsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.txRoot));
-  const transactionsRoot = await Bytes.fromByteArray(transactionsRootByteArray);
-
-  const receiptsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.receiptRoot));
-  const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
-
-  const totalDifficulty = await BigInt.fromString(await __newString(blockData.td));
-
-  // Missing fields from watcher in block data:
-  // unclesHash
-  // author
-  // gasUsed
-  // gasLimit
-  // difficulty
-  // size
-  const block = await ethereum.Block.__new(
-    blockHash,
-    parentHash,
-    await Bytes.empty(),
-    await Address.zero(),
-    stateRoot,
-    transactionsRoot,
-    receiptsRoot,
-    blockNumber,
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    blockTimestamp,
-    await BigInt.fromI32(0),
-    totalDifficulty,
-    null
-  );
+  const block = await createBlock(instanceExports, blockData);
 
   // Fill transaction data.
   const txHashByteArray = await ByteArray.fromHexString(await __newString(tx.hash));
@@ -261,6 +217,63 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     block,
     transaction,
     eventParams
+  );
+};
+
+export const createBlock = async (instanceExports: any, blockData: Block): Promise<any> => {
+  const {
+    __newString,
+    Address,
+    BigInt,
+    ethereum,
+    Bytes,
+    ByteArray
+  } = instanceExports;
+
+  // Fill block data.
+  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.blockHash));
+  const blockHash = await Bytes.fromByteArray(blockHashByteArray);
+
+  const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
+  const parentHash = await Bytes.fromByteArray(parentHashByteArray);
+
+  const blockNumber = await BigInt.fromString(await __newString(blockData.blockNumber));
+
+  const blockTimestamp = await BigInt.fromString(await __newString(blockData.timestamp));
+
+  const stateRootByteArray = await ByteArray.fromHexString(await __newString(blockData.stateRoot));
+  const stateRoot = await Bytes.fromByteArray(stateRootByteArray);
+
+  const transactionsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.txRoot));
+  const transactionsRoot = await Bytes.fromByteArray(transactionsRootByteArray);
+
+  const receiptsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.receiptRoot));
+  const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
+
+  const totalDifficulty = await BigInt.fromString(await __newString(blockData.td));
+
+  // Missing fields from watcher in block data:
+  // unclesHash
+  // author
+  // gasUsed
+  // gasLimit
+  // difficulty
+  // size
+  return await ethereum.Block.__new(
+    blockHash,
+    parentHash,
+    await Bytes.empty(),
+    await Address.zero(),
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
+    blockNumber,
+    await BigInt.fromI32(0),
+    await BigInt.fromI32(0),
+    blockTimestamp,
+    await BigInt.fromI32(0),
+    totalDifficulty,
+    null
   );
 };
 
