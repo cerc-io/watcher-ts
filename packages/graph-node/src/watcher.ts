@@ -166,9 +166,11 @@ export class GraphWatcher {
       const ethereumBlock = await createBlock(exports, blockData);
 
       // Call all the block handlers one after the another for a contract.
-      dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
         await exports[blockHandler.handler](ethereumBlock);
       });
+
+      await Promise.all(blockHandlerPromises);
     }
   }
 
