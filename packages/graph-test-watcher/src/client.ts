@@ -3,7 +3,6 @@
 //
 
 import { gql } from '@apollo/client/core';
-
 import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 
 import { queries, mutations, subscriptions } from './gql';
@@ -18,7 +17,6 @@ export class Client {
     this._client = new GraphQLClient(config);
   }
 
-  // eslint-disable-next-line camelcase
   async getGetMethod (blockHash: string, contractAddress: string): Promise<any> {
     const { getMethod } = await this._client.query(
       gql(queries.getMethod),
@@ -28,8 +26,7 @@ export class Client {
     return getMethod;
   }
 
-  // eslint-disable-next-line camelcase
-  async get_test (blockHash: string, contractAddress: string): Promise<any> {
+  async _getTest (blockHash: string, contractAddress: string): Promise<any> {
     const { _test } = await this._client.query(
       gql(queries._test),
       { blockHash, contractAddress }

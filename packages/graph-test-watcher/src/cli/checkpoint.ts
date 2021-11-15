@@ -13,7 +13,7 @@ import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import { Database } from '../database';
 import { Indexer } from '../indexer';
 
-const log = debug('vulcanize:watch-contract');
+const log = debug('vulcanize:checkpoint');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -31,23 +31,11 @@ const main = async (): Promise<void> => {
       type: 'string',
       require: true,
       demandOption: true,
-      describe: 'Address of the deployed contract'
+      describe: 'Contract address to create the checkpoint for.'
     },
-    kind: {
+    blockHash: {
       type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Kind of contract'
-    },
-    checkpoint: {
-      type: 'boolean',
-      require: true,
-      demandOption: true,
-      describe: 'Turn checkpointing on'
-    },
-    startingBlock: {
-      type: 'number',
-      describe: 'Starting block'
+      describe: 'Blockhash at which to create the checkpoint.'
     }
   }).argv;
 
@@ -67,7 +55,9 @@ const main = async (): Promise<void> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  await indexer.watchContract(argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
+  const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
+
+  log(`Created a checkpoint for contract ${argv.address} at block-hash ${blockHash}`);
 
   await db.close();
 };
