@@ -3,9 +3,11 @@
 //
 
 import path from 'path';
+import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
+import util from 'util';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
@@ -13,7 +15,7 @@ import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import { Database } from '../database';
 import { Indexer } from '../indexer';
 
-const log = debug('vulcanize:watch-contract');
+const log = debug('vulcanize:inspect-cid');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -27,27 +29,11 @@ const main = async (): Promise<void> => {
       describe: 'Configuration file path (toml)',
       default: DEFAULT_CONFIG_PATH
     },
-    address: {
+    cid: {
+      alias: 'c',
       type: 'string',
-      require: true,
       demandOption: true,
-      describe: 'Address of the deployed contract'
-    },
-    kind: {
-      type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Kind of contract'
-    },
-    checkpoint: {
-      type: 'boolean',
-      require: true,
-      demandOption: true,
-      describe: 'Turn checkpointing on'
-    },
-    startingBlock: {
-      type: 'number',
-      describe: 'Starting block'
+      describe: 'CID to be inspected'
     }
   }).argv;
 
@@ -67,9 +53,12 @@ const main = async (): Promise<void> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  await indexer.watchContract(argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
+  const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
+  assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');
 
-  await db.close();
+  const ipldData = await indexer.getIPLDData(ipldBlock);
+
+  log(util.inspect(ipldData, false, null));
 };
 
 main().catch(err => {

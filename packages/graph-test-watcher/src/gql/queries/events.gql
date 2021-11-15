@@ -1,6 +1,7 @@
 query events($blockHash: String!, $contractAddress: String!, $name: String){
     events(blockHash: $blockHash, contractAddress: $contractAddress, name: $name){
         block{
+            cid
             hash
             number
             timestamp
