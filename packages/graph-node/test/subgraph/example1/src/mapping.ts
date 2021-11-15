@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -52,6 +52,30 @@ export function handleTest (event: Test): void {
   // state variables and other data:
   //
   // - contract.getMethod(...)
+}
+
+export function handleBlock (block: ethereum.Block): void {
+  log.debug('block.hash: {}', [block.hash.toHexString()]);
+  log.debug('block.parentHash: {}', [block.parentHash.toHexString()]);
+  log.debug('block.unclesHash: {}', [block.unclesHash.toHexString()]);
+  log.debug('block.author: {}', [block.author.toHexString()]);
+  log.debug('block.stateRoot: {}', [block.stateRoot.toHexString()]);
+  log.debug('block.transactionsRoot: {}', [block.transactionsRoot.toHexString()]);
+  log.debug('block.receiptsRoot: {}', [block.receiptsRoot.toHexString()]);
+  log.debug('block.number: {}', [block.number.toString()]);
+  log.debug('block.gasUsed: {}', [block.gasUsed.toString()]);
+  log.debug('block.gasLimit: {}', [block.gasLimit.toString()]);
+  log.debug('block.timestamp: {}', [block.timestamp.toString()]);
+  log.debug('block.difficulty: {}', [block.difficulty.toString()]);
+  log.debug('block.totalDifficulty: {}', [block.totalDifficulty.toString()]);
+
+  const blockSize = block.size;
+
+  if (blockSize) {
+    log.debug('block.size: {}', [blockSize.toString()]);
+  } else {
+    log.debug('block.size: {}', ['null']);
+  }
 }
 
 export function testEthCall (): void {

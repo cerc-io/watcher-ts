@@ -144,33 +144,38 @@ export class GraphWatcher {
     await exports[eventHandler.handler](ethereumEvent);
   }
 
-  async handleBlock (blockData: any, contract: string) {
-    // Assume we get everything from the watcher in blockData.
-    // If not, fetch from _postgraphileClient like above.
+  async handleBlock (blockHash: string) {
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          blockData
+        ]
+      }
+    } = await this._postgraphileClient.getBlocks({ blockHash });
 
-    // Get dataSource in subgraph yaml based on contract address.
-    const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
+    // Call blockHandler for each contract.
+    for (const dataSource of this._dataSources) {
+      if (!dataSource) {
+        log(`Subgraph doesnt have configuration for contract ${dataSource.source.address}`);
+        continue;
+      }
 
-    if (!dataSource) {
-      log(`Subgraph doesnt have configuration for contract ${contract}`);
-      return;
+      // TODO Handle more than one block handlers.
+      // Get the first blockHandler.
+      const blockHandler = dataSource.mapping.blockHandlers[0];
+
+      if (!blockHandler) {
+        log(`No block handler configured in subgraph for contract ${dataSource.source.address}`);
+        continue;
+      }
+
+      const { instance: { exports } } = this._dataSourceMap[dataSource.source.address];
+
+      // Create ethereum block to be passed to the wasm block handler.
+      const ethereumBlock = await createBlock(exports, blockData);
+
+      await exports[blockHandler.handler](ethereumBlock);
     }
-
-    // TODO Handle more than one block handlers.
-    // Get the first blockHandler.
-    const blockHandler = dataSource.mapping.blockHandlers[0];
-
-    if (!blockHandler) {
-      log('No block handler configured in subgraph');
-      return;
-    }
-
-    const { instance: { exports } } = this._dataSourceMap[contract];
-
-    // Create ethereum block to be passed to the wasm block handler.
-    const ethereumBlock = await createBlock(exports, blockData);
-
-    await exports[blockHandler.handler](ethereumBlock);
   }
 
   async getEntity (blockHash: string, entity: string, id: string): Promise<any> {
