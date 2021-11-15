@@ -153,28 +153,22 @@ export class GraphWatcher {
       }
     } = await this._postgraphileClient.getBlocks({ blockHash });
 
-    // Call blockHandler for each contract.
+    // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
-      if (!dataSource) {
-        log(`Subgraph doesnt have configuration for contract ${dataSource.source.address}`);
-        continue;
-      }
-
-      // TODO Handle more than one block handlers.
-      // Get the first blockHandler.
-      const blockHandler = dataSource.mapping.blockHandlers[0];
-
-      if (!blockHandler) {
-        log(`No block handler configured in subgraph for contract ${dataSource.source.address}`);
+      // Check if block handler(s) are configured.
+      if (!dataSource.mapping.blockHandlers) {
         continue;
       }
 
       const { instance: { exports } } = this._dataSourceMap[dataSource.source.address];
 
-      // Create ethereum block to be passed to the wasm block handler.
+      // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(exports, blockData);
 
-      await exports[blockHandler.handler](ethereumBlock);
+      // Call all the block handlers one after the another for a contract.
+      dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+        await exports[blockHandler.handler](ethereumBlock);
+      });
     }
   }
 
