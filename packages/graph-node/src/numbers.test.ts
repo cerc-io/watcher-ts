@@ -28,11 +28,22 @@ describe('numbers wasm tests', () => {
     _start();
   });
 
-  it('should execute bigInt fromString API', async () => {
-    const { testBigIntFromString, __getString } = exports;
+  describe('should execute bigInt fromString API', () => {
+    let testBigIntFromString: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntFromString();
-    expect(__getString(ptr)).to.equal('123');
+    before(() => {
+      ({ testBigIntFromString, __getString, __newString } = exports);
+    });
+
+    it('should get bigInt for positive numbers', async () => {
+      const ptr = await testBigIntFromString(await __newString('123'));
+      expect(__getString(ptr)).to.equal('123');
+    });
+
+    xit('should get bigInt for negative numbers', async () => {
+      const ptr = await testBigIntFromString(await __newString('-123'));
+      expect(__getString(ptr)).to.equal('-123');
+    });
   });
 
   it('should execute bigInt plus API', async () => {
@@ -61,6 +72,31 @@ describe('numbers wasm tests', () => {
 
     const ptr = await testBigIntDividedBy();
     expect(__getString(ptr)).to.equal('100');
+  });
+
+  it('should execute bigDecimal toString API', async () => {
+    const { testBigDecimalToString, __getString } = exports;
+
+    const ptr = await testBigDecimalToString();
+    expect(__getString(ptr)).to.equal('1000000000000000000');
+  });
+
+  describe('should execute bigDecimal fromString API', () => {
+    let testBigDecimalFromString: any, __getString: any, __newString: any;
+
+    before(() => {
+      ({ testBigDecimalFromString, __getString, __newString } = exports);
+    });
+
+    it('should get bigDecimal for numbers without decimals', async () => {
+      const ptr = await testBigDecimalFromString(await __newString('4.321e+4'));
+      expect(__getString(ptr)).to.equal('43210');
+    });
+
+    xit('should get bigDecimal for numbers with decimals', async () => {
+      const ptr = await testBigDecimalFromString(await __newString('5032485723458348569331745.33434346346912144534543'));
+      expect(__getString(ptr)).to.equal('5032485723458348569331745.33434346346912144534543');
+    });
   });
 
   xit('should execute bigDecimal dividedBy API', () => {
