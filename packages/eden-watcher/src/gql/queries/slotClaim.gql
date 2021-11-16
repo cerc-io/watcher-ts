@@ -1,0 +1,40 @@
+query slotClaim($id: String!, $blockHash: String!){
+    slotClaim(id: $id, blockHash: $blockHash){
+        id
+        slot{
+            id
+            owner
+            delegate
+            winningBid
+            oldBid
+            startTime
+            expirationTime
+            taxRatePerDay
+            claims{
+                id
+                slot{
+                    id
+                    owner
+                    delegate
+                    winningBid
+                    oldBid
+                    startTime
+                    expirationTime
+                    taxRatePerDay
+                }
+                owner
+                winningBid
+                oldBid
+                startTime
+                expirationTime
+                taxRatePerDay
+            }
+        }
+        owner
+        winningBid
+        oldBid
+        startTime
+        expirationTime
+        taxRatePerDay
+    }
+}
