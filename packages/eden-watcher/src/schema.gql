@@ -48,7 +48,7 @@ type ResultEvent {
   proof: Proof
 }
 
-union Event = TransferERC20Event | ApprovalERC20Event | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent | TransferERC721Event | ApprovalERC721Event | ApprovalForAllEvent | BlockProducerAddedEvent | BlockProducerRemovedEvent | BlockProducerRewardCollectorChangedEvent | RewardScheduleChangedEvent | ClaimedEvent | SlashedEvent | MerkleRootUpdatedEvent | AccountUpdatedEvent | PermanentURIEvent | GovernanceChangedEvent | UpdateThresholdChangedEvent | RoleAdminChangedEvent | RoleGrantedEvent | RoleRevokedEvent
+union Event = TransferERC20Event | ApprovalERC20Event | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent | TransferERC721Event | ApprovalERC721Event | ApprovalForAllEvent | BlockProducerAddedEvent | BlockProducerRemovedEvent | BlockProducerRewardCollectorChangedEvent | ClaimedEvent | SlashedEvent | MerkleRootUpdatedEvent | AccountUpdatedEvent | PermanentURIEvent | GovernanceChangedEvent | UpdateThresholdChangedEvent | RoleAdminChangedEvent | RoleGrantedEvent | RoleRevokedEvent | RewardScheduleChangedEvent
 
 type TransferERC20Event {
   from: String!
@@ -142,7 +142,10 @@ type BlockProducerRewardCollectorChangedEvent {
   collector: String!
 }
 
-type RewardScheduleChangedEvent
+type RewardScheduleChangedEvent {
+  # Note: dummy property added as server throws an error for type without any fields.
+  dummy: String
+}
 
 type ClaimedEvent {
   index: BigInt!
