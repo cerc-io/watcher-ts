@@ -4,7 +4,7 @@ import {
   Example1,
   Test
 } from '../generated/Example1/Example1';
-import { ExampleEntity } from '../generated/schema';
+import { ExampleEntity, RelatedEntity } from '../generated/schema';
 
 export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
@@ -36,6 +36,16 @@ export function handleTest (event: Test): void {
   entity.paramBytes = event.address;
   entity.paramEnum = 'choice1';
   entity.paramBigDecimal = BigDecimal.fromString('123');
+
+  let relatedEntity = RelatedEntity.load('1');
+
+  if (!relatedEntity) {
+    relatedEntity = new RelatedEntity('1');
+    relatedEntity.paramBigInt = BigInt.fromString('1');
+    relatedEntity.save();
+  }
+
+  entity.related = relatedEntity.id;
 
   // Entities can be written to the store with `.save()`
   entity.save();
