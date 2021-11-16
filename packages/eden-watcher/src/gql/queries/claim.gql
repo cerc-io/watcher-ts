@@ -1,0 +1,36 @@
+query claim($id: String!, $blockHash: String!){
+    claim(id: $id, blockHash: $blockHash){
+        id
+        timestamp
+        index
+        account{
+            id
+            totalClaimed
+            totalSlashed
+            claims{
+                id
+                timestamp
+                index
+                account{
+                    id
+                    totalClaimed
+                    totalSlashed
+                    slashes{
+                        id
+                        timestamp
+                        account{
+                            id
+                            totalClaimed
+                            totalSlashed
+                        }
+                        slashed
+                    }
+                }
+                totalEarned
+                claimed
+            }
+        }
+        totalEarned
+        claimed
+    }
+}
