@@ -13,6 +13,7 @@ import {
   ContractInterface
 } from 'ethers';
 import Decimal from 'decimal.js';
+import JSONbig from 'json-bigint';
 
 import { IndexerInterface } from '@vulcanize/util';
 
@@ -74,7 +75,9 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         // Prepare the diff data.
         const diffData: any = { state: {} };
-        diffData.state[entityName] = dbData;
+        // JSON stringify and parse data for handling unknown types when encoding.
+        // For example, decimal.js values are converted to string in the diff data.
+        diffData.state[entityName] = JSONbig.parse(JSONbig.stringify(dbData));
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
