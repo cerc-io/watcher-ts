@@ -26,11 +26,17 @@ import { SyncStatus } from './entity/SyncStatus';
 import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
-import artifacts from './artifacts/EdenNetwork.json';
+import EdenNetworkArtifacts from './artifacts/EdenNetwork.json';
+import MerkleDistributorArtifacts from './artifacts/MerkleDistributor.json';
+import DistributorGovernanceArtifacts from './artifacts/DistributorGovernance.json';
 import { createInitialCheckpoint, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { IPFSClient } from './ipfs';
 
 const log = debug('vulcanize:indexer');
+
+const KIND_EDENNETWORK = 'EdenNetwork';
+const KIND_MERKLEDISTRIBUTOR = 'MerkleDistributor';
+const KIND_DISTRIBUTORGOVERNANCE = 'DistributorGovernance';
 
 const TRANSFER_EVENT = 'Transfer';
 const APPROVAL_EVENT = 'Approval';
@@ -105,9 +111,9 @@ export class Indexer implements IndexerInterface {
   _serverConfig: ServerConfig
   _graphWatcher: GraphWatcher;
 
-  _abi: JsonFragment[]
-  _storageLayout: StorageLayout
-  _contract: ethers.utils.Interface
+  _abiMap: Map<string, JsonFragment[]>
+  _storageLayoutMap: Map<string, StorageLayout>
+  _contractMap: Map<string, ethers.utils.Interface>
 
   _ipfsClient: IPFSClient
 
@@ -124,15 +130,34 @@ export class Indexer implements IndexerInterface {
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
     this._graphWatcher = graphWatcher;
 
-    const { abi, storageLayout } = artifacts;
+    this._abiMap = new Map();
+    this._storageLayoutMap = new Map();
+    this._contractMap = new Map();
 
-    assert(abi);
-    assert(storageLayout);
+    const { abi: EdenNetworkABI, storageLayout: EdenNetworkStorageLayout } = EdenNetworkArtifacts;
+    const { abi: MerkleDistributorABI, storageLayout: MerkleDistributorStorageLayout } = MerkleDistributorArtifacts;
+    const { abi: DistributorGovernanceABI, storageLayout: DistributorGovernanceStorageLayout } = DistributorGovernanceArtifacts;
 
-    this._abi = abi;
-    this._storageLayout = storageLayout;
+    assert(EdenNetworkABI);
+    assert(EdenNetworkStorageLayout);
 
-    this._contract = new ethers.utils.Interface(this._abi);
+    assert(MerkleDistributorABI);
+    assert(MerkleDistributorStorageLayout);
+
+    assert(DistributorGovernanceABI);
+    assert(DistributorGovernanceStorageLayout);
+
+    this._abiMap.set(KIND_EDENNETWORK, EdenNetworkABI);
+    this._storageLayoutMap.set(KIND_EDENNETWORK, EdenNetworkStorageLayout);
+    this._contractMap.set(KIND_EDENNETWORK, new ethers.utils.Interface(EdenNetworkABI));
+
+    this._abiMap.set(KIND_MERKLEDISTRIBUTOR, MerkleDistributorABI);
+    this._storageLayoutMap.set(KIND_MERKLEDISTRIBUTOR, MerkleDistributorStorageLayout);
+    this._contractMap.set(KIND_MERKLEDISTRIBUTOR, new ethers.utils.Interface(MerkleDistributorABI));
+
+    this._abiMap.set(KIND_DISTRIBUTORGOVERNANCE, DistributorGovernanceABI);
+    this._storageLayoutMap.set(KIND_DISTRIBUTORGOVERNANCE, DistributorGovernanceStorageLayout);
+    this._contractMap.set(KIND_DISTRIBUTORGOVERNANCE, new ethers.utils.Interface(DistributorGovernanceABI));
 
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
   }
@@ -523,7 +548,40 @@ export class Indexer implements IndexerInterface {
     let eventInfo = {};
 
     const { topics, data } = logObj;
-    const logDescription = this._contract.parseLog({ data, topics });
+
+    const contract = this._contractMap.get(kind);
+    assert(contract);
+
+    const logDescription = contract.parseLog({ data, topics });
+
+    switch (kind) {
+      case KIND_EDENNETWORK: {
+        ({ eventName, eventInfo } = this.parseEdenNetworkEvent(logDescription));
+
+        break;
+      }
+      case KIND_MERKLEDISTRIBUTOR: {
+        ({ eventName, eventInfo } = this.parseMerkleDistributorEvent(logDescription));
+
+        break;
+      }
+      case KIND_DISTRIBUTORGOVERNANCE: {
+        ({ eventName, eventInfo } = this.parseDistributorGovernanceEvent(logDescription));
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo,
+      eventSignature: logDescription.signature
+    };
+  }
+
+  parseEdenNetworkEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
 
     switch (logDescription.name) {
       case TRANSFER_EVENT: {
@@ -633,6 +691,41 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           withdrawer,
           withdrawalAmount: BigInt(ethers.BigNumber.from(withdrawalAmount).toString())
+        };
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo
+    };
+  }
+
+  parseMerkleDistributorEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
+
+    switch (logDescription.name) {
+      case TRANSFER_EVENT: {
+        eventName = logDescription.name;
+        const { from, to, tokenId } = logDescription.args;
+        eventInfo = {
+          from,
+          to,
+          tokenId: BigInt(ethers.BigNumber.from(tokenId).toString())
+        };
+
+        break;
+      }
+      case APPROVAL_EVENT: {
+        eventName = logDescription.name;
+        const { owner, approved, tokenId } = logDescription.args;
+        eventInfo = {
+          owner,
+          approved,
+          tokenId: BigInt(ethers.BigNumber.from(tokenId).toString())
         };
 
         break;
@@ -792,8 +885,87 @@ export class Indexer implements IndexerInterface {
 
     return {
       eventName,
-      eventInfo,
-      eventSignature: logDescription.signature
+      eventInfo
+    };
+  }
+
+  parseDistributorGovernanceEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
+
+    switch (logDescription.name) {
+      case BLOCKPRODUCERADDED_EVENT: {
+        eventName = logDescription.name;
+        const { producer } = logDescription.args;
+        eventInfo = {
+          producer
+        };
+
+        break;
+      }
+      case BLOCKPRODUCERREMOVED_EVENT: {
+        eventName = logDescription.name;
+        const { producer } = logDescription.args;
+        eventInfo = {
+          producer
+        };
+
+        break;
+      }
+      case BLOCKPRODUCERREWARDCOLLECTORCHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { producer, collector } = logDescription.args;
+        eventInfo = {
+          producer,
+          collector
+        };
+
+        break;
+      }
+      case REWARDSCHEDULECHANGED_EVENT: {
+        eventName = logDescription.name;
+        eventInfo = {};
+
+        break;
+      }
+      case ROLEADMINCHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { role, previousAdminRole, newAdminRole } = logDescription.args;
+        eventInfo = {
+          role,
+          previousAdminRole,
+          newAdminRole
+        };
+
+        break;
+      }
+      case ROLEGRANTED_EVENT: {
+        eventName = logDescription.name;
+        const { role, account, sender } = logDescription.args;
+        eventInfo = {
+          role,
+          account,
+          sender
+        };
+
+        break;
+      }
+      case ROLEREVOKED_EVENT: {
+        eventName = logDescription.name;
+        const { role, account, sender } = logDescription.args;
+        eventInfo = {
+          role,
+          account,
+          sender
+        };
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo
     };
   }
 
