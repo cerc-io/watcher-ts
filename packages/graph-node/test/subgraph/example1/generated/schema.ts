@@ -18,8 +18,12 @@ export class ExampleEntity extends Entity {
     this.set("id", Value.fromString(id));
 
     this.set("count", Value.fromBigInt(BigInt.zero()));
-    this.set("param1", Value.fromString(""));
-    this.set("param2", Value.fromI32(0));
+    this.set("paramString", Value.fromString(""));
+    this.set("paramInt", Value.fromI32(0));
+    this.set("paramBoolean", Value.fromBoolean(false));
+    this.set("paramBytes", Value.fromBytes(Bytes.empty()));
+    this.set("paramEnum", Value.fromString(""));
+    this.set("paramBigDecimal", Value.fromBigDecimal(BigDecimal.zero()));
   }
 
   save(): void {
@@ -57,21 +61,57 @@ export class ExampleEntity extends Entity {
     this.set("count", Value.fromBigInt(value));
   }
 
-  get param1(): string {
-    let value = this.get("param1");
+  get paramString(): string {
+    let value = this.get("paramString");
     return value!.toString();
   }
 
-  set param1(value: string) {
-    this.set("param1", Value.fromString(value));
+  set paramString(value: string) {
+    this.set("paramString", Value.fromString(value));
   }
 
-  get param2(): i32 {
-    let value = this.get("param2");
+  get paramInt(): i32 {
+    let value = this.get("paramInt");
     return value!.toI32();
   }
 
-  set param2(value: i32) {
-    this.set("param2", Value.fromI32(value));
+  set paramInt(value: i32) {
+    this.set("paramInt", Value.fromI32(value));
+  }
+
+  get paramBoolean(): boolean {
+    let value = this.get("paramBoolean");
+    return value!.toBoolean();
+  }
+
+  set paramBoolean(value: boolean) {
+    this.set("paramBoolean", Value.fromBoolean(value));
+  }
+
+  get paramBytes(): Bytes {
+    let value = this.get("paramBytes");
+    return value!.toBytes();
+  }
+
+  set paramBytes(value: Bytes) {
+    this.set("paramBytes", Value.fromBytes(value));
+  }
+
+  get paramEnum(): string {
+    let value = this.get("paramEnum");
+    return value!.toString();
+  }
+
+  set paramEnum(value: string) {
+    this.set("paramEnum", Value.fromString(value));
+  }
+
+  get paramBigDecimal(): BigDecimal {
+    let value = this.get("paramBigDecimal");
+    return value!.toBigDecimal();
+  }
+
+  set paramBigDecimal(value: BigDecimal) {
+    this.set("paramBigDecimal", Value.fromBigDecimal(value));
   }
 }

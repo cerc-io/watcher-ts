@@ -1,5 +1,9 @@
 scalar BigInt
 
+scalar Bytes
+
+scalar BigDecimal
+
 type Proof {
   data: String!
 }
