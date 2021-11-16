@@ -1,0 +1,46 @@
+query producerEpoch($id: String!, $blockHash: String!){
+    producerEpoch(id: $id, blockHash: $blockHash){
+        id
+        address
+        epoch{
+            id
+            finalized
+            epochNumber
+            startBlock{
+                cid
+                hash
+                number
+                timestamp
+                parentHash
+            }
+            endBlock{
+                cid
+                hash
+                number
+                timestamp
+                parentHash
+            }
+            producerBlocks
+            allBlocks
+            producerBlocksRatio
+            producerRewards{
+                id
+                address
+                epoch{
+                    id
+                    finalized
+                    epochNumber
+                    producerBlocks
+                    allBlocks
+                    producerBlocksRatio
+                }
+                totalRewards
+                blocksProduced
+                blocksProducedRatio
+            }
+        }
+        totalRewards
+        blocksProduced
+        blocksProducedRatio
+    }
+}

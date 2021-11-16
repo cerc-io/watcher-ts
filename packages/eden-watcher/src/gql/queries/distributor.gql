@@ -1,0 +1,15 @@
+query distributor($id: String!, $blockHash: String!){
+    distributor(id: $id, blockHash: $blockHash){
+        id
+        currentDistribution{
+            id
+            distributor{
+                id
+            }
+            timestamp
+            distributionNumber
+            merkleRoot
+            metadataURI
+        }
+    }
+}

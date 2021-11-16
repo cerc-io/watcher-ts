@@ -1,0 +1,75 @@
+subscription onEvent{
+    onEvent{
+        block{
+            cid
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        tx{
+            hash
+            index
+            from
+            to
+        }
+        contract
+        eventIndex
+        event{
+            ... on TransferEvent {
+                from
+                to
+                value
+            }
+            ... on ApprovalEvent {
+                owner
+                spender
+                value
+            }
+            ... on AuthorizationUsedEvent {
+                authorizer
+                nonce
+            }
+            ... on AdminUpdatedEvent {
+                newAdmin
+                oldAdmin
+            }
+            ... on TaxRateUpdatedEvent {
+                newNumerator
+                newDenominator
+                oldNumerator
+                oldDenominator
+            }
+            ... on SlotClaimedEvent {
+                slot
+                owner
+                delegate
+                newBidAmount
+                oldBidAmount
+                taxNumerator
+                taxDenominator
+            }
+            ... on SlotDelegateUpdatedEvent {
+                slot
+                owner
+                newDelegate
+                oldDelegate
+            }
+            ... on StakeEvent {
+                staker
+                stakeAmount
+            }
+            ... on UnstakeEvent {
+                staker
+                unstakedAmount
+            }
+            ... on WithdrawEvent {
+                withdrawer
+                withdrawalAmount
+            }
+        }
+        proof{
+            data
+        }
+    }
+}

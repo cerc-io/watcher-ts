@@ -1,0 +1,299 @@
+scalar BigInt
+
+type Proof {
+  data: String!
+}
+
+type ResultBoolean {
+  value: Boolean!
+  proof: Proof
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultInt {
+  value: Int!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
+  proof: Proof
+}
+
+type Block {
+  cid: String!
+  hash: String!
+  number: Int!
+  timestamp: Int!
+  parentHash: String!
+}
+
+type Transaction {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+type ResultEvent {
+  block: Block!
+  tx: Transaction!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
+union Event = TransferEvent | ApprovalEvent | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent
+
+type TransferEvent {
+  from: String!
+  to: String!
+  value: BigInt!
+}
+
+type ApprovalEvent {
+  owner: String!
+  spender: String!
+  value: BigInt!
+}
+
+type AuthorizationUsedEvent {
+  authorizer: String!
+  nonce: String!
+}
+
+type AdminUpdatedEvent {
+  newAdmin: String!
+  oldAdmin: String!
+}
+
+type TaxRateUpdatedEvent {
+  newNumerator: Int!
+  newDenominator: Int!
+  oldNumerator: Int!
+  oldDenominator: Int!
+}
+
+type SlotClaimedEvent {
+  slot: Int!
+  owner: String!
+  delegate: String!
+  newBidAmount: Int!
+  oldBidAmount: Int!
+  taxNumerator: Int!
+  taxDenominator: Int!
+}
+
+type SlotDelegateUpdatedEvent {
+  slot: Int!
+  owner: String!
+  newDelegate: String!
+  oldDelegate: String!
+}
+
+type StakeEvent {
+  staker: String!
+  stakeAmount: BigInt!
+}
+
+type UnstakeEvent {
+  staker: String!
+  unstakedAmount: BigInt!
+}
+
+type WithdrawEvent {
+  withdrawer: String!
+  withdrawalAmount: BigInt!
+}
+
+type ResultIPLDBlock {
+  block: Block!
+  contractAddress: String!
+  cid: String!
+  kind: String!
+  data: String!
+}
+
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  producer(id: String!, blockHash: String!): Producer!
+  producerSet(id: String!, blockHash: String!): ProducerSet!
+  producerSetChange(id: String!, blockHash: String!): ProducerSetChange!
+  producerRewardCollectorChange(id: String!, blockHash: String!): ProducerRewardCollectorChange!
+  rewardScheduleEntry(id: String!, blockHash: String!): RewardScheduleEntry!
+  rewardSchedule(id: String!, blockHash: String!): RewardSchedule!
+  producerEpoch(id: String!, blockHash: String!): ProducerEpoch!
+  epoch(id: String!, blockHash: String!): Epoch!
+  slotClaim(id: String!, blockHash: String!): SlotClaim!
+  slot(id: String!, blockHash: String!): Slot!
+  staker(id: String!, blockHash: String!): Staker!
+  network(id: String!, blockHash: String!): Network!
+  distributor(id: String!, blockHash: String!): Distributor!
+  distribution(id: String!, blockHash: String!): Distribution!
+  claim(id: String!, blockHash: String!): Claim!
+  slash(id: String!, blockHash: String!): Slash!
+  account(id: String!, blockHash: String!): Account!
+  getStateByCID(cid: String!): ResultIPLDBlock
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+}
+
+type Producer {
+  id: ID!
+  active: Boolean!
+  rewardCollector: String
+  rewards: BigInt!
+  confirmedBlocks: BigInt!
+  pendingEpochBlocks: BigInt!
+}
+
+type ProducerSet {
+  id: ID!
+  producers: [Producer!]!
+}
+
+type ProducerSetChange {
+  id: ID!
+  blockNumber: BigInt!
+  producer: String!
+  changeType: ProducerSetChangeType!
+}
+
+enum ProducerSetChangeType {
+  Added
+  Removed
+}
+
+type ProducerRewardCollectorChange {
+  id: ID!
+  blockNumber: BigInt!
+  producer: String!
+  rewardCollector: String!
+}
+
+type RewardScheduleEntry {
+  id: ID!
+  startTime: BigInt!
+  epochDuration: BigInt!
+  rewardsPerEpoch: BigInt!
+}
+
+type RewardSchedule {
+  id: ID!
+  rewardScheduleEntries: [RewardScheduleEntry!]!
+  lastEpoch: Epoch
+  pendingEpoch: Epoch
+  activeRewardScheduleEntry: RewardScheduleEntry
+}
+
+type Epoch {
+  id: ID!
+  finalized: Boolean!
+  epochNumber: BigInt!
+  startBlock: Block
+  endBlock: Block
+  producerBlocks: BigInt!
+  allBlocks: BigInt!
+  producerBlocksRatio: String!
+  producerRewards: [ProducerEpoch!]!
+}
+
+type ProducerEpoch {
+  id: ID!
+  address: String!
+  epoch: Epoch!
+  totalRewards: BigInt!
+  blocksProduced: BigInt!
+  blocksProducedRatio: String!
+}
+
+type SlotClaim {
+  id: ID!
+  slot: Slot!
+  owner: String!
+  winningBid: BigInt!
+  oldBid: BigInt!
+  startTime: BigInt!
+  expirationTime: BigInt!
+  taxRatePerDay: String!
+}
+
+type Slot {
+  id: ID!
+  owner: String!
+  delegate: String!
+  winningBid: BigInt!
+  oldBid: BigInt!
+  startTime: BigInt!
+  expirationTime: BigInt!
+  taxRatePerDay: String!
+  claims: [SlotClaim!]!
+}
+
+type Staker {
+  id: ID!
+  staked: BigInt!
+  rank: BigInt
+}
+
+type Network {
+  id: ID!
+  slot0: Slot
+  slot1: Slot
+  slot2: Slot
+  stakers: [Staker!]!
+  numStakers: BigInt
+  totalStaked: BigInt!
+  stakedPercentiles: [BigInt!]!
+}
+
+type Distributor {
+  id: ID!
+  currentDistribution: Distribution
+}
+
+type Distribution {
+  id: ID!
+  distributor: Distributor!
+  timestamp: BigInt!
+  distributionNumber: BigInt!
+  merkleRoot: String!
+  metadataURI: String!
+}
+
+type Claim {
+  id: ID!
+  timestamp: BigInt!
+  index: BigInt!
+  account: Account!
+  totalEarned: BigInt!
+  claimed: BigInt!
+}
+
+type Account {
+  id: ID!
+  totalClaimed: BigInt!
+  totalSlashed: BigInt!
+  claims: [Claim!]!
+  slashes: [Slash!]!
+}
+
+type Slash {
+  id: ID!
+  timestamp: BigInt!
+  account: Account!
+  slashed: BigInt!
+}
+
+type Mutation {
+  watchContract(address: String!, kind: String!, checkpoint: Boolean!, startingBlock: Int): Boolean!
+}
+
+type Subscription {
+  onEvent: ResultEvent!
+}
