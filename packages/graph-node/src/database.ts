@@ -83,7 +83,6 @@ export class Database {
     const entityValuePromises = entityFields.filter(field => {
       const { propertyName } = field;
 
-      // TODO: Will clash if entity has blockHash and blockNumber fields.
       if (propertyName === 'blockHash' || propertyName === 'blockNumber') {
         return false;
       }
@@ -91,6 +90,10 @@ export class Database {
       return true;
     }).map(async (field) => {
       const { type, propertyName } = field;
+
+      if (['_blockNumber', '_blockHash'].includes(propertyName)) {
+        return toEntityValue(instanceExports, entityInstance, data, type.toString(), propertyName.slice(1));
+      }
 
       return toEntityValue(instanceExports, entityInstance, data, type.toString(), propertyName);
     }, {});
@@ -112,13 +115,16 @@ export class Database {
     const entityValuePromises = entityFields.map(async (field: any) => {
       const { type, propertyName } = field;
 
-      // TODO: Will clash if entity has blockHash and blockNumber fields.
       if (propertyName === 'blockHash') {
         return block.blockHash;
       }
 
       if (propertyName === 'blockNumber') {
         return block.blockNumber;
+      }
+
+      if (['_blockNumber', '_blockHash'].includes(propertyName)) {
+        return fromEntityValue(instanceExports, entityInstance, type.toString(), propertyName.slice(1));
       }
 
       return fromEntityValue(instanceExports, entityInstance, type.toString(), propertyName);

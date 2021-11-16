@@ -8,6 +8,7 @@ import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils } from 'ethers';
+import _ from 'lodash';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -183,7 +184,23 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
-    return this._database.getEntity(entity, id, blockHash);
+  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
+    let result = await this._database.getEntity(entity, id, blockHash) as any;
+
+    if (result) {
+      result = _.omit(result, ['blockHash', 'blockNumber']);
+
+      if ('_blockHash' in result) {
+        result.blockHash = result._blockHash;
+        result = _.omit(result, ['_blockHash']);
+      }
+
+      if ('_blockNumber' in result) {
+        result.blockNumber = result._blockNumber;
+        result = _.omit(result, ['_blockNumber']);
+      }
+    }
+
+    return result;
   }
 }
