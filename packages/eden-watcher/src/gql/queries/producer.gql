@@ -1,0 +1,10 @@
+query producer($id: String!, $blockHash: String!){
+    producer(id: $id, blockHash: $blockHash){
+        id
+        active
+        rewardCollector
+        rewards
+        confirmedBlocks
+        pendingEpochBlocks
+    }
+}

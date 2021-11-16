@@ -1,0 +1,31 @@
+query slot($id: String!, $blockHash: String!){
+    slot(id: $id, blockHash: $blockHash){
+        id
+        owner
+        delegate
+        winningBid
+        oldBid
+        startTime
+        expirationTime
+        taxRatePerDay
+        claims{
+            id
+            slot{
+                id
+                owner
+                delegate
+                winningBid
+                oldBid
+                startTime
+                expirationTime
+                taxRatePerDay
+            }
+            owner
+            winningBid
+            oldBid
+            startTime
+            expirationTime
+            taxRatePerDay
+        }
+    }
+}
