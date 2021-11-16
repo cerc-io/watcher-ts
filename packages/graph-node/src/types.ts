@@ -58,8 +58,8 @@ export enum TypeId {
   ArrayBigDecimal = 51,
 }
 
-// ValueKind from https://github.com/graphprotocol/graph-ts/blob/master/chain/ethereum.ts#L13
-export enum ValueKind {
+// ethereum ValueKind from https://github.com/graphprotocol/graph-ts/blob/master/chain/ethereum.ts#L13
+export enum EthereumValueKind {
   ADDRESS = 0,
   FIXED_BYTES = 1,
   BYTES = 2,
@@ -70,4 +70,16 @@ export enum ValueKind {
   FIXED_ARRAY = 7,
   ARRAY = 8,
   TUPLE = 9,
+}
+
+// ValueKind from https://github.com/graphprotocol/graph-ts/blob/master/common/value.ts#L8
+export enum ValueKind {
+  STRING = 0,
+  INT = 1,
+  BIGDECIMAL = 2,
+  BOOL = 3,
+  ARRAY = 4,
+  NULL = 5,
+  BYTES = 6,
+  BIGINT = 7,
 }

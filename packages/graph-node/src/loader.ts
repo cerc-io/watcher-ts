@@ -12,6 +12,8 @@ import {
   Contract,
   ContractInterface
 } from 'ethers';
+import Decimal from 'decimal.js';
+import JSONbig from 'json-bigint';
 
 import { IndexerInterface } from '@vulcanize/util';
 
@@ -73,7 +75,9 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         // Prepare the diff data.
         const diffData: any = { state: {} };
-        diffData.state[entityName] = dbData;
+        // JSON stringify and parse data for handling unknown types when encoding.
+        // For example, decimal.js values are converted to string in the diff data.
+        diffData.state[entityName] = JSONbig.parse(JSONbig.stringify(dbData));
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
@@ -81,63 +85,8 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
       },
 
-      'typeConversion.stringToH160': () => {
-        console.log('index typeConversion.stringToH160');
-      },
-      'typeConversion.bytesToHex': () => {
-        console.log('index typeConversion.bytesToHex');
-      },
-      // 'typeConversion.bytesToString': () => {
-      //   console.log('typeConversion.bytesToString');
-      // },
-      'typeConversion.bigIntToString': () => {
-        console.log('index typeConversion.bigIntToString');
-      },
-
-      // 'bigDecimal.fromString': () => {
-      //   console.log('bigDecimal.fromString');
-      // },
-      // 'bigDecimal.times': () => {
-      //   console.log('bigDecimal.times');
-      // },
-      'bigDecimal.dividedBy': () => {
-        console.log('bigDecimal.dividedBy');
-      },
-      // 'bigDecimal.plus': () => {
-      //   console.log('bigDecimal.plus');
-      // },
-      // 'bigDecimal.minus': () => {
-      //   console.log('bigDecimal.minus');
-      // },
-
-      'bigInt.plus': () => {
-        console.log('bigInt.plus');
-      },
-      'bigInt.minus': () => {
-        console.log('bigInt.minus');
-      },
-      'bigInt.times': () => {
-        console.log('bigInt.times');
-      },
-      'bigInt.dividedBy': () => {
-        console.log('bigInt.dividedBy');
-      },
-      // 'bigInt.mod': () => {
-      //   console.log('bigInt.mod');
-      // },
-      'bigInt.fromString': () => {
-        console.log('bigInt.fromString');
-      },
-
       'log.log': (_: number, msg: number) => {
         console.log('log.log', __getString(msg));
-      },
-
-      // 'dataSource.create': () => {
-      //   console.log('dataSource.create');
-      // },
-      'dataSource.address': () => {
-        console.log('dataSource.address');
       },
 
       'test.asyncMethod': async () => {
@@ -253,11 +202,38 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         console.log('y digits and exp', yDigits, yExp);
       },
-      'bigDecimal.toString': () => {
-        console.log('numbers bigDecimal.toString');
+      'bigDecimal.toString': async (bigDecimal: number) => {
+        const bigDecimalInstance = BigDecimal.wrap(bigDecimal);
+
+        const digitsBigInt = BigInt.wrap(await bigDecimalInstance.digits);
+        const expBigInt = BigInt.wrap(await bigDecimalInstance.exp);
+
+        const digits = __getString(await digitsBigInt.toString());
+        const exp = __getString(await expBigInt.toString());
+
+        const decimal = new Decimal(`${digits}e${exp}`);
+        const ptr = __newString(decimal.toFixed());
+
+        return ptr;
       },
-      'bigDecimal.fromString': () => {
-        console.log('numbers bigDecimal.toString');
+      'bigDecimal.fromString': async (s: number) => {
+        const string = __getString(s);
+        const decimal = new Decimal(string);
+
+        // Convert from digits array to BigInt.
+        const digits = decimal.d.join('');
+        const digitsBigNumber = BigNumber.from(digits);
+        const signBigNumber = BigNumber.from(decimal.s);
+        const digitsBigInt = await BigInt.fromString(await __newString(digitsBigNumber.mul(signBigNumber).toString()));
+
+        // Calculate exp after converting digits to BigInt above.
+        const exp = decimal.e - digits.length + 1;
+        const expBigInt = await BigInt.fromString(await __newString(exp.toString()));
+
+        const bigDecimal = await BigDecimal.__new(digitsBigInt);
+        bigDecimal.exp = expBigInt;
+
+        return bigDecimal;
       },
       'bigDecimal.plus': () => {
         console.log('bigDecimal.plus');

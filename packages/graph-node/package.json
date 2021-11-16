@@ -36,7 +36,9 @@
   },
   "dependencies": {
     "@vulcanize/assemblyscript": "0.0.1",
+    "@vulcanize/util": "^0.1.0",
     "js-yaml": "^4.1.0",
-    "typeorm": "^0.2.32"
+    "typeorm": "^0.2.32",
+    "decimal.js": "^10.3.1"
   }
 }
