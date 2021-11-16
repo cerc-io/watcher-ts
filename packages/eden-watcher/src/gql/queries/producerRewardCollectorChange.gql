@@ -1,0 +1,8 @@
+query producerRewardCollectorChange($id: String!, $blockHash: String!){
+    producerRewardCollectorChange(id: $id, blockHash: $blockHash){
+        id
+        blockNumber
+        producer
+        rewardCollector
+    }
+}

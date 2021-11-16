@@ -1,0 +1,42 @@
+[server]
+  host = "127.0.0.1"
+  port = 3012
+  kind = "active"
+
+  # Checkpointing state.
+  checkpointing = true
+
+  # Checkpoint interval in number of blocks.
+  checkpointInterval = 2000
+
+  # IPFS API address (can be taken from the output on running the IPFS daemon).
+  ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
+  
+  subgraphPath = "../graph-node/test/subgraph/eden"
+
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "eden-watcher"
+  username = "postgres"
+  password = "postgres"
+  synchronize = true
+  logging = false
+
+[upstream]
+  [upstream.ethServer]
+    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
+    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8081"
+    blockDelayInMilliSecs = 2000
+
+  [upstream.cache]
+    name = "requests"
+    enabled = false
+    deleteOnStart = false
+
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/eden-watcher-job-queue"
+  maxCompletionLagInSecs = 300
+  jobDelayInMilliSecs = 100

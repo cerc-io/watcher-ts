@@ -1,0 +1,15 @@
+query getState($blockHash: String!, $contractAddress: String!, $kind: String){
+    getState(blockHash: $blockHash, contractAddress: $contractAddress, kind: $kind){
+        block{
+            cid
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        contractAddress
+        cid
+        kind
+        data
+    }
+}
