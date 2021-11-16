@@ -1,0 +1,13 @@
+query producerSet($id: String!, $blockHash: String!){
+    producerSet(id: $id, blockHash: $blockHash){
+        id
+        producers{
+            id
+            active
+            rewardCollector
+            rewards
+            confirmedBlocks
+            pendingEpochBlocks
+        }
+    }
+}
