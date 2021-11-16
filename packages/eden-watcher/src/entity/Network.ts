@@ -3,9 +3,10 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Slot } from './Slot';
-import { Staker } from './Staker';
+
 import { bigintTransformer } from '@vulcanize/util';
+
+import { Staker } from './Staker';
 
 @Entity()
 export class Network {
@@ -18,14 +19,14 @@ export class Network {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Slot, { nullable: true })
-  slot0!: Slot;
+  @Column('varchar', { nullable: true })
+  slot0!: string;
 
-  @ManyToOne(() => Slot, { nullable: true })
-  slot1!: Slot;
+  @Column('varchar', { nullable: true })
+  slot1!: string;
 
-  @ManyToOne(() => Slot, { nullable: true })
-  slot2!: Slot;
+  @Column('varchar', { nullable: true })
+  slot2!: string;
 
   @ManyToOne(() => Staker)
   stakers!: Staker;

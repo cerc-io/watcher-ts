@@ -2,8 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Distributor } from './Distributor';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
+
 import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
@@ -17,8 +17,8 @@ export class Distribution {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Distributor)
-  distributor!: Distributor;
+  @Column('varchar')
+  distributor!: string;
 
   @Column('bigint', { transformer: bigintTransformer })
   timestamp!: bigint;

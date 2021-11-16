@@ -3,8 +3,8 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
+
 import { RewardScheduleEntry } from './RewardScheduleEntry';
-import { Epoch } from './Epoch';
 
 @Entity()
 export class RewardSchedule {
@@ -20,12 +20,12 @@ export class RewardSchedule {
   @ManyToOne(() => RewardScheduleEntry)
   rewardScheduleEntries!: RewardScheduleEntry;
 
-  @ManyToOne(() => Epoch, { nullable: true })
-  lastEpoch!: Epoch;
+  @Column('varchar', { nullable: true })
+  lastEpoch!: string;
 
-  @ManyToOne(() => Epoch, { nullable: true })
-  pendingEpoch!: Epoch;
+  @Column('varchar', { nullable: true })
+  pendingEpoch!: string;
 
-  @ManyToOne(() => RewardScheduleEntry, { nullable: true })
-  activeRewardScheduleEntry!: RewardScheduleEntry;
+  @Column('varchar', { nullable: true })
+  activeRewardScheduleEntry!: string;
 }
