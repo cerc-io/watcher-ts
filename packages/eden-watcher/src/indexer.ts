@@ -42,6 +42,21 @@ const SLOTDELEGATEUPDATED_EVENT = 'SlotDelegateUpdated';
 const STAKE_EVENT = 'Stake';
 const UNSTAKE_EVENT = 'Unstake';
 const WITHDRAW_EVENT = 'Withdraw';
+const APPROVALFORALL_EVENT = 'ApprovalForAll';
+const BLOCKPRODUCERADDED_EVENT = 'BlockProducerAdded';
+const BLOCKPRODUCERREMOVED_EVENT = 'BlockProducerRemoved';
+const BLOCKPRODUCERREWARDCOLLECTORCHANGED_EVENT = 'BlockProducerRewardCollectorChanged';
+const REWARDSCHEDULECHANGED_EVENT = 'RewardScheduleChanged';
+const CLAIMED_EVENT = 'Claimed';
+const SLASHED_EVENT = 'Slashed';
+const MERKLEROOTUPDATED_EVENT = 'MerkleRootUpdated';
+const ACCOUNTUPDATED_EVENT = 'AccountUpdated';
+const PERMANENTURI_EVENT = 'PermanentURI';
+const GOVERNANCECHANGED_EVENT = 'GovernanceChanged';
+const UPDATETHRESHOLDCHANGED_EVENT = 'UpdateThresholdChanged';
+const ROLEADMINCHANGED_EVENT = 'RoleAdminChanged';
+const ROLEGRANTED_EVENT = 'RoleGranted';
+const ROLEREVOKED_EVENT = 'RoleRevoked';
 
 export type ResultEvent = {
   block: {
@@ -618,6 +633,157 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           withdrawer,
           withdrawalAmount: BigInt(ethers.BigNumber.from(withdrawalAmount).toString())
+        };
+
+        break;
+      }
+      case APPROVALFORALL_EVENT: {
+        eventName = logDescription.name;
+        const { owner, operator, approved } = logDescription.args;
+        eventInfo = {
+          owner,
+          operator,
+          approved
+        };
+
+        break;
+      }
+      case BLOCKPRODUCERADDED_EVENT: {
+        eventName = logDescription.name;
+        const { producer } = logDescription.args;
+        eventInfo = {
+          producer
+        };
+
+        break;
+      }
+      case BLOCKPRODUCERREMOVED_EVENT: {
+        eventName = logDescription.name;
+        const { producer } = logDescription.args;
+        eventInfo = {
+          producer
+        };
+
+        break;
+      }
+      case BLOCKPRODUCERREWARDCOLLECTORCHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { producer, collector } = logDescription.args;
+        eventInfo = {
+          producer,
+          collector
+        };
+
+        break;
+      }
+      case REWARDSCHEDULECHANGED_EVENT: {
+        eventName = logDescription.name;
+        eventInfo = {};
+
+        break;
+      }
+      case CLAIMED_EVENT: {
+        eventName = logDescription.name;
+        const { index, totalEarned, account, claimed } = logDescription.args;
+        eventInfo = {
+          index: BigInt(ethers.BigNumber.from(index).toString()),
+          totalEarned: BigInt(ethers.BigNumber.from(totalEarned).toString()),
+          account,
+          claimed: BigInt(ethers.BigNumber.from(claimed).toString())
+        };
+
+        break;
+      }
+      case SLASHED_EVENT: {
+        eventName = logDescription.name;
+        const { account, slashed } = logDescription.args;
+        eventInfo = {
+          account,
+          slashed: BigInt(ethers.BigNumber.from(slashed).toString())
+        };
+
+        break;
+      }
+      case MERKLEROOTUPDATED_EVENT: {
+        eventName = logDescription.name;
+        const { merkleRoot, distributionNumber, metadataURI } = logDescription.args;
+        eventInfo = {
+          merkleRoot,
+          distributionNumber: BigInt(ethers.BigNumber.from(distributionNumber).toString()),
+          metadataURI
+        };
+
+        break;
+      }
+      case ACCOUNTUPDATED_EVENT: {
+        eventName = logDescription.name;
+        const { account, totalClaimed, totalSlashed } = logDescription.args;
+        eventInfo = {
+          account,
+          totalClaimed: BigInt(ethers.BigNumber.from(totalClaimed).toString()),
+          totalSlashed: BigInt(ethers.BigNumber.from(totalSlashed).toString())
+        };
+
+        break;
+      }
+      case PERMANENTURI_EVENT: {
+        eventName = logDescription.name;
+        const { value, id } = logDescription.args;
+        eventInfo = {
+          value,
+          id: BigInt(ethers.BigNumber.from(id).toString())
+        };
+
+        break;
+      }
+      case GOVERNANCECHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { from, to } = logDescription.args;
+        eventInfo = {
+          from,
+          to
+        };
+
+        break;
+      }
+      case UPDATETHRESHOLDCHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { updateThreshold } = logDescription.args;
+        eventInfo = {
+          updateThreshold: BigInt(ethers.BigNumber.from(updateThreshold).toString())
+        };
+
+        break;
+      }
+      case ROLEADMINCHANGED_EVENT: {
+        eventName = logDescription.name;
+        const { role, previousAdminRole, newAdminRole } = logDescription.args;
+        eventInfo = {
+          role,
+          previousAdminRole,
+          newAdminRole
+        };
+
+        break;
+      }
+      case ROLEGRANTED_EVENT: {
+        eventName = logDescription.name;
+        const { role, account, sender } = logDescription.args;
+        eventInfo = {
+          role,
+          account,
+          sender
+        };
+
+        break;
+      }
+      case ROLEREVOKED_EVENT: {
+        eventName = logDescription.name;
+        const { role, account, sender } = logDescription.args;
+        eventInfo = {
+          role,
+          account,
+          sender
         };
 
         break;

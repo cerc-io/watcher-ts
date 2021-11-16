@@ -48,7 +48,7 @@ type ResultEvent {
   proof: Proof
 }
 
-union Event = TransferEvent | ApprovalEvent | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent
+union Event = TransferEvent | ApprovalEvent | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent | ApprovalForAllEvent | BlockProducerAddedEvent | BlockProducerRemovedEvent | BlockProducerRewardCollectorChangedEvent | RewardScheduleChangedEvent | ClaimedEvent | SlashedEvent | MerkleRootUpdatedEvent | AccountUpdatedEvent | PermanentURIEvent | GovernanceChangedEvent | UpdateThresholdChangedEvent | RoleAdminChangedEvent | RoleGrantedEvent | RoleRevokedEvent
 
 type TransferEvent {
   from: String!
@@ -109,6 +109,83 @@ type UnstakeEvent {
 type WithdrawEvent {
   withdrawer: String!
   withdrawalAmount: BigInt!
+}
+
+type ApprovalForAllEvent {
+  owner: String!
+  operator: String!
+  approved: Boolean!
+}
+
+type BlockProducerAddedEvent {
+  producer: String!
+}
+
+type BlockProducerRemovedEvent {
+  producer: String!
+}
+
+type BlockProducerRewardCollectorChangedEvent {
+  producer: String!
+  collector: String!
+}
+
+type RewardScheduleChangedEvent
+
+type ClaimedEvent {
+  index: BigInt!
+  totalEarned: BigInt!
+  account: String!
+  claimed: BigInt!
+}
+
+type SlashedEvent {
+  account: String!
+  slashed: BigInt!
+}
+
+type MerkleRootUpdatedEvent {
+  merkleRoot: String!
+  distributionNumber: BigInt!
+  metadataURI: String!
+}
+
+type AccountUpdatedEvent {
+  account: String!
+  totalClaimed: BigInt!
+  totalSlashed: BigInt!
+}
+
+type PermanentURIEvent {
+  value: String!
+  id: BigInt!
+}
+
+type GovernanceChangedEvent {
+  from: String!
+  to: String!
+}
+
+type UpdateThresholdChangedEvent {
+  updateThreshold: BigInt!
+}
+
+type RoleAdminChangedEvent {
+  role: String!
+  previousAdminRole: String!
+  newAdminRole: String!
+}
+
+type RoleGrantedEvent {
+  role: String!
+  account: String!
+  sender: String!
+}
+
+type RoleRevokedEvent {
+  role: String!
+  account: String!
+  sender: String!
 }
 
 type ResultIPLDBlock {
