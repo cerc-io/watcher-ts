@@ -8,7 +8,8 @@ import {
   Address,
   ByteArray,
   Bytes,
-  Entity
+  Entity,
+  Value
 } from '@graphprotocol/graph-ts';
 
 export {
@@ -20,5 +21,6 @@ export {
 
   Address,
   ByteArray,
-  Bytes
+  Bytes,
+  Value
 }
