@@ -16,6 +16,7 @@ import { ProducerRewardCollectorChange } from './entity/ProducerRewardCollectorC
 import { RewardScheduleEntry } from './entity/RewardScheduleEntry';
 import { RewardSchedule } from './entity/RewardSchedule';
 import { ProducerEpoch } from './entity/ProducerEpoch';
+import { Block } from './entity/Block';
 import { Epoch } from './entity/Epoch';
 import { SlotClaim } from './entity/SlotClaim';
 import { Slot } from './entity/Slot';
@@ -100,11 +101,11 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(ProducerEpoch, id, blockHash);
       },
 
-      // block: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Block | undefined> => {
-      //   log('block', id, blockHash);
+      block: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Block | undefined> => {
+        log('block', id, blockHash);
 
-      //   return indexer.getSubgraphEntity(Block, id, blockHash);
-      // },
+        return indexer.getSubgraphEntity(Block, id, blockHash);
+      },
 
       epoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Epoch | undefined> => {
         log('epoch', id, blockHash);
