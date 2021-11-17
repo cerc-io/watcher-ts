@@ -50,4 +50,7 @@ export class ExampleEntity {
 
   @Column('varchar')
   related!: string;
+
+  @Column('varchar', { array: true })
+  manyRelated!: string[]
 }

@@ -74,6 +74,8 @@ type Query {
   _test(blockHash: String!, contractAddress: String!): ResultBigInt!
   relatedEntity(id: String!, blockHash: String!): RelatedEntity!
   exampleEntity(id: String!, blockHash: String!): ExampleEntity!
+  relatedEntity(id: String!, blockHash: String!): RelatedEntity!
+  manyRelatedEntity(id: String!, blockHash: String!): ManyRelatedEntity!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }
@@ -86,8 +88,12 @@ enum EnumType {
 type RelatedEntity {
   id: ID!
   paramBigInt: BigInt!
-  examples: [ExampleEntity!]!
   bigIntArray: [BigInt!]!
+}
+
+type ManyRelatedEntity {
+  id: ID!
+  count: BigInt!
 }
 
 type ExampleEntity {
@@ -100,6 +106,7 @@ type ExampleEntity {
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
   related: RelatedEntity!
+  manyRelated: [ManyRelatedEntity!]!
 }
 
 type Mutation {

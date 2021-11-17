@@ -18,7 +18,6 @@ export class RelatedEntity extends Entity {
     this.set("id", Value.fromString(id));
 
     this.set("paramBigInt", Value.fromBigInt(BigInt.zero()));
-    this.set("examples", Value.fromStringArray(new Array(0)));
     this.set("bigIntArray", Value.fromBigIntArray(new Array(0)));
   }
 
@@ -57,15 +56,6 @@ export class RelatedEntity extends Entity {
     this.set("paramBigInt", Value.fromBigInt(value));
   }
 
-  get examples(): Array<string> {
-    let value = this.get("examples");
-    return value!.toStringArray();
-  }
-
-  set examples(value: Array<string>) {
-    this.set("examples", Value.fromStringArray(value));
-  }
-
   get bigIntArray(): Array<BigInt> {
     let value = this.get("bigIntArray");
     return value!.toBigIntArray();
@@ -89,6 +79,7 @@ export class ExampleEntity extends Entity {
     this.set("paramEnum", Value.fromString(""));
     this.set("paramBigDecimal", Value.fromBigDecimal(BigDecimal.zero()));
     this.set("related", Value.fromString(""));
+    this.set("manyRelated", Value.fromStringArray(new Array(0)));
   }
 
   save(): void {
@@ -187,5 +178,60 @@ export class ExampleEntity extends Entity {
 
   set related(value: string) {
     this.set("related", Value.fromString(value));
+  }
+
+  get manyRelated(): Array<string> {
+    let value = this.get("manyRelated");
+    return value!.toStringArray();
+  }
+
+  set manyRelated(value: Array<string>) {
+    this.set("manyRelated", Value.fromStringArray(value));
+  }
+}
+
+export class ManyRelatedEntity extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+
+    this.set("count", Value.fromBigInt(BigInt.zero()));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save ManyRelatedEntity entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        "Cannot save ManyRelatedEntity entity with non-string ID. " +
+          'Considering using .toHex() to convert the "id" to a string.'
+      );
+      store.set("ManyRelatedEntity", id.toString(), this);
+    }
+  }
+
+  static load(id: string): ManyRelatedEntity | null {
+    return changetype<ManyRelatedEntity | null>(
+      store.get("ManyRelatedEntity", id)
+    );
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get count(): BigInt {
+    let value = this.get("count");
+    return value!.toBigInt();
+  }
+
+  set count(value: BigInt) {
+    this.set("count", Value.fromBigInt(value));
   }
 }
