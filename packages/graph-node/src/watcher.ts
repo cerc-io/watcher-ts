@@ -11,7 +11,7 @@ import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
 import { Context, instantiate } from './loader';
@@ -98,13 +98,7 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          blockData
-        ]
-      }
-    } = await this._postgraphileClient.getBlocks({ blockHash: block.hash });
+    const blockData = await getFullBlock(this._postgraphileClient, block.hash);
 
     this._context.event.block = blockData;
 
@@ -150,13 +144,7 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string) {
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          blockData
-        ]
-      }
-    } = await this._postgraphileClient.getBlocks({ blockHash });
+    const blockData = await getFullBlock(this._postgraphileClient, blockHash);
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {

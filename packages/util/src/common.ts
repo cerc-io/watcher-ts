@@ -1,4 +1,5 @@
 import debug from 'debug';
+import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
@@ -6,6 +7,7 @@ import { JOB_KIND_PRUNE, QUEUE_BLOCK_PROCESSING, JOB_KIND_INDEX } from './consta
 import { JobQueue } from './job-queue';
 import { IndexerInterface } from './types';
 import { wait } from './misc';
+import * as EthDecoder from './eth';
 
 const log = debug('vulcanize:common');
 
@@ -74,4 +76,40 @@ export const processBlockByNumber = async (
 
     await wait(blockDelayInMilliSecs);
   }
+};
+
+export const getFullBlock = async (ethClient: EthClient, blockHash: string): Promise<any> => {
+  const {
+    allEthHeaderCids: {
+      nodes: [
+        fullBlock
+      ]
+    }
+  } = await ethClient.getFullBlocks({ blockHash });
+
+  assert(fullBlock.blockByMhKey);
+
+  // Deecode the header data.
+  const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
+  assert(header);
+
+  // TODO:
+  // 1. Verify uncleHash
+  // 2. Get author
+  // 3. Calculate size
+  return {
+    cid: fullBlock.cid,
+    blockNumber: fullBlock.blockNumber,
+    blockHash: fullBlock.blockHash,
+    parentHash: fullBlock.parentHash,
+    timestamp: fullBlock.timestamp,
+    stateRoot: fullBlock.stateRoot,
+    td: fullBlock.td,
+    txRoot: fullBlock.txRoot,
+    receiptRoot: fullBlock.receiptRoot,
+    uncleHash: fullBlock.uncleRoot,
+    difficulty: header.Difficulty.toString(),
+    gasLimit: header.GasLimit.toString(),
+    gasUsed: header.GasUsed.toString()
+  };
 };

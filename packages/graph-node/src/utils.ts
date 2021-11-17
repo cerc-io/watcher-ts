@@ -33,6 +33,10 @@ export interface Block {
   td: string;
   txRoot: string;
   receiptRoot: string;
+  uncleHash: string;
+  difficulty: string;
+  gasLimit: string;
+  gasUsed: string;
 }
 
 export interface EventData {
@@ -263,8 +267,15 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const parentHashByteArray = await ByteArray.fromHexString(parentHashStringPtr);
   const parentHash = await Bytes.fromByteArray(parentHashByteArray);
 
+  const uncleHashByteArray = await ByteArray.fromHexString(await __newString(blockData.uncleHash));
+  const uncleHash = await Bytes.fromByteArray(uncleHashByteArray);
+
   const blockNumberStringPtr = await __newString(blockData.blockNumber);
   const blockNumber = await BigInt.fromString(blockNumberStringPtr);
+
+  const gasUsed = await BigInt.fromString(await __newString(blockData.gasUsed));
+
+  const gasLimit = await BigInt.fromString(await __newString(blockData.gasLimit));
 
   const timestampStringPtr = await __newString(blockData.timestamp);
   const blockTimestamp = await BigInt.fromString(timestampStringPtr);
@@ -281,35 +292,29 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const receiptsRootByteArray = await ByteArray.fromHexString(receiptRootStringPtr);
   const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
 
+  const difficulty = await BigInt.fromString(await __newString(blockData.difficulty));
+
   const tdStringPtr = await __newString(blockData.td);
   const totalDifficulty = await BigInt.fromString(tdStringPtr);
 
-  const unclesHashPtr = await Bytes.empty();
   const authorPtr = await Address.zero();
-  const gasUsedPtr = await BigInt.fromI32(0);
-  const gasLimitPtr = await BigInt.fromI32(0);
-  const difficultyPtr = await BigInt.fromI32(0);
 
   // Missing fields from watcher in block data:
-  // unclesHash
   // author
-  // gasUsed
-  // gasLimit
-  // difficulty
   // size
   return await ethereum.Block.__new(
     blockHash,
     parentHash,
-    unclesHashPtr,
+    uncleHash,
     authorPtr,
     stateRoot,
     transactionsRoot,
     receiptsRoot,
     blockNumber,
-    gasUsedPtr,
-    gasLimitPtr,
+    gasUsed,
+    gasLimit,
     blockTimestamp,
-    difficultyPtr,
+    difficulty,
     totalDifficulty,
     null
   );
