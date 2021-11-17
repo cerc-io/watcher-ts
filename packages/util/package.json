@@ -9,6 +9,7 @@
     "decimal.js": "^10.3.1",
     "ethers": "^5.2.0",
     "fs-extra": "^10.0.0",
+    "multiformats": "^9.4.8",
     "pg-boss": "^6.1.0",
     "toml": "^3.0.0"
   },
@@ -20,6 +21,7 @@
     "@vulcanize/cache": "^0.1.0",
     "@vulcanize/ipld-eth-client": "^0.1.0",
     "apollo-server-express": "^2.25.0",
+    "decimal.js": "^10.3.1",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
     "eslint-config-standard": "^16.0.3",
