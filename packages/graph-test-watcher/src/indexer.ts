@@ -553,6 +553,11 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
+  async processBlock (blockHash: string): Promise<void> {
+    // Call subgraph handler for block.
+    await this._graphWatcher.handleBlock(blockHash);
+  }
+
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};
