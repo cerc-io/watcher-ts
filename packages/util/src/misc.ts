@@ -9,9 +9,12 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { utils, getDefaultProvider, providers } from 'ethers';
 
+import { EthClient } from '@vulcanize/ipld-eth-client';
+
 import { DEFAULT_CONFIG_PATH } from './constants';
 import { Config } from './config';
 import { JobQueue } from './job-queue';
+import * as EthDecoder from './eth';
 
 /**
  * Method to wait for specified time.
@@ -148,3 +151,38 @@ class CustomFormatter extends providers.Formatter {
     throw new Error('invalid blockTag');
   }
 }
+
+export const getFullBlock = async (ethClient: EthClient, blockHash: string): Promise<any> => {
+  const {
+    allEthHeaderCids: {
+      nodes: [
+        fullBlock
+      ]
+    }
+  } = await ethClient.getFullBlocks({ blockHash });
+
+  assert(fullBlock.blockByMhKey);
+
+  // Deecode the header data.
+  const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
+  assert(header);
+
+  // TODO:
+  // 1. Get author
+  // 2. Calculate size
+  return {
+    cid: fullBlock.cid,
+    blockNumber: fullBlock.blockNumber,
+    blockHash: fullBlock.blockHash,
+    parentHash: fullBlock.parentHash,
+    timestamp: fullBlock.timestamp,
+    stateRoot: fullBlock.stateRoot,
+    td: fullBlock.td,
+    txRoot: fullBlock.txRoot,
+    receiptRoot: fullBlock.receiptRoot,
+    uncleHash: fullBlock.uncleRoot,
+    difficulty: header.Difficulty.toString(),
+    gasLimit: header.GasLimit.toString(),
+    gasUsed: header.GasUsed.toString()
+  };
+};
