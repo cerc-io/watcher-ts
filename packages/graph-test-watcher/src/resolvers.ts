@@ -64,7 +64,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
         log('exampleEntity', id, blockHash);
 
-        return indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+        const data = await indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+
+        return indexer.loadSubgraphEntityRelations(ExampleEntity, blockHash, data);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
