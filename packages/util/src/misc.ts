@@ -80,6 +80,40 @@ export const bigintTransformer: ValueTransformer = {
   }
 };
 
+export const bigintArrayTransformer: ValueTransformer = {
+  to: (valueArray?: bigint[]) => {
+    if (valueArray) {
+      return valueArray.map(value => bigintTransformer.to(value));
+    }
+
+    return valueArray;
+  },
+  from: (valueArray?: string[]) => {
+    if (valueArray) {
+      return valueArray.map(value => bigintTransformer.from(value));
+    }
+
+    return valueArray;
+  }
+};
+
+export const decimalArrayTransformer: ValueTransformer = {
+  to: (valueArray?: Decimal[]) => {
+    if (valueArray) {
+      return valueArray.map(value => decimalTransformer.to(value));
+    }
+
+    return valueArray;
+  },
+  from: (valueArray?: string[]) => {
+    if (valueArray) {
+      return valueArray.map(value => decimalTransformer.from(value));
+    }
+
+    return valueArray;
+  }
+};
+
 export const resetJobs = async (config: Config): Promise<void> => {
   const { jobQueue: jobQueueConfig } = config;
 

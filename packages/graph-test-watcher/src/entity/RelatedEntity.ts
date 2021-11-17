@@ -4,10 +4,10 @@
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-import { bigintTransformer } from '@vulcanize/util';
+import { bigintTransformer, bigintArrayTransformer } from '@vulcanize/util';
 
 @Entity()
-export class Distribution {
+export class RelatedEntity {
   @PrimaryColumn('varchar')
   id!: string;
 
@@ -17,18 +17,12 @@ export class Distribution {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('varchar')
-  distributor!: string;
-
   @Column('bigint', { transformer: bigintTransformer })
-  timestamp!: bigint;
+  paramBigInt!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
-  distributionNumber!: bigint;
+  @Column('varchar', { array: true })
+  examples!: string[];
 
-  @Column('varchar')
-  merkleRoot!: string;
-
-  @Column('varchar')
-  metadataURI!: string;
+  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
+  bigIntArray!: bigint[];
 }
