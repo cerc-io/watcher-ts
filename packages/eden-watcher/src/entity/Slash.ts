@@ -2,8 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Account } from './Account';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
+
 import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
@@ -20,8 +20,8 @@ export class Slash {
   @Column('bigint', { transformer: bigintTransformer })
   timestamp!: bigint;
 
-  @ManyToOne(() => Account)
-  account!: Account;
+  @Column('varchar')
+  account!: string;
 
   @Column('bigint', { transformer: bigintTransformer })
   slashed!: bigint;

@@ -2,9 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Epoch } from './Epoch';
-import { bigintTransformer } from '@vulcanize/util';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
+import Decimal from 'decimal.js';
+
+import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
 
 @Entity()
 export class ProducerEpoch {
@@ -20,8 +21,8 @@ export class ProducerEpoch {
   @Column('varchar')
   address!: string;
 
-  @ManyToOne(() => Epoch)
-  epoch!: Epoch;
+  @Column('varchar')
+  epoch!: string;
 
   @Column('bigint', { transformer: bigintTransformer })
   totalRewards!: bigint;
@@ -29,6 +30,6 @@ export class ProducerEpoch {
   @Column('bigint', { transformer: bigintTransformer })
   blocksProduced!: bigint;
 
-  @Column('varchar')
-  blocksProducedRatio!: string;
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  blocksProducedRatio!: Decimal;
 }

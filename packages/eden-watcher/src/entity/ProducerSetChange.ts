@@ -27,6 +27,9 @@ export class ProducerSetChange {
   @Column('varchar')
   producer!: string;
 
-  @Column('integer')
+  @Column({
+    type: 'enum',
+    enum: ProducerSetChangeType
+  })
   changeType!: ProducerSetChangeType;
 }

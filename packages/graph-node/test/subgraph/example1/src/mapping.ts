@@ -4,7 +4,7 @@ import {
   Example1,
   Test
 } from '../generated/Example1/Example1';
-import { ExampleEntity } from '../generated/schema';
+import { ExampleEntity, RelatedEntity } from '../generated/schema';
 
 export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
@@ -15,12 +15,12 @@ export function handleTest (event: Test): void {
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex());
+  let entity = ExampleEntity.load(event.transaction.hash.toHexString());
 
   // Entities only exist after they have been saved to the store;
   // `null` checks allow to create entities on demand
   if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex());
+    entity = new ExampleEntity(event.transaction.hash.toHexString());
 
     // Entity fields can be set using simple assignments
     entity.count = BigInt.fromString('0');
@@ -36,6 +36,25 @@ export function handleTest (event: Test): void {
   entity.paramBytes = event.address;
   entity.paramEnum = 'choice1';
   entity.paramBigDecimal = BigDecimal.fromString('123');
+
+  let relatedEntity = RelatedEntity.load(event.transaction.from.toHex());
+
+  if (!relatedEntity) {
+    relatedEntity = new RelatedEntity(event.transaction.from.toHex());
+    relatedEntity.paramBigInt = BigInt.fromString('123');
+  }
+
+  const bigIntArray = relatedEntity.bigIntArray;
+  bigIntArray.push(entity.count);
+  relatedEntity.bigIntArray = bigIntArray;
+
+  const examples = relatedEntity.examples;
+  examples.push(entity.id);
+  relatedEntity.examples = examples;
+
+  relatedEntity.save();
+
+  entity.related = relatedEntity.id;
 
   // Entities can be written to the store with `.save()`
   entity.save();

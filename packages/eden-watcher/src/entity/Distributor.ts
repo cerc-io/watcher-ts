@@ -2,8 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Distribution } from './Distribution';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity()
 export class Distributor {
@@ -16,6 +15,6 @@ export class Distributor {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Distribution, { nullable: true })
-  currentDistribution!: Distribution;
+  @Column('varchar', { nullable: true })
+  currentDistribution!: string;
 }

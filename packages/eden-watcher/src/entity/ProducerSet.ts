@@ -2,8 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Producer } from './Producer';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity()
 export class ProducerSet {
@@ -16,6 +15,6 @@ export class ProducerSet {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Producer)
-  producers!: Producer;
+  @Column('varchar', { array: true })
+  producers!: string[];
 }
