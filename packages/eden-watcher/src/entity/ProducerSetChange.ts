@@ -3,6 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { bigintTransformer } from '@vulcanize/util';
 
 enum ProducerSetChangeType {
   Added,
@@ -19,6 +20,9 @@ export class ProducerSetChange {
 
   @Column('integer')
   blockNumber!: number;
+
+  @Column('bigint', { transformer: bigintTransformer })
+  _blockNumber!: bigint;
 
   @Column('varchar')
   producer!: string;

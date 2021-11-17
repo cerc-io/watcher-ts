@@ -524,7 +524,7 @@ export class Indexer implements IndexerInterface {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
     return this._graphWatcher.getEntity(entity, id, blockHash);
   }
 
