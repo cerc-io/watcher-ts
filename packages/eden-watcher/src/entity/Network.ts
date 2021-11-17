@@ -2,11 +2,9 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-import { bigintTransformer } from '@vulcanize/util';
-
-import { Staker } from './Staker';
+import { bigintArrayTransformer, bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 export class Network {
@@ -28,8 +26,8 @@ export class Network {
   @Column('varchar', { nullable: true })
   slot2!: string;
 
-  @ManyToOne(() => Staker)
-  stakers!: Staker;
+  @Column('varchar', { array: true })
+  stakers!: string[];
 
   @Column('bigint', { nullable: true, transformer: bigintTransformer })
   numStakers!: bigint;
@@ -37,6 +35,6 @@ export class Network {
   @Column('bigint', { transformer: bigintTransformer })
   totalStaked!: bigint;
 
-  @Column('bigint', { array: true })
+  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
   stakedPercentiles!: bigint[];
 }

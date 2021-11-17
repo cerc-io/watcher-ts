@@ -59,7 +59,8 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
 
   switch (kind) {
     case EthereumValueKind.ADDRESS: {
-      const address = Address.wrap(await value.toAddress());
+      const addressPtr = await value.toAddress();
+      const address = Address.wrap(addressPtr);
       const addressStringPtr = await address.toHexString();
       return __getString(addressStringPtr);
     }
@@ -78,7 +79,8 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
 
     case EthereumValueKind.INT:
     case EthereumValueKind.UINT: {
-      const bigInt = BigInt.wrap(await value.toBigInt());
+      const bigIntPtr = await value.toBigInt();
+      const bigInt = BigInt.wrap(bigIntPtr);
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
       return BigNumber.from(bigIntString);
@@ -115,8 +117,8 @@ export const toEthereumValue = async (instanceExports: any, value: any, type: st
 
   // For uint/int type or enum type.
   if (isIntegerOrEnum) {
-    const valueString = await __newString(value.toString());
-    const bigInt = await BigInt.fromString(valueString);
+    const valueStringPtr = await __newString(value.toString());
+    const bigInt = await BigInt.fromString(valueStringPtr);
     let ethereumValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
 
     if (Boolean(isInteger) && !isUnsigned) {
@@ -127,18 +129,23 @@ export const toEthereumValue = async (instanceExports: any, value: any, type: st
   }
 
   if (type.startsWith('address')) {
-    return ethereum.Value.fromAddress(await Address.fromString(await __newString(value)));
+    const valueStringPtr = await __newString(value);
+    const addressPtr = await Address.fromString(valueStringPtr);
+
+    return ethereum.Value.fromAddress(addressPtr);
   }
 
   // TODO: Check between fixed bytes and dynamic bytes.
   if (type.startsWith('bytes')) {
-    const byteArray = await ByteArray.fromHexString(await __newString(value));
+    const valueStringPtr = await __newString(value);
+    const byteArray = await ByteArray.fromHexString(valueStringPtr);
     const bytes = await Bytes.fromByteArray(byteArray);
     return ethereum.Value.fromBytes(bytes);
   }
 
   // For string type.
-  return ethereum.Value.fromString(await __newString(value));
+  const valueStringPtr = await __newString(value);
+  return ethereum.Value.fromString(valueStringPtr);
 };
 
 /**
@@ -170,14 +177,22 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const block = await createBlock(instanceExports, blockData);
 
   // Fill transaction data.
-  const txHashByteArray = await ByteArray.fromHexString(await __newString(tx.hash));
+  const txHashStringPtr = await __newString(tx.hash);
+  const txHashByteArray = await ByteArray.fromHexString(txHashStringPtr);
   const txHash = await Bytes.fromByteArray(txHashByteArray);
 
   const txIndex = await BigInt.fromI32(tx.index);
 
-  const txFrom = await Address.fromString(await __newString(tx.from));
+  const txFromStringPtr = await __newString(tx.from);
+  const txFrom = await Address.fromString(txFromStringPtr);
 
-  const txTo = tx.to && await Address.fromString(await __newString(tx.to));
+  const txToStringPtr = await __newString(tx.to);
+  const txTo = tx.to && await Address.fromString(txToStringPtr);
+
+  const txValuePtr = await BigInt.fromI32(0);
+  const txGasLimitPtr = await BigInt.fromI32(0);
+  const txGasPricePtr = await BigInt.fromI32(0);
+  const txinputPtr = await Bytes.empty();
 
   // Missing fields from watcher in transaction data:
   // value
@@ -189,33 +204,39 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     txIndex,
     txFrom,
     txTo,
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
-    await Bytes.empty()
+    txValuePtr,
+    txGasLimitPtr,
+    txGasPricePtr,
+    txinputPtr
   );
 
   const eventParamArrayPromise = eventParamsData.map(async data => {
     const { name, value, kind } = data;
 
     const ethValue = await toEthereumValue(instanceExports, value, kind);
+    const namePtr = await __newString(name);
 
     return ethereum.EventParam.__new(
-      await __newString(name),
+      namePtr,
       ethValue
     );
   });
 
   const eventParamArray = await Promise.all(eventParamArrayPromise);
-  const eventParams = await __newArray(await idOfType(TypeId.ArrayEventParam), eventParamArray);
+  const arrayEventParamId = await idOfType(TypeId.ArrayEventParam);
+  const eventParams = await __newArray(arrayEventParamId, eventParamArray);
 
   const addStrPtr = await __newString(contractAddress);
+  const eventAddressPtr = await Address.fromString(addStrPtr);
+
+  const eventIndexPtr = await BigInt.fromI32(eventIndex);
+  const transactionLogIndexPtr = await BigInt.fromI32(0);
 
   // Create event to be passed to handler.
   return ethereum.Event.__new(
-    await Address.fromString(addStrPtr),
-    await BigInt.fromI32(eventIndex),
-    await BigInt.fromI32(0),
+    eventAddressPtr,
+    eventIndexPtr,
+    transactionLogIndexPtr,
     null,
     block,
     transaction,
@@ -234,26 +255,40 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   } = instanceExports;
 
   // Fill block data.
-  const blockHashByteArray = await ByteArray.fromHexString(await __newString(blockData.blockHash));
+  const blockHashStringPtr = await __newString(blockData.blockHash);
+  const blockHashByteArray = await ByteArray.fromHexString(blockHashStringPtr);
   const blockHash = await Bytes.fromByteArray(blockHashByteArray);
 
-  const parentHashByteArray = await ByteArray.fromHexString(await __newString(blockData.parentHash));
+  const parentHashStringPtr = await __newString(blockData.parentHash);
+  const parentHashByteArray = await ByteArray.fromHexString(parentHashStringPtr);
   const parentHash = await Bytes.fromByteArray(parentHashByteArray);
 
-  const blockNumber = await BigInt.fromString(await __newString(blockData.blockNumber));
+  const blockNumberStringPtr = await __newString(blockData.blockNumber);
+  const blockNumber = await BigInt.fromString(blockNumberStringPtr);
 
-  const blockTimestamp = await BigInt.fromString(await __newString(blockData.timestamp));
+  const timestampStringPtr = await __newString(blockData.timestamp);
+  const blockTimestamp = await BigInt.fromString(timestampStringPtr);
 
-  const stateRootByteArray = await ByteArray.fromHexString(await __newString(blockData.stateRoot));
+  const stateRootStringPtr = await __newString(blockData.stateRoot);
+  const stateRootByteArray = await ByteArray.fromHexString(stateRootStringPtr);
   const stateRoot = await Bytes.fromByteArray(stateRootByteArray);
 
-  const transactionsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.txRoot));
+  const txRootStringPtr = await __newString(blockData.txRoot);
+  const transactionsRootByteArray = await ByteArray.fromHexString(txRootStringPtr);
   const transactionsRoot = await Bytes.fromByteArray(transactionsRootByteArray);
 
-  const receiptsRootByteArray = await ByteArray.fromHexString(await __newString(blockData.receiptRoot));
+  const receiptRootStringPtr = await __newString(blockData.receiptRoot);
+  const receiptsRootByteArray = await ByteArray.fromHexString(receiptRootStringPtr);
   const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
 
-  const totalDifficulty = await BigInt.fromString(await __newString(blockData.td));
+  const tdStringPtr = await __newString(blockData.td);
+  const totalDifficulty = await BigInt.fromString(tdStringPtr);
+
+  const unclesHashPtr = await Bytes.empty();
+  const authorPtr = await Address.zero();
+  const gasUsedPtr = await BigInt.fromI32(0);
+  const gasLimitPtr = await BigInt.fromI32(0);
+  const difficultyPtr = await BigInt.fromI32(0);
 
   // Missing fields from watcher in block data:
   // unclesHash
@@ -265,16 +300,16 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   return await ethereum.Block.__new(
     blockHash,
     parentHash,
-    await Bytes.empty(),
-    await Address.zero(),
+    unclesHashPtr,
+    authorPtr,
     stateRoot,
     transactionsRoot,
     receiptsRoot,
     blockNumber,
-    await BigInt.fromI32(0),
-    await BigInt.fromI32(0),
+    gasUsedPtr,
+    gasLimitPtr,
     blockTimestamp,
-    await BigInt.fromI32(0),
+    difficultyPtr,
     totalDifficulty,
     null
   );
@@ -288,7 +323,8 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  const config = yaml.load(await fs.readFile(configFilePath, 'utf8'));
+  const configFile = await fs.readFile(configFilePath, 'utf8');
+  const config = yaml.load(configFile);
   log('config', JSON.stringify(config, null, 2));
 
   return config;
@@ -299,7 +335,8 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
   const { type, isArray, propertyName } = field;
 
   const entityKey = await __newString(propertyName);
-  const subgraphValue = Value.wrap(await entityInstance.get(entityKey));
+  const entityValuePtr = await entityInstance.get(entityKey);
+  const subgraphValue = Value.wrap(entityValuePtr);
   const value = data[propertyName];
 
   const entityValue = await formatEntityValue(instanceExports, subgraphValue, type, value, isArray);
@@ -310,8 +347,9 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
 export const fromEntityValue = async (instanceExports: any, entityInstance: any, key: string): Promise<any> => {
   const { __newString } = instanceExports;
   const entityKey = await __newString(key);
+  const entityValuePtr = await entityInstance.get(entityKey);
 
-  return parseEntityValue(instanceExports, await entityInstance.get(entityKey));
+  return parseEntityValue(instanceExports, entityValuePtr);
 };
 
 const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
@@ -334,7 +372,8 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
     }
 
     case ValueKind.BYTES: {
-      const bytes = await Bytes.wrap(await value.toBytes());
+      const bytesPtr = await value.toBytes();
+      const bytes = await Bytes.wrap(bytesPtr);
       const bytesStringPtr = await bytes.toHexString();
 
       return __getString(bytesStringPtr);
@@ -351,7 +390,8 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
     }
 
     case ValueKind.BIGINT: {
-      const bigInt = ExportBigInt.wrap(await value.toBigInt());
+      const bigIntPtr = await value.toBigInt();
+      const bigInt = ExportBigInt.wrap(bigIntPtr);
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
 
@@ -359,13 +399,16 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
     }
 
     case ValueKind.BIGDECIMAL: {
-      const bigDecimal = BigDecimal.wrap(await value.toBigDecimal());
+      const bigDecimalPtr = await value.toBigDecimal();
+      const bigDecimal = BigDecimal.wrap(bigDecimalPtr);
+      const bigDecimalStringPtr = await bigDecimal.toString();
 
-      return new Decimal(__getString(await bigDecimal.toString()));
+      return new Decimal(__getString(bigDecimalStringPtr));
     }
 
     case ValueKind.ARRAY: {
-      const arr = await __getArray(await value.toArray());
+      const arrayPtr = await value.toArray();
+      const arr = await __getArray(arrayPtr);
       const arrDataPromises = arr.map((arrValuePtr: any) => parseEntityValue(instanceExports, arrValuePtr));
 
       return Promise.all(arrDataPromises);
@@ -387,7 +430,8 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
     // TODO: Implement handling array of Bytes type field.
     const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
     const dataArray = await Promise.all(dataArrayPromises);
-    const valueArray = await __newArray(await getIdOfType(TypeId.ArrayStoreValue), dataArray);
+    const arrayStoreValueId = await getIdOfType(TypeId.ArrayStoreValue);
+    const valueArray = await __newArray(arrayStoreValueId, dataArray);
 
     return Value.fromArray(valueArray);
   }
@@ -415,7 +459,8 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
     }
 
     case 'bigint': {
-      const bigInt = await ExportBigInt.fromString(await __newString(value.toString()));
+      const valueStringPtr = await __newString(value.toString());
+      const bigInt = await ExportBigInt.fromString(valueStringPtr);
 
       return Value.fromBigInt(bigInt);
     }
@@ -431,7 +476,8 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
     }
 
     case 'numeric': {
-      const bigDecimal = await BigDecimal.fromString(await __newString(value.toString()));
+      const valueStringPtr = await __newString(value.toString());
+      const bigDecimal = await BigDecimal.fromString(valueStringPtr);
 
       return Value.fromBigDecimal(bigDecimal);
     }
