@@ -83,6 +83,7 @@ export class Database {
     const entityValuePromises = entityFields.filter(field => {
       const { propertyName } = field;
 
+      // Filter out blockHash and blockNumber from entity fields to fill the entityInstance (wasm).
       if (propertyName === 'blockHash' || propertyName === 'blockNumber') {
         return false;
       }
@@ -91,6 +92,7 @@ export class Database {
     }).map(async (field) => {
       const { type, propertyName } = field;
 
+      // Fill _blockNumber as blockNumber and _blockHash as blockHash in the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
         return toEntityValue(instanceExports, entityInstance, data, type.toString(), propertyName.slice(1));
       }
@@ -115,14 +117,17 @@ export class Database {
     const entityValuePromises = entityFields.map(async (field: any) => {
       const { type, propertyName } = field;
 
+      // Get blockHash property for db entry from block instance.
       if (propertyName === 'blockHash') {
         return block.blockHash;
       }
 
+      // Get blockNumber property for db entry from block instance.
       if (propertyName === 'blockNumber') {
         return block.blockNumber;
       }
 
+      // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
         return fromEntityValue(instanceExports, entityInstance, type.toString(), propertyName.slice(1));
       }

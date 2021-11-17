@@ -8,13 +8,12 @@ import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils } from 'ethers';
-import _ from 'lodash';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { IndexerInterface } from '@vulcanize/util';
 
-import { createBlock, createEvent, getSubgraphConfig } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
 import { Context, instantiate } from './loader';
 import { Database } from './database';
 
@@ -185,22 +184,10 @@ export class GraphWatcher {
   }
 
   async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
-    let result = await this._database.getEntity(entity, id, blockHash) as any;
+    // Get entity from the database.
+    const result = await this._database.getEntity(entity, id, blockHash) as any;
 
-    if (result) {
-      result = _.omit(result, ['blockHash', 'blockNumber']);
-
-      if ('_blockHash' in result) {
-        result.blockHash = result._blockHash;
-        result = _.omit(result, ['_blockHash']);
-      }
-
-      if ('_blockNumber' in result) {
-        result.blockNumber = result._blockNumber;
-        result = _.omit(result, ['_blockNumber']);
-      }
-    }
-
-    return result;
+    // Resolve any field name conflicts in the entity result.
+    return resolveEntityFieldConflicts(result);
   }
 }

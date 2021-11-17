@@ -18,7 +18,7 @@ import JSONbig from 'json-bigint';
 import { IndexerInterface } from '@vulcanize/util';
 
 import { TypeId } from './types';
-import { Block, fromEthereumValue, toEthereumValue } from './utils';
+import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts } from './utils';
 import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -66,15 +66,15 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const entityInstance = await Entity.wrap(data);
 
         assert(context.event.block);
-        const dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
+        let dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
 
-        // Remove blockNumber and blockHash from dbData for auto-diff.
-        delete dbData.blockNumber;
-        delete dbData.blockHash;
+        // Resolve any field name conflicts in the dbData for auto-diff.
+        dbData = resolveEntityFieldConflicts(dbData);
 
         // Prepare the diff data.
         const diffData: any = { state: {} };
+
         // JSON stringify and parse data for handling unknown types when encoding.
         // For example, decimal.js values are converted to string in the diff data.
         diffData.state[entityName] = JSONbig.parse(JSONbig.stringify(dbData));
