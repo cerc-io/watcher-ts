@@ -13,7 +13,7 @@ import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { IndexerInterface } from '@vulcanize/util';
 
-import { createBlock, createEvent, getSubgraphConfig } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
 import { Context, instantiate } from './loader';
 import { Database } from './database';
 
@@ -183,7 +183,11 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
-    return this._database.getEntity(entity, id, blockHash);
+  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
+    // Get entity from the database.
+    const result = await this._database.getEntity(entity, id, blockHash) as any;
+
+    // Resolve any field name conflicts in the entity result.
+    return resolveEntityFieldConflicts(result);
   }
 }
