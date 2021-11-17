@@ -1,4 +1,5 @@
 import debug from 'debug';
+import assert from 'assert';
 import { CID, digest } from 'multiformats';
 import { code as JSON_CODEC } from 'multiformats/codecs/json';
 import { base64url } from 'multiformats/bases/base64';
@@ -8,25 +9,17 @@ const log = debug('vulcanize:eth');
 
 export enum HashCode {
   KEC_RLP_JSON = 471,
-   KEC_RLP_JSON_ACCOUNT,
-   KEC_RLP_JSON_TRANSACTION,
-   KEC_RLP_JSON_BLOCK_HEADER,
-   KEC_RLP_JSON_LOG_ENTRY,
-   KEC_RLP_JSON_RECEIPT,
-   KEC_RLP_JSON_RECEIPTS,
-   KEC_RLP_JSON_TRANSACTIONS,
-   KEC_RLP_JSON_STORAGE,
+  KEC_RLP_JSON_ACCOUNT,
+  KEC_RLP_JSON_TRANSACTION,
+  KEC_RLP_JSON_BLOCK_HEADER,
+  KEC_RLP_JSON_LOG_ENTRY,
+  KEC_RLP_JSON_RECEIPT,
+  KEC_RLP_JSON_RECEIPTS,
+  KEC_RLP_JSON_TRANSACTIONS,
+  KEC_RLP_JSON_STORAGE,
 }
 
-export interface IPLD<T> {
-  ['/'] : T
-}
-
-export type Bytes = IPLD<{bytes: string}>;
-
-export type Link = IPLD<string>;
-
-export function toBytes (bytes: Uint8Array) : Bytes {
+export function toBytes (bytes: Uint8Array): any {
   return { '/': { bytes: base64url.encode(bytes) } };
 }
 
@@ -43,31 +36,26 @@ export function isHashCode (thing: any) : thing is HashCode {
   return typeof thing === 'number' && HashCode[thing] !== undefined;
 }
 
-export function toLink(code: HashCode, hash: Uint8Array) : Link
-export function toLink(cid: CID) : Link
-export function toLink (codeOrCID: HashCode | CID, hash?: Uint8Array) : Link {
-  if (isHashCode(codeOrCID)) {
-    return { '/': toCID(codeOrCID, hash!).toString(base64url) }; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-  } else {
-    return { '/': codeOrCID.toString(base64url) };
-  }
+export function toLink (code: HashCode, hash: Uint8Array): any {
+  assert(isHashCode(code));
+  return { '/': toCID(code, hash).toString(base64url) };
 }
 
-export interface Header<LinkType = Link, BytesType = Bytes> {
-  ParentCID: LinkType,
-  UnclesDigest: BytesType,
-  StateRootCID: LinkType,
-  Beneficiary: BytesType,
-  TxRootCID: LinkType,
-  RctRootCID: LinkType,
-  Bloom: BytesType,
+export interface Header {
+  ParentCID: any,
+  UnclesDigest: any,
+  StateRootCID: any,
+  Beneficiary: any,
+  TxRootCID: any,
+  RctRootCID: any,
+  Bloom: any,
   Difficulty: BigInt,
   Number: BigInt,
   GasLimit: BigInt,
   GasUsed: BigInt,
   Time: number,
-  Extra: BytesType,
-  MixDigest: BytesType,
+  Extra: any,
+  MixDigest: any,
   Nonce: BigInt,
   BaseFee?: BigInt
 }
@@ -88,13 +76,12 @@ export function decodeNumber (value : string, defaultValue?: number) : number | 
   return Number(value);
 }
 
-export function decodeBytes (hex: string) : Bytes {
+export function decodeBytes (hex: string): any {
   if (hex === undefined || hex === null || hex.length < 2) return { '/': { bytes: '' } };
-  const result = toBytes(Buffer.from(hex.slice(2), 'hex'));
-  return result;
+  return toBytes(Buffer.from(hex.slice(2), 'hex'));
 }
 
-export function decodeHash (code : HashCode, hex: string) : Link {
+export function decodeHash (code : HashCode, hex: string): any {
   return toLink(code, Buffer.from(hex.slice(2), 'hex'));
 }
 

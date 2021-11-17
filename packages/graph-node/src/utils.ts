@@ -267,15 +267,18 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const parentHashByteArray = await ByteArray.fromHexString(parentHashStringPtr);
   const parentHash = await Bytes.fromByteArray(parentHashByteArray);
 
-  const uncleHashByteArray = await ByteArray.fromHexString(await __newString(blockData.uncleHash));
+  const uncleHashStringPtr = await __newString(blockData.uncleHash);
+  const uncleHashByteArray = await ByteArray.fromHexString(uncleHashStringPtr);
   const uncleHash = await Bytes.fromByteArray(uncleHashByteArray);
 
   const blockNumberStringPtr = await __newString(blockData.blockNumber);
   const blockNumber = await BigInt.fromString(blockNumberStringPtr);
 
-  const gasUsed = await BigInt.fromString(await __newString(blockData.gasUsed));
+  const gasUsedStringPtr = await __newString(blockData.gasUsed);
+  const gasUsed = await BigInt.fromString(gasUsedStringPtr);
 
-  const gasLimit = await BigInt.fromString(await __newString(blockData.gasLimit));
+  const gasLimitStringPtr = await __newString(blockData.gasLimit);
+  const gasLimit = await BigInt.fromString(gasLimitStringPtr);
 
   const timestampStringPtr = await __newString(blockData.timestamp);
   const blockTimestamp = await BigInt.fromString(timestampStringPtr);
@@ -292,7 +295,8 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const receiptsRootByteArray = await ByteArray.fromHexString(receiptRootStringPtr);
   const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
 
-  const difficulty = await BigInt.fromString(await __newString(blockData.difficulty));
+  const difficultyStringPtr = await __newString(blockData.difficulty);
+  const difficulty = await BigInt.fromString(difficultyStringPtr);
 
   const tdStringPtr = await __newString(blockData.td);
   const totalDifficulty = await BigInt.fromString(tdStringPtr);

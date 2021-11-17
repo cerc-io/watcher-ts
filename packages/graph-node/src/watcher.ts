@@ -98,6 +98,7 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
+    // TODO: Use blockData fetched in handleBlock.
     const blockData = await getFullBlock(this._postgraphileClient, block.hash);
 
     this._context.event.block = blockData;
