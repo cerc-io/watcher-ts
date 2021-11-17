@@ -105,17 +105,27 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       'ethereum.call': async (call: number) => {
         const smartContractCall = await ethereum.SmartContractCall.wrap(call);
 
-        const contractAddress = await Address.wrap(await smartContractCall.contractAddress);
-        const contractName = __getString(await smartContractCall.contractName);
-        const functionName = __getString(await smartContractCall.functionName);
-        const functionSignature = __getString(await smartContractCall.functionSignature);
-        let functionParams = __getArray(await smartContractCall.functionParams);
+        const contractAddressPtr = await smartContractCall.contractAddress;
+        const contractAddress = await Address.wrap(contractAddressPtr);
+
+        const contractNamePtr = await smartContractCall.contractName;
+        const contractName = __getString(contractNamePtr);
+
+        const functionNamePtr = await smartContractCall.functionName;
+        const functionName = __getString(functionNamePtr);
+
+        const functionSignaturePtr = await smartContractCall.functionSignature;
+        const functionSignature = __getString(functionSignaturePtr);
+
+        const functionParamsPtr = await smartContractCall.functionParams;
+        let functionParams = __getArray(functionParamsPtr);
 
         console.log('ethereum.call params');
         console.log('functionSignature:', functionSignature);
 
         const abi = abis[contractName];
-        const contract = new Contract(__getString(await contractAddress.toHexString()), abi, provider);
+        const contractAddressStringPtr = await contractAddress.toHexString();
+        const contract = new Contract(__getString(contractAddressStringPtr), abi, provider);
 
         try {
           const functionParamsPromise = functionParams.map(async param => {
@@ -142,7 +152,8 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
           });
 
           const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);
-          const res = await __newArray(await getIdOfType(TypeId.ArrayEthereumValue), resultPtrArray);
+          const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
+          const res = await __newArray(arrayEthereumValueId, resultPtrArray);
 
           return res;
         } catch (err) {
@@ -194,10 +205,12 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         const bigDecimaly = BigDecimal.wrap(y);
 
-        const yDigitsBigIntArray = __getArray(await bigDecimaly.digits);
+        const digitsPtr = await bigDecimaly.digits;
+        const yDigitsBigIntArray = __getArray(digitsPtr);
         const yDigits = BigNumber.from(yDigitsBigIntArray);
 
-        const yExpBigIntArray = __getArray(await bigDecimaly.exp);
+        const expPtr = await bigDecimaly.exp;
+        const yExpBigIntArray = __getArray(expPtr);
         const yExp = BigNumber.from(yExpBigIntArray);
 
         console.log('y digits and exp', yDigits, yExp);
@@ -205,11 +218,17 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       'bigDecimal.toString': async (bigDecimal: number) => {
         const bigDecimalInstance = BigDecimal.wrap(bigDecimal);
 
-        const digitsBigInt = BigInt.wrap(await bigDecimalInstance.digits);
-        const expBigInt = BigInt.wrap(await bigDecimalInstance.exp);
+        const digitsPtr = await bigDecimalInstance.digits;
+        const digitsBigInt = BigInt.wrap(digitsPtr);
 
-        const digits = __getString(await digitsBigInt.toString());
-        const exp = __getString(await expBigInt.toString());
+        const expPtr = await bigDecimalInstance.exp;
+        const expBigInt = BigInt.wrap(expPtr);
+
+        const digitsStringPtr = await digitsBigInt.toString();
+        const digits = __getString(digitsStringPtr);
+
+        const expStringPtr = await expBigInt.toString();
+        const exp = __getString(expStringPtr);
 
         const decimal = new Decimal(`${digits}e${exp}`);
         const ptr = __newString(decimal.toFixed());
@@ -224,11 +243,13 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const digits = decimal.d.join('');
         const digitsBigNumber = BigNumber.from(digits);
         const signBigNumber = BigNumber.from(decimal.s);
-        const digitsBigInt = await BigInt.fromString(await __newString(digitsBigNumber.mul(signBigNumber).toString()));
+        const digitsStringPtr = await __newString(digitsBigNumber.mul(signBigNumber).toString());
+        const digitsBigInt = await BigInt.fromString(digitsStringPtr);
 
         // Calculate exp after converting digits to BigInt above.
         const exp = decimal.e - digits.length + 1;
-        const expBigInt = await BigInt.fromString(await __newString(exp.toString()));
+        const expStringPtr = await __newString(exp.toString());
+        const expBigInt = await BigInt.fromString(expStringPtr);
 
         const bigDecimal = await BigDecimal.__new(digitsBigInt);
         bigDecimal.exp = expBigInt;
@@ -259,10 +280,12 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       },
       'bigInt.plus': async (x: number, y: number) => {
         const xBigInt = await BigInt.wrap(x);
-        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         const yBigInt = await BigInt.wrap(y);
-        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const sum = xBigNumber.add(yBigNumber);
         const ptr = await __newString(sum.toString());
@@ -272,10 +295,12 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       },
       'bigInt.minus': async (x: number, y: number) => {
         const xBigInt = await BigInt.wrap(x);
-        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         const yBigInt = await BigInt.wrap(y);
-        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const diff = xBigNumber.sub(yBigNumber);
         const ptr = await __newString(diff.toString());
@@ -285,10 +310,12 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       },
       'bigInt.times': async (x: number, y: number) => {
         const xBigInt = await BigInt.wrap(x);
-        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         const yBigInt = await BigInt.wrap(y);
-        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const product = xBigNumber.mul(yBigNumber);
         const ptr = await __newString(product.toString());
@@ -298,10 +325,12 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       },
       'bigInt.dividedBy': async (x: number, y: number) => {
         const xBigInt = await BigInt.wrap(x);
-        const xBigNumber = BigNumber.from(__getString(await xBigInt.toString()));
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         const yBigInt = await BigInt.wrap(y);
-        const yBigNumber = BigNumber.from(__getString(await yBigInt.toString()));
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const quotient = xBigNumber.div(yBigNumber);
         const ptr = await __newString(quotient.toString());
@@ -334,7 +363,8 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
     datasource: {
       'dataSource.address': async () => {
         assert(dataSource);
-        return Address.fromString(await __newString(dataSource.address));
+        const addressStringPtr = await __newString(dataSource.address);
+        return Address.fromString(addressStringPtr);
       }
     }
   };
