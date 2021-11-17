@@ -21,7 +21,8 @@ import {
   QUEUE_IPFS,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  initClients
+  initClients,
+  JOB_KIND_INDEX
 } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
@@ -56,6 +57,12 @@ export class JobRunner {
       // TODO Call pre-block hook here (Directly or indirectly (Like done through indexer.processEvent for events)).
 
       await this._baseJobRunner.processBlock(job);
+
+      const { data: { kind, blockHash } } = job;
+
+      if (kind === JOB_KIND_INDEX) {
+        await this._indexer.processBlock(blockHash);
+      }
 
       await this._jobQueue.markComplete(job);
     });
