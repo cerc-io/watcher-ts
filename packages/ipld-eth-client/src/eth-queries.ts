@@ -82,6 +82,30 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 }
 `;
 
+export const getFullBlocks = gql`
+query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
+  allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {
+    nodes {
+      cid
+      blockNumber
+      blockHash
+      parentHash
+      timestamp
+      stateRoot
+      td
+      txRoot
+      receiptRoot
+      uncleRoot
+      bloom
+      blockByMhKey {
+        key
+        data
+      }
+    }
+  }
+}
+`;
+
 export const getBlockByHash = gql`
 query block($blockHash: Bytes32) {
   block(hash: $blockHash) {
@@ -133,6 +157,7 @@ export default {
   getLogs,
   getBlockWithTransactions,
   getBlocks,
+  getFullBlocks,
   getBlockByHash,
   subscribeBlocks,
   subscribeTransactions
