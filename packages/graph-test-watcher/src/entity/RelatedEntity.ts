@@ -19,4 +19,10 @@ export class RelatedEntity {
 
   @Column('bigint', { transformer: bigintTransformer })
   paramBigInt!: bigint;
+
+  @Column('varchar', { array: true })
+  examples!: string[];
+
+  @Column('bigint', { transformer: bigintTransformer, array: true })
+  bigIntArray!: bigint[];
 }

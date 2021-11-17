@@ -3,9 +3,11 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
+import Decimal from 'decimal.js';
+import { ColumnType } from 'typeorm';
+import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
-import Decimal from 'decimal.js';
 
 const log = debug('vulcanize:utils');
 
@@ -292,103 +294,145 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   return config;
 };
 
-export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, type: string, key: string) => {
-  const { __newString, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal } = instanceExports;
+export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata) => {
+  const { __newString, Value } = instanceExports;
+  const { type, isArray, propertyName } = field;
+
+  const entityKey = await __newString(propertyName);
+  const subgraphValue = Value.wrap(await entityInstance.get(entityKey));
+  const value = data[propertyName];
+
+  const entityValue = await formatEntityValue(instanceExports, subgraphValue, type, value, isArray);
+
+  return entityInstance.set(entityKey, entityValue);
+};
+
+export const fromEntityValue = async (instanceExports: any, entityInstance: any, key: string): Promise<any> => {
+  const { __newString } = instanceExports;
   const entityKey = await __newString(key);
-  const value = data[key];
+
+  return parseEntityValue(instanceExports, await entityInstance.get(entityKey));
+};
+
+const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
+  const {
+    __getString,
+    __getArray,
+    BigInt: ExportBigInt,
+    Bytes,
+    BigDecimal,
+    Value
+  } = instanceExports;
+
+  const value = Value.wrap(valuePtr);
+  const kind = await value.kind;
+
+  switch (kind) {
+    case ValueKind.STRING: {
+      return __getString(await value.toString());
+    }
+
+    case ValueKind.BYTES: {
+      const bytes = await Bytes.wrap(await value.toBytes());
+      const bytesStringPtr = await bytes.toHexString();
+
+      return __getString(bytesStringPtr);
+    }
+
+    case ValueKind.BOOL: {
+      const bool = await value.toBoolean();
+
+      return Boolean(bool);
+    }
+
+    case ValueKind.INT: {
+      return value.toI32();
+    }
+
+    case ValueKind.BIGINT: {
+      const bigInt = ExportBigInt.wrap(await value.toBigInt());
+      const bigIntStringPtr = await bigInt.toString();
+      const bigIntString = __getString(bigIntStringPtr);
+
+      return BigInt(bigIntString);
+    }
+
+    case ValueKind.BIGDECIMAL: {
+      const bigDecimal = BigDecimal.wrap(await value.toBigDecimal());
+
+      return new Decimal(__getString(await bigDecimal.toString()));
+    }
+
+    case ValueKind.ARRAY: {
+      const arr = await __getArray(await value.toArray());
+      const arrDataPromises = arr.map((arrValuePtr: any) => parseEntityValue(instanceExports, arrValuePtr));
+
+      return Promise.all(arrDataPromises);
+    }
+
+    case ValueKind.NULL: {
+      return null;
+    }
+
+    default:
+      throw new Error(`Unsupported value kind: ${kind}`);
+  }
+};
+
+const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: ColumnType, value: any, isArray: boolean): Promise<any> => {
+  const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, getIdOfType } = instanceExports;
+
+  if (isArray) {
+    // TODO: Implement handling array of Bytes type field.
+    const valueArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
+    const valueArray = await Promise.all(valueArrayPromises);
+    const res = await __newArray(await getIdOfType(TypeId.ArrayStoreValue), valueArray);
+
+    return res;
+  }
 
   switch (type) {
     case 'varchar': {
       const entityValue = await __newString(value);
-
-      const graphValue = Value.wrap(await entityInstance.get(entityKey));
-
-      const kind = await graphValue.kind;
+      const kind = await subgraphValue.kind;
 
       switch (kind) {
         case ValueKind.BYTES: {
           const byteArray = await ByteArray.fromHexString(entityValue);
           const bytes = await Bytes.fromByteArray(byteArray);
-          return entityInstance.setBytes(entityKey, bytes);
+
+          return Value.fromBytes(bytes);
         }
 
         default:
-          return entityInstance.setString(entityKey, entityValue);
+          return Value.fromString(entityValue);
       }
     }
 
     case 'integer': {
-      return entityInstance.setI32(entityKey, value);
+      return Value.fromI32(value);
     }
 
     case 'bigint': {
       const bigInt = await ExportBigInt.fromString(await __newString(value.toString()));
 
-      return entityInstance.setBigInt(entityKey, bigInt);
+      return Value.fromBigInt(bigInt);
     }
 
     case 'boolean': {
-      return entityInstance.setBoolean(entityKey, value ? 1 : 0);
+      return Value.fromBoolean(value ? 1 : 0);
     }
 
     case 'enum': {
       const entityValue = await __newString(value);
-      return entityInstance.setString(entityKey, entityValue);
+
+      return Value.fromString(entityValue);
     }
 
     case 'numeric': {
       const bigDecimal = await BigDecimal.fromString(await __newString(value.toString()));
-      return entityInstance.setBigDecimal(entityKey, bigDecimal);
-    }
 
-    // TODO: Support more types.
-    default:
-      throw new Error(`Unsupported type: ${type}`);
-  }
-};
-
-export const fromEntityValue = async (instanceExports: any, entityInstance: any, type: string, key: string): Promise<any> => {
-  const { __newString, __getString, BigInt: ExportBigInt, Value, BigDecimal, Bytes } = instanceExports;
-  const entityKey = await __newString(key);
-
-  switch (type) {
-    case 'varchar': {
-      const value = Value.wrap(await entityInstance.get(entityKey));
-
-      const kind = await value.kind;
-
-      switch (kind) {
-        case ValueKind.BYTES: {
-          const bytes = await Bytes.wrap(await value.toBytes());
-          const bytesStringPtr = await bytes.toHexString();
-          return __getString(bytesStringPtr);
-        }
-
-        default:
-          return __getString(await entityInstance.getString(entityKey));
-      }
-    }
-
-    case 'integer': {
-      return entityInstance.getI32(entityKey);
-    }
-
-    case 'bigint': {
-      const bigInt = ExportBigInt.wrap(await entityInstance.getBigInt(entityKey));
-      return BigInt(__getString(await bigInt.toString()));
-    }
-
-    case 'boolean': {
-      return Boolean(await entityInstance.getBoolean(entityKey));
-    }
-
-    case 'enum': {
-      return __getString(await entityInstance.getString(entityKey));
-    }
-
-    case 'numeric': {
-      const bigDecimal = BigDecimal.wrap(await entityInstance.getBigDecimal(entityKey));
-      return new Decimal(__getString(await bigDecimal.toString()));
+      return Value.fromBigDecimal(bigDecimal);
     }
 
     // TODO: Support more types.

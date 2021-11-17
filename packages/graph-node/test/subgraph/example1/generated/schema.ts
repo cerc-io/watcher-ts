@@ -18,6 +18,8 @@ export class RelatedEntity extends Entity {
     this.set("id", Value.fromString(id));
 
     this.set("paramBigInt", Value.fromBigInt(BigInt.zero()));
+    this.set("examples", Value.fromStringArray(new Array(0)));
+    this.set("bigIntArray", Value.fromBigIntArray(new Array(0)));
   }
 
   save(): void {
@@ -53,6 +55,24 @@ export class RelatedEntity extends Entity {
 
   set paramBigInt(value: BigInt) {
     this.set("paramBigInt", Value.fromBigInt(value));
+  }
+
+  get examples(): Array<string> {
+    let value = this.get("examples");
+    return value!.toStringArray();
+  }
+
+  set examples(value: Array<string>) {
+    this.set("examples", Value.fromStringArray(value));
+  }
+
+  get bigIntArray(): Array<BigInt> {
+    let value = this.get("bigIntArray");
+    return value!.toBigIntArray();
+  }
+
+  set bigIntArray(value: Array<BigInt>) {
+    this.set("bigIntArray", Value.fromBigIntArray(value));
   }
 }
 

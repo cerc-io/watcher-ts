@@ -6,6 +6,8 @@ enum EnumType {
 type RelatedEntity @entity {
   id: ID!
   paramBigInt: BigInt!
+  examples: [ExampleEntity!]!
+  bigIntArray: [BigInt!]!
 }
 
 type ExampleEntity @entity {
