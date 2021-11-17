@@ -16,6 +16,7 @@ import { ProducerRewardCollectorChange } from './entity/ProducerRewardCollectorC
 import { RewardScheduleEntry } from './entity/RewardScheduleEntry';
 import { RewardSchedule } from './entity/RewardSchedule';
 import { ProducerEpoch } from './entity/ProducerEpoch';
+import { Block } from './entity/Block';
 import { Epoch } from './entity/Epoch';
 import { SlotClaim } from './entity/SlotClaim';
 import { Slot } from './entity/Slot';
@@ -58,109 +59,109 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Query: {
-      producer: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Producer | undefined> => {
+      producer: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('producer', id, blockHash);
 
         return indexer.getSubgraphEntity(Producer, id, blockHash);
       },
 
-      producerSet: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ProducerSet | undefined> => {
+      producerSet: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('producerSet', id, blockHash);
 
         return indexer.getSubgraphEntity(ProducerSet, id, blockHash);
       },
 
-      producerSetChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ProducerSetChange | undefined> => {
+      producerSetChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('producerSetChange', id, blockHash);
 
         return indexer.getSubgraphEntity(ProducerSetChange, id, blockHash);
       },
 
-      producerRewardCollectorChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ProducerRewardCollectorChange | undefined> => {
+      producerRewardCollectorChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('producerRewardCollectorChange', id, blockHash);
 
         return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, blockHash);
       },
 
-      rewardScheduleEntry: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<RewardScheduleEntry | undefined> => {
+      rewardScheduleEntry: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('rewardScheduleEntry', id, blockHash);
 
         return indexer.getSubgraphEntity(RewardScheduleEntry, id, blockHash);
       },
 
-      rewardSchedule: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<RewardSchedule | undefined> => {
+      rewardSchedule: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('rewardSchedule', id, blockHash);
 
         return indexer.getSubgraphEntity(RewardSchedule, id, blockHash);
       },
 
-      producerEpoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ProducerEpoch | undefined> => {
+      producerEpoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('producerEpoch', id, blockHash);
 
         return indexer.getSubgraphEntity(ProducerEpoch, id, blockHash);
       },
 
-      // block: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Block | undefined> => {
-      //   log('block', id, blockHash);
+      block: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
+        log('block', id, blockHash);
 
-      //   return indexer.getSubgraphEntity(Block, id, blockHash);
-      // },
+        return indexer.getSubgraphEntity(Block, id, blockHash);
+      },
 
-      epoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Epoch | undefined> => {
+      epoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('epoch', id, blockHash);
 
         return indexer.getSubgraphEntity(Epoch, id, blockHash);
       },
 
-      slotClaim: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<SlotClaim | undefined> => {
+      slotClaim: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('slotClaim', id, blockHash);
 
         return indexer.getSubgraphEntity(SlotClaim, id, blockHash);
       },
 
-      slot: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Slot | undefined> => {
+      slot: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('slot', id, blockHash);
 
         return indexer.getSubgraphEntity(Slot, id, blockHash);
       },
 
-      staker: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Staker | undefined> => {
+      staker: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('staker', id, blockHash);
 
         return indexer.getSubgraphEntity(Staker, id, blockHash);
       },
 
-      network: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Network | undefined> => {
+      network: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('network', id, blockHash);
 
         return indexer.getSubgraphEntity(Network, id, blockHash);
       },
 
-      distributor: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Distributor | undefined> => {
+      distributor: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('distributor', id, blockHash);
 
         return indexer.getSubgraphEntity(Distributor, id, blockHash);
       },
 
-      distribution: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Distribution | undefined> => {
+      distribution: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('distribution', id, blockHash);
 
         return indexer.getSubgraphEntity(Distribution, id, blockHash);
       },
 
-      claim: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Claim | undefined> => {
+      claim: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('claim', id, blockHash);
 
         return indexer.getSubgraphEntity(Claim, id, blockHash);
       },
 
-      slash: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Slash | undefined> => {
+      slash: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('slash', id, blockHash);
 
         return indexer.getSubgraphEntity(Slash, id, blockHash);
       },
 
-      account: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<Account | undefined> => {
+      account: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
         log('account', id, blockHash);
 
         return indexer.getSubgraphEntity(Account, id, blockHash);

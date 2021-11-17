@@ -396,3 +396,25 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
       throw new Error(`Unsupported type: ${type}`);
   }
 };
+
+export const resolveEntityFieldConflicts = (entity: any): any => {
+  if (entity) {
+    // Remove fields blockHash and blockNumber from the entity.
+    delete entity.blockHash;
+    delete entity.blockNumber;
+
+    // Rename _blockHash -> blockHash.
+    if ('_blockHash' in entity) {
+      entity.blockHash = entity._blockHash;
+      delete entity._blockHash;
+    }
+
+    // Rename _blockNumber -> blockNumber.
+    if ('_blockNumber' in entity) {
+      entity.blockNumber = entity._blockNumber;
+      delete entity._blockNumber;
+    }
+  }
+
+  return entity;
+};
