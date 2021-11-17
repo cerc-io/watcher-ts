@@ -3,8 +3,11 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
+import Decimal from 'decimal.js';
+
+import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
+
 import { SlotClaim } from './SlotClaim';
-import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 export class Slot {
@@ -35,8 +38,8 @@ export class Slot {
   @Column('bigint', { transformer: bigintTransformer })
   expirationTime!: bigint;
 
-  @Column('varchar')
-  taxRatePerDay!: string;
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  taxRatePerDay!: Decimal;
 
   @ManyToOne(() => SlotClaim)
   claims!: SlotClaim;

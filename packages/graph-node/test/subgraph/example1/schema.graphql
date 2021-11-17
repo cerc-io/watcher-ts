@@ -3,6 +3,13 @@ enum EnumType {
   choice2
 }
 
+type RelatedEntity @entity {
+  id: ID!
+  paramBigInt: BigInt!
+  examples: [ExampleEntity!]!
+  bigIntArray: [BigInt!]!
+}
+
 type ExampleEntity @entity {
   id: ID!
   count: BigInt!
@@ -12,4 +19,5 @@ type ExampleEntity @entity {
   paramBytes: Bytes!
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
+  related: RelatedEntity!
 }

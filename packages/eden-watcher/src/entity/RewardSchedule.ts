@@ -2,9 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { RewardScheduleEntry } from './RewardScheduleEntry';
-import { Epoch } from './Epoch';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity()
 export class RewardSchedule {
@@ -17,15 +15,15 @@ export class RewardSchedule {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => RewardScheduleEntry)
-  rewardScheduleEntries!: RewardScheduleEntry;
+  @Column('varchar', { array: true })
+  rewardScheduleEntries!: string[];
 
-  @ManyToOne(() => Epoch, { nullable: true })
-  lastEpoch!: Epoch;
+  @Column('varchar', { nullable: true })
+  lastEpoch!: string;
 
-  @ManyToOne(() => Epoch, { nullable: true })
-  pendingEpoch!: Epoch;
+  @Column('varchar', { nullable: true })
+  pendingEpoch!: string;
 
-  @ManyToOne(() => RewardScheduleEntry, { nullable: true })
-  activeRewardScheduleEntry!: RewardScheduleEntry;
+  @Column('varchar', { nullable: true })
+  activeRewardScheduleEntry!: string;
 }
