@@ -3,9 +3,10 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Block } from './Block';
+import Decimal from 'decimal.js';
+
 import { ProducerEpoch } from './ProducerEpoch';
-import { bigintTransformer } from '@vulcanize/util';
+import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
 
 @Entity()
 export class Epoch {
@@ -24,11 +25,11 @@ export class Epoch {
   @Column('bigint', { transformer: bigintTransformer })
   epochNumber!: bigint;
 
-  @ManyToOne(() => Block, { nullable: true })
-  startBlock!: Block;
+  @Column('varchar', { nullable: true })
+  startBlock!: string;
 
-  @ManyToOne(() => Block, { nullable: true })
-  endBlock!: Block;
+  @Column('varchar', { nullable: true })
+  endBlock!: string;
 
   @Column('bigint', { transformer: bigintTransformer })
   producerBlocks!: bigint;
@@ -36,8 +37,8 @@ export class Epoch {
   @Column('bigint', { transformer: bigintTransformer })
   allBlocks!: bigint;
 
-  @Column('varchar')
-  producerBlocksRatio!: string;
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  producerBlocksRatio!: Decimal;
 
   @ManyToOne(() => ProducerEpoch)
   producerRewards!: ProducerEpoch;

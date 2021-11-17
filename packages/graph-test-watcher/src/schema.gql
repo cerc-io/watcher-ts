@@ -77,11 +77,21 @@ type Query {
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }
 
+enum EnumType {
+  choice1
+  choice2
+}
+
 type ExampleEntity {
   id: ID!
   count: BigInt!
-  param1: String!
-  param2: Int!
+  paramString: String!
+  paramInt: Int!
+  paramBoolean: Boolean!
+  paramBytes: Bytes!
+  paramEnum: EnumType!
+  paramBigDecimal: BigDecimal!
+  related: String!
 }
 
 type Mutation {

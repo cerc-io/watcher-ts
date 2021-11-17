@@ -2,9 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { Slot } from './Slot';
-import { bigintTransformer } from '@vulcanize/util';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
+import Decimal from 'decimal.js';
+
+import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
 
 @Entity()
 export class SlotClaim {
@@ -17,8 +18,8 @@ export class SlotClaim {
   @Column('integer')
   blockNumber!: number;
 
-  @ManyToOne(() => Slot)
-  slot!: Slot;
+  @Column('varchar')
+  slot!: string;
 
   @Column('varchar')
   owner!: string;
@@ -35,6 +36,6 @@ export class SlotClaim {
   @Column('bigint', { transformer: bigintTransformer })
   expirationTime!: bigint;
 
-  @Column('varchar')
-  taxRatePerDay!: string;
+  @Column('numeric', { default: 0, transformer: decimalTransformer })
+  taxRatePerDay!: Decimal;
 }

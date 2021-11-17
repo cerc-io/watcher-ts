@@ -11,7 +11,7 @@
 
   # IPFS API address (can be taken from the output on running the IPFS daemon).
   ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
-  
+
   subgraphPath = "../graph-node/test/subgraph/example1/build"
 
 [database]
