@@ -40,9 +40,8 @@ export function handleTest (event: Test): void {
   let relatedEntity = RelatedEntity.load(event.transaction.from.toHex());
 
   if (!relatedEntity) {
-    relatedEntity = new RelatedEntity('1');
-    relatedEntity.paramBigInt = BigInt.fromString(event.transaction.from.toHex());
-    relatedEntity.save();
+    relatedEntity = new RelatedEntity(event.transaction.from.toHex());
+    relatedEntity.paramBigInt = BigInt.fromString('123');
   }
 
   const bigIntArray = relatedEntity.bigIntArray;

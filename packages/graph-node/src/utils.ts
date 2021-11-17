@@ -329,7 +329,8 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 
   switch (kind) {
     case ValueKind.STRING: {
-      return __getString(await value.toString());
+      const stringValue = await value.toString();
+      return __getString(stringValue);
     }
 
     case ValueKind.BYTES: {
@@ -380,15 +381,15 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 };
 
 const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: ColumnType, value: any, isArray: boolean): Promise<any> => {
-  const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, getIdOfType } = instanceExports;
+  const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
 
   if (isArray) {
     // TODO: Implement handling array of Bytes type field.
-    const valueArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
-    const valueArray = await Promise.all(valueArrayPromises);
-    const res = await __newArray(await getIdOfType(TypeId.ArrayStoreValue), valueArray);
+    const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
+    const dataArray = await Promise.all(dataArrayPromises);
+    const valueArray = await __newArray(await getIdOfType(TypeId.ArrayStoreValue), dataArray);
 
-    return res;
+    return Value.fromArray(valueArray);
   }
 
   switch (type) {

@@ -92,7 +92,7 @@ export class Database {
     }).map(async (field) => {
       // Fill _blockNumber as blockNumber and _blockHash as blockHash in the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(field.propertyName)) {
-        field.propertyName = field.propertyName.slice(1)
+        field.propertyName = field.propertyName.slice(1);
 
         return toEntityValue(instanceExports, entityInstance, data, field);
       }
@@ -115,7 +115,7 @@ export class Database {
 
   async getEntityValues (instanceExports: any, block: Block, entityInstance: any, entityFields: any): Promise<{ [key: string]: any } > {
     const entityValuePromises = entityFields.map(async (field: any) => {
-      const { type, propertyName } = field;
+      const { propertyName } = field;
 
       // Get blockHash property for db entry from block instance.
       if (propertyName === 'blockHash') {
@@ -129,10 +129,10 @@ export class Database {
 
       // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
-        return fromEntityValue(instanceExports, entityInstance, type.toString());
+        return fromEntityValue(instanceExports, entityInstance, propertyName);
       }
 
-      return fromEntityValue(instanceExports, entityInstance, type.toString());
+      return fromEntityValue(instanceExports, entityInstance, propertyName);
     }, {});
 
     const entityValues = await Promise.all(entityValuePromises);

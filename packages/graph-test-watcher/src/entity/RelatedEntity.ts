@@ -4,7 +4,7 @@
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-import { bigintTransformer } from '@vulcanize/util';
+import { bigintTransformer, bigintArrayTransformer } from '@vulcanize/util';
 
 @Entity()
 export class RelatedEntity {
@@ -23,6 +23,6 @@ export class RelatedEntity {
   @Column('varchar', { array: true })
   examples!: string[];
 
-  @Column('bigint', { transformer: bigintTransformer, array: true })
+  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
   bigIntArray!: bigint[];
 }
