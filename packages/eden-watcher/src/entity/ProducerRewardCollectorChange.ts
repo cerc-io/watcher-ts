@@ -3,6 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 export class ProducerRewardCollectorChange {
@@ -14,6 +15,9 @@ export class ProducerRewardCollectorChange {
 
   @Column('integer')
   blockNumber!: number;
+
+  @Column('bigint', { transformer: bigintTransformer })
+  _blockNumber!: bigint;
 
   @Column('varchar')
   producer!: string;

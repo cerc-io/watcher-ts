@@ -24,7 +24,7 @@ type ResultBigInt {
   proof: Proof
 }
 
-type Block {
+type _Block_ {
   cid: String!
   hash: String!
   number: Int!
@@ -32,7 +32,7 @@ type Block {
   parentHash: String!
 }
 
-type Transaction {
+type _Transaction_ {
   hash: String!
   index: Int!
   from: String!
@@ -40,8 +40,8 @@ type Transaction {
 }
 
 type ResultEvent {
-  block: Block!
-  tx: Transaction!
+  block: _Block_!
+  tx: _Transaction_!
   contract: String!
   eventIndex: Int!
   event: Event!
@@ -204,7 +204,7 @@ type RoleRevokedEvent {
 }
 
 type ResultIPLDBlock {
-  block: Block!
+  block: _Block_!
   contractAddress: String!
   cid: String!
   kind: String!
@@ -221,6 +221,7 @@ type Query {
   rewardScheduleEntry(id: String!, blockHash: String!): RewardScheduleEntry!
   rewardSchedule(id: String!, blockHash: String!): RewardSchedule!
   producerEpoch(id: String!, blockHash: String!): ProducerEpoch!
+  block(id: String!, blockHash: String!): Block!
   epoch(id: String!, blockHash: String!): Epoch!
   slotClaim(id: String!, blockHash: String!): SlotClaim!
   slot(id: String!, blockHash: String!): Slot!
@@ -281,6 +282,25 @@ type RewardSchedule {
   lastEpoch: Epoch
   pendingEpoch: Epoch
   activeRewardScheduleEntry: RewardScheduleEntry
+}
+
+type Block {
+  id: ID!
+  fromActiveProducer: Boolean!
+  hash: String!
+  parentHash: String!
+  unclesHash: String!
+  author: String!
+  stateRoot: String!
+  transactionsRoot: String!
+  receiptsRoot: String!
+  number: BigInt!
+  gasUsed: BigInt!
+  gasLimit: BigInt!
+  timestamp: BigInt!
+  difficulty: BigInt!
+  totalDifficulty: BigInt!
+  size: BigInt
 }
 
 type Epoch {
