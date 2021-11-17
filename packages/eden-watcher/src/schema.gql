@@ -1,5 +1,9 @@
 scalar BigInt
 
+scalar Bytes
+
+scalar BigDecimal
+
 type Proof {
   data: String!
 }
@@ -239,7 +243,7 @@ type Query {
 type Producer {
   id: ID!
   active: Boolean!
-  rewardCollector: String
+  rewardCollector: Bytes
   rewards: BigInt!
   confirmedBlocks: BigInt!
   pendingEpochBlocks: BigInt!
@@ -253,7 +257,7 @@ type ProducerSet {
 type ProducerSetChange {
   id: ID!
   blockNumber: BigInt!
-  producer: String!
+  producer: Bytes!
   changeType: ProducerSetChangeType!
 }
 
@@ -265,8 +269,8 @@ enum ProducerSetChangeType {
 type ProducerRewardCollectorChange {
   id: ID!
   blockNumber: BigInt!
-  producer: String!
-  rewardCollector: String!
+  producer: Bytes!
+  rewardCollector: Bytes!
 }
 
 type RewardScheduleEntry {
@@ -311,39 +315,39 @@ type Epoch {
   endBlock: Block
   producerBlocks: BigInt!
   allBlocks: BigInt!
-  producerBlocksRatio: String!
+  producerBlocksRatio: BigDecimal!
   producerRewards: [ProducerEpoch!]!
 }
 
 type ProducerEpoch {
   id: ID!
-  address: String!
+  address: Bytes!
   epoch: Epoch!
   totalRewards: BigInt!
   blocksProduced: BigInt!
-  blocksProducedRatio: String!
+  blocksProducedRatio: BigDecimal!
 }
 
 type SlotClaim {
   id: ID!
   slot: Slot!
-  owner: String!
+  owner: Bytes!
   winningBid: BigInt!
   oldBid: BigInt!
   startTime: BigInt!
   expirationTime: BigInt!
-  taxRatePerDay: String!
+  taxRatePerDay: BigDecimal!
 }
 
 type Slot {
   id: ID!
-  owner: String!
-  delegate: String!
+  owner: Bytes!
+  delegate: Bytes!
   winningBid: BigInt!
   oldBid: BigInt!
   startTime: BigInt!
   expirationTime: BigInt!
-  taxRatePerDay: String!
+  taxRatePerDay: BigDecimal!
   claims: [SlotClaim!]!
 }
 
@@ -374,7 +378,7 @@ type Distribution {
   distributor: Distributor!
   timestamp: BigInt!
   distributionNumber: BigInt!
-  merkleRoot: String!
+  merkleRoot: Bytes!
   metadataURI: String!
 }
 
