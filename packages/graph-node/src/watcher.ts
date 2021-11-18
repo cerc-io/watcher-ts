@@ -147,6 +147,8 @@ export class GraphWatcher {
   async handleBlock (blockHash: string) {
     const blockData = await getFullBlock(this._postgraphileClient, blockHash);
 
+    this._context.event.block = blockData;
+
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
       // Check if block handler(s) are configured.

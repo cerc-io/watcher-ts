@@ -43,26 +43,33 @@ export class Database {
   async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
     const repo = queryRunner.manager.getRepository(entity);
-    const whereOptions: { [key: string]: any } = { id };
 
-    if (blockHash) {
-      whereOptions.blockHash = blockHash;
-    }
+    try {
+      const whereOptions: { [key: string]: any } = { id };
 
-    const findOptions = {
-      where: whereOptions,
-      order: {
-        blockNumber: 'DESC'
+      if (blockHash) {
+        whereOptions.blockHash = blockHash;
       }
-    };
 
-    let entityData = await repo.findOne(findOptions as FindOneOptions<any>);
+      const findOptions = {
+        where: whereOptions,
+        order: {
+          blockNumber: 'DESC'
+        }
+      };
 
-    if (!entityData && findOptions.where.blockHash) {
-      entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+      let entityData = await repo.findOne(findOptions as FindOneOptions<any>);
+
+      if (!entityData && findOptions.where.blockHash) {
+        entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+      }
+
+      return entityData;
+    } catch (error) {
+      console.log(error);
+    } finally {
+      await queryRunner.release();
     }
-
-    return entityData;
   }
 
   async saveEntity (entity: string, data: any): Promise<void> {
@@ -129,7 +136,7 @@ export class Database {
 
       // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
-        return fromEntityValue(instanceExports, entityInstance, propertyName);
+        return fromEntityValue(instanceExports, entityInstance, propertyName.slice(1));
       }
 
       return fromEntityValue(instanceExports, entityInstance, propertyName);
