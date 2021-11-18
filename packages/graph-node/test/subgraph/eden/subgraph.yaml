@@ -8,7 +8,7 @@ dataSources:
     source:
       address: "0x726aDC632871Ff796379da14F9D5aeb199bEd505"
       abi: Governance
-      startBlock: 100
+      startBlock: 12948292
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -44,7 +44,7 @@ dataSources:
     source:
       address: "0x9E3382cA57F4404AC7Bf435475EAe37e87D1c453"
       abi: EdenNetwork
-      startBlock: 100
+      startBlock: 12948381
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -74,7 +74,7 @@ dataSources:
     source:
       address: "0x2Ae0f92498346B9e011ED15d8C98142DCF62F774"
       abi: Distribution
-      startBlock: 100
+      startBlock: 12948356
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
