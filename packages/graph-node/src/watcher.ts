@@ -95,6 +95,16 @@ export class GraphWatcher {
     }, {});
   }
 
+  async addContracts () {
+    assert(this._indexer?.watchContract);
+
+    // Watching the contract(s).
+    for (const dataSource of this._dataSources) {
+      const { source: { address, startBlock }, name } = dataSource;
+      await this._indexer.watchContract(address, name, true, startBlock);
+    }
+  }
+
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
@@ -146,6 +156,8 @@ export class GraphWatcher {
 
   async handleBlock (blockHash: string) {
     const blockData = await getFullBlock(this._postgraphileClient, blockHash);
+
+    this._context.event.block = blockData;
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
