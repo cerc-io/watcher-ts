@@ -191,15 +191,10 @@ export class Database implements DatabaseInterface {
     return repo.save(entity);
   }
 
-  async getContracts (where: FindConditions<Contract>): Promise<Contract[]> {
-    const repo = this._conn.getRepository(Contract);
-    return repo.find({ where });
-  }
-
-  async getContract (address: string): Promise<Contract | undefined> {
+  async getContracts (): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
 
-    return this._baseDatabase.getContract(repo, address);
+    return this._baseDatabase.getContracts(repo);
   }
 
   async createTransactionRunner (): Promise<QueryRunner> {
@@ -223,10 +218,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.saveEventEntity(repo, entity);
   }
 
-  async getBlockEvents (blockHash: string, where: FindConditions<Event>): Promise<Event[]> {
+  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Event[]> {
     const repo = this._conn.getRepository(Event);
 
-    return this._baseDatabase.getBlockEvents(repo, blockHash, where);
+    return this._baseDatabase.getBlockEvents(repo, blockHash, options);
   }
 
   async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
@@ -236,12 +231,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
-  async saveContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
-    await this._conn.transaction(async (tx) => {
-      const repo = tx.getRepository(Contract);
+  async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {
+    const repo = queryRunner.manager.getRepository(Contract);
 
-      return this._baseDatabase.saveContract(repo, address, kind, checkpoint, startingBlock);
-    });
+    return this._baseDatabase.saveContract(repo, address, kind, checkpoint, startingBlock);
   }
 
   async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
@@ -291,10 +284,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlockProgress(repo, blockHash);
   }
 
-  async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
-    return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
+    return this._baseDatabase.updateBlockProgress(repo, block, lastProcessedEventIndex);
   }
 
   async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void> {

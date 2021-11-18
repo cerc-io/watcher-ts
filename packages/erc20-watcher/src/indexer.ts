@@ -29,8 +29,6 @@ const ETH_CALL_MODE = 'eth_call';
 const TRANSFER_EVENT = 'Transfer';
 const APPROVAL_EVENT = 'Approval';
 
-const CONTRACT_KIND = 'token';
-
 interface EventResult {
   event: {
     from?: string;
@@ -301,8 +299,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isWatchedContract(address);
   }
 
-  async watchContract (address: string, checkpoint: boolean, startingBlock: number): Promise<void> {
-    return this._baseIndexer.watchContract(address, CONTRACT_KIND, checkpoint, startingBlock);
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {
