@@ -9,7 +9,7 @@ import 'reflect-metadata';
 import debug from 'debug';
 import util from 'util';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../database';
@@ -48,7 +48,16 @@ const main = async (): Promise<void> => {
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+  const jobQueueConfig = config.jobQueue;
+  assert(jobQueueConfig, 'Missing job queue config');
+
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+  assert(dbConnectionString, 'Missing job queue db connection string');
+
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+  await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();

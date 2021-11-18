@@ -10,6 +10,7 @@ import { ValueResult } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+import { CONTRACT_KIND } from './utils/index';
 
 const log = debug('vulcanize:resolver');
 
@@ -36,7 +37,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     Mutation: {
       watchToken: async (_: any, { token, checkpoint = false, startingBlock = 1 }: { token: string, checkpoint: boolean, startingBlock: number }): Promise<boolean> => {
         log('watchToken', token, checkpoint, startingBlock);
-        await indexer.watchContract(token, checkpoint, startingBlock);
+        await indexer.watchContract(token, CONTRACT_KIND, checkpoint, startingBlock);
 
         return true;
       }

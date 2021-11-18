@@ -72,6 +72,7 @@ type Query {
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   getMethod(blockHash: String!, contractAddress: String!): ResultString!
   _test(blockHash: String!, contractAddress: String!): ResultBigInt!
+  relatedEntity(id: String!, blockHash: String!): RelatedEntity!
   exampleEntity(id: String!, blockHash: String!): ExampleEntity!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
@@ -80,6 +81,13 @@ type Query {
 enum EnumType {
   choice1
   choice2
+}
+
+type RelatedEntity {
+  id: ID!
+  paramBigInt: BigInt!
+  examples: [ExampleEntity!]!
+  bigIntArray: [BigInt!]!
 }
 
 type ExampleEntity {
@@ -91,7 +99,7 @@ type ExampleEntity {
   paramBytes: Bytes!
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
-  related: String!
+  related: RelatedEntity!
 }
 
 type Mutation {
