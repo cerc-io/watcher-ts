@@ -7,7 +7,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs, JobQueue } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../../database';
@@ -40,7 +40,16 @@ export const handler = async (argv: any): Promise<void> => {
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
+  const jobQueueConfig = config.jobQueue;
+  assert(jobQueueConfig, 'Missing job queue config');
+
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+  assert(dbConnectionString, 'Missing job queue db connection string');
+
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+  await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();

@@ -73,7 +73,7 @@ export interface IndexerInterface {
   isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
   cacheContract?: (contract: ContractInterface) => void;
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
-  watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock?: number) => Promise<boolean>
+  watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
 }
 
 export interface EventWatcherInterface {

@@ -63,21 +63,12 @@ export class JobRunner {
       if (kind === JOB_KIND_INDEX) {
         await this._indexer.processBlock(blockHash);
       }
-
-      await this._jobQueue.markComplete(job);
     });
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      const event = await this._baseJobRunner.processEvent(job);
-
-      const watchedContract = await this._indexer.isWatchedContract(event.contract);
-      if (watchedContract) {
-        await this._indexer.processEvent(event);
-      }
-
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processEvent(job);
     });
   }
 
@@ -141,11 +132,6 @@ export const main = async (): Promise<any> => {
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, config.server.subgraphPath);
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
-
-  graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -154,6 +140,14 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
+
+  // Watching all the contracts in the subgraph.
+  await graphWatcher.addContracts();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

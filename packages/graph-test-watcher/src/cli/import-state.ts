@@ -55,10 +55,6 @@ export const main = async (): Promise<any> => {
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
-
-  graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
@@ -68,6 +64,11 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
@@ -91,7 +92,7 @@ export const main = async (): Promise<any> => {
 
   // Fill the Contracts.
   for (const contract of importData.contracts) {
-    await db.saveContract(contract.address, contract.kind, contract.checkpoint, contract.startingBlock);
+    await indexer.watchContract(contract.address, contract.kind, contract.checkpoint, contract.startingBlock);
   }
 
   // Get the snapshot block.

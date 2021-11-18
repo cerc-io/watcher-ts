@@ -10,6 +10,7 @@ import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
+import { CONTRACT_KIND } from '../utils/index';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -60,7 +61,7 @@ import { Indexer } from '../indexer';
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
 
-  await indexer.watchContract(argv.address, argv.checkpoint, argv.startingBlock);
+  await indexer.watchContract(argv.address, CONTRACT_KIND, argv.checkpoint, argv.startingBlock);
 
   await db.close();
   await jobQueue.stop();

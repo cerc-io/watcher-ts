@@ -312,8 +312,10 @@ export class Indexer {
     assert(this._db.saveContract);
     const dbTx = await this._db.createTransactionRunner();
 
-    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-    const contractAddress = ethers.utils.getAddress(address);
+    // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
+    // If a contract identifier is passed as address instead, no need to convert to checksum address.
+    // Customize: use the kind input to filter out non-contract-address input to address.
+    const contractAddress = (kind === '__protocol__') ? address : ethers.utils.getAddress(address);
 
     try {
       const contract = await this._db.saveContract(dbTx, contractAddress, kind, checkpoint, startingBlock);

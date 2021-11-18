@@ -16,7 +16,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, IndexerInterface, UNKNOWN_EVENT_NAME, ServerConfig } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, IndexerInterface, UNKNOWN_EVENT_NAME, ServerConfig, JobQueue } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
@@ -117,7 +117,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
     assert(postgraphileClient);
@@ -127,7 +127,7 @@ export class Indexer implements IndexerInterface {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
     this._graphWatcher = graphWatcher;
 
     this._abiMap = new Map();
@@ -281,7 +281,7 @@ export class Indexer implements IndexerInterface {
     const { data: { blockHash, blockNumber } } = job;
 
     // Get all the contracts.
-    const contracts = await this._db.getContracts({});
+    const contracts = await this._db.getContracts();
 
     // For each contract, merge the diff till now to create a checkpoint.
     for (const contract of contracts) {
@@ -976,24 +976,6 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock?: number): Promise<boolean> {
-    // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
-    // If a contract identifier is passed as address instead, no need to convert to checksum address.
-    // Customize: use the kind input to filter out non-contract-address input to address.
-    const formattedAddress = (kind === '__protocol__') ? address : ethers.utils.getAddress(address);
-
-    if (!startingBlock) {
-      const syncStatus = await this.getSyncStatus();
-      assert(syncStatus);
-
-      startingBlock = syncStatus.latestIndexedBlockNumber;
-    }
-
-    await this._db.saveContract(formattedAddress, kind, checkpoint, startingBlock);
-
-    return true;
-  }
-
   async getHookStatus (): Promise<HookStatus | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
@@ -1035,6 +1017,14 @@ export class Indexer implements IndexerInterface {
     return this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
   }
 
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
+
+  async saveEventEntity (dbEvent: Event): Promise<Event> {
+    return this._baseIndexer.saveEventEntity(dbEvent);
+  }
+
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
@@ -1055,6 +1045,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getSyncStatus();
   }
 
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    return this._baseIndexer.getBlocks(blockFilter);
+  }
+
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
@@ -1065,10 +1059,6 @@ export class Indexer implements IndexerInterface {
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
-  }
-
-  async getBlock (blockHash: string): Promise<any> {
-    return this._baseIndexer.getBlock(blockHash);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
@@ -1099,8 +1089,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
+    return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
