@@ -271,8 +271,10 @@ export class Indexer implements IndexerInterface {
     const checkpoint = await this.getLatestIPLDBlock(contractAddress, 'checkpoint');
 
     // There should be an initial checkpoint at least.
-    // Assumption: There should be no events for the contract at the starting block.
-    assert(checkpoint, 'Initial checkpoint doesn\'t exist');
+    // Return if initial checkpoint doesn't exist.
+    if (!checkpoint) {
+      return;
+    }
 
     // Check if the latest checkpoint is in the same block.
     assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash.');
@@ -299,7 +301,7 @@ export class Indexer implements IndexerInterface {
         const checkpointBlock = await this.getLatestIPLDBlock(contract.address, 'checkpoint');
 
         if (!checkpointBlock) {
-          if (blockNumber === contract.startingBlock) {
+          if (blockNumber >= contract.startingBlock) {
             // Call initial checkpoint hook.
             await createInitialCheckpoint(this, contract.address, blockHash);
           }
