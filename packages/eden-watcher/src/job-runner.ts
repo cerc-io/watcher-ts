@@ -146,6 +146,9 @@ export const main = async (): Promise<any> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
+  // Watching all the contracts in the subgraph.
+  await graphWatcher.addContracts();
+
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 

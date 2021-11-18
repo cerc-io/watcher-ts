@@ -42,9 +42,10 @@ export class Database {
 
   async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
-    const repo = queryRunner.manager.getRepository(entity);
 
     try {
+      const repo = queryRunner.manager.getRepository(entity);
+
       const whereOptions: { [key: string]: any } = { id };
 
       if (blockHash) {
