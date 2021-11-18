@@ -64,6 +64,7 @@ export interface IndexerInterface {
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>;
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
+  watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock?: number) => Promise<boolean>
 }
 
 export interface EventWatcherInterface {
