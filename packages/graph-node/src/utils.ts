@@ -303,6 +303,9 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
 
   const authorPtr = await Address.zero();
 
+  const sizePtr = await __newString('0');
+  const size = await BigInt.fromString(sizePtr);
+
   // Missing fields from watcher in block data:
   // author
   // size
@@ -320,7 +323,7 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
     blockTimestamp,
     difficulty,
     totalDifficulty,
-    null
+    size
   );
 };
 
