@@ -8,6 +8,7 @@ dataSources:
     source:
       address: ""
       abi: Example1
+      startBlock: 100
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5

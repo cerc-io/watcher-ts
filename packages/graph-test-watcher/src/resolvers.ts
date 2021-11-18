@@ -12,6 +12,7 @@ import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
 import { ExampleEntity } from './entity/ExampleEntity';
+import { RelatedEntity } from './entity/RelatedEntity';
 
 const log = debug('vulcanize:resolver');
 
@@ -52,6 +53,12 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       _test: (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<ValueResult> => {
         log('_test', blockHash, contractAddress);
         return indexer._test(blockHash, contractAddress);
+      },
+
+      relatedEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<RelatedEntity | undefined> => {
+        log('relatedEntity', id, blockHash);
+
+        return indexer.getSubgraphEntity(RelatedEntity, id, blockHash);
       },
 
       exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
