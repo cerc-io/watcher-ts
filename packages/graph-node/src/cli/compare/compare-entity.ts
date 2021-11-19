@@ -4,18 +4,14 @@
 
 import yargs from 'yargs';
 import 'reflect-metadata';
-import debug from 'debug';
 import path from 'path';
 import toml from 'toml';
 import fs from 'fs-extra';
 import assert from 'assert';
-import _ from 'lodash';
-import { diff } from 'deep-object-diff';
 import util from 'util';
+import { diffString, diff } from 'json-diff';
 
 import { Client } from './client';
-
-const log = debug('vulcanize:compare');
 
 const DEFAULT_CONFIG_PATH = './src/cli/compare/config.toml';
 
@@ -55,6 +51,12 @@ const main = async (): Promise<void> => {
       type: 'string',
       demandOption: true,
       describe: 'Id of the entity to be queried'
+    },
+    rawJson: {
+      alias: 'j',
+      type: 'boolean',
+      describe: 'Whether to print out raw diff object',
+      default: false
     }
   }).argv;
 
@@ -69,13 +71,21 @@ const main = async (): Promise<void> => {
   const result2 = await client2.getEntity({ queryName, id, blockHash });
 
   // Getting the diff of two result objects.
-  const resultDiff = diff(result1, result2);
+  let resultDiff;
+  if (argv.rawJson) {
+    resultDiff = diff(result1, result2);
 
-  if (!_.isEmpty(resultDiff)) {
-    log(util.inspect(resultDiff, false, null));
+    if (resultDiff) {
+      // Use util.inspect to extend depth limit in the output.
+      resultDiff = util.inspect(diff(result1, result2), false, null, true);
+    }
+  } else {
+    resultDiff = diffString(result1, result2);
+  }
 
-    const message = `Fetched results for entity ${argv.queryName} not equal`;
-    throw new Error(message);
+  if (resultDiff) {
+    console.log(resultDiff);
+    process.exit(1);
   }
 };
 
@@ -118,8 +128,7 @@ async function getClients (config: Config): Promise<{
 }
 
 main().catch(err => {
-  log(err);
-  process.exit(1);
+  console.log(err);
 }).finally(() => {
   process.exit(0);
 });

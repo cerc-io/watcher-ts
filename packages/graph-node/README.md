@@ -36,3 +36,35 @@
 6. Run `yarn build:example` to build the wasm files.
 
 7. Run `yarn test`.
+
+## Run
+
+* Compare query results from two different GQL endpoints:
+  
+  * Specify the GQL two endpoints in the endpoints config in [config-file](./src/cli/compare/config.toml)
+
+    Example:
+
+    ```
+    [endpoints]
+      gqlEndpoint1 = "http://127.0.0.1:3008/graphql"
+      gqlEndpoint2 = "http://127.0.0.1:3009/graphql"
+    ```
+  
+    Or pass the path to config file as an arg. to the CLI.
+  
+  * Add the GQL query files to the [queries-folder](./src/cli/compare/queries)
+
+  * Fire a query and get the diff of the results from the two GQL endpoints:
+
+    ```bash
+    yarn compare-entity --config-file [config-file-path] --query-name <query-name> --block-hash <block-hash> --entity-id <entity-id> --raw-json [true | false]
+    ```
+
+    * `config-file`(alias: `f`): Configuration file path (toml) (default: `./src/cli/compare/config.toml`).
+    * `query-name`(alias: `q`): Query to be fired (required).
+    * `block-hash`(alias: `b`): Block hash (required).
+    * `entity-id`(alias: `i`): Entity Id (required).
+    * `raw-json`(alias: `j`): Whether to print out a raw diff object (default: `false`).
+  
+  * The program will exit with code `1` if the query results are not equal.
