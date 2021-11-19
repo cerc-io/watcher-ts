@@ -13,8 +13,6 @@ import { diffString, diff } from 'json-diff';
 
 import { Client } from './client';
 
-const DEFAULT_CONFIG_PATH = path.join(process.cwd(), 'src/cli/compare/config.toml');
-
 interface EndpointConfig {
   gqlEndpoint1: string;
   gqlEndpoint2: string;
@@ -36,8 +34,8 @@ const main = async (): Promise<void> => {
     configFile: {
       alias: 'cf',
       type: 'string',
-      describe: 'Configuration file path (toml)',
-      default: DEFAULT_CONFIG_PATH
+      demandOption: true,
+      describe: 'Configuration file path (toml)'
     },
     queryDir: {
       alias: 'qf',
