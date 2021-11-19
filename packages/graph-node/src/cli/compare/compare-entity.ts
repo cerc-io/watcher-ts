@@ -10,6 +10,8 @@ import toml from 'toml';
 import fs from 'fs-extra';
 import assert from 'assert';
 import _ from 'lodash';
+import { diff } from 'deep-object-diff';
+import util from 'util';
 
 import { Client } from './client';
 
@@ -66,8 +68,13 @@ const main = async (): Promise<void> => {
   const result1 = await client1.getEntity({ queryName, id, blockHash });
   const result2 = await client2.getEntity({ queryName, id, blockHash });
 
-  if (!compareResults(result1, result2)) {
-    const message = `Fetch results for entity ${argv.entityName} not equal`;
+  // Getting the diff of two result objects.
+  const resultDiff = diff(result1, result2);
+
+  if (!_.isEmpty(resultDiff)) {
+    log(util.inspect(resultDiff, false, null));
+
+    const message = `Fetched results for entity ${argv.queryName} not equal`;
     throw new Error(message);
   }
 };
@@ -108,10 +115,6 @@ async function getClients (config: Config): Promise<{
     client1,
     client2
   };
-}
-
-function compareResults (result1: any, result2: any): boolean {
-  return _.isEqual(result1, result2);
 }
 
 main().catch(err => {
