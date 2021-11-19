@@ -12,19 +12,20 @@ import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
 export class Client {
   _config: GraphQLConfig;
   _graphqlClient: GraphQLClient;
+  _queryDir: string;
 
-  constructor (config: GraphQLConfig) {
+  constructor (config: GraphQLConfig, queryDir: string) {
     this._config = config;
+    this._queryDir = path.resolve(process.cwd(), queryDir);
 
     const { gqlEndpoint } = config;
-
     assert(gqlEndpoint, 'Missing gql endpoint');
 
     this._graphqlClient = new GraphQLClient(config);
   }
 
   async getEntity ({ queryName, id, blockHash }: { queryName: string, id: string, blockHash: string }): Promise<any> {
-    const entityQuery = fs.readFileSync(path.join(__dirname, `queries/${queryName}.gql`), 'utf8');
+    const entityQuery = fs.readFileSync(path.resolve(this._queryDir, `${queryName}.gql`), 'utf8');
 
     return this._graphqlClient.query(
       gql(entityQuery),

@@ -13,15 +13,20 @@ import { diffString, diff } from 'json-diff';
 
 import { Client } from './client';
 
-const DEFAULT_CONFIG_PATH = './src/cli/compare/config.toml';
+const DEFAULT_CONFIG_PATH = path.join(process.cwd(), 'src/cli/compare/config.toml');
 
 interface EndpointConfig {
   gqlEndpoint1: string;
   gqlEndpoint2: string;
 }
 
+interface QueryConfig {
+  queryDir: string;
+}
+
 interface Config {
   endpoints: EndpointConfig;
+  queries: QueryConfig;
 }
 
 const main = async (): Promise<void> => {
@@ -29,10 +34,15 @@ const main = async (): Promise<void> => {
     'parse-numbers': false
   }).options({
     configFile: {
-      alias: 'f',
+      alias: 'cf',
       type: 'string',
       describe: 'Configuration file path (toml)',
       default: DEFAULT_CONFIG_PATH
+    },
+    queryDir: {
+      alias: 'qf',
+      type: 'string',
+      describe: 'Path to queries directory'
     },
     blockHash: {
       alias: 'b',
@@ -61,7 +71,8 @@ const main = async (): Promise<void> => {
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
-  const { client1, client2 } = await getClients(config);
+
+  const { client1, client2 } = await getClients(config, argv.queryDir);
 
   const queryName = argv.queryName;
   const id = argv.entityId;
@@ -101,7 +112,7 @@ async function getConfig (configFile: string): Promise<Config> {
   return config;
 }
 
-async function getClients (config: Config): Promise<{
+async function getClients (config: Config, queryDir?: string): Promise<{
   client1: Client,
   client2: Client
 }> {
@@ -113,13 +124,20 @@ async function getClients (config: Config): Promise<{
   assert(gqlEndpoint1, 'Missing endpoint one');
   assert(gqlEndpoint2, 'Missing endpoint two');
 
+  if (!queryDir) {
+    assert(config.queries, 'Missing queries config');
+    queryDir = config.queries.queryDir;
+  }
+
+  assert(queryDir, 'Query directory not provided');
+
   const client1 = new Client({
     gqlEndpoint: gqlEndpoint1
-  });
+  }, queryDir);
 
   const client2 = new Client({
     gqlEndpoint: gqlEndpoint2
-  });
+  }, queryDir);
 
   return {
     client1,
