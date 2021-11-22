@@ -184,9 +184,9 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
+  async getEntity<Entity> (entity: new () => Entity, id: string, blockHash: string, relations: { [key: string]: any }): Promise<any> {
     // Get entity from the database.
-    const result = await this._database.getEntity(entity, id, blockHash) as any;
+    const result = await this._database.getEntityWithRelations(entity, id, blockHash, relations) as any;
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
