@@ -120,7 +120,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const functionParamsPtr = await smartContractCall.functionParams;
         let functionParams = __getArray(functionParamsPtr);
 
-        console.log('ethereum.call params');
+        console.log('ethereum.call params', functionParams);
         console.log('functionSignature:', functionSignature);
 
         const abi = abis[contractName];
@@ -138,17 +138,17 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
 
-          if (!Array.isArray(result)) {
-            result = [result];
-          }
-
           // TODO: Check for function overloading.
           // Using function signature does not work.
           const outputs = contract.interface.getFunction(functionName).outputs;
+          assert(outputs);
 
-          const resultPtrArrayPromise = result.map(async (value: any, index: number) => {
-            assert(outputs);
-            return toEthereumValue(exports, value, outputs[index].type);
+          if (!Array.isArray(result) || (outputs.length === 1 && outputs[0].type === 'tuple')) {
+            result = [result];
+          }
+
+          const resultPtrArrayPromise = outputs.map(async (output: any, index: number) => {
+            return toEthereumValue(exports, result[index], output.type);
           });
 
           const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);

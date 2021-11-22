@@ -32,9 +32,51 @@ export class Test__Params {
   }
 }
 
+export class Example1__structMethodResultValue0Struct extends ethereum.Tuple {
+  get bidAmount1(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get bidAmount2(): BigInt {
+    return this[1].toBigInt();
+  }
+}
+
 export class Example1 extends ethereum.SmartContract {
   static bind(address: Address): Example1 {
     return new Example1("Example1", address);
+  }
+
+  addMethod(bidAmount1: BigInt, bidAmount2: BigInt): BigInt {
+    let result = super.call(
+      "addMethod",
+      "addMethod(uint128,uint128):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(bidAmount1),
+        ethereum.Value.fromUnsignedBigInt(bidAmount2)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_addMethod(
+    bidAmount1: BigInt,
+    bidAmount2: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "addMethod",
+      "addMethod(uint128,uint128):(uint256)",
+      [
+        ethereum.Value.fromUnsignedBigInt(bidAmount1),
+        ethereum.Value.fromUnsignedBigInt(bidAmount2)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   emitEvent(): boolean {
@@ -65,6 +107,43 @@ export class Example1 extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toString());
+  }
+
+  structMethod(
+    bidAmount1: BigInt,
+    bidAmount2: BigInt
+  ): Example1__structMethodResultValue0Struct {
+    let result = super.call(
+      "structMethod",
+      "structMethod(uint128,uint128):((uint128,uint128))",
+      [
+        ethereum.Value.fromUnsignedBigInt(bidAmount1),
+        ethereum.Value.fromUnsignedBigInt(bidAmount2)
+      ]
+    );
+
+    return result[0].toTuple() as Example1__structMethodResultValue0Struct;
+  }
+
+  try_structMethod(
+    bidAmount1: BigInt,
+    bidAmount2: BigInt
+  ): ethereum.CallResult<Example1__structMethodResultValue0Struct> {
+    let result = super.tryCall(
+      "structMethod",
+      "structMethod(uint128,uint128):((uint128,uint128))",
+      [
+        ethereum.Value.fromUnsignedBigInt(bidAmount1),
+        ethereum.Value.fromUnsignedBigInt(bidAmount2)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      value[0].toTuple() as Example1__structMethodResultValue0Struct
+    );
   }
 }
 

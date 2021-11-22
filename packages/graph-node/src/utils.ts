@@ -105,12 +105,31 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
 export const toEthereumValue = async (instanceExports: any, value: any, type: string): Promise<any> => {
   const {
     __newString,
+    __newArray,
     ByteArray,
     Bytes,
     Address,
     ethereum,
-    BigInt
+    BigInt,
+    id_of_type: getIdOfType
   } = instanceExports;
+
+  if (type === 'tuple') {
+    const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
+
+    const ethereumValuePromises = value.map(async (componentValue: any) => {
+      const valueStringPtr = await __newString(componentValue.toString());
+      const bigInt = await BigInt.fromString(valueStringPtr);
+      return ethereum.Value.fromUnsignedBigInt(bigInt);
+    });
+
+    const ethereumValues: any[] = await Promise.all(ethereumValuePromises);
+    const ethereumValuesArrayPtr = await __newArray(arrayEthereumValueId, ethereumValues);
+    const ethereumTuple = await ethereum.Tuple.wrap(ethereumValuesArrayPtr);
+
+    // return ethereumTuple;
+    return ethereum.Value.fromTuple(ethereumTuple);
+  }
 
   // For boolean type.
   if (type === 'bool') {
