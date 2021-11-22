@@ -86,7 +86,7 @@ const main = async (): Promise<void> => {
 
     if (resultDiff) {
       // Use util.inspect to extend depth limit in the output.
-      resultDiff = util.inspect(diff(result1, result2), false, null, true);
+      resultDiff = util.inspect(diff(result1, result2), false, null);
     }
   } else {
     resultDiff = diffString(result1, result2);

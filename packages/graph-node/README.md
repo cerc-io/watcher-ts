@@ -51,8 +51,8 @@
 
         ```
         [endpoints]
-          gqlEndpoint1 = "http://127.0.0.1:3008/graphql"
-          gqlEndpoint2 = "http://127.0.0.1:3009/graphql"
+          gqlEndpoint1 = "http://localhost:8000/subgraphs/name/example1"
+          gqlEndpoint2 = "http://localhost:3008/graphql"
         
         [queries]
           queryDir = "../graph-test-watcher/src/gql/queries"
