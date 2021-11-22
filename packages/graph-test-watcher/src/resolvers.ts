@@ -13,6 +13,7 @@ import { EventWatcher } from './events';
 
 import { ExampleEntity } from './entity/ExampleEntity';
 import { RelatedEntity } from './entity/RelatedEntity';
+import { ManyRelatedEntity } from './entity/ManyRelatedEntity';
 
 const log = debug('vulcanize:resolver');
 
@@ -56,16 +57,22 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer._test(blockHash, contractAddress);
       },
 
+      exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
+        log('exampleEntity', id, blockHash);
+
+        return indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+      },
+
       relatedEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<RelatedEntity | undefined> => {
         log('relatedEntity', id, blockHash);
 
         return indexer.getSubgraphEntity(RelatedEntity, id, blockHash);
       },
 
-      exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
-        log('exampleEntity', id, blockHash);
+      manyRelatedEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ManyRelatedEntity | undefined> => {
+        log('relatedEntity', id, blockHash);
 
-        return indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+        return indexer.getSubgraphEntity(ManyRelatedEntity, id, blockHash);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
