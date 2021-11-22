@@ -24,8 +24,8 @@
     js-tokens "^4.0.0"
 
 "@graphprotocol/graph-cli@ssh://git@github.com:vulcanize/graph-cli.git#ng-add-exports":
-  version "0.22.1"
-  resolved "ssh://git@github.com:vulcanize/graph-cli.git#cae2627e27df7215b8485060fa491fc9854e8dfa"
+  version "0.22.4"
+  resolved "ssh://git@github.com:vulcanize/graph-cli.git#d944c2b9db6477a2f6cc5fb519834becc64802b5"
   dependencies:
     assemblyscript "0.19.10"
     binary-install-raw "0.0.13"

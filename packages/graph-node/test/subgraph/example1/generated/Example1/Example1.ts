@@ -122,7 +122,9 @@ export class Example1 extends ethereum.SmartContract {
       ]
     );
 
-    return result[0].toTuple() as Example1__structMethodResultValue0Struct;
+    return changetype<Example1__structMethodResultValue0Struct>(
+      result[0].toTuple()
+    );
   }
 
   try_structMethod(
@@ -142,7 +144,7 @@ export class Example1 extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      value[0].toTuple() as Example1__structMethodResultValue0Struct
+      changetype<Example1__structMethodResultValue0Struct>(value[0].toTuple())
     );
   }
 }

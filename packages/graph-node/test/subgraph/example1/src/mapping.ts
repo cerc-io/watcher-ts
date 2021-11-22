@@ -71,12 +71,9 @@ export function handleTest (event: Test): void {
   }
 
   // Access functions by calling them.
-  const res = contract.try_structMethod(BigInt.fromString('1000'), BigInt.fromString('500'));
-  if (res.reverted) {
-    log.debug('Contract eth call reverted', []);
-  } else {
-    log.debug('Contract eth call result: {}', [res.value.toString()]);
-  }
+  const res = contract.structMethod(BigInt.fromString('1000'), BigInt.fromString('500'));
+
+  log.debug('Contract eth call result: {}', [res.bidAmount1.toString()]);
 
   // Note: If a handler doesn't require existing field values, it is faster
   // _not_ to load the entity from the store. Instead, create it fresh with
