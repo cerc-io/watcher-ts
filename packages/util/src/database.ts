@@ -412,7 +412,7 @@ export class Database {
     return selectQueryBuilder.getMany();
   }
 
-  async getPrevEntityVersion<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
+  async getFrothyEntity<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, data: { blockHash: string, id: string }): Promise<{ blockHash: string, blockNumber: number, id: string }> {
     // Hierarchical query for getting the entity in the frothy region.
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
@@ -456,7 +456,13 @@ export class Database {
     `;
 
     // Fetching blockHash for previous entity in frothy region.
-    const [{ block_hash: blockHash, block_number: blockNumber, id }] = await queryRunner.query(heirerchicalQuery, [findOptions.where.blockHash, findOptions.where.id, MAX_REORG_DEPTH]);
+    const [{ block_hash: blockHash, block_number: blockNumber, id }] = await queryRunner.query(heirerchicalQuery, [data.blockHash, data.id, MAX_REORG_DEPTH]);
+
+    return { blockHash, blockNumber, id };
+  }
+
+  async getPrevEntityVersion<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
+    const { blockHash, blockNumber, id } = await this.getFrothyEntity(queryRunner, repo, findOptions.where);
 
     if (id) {
       // Entity found in frothy region.
