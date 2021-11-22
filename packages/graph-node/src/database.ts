@@ -73,6 +73,65 @@ export class Database {
     }
   }
 
+  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, blockHash: string, relations: { [key: string]: any }): Promise<Entity | undefined> {
+    const queryRunner = this._conn.createQueryRunner();
+
+    try {
+      const repo = queryRunner.manager.getRepository(entity);
+
+      // Fetching blockHash for previous entity in frothy region.
+      const { blockHash: entityblockHash, blockNumber, id: frothyId } = await this._baseDatabase.getFrothyEntity(queryRunner, repo, { blockHash, id });
+
+      let selectQueryBuilder = repo.createQueryBuilder('entity');
+
+      if (frothyId) {
+        // If entity found in frothy region.
+        selectQueryBuilder = selectQueryBuilder.where('entity.block_hash = :entityblockHash', { entityblockHash });
+      } else {
+        // If entity not in frothy region.
+        const canonicalBlockNumber = blockNumber + 1;
+
+        selectQueryBuilder = selectQueryBuilder.innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
+          .where('block.is_pruned = false')
+          .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
+          .orderBy('entity.block_number', 'DESC')
+          .limit(1);
+      }
+
+      selectQueryBuilder = selectQueryBuilder.andWhere('entity.id = :id', { id });
+
+      // TODO: Implement query for nested relations.
+      Object.entries(relations).forEach(([field, data], index) => {
+        const { entity: relatedEntity, isArray } = data;
+        const alias = `relatedEntity${index}`;
+
+        if (isArray) {
+          // For one to many relational field.
+          selectQueryBuilder = selectQueryBuilder.leftJoinAndMapMany(
+              `entity.${field}`,
+              relatedEntity,
+              alias,
+              `${alias}.id IN (SELECT unnest(entity.${field})) AND ${alias}.block_number <= entity.block_number`
+          )
+            .addOrderBy(`${alias}.block_number`, 'DESC');
+        } else {
+          // For one to one relational field.
+          selectQueryBuilder = selectQueryBuilder.leftJoinAndMapOne(
+              `entity.${field}`,
+              relatedEntity,
+              alias,
+              `entity.${field} = ${alias}.id AND ${alias}.block_number <= entity.block_number`
+          )
+            .addOrderBy(`${alias}.block_number`, 'DESC');
+        }
+      });
+
+      return selectQueryBuilder.getOne();
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async saveEntity (entity: string, data: any): Promise<void> {
     const repo = this._conn.getRepository(entity);
 
