@@ -6,7 +6,6 @@ enum EnumType {
 type RelatedEntity @entity {
   id: ID!
   paramBigInt: BigInt!
-  examples: [ExampleEntity!]!
   bigIntArray: [BigInt!]!
 }
 
@@ -20,4 +19,10 @@ type ExampleEntity @entity {
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
   related: RelatedEntity!
+  manyRelated: [ManyRelatedEntity!]!
+}
+
+type ManyRelatedEntity @entity {
+  id: ID!
+  count: BigInt!
 }
