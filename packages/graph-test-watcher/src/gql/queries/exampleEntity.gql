@@ -1,8 +1,21 @@
-query exampleEntity($id: String!, $blockHash: String!){
-    exampleEntity(id: $id, blockHash: $blockHash){
+query exampleEntity($id: String!, $blockHash: Bytes){
+    exampleEntity(id: $id, block: { hash: $blockHash }){
         id
         count
-        param1
-        param2
+        paramString
+        paramInt
+        paramBoolean
+        paramBytes
+        paramEnum
+        paramBigDecimal
+        related {
+            id
+            paramBigInt
+            bigIntArray
+        }
+        manyRelated {
+            id
+            count
+        }
     }
 }

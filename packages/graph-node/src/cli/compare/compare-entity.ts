@@ -76,8 +76,8 @@ const main = async (): Promise<void> => {
   const id = argv.entityId;
   const blockHash = argv.blockHash;
 
-  const result1 = await client1.getEntity({ queryName, id, blockHash });
-  const result2 = await client2.getEntity({ queryName, id, blockHash });
+  const result1 = await client1.getEntity({ blockHash, queryName, id });
+  const result2 = await client2.getEntity({ blockHash, queryName, id });
 
   // Getting the diff of two result objects.
   let resultDiff;

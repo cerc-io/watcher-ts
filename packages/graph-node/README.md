@@ -55,7 +55,7 @@
           gqlEndpoint2 = "http://127.0.0.1:3009/graphql"
         
         [queries]
-        queryDir = "../graph-test-watcher/src/gql/queries"
+          queryDir = "../graph-test-watcher/src/gql/queries"
         ```
 
   * Fire a query and get the diff of the results from the two GQL endpoints:

@@ -1,5 +1,5 @@
 [endpoints]
-  gqlEndpoint1 = "http://127.0.0.1:3008/graphql"
+  gqlEndpoint1 = "http://localhost:8000/subgraphs/name/example1"
   gqlEndpoint2 = "http://127.0.0.1:3008/graphql"
 
 [queries]
