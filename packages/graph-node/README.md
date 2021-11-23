@@ -40,7 +40,7 @@
 ## Run
 
 * Compare query results from two different GQL endpoints:
-  
+
   * In a config file (sample: `environments/compare-cli-config.toml`):
 
     * Specify the two GQL endpoints in the endpoints config.
@@ -53,7 +53,7 @@
         [endpoints]
           gqlEndpoint1 = "http://localhost:8000/subgraphs/name/example1"
           gqlEndpoint2 = "http://localhost:3008/graphql"
-        
+
         [queries]
           queryDir = "../graph-test-watcher/src/gql/queries"
         ```
@@ -70,11 +70,11 @@
       * `block-hash`(alias: `b`): Block hash (required).
       * `entity-id`(alias: `i`): Entity Id (required).
       * `raw-json`(alias: `j`): Whether to print out a raw diff object (default: `false`).
-    
+
       Example:
 
         ```bash
-        yarn compare-entity --config-file environments/compare-cli-config.toml --query-name exampleEntity --block-hash 0xceed7ee9d3de97c99db12e42433cae9115bb311c516558539fb7114fa17d545b --entity-id 0x2886bae64814bd959aec4282f86f3a97bf1e16e4111b39fd7bdd592b516c66c6
+        yarn compare-entity --config-file environments/compare-cli-config.toml --query-name exampleEntity --block-hash 0xceed7ee9d3de97c99db12e42433cae9115bb311c516558539fb7114fa17d545b --entity-id 0xdc7d7a8920c8eecc098da5b7522a5f31509b5bfc
         ```
-  
+
   * The program will exit with code `1` if the query results are not equal.

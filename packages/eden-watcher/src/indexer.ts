@@ -80,15 +80,6 @@ const ROLEADMINCHANGED_EVENT = 'RoleAdminChanged';
 const ROLEGRANTED_EVENT = 'RoleGranted';
 const ROLEREVOKED_EVENT = 'RoleRevoked';
 
-interface Relations {
-  [key: string]: {
-    entity: any;
-    isArray: boolean;
-    isDerived: boolean;
-    field?: string;
-  }
-}
-
 export type ResultEvent = {
   block: {
     cid: string;

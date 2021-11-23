@@ -3,5 +3,8 @@ query relatedEntity($id: String!, $blockHash: Bytes!){
         id
         paramBigInt
         bigIntArray
+        example {
+            id
+        }
     }
 }

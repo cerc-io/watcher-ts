@@ -2,12 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 import Decimal from 'decimal.js';
 
 import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
-
-import { SlotClaim } from './SlotClaim';
 
 @Entity()
 export class Slot {

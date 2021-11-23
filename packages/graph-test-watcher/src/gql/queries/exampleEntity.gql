@@ -8,12 +8,12 @@ query exampleEntity($id: String!, $blockHash: Bytes!){
         paramBytes
         paramEnum
         paramBigDecimal
-        related {
+        relateds {
             id
             paramBigInt
             bigIntArray
         }
-        manyRelated {
+        manyRelateds {
             id
             count
         }

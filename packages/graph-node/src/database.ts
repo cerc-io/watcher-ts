@@ -83,8 +83,7 @@ export class Database {
       let selectQueryBuilder = repo.createQueryBuilder('entity');
 
       selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id })
-        .orderBy('entity.block_number', 'DESC')
-        .limit(1);
+        .orderBy('entity.block_number', 'DESC');
 
       // Use blockHash if provided.
       if (blockHash) {
