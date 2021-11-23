@@ -23,10 +23,4 @@ export class Account {
 
   @Column('bigint', { transformer: bigintTransformer })
   totalSlashed!: bigint;
-
-  @ManyToOne(() => Claim)
-  claims!: Claim;
-
-  @ManyToOne(() => Slash)
-  slashes!: Slash;
 }

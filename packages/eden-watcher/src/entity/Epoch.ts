@@ -39,7 +39,4 @@ export class Epoch {
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   producerBlocksRatio!: Decimal;
-
-  @ManyToOne(() => ProducerEpoch)
-  producerRewards!: ProducerEpoch;
 }

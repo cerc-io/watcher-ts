@@ -80,6 +80,15 @@ const ROLEADMINCHANGED_EVENT = 'RoleAdminChanged';
 const ROLEGRANTED_EVENT = 'RoleGranted';
 const ROLEREVOKED_EVENT = 'RoleRevoked';
 
+interface Relations {
+  [key: string]: {
+    entity: any;
+    isArray: boolean;
+    isDerived: boolean;
+    field?: string;
+  }
+}
+
 export type ResultEvent = {
   block: {
     cid: string;
@@ -1154,78 +1163,120 @@ export class Indexer implements IndexerInterface {
     this._relationsMap.set(ProducerSet, {
       producers: {
         entity: Producer,
-        isArray: true
+        isArray: true,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(RewardSchedule, {
       rewardScheduleEntries: {
         entity: RewardScheduleEntry,
-        isArray: true
+        isArray: true,
+        isDerived: false
       },
       activeRewardScheduleEntry: {
         entity: RewardScheduleEntry,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(ProducerEpoch, {
       epoch: {
         entity: Epoch,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Epoch, {
       startBlock: {
         entity: Block,
-        isArray: false
+        isArray: false,
+        isDerived: false
       },
       endBlock: {
         entity: Block,
-        isArray: false
+        isArray: false,
+        isDerived: false
+      },
+      producerRewards: {
+        entity: ProducerEpoch,
+        isArray: true,
+        isDerived: true,
+        field: 'epoch'
       }
     });
 
     this._relationsMap.set(SlotClaim, {
       slot: {
         entity: Slot,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Network, {
       stakers: {
         entity: Staker,
-        isArray: true
+        isArray: true,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Distributor, {
       currentDistribution: {
         entity: Distribution,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Distribution, {
       distributor: {
         entity: Distributor,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Claim, {
       account: {
         entity: Account,
-        isArray: false
+        isArray: false,
+        isDerived: false
       }
     });
 
     this._relationsMap.set(Slash, {
       account: {
         entity: Account,
-        isArray: false
+        isArray: false,
+        isDerived: false
+      }
+    });
+
+    this._relationsMap.set(Slot, {
+      claims: {
+        entity: SlotClaim,
+        isArray: true,
+        isDerived: true,
+        field: 'slot'
+      }
+    });
+
+    this._relationsMap.set(Account, {
+      claims: {
+        entity: Claim,
+        isArray: true,
+        isDerived: true,
+        field: 'account'
+      },
+      slashes: {
+        entity: Slash,
+        isArray: true,
+        isDerived: true,
+        field: 'account'
       }
     });
   }
