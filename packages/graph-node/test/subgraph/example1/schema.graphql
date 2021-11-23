@@ -7,6 +7,7 @@ type RelatedEntity @entity {
   id: ID!
   paramBigInt: BigInt!
   bigIntArray: [BigInt!]!
+  example: ExampleEntity
 }
 
 type ExampleEntity @entity {
@@ -18,8 +19,8 @@ type ExampleEntity @entity {
   paramBytes: Bytes!
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
-  related: RelatedEntity!
-  manyRelated: [ManyRelatedEntity!]!
+  relateds: [RelatedEntity!]! @derivedFrom(field: "example")
+  manyRelateds: [ManyRelatedEntity!]!
 }
 
 type ManyRelatedEntity @entity {

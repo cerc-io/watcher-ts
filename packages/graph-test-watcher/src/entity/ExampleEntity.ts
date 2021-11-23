@@ -48,9 +48,6 @@ export class ExampleEntity {
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   paramBigDecimal!: Decimal
 
-  @Column('varchar')
-  related!: string;
-
   @Column('varchar', { array: true })
-  manyRelated!: string[]
+  manyRelateds!: string[]
 }

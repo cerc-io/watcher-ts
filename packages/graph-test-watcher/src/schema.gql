@@ -93,6 +93,7 @@ type RelatedEntity {
   id: ID!
   paramBigInt: BigInt!
   bigIntArray: [BigInt!]!
+  example: ExampleEntity
 }
 
 type ManyRelatedEntity {
@@ -109,8 +110,8 @@ type ExampleEntity {
   paramBytes: Bytes!
   paramEnum: EnumType!
   paramBigDecimal: BigDecimal!
-  related: RelatedEntity!
-  manyRelated: [ManyRelatedEntity!]!
+  relateds: [RelatedEntity!]!
+  manyRelateds: [ManyRelatedEntity!]!
 }
 
 type Mutation {

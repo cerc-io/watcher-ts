@@ -22,4 +22,7 @@ export class RelatedEntity {
 
   @Column('bigint', { transformer: bigintArrayTransformer, array: true })
   bigIntArray!: bigint[];
+
+  @Column('varchar')
+  example!: string;
 }

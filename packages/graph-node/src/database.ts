@@ -106,27 +106,37 @@ export class Database {
 
       // TODO: Implement query for nested relations.
       Object.entries(relations).forEach(([field, data], index) => {
-        const { entity: relatedEntity, isArray } = data;
+        const { entity: relatedEntity, isArray, isDerived, field: derivedField } = data;
         const alias = `relatedEntity${index}`;
+        let condition: string;
+
+        if (isDerived) {
+          // For derived relational field.
+          condition = `${alias}.${derivedField} = entity.id AND ${alias}.block_number <= entity.block_number`;
+        } else {
+          if (isArray) {
+            // For one to many relational field.
+            condition = `${alias}.id IN (SELECT unnest(entity.${field})) AND ${alias}.block_number <= entity.block_number`;
+          } else {
+            // For one to one relational field.
+            condition = `entity.${field} = ${alias}.id AND ${alias}.block_number <= entity.block_number`;
+          }
+        }
 
         if (isArray) {
-          // For one to many relational field.
           selectQueryBuilder = selectQueryBuilder.leftJoinAndMapMany(
-              `entity.${field}`,
-              relatedEntity,
-              alias,
-              `${alias}.id IN (SELECT unnest(entity.${field})) AND ${alias}.block_number <= entity.block_number`
-          )
-            .addOrderBy(`${alias}.block_number`, 'DESC');
+            `entity.${field}`,
+            relatedEntity,
+            alias,
+            condition
+          ).addOrderBy(`${alias}.block_number`, 'DESC');
         } else {
-          // For one to one relational field.
           selectQueryBuilder = selectQueryBuilder.leftJoinAndMapOne(
-              `entity.${field}`,
-              relatedEntity,
-              alias,
-              `entity.${field} = ${alias}.id AND ${alias}.block_number <= entity.block_number`
-          )
-            .addOrderBy(`${alias}.block_number`, 'DESC');
+            `entity.${field}`,
+            relatedEntity,
+            alias,
+            condition
+          ).addOrderBy(`${alias}.block_number`, 'DESC');
         }
       });
 

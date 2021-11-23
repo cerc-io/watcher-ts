@@ -37,27 +37,27 @@ export function handleTest (event: Test): void {
   entity.paramEnum = 'choice1';
   entity.paramBigDecimal = BigDecimal.fromString('123');
 
-  let relatedEntity = RelatedEntity.load(event.params.param1);
+  let relatedEntity = RelatedEntity.load(entity.count.toString());
 
   if (!relatedEntity) {
-    relatedEntity = new RelatedEntity(event.params.param1);
+    relatedEntity = new RelatedEntity(entity.count.toString());
     relatedEntity.paramBigInt = BigInt.fromString('123');
   }
 
   const bigIntArray = relatedEntity.bigIntArray;
   bigIntArray.push(entity.count);
   relatedEntity.bigIntArray = bigIntArray;
+  relatedEntity.example = entity.id;
 
   relatedEntity.save();
-  entity.related = relatedEntity.id;
 
   const manyRelatedEntity = new ManyRelatedEntity(event.transaction.hash.toHexString());
   manyRelatedEntity.count = entity.count;
   manyRelatedEntity.save();
 
-  const manyRelated = entity.manyRelated;
-  manyRelated.push(manyRelatedEntity.id);
-  entity.manyRelated = manyRelated;
+  const manyRelateds = entity.manyRelateds;
+  manyRelateds.push(manyRelatedEntity.id);
+  entity.manyRelateds = manyRelateds;
 
   // Entities can be written to the store with `.save()`
   entity.save();

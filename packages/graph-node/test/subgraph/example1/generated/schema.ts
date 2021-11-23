@@ -64,6 +64,23 @@ export class RelatedEntity extends Entity {
   set bigIntArray(value: Array<BigInt>) {
     this.set("bigIntArray", Value.fromBigIntArray(value));
   }
+
+  get example(): string | null {
+    let value = this.get("example");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set example(value: string | null) {
+    if (!value) {
+      this.unset("example");
+    } else {
+      this.set("example", Value.fromString(<string>value));
+    }
+  }
 }
 
 export class ExampleEntity extends Entity {
@@ -78,8 +95,7 @@ export class ExampleEntity extends Entity {
     this.set("paramBytes", Value.fromBytes(Bytes.empty()));
     this.set("paramEnum", Value.fromString(""));
     this.set("paramBigDecimal", Value.fromBigDecimal(BigDecimal.zero()));
-    this.set("related", Value.fromString(""));
-    this.set("manyRelated", Value.fromStringArray(new Array(0)));
+    this.set("manyRelateds", Value.fromStringArray(new Array(0)));
   }
 
   save(): void {
@@ -171,22 +187,22 @@ export class ExampleEntity extends Entity {
     this.set("paramBigDecimal", Value.fromBigDecimal(value));
   }
 
-  get related(): string {
-    let value = this.get("related");
-    return value!.toString();
-  }
-
-  set related(value: string) {
-    this.set("related", Value.fromString(value));
-  }
-
-  get manyRelated(): Array<string> {
-    let value = this.get("manyRelated");
+  get relateds(): Array<string> {
+    let value = this.get("relateds");
     return value!.toStringArray();
   }
 
-  set manyRelated(value: Array<string>) {
-    this.set("manyRelated", Value.fromStringArray(value));
+  set relateds(value: Array<string>) {
+    this.set("relateds", Value.fromStringArray(value));
+  }
+
+  get manyRelateds(): Array<string> {
+    let value = this.get("manyRelateds");
+    return value!.toStringArray();
+  }
+
+  set manyRelateds(value: Array<string>) {
+    this.set("manyRelateds", Value.fromStringArray(value));
   }
 }
 
