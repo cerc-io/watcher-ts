@@ -138,18 +138,27 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
 
-          if (!Array.isArray(result)) {
+          // TODO: Check for function overloading.
+          // Using function signature does not work.
+          const { outputs } = contract.interface.getFunction(functionName);
+          assert(outputs);
+
+          // If method returns a single value, ethers returns it directly compared to returning multiple values in an array.
+          if (outputs.length === 1) {
+            // Put result in an array to map with the outputs array from abi.
             result = [result];
           }
 
-          // TODO: Check for function overloading.
-          // Using function signature does not work.
-          const outputs = contract.interface.getFunction(functionName).outputs;
-
-          const resultPtrArrayPromise = result.map(async (value: any, index: number) => {
-            assert(outputs);
-            return toEthereumValue(exports, value, outputs[index].type);
-          });
+          const resultPtrArrayPromise = outputs.map(
+            async (
+              output: any,
+              index: number
+            ) => toEthereumValue(
+              exports,
+              output,
+              result[index]
+            )
+          );
 
           const resultPtrArray: any[] = await Promise.all(resultPtrArrayPromise);
           const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
