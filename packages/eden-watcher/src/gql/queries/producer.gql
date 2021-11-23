@@ -1,5 +1,5 @@
-query producer($id: String!, $blockHash: String!){
-    producer(id: $id, blockHash: $blockHash){
+query producer($id: String!, $blockHash: Bytes!){
+    producer(id: $id, block: { hash: $blockHash }){
         id
         active
         rewardCollector
