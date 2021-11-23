@@ -341,12 +341,6 @@ export class Indexer implements IndexerInterface {
   }
 
   async createCheckpoint (contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
-    const syncStatus = await this.getSyncStatus();
-    assert(syncStatus);
-
-    const hookStatus = await this.getHookStatus();
-    assert(hookStatus);
-
     // Getting the current block.
     let currentBlock;
 
@@ -354,10 +348,7 @@ export class Indexer implements IndexerInterface {
       currentBlock = await this.getBlockProgress(blockHash);
     } else {
       // In case of empty blockHash from checkpoint CLI, get the latest processed block from hookStatus for the checkpoint.
-      const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
-      assert(blocksAtHeight.length === 1);
-
-      currentBlock = blocksAtHeight[0];
+      currentBlock = await this.getLatestHooksProcessedBlock();
     }
 
     assert(currentBlock);
@@ -376,8 +367,8 @@ export class Indexer implements IndexerInterface {
     // Make sure the block is marked complete.
     assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
 
-    // Make sure the block is in the pruned region.
-    assert(currentBlock.blockNumber <= syncStatus.latestCanonicalBlockNumber, 'Block for a checkpoint should be in the pruned region');
+    const hookStatus = await this.getHookStatus();
+    assert(hookStatus);
 
     // Make sure the hooks have been processed for the block.
     assert(currentBlock.blockNumber <= hookStatus.latestProcessedBlockNumber, 'Block for a checkpoint should have hooks processed');
@@ -662,11 +653,26 @@ export class Indexer implements IndexerInterface {
     return res;
   }
 
-  async getLatestCanonicalBlock (): Promise<BlockProgress | undefined> {
+  async getLatestCanonicalBlock (): Promise<BlockProgress> {
     const syncStatus = await this.getSyncStatus();
     assert(syncStatus);
 
-    return this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    const latestCanonicalBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    assert(latestCanonicalBlock);
+
+    return latestCanonicalBlock;
+  }
+
+  async getLatestHooksProcessedBlock (): Promise<BlockProgress> {
+    const hookStatus = await this.getHookStatus();
+    assert(hookStatus);
+
+    const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
+
+    // There can exactly one block at hookStatus.latestProcessedBlockNumber height.
+    assert(blocksAtHeight.length === 1);
+
+    return blocksAtHeight[0];
   }
 
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {
