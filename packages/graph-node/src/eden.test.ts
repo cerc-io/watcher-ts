@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { ethers } from 'ethers';
+import { ethers, utils } from 'ethers';
 import path from 'path';
 import chai from 'chai';
 import spies from 'chai-spies';
@@ -65,6 +65,8 @@ describe('eden wasm loader tests', async () => {
       }
     };
 
+    const contractInterface = new utils.Interface(edenNetworkAbi);
+
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
       ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
@@ -78,43 +80,17 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotClaimedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'slot',
-          kind: 'uint8',
-          value: 0
-        },
-        {
-          name: 'owner',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'delegate',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'newBidAmount',
-          kind: 'uint128',
-          value: BigInt(1)
-        },
-        {
-          name: 'oldBidAmount',
-          kind: 'uint128',
-          value: BigInt(1)
-        },
-        {
-          name: 'taxNumerator',
-          kind: 'uint16',
-          value: 1
-        },
-        {
-          name: 'taxDenominator',
-          kind: 'uint16',
-          value: 1
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('SlotClaimed(indexed uint8,indexed address,indexed address,uint128,uint128,uint16,uint16)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        slot: 0,
+        owner: ZERO_ADDRESS,
+        delegate: ZERO_ADDRESS,
+        newBidAmount: BigInt(1),
+        oldBidAmount: BigInt(1),
+        taxNumerator: 1,
+        taxDenominator: 1
+      };
 
       // Create an ethereum event SlotClaimedEvent to be passed to handler.
       const slotClaimedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -128,28 +104,14 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotDelegateUpdatedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'slot',
-          kind: 'uint8',
-          value: 0
-        },
-        {
-          name: 'owner',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'newDelegate',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'oldDelegate',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('SlotDelegateUpdated(indexed uint8,indexed address,indexed address,address)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        slot: 0,
+        owner: ZERO_ADDRESS,
+        newDelegate: ZERO_ADDRESS,
+        oldDelegate: ZERO_ADDRESS
+      };
 
       // Create an ethereum event SlotDelegateUpdatedEvent to be passed to handler.
       const slotClaimedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -163,18 +125,12 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy StakeEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'staker',
-          kind: 'address',
-          value: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc'
-        },
-        {
-          name: 'stakeAmount',
-          kind: 'uint256',
-          value: BigInt(1)
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('Stake(indexed address,uint256)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        staker: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
+        stakeAmount: BigInt(1)
+      };
 
       // Create an ethereum event StakeEvent to be passed to handler.
       const stakeEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -188,18 +144,12 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy UnstakeEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'staker',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'unstakedAmount',
-          kind: 'uin256',
-          value: BigInt(1)
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('Unstake(indexed address,uint256)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        staker: ZERO_ADDRESS,
+        unstakedAmount: BigInt(1)
+      };
 
       // Create an ethereum event UnstakeEvent to be passed to handler.
       const unstakeEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -224,6 +174,8 @@ describe('eden wasm loader tests', async () => {
       }
     };
 
+    const contractInterface = new utils.Interface(merkleDistributorAbi);
+
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
       ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
@@ -237,28 +189,14 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy ClaimedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'index',
-          kind: 'uint256',
-          value: BigInt(1)
-        },
-        {
-          name: 'totalEarned',
-          kind: 'uint256',
-          value: BigInt(1)
-        },
-        {
-          name: 'account',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'claimed',
-          kind: 'uint256',
-          value: BigInt(1)
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('Claimed(uint256,uint256,indexed address,uint256)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        index: BigInt(1),
+        totalEarned: BigInt(1),
+        account: ZERO_ADDRESS,
+        claimed: BigInt(1)
+      };
 
       // Create an ethereum event ClaimedEvent to be passed to handler.
       const claimedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -272,18 +210,12 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlashedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'account',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'slashed',
-          kind: 'uint256',
-          value: BigInt(1)
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('Slashed(indexed address,uint256)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        account: ZERO_ADDRESS,
+        slashed: BigInt(1)
+      };
 
       // Create an ethereum event SlashedEvent to be passed to handler.
       const slashedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -297,23 +229,13 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy MerkleRootUpdatedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'merkleRoot',
-          kind: 'bytes32',
-          value: ethers.utils.hexlify(ethers.utils.randomBytes(32))
-        },
-        {
-          name: 'distributionNumber',
-          kind: 'uint256',
-          value: BigInt(1)
-        },
-        {
-          name: 'metadataURI',
-          kind: 'string',
-          value: 'abc'
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('MerkleRootUpdated(bytes32,uint256,string)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        merkleRoot: ethers.utils.hexlify(ethers.utils.randomBytes(32)),
+        distributionNumber: BigInt(1),
+        metadataURI: 'abc'
+      };
 
       // Create an ethereum event MerkleRootUpdatedEvent to be passed to handler.
       const merkleRootUpdatedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -327,23 +249,13 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy AccountUpdatedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'account',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'totalClaimed',
-          kind: 'uint256',
-          value: BigInt(1)
-        },
-        {
-          name: 'totalSlashed',
-          kind: 'uint256',
-          value: BigInt(1)
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('AccountUpdated(indexed address,uint256,uint256)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        account: ZERO_ADDRESS,
+        totalClaimed: BigInt(1),
+        totalSlashed: BigInt(1)
+      };
 
       // Create an ethereum event AccountUpdatedEvent to be passed to handler.
       const accountUpdatedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -368,6 +280,8 @@ describe('eden wasm loader tests', async () => {
       }
     };
 
+    const contractInterface = new utils.Interface(distributorGovernanceAbi);
+
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
       ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
@@ -381,13 +295,9 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerAddedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'produces',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('BlockProducerAdded(indexed address)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = { produces: ZERO_ADDRESS };
 
       // Create an ethereum event BlockProducerAddedEvent to be passed to handler.
       const blockProducerAddedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -401,13 +311,9 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRemovedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'producer',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('BlockProducerRemoved(indexed address)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = { producer: ZERO_ADDRESS };
 
       // Create an ethereum event BlockProducerRemovedEvent to be passed to handler.
       const blockProducerRemovedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -421,23 +327,13 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRewardCollectorChangedEvent params.
-      dummyEventData.eventParams = [
-        {
-          name: 'producer',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'collector',
-          kind: 'address',
-          value: ZERO_ADDRESS
-        },
-        {
-          name: 'metadataURI',
-          kind: 'string',
-          value: 'abc'
-        }
-      ];
+      const eventFragment = contractInterface.getEvent('BlockProducerRewardCollectorChanged(indexed address,indexed address)');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {
+        producer: ZERO_ADDRESS,
+        collector: ZERO_ADDRESS,
+        metadataURI: 'abc'
+      };
 
       // Create an ethereum event BlockProducerRewardCollectorChangedEvent to be passed to handler.
       const blockProducerRewardCollectorChangedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -450,7 +346,9 @@ describe('eden wasm loader tests', async () => {
         rewardScheduleChanged
       } = exports;
 
-      dummyEventData.eventParams = [];
+      const eventFragment = contractInterface.getEvent('RewardScheduleChanged()');
+      dummyEventData.inputs = eventFragment.inputs;
+      dummyEventData.event = {};
 
       // Create an ethereum event RewardScheduleChangedEvent to be passed to handler.
       const rewardScheduleChangedEvent = await createEvent(exports, contractAddress, dummyEventData);
