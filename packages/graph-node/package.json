@@ -32,13 +32,25 @@
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
     "test": "yarn asbuild:debug && mocha src/**/*.test.ts",
     "build:example": "cd test/subgraph/example1 && yarn && yarn build",
-    "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts"
+    "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts",
+    "compare-entity": "DEBUG=vulcanize:* ts-node src/cli/compare/compare-entity.ts"
   },
   "dependencies": {
+    "@apollo/client": "^3.3.19",
+    "@types/json-diff": "^0.5.2",
     "@vulcanize/assemblyscript": "0.0.1",
+    "@vulcanize/ipld-eth-client": "^0.1.0",
     "@vulcanize/util": "^0.1.0",
+    "debug": "^4.3.1",
+    "decimal.js": "^10.3.1",
+    "fs-extra": "^10.0.0",
     "js-yaml": "^4.1.0",
+    "json-bigint": "^1.0.0",
+    "json-diff": "^0.5.4",
+    "lodash": "^4.17.21",
+    "reflect-metadata": "^0.1.13",
+    "toml": "^3.0.0",
     "typeorm": "^0.2.32",
-    "decimal.js": "^10.3.1"
+    "yargs": "^17.0.1"
   }
 }

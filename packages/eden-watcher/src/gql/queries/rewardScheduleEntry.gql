@@ -1,5 +1,5 @@
-query rewardScheduleEntry($id: String!, $blockHash: String!){
-    rewardScheduleEntry(id: $id, blockHash: $blockHash){
+query rewardScheduleEntry($id: String!, $blockHash: Bytes!){
+    rewardScheduleEntry(id: $id, block: { hash: $blockHash }){
         id
         startTime
         epochDuration

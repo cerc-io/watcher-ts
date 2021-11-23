@@ -1,5 +1,5 @@
-query rewardSchedule($id: String!, $blockHash: String!){
-    rewardSchedule(id: $id, blockHash: $blockHash){
+query rewardSchedule($id: String!, $blockHash: Bytes!){
+    rewardSchedule(id: $id, block: { hash: $blockHash }){
         id
         rewardScheduleEntries{
             id
@@ -11,88 +11,17 @@ query rewardSchedule($id: String!, $blockHash: String!){
             id
             finalized
             epochNumber
-            startBlock{
-                cid
-                hash
-                number
-                timestamp
-                parentHash
-            }
-            endBlock{
-                cid
-                hash
-                number
-                timestamp
-                parentHash
-            }
             producerBlocks
             allBlocks
             producerBlocksRatio
-            producerRewards{
-                id
-                address
-                epoch{
-                    id
-                    finalized
-                    epochNumber
-                    startBlock{
-                        cid
-                        hash
-                        number
-                        timestamp
-                        parentHash
-                    }
-                    endBlock{
-                        cid
-                        hash
-                        number
-                        timestamp
-                        parentHash
-                    }
-                    producerBlocks
-                    allBlocks
-                    producerBlocksRatio
-                    producerRewards{
-                        id
-                        address
-                        totalRewards
-                        blocksProduced
-                        blocksProducedRatio
-                    }
-                }
-                totalRewards
-                blocksProduced
-                blocksProducedRatio
-            }
         }
         pendingEpoch{
             id
             finalized
             epochNumber
-            startBlock{
-                cid
-                hash
-                number
-                timestamp
-                parentHash
-            }
-            endBlock{
-                cid
-                hash
-                number
-                timestamp
-                parentHash
-            }
             producerBlocks
             allBlocks
             producerBlocksRatio
-            producerRewards{
-                id
-                address
-                totalRewards
-                blocksProduced
-                blocksProducedRatio
-            }
         }
         activeRewardScheduleEntry{
             id

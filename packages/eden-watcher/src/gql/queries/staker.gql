@@ -1,5 +1,5 @@
-query staker($id: String!, $blockHash: String!){
-    staker(id: $id, blockHash: $blockHash){
+query staker($id: String!, $blockHash: Bytes!){
+    staker(id: $id, block: { hash: $blockHash }){
         id
         staked
         rank

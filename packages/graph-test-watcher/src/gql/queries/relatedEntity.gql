@@ -1,0 +1,7 @@
+query relatedEntity($id: String!, $blockHash: Bytes!){
+    relatedEntity(id: $id, block: { hash: $blockHash }){
+        id
+        paramBigInt
+        bigIntArray
+    }
+}

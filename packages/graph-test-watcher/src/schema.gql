@@ -4,6 +4,11 @@ scalar Bytes
 
 scalar BigDecimal
 
+input Block_height {
+  hash: Bytes
+  number: Int
+}
+
 type Proof {
   data: String!
 }
@@ -72,9 +77,9 @@ type Query {
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   getMethod(blockHash: String!, contractAddress: String!): ResultString!
   _test(blockHash: String!, contractAddress: String!): ResultBigInt!
-  relatedEntity(id: String!, blockHash: String!): RelatedEntity!
-  exampleEntity(id: String!, blockHash: String!): ExampleEntity!
-  manyRelatedEntity(id: String!, blockHash: String!): ManyRelatedEntity!
+  relatedEntity(id: String!, block: Block_height): RelatedEntity!
+  exampleEntity(id: String!, block: Block_height): ExampleEntity!
+  manyRelatedEntity(id: String!, block: Block_height): ManyRelatedEntity!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }

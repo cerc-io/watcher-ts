@@ -1,5 +1,5 @@
-query network($id: String!, $blockHash: String!){
-    network(id: $id, blockHash: $blockHash){
+query network($id: String!, $blockHash: Bytes!){
+    network(id: $id, block: { hash: $blockHash }){
         id
         slot0{
             id
@@ -10,34 +10,6 @@ query network($id: String!, $blockHash: String!){
             startTime
             expirationTime
             taxRatePerDay
-            claims{
-                id
-                slot{
-                    id
-                    owner
-                    delegate
-                    winningBid
-                    oldBid
-                    startTime
-                    expirationTime
-                    taxRatePerDay
-                    claims{
-                        id
-                        owner
-                        winningBid
-                        oldBid
-                        startTime
-                        expirationTime
-                        taxRatePerDay
-                    }
-                }
-                owner
-                winningBid
-                oldBid
-                startTime
-                expirationTime
-                taxRatePerDay
-            }
         }
         slot1{
             id
@@ -48,15 +20,6 @@ query network($id: String!, $blockHash: String!){
             startTime
             expirationTime
             taxRatePerDay
-            claims{
-                id
-                owner
-                winningBid
-                oldBid
-                startTime
-                expirationTime
-                taxRatePerDay
-            }
         }
         slot2{
             id
@@ -67,15 +30,6 @@ query network($id: String!, $blockHash: String!){
             startTime
             expirationTime
             taxRatePerDay
-            claims{
-                id
-                owner
-                winningBid
-                oldBid
-                startTime
-                expirationTime
-                taxRatePerDay
-            }
         }
         stakers{
             id
