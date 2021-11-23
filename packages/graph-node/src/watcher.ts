@@ -133,17 +133,10 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const eventParams = eventFragment.inputs.map((input) => {
-      return {
-        name: input.name,
-        value: event[input.name],
-        kind: input.type
-      };
-    });
-
     const data = {
-      eventParams: eventParams,
       block: blockData,
+      inputs: eventFragment.inputs,
+      event,
       tx,
       eventIndex
     };

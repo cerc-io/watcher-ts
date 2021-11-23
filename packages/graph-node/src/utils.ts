@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
@@ -10,12 +10,6 @@ import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { TypeId, EthereumValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
-
-interface EventParam {
-  name: string;
-  value: any;
-  kind: string;
-}
 
 interface Transaction {
   hash: string;
@@ -42,7 +36,8 @@ export interface Block {
 export interface EventData {
   block: Block;
   tx: Transaction;
-  eventParams: EventParam[];
+  inputs: utils.ParamType[];
+  event: { [key: string]: any }
   eventIndex: number;
 }
 
@@ -102,7 +97,7 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
  * @param type
  * @returns
  */
-export const toEthereumValue = async (instanceExports: any, value: any, type: string): Promise<any> => {
+export const toEthereumValue = async (instanceExports: any, output: utils.ParamType, value: any): Promise<any> => {
   const {
     __newString,
     __newArray,
@@ -114,20 +109,26 @@ export const toEthereumValue = async (instanceExports: any, value: any, type: st
     id_of_type: getIdOfType
   } = instanceExports;
 
+  const { type } = output;
+
+  // For tuple type.
   if (type === 'tuple') {
     const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
 
-    const ethereumValuePromises = value.map(async (componentValue: any) => {
-      const valueStringPtr = await __newString(componentValue.toString());
-      const bigInt = await BigInt.fromString(valueStringPtr);
-      return ethereum.Value.fromUnsignedBigInt(bigInt);
-    });
+    // Get values for struct elements.
+    const ethereumValuePromises = output.components
+      .map(
+        async (component: utils.ParamType) => toEthereumValue(
+          instanceExports,
+          component,
+          value[component.name]
+        )
+      );
 
     const ethereumValues: any[] = await Promise.all(ethereumValuePromises);
     const ethereumValuesArrayPtr = await __newArray(arrayEthereumValueId, ethereumValues);
     const ethereumTuple = await ethereum.Tuple.wrap(ethereumValuesArrayPtr);
 
-    // return ethereumTuple;
     return ethereum.Value.fromTuple(ethereumTuple);
   }
 
@@ -182,7 +183,8 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const {
     tx,
     eventIndex,
-    eventParams: eventParamsData,
+    inputs,
+    event,
     block: blockData
   } = eventData;
 
@@ -233,10 +235,10 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     txinputPtr
   );
 
-  const eventParamArrayPromise = eventParamsData.map(async data => {
-    const { name, value, kind } = data;
+  const eventParamArrayPromise = inputs.map(async input => {
+    const { name } = input;
 
-    const ethValue = await toEthereumValue(instanceExports, value, kind);
+    const ethValue = await toEthereumValue(instanceExports, input, event[name]);
     const namePtr = await __newString(name);
 
     return ethereum.EventParam.__new(
