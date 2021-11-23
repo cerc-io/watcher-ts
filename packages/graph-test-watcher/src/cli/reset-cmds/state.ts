@@ -16,6 +16,9 @@ import { BlockProgress } from '../../entity/BlockProgress';
 
 import { GetMethod } from '../../entity/GetMethod';
 import { _Test } from '../../entity/_Test';
+import { ExampleEntity } from '../../entity/ExampleEntity';
+import { RelatedEntity } from '../../entity/RelatedEntity';
+import { ManyRelatedEntity } from '../../entity/ManyRelatedEntity';
 
 const log = debug('vulcanize:reset-state');
 
@@ -62,7 +65,7 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const entities = [BlockProgress, GetMethod, _Test];
+    const entities = [BlockProgress, GetMethod, _Test, ExampleEntity, ManyRelatedEntity, RelatedEntity];
 
     const removeEntitiesPromise = entities.map(async entityClass => {
       return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });
