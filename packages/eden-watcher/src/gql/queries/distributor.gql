@@ -1,11 +1,8 @@
-query distributor($id: String!, $blockHash: String!){
-    distributor(id: $id, blockHash: $blockHash){
+query distributor($id: String!, $blockHash: Bytes!){
+    distributor(id: $id, block: { hash: $blockHash }){
         id
         currentDistribution{
             id
-            distributor{
-                id
-            }
             timestamp
             distributionNumber
             merkleRoot

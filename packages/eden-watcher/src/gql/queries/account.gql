@@ -1,5 +1,5 @@
-query account($id: String!, $blockHash: String!){
-    account(id: $id, blockHash: $blockHash){
+query account($id: String!, $blockHash: Bytes!){
+    account(id: $id, block: { hash: $blockHash }){
         id
         totalClaimed
         totalSlashed
@@ -7,23 +7,13 @@ query account($id: String!, $blockHash: String!){
             id
             timestamp
             index
-            account{
-                id
-                totalClaimed
-                totalSlashed
-                slashes{
-                    id
-                    timestamp
-                    account{
-                        id
-                        totalClaimed
-                        totalSlashed
-                    }
-                    slashed
-                }
-            }
             totalEarned
             claimed
+        }
+        slashes{
+            id
+            timestamp
+            slashed
         }
     }
 }

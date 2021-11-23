@@ -547,10 +547,10 @@ export class Indexer implements IndexerInterface {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<any> {
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash?: string): Promise<any> {
     const relations = this._relationsMap.get(entity) || {};
 
-    const data = await this._graphWatcher.getEntity(entity, id, blockHash, relations);
+    const data = await this._graphWatcher.getEntity(entity, id, relations, blockHash);
 
     return data;
   }

@@ -1,5 +1,5 @@
-query producerRewardCollectorChange($id: String!, $blockHash: String!){
-    producerRewardCollectorChange(id: $id, blockHash: $blockHash){
+query producerRewardCollectorChange($id: String!, $blockHash: Bytes!){
+    producerRewardCollectorChange(id: $id, block: { hash: $blockHash }){
         id
         blockNumber
         producer

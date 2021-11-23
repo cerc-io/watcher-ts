@@ -71,7 +71,7 @@
       * `entity-id`(alias: `i`): Entity Id (required).
       * `raw-json`(alias: `j`): Whether to print out a raw diff object (default: `false`).
     
-    * Example:
+      Example:
 
         ```bash
         yarn compare-entity --config-file environments/compare-cli-config.toml --query-name exampleEntity --block-hash 0xceed7ee9d3de97c99db12e42433cae9115bb311c516558539fb7114fa17d545b --entity-id 0x2886bae64814bd959aec4282f86f3a97bf1e16e4111b39fd7bdd592b516c66c6

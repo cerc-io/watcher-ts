@@ -1,21 +1,43 @@
-query epoch($id: String!, $blockHash: String!){
-    epoch(id: $id, blockHash: $blockHash){
+query epoch($id: String!, $blockHash: Bytes!){
+    epoch(id: $id, block: { hash: $blockHash }){
         id
         finalized
         epochNumber
         startBlock{
-            cid
+            id
+            fromActiveProducer
             hash
-            number
-            timestamp
             parentHash
+            unclesHash
+            author
+            stateRoot
+            transactionsRoot
+            receiptsRoot
+            number
+            gasUsed
+            gasLimit
+            timestamp
+            difficulty
+            totalDifficulty
+            size
         }
         endBlock{
-            cid
+            id
+            fromActiveProducer
             hash
-            number
-            timestamp
             parentHash
+            unclesHash
+            author
+            stateRoot
+            transactionsRoot
+            receiptsRoot
+            number
+            gasUsed
+            gasLimit
+            timestamp
+            difficulty
+            totalDifficulty
+            size
         }
         producerBlocks
         allBlocks
@@ -23,14 +45,6 @@ query epoch($id: String!, $blockHash: String!){
         producerRewards{
             id
             address
-            epoch{
-                id
-                finalized
-                epochNumber
-                producerBlocks
-                allBlocks
-                producerBlocksRatio
-            }
             totalRewards
             blocksProduced
             blocksProducedRatio
