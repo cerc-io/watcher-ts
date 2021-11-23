@@ -62,6 +62,22 @@ export function handleTest (event: Test): void {
   // Entities can be written to the store with `.save()`
   entity.save();
 
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+
+  // Access functions by calling them.
+  const res1 = contract.try_addMethod(BigInt.fromString('10'), BigInt.fromString('20'));
+  if (res1.reverted) {
+    log.debug('Contract eth call reverted', []);
+  } else {
+    log.debug('Contract eth call result: {}', [res1.value.toString()]);
+  }
+
+  // Access functions by calling them.
+  const res = contract.structMethod(BigInt.fromString('1000'), BigInt.fromString('500'));
+
+  log.debug('Contract eth call result: {}', [res.bidAmount1.toString()]);
+
   // Note: If a handler doesn't require existing field values, it is faster
   // _not_ to load the entity from the store. Instead, create it fresh with
   // `new Entity(...)`, set the fields that should be updated and save the
