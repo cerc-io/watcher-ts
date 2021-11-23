@@ -4,6 +4,11 @@ scalar Bytes
 
 scalar BigDecimal
 
+input Block_height {
+  hash: Bytes
+  number: Int
+}
+
 type Proof {
   data: String!
 }
@@ -218,24 +223,24 @@ type ResultIPLDBlock {
 type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
-  producer(id: String!, blockHash: String!): Producer!
-  producerSet(id: String!, blockHash: String!): ProducerSet!
-  producerSetChange(id: String!, blockHash: String!): ProducerSetChange!
-  producerRewardCollectorChange(id: String!, blockHash: String!): ProducerRewardCollectorChange!
-  rewardScheduleEntry(id: String!, blockHash: String!): RewardScheduleEntry!
-  rewardSchedule(id: String!, blockHash: String!): RewardSchedule!
-  producerEpoch(id: String!, blockHash: String!): ProducerEpoch!
-  block(id: String!, blockHash: String!): Block!
-  epoch(id: String!, blockHash: String!): Epoch!
-  slotClaim(id: String!, blockHash: String!): SlotClaim!
-  slot(id: String!, blockHash: String!): Slot!
-  staker(id: String!, blockHash: String!): Staker!
-  network(id: String!, blockHash: String!): Network!
-  distributor(id: String!, blockHash: String!): Distributor!
-  distribution(id: String!, blockHash: String!): Distribution!
-  claim(id: String!, blockHash: String!): Claim!
-  slash(id: String!, blockHash: String!): Slash!
-  account(id: String!, blockHash: String!): Account!
+  producer(id: String!, block: Block_height): Producer!
+  producerSet(id: String!, block: Block_height): ProducerSet!
+  producerSetChange(id: String!, block: Block_height): ProducerSetChange!
+  producerRewardCollectorChange(id: String!, block: Block_height): ProducerRewardCollectorChange!
+  rewardScheduleEntry(id: String!, block: Block_height): RewardScheduleEntry!
+  rewardSchedule(id: String!, block: Block_height): RewardSchedule!
+  producerEpoch(id: String!, block: Block_height): ProducerEpoch!
+  block(id: String!, block: Block_height): Block!
+  epoch(id: String!, block: Block_height): Epoch!
+  slotClaim(id: String!, block: Block_height): SlotClaim!
+  slot(id: String!, block: Block_height): Slot!
+  staker(id: String!, block: Block_height): Staker!
+  network(id: String!, block: Block_height): Network!
+  distributor(id: String!, block: Block_height): Distributor!
+  distribution(id: String!, block: Block_height): Distribution!
+  claim(id: String!, block: Block_height): Claim!
+  slash(id: String!, block: Block_height): Slash!
+  account(id: String!, block: Block_height): Account!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }

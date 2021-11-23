@@ -40,7 +40,8 @@ export class Database {
     return this._baseDatabase.close();
   }
 
-  async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash: string): Promise<Entity | undefined> {
+  async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined> {
+    // TODO: Take block number as an optional argument
     const queryRunner = this._conn.createQueryRunner();
 
     try {
@@ -73,32 +74,35 @@ export class Database {
     }
   }
 
-  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, blockHash: string, relations: { [key: string]: any }): Promise<Entity | undefined> {
+  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, blockHash?: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
 
     try {
       const repo = queryRunner.manager.getRepository(entity);
 
-      // Fetching blockHash for previous entity in frothy region.
-      const { blockHash: entityblockHash, blockNumber, id: frothyId } = await this._baseDatabase.getFrothyEntity(queryRunner, repo, { blockHash, id });
-
       let selectQueryBuilder = repo.createQueryBuilder('entity');
 
-      if (frothyId) {
-        // If entity found in frothy region.
-        selectQueryBuilder = selectQueryBuilder.where('entity.block_hash = :entityblockHash', { entityblockHash });
-      } else {
-        // If entity not in frothy region.
-        const canonicalBlockNumber = blockNumber + 1;
+      selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id })
+        .orderBy('entity.block_number', 'DESC')
+        .limit(1);
 
-        selectQueryBuilder = selectQueryBuilder.innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
-          .where('block.is_pruned = false')
-          .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
-          .orderBy('entity.block_number', 'DESC')
-          .limit(1);
+      // Use blockHash if provided.
+      if (blockHash) {
+        // Fetching blockHash for previous entity in frothy region.
+        const { blockHash: entityblockHash, blockNumber, id: frothyId } = await this._baseDatabase.getFrothyEntity(queryRunner, repo, { blockHash, id });
+
+        if (frothyId) {
+          // If entity found in frothy region.
+          selectQueryBuilder = selectQueryBuilder.andWhere('entity.block_hash = :entityblockHash', { entityblockHash });
+        } else {
+          // If entity not in frothy region.
+          const canonicalBlockNumber = blockNumber + 1;
+
+          selectQueryBuilder = selectQueryBuilder.innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
+            .andWhere('block.is_pruned = false')
+            .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }
       }
-
-      selectQueryBuilder = selectQueryBuilder.andWhere('entity.id = :id', { id });
 
       // TODO: Implement query for nested relations.
       Object.entries(relations).forEach(([field, data], index) => {

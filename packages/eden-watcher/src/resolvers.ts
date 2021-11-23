@@ -6,6 +6,8 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
+import { BlockHeight } from '@vulcanize/util';
+
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
@@ -59,112 +61,112 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Query: {
-      producer: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('producer', id, blockHash);
+      producer: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('producer', id, block);
 
-        return indexer.getSubgraphEntity(Producer, id, blockHash);
+        return indexer.getSubgraphEntity(Producer, id, block.hash);
       },
 
-      producerSet: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('producerSet', id, blockHash);
+      producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('producerSet', id, block);
 
-        return indexer.getSubgraphEntity(ProducerSet, id, blockHash);
+        return indexer.getSubgraphEntity(ProducerSet, id, block.hash);
       },
 
-      producerSetChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('producerSetChange', id, blockHash);
+      producerSetChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('producerSetChange', id, block);
 
-        return indexer.getSubgraphEntity(ProducerSetChange, id, blockHash);
+        return indexer.getSubgraphEntity(ProducerSetChange, id, block.hash);
       },
 
-      producerRewardCollectorChange: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('producerRewardCollectorChange', id, blockHash);
+      producerRewardCollectorChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('producerRewardCollectorChange', id, block);
 
-        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, blockHash);
+        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block.hash);
       },
 
-      rewardScheduleEntry: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('rewardScheduleEntry', id, blockHash);
+      rewardScheduleEntry: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('rewardScheduleEntry', id, block);
 
-        return indexer.getSubgraphEntity(RewardScheduleEntry, id, blockHash);
+        return indexer.getSubgraphEntity(RewardScheduleEntry, id, block.hash);
       },
 
-      rewardSchedule: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('rewardSchedule', id, blockHash);
+      rewardSchedule: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('rewardSchedule', id, block);
 
-        return indexer.getSubgraphEntity(RewardSchedule, id, blockHash);
+        return indexer.getSubgraphEntity(RewardSchedule, id, block.hash);
       },
 
-      producerEpoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('producerEpoch', id, blockHash);
+      producerEpoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('producerEpoch', id, block);
 
-        return indexer.getSubgraphEntity(ProducerEpoch, id, blockHash);
+        return indexer.getSubgraphEntity(ProducerEpoch, id, block.hash);
       },
 
-      block: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('block', id, blockHash);
+      block: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('block', id, block);
 
-        return indexer.getSubgraphEntity(Block, id, blockHash);
+        return indexer.getSubgraphEntity(Block, id, block.hash);
       },
 
-      epoch: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('epoch', id, blockHash);
+      epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('epoch', id, block);
 
-        return indexer.getSubgraphEntity(Epoch, id, blockHash);
+        return indexer.getSubgraphEntity(Epoch, id, block.hash);
       },
 
-      slotClaim: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('slotClaim', id, blockHash);
+      slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('slotClaim', id, block);
 
-        return indexer.getSubgraphEntity(SlotClaim, id, blockHash);
+        return indexer.getSubgraphEntity(SlotClaim, id, block.hash);
       },
 
-      slot: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('slot', id, blockHash);
+      slot: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('slot', id, block);
 
-        return indexer.getSubgraphEntity(Slot, id, blockHash);
+        return indexer.getSubgraphEntity(Slot, id, block.hash);
       },
 
-      staker: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('staker', id, blockHash);
+      staker: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('staker', id, block);
 
-        return indexer.getSubgraphEntity(Staker, id, blockHash);
+        return indexer.getSubgraphEntity(Staker, id, block.hash);
       },
 
-      network: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('network', id, blockHash);
+      network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('network', id, block);
 
-        return indexer.getSubgraphEntity(Network, id, blockHash);
+        return indexer.getSubgraphEntity(Network, id, block.hash);
       },
 
-      distributor: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('distributor', id, blockHash);
+      distributor: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('distributor', id, block);
 
-        return indexer.getSubgraphEntity(Distributor, id, blockHash);
+        return indexer.getSubgraphEntity(Distributor, id, block.hash);
       },
 
-      distribution: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('distribution', id, blockHash);
+      distribution: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('distribution', id, block);
 
-        return indexer.getSubgraphEntity(Distribution, id, blockHash);
+        return indexer.getSubgraphEntity(Distribution, id, block.hash);
       },
 
-      claim: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('claim', id, blockHash);
+      claim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('claim', id, block);
 
-        return indexer.getSubgraphEntity(Claim, id, blockHash);
+        return indexer.getSubgraphEntity(Claim, id, block.hash);
       },
 
-      slash: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('slash', id, blockHash);
+      slash: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('slash', id, block);
 
-        return indexer.getSubgraphEntity(Slash, id, blockHash);
+        return indexer.getSubgraphEntity(Slash, id, block.hash);
       },
 
-      account: async (_: any, { id, blockHash }: { id: string, blockHash: string }) => {
-        log('account', id, blockHash);
+      account: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('account', id, block);
 
-        return indexer.getSubgraphEntity(Account, id, blockHash);
+        return indexer.getSubgraphEntity(Account, id, block.hash);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {

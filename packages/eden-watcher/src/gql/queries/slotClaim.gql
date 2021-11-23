@@ -1,5 +1,5 @@
-query slotClaim($id: String!, $blockHash: String!){
-    slotClaim(id: $id, blockHash: $blockHash){
+query slotClaim($id: String!, $blockHash: Bytes!){
+    slotClaim(id: $id, block: { hash: $blockHash }){
         id
         slot{
             id
@@ -10,25 +10,6 @@ query slotClaim($id: String!, $blockHash: String!){
             startTime
             expirationTime
             taxRatePerDay
-            claims{
-                id
-                slot{
-                    id
-                    owner
-                    delegate
-                    winningBid
-                    oldBid
-                    startTime
-                    expirationTime
-                    taxRatePerDay
-                }
-                owner
-                winningBid
-                oldBid
-                startTime
-                expirationTime
-                taxRatePerDay
-            }
         }
         owner
         winningBid

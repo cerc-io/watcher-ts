@@ -1,0 +1,20 @@
+query block($id: String!, $blockHash: Bytes!){
+    block(id: $id, block: { hash: $blockHash }){
+        id
+        fromActiveProducer
+        hash
+        parentHash
+        unclesHash
+        author
+        stateRoot
+        transactionsRoot
+        receiptsRoot
+        number
+        gasUsed
+        gasLimit
+        timestamp
+        difficulty
+        totalDifficulty
+        size
+    }
+}
