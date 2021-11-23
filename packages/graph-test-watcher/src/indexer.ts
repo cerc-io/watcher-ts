@@ -324,16 +324,18 @@ export class Indexer implements IndexerInterface {
     const checkpointBlockHash = await this.createCheckpoint(contractAddress, blockHash);
     assert(checkpointBlockHash);
 
-    const block = await this.getBlockProgress(checkpointBlockHash);
-    const checkpointIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind: 'checkpoint' });
+    // Push checkpoint to IPFS if configured.
+    if (this.isIPFSConfigured()) {
+      const block = await this.getBlockProgress(checkpointBlockHash);
+      const checkpointIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind: 'checkpoint' });
 
-    // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
-    assert(checkpointIPLDBlocks.length <= 1);
-    const checkpointIPLDBlock = checkpointIPLDBlocks[0];
+      // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
+      assert(checkpointIPLDBlocks.length <= 1);
+      const checkpointIPLDBlock = checkpointIPLDBlocks[0];
 
-    const checkpointData = this.getIPLDData(checkpointIPLDBlock);
-
-    await this.pushToIPFS(checkpointData);
+      const checkpointData = this.getIPLDData(checkpointIPLDBlock);
+      await this.pushToIPFS(checkpointData);
+    }
 
     return checkpointBlockHash;
   }
@@ -342,14 +344,20 @@ export class Indexer implements IndexerInterface {
     const syncStatus = await this.getSyncStatus();
     assert(syncStatus);
 
+    const hookStatus = await this.getHookStatus();
+    assert(hookStatus);
+
     // Getting the current block.
     let currentBlock;
 
     if (blockHash) {
       currentBlock = await this.getBlockProgress(blockHash);
     } else {
-      // In case of empty blockHash from checkpoint CLI, get the latest canonical block for the checkpoint.
-      currentBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+      // In case of empty blockHash from checkpoint CLI, get the latest processed block from hookStatus for the checkpoint.
+      const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
+      assert(blocksAtHeight.length === 1);
+
+      currentBlock = blocksAtHeight[0];
     }
 
     assert(currentBlock);
@@ -370,6 +378,9 @@ export class Indexer implements IndexerInterface {
 
     // Make sure the block is in the pruned region.
     assert(currentBlock.blockNumber <= syncStatus.latestCanonicalBlockNumber, 'Block for a checkpoint should be in the pruned region');
+
+    // Make sure the hooks have been processed for the block.
+    assert(currentBlock.blockNumber <= hookStatus.latestProcessedBlockNumber, 'Block for a checkpoint should have hooks processed');
 
     // Fetch the latest checkpoint for the contract.
     const checkpointBlock = await this.getLatestIPLDBlock(contractAddress, 'checkpoint', currentBlock.blockNumber);
