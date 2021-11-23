@@ -6,7 +6,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
-import { ValueResult } from '@vulcanize/util';
+import { ValueResult, BlockHeight } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -57,22 +57,22 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer._test(blockHash, contractAddress);
       },
 
-      exampleEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ExampleEntity | undefined> => {
-        log('exampleEntity', id, blockHash);
+      relatedEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<RelatedEntity | undefined> => {
+        log('relatedEntity', id, block);
 
-        return indexer.getSubgraphEntity(ExampleEntity, id, blockHash);
+        return indexer.getSubgraphEntity(RelatedEntity, id, block.hash);
       },
 
-      relatedEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<RelatedEntity | undefined> => {
-        log('relatedEntity', id, blockHash);
+      manyRelatedEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<ManyRelatedEntity | undefined> => {
+        log('relatedEntity', id, block);
 
-        return indexer.getSubgraphEntity(RelatedEntity, id, blockHash);
+        return indexer.getSubgraphEntity(ManyRelatedEntity, id, block.hash);
       },
 
-      manyRelatedEntity: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<ManyRelatedEntity | undefined> => {
-        log('relatedEntity', id, blockHash);
+      exampleEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<ExampleEntity | undefined> => {
+        log('exampleEntity', id, block);
 
-        return indexer.getSubgraphEntity(ManyRelatedEntity, id, blockHash);
+        return indexer.getSubgraphEntity(ExampleEntity, id, block.hash);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
