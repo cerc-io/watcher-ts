@@ -5,8 +5,10 @@
 import path from 'path';
 import chai, { assert, expect } from 'chai';
 import spies from 'chai-spies';
+import { utils } from 'ethers';
 
 import { getDummyEventData, getTestDatabase } from '../test/utils';
+import abi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 import { instantiate } from './loader';
 import { createEvent, createBlock, Block } from './utils';
 import { Database } from './database';
@@ -66,18 +68,14 @@ describe('call handler in mapping code', () => {
     _start();
 
     // Create event params data.
-    dummyEventData.eventParams = [
-      {
-        name: 'param1',
-        value: 'abc',
-        kind: 'string'
-      },
-      {
-        name: 'param2',
-        value: BigInt(123),
-        kind: 'uint256'
-      }
-    ];
+    const contractInterface = new utils.Interface(abi);
+    const eventFragment = contractInterface.getEvent('Test(string,uint8)');
+    dummyEventData.inputs = eventFragment.inputs;
+
+    dummyEventData.event = {
+      param1: 'abc',
+      param2: BigInt(123)
+    };
 
     // Dummy contract address string.
     const contractAddress = '0xCA6D29232D1435D8198E3E5302495417dD073d61';
