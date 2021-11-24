@@ -1,0 +1,17 @@
+query blog($id: String!, $blockHash: Bytes!){
+    blog(id: $id, block: { hash: $blockHash }){
+        id
+        kind
+        reviews
+        isActive
+        author {
+            id
+            name
+        }
+        categories {
+            id
+            name
+            count
+        }
+    }
+}

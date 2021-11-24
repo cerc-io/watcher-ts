@@ -1,29 +1,29 @@
-enum EnumType {
-  choice1
-  choice2
+enum BlogKind {
+  short
+  long
 }
 
-type RelatedEntity @entity {
+type Blog @entity {
   id: ID!
-  paramBigInt: BigInt!
-  bigIntArray: [BigInt!]!
-  example: ExampleEntity
+  kind: BlogKind!
+  isActive: Boolean!
+  reviews: [BigInt!]!
+  author: Author!
+  categories: [Category!]!
 }
 
-type ExampleEntity @entity {
+type Author @entity {
   id: ID!
-  count: BigInt!
-  paramString: String! # string
+  blogCount: BigInt!
+  name: String! # string
+  rating: BigDecimal!
   paramInt: Int! # uint8
-  paramBoolean: Boolean!
   paramBytes: Bytes!
-  paramEnum: EnumType!
-  paramBigDecimal: BigDecimal!
-  relateds: [RelatedEntity!]! @derivedFrom(field: "example")
-  manyRelateds: [ManyRelatedEntity!]!
+  blogs: [Blog!]! @derivedFrom(field: "author")
 }
 
-type ManyRelatedEntity @entity {
+type Category @entity {
   id: ID!
+  name: String!
   count: BigInt!
 }

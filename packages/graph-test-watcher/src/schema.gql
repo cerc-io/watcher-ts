@@ -77,41 +77,41 @@ type Query {
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   getMethod(blockHash: String!, contractAddress: String!): ResultString!
   _test(blockHash: String!, contractAddress: String!): ResultBigInt!
-  relatedEntity(id: String!, block: Block_height): RelatedEntity!
-  exampleEntity(id: String!, block: Block_height): ExampleEntity!
-  manyRelatedEntity(id: String!, block: Block_height): ManyRelatedEntity!
+  blog(id: String!, block: Block_height): Blog!
+  author(id: String!, block: Block_height): Author!
+  category(id: String!, block: Block_height): Category!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
 }
 
-enum EnumType {
-  choice1
-  choice2
+enum BlogKind {
+  short
+  long
 }
 
-type RelatedEntity {
+type Blog {
   id: ID!
-  paramBigInt: BigInt!
-  bigIntArray: [BigInt!]!
-  example: ExampleEntity
+  kind: BlogKind!
+  isActive: Boolean!
+  reviews: [BigInt!]!
+  author: Author!
+  categories: [Category!]!
 }
 
-type ManyRelatedEntity {
-  id: ID!
-  count: BigInt!
-}
-
-type ExampleEntity {
+type Category {
   id: ID!
   count: BigInt!
-  paramString: String!
+  name: String!
+}
+
+type Author {
+  id: ID!
+  blogCount: BigInt!
+  name: String!
+  rating: BigDecimal!
   paramInt: Int!
-  paramBoolean: Boolean!
   paramBytes: Bytes!
-  paramEnum: EnumType!
-  paramBigDecimal: BigDecimal!
-  relateds: [RelatedEntity!]!
-  manyRelateds: [ManyRelatedEntity!]!
+  blogs: [Blog!]!
 }
 
 type Mutation {

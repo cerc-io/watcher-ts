@@ -74,7 +74,7 @@
       Example:
 
         ```bash
-        yarn compare-entity --config-file environments/compare-cli-config.toml --query-name exampleEntity --block-hash 0xceed7ee9d3de97c99db12e42433cae9115bb311c516558539fb7114fa17d545b --entity-id 0xdc7d7a8920c8eecc098da5b7522a5f31509b5bfc
+        yarn compare-entity --config-file environments/compare-cli-config.toml --query-name author --block-hash 0xceed7ee9d3de97c99db12e42433cae9115bb311c516558539fb7114fa17d545b --entity-id 0xdc7d7a8920c8eecc098da5b7522a5f31509b5bfc
         ```
 
   * The program will exit with code `1` if the query results are not equal.

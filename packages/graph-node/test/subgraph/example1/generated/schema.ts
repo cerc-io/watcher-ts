@@ -12,30 +12,33 @@ import {
   BigDecimal
 } from "@graphprotocol/graph-ts";
 
-export class RelatedEntity extends Entity {
+export class Blog extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
 
-    this.set("paramBigInt", Value.fromBigInt(BigInt.zero()));
-    this.set("bigIntArray", Value.fromBigIntArray(new Array(0)));
+    this.set("kind", Value.fromString(""));
+    this.set("isActive", Value.fromBoolean(false));
+    this.set("reviews", Value.fromBigIntArray(new Array(0)));
+    this.set("author", Value.fromString(""));
+    this.set("categories", Value.fromStringArray(new Array(0)));
   }
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save RelatedEntity entity without an ID");
+    assert(id != null, "Cannot save Blog entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        "Cannot save RelatedEntity entity with non-string ID. " +
+        "Cannot save Blog entity with non-string ID. " +
           'Considering using .toHex() to convert the "id" to a string.'
       );
-      store.set("RelatedEntity", id.toString(), this);
+      store.set("Blog", id.toString(), this);
     }
   }
 
-  static load(id: string): RelatedEntity | null {
-    return changetype<RelatedEntity | null>(store.get("RelatedEntity", id));
+  static load(id: string): Blog | null {
+    return changetype<Blog | null>(store.get("Blog", id));
   }
 
   get id(): string {
@@ -47,72 +50,79 @@ export class RelatedEntity extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get paramBigInt(): BigInt {
-    let value = this.get("paramBigInt");
-    return value!.toBigInt();
+  get kind(): string {
+    let value = this.get("kind");
+    return value!.toString();
   }
 
-  set paramBigInt(value: BigInt) {
-    this.set("paramBigInt", Value.fromBigInt(value));
+  set kind(value: string) {
+    this.set("kind", Value.fromString(value));
   }
 
-  get bigIntArray(): Array<BigInt> {
-    let value = this.get("bigIntArray");
+  get isActive(): boolean {
+    let value = this.get("isActive");
+    return value!.toBoolean();
+  }
+
+  set isActive(value: boolean) {
+    this.set("isActive", Value.fromBoolean(value));
+  }
+
+  get reviews(): Array<BigInt> {
+    let value = this.get("reviews");
     return value!.toBigIntArray();
   }
 
-  set bigIntArray(value: Array<BigInt>) {
-    this.set("bigIntArray", Value.fromBigIntArray(value));
+  set reviews(value: Array<BigInt>) {
+    this.set("reviews", Value.fromBigIntArray(value));
   }
 
-  get example(): string | null {
-    let value = this.get("example");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
+  get author(): string {
+    let value = this.get("author");
+    return value!.toString();
   }
 
-  set example(value: string | null) {
-    if (!value) {
-      this.unset("example");
-    } else {
-      this.set("example", Value.fromString(<string>value));
-    }
+  set author(value: string) {
+    this.set("author", Value.fromString(value));
+  }
+
+  get categories(): Array<string> {
+    let value = this.get("categories");
+    return value!.toStringArray();
+  }
+
+  set categories(value: Array<string>) {
+    this.set("categories", Value.fromStringArray(value));
   }
 }
 
-export class ExampleEntity extends Entity {
+export class Author extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
 
-    this.set("count", Value.fromBigInt(BigInt.zero()));
-    this.set("paramString", Value.fromString(""));
+    this.set("blogCount", Value.fromBigInt(BigInt.zero()));
+    this.set("name", Value.fromString(""));
+    this.set("rating", Value.fromBigDecimal(BigDecimal.zero()));
     this.set("paramInt", Value.fromI32(0));
-    this.set("paramBoolean", Value.fromBoolean(false));
     this.set("paramBytes", Value.fromBytes(Bytes.empty()));
-    this.set("paramEnum", Value.fromString(""));
-    this.set("paramBigDecimal", Value.fromBigDecimal(BigDecimal.zero()));
-    this.set("manyRelateds", Value.fromStringArray(new Array(0)));
   }
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save ExampleEntity entity without an ID");
+    assert(id != null, "Cannot save Author entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        "Cannot save ExampleEntity entity with non-string ID. " +
+        "Cannot save Author entity with non-string ID. " +
           'Considering using .toHex() to convert the "id" to a string.'
       );
-      store.set("ExampleEntity", id.toString(), this);
+      store.set("Author", id.toString(), this);
     }
   }
 
-  static load(id: string): ExampleEntity | null {
-    return changetype<ExampleEntity | null>(store.get("ExampleEntity", id));
+  static load(id: string): Author | null {
+    return changetype<Author | null>(store.get("Author", id));
   }
 
   get id(): string {
@@ -124,22 +134,31 @@ export class ExampleEntity extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get count(): BigInt {
-    let value = this.get("count");
+  get blogCount(): BigInt {
+    let value = this.get("blogCount");
     return value!.toBigInt();
   }
 
-  set count(value: BigInt) {
-    this.set("count", Value.fromBigInt(value));
+  set blogCount(value: BigInt) {
+    this.set("blogCount", Value.fromBigInt(value));
   }
 
-  get paramString(): string {
-    let value = this.get("paramString");
+  get name(): string {
+    let value = this.get("name");
     return value!.toString();
   }
 
-  set paramString(value: string) {
-    this.set("paramString", Value.fromString(value));
+  set name(value: string) {
+    this.set("name", Value.fromString(value));
+  }
+
+  get rating(): BigDecimal {
+    let value = this.get("rating");
+    return value!.toBigDecimal();
+  }
+
+  set rating(value: BigDecimal) {
+    this.set("rating", Value.fromBigDecimal(value));
   }
 
   get paramInt(): i32 {
@@ -151,15 +170,6 @@ export class ExampleEntity extends Entity {
     this.set("paramInt", Value.fromI32(value));
   }
 
-  get paramBoolean(): boolean {
-    let value = this.get("paramBoolean");
-    return value!.toBoolean();
-  }
-
-  set paramBoolean(value: boolean) {
-    this.set("paramBoolean", Value.fromBoolean(value));
-  }
-
   get paramBytes(): Bytes {
     let value = this.get("paramBytes");
     return value!.toBytes();
@@ -169,68 +179,40 @@ export class ExampleEntity extends Entity {
     this.set("paramBytes", Value.fromBytes(value));
   }
 
-  get paramEnum(): string {
-    let value = this.get("paramEnum");
-    return value!.toString();
-  }
-
-  set paramEnum(value: string) {
-    this.set("paramEnum", Value.fromString(value));
-  }
-
-  get paramBigDecimal(): BigDecimal {
-    let value = this.get("paramBigDecimal");
-    return value!.toBigDecimal();
-  }
-
-  set paramBigDecimal(value: BigDecimal) {
-    this.set("paramBigDecimal", Value.fromBigDecimal(value));
-  }
-
-  get relateds(): Array<string> {
-    let value = this.get("relateds");
+  get blogs(): Array<string> {
+    let value = this.get("blogs");
     return value!.toStringArray();
   }
 
-  set relateds(value: Array<string>) {
-    this.set("relateds", Value.fromStringArray(value));
-  }
-
-  get manyRelateds(): Array<string> {
-    let value = this.get("manyRelateds");
-    return value!.toStringArray();
-  }
-
-  set manyRelateds(value: Array<string>) {
-    this.set("manyRelateds", Value.fromStringArray(value));
+  set blogs(value: Array<string>) {
+    this.set("blogs", Value.fromStringArray(value));
   }
 }
 
-export class ManyRelatedEntity extends Entity {
+export class Category extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
 
+    this.set("name", Value.fromString(""));
     this.set("count", Value.fromBigInt(BigInt.zero()));
   }
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save ManyRelatedEntity entity without an ID");
+    assert(id != null, "Cannot save Category entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        "Cannot save ManyRelatedEntity entity with non-string ID. " +
+        "Cannot save Category entity with non-string ID. " +
           'Considering using .toHex() to convert the "id" to a string.'
       );
-      store.set("ManyRelatedEntity", id.toString(), this);
+      store.set("Category", id.toString(), this);
     }
   }
 
-  static load(id: string): ManyRelatedEntity | null {
-    return changetype<ManyRelatedEntity | null>(
-      store.get("ManyRelatedEntity", id)
-    );
+  static load(id: string): Category | null {
+    return changetype<Category | null>(store.get("Category", id));
   }
 
   get id(): string {
@@ -240,6 +222,15 @@ export class ManyRelatedEntity extends Entity {
 
   set id(value: string) {
     this.set("id", Value.fromString(value));
+  }
+
+  get name(): string {
+    let value = this.get("name");
+    return value!.toString();
+  }
+
+  set name(value: string) {
+    this.set("name", Value.fromString(value));
   }
 
   get count(): BigInt {

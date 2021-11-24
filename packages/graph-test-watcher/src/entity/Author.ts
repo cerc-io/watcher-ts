@@ -7,13 +7,8 @@ import Decimal from 'decimal.js';
 
 import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
 
-enum EnumType {
-  choice1 = 'choice1',
-  choice2 = 'choice2'
-}
-
 @Entity()
-export class ExampleEntity {
+export class Author {
   @PrimaryColumn('varchar')
   id!: string;
 
@@ -24,30 +19,17 @@ export class ExampleEntity {
   blockNumber!: number;
 
   @Column('bigint', { transformer: bigintTransformer })
-  count!: bigint;
+  blogCount!: bigint;
 
   @Column('varchar')
-  paramString!: string
+  name!: string
 
   @Column('integer')
   paramInt!: number
 
-  @Column('boolean')
-  paramBoolean!: boolean
-
   @Column('varchar')
   paramBytes!: string
 
-  @Column({
-    type: 'enum',
-    enum: EnumType,
-    default: EnumType.choice1
-  })
-  paramEnum!: EnumType
-
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  paramBigDecimal!: Decimal
-
-  @Column('varchar', { array: true })
-  manyRelateds!: string[]
+  rating!: Decimal
 }
