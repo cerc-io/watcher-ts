@@ -70,8 +70,8 @@ const main = async (): Promise<void> => {
 
   const contracts = await db.getContracts();
 
-  // Get latest canonical block.
-  const block = await indexer.getLatestCanonicalBlock();
+  // Get latest block with hooks processed.
+  const block = await indexer.getLatestHooksProcessedBlock();
   assert(block);
 
   // Export snapshot block.
@@ -96,7 +96,11 @@ const main = async (): Promise<void> => {
       const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, 'checkpoint', block.blockNumber);
       assert(ipldBlock);
 
-      const data = codec.decode(Buffer.from(ipldBlock.data)) as any;
+      const data = indexer.getIPLDData(ipldBlock);
+
+      if (indexer.isIPFSConfigured()) {
+        await indexer.pushToIPFS(data);
+      }
 
       exportData.ipldCheckpoints.push({
         contractAddress: ipldBlock.contractAddress,

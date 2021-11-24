@@ -152,7 +152,6 @@ export class EventWatcher implements EventWatcherInterface {
     // If it's a pruning job: Create a hook job for the latest canonical block.
     if (kind === JOB_KIND_PRUNE) {
       const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
-      assert(latestCanonicalBlock);
 
       await this._jobQueue.pushJob(
         QUEUE_HOOKS,
