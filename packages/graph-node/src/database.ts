@@ -112,6 +112,8 @@ export class Database {
         if (isDerived) {
           // For derived relational field.
           condition = `${alias}.${derivedField} = entity.id AND ${alias}.block_number <= entity.block_number`;
+
+          selectQueryBuilder = selectQueryBuilder.addOrderBy(`${alias}.id`);
         } else {
           if (isArray) {
             // For one to many relational field.
@@ -120,6 +122,8 @@ export class Database {
             // For one to one relational field.
             condition = `entity.${field} = ${alias}.id AND ${alias}.block_number <= entity.block_number`;
           }
+
+          selectQueryBuilder = selectQueryBuilder.addOrderBy(`${alias}.block_number`, 'DESC');
         }
 
         if (isArray) {
@@ -128,14 +132,14 @@ export class Database {
             relatedEntity,
             alias,
             condition
-          ).addOrderBy(`${alias}.block_number`, 'DESC');
+          );
         } else {
           selectQueryBuilder = selectQueryBuilder.leftJoinAndMapOne(
             `entity.${field}`,
             relatedEntity,
             alias,
             condition
-          ).addOrderBy(`${alias}.block_number`, 'DESC');
+          );
         }
       });
 
