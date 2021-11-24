@@ -36,13 +36,13 @@ describe('numbers wasm tests', () => {
     });
 
     it('should get bigInt for positive numbers', async () => {
-      const ptr = await testBigIntFromString(await __newString('123'));
-      expect(__getString(ptr)).to.equal('123');
+      const ptr = await testBigIntFromString(await __newString('923567899898'));
+      expect(__getString(ptr)).to.equal('923567899898');
     });
 
-    xit('should get bigInt for negative numbers', async () => {
-      const ptr = await testBigIntFromString(await __newString('-123'));
-      expect(__getString(ptr)).to.equal('-123');
+    it('should get bigInt for negative numbers', async () => {
+      const ptr = await testBigIntFromString(await __newString('-1506556'));
+      expect(__getString(ptr)).to.equal('-1506556');
     });
   });
 
@@ -93,7 +93,7 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal('43210');
     });
 
-    xit('should get bigDecimal for numbers with decimals', async () => {
+    it('should get bigDecimal for numbers with decimals', async () => {
       const ptr = await testBigDecimalFromString(await __newString('5032485723458348569331745.33434346346912144534543'));
       expect(__getString(ptr)).to.equal('5032485723458348569331745.33434346346912144534543');
     });

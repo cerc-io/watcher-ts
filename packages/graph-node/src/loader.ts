@@ -14,6 +14,7 @@ import {
 } from 'ethers';
 import Decimal from 'decimal.js';
 import JSONbig from 'json-bigint';
+import BN from 'bn.js';
 
 import { IndexerInterface } from '@vulcanize/util';
 
@@ -185,8 +186,14 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
       'typeConversion.bigIntToString': (bigInt: number) => {
         const bigIntByteArray = __getArray(bigInt);
-        const bigNumber = BigNumber.from(bigIntByteArray);
-        const ptr = __newString(bigNumber.toString());
+
+        // Create a BN with 'le' endianness.
+        const bigNumber = new BN(bigIntByteArray, 'le');
+
+        // Convert BN from two's compliment and to string.
+        const bigNumberString = bigNumber.fromTwos(bigIntByteArray.length * 8).toString();
+
+        const ptr = __newString(bigNumberString);
 
         return ptr;
       },
@@ -277,9 +284,13 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
       'bigInt.fromString': async (s: number) => {
         const string = __getString(s);
-        const bigNumber = BigNumber.from(string);
-        const hex = bigNumber.toHexString();
-        const bytes = utils.arrayify(hex);
+
+        // Create a BN in two's compliment representation.
+        let bigNumber = new BN(string, 10);
+        bigNumber = bigNumber.toTwos(256);
+
+        // Create an array out of BN in 'le' endianness.
+        const bytes = bigNumber.toArray('le', 32);
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
         const ptr = await __newArray(uint8ArrayId, bytes);
