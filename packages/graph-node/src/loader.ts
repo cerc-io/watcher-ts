@@ -24,6 +24,18 @@ import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
+// Size (in bytes) of the BN used in bigInt store host API.
+// The BN is being stored as a byte array in wasm memory in 2's compliment representation and interpreted as such in other APIs.
+// 33 bytes is chosen so that it can support:
+//    - Int256 (32 bytes sufficient)
+//    - UInt256 (33 bytes required as we are storing the 2's compliment)
+const BN_SIZE = 33;
+
+// Endianness of BN used in bigInt store host API.
+// Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
+// (for eg. bigInt.fromString(negativeI32Value))
+const BN_ENDIANNESS = 'le';
+
 type idOfType = (TypeId: number) => number
 
 interface DataSource {
@@ -188,7 +200,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const bigIntByteArray = __getArray(bigInt);
 
         // Create a BN with 'le' endianness.
-        const bigNumber = new BN(bigIntByteArray, 'le');
+        const bigNumber = new BN(bigIntByteArray, BN_ENDIANNESS);
 
         // Convert BN from two's compliment and to string.
         const bigNumberString = bigNumber.fromTwos(bigIntByteArray.length * 8).toString();
@@ -285,12 +297,15 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
       'bigInt.fromString': async (s: number) => {
         const string = __getString(s);
 
-        // Create a BN in two's compliment representation.
-        let bigNumber = new BN(string, 10);
-        bigNumber = bigNumber.toTwos(256);
+        // Create a BN in 2's compliment representation.
+        // Need to use BN as ethers.BigNumber:
+        //    Doesn't store -ve numbers in 2's compilment form
+        //    Stores in big endian form.
+        let bigNumber = new BN(string);
+        bigNumber = bigNumber.toTwos(BN_SIZE * 8);
 
         // Create an array out of BN in 'le' endianness.
-        const bytes = bigNumber.toArray('le', 32);
+        const bytes = bigNumber.toArray(BN_ENDIANNESS, BN_SIZE);
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
         const ptr = await __newArray(uint8ArrayId, bytes);

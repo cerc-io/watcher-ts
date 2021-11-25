@@ -259,3 +259,23 @@ export function testBigIntFromString (value: string): string {
 
   return res;
 }
+
+export function testBigIntWithI32 (value: string): string[] {
+  log.debug('In testBigIntWithI32', []);
+
+  const variableI32: i32 = parseInt(value) as i32;
+
+  const bigInt1 = BigInt.fromI32(variableI32);
+  const bigInt2 = BigInt.fromString(value);
+
+  const res1 = bigInt1.toString();
+  log.debug('bigInt.FromString result 1: {}', [res1]);
+
+  const res2 = bigInt2.toString();
+  log.debug('bigInt.FromString result 2: {}', [res2]);
+
+  const res3 = BigInt.compare(bigInt1, bigInt2).toString();
+  log.debug('bigInt.FromString result 3: {}', [res3]);
+
+  return [res1, res2, res3];
+}

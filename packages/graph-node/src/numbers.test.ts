@@ -29,10 +29,10 @@ describe('numbers wasm tests', () => {
   });
 
   describe('should execute bigInt fromString API', () => {
-    let testBigIntFromString: any, __getString: any, __newString: any;
+    let testBigIntFromString: any, testBigIntWithI32: any, __getString: any, __newString: any, __getArray: any;
 
     before(() => {
-      ({ testBigIntFromString, __getString, __newString } = exports);
+      ({ testBigIntFromString, testBigIntWithI32, __getString, __newString, __getArray } = exports);
     });
 
     it('should get bigInt for positive numbers', async () => {
@@ -43,6 +43,14 @@ describe('numbers wasm tests', () => {
     it('should get bigInt for negative numbers', async () => {
       const ptr = await testBigIntFromString(await __newString('-1506556'));
       expect(__getString(ptr)).to.equal('-1506556');
+    });
+
+    it('should give equal values for bigInt fromString and fromI32', async () => {
+      const ptr = await testBigIntWithI32(await __newString('-1506556'));
+      const ptrs = __getArray(ptr);
+
+      expect(__getString(ptrs[0])).to.equal(__getString(ptrs[1]));
+      expect(__getString(ptrs[2])).to.equal('0');
     });
   });
 
@@ -94,8 +102,8 @@ describe('numbers wasm tests', () => {
     });
 
     it('should get bigDecimal for numbers with decimals', async () => {
-      const ptr = await testBigDecimalFromString(await __newString('5032485723458348569331745.33434346346912144534543'));
-      expect(__getString(ptr)).to.equal('5032485723458348569331745.33434346346912144534543');
+      const ptr = await testBigDecimalFromString(await __newString('-5032485723458348569331745849735.3343434634691214453454356561'));
+      expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.3343434634691214453454356561');
     });
   });
 
