@@ -82,6 +82,41 @@ describe('numbers wasm tests', () => {
     expect(__getString(ptr)).to.equal('100');
   });
 
+  describe('should execute bigInt dividedByDecimal API', async () => {
+    let testBigIntDividedByDecimal: any, __newString: any, __getString: any;
+
+    before(() => {
+      ({ testBigIntDividedByDecimal, __newString, __getString } = exports);
+    });
+
+    it('should execute bigInt dividedByDecimal for positive dividend and positive divisor', async () => {
+      const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('54652.65645'));
+      expect(__getString(ptr)).to.equal('42366323478.725506672');
+    });
+
+    it('should execute bigInt dividedByDecimal for negative dividend and positive divisor', async () => {
+      const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('54652.65645'));
+      expect(__getString(ptr)).to.equal('-42366323478.725506672');
+    });
+
+    it('should execute bigInt dividedByDecimal for positive dividend and negative divisor', async () => {
+      const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('-54652.65645'));
+      expect(__getString(ptr)).to.equal('-42366323478.725506672');
+    });
+
+    it('should execute bigInt dividedByDecimal for negative dividend and negative divisor', async () => {
+      const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('-54652.65645'));
+      expect(__getString(ptr)).to.equal('42366323478.725506672');
+    });
+  });
+
+  it('should execute bigInt mod API', async () => {
+    const { testBigIntMod, __getString, __newString } = exports;
+
+    const ptr = await testBigIntMod(await __newString('2315432122132354'), await __newString('5465265645'));
+    expect(__getString(ptr)).to.equal('1283174719');
+  });
+
   it('should execute bigDecimal toString API', async () => {
     const { testBigDecimalToString, __newString, __getString } = exports;
 

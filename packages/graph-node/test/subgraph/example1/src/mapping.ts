@@ -283,6 +283,28 @@ export function testBigIntDividedBy (): string {
   return res.toString();
 }
 
+export function testBigIntDividedByDecimal (value1: string, value2: string): string {
+  log.debug('In test bigInt.dividedByDecimal', []);
+
+  const bigInt = BigInt.fromString(value1);
+  const bigDecimal = BigDecimal.fromString(value2);
+
+  const res = bigInt.divDecimal(bigDecimal);
+  log.debug('bigInt.dividedByDecimal result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntMod (value1: string, value2: string): string {
+  log.debug('In test bigInt.mod', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1.mod(bigInt2);
+  log.debug('bigInt.mod result: {}', [res.toString()]);
+  return res.toString();
+}
+
 export function testBigIntFromString (value: string): string {
   log.debug('In test bigInt.fromString', []);
 

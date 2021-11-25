@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import fs from 'fs/promises';
-import loader from '@vulcanize/assemblyscript/lib/loader';
 import {
   utils,
   BigNumber,
@@ -16,6 +15,7 @@ import Decimal from 'decimal.js';
 import JSONbig from 'json-bigint';
 import BN from 'bn.js';
 
+import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
 import { TypeId } from './types';
@@ -288,7 +288,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         return bigDecimal;
       },
       'bigDecimal.plus': async (x: number, y: number) => {
-        // Creating decimal x string.
+        // Create decimal x string.
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
@@ -298,7 +298,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Performing the decimal sum operation.
+        // Perform the decimal sum operation.
         const sumResult = Decimal.sum(xDecimalString, yDecimalString);
         const ptr = await __newString(sumResult.toString());
         const sumResultBigDecimal = await BigDecimal.fromString(ptr);
@@ -306,7 +306,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         return sumResultBigDecimal;
       },
       'bigDecimal.minus': async (x: number, y: number) => {
-        // Creating decimal x string.
+        // Create decimal x string.
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
@@ -316,7 +316,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Performing the decimal sub operation.
+        // Perform the decimal sub operation.
         const subResult = Decimal.sub(xDecimalString, yDecimalString);
         const ptr = await __newString(subResult.toString());
         const subResultBigDecimal = await BigDecimal.fromString(ptr);
@@ -324,7 +324,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         return subResultBigDecimal;
       },
       'bigDecimal.times': async (x: number, y: number) => {
-        // Creating decimal x string.
+        // Create decimal x string.
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
@@ -334,7 +334,7 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Performing the decimal mul operation.
+        // Perform the decimal mul operation.
         const mulResult = Decimal.mul(xDecimalString, yDecimalString);
         const ptr = await __newString(mulResult.toString());
         const mulResultBigDecimal = await BigDecimal.fromString(ptr);
@@ -421,11 +421,41 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         return quotientBigInt;
       },
-      'bigInt.dividedByDecimal': () => {
-        console.log('bigInt.dividedByDecimal');
+      'bigInt.dividedByDecimal': async (x: number, y: number) => {
+        // Create a decimal out of bigInt x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xDecimal = new Decimal(__getString(xStringPtr));
+
+        // Create decimal y.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimal = new Decimal(__getString(yStringPtr));
+
+        // Perform the decimal division operation.
+        const divResult = xDecimal.dividedBy(yDecimal);
+        const ptr = await __newString(divResult.toString());
+        const divResultBigDecimal = await BigDecimal.fromString(ptr);
+
+        return divResultBigDecimal;
       },
-      'bigInt.mod': () => {
-        console.log('bigInt.mod');
+      'bigInt.mod': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Create a bigNumber y.
+        const yBigInt = await BigInt.wrap(y);
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
+
+        // Perform the bigNumber mod operation.
+        const remainder = xBigNumber.mod(yBigNumber);
+        const ptr = await __newString(remainder.toString());
+        const remainderBigInt = BigInt.fromString(ptr);
+
+        return remainderBigInt;
       },
       'bigInt.bitOr': () => {
         console.log('bigInt.bitOr');
