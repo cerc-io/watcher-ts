@@ -203,6 +203,42 @@ export function testBigDecimalDividedBy (value1: string, value2: string): string
   return res.toString();
 }
 
+export function testBigDecimalPlus (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.plus', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 + bigDecimal2;
+  log.debug('bigDecimal.plus result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigDecimalMinus (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.minus', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 - bigDecimal2;
+  log.debug('bigDecimal.minus result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigDecimalTimes (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.times', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 * bigDecimal2;
+  log.debug('bigDecimal.times result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
 export function testBigIntPlus (): string {
   log.debug('In test bigInt.plus', []);
 

@@ -107,6 +107,27 @@ describe('numbers wasm tests', () => {
     });
   });
 
+  it('should execute bigDecimal plus API', async () => {
+    const { testBigDecimalPlus, __getString, __newString } = exports;
+
+    const ptr = await testBigDecimalPlus(await __newString('231543212.2132354'), await __newString('54652.65645'));
+    expect(__getString(ptr)).to.equal('231597864.8696854');
+  });
+
+  it('should execute bigDecimal minus API', async () => {
+    const { testBigDecimalMinus, __getString, __newString } = exports;
+
+    const ptr = await testBigDecimalMinus(await __newString('231543212.2132354'), await __newString('54652.65645'));
+    expect(__getString(ptr)).to.equal('231488559.5567854');
+  });
+
+  it('should execute bigDecimal times API', async () => {
+    const { testBigDecimalTimes, __getString, __newString } = exports;
+
+    const ptr = await testBigDecimalTimes(await __newString('231543212.2132354'), await __newString('54652.65645'));
+    expect(__getString(ptr)).to.equal('12654451630419.398459');
+  });
+
   it('should execute bigDecimal dividedBy API', async () => {
     const { testBigDecimalDividedBy, __getString, __newString } = exports;
 

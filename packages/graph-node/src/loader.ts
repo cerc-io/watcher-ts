@@ -287,14 +287,59 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
 
         return bigDecimal;
       },
-      'bigDecimal.plus': () => {
-        console.log('bigDecimal.plus');
+      'bigDecimal.plus': async (x: number, y: number) => {
+        // Creating decimal x string.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimalString = __getString(xStringPtr);
+
+        // Create decimal y string.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimalString = __getString(yStringPtr);
+
+        // Performing the decimal sum operation.
+        const sumResult = Decimal.sum(xDecimalString, yDecimalString);
+        const ptr = await __newString(sumResult.toString());
+        const sumResultBigDecimal = await BigDecimal.fromString(ptr);
+
+        return sumResultBigDecimal;
       },
-      'bigDecimal.minus': () => {
-        console.log('bigDecimal.minus');
+      'bigDecimal.minus': async (x: number, y: number) => {
+        // Creating decimal x string.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimalString = __getString(xStringPtr);
+
+        // Create decimal y string.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimalString = __getString(yStringPtr);
+
+        // Performing the decimal sub operation.
+        const subResult = Decimal.sub(xDecimalString, yDecimalString);
+        const ptr = await __newString(subResult.toString());
+        const subResultBigDecimal = await BigDecimal.fromString(ptr);
+
+        return subResultBigDecimal;
       },
-      'bigDecimal.times': () => {
-        console.log('bigDecimal.times');
+      'bigDecimal.times': async (x: number, y: number) => {
+        // Creating decimal x string.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimalString = __getString(xStringPtr);
+
+        // Create decimal y string.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimalString = __getString(yStringPtr);
+
+        // Performing the decimal mul operation.
+        const mulResult = Decimal.mul(xDecimalString, yDecimalString);
+        const ptr = await __newString(mulResult.toString());
+        const mulResultBigDecimal = await BigDecimal.fromString(ptr);
+
+        return mulResultBigDecimal;
       },
 
       'bigInt.fromString': async (s: number) => {
