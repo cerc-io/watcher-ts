@@ -171,13 +171,12 @@ export function testStringToH160 (): string {
   return res;
 }
 
-export function testBigDecimalToString (): string {
+export function testBigDecimalToString (value: string): string {
   log.debug('In test bigDecimalToString', []);
 
-  const bigInt = BigInt.fromString('1000000000000000000');
-  const bigDecimal = bigInt.toBigDecimal();
+  const bigDecimal = BigDecimal.fromString(value);
   const res = bigDecimal.toString();
-  log.debug('typeConversion.bigIntToString from hex result: {}', [res]);
+  log.debug('typeConversion.bigIntToString result: {}', [res]);
 
   return res;
 }
@@ -192,16 +191,50 @@ export function testBigDecimalFromString (value: string): string {
   return res;
 }
 
-export function testBigDecimalDividedBy (): string {
+export function testBigDecimalDividedBy (value1: string, value2: string): string {
   log.debug('In test bigDecimal.dividedBy', []);
 
-  const bigInt1 = BigInt.fromString('1000000000000000000');
-  const bigInt2 = BigInt.fromString('100');
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
 
-  const bigDecimal1 = new BigDecimal(bigInt1);
-  const bigDecimal2 = new BigDecimal(bigInt2);
   const res = bigDecimal1 / bigDecimal2;
   log.debug('bigDecimal.dividedBy result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigDecimalPlus (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.plus', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 + bigDecimal2;
+  log.debug('bigDecimal.plus result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigDecimalMinus (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.minus', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 - bigDecimal2;
+  log.debug('bigDecimal.minus result: {}', [res.toString()]);
+
+  return res.toString();
+}
+
+export function testBigDecimalTimes (value1: string, value2: string): string {
+  log.debug('In test bigDecimal.times', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  const res = bigDecimal1 * bigDecimal2;
+  log.debug('bigDecimal.times result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -250,6 +283,28 @@ export function testBigIntDividedBy (): string {
   return res.toString();
 }
 
+export function testBigIntDividedByDecimal (value1: string, value2: string): string {
+  log.debug('In test bigInt.dividedByDecimal', []);
+
+  const bigInt = BigInt.fromString(value1);
+  const bigDecimal = BigDecimal.fromString(value2);
+
+  const res = bigInt.divDecimal(bigDecimal);
+  log.debug('bigInt.dividedByDecimal result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntMod (value1: string, value2: string): string {
+  log.debug('In test bigInt.mod', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1.mod(bigInt2);
+  log.debug('bigInt.mod result: {}', [res.toString()]);
+  return res.toString();
+}
+
 export function testBigIntFromString (value: string): string {
   log.debug('In test bigInt.fromString', []);
 
@@ -258,4 +313,24 @@ export function testBigIntFromString (value: string): string {
   log.debug('bigInt.FromString result: {}', [res]);
 
   return res;
+}
+
+export function testBigIntWithI32 (value: string): string[] {
+  log.debug('In testBigIntWithI32', []);
+
+  const variableI32: i32 = parseInt(value) as i32;
+
+  const bigInt1 = BigInt.fromI32(variableI32);
+  const bigInt2 = BigInt.fromString(value);
+
+  const res1 = bigInt1.toString();
+  log.debug('bigInt.FromString result 1: {}', [res1]);
+
+  const res2 = bigInt2.toString();
+  log.debug('bigInt.FromString result 2: {}', [res2]);
+
+  const res3 = BigInt.compare(bigInt1, bigInt2).toString();
+  log.debug('bigInt.FromString result 3: {}', [res3]);
+
+  return [res1, res2, res3];
 }
