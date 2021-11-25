@@ -83,10 +83,10 @@ describe('numbers wasm tests', () => {
   });
 
   it('should execute bigDecimal toString API', async () => {
-    const { testBigDecimalToString, __getString } = exports;
+    const { testBigDecimalToString, __newString, __getString } = exports;
 
-    const ptr = await testBigDecimalToString();
-    expect(__getString(ptr)).to.equal('1000000000000000000');
+    const ptr = await testBigDecimalToString(await __newString('-5032485723458348569331745849735.3343434634691214453454356561'));
+    expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.3343434634691214453454356561');
   });
 
   describe('should execute bigDecimal fromString API', () => {
@@ -107,11 +107,10 @@ describe('numbers wasm tests', () => {
     });
   });
 
-  xit('should execute bigDecimal dividedBy API', () => {
-    const { testBigDecimalDividedBy, __getString } = exports;
+  it('should execute bigDecimal dividedBy API', async () => {
+    const { testBigDecimalDividedBy, __getString, __newString } = exports;
 
-    const ptr = testBigDecimalDividedBy();
-    expect(__getString(ptr)).to.equal('10000000000000000');
-    console.log(__getString(ptr));
+    const ptr = await testBigDecimalDividedBy(await __newString('231543212.2132354'), await __newString('54652.65645'));
+    expect(__getString(ptr)).to.equal('4236.6323478725506672');
   });
 });

@@ -229,19 +229,22 @@ export const instantiate = async (database: Database, indexer: IndexerInterface,
     },
     numbers: {
       'bigDecimal.dividedBy': async (x: number, y: number) => {
-        console.log('numbers bigDecimal.dividedBy');
+        // Creating decimal x.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimal = new Decimal(__getString(xStringPtr));
 
-        const bigDecimaly = BigDecimal.wrap(y);
+        // Create decimal y.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimal = new Decimal(__getString(yStringPtr));
 
-        const digitsPtr = await bigDecimaly.digits;
-        const yDigitsBigIntArray = __getArray(digitsPtr);
-        const yDigits = BigNumber.from(yDigitsBigIntArray);
+        // Performing the decimal division operation.
+        const divResult = xDecimal.dividedBy(yDecimal);
+        const ptr = await __newString(divResult.toString());
+        const divResultBigDecimal = await BigDecimal.fromString(ptr);
 
-        const expPtr = await bigDecimaly.exp;
-        const yExpBigIntArray = __getArray(expPtr);
-        const yExp = BigNumber.from(yExpBigIntArray);
-
-        console.log('y digits and exp', yDigits, yExp);
+        return divResultBigDecimal;
       },
       'bigDecimal.toString': async (bigDecimal: number) => {
         const bigDecimalInstance = BigDecimal.wrap(bigDecimal);
