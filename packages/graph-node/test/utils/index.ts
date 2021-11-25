@@ -17,7 +17,11 @@ export const getDummyEventData = (): EventData => {
     stateRoot: ZERO_HASH,
     td: ZERO_HASH,
     txRoot: ZERO_HASH,
-    receiptRoot: ZERO_HASH
+    receiptRoot: ZERO_HASH,
+    uncleHash: ZERO_HASH,
+    difficulty: '0',
+    gasLimit: '0',
+    gasUsed: '0'
   };
 
   const tx = {
@@ -30,7 +34,8 @@ export const getDummyEventData = (): EventData => {
   return {
     block,
     tx,
-    eventParams: [],
+    inputs: [],
+    event: {},
     eventIndex: 0
   };
 };
