@@ -13,6 +13,12 @@
         "internalType": "uint8",
         "name": "param2",
         "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "param3",
+        "type": "uint256"
       }
     ],
     "name": "Test",
