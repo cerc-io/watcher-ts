@@ -12,7 +12,11 @@ import { TypeId, EthereumValueKind, ValueKind } from './types';
 const log = debug('vulcanize:utils');
 
 // Customize Decimal according the limits of IEEE-754 decimal128.
+// Reference: https://github.com/graphprotocol/graph-node/blob/v0.24.2/graph/src/data/store/scalar.rs#L42
 export const GraphDecimal = Decimal.clone({ minE: -6143, maxE: 6144, precision: 34 });
+
+// Constant used in function digitsToString.
+const LOG_BASE = 7;
 
 interface Transaction {
   hash: string;
@@ -439,7 +443,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
       const bigDecimal = BigDecimal.wrap(bigDecimalPtr);
       const bigDecimalStringPtr = await bigDecimal.toString();
 
-      return new GraphDecimal(__getString(bigDecimalStringPtr));
+      return new GraphDecimal(__getString(bigDecimalStringPtr)).toFixed();
     }
 
     case ValueKind.ARRAY: {
@@ -545,3 +549,40 @@ export const resolveEntityFieldConflicts = (entity: any): any => {
 
   return entity;
 };
+
+// Get digits in a string from an array of digit numbers (Decimal().d)
+// https://github.com/MikeMcl/decimal.js/blob/master/decimal.mjs#L2516
+export function digitsToString (d: any) {
+  let i, k, ws;
+  const indexOfLastWord = d.length - 1;
+  let str = '';
+  let w = d[0];
+
+  if (indexOfLastWord > 0) {
+    str += w;
+    for (i = 1; i < indexOfLastWord; i++) {
+      ws = d[i] + '';
+      k = LOG_BASE - ws.length;
+      if (k) str += getZeroString(k);
+      str += ws;
+    }
+
+    w = d[i];
+    ws = w + '';
+    k = LOG_BASE - ws.length;
+    if (k) str += getZeroString(k);
+  } else if (w === 0) {
+    return '0';
+  }
+
+  // Remove trailing zeros of last w.
+  for (; w % 10 === 0;) w /= 10;
+
+  return str + w;
+}
+
+function getZeroString (k: any) {
+  let zs = '';
+  for (; k--;) zs += '0';
+  return zs;
+}

@@ -18,7 +18,7 @@ import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
 import { TypeId } from './types';
-import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal } from './utils';
+import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal, digitsToString } from './utils';
 import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -273,10 +273,12 @@ export const instantiate = async (
       },
       'bigDecimal.fromString': async (s: number) => {
         const string = __getString(s);
-        const decimal = new GraphDecimal(string);
+
+        // Creating a decimal with the configured precision applied.
+        const decimal = new GraphDecimal(string).toSignificantDigits();
 
         // Convert from digits array to BigInt.
-        const digits = decimal.d.join('');
+        const digits = digitsToString(decimal.d);
         const digitsBigNumber = BigNumber.from(digits);
         const signBigNumber = BigNumber.from(decimal.s);
         const digitsStringPtr = await __newString(digitsBigNumber.mul(signBigNumber).toString());

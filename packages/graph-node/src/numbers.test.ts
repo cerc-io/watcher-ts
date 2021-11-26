@@ -90,23 +90,23 @@ describe('numbers wasm tests', () => {
     });
 
     it('should execute bigInt dividedByDecimal for positive dividend and positive divisor', async () => {
-      const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('54652.65645'));
-      expect(__getString(ptr)).to.equal('42366323478.72550667205491344419362');
+      const ptr = await testBigIntDividedByDecimal(await __newString('231543212213235645154'), await __newString('552.65645'));
+      expect(__getString(ptr)).to.equal('418964100053904455.7500414588484401');
     });
 
     it('should execute bigInt dividedByDecimal for negative dividend and positive divisor', async () => {
-      const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('54652.65645'));
-      expect(__getString(ptr)).to.equal('-42366323478.72550667205491344419362');
+      const ptr = await testBigIntDividedByDecimal(await __newString('-231543212213235645154'), await __newString('552.65645'));
+      expect(__getString(ptr)).to.equal('-418964100053904455.7500414588484401');
     });
 
     it('should execute bigInt dividedByDecimal for positive dividend and negative divisor', async () => {
-      const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('-54652.65645'));
-      expect(__getString(ptr)).to.equal('-42366323478.72550667205491344419362');
+      const ptr = await testBigIntDividedByDecimal(await __newString('231543212213235645154'), await __newString('-552.65645'));
+      expect(__getString(ptr)).to.equal('-418964100053904455.7500414588484401');
     });
 
     it('should execute bigInt dividedByDecimal for negative dividend and negative divisor', async () => {
-      const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('-54652.65645'));
-      expect(__getString(ptr)).to.equal('42366323478.72550667205491344419362');
+      const ptr = await testBigIntDividedByDecimal(await __newString('-231543212213235645154'), await __newString('-552.65645'));
+      expect(__getString(ptr)).to.equal('418964100053904455.7500414588484401');
     });
   });
 
@@ -121,7 +121,7 @@ describe('numbers wasm tests', () => {
     const { testBigDecimalToString, __newString, __getString } = exports;
 
     const ptr = await testBigDecimalToString(await __newString('-5032485723458348569331745849735.3343434634691214453454356561'));
-    expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.3343434634691214453454356561');
+    expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.334');
   });
 
   describe('should execute bigDecimal fromString API', () => {
@@ -138,7 +138,7 @@ describe('numbers wasm tests', () => {
 
     it('should get bigDecimal for numbers with decimals', async () => {
       const ptr = await testBigDecimalFromString(await __newString('-5032485723458348569331745849735.3343434634691214453454356561'));
-      expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.3343434634691214453454356561');
+      expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.334');
     });
   });
 
