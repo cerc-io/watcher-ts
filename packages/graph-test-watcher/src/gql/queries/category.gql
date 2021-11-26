@@ -1,0 +1,7 @@
+query category($id: String!, $blockHash: Bytes!){
+    category(id: $id, block: { hash: $blockHash }){
+        id
+        count
+        name
+    }
+}
