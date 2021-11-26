@@ -91,22 +91,22 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigInt dividedByDecimal for positive dividend and positive divisor', async () => {
       const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('54652.65645'));
-      expect(__getString(ptr)).to.equal('42366323478.725506672');
+      expect(__getString(ptr)).to.equal('42366323478.72550667205491344419362');
     });
 
     it('should execute bigInt dividedByDecimal for negative dividend and positive divisor', async () => {
       const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('54652.65645'));
-      expect(__getString(ptr)).to.equal('-42366323478.725506672');
+      expect(__getString(ptr)).to.equal('-42366323478.72550667205491344419362');
     });
 
     it('should execute bigInt dividedByDecimal for positive dividend and negative divisor', async () => {
       const ptr = await testBigIntDividedByDecimal(await __newString('2315432122132354'), await __newString('-54652.65645'));
-      expect(__getString(ptr)).to.equal('-42366323478.725506672');
+      expect(__getString(ptr)).to.equal('-42366323478.72550667205491344419362');
     });
 
     it('should execute bigInt dividedByDecimal for negative dividend and negative divisor', async () => {
       const ptr = await testBigIntDividedByDecimal(await __newString('-2315432122132354'), await __newString('-54652.65645'));
-      expect(__getString(ptr)).to.equal('42366323478.725506672');
+      expect(__getString(ptr)).to.equal('42366323478.72550667205491344419362');
     });
   });
 
@@ -160,13 +160,13 @@ describe('numbers wasm tests', () => {
     const { testBigDecimalTimes, __getString, __newString } = exports;
 
     const ptr = await testBigDecimalTimes(await __newString('231543212.2132354'), await __newString('54652.65645'));
-    expect(__getString(ptr)).to.equal('12654451630419.398459');
+    expect(__getString(ptr)).to.equal('12654451630419.39845917833');
   });
 
   it('should execute bigDecimal dividedBy API', async () => {
     const { testBigDecimalDividedBy, __getString, __newString } = exports;
 
     const ptr = await testBigDecimalDividedBy(await __newString('231543212.2132354'), await __newString('54652.65645'));
-    expect(__getString(ptr)).to.equal('4236.6323478725506672');
+    expect(__getString(ptr)).to.equal('4236.632347872550667205491344419362');
   });
 });

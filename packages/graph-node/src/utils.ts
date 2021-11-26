@@ -11,6 +11,9 @@ import { TypeId, EthereumValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
 
+// Customize Decimal according the limits of IEEE-754 decimal128.
+export const GraphDecimal = Decimal.clone({ minE: -6143, maxE: 6144, precision: 34 });
+
 interface Transaction {
   hash: string;
   index: number;
@@ -436,7 +439,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
       const bigDecimal = BigDecimal.wrap(bigDecimalPtr);
       const bigDecimalStringPtr = await bigDecimal.toString();
 
-      return new Decimal(__getString(bigDecimalStringPtr));
+      return new GraphDecimal(__getString(bigDecimalStringPtr));
     }
 
     case ValueKind.ARRAY: {

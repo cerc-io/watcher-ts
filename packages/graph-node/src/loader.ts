@@ -11,7 +11,6 @@ import {
   Contract,
   ContractInterface
 } from 'ethers';
-import Decimal from 'decimal.js';
 import JSONbig from 'json-bigint';
 import BN from 'bn.js';
 
@@ -19,7 +18,7 @@ import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
 import { TypeId } from './types';
-import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts } from './utils';
+import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal } from './utils';
 import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -238,12 +237,12 @@ export const instantiate = async (
         // Creating decimal x.
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
-        const xDecimal = new Decimal(__getString(xStringPtr));
+        const xDecimal = new GraphDecimal(__getString(xStringPtr));
 
         // Create decimal y.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
-        const yDecimal = new Decimal(__getString(yStringPtr));
+        const yDecimal = new GraphDecimal(__getString(yStringPtr));
 
         // Performing the decimal division operation.
         const divResult = xDecimal.dividedBy(yDecimal);
@@ -267,14 +266,14 @@ export const instantiate = async (
         const expStringPtr = await expBigInt.toString();
         const exp = __getString(expStringPtr);
 
-        const decimal = new Decimal(`${digits}e${exp}`);
+        const decimal = new GraphDecimal(`${digits}e${exp}`);
         const ptr = __newString(decimal.toFixed());
 
         return ptr;
       },
       'bigDecimal.fromString': async (s: number) => {
         const string = __getString(s);
-        const decimal = new Decimal(string);
+        const decimal = new GraphDecimal(string);
 
         // Convert from digits array to BigInt.
         const digits = decimal.d.join('');
@@ -305,7 +304,7 @@ export const instantiate = async (
         const yDecimalString = __getString(yStringPtr);
 
         // Perform the decimal sum operation.
-        const sumResult = Decimal.sum(xDecimalString, yDecimalString);
+        const sumResult = GraphDecimal.sum(xDecimalString, yDecimalString);
         const ptr = await __newString(sumResult.toString());
         const sumResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -323,7 +322,7 @@ export const instantiate = async (
         const yDecimalString = __getString(yStringPtr);
 
         // Perform the decimal sub operation.
-        const subResult = Decimal.sub(xDecimalString, yDecimalString);
+        const subResult = GraphDecimal.sub(xDecimalString, yDecimalString);
         const ptr = await __newString(subResult.toString());
         const subResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -341,7 +340,7 @@ export const instantiate = async (
         const yDecimalString = __getString(yStringPtr);
 
         // Perform the decimal mul operation.
-        const mulResult = Decimal.mul(xDecimalString, yDecimalString);
+        const mulResult = GraphDecimal.mul(xDecimalString, yDecimalString);
         const ptr = await __newString(mulResult.toString());
         const mulResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -431,12 +430,12 @@ export const instantiate = async (
         // Create a decimal out of bigInt x.
         const xBigInt = await BigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
-        const xDecimal = new Decimal(__getString(xStringPtr));
+        const xDecimal = new GraphDecimal(__getString(xStringPtr));
 
         // Create decimal y.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
-        const yDecimal = new Decimal(__getString(yStringPtr));
+        const yDecimal = new GraphDecimal(__getString(yStringPtr));
 
         // Perform the decimal division operation.
         const divResult = xDecimal.dividedBy(yDecimal);
