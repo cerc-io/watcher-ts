@@ -10,6 +10,7 @@ export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
   log.debug('event.params.param1: {}', [event.params.param1]);
   log.debug('event.params.param2: {}', [event.params.param2.toString()]);
+  log.debug('event.params.param3: {}', [event.params.param3.toString()]);
   log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
   log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
 
@@ -32,8 +33,9 @@ export function handleTest (event: Test): void {
   // Entity fields can be set based on event parameters
   author.name = event.params.param1;
   author.paramInt = event.params.param2;
+  author.paramBigInt = event.params.param3;
   author.paramBytes = event.address;
-  author.rating = BigDecimal.fromString('4');
+  author.rating = BigDecimal.fromString('3.2132354');
 
   // Entities can be written to the store with `.save()`
   author.save();

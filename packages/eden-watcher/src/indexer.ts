@@ -624,7 +624,7 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           from,
           to,
-          value: BigInt(ethers.BigNumber.from(value).toString())
+          value: BigInt(value.toString())
         };
 
         break;
@@ -635,7 +635,7 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           owner,
           spender,
-          value: BigInt(ethers.BigNumber.from(value).toString())
+          value: BigInt(value.toString())
         };
 
         break;
@@ -679,8 +679,8 @@ export class Indexer implements IndexerInterface {
           slot,
           owner,
           delegate,
-          newBidAmount,
-          oldBidAmount,
+          newBidAmount: BigInt(newBidAmount.toString()),
+          oldBidAmount: BigInt(oldBidAmount.toString()),
           taxNumerator,
           taxDenominator
         };
@@ -704,7 +704,7 @@ export class Indexer implements IndexerInterface {
         const { staker, stakeAmount } = logDescription.args;
         eventInfo = {
           staker,
-          stakeAmount: BigInt(ethers.BigNumber.from(stakeAmount).toString())
+          stakeAmount: BigInt(stakeAmount.toString())
         };
 
         break;
@@ -714,7 +714,7 @@ export class Indexer implements IndexerInterface {
         const { staker, unstakedAmount } = logDescription.args;
         eventInfo = {
           staker,
-          unstakedAmount: BigInt(ethers.BigNumber.from(unstakedAmount).toString())
+          unstakedAmount: BigInt(unstakedAmount.toString())
         };
 
         break;
@@ -724,7 +724,7 @@ export class Indexer implements IndexerInterface {
         const { withdrawer, withdrawalAmount } = logDescription.args;
         eventInfo = {
           withdrawer,
-          withdrawalAmount: BigInt(ethers.BigNumber.from(withdrawalAmount).toString())
+          withdrawalAmount: BigInt(withdrawalAmount.toString())
         };
 
         break;
@@ -748,7 +748,7 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           from,
           to,
-          tokenId: BigInt(ethers.BigNumber.from(tokenId).toString())
+          tokenId: BigInt(tokenId.toString())
         };
 
         break;
@@ -759,7 +759,7 @@ export class Indexer implements IndexerInterface {
         eventInfo = {
           owner,
           approved,
-          tokenId: BigInt(ethers.BigNumber.from(tokenId).toString())
+          tokenId: BigInt(tokenId.toString())
         };
 
         break;
@@ -813,10 +813,10 @@ export class Indexer implements IndexerInterface {
         eventName = logDescription.name;
         const { index, totalEarned, account, claimed } = logDescription.args;
         eventInfo = {
-          index: BigInt(ethers.BigNumber.from(index).toString()),
-          totalEarned: BigInt(ethers.BigNumber.from(totalEarned).toString()),
+          index: BigInt(index.toString()),
+          totalEarned: BigInt(totalEarned.toString()),
           account,
-          claimed: BigInt(ethers.BigNumber.from(claimed).toString())
+          claimed: BigInt(claimed.toString())
         };
 
         break;
@@ -826,7 +826,7 @@ export class Indexer implements IndexerInterface {
         const { account, slashed } = logDescription.args;
         eventInfo = {
           account,
-          slashed: BigInt(ethers.BigNumber.from(slashed).toString())
+          slashed: BigInt(slashed.toString())
         };
 
         break;
@@ -836,7 +836,7 @@ export class Indexer implements IndexerInterface {
         const { merkleRoot, distributionNumber, metadataURI } = logDescription.args;
         eventInfo = {
           merkleRoot,
-          distributionNumber: BigInt(ethers.BigNumber.from(distributionNumber).toString()),
+          distributionNumber: BigInt(distributionNumber.toString()),
           metadataURI
         };
 
@@ -847,8 +847,8 @@ export class Indexer implements IndexerInterface {
         const { account, totalClaimed, totalSlashed } = logDescription.args;
         eventInfo = {
           account,
-          totalClaimed: BigInt(ethers.BigNumber.from(totalClaimed).toString()),
-          totalSlashed: BigInt(ethers.BigNumber.from(totalSlashed).toString())
+          totalClaimed: BigInt(totalClaimed.toString()),
+          totalSlashed: BigInt(totalSlashed.toString())
         };
 
         break;
@@ -858,7 +858,7 @@ export class Indexer implements IndexerInterface {
         const { value, id } = logDescription.args;
         eventInfo = {
           value,
-          id: BigInt(ethers.BigNumber.from(id).toString())
+          id: BigInt(id.toString())
         };
 
         break;
@@ -877,7 +877,7 @@ export class Indexer implements IndexerInterface {
         eventName = logDescription.name;
         const { updateThreshold } = logDescription.args;
         eventInfo = {
-          updateThreshold: BigInt(ethers.BigNumber.from(updateThreshold).toString())
+          updateThreshold: BigInt(updateThreshold.toString())
         };
 
         break;

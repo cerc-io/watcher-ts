@@ -30,6 +30,10 @@ export class Test__Params {
   get param2(): i32 {
     return this._event.parameters[1].value.toI32();
   }
+
+  get param3(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
 }
 
 export class Example1__structMethodResultValue0Struct extends ethereum.Tuple {
