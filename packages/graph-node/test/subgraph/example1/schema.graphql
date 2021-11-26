@@ -18,6 +18,7 @@ type Author @entity {
   name: String! # string
   rating: BigDecimal!
   paramInt: Int! # uint8
+  paramBigInt: BigInt! # uint256
   paramBytes: Bytes!
   blogs: [Blog!]! @derivedFrom(field: "author")
 }

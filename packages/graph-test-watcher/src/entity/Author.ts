@@ -27,6 +27,9 @@ export class Author {
   @Column('integer')
   paramInt!: number
 
+  @Column('bigint', { transformer: bigintTransformer })
+  paramBigInt!: number
+
   @Column('varchar')
   paramBytes!: string
 

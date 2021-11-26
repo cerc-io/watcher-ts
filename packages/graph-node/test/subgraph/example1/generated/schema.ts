@@ -105,6 +105,7 @@ export class Author extends Entity {
     this.set("name", Value.fromString(""));
     this.set("rating", Value.fromBigDecimal(BigDecimal.zero()));
     this.set("paramInt", Value.fromI32(0));
+    this.set("paramBigInt", Value.fromBigInt(BigInt.zero()));
     this.set("paramBytes", Value.fromBytes(Bytes.empty()));
   }
 
@@ -168,6 +169,15 @@ export class Author extends Entity {
 
   set paramInt(value: i32) {
     this.set("paramInt", Value.fromI32(value));
+  }
+
+  get paramBigInt(): BigInt {
+    let value = this.get("paramBigInt");
+    return value!.toBigInt();
+  }
+
+  set paramBigInt(value: BigInt) {
+    this.set("paramBigInt", Value.fromBigInt(value));
   }
 
   get paramBytes(): Bytes {
