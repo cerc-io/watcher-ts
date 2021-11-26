@@ -4,6 +4,7 @@
 
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
+import { Indexer } from './indexer';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -40,6 +41,18 @@ export const getDummyEventData = (): EventData => {
   };
 };
 
+export const getDummyGraphData = (): any => {
+  return {
+    dataSource: {
+      address: ZERO_ADDRESS
+    }
+  };
+};
+
 export const getTestDatabase = (): Database => {
   return new Database({ type: 'postgres' }, '');
+};
+
+export const getTestIndexer = (): Indexer => {
+  return new Indexer();
 };

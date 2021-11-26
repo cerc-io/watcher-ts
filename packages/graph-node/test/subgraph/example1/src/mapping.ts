@@ -66,22 +66,6 @@ export function handleTest (event: Test): void {
 
   blog.save();
 
-  const contractAddress = dataSource.address();
-  const contract = Example1.bind(contractAddress);
-
-  // Access functions by calling them.
-  const res1 = contract.try_addMethod(BigInt.fromString('10'), BigInt.fromString('20'));
-  if (res1.reverted) {
-    log.debug('Contract eth call reverted', []);
-  } else {
-    log.debug('Contract eth call result: {}', [res1.value.toString()]);
-  }
-
-  // Access functions by calling them.
-  const res = contract.structMethod(BigInt.fromString('1000'), BigInt.fromString('500'));
-
-  log.debug('Contract eth call result: {}', [res.bidAmount1.toString()]);
-
   // Note: If a handler doesn't require existing field values, it is faster
   // _not_ to load the entity from the store. Instead, create it fresh with
   // `new Entity(...)`, set the fields that should be updated and save the
@@ -124,8 +108,8 @@ export function handleBlock (block: ethereum.Block): void {
   }
 }
 
-export function testEthCall (): void {
-  log.debug('In test eth call', []);
+export function testGetEthCall (): void {
+  log.debug('In test get eth call', []);
 
   // Bind the contract to the address that emitted the event.
   // TODO: Address.fromString throws error in WASM module instantiation.
@@ -138,6 +122,38 @@ export function testEthCall (): void {
     log.debug('Contract eth call reverted', []);
   } else {
     log.debug('Contract eth call result: {}', [res.value]);
+  }
+}
+
+export function testAddEthCall (): void {
+  log.debug('In test add eth call', []);
+
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+
+  // Access functions by calling them.
+  const res = contract.try_addMethod(BigInt.fromString('10'), BigInt.fromString('20'));
+  if (res.reverted) {
+    log.debug('Contract eth call reverted', []);
+  } else {
+    log.debug('Contract eth call result: {}', [res.value.toString()]);
+  }
+}
+
+export function testStructEthCall (): void {
+  log.debug('In test struct eth call', []);
+
+  // Bind the contract to the address that emitted the event.
+  // TODO: Address.fromString throws error in WASM module instantiation.
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+
+  // Access functions by calling them.
+  const res = contract.try_structMethod(BigInt.fromString('1000'), BigInt.fromString('500'));
+  if (res.reverted) {
+    log.debug('Contract eth call reverted', []);
+  } else {
+    log.debug('Contract eth call result: {}', [res.value.toString()]);
   }
 }
 
