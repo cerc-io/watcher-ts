@@ -33,7 +33,7 @@ const BN_SIZE = 33;
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
 // (for eg. bigInt.fromString(negativeI32Value))
-const BN_ENDIANNESS = 'le';
+export const BN_ENDIANNESS = 'le';
 
 type idOfType = (TypeId: number) => number
 
@@ -214,8 +214,17 @@ export const instantiate = async (
 
         return ptr;
       },
-      'typeConversion.bigIntToHex': () => {
-        console.log('index typeConversion.bigIntToHex');
+      'typeConversion.bigIntToHex': async (bigInt: number) => {
+        const bigIntInstance = await BigInt.wrap(bigInt);
+        const bigIntString = await bigIntInstance.toString();
+        console.log('bigint string', __getString(bigIntString));
+
+        // Create a BN with 'le' endianness.
+        const bigNumber = new BN(__getString(bigIntString));
+
+        const bigNumberHex = bigNumber.toString('hex');
+
+        return __newString(bigNumberHex);
       },
 
       'typeConversion.bytesToHex': async (bytes: number) => {
@@ -225,11 +234,19 @@ export const instantiate = async (
 
         return ptr;
       },
-      'typeConversion.bytesToString': () => {
-        console.log('index typeConversion.bytesToString');
+      'typeConversion.bytesToString': async (bytes: number) => {
+        const byteArray = __getArray(bytes);
+        const string = utils.toUtf8String(byteArray);
+        const ptr = await __newString(string);
+
+        return ptr;
       },
-      'typeConversion.bytesToBase58': () => {
-        console.log('index typeConversion.bytesToBase58');
+      'typeConversion.bytesToBase58': async (n: number) => {
+        const uint8Array = __getArray(n);
+        const string = utils.base58.encode(uint8Array);
+        const ptr = await __newString(string);
+
+        return ptr;
       }
     },
     numbers: {

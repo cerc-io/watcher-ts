@@ -170,6 +170,26 @@ export function testBytesToHex (): string {
   return res;
 }
 
+export function testBytesToString (value: string): string {
+  log.debug('In test bytesToString', []);
+
+  const byteArray = ByteArray.fromUTF8(value);
+  const res = byteArray.toString();
+  log.debug('typeConversion.bytesToString result: {}', [res]);
+
+  return res;
+}
+
+export function testBytesToBase58 (value: string): string {
+  log.debug('In test bytesToBase58', []);
+
+  const byteArray = ByteArray.fromUTF8(value);
+  const res = byteArray.toBase58();
+  log.debug('typeConversion.bytesToBase58 result: {}', [res]);
+
+  return res;
+}
+
 export function testBigIntToString (): string {
   log.debug('In test bigIntToString', []);
 
@@ -408,4 +428,21 @@ export function testBigIntWithI32 (value: string): string[] {
   log.debug('bigInt.FromString result 3: {}', [res3]);
 
   return [res1, res2, res3];
+}
+
+export function testBigIntToHex (value: string): string[] {
+  log.debug('In testBigIntToHex', []);
+
+  const variableI32: i32 = parseInt(value) as i32;
+
+  const bigInt1 = BigInt.fromI32(variableI32);
+  const bigInt2 = BigInt.fromString(value);
+
+  const res1 = bigInt1.toHex();
+  log.debug('bigInt.toHex result 1: {}', [res1]);
+
+  const res2 = bigInt2.toHex();
+  log.debug('bigInt.toHex result 2: {}', [res2]);
+
+  return [res1, res2];
 }
