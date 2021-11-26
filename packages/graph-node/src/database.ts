@@ -6,10 +6,12 @@ import assert from 'assert';
 import {
   Connection,
   ConnectionOptions,
-  FindOneOptions
+  FindOneOptions,
+  LessThanOrEqual
 } from 'typeorm';
 
 import {
+  BlockHeight,
   Database as BaseDatabase
 } from '@vulcanize/util';
 
@@ -74,76 +76,91 @@ export class Database {
     }
   }
 
-  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, blockHash?: string): Promise<Entity | undefined> {
+  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, block: BlockHeight = {}): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
+    let { hash: blockHash, number: blockNumber } = block;
 
     try {
       const repo = queryRunner.manager.getRepository(entity);
 
-      let selectQueryBuilder = repo.createQueryBuilder('entity');
+      const whereOptions: any = { id };
 
-      selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id })
-        .orderBy('entity.block_number', 'DESC');
-
-      // Use blockHash if provided.
-      if (blockHash) {
-        // Fetching blockHash for previous entity in frothy region.
-        const { blockHash: entityblockHash, blockNumber, id: frothyId } = await this._baseDatabase.getFrothyEntity(queryRunner, repo, { blockHash, id });
-
-        if (frothyId) {
-          // If entity found in frothy region.
-          selectQueryBuilder = selectQueryBuilder.andWhere('entity.block_hash = :entityblockHash', { entityblockHash });
-        } else {
-          // If entity not in frothy region.
-          const canonicalBlockNumber = blockNumber + 1;
-
-          selectQueryBuilder = selectQueryBuilder.innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
-            .andWhere('block.is_pruned = false')
-            .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }
+      if (blockNumber) {
+        whereOptions.blockNumber = LessThanOrEqual(blockNumber);
       }
 
-      // TODO: Implement query for nested relations.
-      Object.entries(relations).forEach(([field, data], index) => {
-        const { entity: relatedEntity, isArray, isDerived, field: derivedField } = data;
-        const alias = `relatedEntity${index}`;
-        let condition: string;
+      if (blockHash) {
+        whereOptions.blockHash = blockHash;
+        const block = await this._baseDatabase.getBlockProgress(queryRunner.manager.getRepository('block_progress'), blockHash);
+        blockNumber = block?.blockNumber;
+      }
 
-        if (isDerived) {
-          // For derived relational field.
-          condition = `${alias}.${derivedField} = entity.id AND ${alias}.block_number <= entity.block_number`;
+      const findOptions = {
+        where: whereOptions,
+        order: {
+          blockNumber: 'DESC'
+        }
+      };
 
-          selectQueryBuilder = selectQueryBuilder.addOrderBy(`${alias}.id`);
-        } else {
-          if (isArray) {
-            // For one to many relational field.
-            condition = `${alias}.id IN (SELECT unnest(entity.${field})) AND ${alias}.block_number <= entity.block_number`;
+      let entityData: any = await repo.findOne(findOptions as FindOneOptions<Entity>);
+
+      if (!entityData && findOptions.where.blockHash) {
+        entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+      }
+
+      if (entityData) {
+        // Populate relational fields.
+        // TODO: Implement query for nested relations.
+        const relationQueryPromises = Object.entries(relations).map(async ([field, data]) => {
+          assert(entityData);
+          const { entity: relatedEntity, isArray, isDerived, field: derivedField } = data;
+
+          const repo = queryRunner.manager.getRepository(relatedEntity);
+          let selectQueryBuilder = repo.createQueryBuilder('entity');
+
+          if (isDerived) {
+            // For derived relational field.
+            selectQueryBuilder = selectQueryBuilder.where(`entity.${derivedField} = :id`, { id: entityData.id });
+
+            if (isArray) {
+              selectQueryBuilder = selectQueryBuilder.distinctOn(['entity.id'])
+                .orderBy('entity.id');
+            } else {
+              selectQueryBuilder = selectQueryBuilder.limit(1);
+            }
           } else {
-            // For one to one relational field.
-            condition = `entity.${field} = ${alias}.id AND ${alias}.block_number <= entity.block_number`;
+            if (isArray) {
+              // For one to many relational field.
+              selectQueryBuilder = selectQueryBuilder.where('entity.id IN (:...ids)', { ids: entityData[field] })
+                .distinctOn(['entity.id'])
+                .orderBy('entity.id');
+            } else {
+              // For one to one relational field.
+              selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id: entityData[field] })
+                .limit(1);
+            }
+
+            selectQueryBuilder = selectQueryBuilder.addOrderBy('entity.block_number', 'DESC');
           }
 
-          selectQueryBuilder = selectQueryBuilder.addOrderBy(`${alias}.block_number`, 'DESC');
-        }
+          if (blockNumber) {
+            selectQueryBuilder = selectQueryBuilder.andWhere(
+              'entity.block_number <= :blockNumber',
+              { blockNumber }
+            );
+          }
 
-        if (isArray) {
-          selectQueryBuilder = selectQueryBuilder.leftJoinAndMapMany(
-            `entity.${field}`,
-            relatedEntity,
-            alias,
-            condition
-          );
-        } else {
-          selectQueryBuilder = selectQueryBuilder.leftJoinAndMapOne(
-            `entity.${field}`,
-            relatedEntity,
-            alias,
-            condition
-          );
-        }
-      });
+          if (isArray) {
+            entityData[field] = await selectQueryBuilder.getMany();
+          } else {
+            entityData[field] = await selectQueryBuilder.getOne();
+          }
+        });
 
-      return selectQueryBuilder.getOne();
+        await Promise.all(relationQueryPromises);
+      }
+
+      return entityData;
     } finally {
       await queryRunner.release();
     }

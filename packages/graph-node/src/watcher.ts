@@ -11,7 +11,7 @@ import { ContractInterface, utils } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock, BlockHeight } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
 import { Context, instantiate } from './loader';
@@ -177,9 +177,9 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, relations: { [key: string]: any }, blockHash?: string): Promise<any> {
+  async getEntity<Entity> (entity: new () => Entity, id: string, relations: { [key: string]: any }, block?: BlockHeight): Promise<any> {
     // Get entity from the database.
-    const result = await this._database.getEntityWithRelations(entity, id, relations, blockHash) as any;
+    const result = await this._database.getEntityWithRelations(entity, id, relations, block) as any;
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);

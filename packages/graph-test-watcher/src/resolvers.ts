@@ -59,19 +59,19 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       blog: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Blog | undefined> => {
         log('blog', id, block);
 
-        return indexer.getSubgraphEntity(Blog, id, block.hash);
+        return indexer.getSubgraphEntity(Blog, id, block);
       },
 
       category: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Category | undefined> => {
         log('category', id, block);
 
-        return indexer.getSubgraphEntity(Category, id, block.hash);
+        return indexer.getSubgraphEntity(Category, id, block);
       },
 
       author: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Author | undefined> => {
         log('author', id, block);
 
-        return indexer.getSubgraphEntity(Author, id, block.hash);
+        return indexer.getSubgraphEntity(Author, id, block);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {

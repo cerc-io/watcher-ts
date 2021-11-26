@@ -16,7 +16,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, updateStateForElementaryType } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, updateStateForElementaryType, BlockHeight } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
@@ -546,10 +546,10 @@ export class Indexer implements IndexerInterface {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash?: string): Promise<Entity | undefined> {
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block: BlockHeight): Promise<Entity | undefined> {
     const relations = this._relationsMap.get(entity) || {};
 
-    const data = await this._graphWatcher.getEntity(entity, id, relations, blockHash);
+    const data = await this._graphWatcher.getEntity(entity, id, relations, block);
 
     return data;
   }
