@@ -11,9 +11,9 @@ import { ValueResult, BlockHeight } from '@vulcanize/util';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
-import { ExampleEntity } from './entity/ExampleEntity';
-import { RelatedEntity } from './entity/RelatedEntity';
-import { ManyRelatedEntity } from './entity/ManyRelatedEntity';
+import { Author } from './entity/Author';
+import { Blog } from './entity/Blog';
+import { Category } from './entity/Category';
 
 const log = debug('vulcanize:resolver');
 
@@ -57,22 +57,22 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer._test(blockHash, contractAddress);
       },
 
-      relatedEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<RelatedEntity | undefined> => {
-        log('relatedEntity', id, block);
+      blog: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Blog | undefined> => {
+        log('blog', id, block);
 
-        return indexer.getSubgraphEntity(RelatedEntity, id, block.hash);
+        return indexer.getSubgraphEntity(Blog, id, block);
       },
 
-      manyRelatedEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<ManyRelatedEntity | undefined> => {
-        log('relatedEntity', id, block);
+      category: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Category | undefined> => {
+        log('category', id, block);
 
-        return indexer.getSubgraphEntity(ManyRelatedEntity, id, block.hash);
+        return indexer.getSubgraphEntity(Category, id, block);
       },
 
-      exampleEntity: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<ExampleEntity | undefined> => {
-        log('exampleEntity', id, block);
+      author: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Author | undefined> => {
+        log('author', id, block);
 
-        return indexer.getSubgraphEntity(ExampleEntity, id, block.hash);
+        return indexer.getSubgraphEntity(Author, id, block);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
