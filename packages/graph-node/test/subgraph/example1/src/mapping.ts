@@ -325,6 +325,61 @@ export function testBigIntMod (value1: string, value2: string): string {
   return res.toString();
 }
 
+export function testBigIntBitOr (value1: string, value2: string): string {
+  log.debug('In test bigInt.bitOr', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1 | bigInt2;
+  log.debug('bigInt.bitOr result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntBitAnd (value1: string, value2: string): string {
+  log.debug('In test bigInt.bitAnd', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1 & bigInt2;
+  log.debug('bigInt.bitAnd result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntLeftShift (value1: string, value2: u8): string {
+  log.debug('In test bigInt.leftShift', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bits = value2;
+
+  const res = bigInt1 << bits;
+  log.debug('bigInt.leftShift result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntRightShift (value1: string, value2: u8): string {
+  log.debug('In test bigInt.RightShift', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bits = value2;
+
+  const res = bigInt1 >> bits;
+  log.debug('bigInt.RightShift result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntPow (value1: string, value2: u8): string {
+  log.debug('In test bigInt.pow', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const exp = value2;
+
+  const res = bigInt1.pow(exp);
+  log.debug('bigInt.pow result: {}', [res.toString()]);
+  return res.toString();
+}
+
 export function testBigIntFromString (value: string): string {
   log.debug('In test bigInt.fromString', []);
 

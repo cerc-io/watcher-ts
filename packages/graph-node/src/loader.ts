@@ -464,20 +464,80 @@ export const instantiate = async (
 
         return remainderBigInt;
       },
-      'bigInt.bitOr': () => {
-        console.log('bigInt.bitOr');
+      'bigInt.bitOr': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Create a bigNumber y.
+        const yBigInt = await BigInt.wrap(y);
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
+
+        // Perform the bigNumber bit or operation.
+        const res = xBigNumber.or(yBigNumber);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.bitAnd': () => {
-        console.log('bigInt.bitAnd');
+      'bigInt.bitAnd': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Create a bigNumber y.
+        const yBigInt = await BigInt.wrap(y);
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
+
+        // Perform the bigNumber bit and operation.
+        const res = xBigNumber.and(yBigNumber);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.leftShift': () => {
-        console.log('bigInt.leftShift');
+      'bigInt.leftShift': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber left shift operation.
+        const res = xBigNumber.shl(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.rightShift': () => {
-        console.log('bigInt.rightShift');
+      'bigInt.rightShift': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber right shift operation.
+        const res = xBigNumber.shr(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.pow': () => {
-        console.log('bigInt.pow');
+      'bigInt.pow': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber pow operation.
+        const res = xBigNumber.pow(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       }
     },
     datasource: {
