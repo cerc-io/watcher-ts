@@ -43,7 +43,6 @@ export class Database {
   }
 
   async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined> {
-    // TODO: Take block number as an optional argument
     const queryRunner = this._conn.createQueryRunner();
 
     try {
@@ -134,6 +133,23 @@ export class Database {
               selectQueryBuilder = selectQueryBuilder.where('entity.id IN (:...ids)', { ids: entityData[field] })
                 .distinctOn(['entity.id'])
                 .orderBy('entity.id');
+
+              // Subquery example if distinctOn is not performant.
+              //
+              // SELECT c.*
+              // FROM
+              //   categories c,
+              //   (
+              //     SELECT id, MAX(block_number) as block_number
+              //     FROM categories
+              //     WHERE
+              //       id IN ('nature', 'tech', 'issues')
+              //       AND
+              //       block_number <= 127
+              //     GROUP BY id
+              //   ) a
+              // WHERE
+              //   c.id = a.id AND c.block_number = a.block_number
             } else {
               // For one to one relational field.
               selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id: entityData[field] })

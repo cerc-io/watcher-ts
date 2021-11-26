@@ -456,7 +456,9 @@ export class Database {
         FROM
           block_progress b
           LEFT JOIN
-            ${repo.metadata.tableName} e ON e.block_hash = b.block_hash
+            ${repo.metadata.tableName} e
+            ON e.block_hash = b.block_hash
+            AND e.id = $2
         WHERE
           b.block_hash = $1
         UNION ALL
