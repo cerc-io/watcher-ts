@@ -65,109 +65,109 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       producer: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producer', id, block);
 
-        return indexer.getSubgraphEntity(Producer, id, block.hash);
+        return indexer.getSubgraphEntity(Producer, id, block);
       },
 
       producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerSet', id, block);
 
-        return indexer.getSubgraphEntity(ProducerSet, id, block.hash);
+        return indexer.getSubgraphEntity(ProducerSet, id, block);
       },
 
       producerSetChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerSetChange', id, block);
 
-        return indexer.getSubgraphEntity(ProducerSetChange, id, block.hash);
+        return indexer.getSubgraphEntity(ProducerSetChange, id, block);
       },
 
       producerRewardCollectorChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerRewardCollectorChange', id, block);
 
-        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block.hash);
+        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block);
       },
 
       rewardScheduleEntry: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('rewardScheduleEntry', id, block);
 
-        return indexer.getSubgraphEntity(RewardScheduleEntry, id, block.hash);
+        return indexer.getSubgraphEntity(RewardScheduleEntry, id, block);
       },
 
       rewardSchedule: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('rewardSchedule', id, block);
 
-        return indexer.getSubgraphEntity(RewardSchedule, id, block.hash);
+        return indexer.getSubgraphEntity(RewardSchedule, id, block);
       },
 
       producerEpoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerEpoch', id, block);
 
-        return indexer.getSubgraphEntity(ProducerEpoch, id, block.hash);
+        return indexer.getSubgraphEntity(ProducerEpoch, id, block);
       },
 
       block: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('block', id, block);
 
-        return indexer.getSubgraphEntity(Block, id, block.hash);
+        return indexer.getSubgraphEntity(Block, id, block);
       },
 
       epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('epoch', id, block);
 
-        return indexer.getSubgraphEntity(Epoch, id, block.hash);
+        return indexer.getSubgraphEntity(Epoch, id, block);
       },
 
       slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slotClaim', id, block);
 
-        return indexer.getSubgraphEntity(SlotClaim, id, block.hash);
+        return indexer.getSubgraphEntity(SlotClaim, id, block);
       },
 
       slot: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slot', id, block);
 
-        return indexer.getSubgraphEntity(Slot, id, block.hash);
+        return indexer.getSubgraphEntity(Slot, id, block);
       },
 
       staker: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('staker', id, block);
 
-        return indexer.getSubgraphEntity(Staker, id, block.hash);
+        return indexer.getSubgraphEntity(Staker, id, block);
       },
 
       network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('network', id, block);
 
-        return indexer.getSubgraphEntity(Network, id, block.hash);
+        return indexer.getSubgraphEntity(Network, id, block);
       },
 
       distributor: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('distributor', id, block);
 
-        return indexer.getSubgraphEntity(Distributor, id, block.hash);
+        return indexer.getSubgraphEntity(Distributor, id, block);
       },
 
       distribution: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('distribution', id, block);
 
-        return indexer.getSubgraphEntity(Distribution, id, block.hash);
+        return indexer.getSubgraphEntity(Distribution, id, block);
       },
 
       claim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('claim', id, block);
 
-        return indexer.getSubgraphEntity(Claim, id, block.hash);
+        return indexer.getSubgraphEntity(Claim, id, block);
       },
 
       slash: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slash', id, block);
 
-        return indexer.getSubgraphEntity(Slash, id, block.hash);
+        return indexer.getSubgraphEntity(Slash, id, block);
       },
 
       account: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('account', id, block);
 
-        return indexer.getSubgraphEntity(Account, id, block.hash);
+        return indexer.getSubgraphEntity(Account, id, block);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {

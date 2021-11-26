@@ -1,6 +1,0 @@
-query manyRelatedEntity($id: String!, $blockHash: Bytes!){
-    manyRelatedEntity(id: $id, block: { hash: $blockHash }){
-        id
-        count
-    }
-}

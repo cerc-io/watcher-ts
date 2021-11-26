@@ -53,7 +53,13 @@ export interface Context {
   }
 }
 
-export const instantiate = async (database: Database, indexer: IndexerInterface, context: Context, filePath: string, data: GraphData = {}): Promise<loader.ResultObject & { exports: any }> => {
+export const instantiate = async (
+  database: Database,
+  indexer: IndexerInterface,
+  context: Context,
+  filePath: string,
+  data: GraphData = {}
+): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
   const provider = getDefaultProvider(NETWORK_URL);
