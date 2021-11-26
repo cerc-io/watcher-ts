@@ -14,10 +14,40 @@
           "internalType": "uint8",
           "name": "param2",
           "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "param3",
+          "type": "uint256"
         }
       ],
       "name": "Test",
       "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint128",
+          "name": "bidAmount1",
+          "type": "uint128"
+        },
+        {
+          "internalType": "uint128",
+          "name": "bidAmount2",
+          "type": "uint128"
+        }
+      ],
+      "name": "addMethod",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
     },
     {
       "inputs": [],
@@ -43,6 +73,42 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint128",
+          "name": "bidAmount1",
+          "type": "uint128"
+        },
+        {
+          "internalType": "uint128",
+          "name": "bidAmount2",
+          "type": "uint128"
+        }
+      ],
+      "name": "structMethod",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint128",
+              "name": "bidAmount1",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint128",
+              "name": "bidAmount2",
+              "type": "uint128"
+            }
+          ],
+          "internalType": "struct Example.Bid",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     }
   ],

@@ -35,11 +35,16 @@ describe('call handler in mapping code', () => {
 
     sandbox.on(db, 'fromGraphEntity', async (instanceExports: any, block: Block, entity: string, entityInstance: any) => {
       const entityFields = [
-        { type: 'varchar', propertyName: 'blockHash' },
-        { type: 'integer', propertyName: 'blockNumber' },
+        { type: 'varchar', propertyName: 'id' },
         { type: 'bigint', propertyName: 'count' },
-        { type: 'varchar', propertyName: 'param1' },
-        { type: 'integer', propertyName: 'param2' }
+        { type: 'varchar', propertyName: 'paramString' },
+        { type: 'integer', propertyName: 'paramInt' },
+        { type: 'bigint', propertyName: 'paramBigInt' },
+        { type: 'boolean', propertyName: 'paramBoolean' },
+        { type: 'varchar', propertyName: 'paramBytes' },
+        { type: 'numeric', propertyName: 'paramBigDecimal' },
+        { type: 'varchar', propertyName: 'related' },
+        { type: 'varchar', propertyName: 'manyRelated' }
       ];
 
       return db.getEntityValues(instanceExports, block, entityInstance, entityFields);
@@ -69,12 +74,13 @@ describe('call handler in mapping code', () => {
 
     // Create event params data.
     const contractInterface = new utils.Interface(abi);
-    const eventFragment = contractInterface.getEvent('Test(string,uint8)');
+    const eventFragment = contractInterface.getEvent('Test(string,uint8,uint256)');
     dummyEventData.inputs = eventFragment.inputs;
 
     dummyEventData.event = {
       param1: 'abc',
-      param2: BigInt(123)
+      param2: BigInt(150),
+      param3: BigInt(564894232132154)
     };
 
     // Dummy contract address string.

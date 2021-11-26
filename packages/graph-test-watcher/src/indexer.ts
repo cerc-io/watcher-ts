@@ -584,10 +584,11 @@ export class Indexer implements IndexerInterface {
     switch (logDescription.name) {
       case TEST_EVENT: {
         eventName = logDescription.name;
-        const { param1, param2 } = logDescription.args;
+        const { param1, param2, param3 } = logDescription.args;
         eventInfo = {
           param1,
-          param2
+          param2,
+          param3: BigInt(param3.toString())
         };
 
         break;
