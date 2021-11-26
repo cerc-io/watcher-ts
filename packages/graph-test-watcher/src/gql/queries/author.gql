@@ -1,0 +1,16 @@
+query author($id: String!, $blockHash: Bytes!){
+    author(id: $id, block: { hash: $blockHash }){
+        id
+        blogCount
+        name
+        rating
+        paramInt
+        paramBytes
+        blogs {
+            id
+            kind
+            reviews
+            isActive
+        }
+    }
+}

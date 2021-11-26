@@ -4,7 +4,7 @@ import {
   Example1,
   Test
 } from '../generated/Example1/Example1';
-import { ExampleEntity, ManyRelatedEntity, RelatedEntity } from '../generated/schema';
+import { Author, Blog, Category } from '../generated/schema';
 
 export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
@@ -15,52 +15,54 @@ export function handleTest (event: Test): void {
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex());
+  let author = Author.load(event.transaction.from.toHex());
 
   // Entities only exist after they have been saved to the store;
   // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex());
+  if (!author) {
+    author = new Author(event.transaction.from.toHex());
 
     // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromString('0');
+    author.blogCount = BigInt.fromString('0');
   }
 
   // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromString('1');
+  author.blogCount = author.blogCount + BigInt.fromString('1');
 
   // Entity fields can be set based on event parameters
-  entity.paramString = event.params.param1;
-  entity.paramInt = event.params.param2;
-  entity.paramBoolean = true;
-  entity.paramBytes = event.address;
-  entity.paramEnum = 'choice1';
-  entity.paramBigDecimal = BigDecimal.fromString('123');
-
-  let relatedEntity = RelatedEntity.load(event.params.param1);
-
-  if (!relatedEntity) {
-    relatedEntity = new RelatedEntity(event.params.param1);
-    relatedEntity.paramBigInt = BigInt.fromString('123');
-  }
-
-  const bigIntArray = relatedEntity.bigIntArray;
-  bigIntArray.push(entity.count);
-  relatedEntity.bigIntArray = bigIntArray;
-
-  relatedEntity.save();
-  entity.related = relatedEntity.id;
-
-  const manyRelatedEntity = new ManyRelatedEntity(event.transaction.hash.toHexString());
-  manyRelatedEntity.count = entity.count;
-  manyRelatedEntity.save();
-
-  const manyRelated = entity.manyRelated;
-  manyRelated.push(manyRelatedEntity.id);
-  entity.manyRelated = manyRelated;
+  author.name = event.params.param1;
+  author.paramInt = event.params.param2;
+  author.paramBytes = event.address;
+  author.rating = BigDecimal.fromString('4');
 
   // Entities can be written to the store with `.save()`
-  entity.save();
+  author.save();
+
+  let category = Category.load(author.blogCount.toString());
+
+  if (!category) {
+    category = new Category(author.blogCount.toString());
+    category.name = event.params.param1;
+  }
+
+  category.count = category.count + BigInt.fromString('1');
+  category.save();
+
+  const blog = new Blog(event.transaction.hash.toHexString());
+  blog.kind = 'long';
+  blog.isActive = true;
+
+  const blogReviews = blog.reviews;
+  blogReviews.push(BigInt.fromString('4'));
+  blog.reviews = blogReviews;
+
+  blog.author = author.id;
+
+  const categories = blog.categories;
+  categories.push(category.id);
+  blog.categories = categories;
+
+  blog.save();
 
   const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);

@@ -4,10 +4,10 @@
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-import { bigintTransformer, bigintArrayTransformer } from '@vulcanize/util';
+import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
-export class RelatedEntity {
+export class Category {
   @PrimaryColumn('varchar')
   id!: string;
 
@@ -18,8 +18,8 @@ export class RelatedEntity {
   blockNumber!: number;
 
   @Column('bigint', { transformer: bigintTransformer })
-  paramBigInt!: bigint;
+  count!: bigint;
 
-  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
-  bigIntArray!: bigint[];
+  @Column('varchar')
+  name!: string;
 }
