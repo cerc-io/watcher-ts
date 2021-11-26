@@ -10,7 +10,7 @@ contract Example {
         uint128 bidAmount2;
     }
 
-    event Test(string param1, uint8 param2);
+    event Test(string param1, uint8 param2, uint256 param3);
 
     function getMethod() public view virtual returns (string memory)
     {
@@ -30,7 +30,7 @@ contract Example {
     }
 
     function emitEvent() public virtual returns (bool) {
-        emit Test('abc', 123);
+        emit Test('abc', 150, 564894232132154);
 
         return true;
     }

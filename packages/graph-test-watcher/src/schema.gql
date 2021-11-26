@@ -62,6 +62,7 @@ union Event = TestEvent
 type TestEvent {
   param1: String!
   param2: Int!
+  param3: BigInt!
 }
 
 type ResultIPLDBlock {
@@ -110,6 +111,7 @@ type Author {
   name: String!
   rating: BigDecimal!
   paramInt: Int!
+  paramBigInt: BigInt!
   paramBytes: Bytes!
   blogs: [Blog!]!
 }

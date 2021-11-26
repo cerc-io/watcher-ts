@@ -19,7 +19,7 @@ dataSources:
         - name: Example1
           file: ./abis/Example1.json
       eventHandlers:
-        - event: Test(string,uint8)
+        - event: Test(string,uint8,uint256)
           handler: handleTest
       blockHandlers:
         - handler: handleBlock
