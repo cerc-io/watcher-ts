@@ -13,11 +13,12 @@ import {
 } from 'ethers';
 import JSONbig from 'json-bigint';
 import BN from 'bn.js';
+import debug from 'debug';
 
 import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
-import { TypeId } from './types';
+import { TypeId, Level } from './types';
 import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal, digitsToString } from './utils';
 import { Database } from './database';
 
@@ -52,6 +53,8 @@ export interface Context {
   }
 }
 
+const log = debug('vulcanize:graph-node');
+
 export const instantiate = async (
   database: Database,
   indexer: IndexerInterface,
@@ -76,7 +79,7 @@ export const instantiate = async (
           return null;
         }
 
-        return database.toGraphEntity(exports, entityName, entityData);
+        return database.toGraphEntity(instanceExports, entityName, entityData);
       },
       'store.set': async (entity: number, id: number, data: number) => {
         const entityName = __getString(entity);
@@ -84,7 +87,7 @@ export const instantiate = async (
         const entityInstance = await Entity.wrap(data);
 
         assert(context.event.block);
-        let dbData = await database.fromGraphEntity(exports, context.event.block, entityName, entityInstance);
+        let dbData = await database.fromGraphEntity(instanceExports, context.event.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
 
         // Resolve any field name conflicts in the dbData for auto-diff.
@@ -103,8 +106,8 @@ export const instantiate = async (
         await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
       },
 
-      'log.log': (_: number, msg: number) => {
-        console.log('log.log', __getString(msg));
+      'log.log': (level: number, msg: number) => {
+        log('log %s | %s', Level[level], __getString(msg));
       },
 
       'test.asyncMethod': async () => {
@@ -148,7 +151,7 @@ export const instantiate = async (
         try {
           const functionParamsPromise = functionParams.map(async param => {
             const ethereumValue = await ethereum.Value.wrap(param);
-            return fromEthereumValue(exports, ethereumValue);
+            return fromEthereumValue(instanceExports, ethereumValue);
           });
 
           functionParams = await Promise.all(functionParamsPromise);
@@ -172,7 +175,7 @@ export const instantiate = async (
               output: any,
               index: number
             ) => toEthereumValue(
-              exports,
+              instanceExports,
               output,
               result[index]
             )
@@ -214,8 +217,14 @@ export const instantiate = async (
 
         return ptr;
       },
-      'typeConversion.bigIntToHex': () => {
-        console.log('index typeConversion.bigIntToHex');
+      'typeConversion.bigIntToHex': async (bigInt: number) => {
+        const bigIntInstance = await BigInt.wrap(bigInt);
+        const bigIntString = await bigIntInstance.toString();
+
+        const bigNumber = BigNumber.from(__getString(bigIntString));
+        const bigNumberHex = bigNumber.toHexString();
+
+        return __newString(bigNumberHex);
       },
 
       'typeConversion.bytesToHex': async (bytes: number) => {
@@ -225,11 +234,19 @@ export const instantiate = async (
 
         return ptr;
       },
-      'typeConversion.bytesToString': () => {
-        console.log('index typeConversion.bytesToString');
+      'typeConversion.bytesToString': async (bytes: number) => {
+        const byteArray = __getArray(bytes);
+        const string = utils.toUtf8String(byteArray);
+        const ptr = await __newString(string);
+
+        return ptr;
       },
-      'typeConversion.bytesToBase58': () => {
-        console.log('index typeConversion.bytesToBase58');
+      'typeConversion.bytesToBase58': async (n: number) => {
+        const uint8Array = __getArray(n);
+        const string = utils.base58.encode(uint8Array);
+        const ptr = await __newString(string);
+
+        return ptr;
       }
     },
     numbers: {
@@ -464,20 +481,80 @@ export const instantiate = async (
 
         return remainderBigInt;
       },
-      'bigInt.bitOr': () => {
-        console.log('bigInt.bitOr');
+      'bigInt.bitOr': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Create a bigNumber y.
+        const yBigInt = await BigInt.wrap(y);
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
+
+        // Perform the bigNumber bit or operation.
+        const res = xBigNumber.or(yBigNumber);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.bitAnd': () => {
-        console.log('bigInt.bitAnd');
+      'bigInt.bitAnd': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Create a bigNumber y.
+        const yBigInt = await BigInt.wrap(y);
+        const yStringPtr = await yBigInt.toString();
+        const yBigNumber = BigNumber.from(__getString(yStringPtr));
+
+        // Perform the bigNumber bit and operation.
+        const res = xBigNumber.and(yBigNumber);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.leftShift': () => {
-        console.log('bigInt.leftShift');
+      'bigInt.leftShift': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber left shift operation.
+        const res = xBigNumber.shl(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.rightShift': () => {
-        console.log('bigInt.rightShift');
+      'bigInt.rightShift': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber right shift operation.
+        const res = xBigNumber.shr(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       },
-      'bigInt.pow': () => {
-        console.log('bigInt.pow');
+      'bigInt.pow': async (x: number, y: number) => {
+        // Create a bigNumber x.
+        const xBigInt = await BigInt.wrap(x);
+        const xStringPtr = await xBigInt.toString();
+        const xBigNumber = BigNumber.from(__getString(xStringPtr));
+
+        // Perform the bigNumber pow operation.
+        const res = xBigNumber.pow(y);
+        const ptr = await __newString(res.toString());
+        const resBigInt = BigInt.fromString(ptr);
+
+        return resBigInt;
       }
     },
     datasource: {
@@ -490,17 +567,17 @@ export const instantiate = async (
   };
 
   const instance = await loader.instantiate(buffer, imports);
-  const { exports } = instance;
+  const { exports: instanceExports } = instance;
 
-  const { __getString, __newString, __getArray, __newArray } = exports;
+  const { __getString, __newString, __getArray, __newArray } = instanceExports;
 
   // TODO: Assign from types file generated by graph-cli
-  const getIdOfType: idOfType = exports.id_of_type as idOfType;
-  const BigDecimal: any = exports.BigDecimal as any;
-  const BigInt: any = exports.BigInt as any;
-  const Address: any = exports.Address as any;
-  const ethereum: any = exports.ethereum as any;
-  const Entity: any = exports.Entity as any;
+  const getIdOfType: idOfType = instanceExports.id_of_type as idOfType;
+  const BigDecimal: any = instanceExports.BigDecimal as any;
+  const BigInt: any = instanceExports.BigInt as any;
+  const Address: any = instanceExports.Address as any;
+  const ethereum: any = instanceExports.ethereum as any;
+  const Entity: any = instanceExports.Entity as any;
 
   return instance;
 };
