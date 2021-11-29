@@ -125,6 +125,41 @@ describe('numbers wasm tests', () => {
     expect(__getString(ptr)).to.equal('1283174719');
   });
 
+  it('should execute bigInt bitOr API', async () => {
+    const { testBigIntBitOr, __getString, __newString } = exports;
+
+    const ptr = await testBigIntBitOr(await __newString('2315432122132354'), await __newString('5465265645'));
+    expect(__getString(ptr)).to.equal('2315433208543215');
+  });
+
+  it('should execute bigInt bitAnd API', async () => {
+    const { testBigIntBitAnd, __getString, __newString } = exports;
+
+    const ptr = await testBigIntBitAnd(await __newString('2315432122132354'), await __newString('5465265645'));
+    expect(__getString(ptr)).to.equal('4378854784');
+  });
+
+  it('should execute bigInt leftShift API', async () => {
+    const { testBigIntLeftShift, __getString, __newString } = exports;
+
+    const ptr = await testBigIntLeftShift(await __newString('2315432122132354'), 3);
+    expect(__getString(ptr)).to.equal('18523456977058832');
+  });
+
+  it('should execute bigInt rightShift API', async () => {
+    const { testBigIntRightShift, __getString, __newString } = exports;
+
+    const ptr = await testBigIntRightShift(await __newString('2315432122132354'), 3);
+    expect(__getString(ptr)).to.equal('289429015266544');
+  });
+
+  it('should execute bigInt pow API', async () => {
+    const { testBigIntPow, __getString, __newString } = exports;
+
+    const ptr = await testBigIntPow(await __newString('2315432'), 5);
+    expect(__getString(ptr)).to.equal('66551853520489467542782546706432');
+  });
+
   it('should execute bigDecimal toString API', async () => {
     const { testBigDecimalToString, __newString, __getString } = exports;
 

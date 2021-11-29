@@ -64,4 +64,11 @@ describe('wasm loader tests', () => {
     const bar = await Bar.__new(await __newString('test'));
     expect(__getString(await bar.prop)).to.equal('test');
   });
+
+  it('should log messages', async () => {
+    const { testLog } = exports;
+
+    // Should print all log messages for different levels.
+    await testLog();
+  });
 });
