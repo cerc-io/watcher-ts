@@ -13,8 +13,9 @@ import { createEvent, Block, createBlock } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
-import { getDummyEventData, getTestDatabase } from '../test/utils';
+import { getDummyEventData, getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
+import { Indexer } from '../test/utils/indexer';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -24,12 +25,20 @@ const sandbox = chai.spy.sandbox();
 
 describe('eden wasm loader tests', async () => {
   let db: Database;
+  let indexer: Indexer;
 
   // Create dummy event data.
   const dummyEventData = getDummyEventData();
 
   before(async () => {
     db = getTestDatabase();
+    indexer = getTestIndexer();
+
+    sandbox.on(indexer, 'createDiffStaged', (contractAddress: string, blockHash: string, data: any) => {
+      assert(contractAddress);
+      assert(blockHash);
+      assert(data);
+    });
 
     sandbox.on(db, 'getEntity', (blockHash: string, entityString: string, idString: string) => {
       assert(blockHash);
@@ -69,7 +78,13 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetwork/EdenNetwork.wasm');
-      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
+      ({ exports } = await instantiate(
+        db,
+        indexer,
+        { event: { block: dummyEventData.block } },
+        filePath,
+        data
+      ));
       const { _start } = exports;
       _start();
     });
@@ -80,7 +95,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotClaimedEvent params.
-      const eventFragment = contractInterface.getEvent('SlotClaimed(indexed uint8,indexed address,indexed address,uint128,uint128,uint16,uint16)');
+      const eventFragment = contractInterface.getEvent('SlotClaimed(uint8,address,address,uint128,uint128,uint16,uint16)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         slot: 0,
@@ -104,7 +119,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlotDelegateUpdatedEvent params.
-      const eventFragment = contractInterface.getEvent('SlotDelegateUpdated(indexed uint8,indexed address,indexed address,address)');
+      const eventFragment = contractInterface.getEvent('SlotDelegateUpdated(uint8,address,address,address)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         slot: 0,
@@ -125,7 +140,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy StakeEvent params.
-      const eventFragment = contractInterface.getEvent('Stake(indexed address,uint256)');
+      const eventFragment = contractInterface.getEvent('Stake(address,uint256)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         staker: '0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc',
@@ -144,7 +159,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy UnstakeEvent params.
-      const eventFragment = contractInterface.getEvent('Unstake(indexed address,uint256)');
+      const eventFragment = contractInterface.getEvent('Unstake(address,uint256)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         staker: ZERO_ADDRESS,
@@ -178,7 +193,12 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network distribution wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
-      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
+      ({ exports } = await instantiate(db,
+        indexer,
+        { event: { block: dummyEventData.block } },
+        filePath,
+        data
+      ));
       const { _start } = exports;
       _start();
     });
@@ -189,7 +209,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy ClaimedEvent params.
-      const eventFragment = contractInterface.getEvent('Claimed(uint256,uint256,indexed address,uint256)');
+      const eventFragment = contractInterface.getEvent('Claimed(uint256,uint256,address,uint256)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         index: BigInt(1),
@@ -210,7 +230,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy SlashedEvent params.
-      const eventFragment = contractInterface.getEvent('Slashed(indexed address,uint256)');
+      const eventFragment = contractInterface.getEvent('Slashed(address,uint256)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         account: ZERO_ADDRESS,
@@ -249,7 +269,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy AccountUpdatedEvent params.
-      const eventFragment = contractInterface.getEvent('AccountUpdated(indexed address,uint256,uint256)');
+      const eventFragment = contractInterface.getEvent('AccountUpdated(address,uint256,uint256)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         account: ZERO_ADDRESS,
@@ -284,7 +304,13 @@ describe('eden wasm loader tests', async () => {
 
     it('should load the subgraph network governance wasm', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkGovernance/EdenNetworkGovernance.wasm');
-      ({ exports } = await instantiate(db, { event: { block: dummyEventData.block } }, filePath, data));
+      ({ exports } = await instantiate(
+        db,
+        indexer,
+        { event: { block: dummyEventData.block } },
+        filePath,
+        data
+      ));
       const { _start } = exports;
       _start();
     });
@@ -295,9 +321,9 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerAddedEvent params.
-      const eventFragment = contractInterface.getEvent('BlockProducerAdded(indexed address)');
+      const eventFragment = contractInterface.getEvent('BlockProducerAdded(address)');
       dummyEventData.inputs = eventFragment.inputs;
-      dummyEventData.event = { produces: ZERO_ADDRESS };
+      dummyEventData.event = { producer: ZERO_ADDRESS };
 
       // Create an ethereum event BlockProducerAddedEvent to be passed to handler.
       const blockProducerAddedEvent = await createEvent(exports, contractAddress, dummyEventData);
@@ -311,7 +337,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRemovedEvent params.
-      const eventFragment = contractInterface.getEvent('BlockProducerRemoved(indexed address)');
+      const eventFragment = contractInterface.getEvent('BlockProducerRemoved(address)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = { producer: ZERO_ADDRESS };
 
@@ -327,7 +353,7 @@ describe('eden wasm loader tests', async () => {
       } = exports;
 
       // Create dummy BlockProducerRewardCollectorChangedEvent params.
-      const eventFragment = contractInterface.getEvent('BlockProducerRewardCollectorChanged(indexed address,indexed address)');
+      const eventFragment = contractInterface.getEvent('BlockProducerRewardCollectorChanged(address,address)');
       dummyEventData.inputs = eventFragment.inputs;
       dummyEventData.event = {
         producer: ZERO_ADDRESS,

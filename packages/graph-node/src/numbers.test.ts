@@ -6,20 +6,28 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { instantiate } from './loader';
-import { getTestDatabase } from '../test/utils';
+import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
+import { Indexer } from '../test/utils/indexer';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
 describe('numbers wasm tests', () => {
   let exports: any;
   let db: Database;
+  let indexer: Indexer;
 
   before(async () => {
     db = getTestDatabase();
+    indexer = getTestIndexer();
 
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
-    const instance = await instantiate(db, { event: {} }, filePath);
+    const instance = await instantiate(
+      db,
+      indexer,
+      { event: {} },
+      filePath
+    );
     exports = instance.exports;
     const { _start } = exports;
 
