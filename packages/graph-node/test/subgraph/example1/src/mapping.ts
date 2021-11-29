@@ -112,7 +112,6 @@ export function testGetEthCall (): void {
   log.debug('In test get eth call', []);
 
   // Bind the contract to the address that emitted the event.
-  // TODO: Address.fromString throws error in WASM module instantiation.
   const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);
 
@@ -166,6 +165,26 @@ export function testBytesToHex (): string {
   const byteArray = ByteArray.fromHexString(hexString);
   const res = byteArray.toHexString();
   log.debug('typeConversion.bytesToHex result: {}', [res]);
+
+  return res;
+}
+
+export function testBytesToString (value: string): string {
+  log.debug('In test bytesToString', []);
+
+  const byteArray = ByteArray.fromUTF8(value);
+  const res = byteArray.toString();
+  log.debug('typeConversion.bytesToString result: {}', [res]);
+
+  return res;
+}
+
+export function testBytesToBase58 (value: string): string {
+  log.debug('In test bytesToBase58', []);
+
+  const byteArray = ByteArray.fromUTF8(value);
+  const res = byteArray.toBase58();
+  log.debug('typeConversion.bytesToBase58 result: {}', [res]);
 
   return res;
 }
@@ -325,6 +344,61 @@ export function testBigIntMod (value1: string, value2: string): string {
   return res.toString();
 }
 
+export function testBigIntBitOr (value1: string, value2: string): string {
+  log.debug('In test bigInt.bitOr', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1 | bigInt2;
+  log.debug('bigInt.bitOr result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntBitAnd (value1: string, value2: string): string {
+  log.debug('In test bigInt.bitAnd', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
+
+  const res = bigInt1 & bigInt2;
+  log.debug('bigInt.bitAnd result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntLeftShift (value1: string, value2: u8): string {
+  log.debug('In test bigInt.leftShift', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bits = value2;
+
+  const res = bigInt1 << bits;
+  log.debug('bigInt.leftShift result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntRightShift (value1: string, value2: u8): string {
+  log.debug('In test bigInt.RightShift', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const bits = value2;
+
+  const res = bigInt1 >> bits;
+  log.debug('bigInt.RightShift result: {}', [res.toString()]);
+  return res.toString();
+}
+
+export function testBigIntPow (value1: string, value2: u8): string {
+  log.debug('In test bigInt.pow', []);
+
+  const bigInt1 = BigInt.fromString(value1);
+  const exp = value2;
+
+  const res = bigInt1.pow(exp);
+  log.debug('bigInt.pow result: {}', [res.toString()]);
+  return res.toString();
+}
+
 export function testBigIntFromString (value: string): string {
   log.debug('In test bigInt.fromString', []);
 
@@ -353,4 +427,21 @@ export function testBigIntWithI32 (value: string): string[] {
   log.debug('bigInt.FromString result 3: {}', [res3]);
 
   return [res1, res2, res3];
+}
+
+export function testBigIntToHex (value: string): string[] {
+  log.debug('In testBigIntToHex', []);
+
+  const variableI32: i32 = parseInt(value) as i32;
+
+  const bigInt1 = BigInt.fromI32(variableI32);
+  const bigInt2 = BigInt.fromString(value);
+
+  const res1 = bigInt1.toHex();
+  log.debug('bigInt.toHex result 1: {}', [res1]);
+
+  const res2 = bigInt2.toHex();
+  log.debug('bigInt.toHex result 2: {}', [res2]);
+
+  return [res1, res2];
 }

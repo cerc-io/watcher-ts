@@ -4,6 +4,7 @@
 
 import path from 'path';
 import { expect } from 'chai';
+import { utils, BigNumber } from 'ethers';
 
 import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
@@ -55,5 +56,40 @@ describe('typeConversion wasm tests', () => {
 
     const ptr = await testStringToH160();
     expect(__getString(ptr)).to.equal('0xafad925b5eae1e370196cba39893e858ff7257d5');
+  });
+
+  it('should execute typeConversion bigIntToHex API', async () => {
+    const { testBigIntToHex, __getString, __getArray, __newString } = exports;
+
+    // Using smaller to also test with BigInt.fromI32
+    const bigNumber = BigNumber.from('2342353');
+    const value = await __newString(bigNumber.toString());
+
+    const ptr = await testBigIntToHex(value);
+    const ptrs = __getArray(ptr);
+    expect(__getString(ptrs[0])).to.equal(__getString(ptrs[1]));
+    expect(__getString(ptrs[0])).to.equal(bigNumber.toHexString());
+  });
+
+  it('should execute typeConversion bytesToString API', async () => {
+    const { testBytesToString, __getString, __newString } = exports;
+
+    const testString = 'test string';
+    const value = await __newString(testString);
+
+    const ptr = await testBytesToString(value);
+    expect(__getString(ptr)).to.equal(testString);
+  });
+
+  it('should execute typeConversion bytesToBase58 API', async () => {
+    const { testBytesToBase58, __getString, __newString } = exports;
+
+    const testString = 'test base58';
+    const value = await __newString(testString);
+
+    const ptr = await testBytesToBase58(value);
+
+    const base58String = utils.base58.encode(utils.toUtf8Bytes(testString));
+    expect(__getString(ptr)).to.equal(base58String);
   });
 });
