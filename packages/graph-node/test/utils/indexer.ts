@@ -100,15 +100,6 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(data);
   }
-
-  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock?: number): Promise<boolean> {
-    assert(address);
-    assert(kind);
-    assert(checkpoint);
-    assert(startingBlock);
-
-    return false;
-  }
 }
 
 class SyncStatus implements SyncStatusInterface {

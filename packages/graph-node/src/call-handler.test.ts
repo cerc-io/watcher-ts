@@ -23,7 +23,7 @@ describe('call handler in mapping code', () => {
   let db: Database;
   let indexer: Indexer;
 
-  // Create dummy event data.
+  // Create dummy test data.
   const dummyEventData = getDummyEventData();
   const dummyGraphData = getDummyGraphData();
 
@@ -60,24 +60,23 @@ describe('call handler in mapping code', () => {
 
   it('should load the subgraph example wasm', async () => {
     const filePath = path.resolve(__dirname, '../test/subgraph/example1/build/Example1/Example1.wasm');
-    const instance = await instantiate(db,
+    const instance = await instantiate(
+      db,
       indexer,
       { event: { block: dummyEventData.block } },
       filePath,
       dummyGraphData
     );
     exports = instance.exports;
-  });
-
-  it('should execute the event handler function', async () => {
-    const {
-      _start,
-      handleTest
-    } = exports;
+    const { _start } = exports;
 
     // Important to call _start for built subgraphs on instantiation!
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
     _start();
+  });
+
+  it('should execute the event handler function', async () => {
+    const { handleTest } = exports;
 
     // Create event params data.
     const contractInterface = new utils.Interface(abi);
@@ -105,12 +104,8 @@ describe('call handler in mapping code', () => {
   });
 
   it('should execute the block handler function', async () => {
-    const { _start, handleBlock } = exports;
+    const { handleBlock } = exports;
     const blockData = dummyEventData.block;
-
-    // Important to call _start for built subgraphs on instantiation!
-    // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
-    _start();
 
     // Create an ethereum block to be passed to the handler.
     const block = await createBlock(exports, blockData);

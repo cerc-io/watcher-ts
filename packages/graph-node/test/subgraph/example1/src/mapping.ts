@@ -153,7 +153,7 @@ export function testStructEthCall (): void {
   if (res.reverted) {
     log.debug('Contract eth call reverted', []);
   } else {
-    log.debug('Contract eth call result: {}', [res.value.toString()]);
+    log.debug('Contract eth call result: {}, {}', [res.value.bidAmount1.toString(), res.value.bidAmount2.toString()]);
   }
 }
 
