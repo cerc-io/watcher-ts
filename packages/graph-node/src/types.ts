@@ -83,3 +83,12 @@ export enum ValueKind {
   BYTES = 6,
   BIGINT = 7,
 }
+
+// log Level from https://github.com/graphprotocol/graph-ts/blob/master/index.ts#L82
+export enum Level {
+  CRITICAL = 0,
+  ERROR = 1,
+  WARNING = 2,
+  INFO = 3,
+  DEBUG = 4,
+}

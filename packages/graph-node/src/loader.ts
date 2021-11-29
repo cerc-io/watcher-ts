@@ -13,11 +13,12 @@ import {
 } from 'ethers';
 import JSONbig from 'json-bigint';
 import BN from 'bn.js';
+import debug from 'debug';
 
 import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
-import { TypeId } from './types';
+import { TypeId, Level } from './types';
 import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal, digitsToString } from './utils';
 import { Database } from './database';
 
@@ -51,6 +52,8 @@ export interface Context {
     block?: Block
   }
 }
+
+const log = debug('vulcanize:graph-node');
 
 export const instantiate = async (
   database: Database,
@@ -103,8 +106,8 @@ export const instantiate = async (
         await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
       },
 
-      'log.log': (_: number, msg: number) => {
-        console.log('log.log', __getString(msg));
+      'log.log': (level: number, msg: number) => {
+        log('log %s | %s', Level[level], __getString(msg));
       },
 
       'test.asyncMethod': async () => {

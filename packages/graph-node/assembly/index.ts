@@ -72,3 +72,11 @@ export class Bar {
     return this.prop;
   }
 }
+
+export function testLog (): void {
+  log.debug('Debug message: {}, {}', ['value1', 'value2']);
+  log.info('Info message: {}', ['value1', 'value2']);
+  log.warning('Warning message', []);
+  log.error('Error message', []);
+  log.critical('Critical message', []);
+}
