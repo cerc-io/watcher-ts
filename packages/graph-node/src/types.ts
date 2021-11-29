@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-// TypeId from https://github.com/graphprotocol/graph-ts/blob/master/global/global.ts
+// Enum types from @graphprotocol/graph-ts.
 export enum TypeId {
   String = 0,
   ArrayBuffer = 1,
@@ -58,7 +58,6 @@ export enum TypeId {
   ArrayBigDecimal = 51,
 }
 
-// ethereum ValueKind from https://github.com/graphprotocol/graph-ts/blob/master/chain/ethereum.ts#L13
 export enum EthereumValueKind {
   ADDRESS = 0,
   FIXED_BYTES = 1,
@@ -72,7 +71,6 @@ export enum EthereumValueKind {
   TUPLE = 9,
 }
 
-// ValueKind from https://github.com/graphprotocol/graph-ts/blob/master/common/value.ts#L8
 export enum ValueKind {
   STRING = 0,
   INT = 1,
@@ -84,7 +82,6 @@ export enum ValueKind {
   BIGINT = 7,
 }
 
-// log Level from https://github.com/graphprotocol/graph-ts/blob/master/index.ts#L82
 export enum Level {
   CRITICAL = 0,
   ERROR = 1,
