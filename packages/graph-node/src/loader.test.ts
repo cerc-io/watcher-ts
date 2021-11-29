@@ -6,20 +6,28 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { instantiate } from './loader';
-import { getTestDatabase } from '../test/utils';
+import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
+import { Indexer } from '../test/utils/indexer';
 
 const WASM_FILE_PATH = '../build/debug.wasm';
 
 describe('wasm loader tests', () => {
   let exports: any;
   let db: Database;
+  let indexer: Indexer;
 
   before(async () => {
     db = getTestDatabase();
+    indexer = getTestIndexer();
 
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
-    const instance = await instantiate(db, { event: {} }, filePath);
+    const instance = await instantiate(
+      db,
+      indexer,
+      { event: {} },
+      filePath
+    );
 
     exports = instance.exports;
   });
