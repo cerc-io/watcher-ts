@@ -129,7 +129,7 @@ export class GraphWatcher {
       return;
     }
 
-    const { instance: { exports }, contractInterface } = this._dataSourceMap[contract];
+    const { instance: { exports: instanceExports }, contractInterface } = this._dataSourceMap[contract];
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
@@ -142,9 +142,9 @@ export class GraphWatcher {
     };
 
     // Create ethereum event to be passed to the wasm event handler.
-    const ethereumEvent = await createEvent(exports, contract, data);
+    const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    await exports[eventHandler.handler](ethereumEvent);
+    await instanceExports[eventHandler.handler](ethereumEvent);
   }
 
   async handleBlock (blockHash: string) {
@@ -159,14 +159,14 @@ export class GraphWatcher {
         continue;
       }
 
-      const { instance: { exports } } = this._dataSourceMap[dataSource.source.address];
+      const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
 
       // Create ethereum block to be passed to a wasm block handler.
-      const ethereumBlock = await createBlock(exports, blockData);
+      const ethereumBlock = await createBlock(instanceExports, blockData);
 
       // Call all the block handlers one after the another for a contract.
       const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
-        await exports[blockHandler.handler](ethereumBlock);
+        await instanceExports[blockHandler.handler](ethereumBlock);
       });
 
       await Promise.all(blockHandlerPromises);
