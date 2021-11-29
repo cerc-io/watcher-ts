@@ -4,10 +4,9 @@
 
 import path from 'path';
 import { expect } from 'chai';
-import { utils } from 'ethers';
-import BN from 'bn.js';
+import { utils, BigNumber } from 'ethers';
 
-import { BN_ENDIANNESS, instantiate } from './loader';
+import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
@@ -38,21 +37,21 @@ describe('typeConversion wasm tests', () => {
     _start();
   });
 
-  xit('should execute typeConversion bytesToHex API', async () => {
+  it('should execute typeConversion bytesToHex API', async () => {
     const { testBytesToHex, __getString } = exports;
 
     const ptr = await testBytesToHex();
     expect(__getString(ptr)).to.equal('0x231a');
   });
 
-  xit('should execute typeConversion bigIntToString API', async () => {
+  it('should execute typeConversion bigIntToString API', async () => {
     const { testBigIntToString, __getString } = exports;
 
     const ptr = await testBigIntToString();
     expect(__getString(ptr)).to.equal('1000000000000000000');
   });
 
-  xit('should execute typeConversion stringToH160 API', async () => {
+  it('should execute typeConversion stringToH160 API', async () => {
     const { testStringToH160, __getString } = exports;
 
     const ptr = await testStringToH160();
@@ -63,17 +62,14 @@ describe('typeConversion wasm tests', () => {
     const { testBigIntToHex, __getString, __getArray, __newString } = exports;
 
     // Using smaller to also test with BigInt.fromI32
-    const bigNumber = new BN('2342353', BN_ENDIANNESS);
-    console.log('bn', bigNumber.toString());
+    const bigNumber = BigNumber.from('2342353');
     const value = await __newString(bigNumber.toString());
 
     const ptr = await testBigIntToHex(value);
     const ptrs = __getArray(ptr);
     expect(__getString(ptrs[0])).to.equal(__getString(ptrs[1]));
-    expect(__getString(ptrs[0])).to.equal(bigNumber.toString('hex'));
+    expect(__getString(ptrs[0])).to.equal(bigNumber.toHexString());
   });
-
-  return;
 
   it('should execute typeConversion bytesToString API', async () => {
     const { testBytesToString, __getString, __newString } = exports;
