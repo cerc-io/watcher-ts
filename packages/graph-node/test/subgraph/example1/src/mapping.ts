@@ -224,7 +224,6 @@ export function testBigDecimalFromString (value: string): string {
 
   const bigDecimal = BigDecimal.fromString(value);
   const res = bigDecimal.toString();
-  log.debug('bigDecimal.FromString result: {}', [res]);
 
   return res;
 }
@@ -248,7 +247,6 @@ export function testBigDecimalPlus (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 + bigDecimal2;
-  log.debug('bigDecimal.plus result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -260,7 +258,6 @@ export function testBigDecimalMinus (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 - bigDecimal2;
-  log.debug('bigDecimal.minus result: {}', [res.toString()]);
 
   return res.toString();
 }

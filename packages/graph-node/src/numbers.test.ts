@@ -4,11 +4,13 @@
 
 import path from 'path';
 import { expect } from 'chai';
+import Decimal from 'decimal.js';
 
 import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
+import { PRECISION } from './utils';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
@@ -16,6 +18,16 @@ const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728
 const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
 const UINT128_MAX = '340282366920938463463374607431768211455';
 const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+// Maximum decimal value.
+const DECIMAL128_MAX = '9.999999999999999999999999999999999e+6144';
+// Minimum decimal value.
+const DECIMAL128_MIN = '-9.999999999999999999999999999999999e+6144';
+
+// Minimum +ve decimal value.
+const DECIMAL128_PMIN = '1e-6143';
+// Maximum -ve decimal value.
+const DECIMAL128_NMAX = '-1e-6143';
 
 describe('numbers wasm tests', () => {
   let exports: any;
@@ -329,24 +341,176 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal('43210');
     });
 
-    it('should get bigDecimal for numbers with decimals', async () => {
+    it('should get bigDecimal for number with negative exponent', async () => {
+      const ptr = await testBigDecimalFromString(await __newString('4.32184561e-30'));
+      expect(__getString(ptr)).to.equal('0.00000000000000000000000000000432184561');
+    });
+
+    it('should get bigDecimal for decimal number having more than 34 digits', async () => {
       const ptr = await testBigDecimalFromString(await __newString('-5032485723458348569331745849735.3343434634691214453454356561'));
       expect(__getString(ptr)).to.equal('-5032485723458348569331745849735.334');
     });
+
+    it('should get bigDecimal for decimal number with whole part having more than 34 digits', async () => {
+      const ptr = await testBigDecimalFromString(await __newString('1157920892373161954235709850086879078532699846.65640564039457584007913129639935'));
+      expect(__getString(ptr)).to.equal('1157920892373161954235709850086879000000000000');
+    });
+
+    it('should get bigDecimal for UINT256_MAX', async () => {
+      const ptr = await testBigDecimalFromString(await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal('115792089237316195423570985008687900000000000000000000000000000000000000000000');
+    });
+
+    it('should get bigDecimal for 0000.000000000', async () => {
+      const ptr = await testBigDecimalFromString(await __newString('0000.000000000'));
+      expect(__getString(ptr)).to.equal('0');
+    });
+
+    it('should get bigDecimal for DECIMAL128_MAX', async () => {
+      const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_MAX));
+      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should get bigDecimal for DECIMAL128_MIN', async () => {
+      const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_MIN));
+      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should get bigDecimal for DECIMAL128_NMAX', async () => {
+      const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_NMAX));
+      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should get bigDecimal for DECIMAL128_PMIN', async () => {
+      const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_PMIN));
+      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
   });
 
-  it('should execute bigDecimal plus API', async () => {
-    const { testBigDecimalPlus, __getString, __newString } = exports;
+  describe('should execute bigDecimal plus API', () => {
+    let testBigDecimalPlus: any, __getString: any, __newString: any;
 
-    const ptr = await testBigDecimalPlus(await __newString('231543212.2132354'), await __newString('54652.65645'));
-    expect(__getString(ptr)).to.equal('231597864.8696854');
+    before(() => {
+      ({ testBigDecimalPlus, __getString, __newString } = exports);
+    });
+
+    it('should execute bigDecimal plus for positive decimals', async () => {
+      const ptr = await testBigDecimalPlus(await __newString('231543212.2132354'), await __newString('54652.65645'));
+      expect(__getString(ptr)).to.equal('231597864.8696854');
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_MAX and 0', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MAX), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_MIN and 0', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MIN), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_PMIN and 0', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_PMIN), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_NMAX and 0', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_NMAX), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_MAX and DECIMAL128_MIN', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MIN));
+      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal plus for DECIMAL128_PMIN and DECIMAL128_NMAX', async () => {
+      const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
+      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
   });
 
-  it('should execute bigDecimal minus API', async () => {
-    const { testBigDecimalMinus, __getString, __newString } = exports;
+  describe('should execute bigDecimal minus API', () => {
+    let testBigDecimalMinus: any, __getString: any, __newString: any;
 
-    const ptr = await testBigDecimalMinus(await __newString('231543212.2132354'), await __newString('54652.65645'));
-    expect(__getString(ptr)).to.equal('231488559.5567854');
+    before(() => {
+      ({ testBigDecimalMinus, __getString, __newString } = exports);
+    });
+
+    it('should execute bigDecimal minus for positive decimals', async () => {
+      const ptr = await testBigDecimalMinus(await __newString('231543212.2132354'), await __newString('54652.65645'));
+      expect(__getString(ptr)).to.equal('231488559.5567854');
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_MAX and 0', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MAX), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for 0 and DECIMAL128_MAX', async () => {
+      const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_MAX));
+      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_MIN and 0', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MIN), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for 0 and DECIMAL128_MIN', async () => {
+      const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_MIN));
+      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_PMIN and 0', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_PMIN), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for 0 and DECIMAL128_PMIN', async () => {
+      const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_PMIN));
+      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_NMAX and 0', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_NMAX), await __newString('0'));
+      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for 0 and DECIMAL128_NMAX', async () => {
+      const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_NMAX));
+      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_MIN and DECIMAL128_MIN', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MIN), await __newString(DECIMAL128_MIN));
+      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should execute bigDecimal minus for DECIMAL128_PMIN and DECIMAL128_PMIN', async () => {
+      const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_PMIN));
+      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      expect(__getString(ptr)).to.equal(expected);
+    });
   });
 
   it('should execute bigDecimal times API', async () => {

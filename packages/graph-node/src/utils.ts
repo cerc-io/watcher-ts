@@ -13,7 +13,10 @@ const log = debug('vulcanize:utils');
 
 // Customize Decimal according the limits of IEEE-754 decimal128.
 // Reference: https://github.com/graphprotocol/graph-node/blob/v0.24.2/graph/src/data/store/scalar.rs#L42
-export const GraphDecimal = Decimal.clone({ minE: -6143, maxE: 6144, precision: 34 });
+export const MIN_EXP = -6143;
+export const MAX_EXP = 6144;
+export const PRECISION = 34;
+export const GraphDecimal = Decimal.clone({ minE: MIN_EXP, maxE: MAX_EXP, precision: PRECISION });
 
 // Constant used in function digitsToString.
 const LOG_BASE = 7;
