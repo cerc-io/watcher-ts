@@ -88,11 +88,11 @@ export class EventWatcher {
 
     switch (kind) {
       case JOB_KIND_INDEX:
-        this._handleIndexingComplete(data);
+        await this._handleIndexingComplete(data);
         break;
 
       case JOB_KIND_PRUNE:
-        this._handlePruningComplete(data);
+        await this._handlePruningComplete(data);
         break;
 
       default:
