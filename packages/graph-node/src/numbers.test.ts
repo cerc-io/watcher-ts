@@ -12,6 +12,11 @@ import { Indexer } from '../test/utils/indexer';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
+const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
+const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
+const UINT128_MAX = '340282366920938463463374607431768211455';
+const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
 describe('numbers wasm tests', () => {
   let exports: any;
   let db: Database;
@@ -60,34 +65,163 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptrs[0])).to.equal(__getString(ptrs[1]));
       expect(__getString(ptrs[2])).to.equal('0');
     });
+
+    it('should get bigInt for INT256_MIN', async () => {
+      const ptr = await testBigIntFromString(await __newString(INT256_MIN));
+      expect(__getString(ptr)).to.equal(INT256_MIN);
+    });
+
+    it('should get bigInt for INT256_MAX', async () => {
+      const ptr = await testBigIntFromString(await __newString(INT256_MAX));
+      expect(__getString(ptr)).to.equal(INT256_MAX);
+    });
+
+    it('should get bigInt for UINT256_MAX', async () => {
+      const ptr = await testBigIntFromString(await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal(UINT256_MAX);
+    });
   });
 
-  it('should execute bigInt plus API', async () => {
-    const { testBigIntPlus, __getString } = exports;
+  describe('should execute bigInt plus API', () => {
+    let testBigIntPlus: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntPlus();
-    expect(__getString(ptr)).to.equal('200');
+    before(() => {
+      ({ testBigIntPlus, __getString, __newString } = exports);
+    });
+
+    it('should execute bigInt plus for positive numbers', async () => {
+      const ptr = await testBigIntPlus(await __newString('923567899898'), await __newString('89456153132132'));
+      expect(__getString(ptr)).to.equal('90379721032030');
+    });
+
+    it('should execute bigInt plus for INT256_MAX and INT256_MAX', async () => {
+      const ptr = await testBigIntPlus(await __newString(INT256_MAX), await __newString(INT256_MAX));
+      expect(__getString(ptr)).to.equal('115792089237316195423570985008687907853269984665640564039457584007913129639934');
+    });
+
+    it('should execute bigInt plus for INT256_MIN and INT256_MIN', async () => {
+      const ptr = await testBigIntPlus(await __newString(INT256_MIN), await __newString(INT256_MIN));
+      expect(__getString(ptr)).to.equal('-115792089237316195423570985008687907853269984665640564039457584007913129639936');
+    });
+
+    it('should execute bigInt plus for INT256_MAX and INT256_MIN', async () => {
+      const ptr = await testBigIntPlus(await __newString(INT256_MAX), await __newString(INT256_MIN));
+      expect(__getString(ptr)).to.equal('-1');
+    });
   });
 
-  it('should execute bigInt minus API', async () => {
-    const { testBigIntMinus, __getString } = exports;
+  describe('should execute bigInt minus API', () => {
+    let testBigIntMinus: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntMinus();
-    expect(__getString(ptr)).to.equal('100');
+    before(() => {
+      ({ testBigIntMinus, __getString, __newString } = exports);
+    });
+
+    it('should execute bigInt minus for positive numbers', async () => {
+      const ptr = await testBigIntMinus(await __newString('923567899898'), await __newString('89456153132132'));
+      expect(__getString(ptr)).to.equal('-88532585232234');
+    });
+
+    it('should execute bigInt minus for UINT256_MAX and UINT256_MAX', async () => {
+      const ptr = await testBigIntMinus(await __newString(UINT256_MAX), await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal('0');
+    });
+
+    it('should execute bigInt minus for INT256_MIN and INT256_MIN', async () => {
+      const ptr = await testBigIntMinus(await __newString(INT256_MIN), await __newString(INT256_MIN));
+      expect(__getString(ptr)).to.equal('0');
+    });
+
+    it('should execute bigInt minus for INT256_MAX and INT256_MIN', async () => {
+      const ptr = await testBigIntMinus(await __newString(INT256_MAX), await __newString(INT256_MIN));
+      expect(__getString(ptr)).to.equal(UINT256_MAX);
+    });
+
+    it('should execute bigInt minus for INT256_MIN and INT256_MAX', async () => {
+      const ptr = await testBigIntMinus(await __newString(INT256_MIN), await __newString(INT256_MAX));
+      expect(__getString(ptr)).to.equal(`-${UINT256_MAX}`);
+    });
   });
 
-  it('should execute bigInt times API', async () => {
-    const { testBigIntTimes, __getString } = exports;
+  describe('should execute bigInt times API', () => {
+    let testBigIntTimes: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntTimes();
-    expect(__getString(ptr)).to.equal('1000');
+    before(() => {
+      ({ testBigIntTimes, __getString, __newString } = exports);
+    });
+
+    it('should execute bigInt times for positive numbers', async () => {
+      const ptr = await testBigIntTimes(await __newString('923567899898'), await __newString('89456153132132'));
+      expect(__getString(ptr)).to.equal('82618831481197046143322536');
+    });
+
+    it('should execute bigInt times for UINT128_MAX and UINT128_MAX', async () => {
+      const ptr = await testBigIntTimes(await __newString(UINT128_MAX), await __newString(UINT128_MAX));
+      expect(__getString(ptr)).to.equal('115792089237316195423570985008687907852589419931798687112530834793049593217025');
+    });
+
+    it('should execute bigInt times for -UINT128_MAX and UINT128_MAX', async () => {
+      const ptr = await testBigIntTimes(await __newString(`-${UINT128_MAX}`), await __newString(UINT128_MAX));
+      expect(__getString(ptr)).to.equal('-115792089237316195423570985008687907852589419931798687112530834793049593217025');
+    });
+
+    it('should execute bigInt times for -UINT128_MAX and -UINT128_MAX', async () => {
+      const ptr = await testBigIntTimes(await __newString(`-${UINT128_MAX}`), await __newString(`-${UINT128_MAX}`));
+      expect(__getString(ptr)).to.equal('115792089237316195423570985008687907852589419931798687112530834793049593217025');
+    });
+
+    it('should execute bigInt times for UINT256_MAX and 0', async () => {
+      const ptr = await testBigIntTimes(await __newString(UINT256_MAX), await __newString('0'));
+      expect(__getString(ptr)).to.equal('0');
+    });
+
+    it('should execute bigInt times for 0 and 0', async () => {
+      const ptr = await testBigIntTimes(await __newString('0'), await __newString('0'));
+      expect(__getString(ptr)).to.equal('0');
+    });
   });
 
-  it('should execute bigInt dividedBy API', async () => {
-    const { testBigIntDividedBy, __getString } = exports;
+  describe('should execute bigInt dividedBy API', () => {
+    let testBigIntDividedBy: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntDividedBy();
-    expect(__getString(ptr)).to.equal('100');
+    before(() => {
+      ({ testBigIntDividedBy, __getString, __newString } = exports);
+    });
+
+    it('should execute bigInt dividedBy for positive numbers', async () => {
+      const ptr = await testBigIntDividedBy(await __newString('82618831481197046143322536'), await __newString('89456153132132'));
+      expect(__getString(ptr)).to.equal('923567899898');
+    });
+
+    it('should execute bigInt dividedBy for UINT256_MAX and UINT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString(UINT128_MAX), await __newString(UINT128_MAX));
+      expect(__getString(ptr)).to.equal('1');
+    });
+
+    it('should execute bigInt dividedBy for -UINT256_MAX and UINT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString(`-${UINT256_MAX}`), await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal('-1');
+    });
+
+    it('should execute bigInt dividedBy for -UINT256_MAX and -UINT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString(`-${UINT256_MAX}`), await __newString(`-${UINT256_MAX}`));
+      expect(__getString(ptr)).to.equal('1');
+    });
+
+    it('should execute bigInt dividedBy for UINT256_MAX and -UINT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString(UINT256_MAX), await __newString(`-${UINT256_MAX}`));
+      expect(__getString(ptr)).to.equal('-1');
+    });
+
+    it('should execute bigInt dividedBy for UINT256_MAX and INT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString(UINT256_MAX), await __newString(INT256_MAX));
+      expect(__getString(ptr)).to.equal('2');
+    });
+
+    it('should execute bigInt dividedBy for 0 and UINT256_MAX', async () => {
+      const ptr = await testBigIntDividedBy(await __newString('0'), await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal('0');
+    });
   });
 
   describe('should execute bigInt dividedByDecimal API', async () => {
@@ -118,11 +252,27 @@ describe('numbers wasm tests', () => {
     });
   });
 
-  it('should execute bigInt mod API', async () => {
-    const { testBigIntMod, __getString, __newString } = exports;
+  describe('should execute bigInt mod API', () => {
+    let testBigIntMod: any, __getString: any, __newString: any;
 
-    const ptr = await testBigIntMod(await __newString('2315432122132354'), await __newString('5465265645'));
-    expect(__getString(ptr)).to.equal('1283174719');
+    before(() => {
+      ({ testBigIntMod, __getString, __newString } = exports);
+    });
+
+    it('should execute bigInt mod for positive dividend and positive divisor', async () => {
+      const ptr = await testBigIntMod(await __newString('2315432122132354'), await __newString('5465265645'));
+      expect(__getString(ptr)).to.equal('1283174719');
+    });
+
+    it('should execute bigInt mod for negative dividend and positive divisor', async () => {
+      const ptr = await testBigIntMod(await __newString('-2315432122132354'), await __newString('5465265645'));
+      expect(__getString(ptr)).to.equal('4182090926');
+    });
+
+    it('should execute bigInt dividedBy for UINT256_MAX and UINT256_MAX', async () => {
+      const ptr = await testBigIntMod(await __newString(UINT256_MAX), await __newString(UINT256_MAX));
+      expect(__getString(ptr)).to.equal('0');
+    });
   });
 
   it('should execute bigInt bitOr API', async () => {
