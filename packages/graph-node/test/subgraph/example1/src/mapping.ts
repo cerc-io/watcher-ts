@@ -127,6 +127,7 @@ export function testGetEthCall (): void {
 export function testAddEthCall (): void {
   log.debug('In test add eth call', []);
 
+  // Bind the contract to the address that emitted the event.
   const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);
 
@@ -235,7 +236,6 @@ export function testBigDecimalDividedBy (value1: string, value2: string): string
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 / bigDecimal2;
-  log.debug('bigDecimal.dividedBy result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -269,7 +269,6 @@ export function testBigDecimalTimes (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 * bigDecimal2;
-  log.debug('bigDecimal.times result: {}', [res.toString()]);
 
   return res.toString();
 }
