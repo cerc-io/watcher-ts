@@ -282,6 +282,10 @@ export const instantiate = async (
         const expStringPtr = await expBigInt.toString();
         const exp = __getString(expStringPtr);
 
+        if (parseInt(exp) < -6143 || parseInt(exp) > 6144) {
+          throw new Error(`big decimal exponent '${exp}' is outside the '-6143' to '6144' range`);
+        }
+
         const decimal = new GraphDecimal(`${digits}e${exp}`);
         const ptr = __newString(decimal.toFixed());
 

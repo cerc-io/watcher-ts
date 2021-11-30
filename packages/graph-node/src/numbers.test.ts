@@ -10,24 +10,19 @@ import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
-import { PRECISION } from './utils';
+import {
+  PRECISION,
+  UINT128_MAX,
+  UINT256_MAX,
+  INT256_MIN,
+  INT256_MAX,
+  DECIMAL128_MIN,
+  DECIMAL128_MAX,
+  DECIMAL128_PMIN,
+  DECIMAL128_NMAX
+} from './utils';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
-
-const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
-const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
-const UINT128_MAX = '340282366920938463463374607431768211455';
-const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
-
-// Maximum decimal value.
-const DECIMAL128_MAX = '9.999999999999999999999999999999999e+6144';
-// Minimum decimal value.
-const DECIMAL128_MIN = '-9.999999999999999999999999999999999e+6144';
-
-// Minimum +ve decimal value.
-const DECIMAL128_PMIN = '1e-6143';
-// Maximum -ve decimal value.
-const DECIMAL128_NMAX = '-1e-6143';
 
 describe('numbers wasm tests', () => {
   let exports: any;
@@ -206,7 +201,7 @@ describe('numbers wasm tests', () => {
     });
 
     it('should execute bigInt dividedBy for UINT256_MAX and UINT256_MAX', async () => {
-      const ptr = await testBigIntDividedBy(await __newString(UINT128_MAX), await __newString(UINT128_MAX));
+      const ptr = await testBigIntDividedBy(await __newString(UINT256_MAX), await __newString(UINT256_MAX));
       expect(__getString(ptr)).to.equal('1');
     });
 
@@ -525,7 +520,7 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal('12654451630419.39845917833');
     });
 
-    it('should execute bigDecimal times for positive decimals', async () => {
+    it('should execute bigDecimal times for positive and negative decimal', async () => {
       const ptr = await testBigDecimalTimes(await __newString('231543212.2132354'), await __newString('-54652.65645'));
       expect(__getString(ptr)).to.equal('-12654451630419.39845917833');
     });
@@ -590,8 +585,8 @@ describe('numbers wasm tests', () => {
     });
 
     it('should execute bigDecimal dividedBy for negative decimal and DECIMAL128_MAX', async () => {
-      const ptr = await testBigDecimalDividedBy(await __newString('-231543212.2132354'), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal('-2315432122132354e-6152').toSignificantDigits(PRECISION).toFixed();
+      const ptr = await testBigDecimalDividedBy(await __newString('-10000.00'), await __newString(DECIMAL128_MAX));
+      const expected = new Decimal('-1e-6141').toSignificantDigits(PRECISION).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
