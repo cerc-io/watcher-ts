@@ -38,6 +38,7 @@ export interface Block {
   difficulty: string;
   gasLimit: string;
   gasUsed: string;
+  author: string;
 }
 
 export interface EventData {
@@ -329,7 +330,8 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const tdStringPtr = await __newString(blockData.td);
   const totalDifficulty = await BigInt.fromString(tdStringPtr);
 
-  const authorPtr = await Address.zero();
+  const authorStringPtr = await __newString(blockData.author);
+  const authorPtr = await Address.fromString(authorStringPtr);
 
   const sizePtr = await __newString('0');
   const size = await BigInt.fromString(sizePtr);
