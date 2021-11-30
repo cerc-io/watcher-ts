@@ -566,6 +566,14 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal(expected);
     });
 
+    it('should throw an error for DECIMAL128_PMIN times DECIMAL128_NMAX', async () => {
+      try {
+        await testBigDecimalTimes(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
+      } catch (error) {
+        expect(error.message).to.be.equal('Big decimal exponent \'-12286\' is outside the \'-6143\' to \'6144\' range');
+      }
+    });
+
     it('should execute bigDecimal times for DECIMAL128_MAX and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_NMAX));
       const expected = new Decimal('-99.99999999999999999999999999999999').toSignificantDigits(PRECISION).toFixed();
@@ -601,6 +609,14 @@ describe('numbers wasm tests', () => {
       const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MIN));
       const expected = new Decimal('-1').toSignificantDigits(PRECISION).toFixed();
       expect(__getString(ptr)).to.equal(expected);
+    });
+
+    it('should throw an error for DECIMAL128_PMIN divideBy DECIMAL128_MAX', async () => {
+      try {
+        await testBigDecimalDividedBy(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_MAX));
+      } catch (error) {
+        expect(error.message).to.be.equal('Big decimal exponent \'-12288\' is outside the \'-6143\' to \'6144\' range');
+      }
     });
 
     it('should execute bigDecimal dividedBy for 0 and DECIMAL128_MAX', async () => {

@@ -22,7 +22,8 @@ export const getDummyEventData = (): EventData => {
     uncleHash: ZERO_HASH,
     difficulty: '0',
     gasLimit: '0',
-    gasUsed: '0'
+    gasUsed: '0',
+    author: ZERO_ADDRESS
   };
 
   const tx = {
