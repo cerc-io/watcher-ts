@@ -168,8 +168,7 @@ export const getFullBlock = async (ethClient: EthClient, blockHash: string): Pro
   assert(header);
 
   // TODO:
-  // 1. Get author
-  // 2. Calculate size
+  // 1. Calculate size
   return {
     cid: fullBlock.cid,
     blockNumber: fullBlock.blockNumber,
@@ -183,6 +182,7 @@ export const getFullBlock = async (ethClient: EthClient, blockHash: string): Pro
     uncleHash: fullBlock.uncleRoot,
     difficulty: header.Difficulty.toString(),
     gasLimit: header.GasLimit.toString(),
-    gasUsed: header.GasUsed.toString()
+    gasUsed: header.GasUsed.toString(),
+    author: header.Beneficiary
   };
 };
