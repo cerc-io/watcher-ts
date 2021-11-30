@@ -163,7 +163,7 @@ export class JobRunner {
         const message = `Parent block number ${parentBlockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash} not fetched yet, aborting`;
         log(message);
 
-        throw new Error(message);
+        return;
       }
 
       if (parentHash !== syncStatus.latestCanonicalBlockHash && !parent.isComplete) {

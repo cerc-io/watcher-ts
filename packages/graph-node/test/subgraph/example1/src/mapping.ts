@@ -143,7 +143,6 @@ export function testStructEthCall (): void {
   log.debug('In test struct eth call', []);
 
   // Bind the contract to the address that emitted the event.
-  // TODO: Address.fromString throws error in WASM module instantiation.
   const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);
 

@@ -159,7 +159,6 @@ export const instantiate = async (
           // TODO: Check for function overloading.
           let result = await contract[functionName](...functionParams);
 
-          // TODO: Check for function overloading.
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);
           assert(outputs);
