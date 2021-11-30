@@ -5,6 +5,7 @@
 import path from 'path';
 import { expect } from 'chai';
 import Decimal from 'decimal.js';
+import BN from 'bn.js';
 
 import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
@@ -185,6 +186,12 @@ describe('numbers wasm tests', () => {
     it('should execute bigInt times for 0 and 0', async () => {
       const ptr = await testBigIntTimes(await __newString('0'), await __newString('0'));
       expect(__getString(ptr)).to.equal('0');
+    });
+
+    it('should execute bigInt times for INT256_MIN and UINT256_MAX', async () => {
+      const ptr = await testBigIntTimes(await __newString(INT256_MIN), await __newString(UINT256_MAX));
+      const expected = new BN(INT256_MIN).mul(new BN(UINT256_MAX)).toString();
+      expect(__getString(ptr)).to.equal(expected);
     });
   });
 
@@ -559,12 +566,6 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal(expected);
     });
 
-    it('should execute bigDecimal times for DECIMAL128_PMIN and DECIMAL128_NMAX', async () => {
-      const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
-      expect(__getString(ptr)).to.equal(expected);
-    });
-
     it('should execute bigDecimal times for DECIMAL128_MAX and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_NMAX));
       const expected = new Decimal('-99.99999999999999999999999999999999').toSignificantDigits(PRECISION).toFixed();
@@ -599,12 +600,6 @@ describe('numbers wasm tests', () => {
     it('should execute bigDecimal dividedBy for DECIMAL128_MAX and DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MIN));
       const expected = new Decimal('-1').toSignificantDigits(PRECISION).toFixed();
-      expect(__getString(ptr)).to.equal(expected);
-    });
-
-    it('should execute bigDecimal dividedBy for DECIMAL128_PMIN and DECIMAL128_MAX', async () => {
-      const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 

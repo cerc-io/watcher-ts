@@ -33,13 +33,6 @@ import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 
-// Size (in bytes) of the BN used in bigInt store host API.
-// The BN is being stored as a byte array in wasm memory in 2's compliment representation and interpreted as such in other APIs.
-// 33 bytes is chosen so that it can support:
-//    - Int256 (32 bytes sufficient)
-//    - UInt256 (33 bytes required as we are storing the 2's compliment)
-const BN_SIZE = 33;
-
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
 // (for eg. bigInt.fromString(negativeI32Value))
@@ -292,7 +285,7 @@ export const instantiate = async (
         const exp = __getString(expStringPtr);
 
         if (parseInt(exp) < MIN_EXP || parseInt(exp) > MAX_EXP) {
-          throw new Error(`big decimal exponent '${exp}' is outside the '${MIN_EXP}' to '${MAX_EXP}' range`);
+          throw new Error(`Big decimal exponent '${exp}' is outside the '${MIN_EXP}' to '${MAX_EXP}' range`);
         }
 
         const decimal = new GraphDecimal(`${digits}e${exp}`);
@@ -381,15 +374,20 @@ export const instantiate = async (
       'bigInt.fromString': async (s: number) => {
         const string = __getString(s);
 
+        // The BN is being stored as a byte array in wasm memory in 2's compliment representation and interpreted as such in other APIs.
         // Create a BN in 2's compliment representation.
         // Need to use BN as ethers.BigNumber:
         //    Doesn't store -ve numbers in 2's compilment form
         //    Stores in big endian form.
         let bigNumber = new BN(string);
-        bigNumber = bigNumber.toTwos(BN_SIZE * 8);
 
-        // Create an array out of BN in 'le' endianness.
-        const bytes = bigNumber.toArray(BN_ENDIANNESS, BN_SIZE);
+        // Size (in bytes) of the BN stored.
+        // Add an extra byte to the BNs byte length to allow for 2's compiment.
+        const bnSize = bigNumber.byteLength() + 1;
+        bigNumber = bigNumber.toTwos(bnSize * 8);
+
+        // Create a byte array out of BN in 'le' endianness.
+        const bytes = bigNumber.toArray(BN_ENDIANNESS, bnSize);
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
         const ptr = await __newArray(uint8ArrayId, bytes);
