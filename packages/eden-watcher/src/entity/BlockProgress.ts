@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 import { BlockProgressInterface } from '@vulcanize/util';
 
 @Entity()
@@ -42,4 +42,7 @@ export class BlockProgress implements BlockProgressInterface {
 
   @Column('boolean', { default: false })
   isPruned!: boolean;
+
+  @CreateDateColumn()
+  createdAt!: Date;
 }

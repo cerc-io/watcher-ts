@@ -50,7 +50,7 @@ export class EventWatcher {
 
   async startBlockProcessing (): Promise<void> {
     const syncStatus = await this._indexer.getSyncStatus();
-    let startBlockNumber;
+    let startBlockNumber: number;
 
     if (!syncStatus) {
       // Get latest block in chain.
@@ -62,7 +62,8 @@ export class EventWatcher {
 
     const { ethServer: { blockDelayInMilliSecs } } = this._upstreamConfig;
 
-    processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, startBlockNumber);
+    // Wait for block processing as blockProgress event might process the same block.
+    await processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -145,22 +146,28 @@ export class EventWatcher {
 
   async _handleIndexingComplete (jobData: any): Promise<void> {
     const { blockHash, blockNumber, priority } = jobData;
-    log(`Job onComplete indexing block ${blockHash} ${blockNumber}`);
 
     const [blockProgress, syncStatus] = await Promise.all([
       this._indexer.getBlockProgress(blockHash),
+      // Update sync progress.
       this._indexer.updateSyncStatusIndexedBlock(blockHash, blockNumber)
     ]);
 
-    // Create pruning job if required.
-    if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
-      await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
-    }
+    if (blockProgress) {
+      log(`Job onComplete indexing block ${blockHash} ${blockNumber}`);
 
-    // Publish block progress event if no events exist.
-    // Event for blocks with events will be pusblished from eventProcessingCompleteHandler.
-    if (blockProgress && blockProgress.numEvents === 0) {
-      await this.publishBlockProgressToSubscribers(blockProgress);
+      // Create pruning job if required.
+      if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
+        await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
+      }
+
+      // Publish block progress event if no events exist.
+      // Event for blocks with events will be pusblished from eventProcessingCompleteHandler.
+      if (blockProgress.numEvents === 0) {
+        await this.publishBlockProgressToSubscribers(blockProgress);
+      }
+    } else {
+      log(`block not indexed for ${blockHash} ${blockNumber}`);
     }
   }
 
