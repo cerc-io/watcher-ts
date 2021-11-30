@@ -19,7 +19,16 @@ import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface } from '@vulcanize/util';
 
 import { TypeId, Level } from './types';
-import { Block, fromEthereumValue, toEthereumValue, resolveEntityFieldConflicts, GraphDecimal, digitsToString } from './utils';
+import {
+  Block,
+  fromEthereumValue,
+  toEthereumValue,
+  resolveEntityFieldConflicts,
+  GraphDecimal,
+  digitsToString,
+  MIN_EXP,
+  MAX_EXP
+} from './utils';
 import { Database } from './database';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -282,8 +291,8 @@ export const instantiate = async (
         const expStringPtr = await expBigInt.toString();
         const exp = __getString(expStringPtr);
 
-        if (parseInt(exp) < -6143 || parseInt(exp) > 6144) {
-          throw new Error(`big decimal exponent '${exp}' is outside the '-6143' to '6144' range`);
+        if (parseInt(exp) < MIN_EXP || parseInt(exp) > MAX_EXP) {
+          throw new Error(`big decimal exponent '${exp}' is outside the '${MIN_EXP}' to '${MAX_EXP}' range`);
         }
 
         const decimal = new GraphDecimal(`${digits}e${exp}`);

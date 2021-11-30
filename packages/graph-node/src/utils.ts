@@ -16,7 +16,7 @@ const log = debug('vulcanize:utils');
 export const MIN_EXP = -6143;
 export const MAX_EXP = 6144;
 export const PRECISION = 34;
-export const GraphDecimal = Decimal.clone({ minE: MIN_EXP, maxE: MAX_EXP, precision: PRECISION });
+export const GraphDecimal = Decimal.clone({ precision: PRECISION });
 
 export const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
 export const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
