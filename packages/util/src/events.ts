@@ -140,20 +140,23 @@ export class EventWatcher {
 
   async _handleIndexingComplete (jobData: any): Promise<void> {
     const { blockHash, blockNumber, priority } = jobData;
-    log(`Job onComplete indexing block ${blockHash} ${blockNumber}`);
-
-    // Update sync progress.
-    const syncStatus = await this._indexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
-
-    // Create pruning job if required.
-    if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
-      await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
-    }
-
-    // Publish block progress event.
     const blockProgress = await this._indexer.getBlockProgress(blockHash);
+
     if (blockProgress) {
+      log(`Job onComplete indexing block ${blockHash} ${blockNumber}`);
+
+      // Update sync progress.
+      const syncStatus = await this._indexer.updateSyncStatusIndexedBlock(blockHash, blockNumber);
+
+      // Create pruning job if required.
+      if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
+        await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
+      }
+
+      // Publish block progress event.
       await this.publishBlockProgressToSubscribers(blockProgress);
+    } else {
+      log(`block not indexed for ${blockHash} ${blockNumber}`);
     }
   }
 
