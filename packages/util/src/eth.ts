@@ -19,30 +19,26 @@ function decodeNumber (value : string, defaultValue?: number): number | undefine
   return Number(value);
 }
 
-function decodeHex (hex: string): any {
-  return Buffer.from(hex.slice(2), 'hex');
-}
-
 export function decodeHeader (rlp : Uint8Array): any {
   try {
     const data = utils.RLP.decode(rlp);
 
     try {
       return {
-        Parent: decodeHex(data[0]),
-        UnclesDigest: decodeHex(data[1]),
-        Beneficiary: decodeHex(data[2]),
-        StateRoot: decodeHex(data[4]),
-        TxRoot: decodeHex(data[4]),
-        RctRoot: decodeHex(data[5]),
-        Bloom: decodeHex(data[6]),
+        Parent: data[0],
+        UnclesDigest: data[1],
+        Beneficiary: data[2],
+        StateRoot: data[4],
+        TxRoot: data[4],
+        RctRoot: data[5],
+        Bloom: data[6],
         Difficulty: decodeInteger(data[7], BigInt(0)),
         Number: decodeInteger(data[8], BigInt(0)),
         GasLimit: decodeInteger(data[9], BigInt(0)),
         GasUsed: decodeInteger(data[10], BigInt(0)),
         Time: decodeNumber(data[11]) || 0,
-        Extra: decodeHex(data[12]),
-        MixDigest: decodeHex(data[13]),
+        Extra: data[12],
+        MixDigest: data[13],
         Nonce: decodeInteger(data[14], BigInt(0)),
         BaseFee: decodeInteger(data[15])
       };
