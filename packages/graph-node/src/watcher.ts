@@ -7,7 +7,7 @@ import 'reflect-metadata';
 import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
-import { ContractInterface, utils } from 'ethers';
+import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -28,6 +28,7 @@ export class GraphWatcher {
   _database: Database;
   _indexer?: IndexerInterface;
   _postgraphileClient: EthClient;
+  _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
@@ -36,9 +37,10 @@ export class GraphWatcher {
     event: {}
   }
 
-  constructor (database: Database, postgraphileClient: EthClient, subgraphPath: string) {
+  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, subgraphPath: string) {
     this._database = database;
     this._postgraphileClient = postgraphileClient;
+    this._ethProvider = ethProvider;
     this._subgraphPath = subgraphPath;
   }
 
@@ -109,7 +111,7 @@ export class GraphWatcher {
     const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
 
     // TODO: Use blockData fetched in handleBlock.
-    const blockData = await getFullBlock(this._postgraphileClient, block.hash);
+    const blockData = await getFullBlock(this._postgraphileClient, this._ethProvider, block.hash);
 
     this._context.event.block = blockData;
 
@@ -148,7 +150,7 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string) {
-    const blockData = await getFullBlock(this._postgraphileClient, blockHash);
+    const blockData = await getFullBlock(this._postgraphileClient, this._ethProvider, blockHash);
 
     this._context.event.block = blockData;
 
