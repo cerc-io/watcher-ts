@@ -24,6 +24,9 @@
     "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
   },
+  "bin": {
+    "compare-entity": "bin/compare-entity"
+  },
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
@@ -33,7 +36,7 @@
     "test": "yarn asbuild:debug && DEBUG=vulcanize:* mocha src/**/*.test.ts",
     "build:example": "cd test/subgraph/example1 && yarn && yarn build",
     "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts",
-    "compare-entity": "DEBUG=vulcanize:* ts-node src/cli/compare/compare-entity.ts"
+    "compare-entity": "node bin/compare-entity"
   },
   "dependencies": {
     "@apollo/client": "^3.3.19",
