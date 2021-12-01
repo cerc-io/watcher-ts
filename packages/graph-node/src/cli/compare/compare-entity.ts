@@ -27,7 +27,7 @@ interface Config {
   queries: QueryConfig;
 }
 
-const main = async (): Promise<void> => {
+export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
     'parse-numbers': false
   }).options({
@@ -142,9 +142,3 @@ async function getClients (config: Config, queryDir?: string): Promise<{
     client2
   };
 }
-
-main().catch(err => {
-  console.log(err);
-}).finally(() => {
-  process.exit(0);
-});
