@@ -39,6 +39,7 @@ export interface Block {
   gasLimit: string;
   gasUsed: string;
   author: string;
+  size: string;
 }
 
 export interface EventData {
@@ -333,7 +334,7 @@ export const createBlock = async (instanceExports: any, blockData: Block): Promi
   const authorStringPtr = await __newString(blockData.author);
   const authorPtr = await Address.fromString(authorStringPtr);
 
-  const sizePtr = await __newString('0');
+  const sizePtr = await __newString(blockData.size);
   const size = await BigInt.fromString(sizePtr);
 
   // Missing fields from watcher in block data:
