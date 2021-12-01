@@ -173,7 +173,7 @@ class CustomFormatter extends providers.Formatter {
   }
 }
 
-export const getFullBlock = async (ethClient: EthClient, blockHash: string): Promise<any> => {
+export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.BaseProvider, blockHash: string): Promise<any> => {
   const {
     allEthHeaderCids: {
       nodes: [
@@ -188,8 +188,11 @@ export const getFullBlock = async (ethClient: EthClient, blockHash: string): Pro
   const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
   assert(header);
 
-  // TODO:
-  // 1. Calculate size
+  // TODO: Calculate size from rlp encoded data provided by postgraphile.
+  // Get block info from JSON RPC API provided by ipld-eth-server.
+  const provider = ethProvider as providers.JsonRpcProvider;
+  const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
+
   return {
     cid: fullBlock.cid,
     blockNumber: fullBlock.blockNumber,
@@ -204,6 +207,7 @@ export const getFullBlock = async (ethClient: EthClient, blockHash: string): Pro
     difficulty: header.Difficulty.toString(),
     gasLimit: header.GasLimit.toString(),
     gasUsed: header.GasUsed.toString(),
-    author: header.Beneficiary
+    author: header.Beneficiary,
+    size: BigInt(size).toString()
   };
 };
