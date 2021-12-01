@@ -127,6 +127,7 @@ export function testGetEthCall (): void {
 export function testAddEthCall (): void {
   log.debug('In test add eth call', []);
 
+  // Bind the contract to the address that emitted the event.
   const contractAddress = dataSource.address();
   const contract = Example1.bind(contractAddress);
 
@@ -224,7 +225,6 @@ export function testBigDecimalFromString (value: string): string {
 
   const bigDecimal = BigDecimal.fromString(value);
   const res = bigDecimal.toString();
-  log.debug('bigDecimal.FromString result: {}', [res]);
 
   return res;
 }
@@ -236,7 +236,6 @@ export function testBigDecimalDividedBy (value1: string, value2: string): string
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 / bigDecimal2;
-  log.debug('bigDecimal.dividedBy result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -248,7 +247,6 @@ export function testBigDecimalPlus (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 + bigDecimal2;
-  log.debug('bigDecimal.plus result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -260,7 +258,6 @@ export function testBigDecimalMinus (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 - bigDecimal2;
-  log.debug('bigDecimal.minus result: {}', [res.toString()]);
 
   return res.toString();
 }
@@ -272,49 +269,48 @@ export function testBigDecimalTimes (value1: string, value2: string): string {
   const bigDecimal2 = BigDecimal.fromString(value2);
 
   const res = bigDecimal1 * bigDecimal2;
-  log.debug('bigDecimal.times result: {}', [res.toString()]);
 
   return res.toString();
 }
 
-export function testBigIntPlus (): string {
+export function testBigIntPlus (value1: string, value2: string): string {
   log.debug('In test bigInt.plus', []);
 
-  const bigInt1 = BigInt.fromString('100');
-  const bigInt2 = BigInt.fromString('100');
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
 
   const res = bigInt1 + bigInt2;
   log.debug('bigInt.plus result: {}', [res.toString()]);
   return res.toString();
 }
 
-export function testBigIntMinus (): string {
+export function testBigIntMinus (value1: string, value2: string): string {
   log.debug('In test bigInt.minus', []);
 
-  const bigInt1 = BigInt.fromString('200');
-  const bigInt2 = BigInt.fromString('100');
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
 
   const res = bigInt1 - bigInt2;
   log.debug('bigInt.minus result: {}', [res.toString()]);
   return res.toString();
 }
 
-export function testBigIntTimes (): string {
+export function testBigIntTimes (value1: string, value2: string): string {
   log.debug('In test bigInt.times', []);
 
-  const bigInt1 = BigInt.fromString('100');
-  const bigInt2 = BigInt.fromString('10');
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
 
   const res = bigInt1 * bigInt2;
   log.debug('bigInt.times result: {}', [res.toString()]);
   return res.toString();
 }
 
-export function testBigIntDividedBy (): string {
+export function testBigIntDividedBy (value1: string, value2: string): string {
   log.debug('In test bigInt.dividedBy', []);
 
-  const bigInt1 = BigInt.fromString('1000');
-  const bigInt2 = BigInt.fromString('10');
+  const bigInt1 = BigInt.fromString(value1);
+  const bigInt2 = BigInt.fromString(value2);
 
   const res = bigInt1 / bigInt2;
   log.debug('bigInt.dividedBy result: {}', [res.toString()]);
