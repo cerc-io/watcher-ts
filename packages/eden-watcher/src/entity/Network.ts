@@ -29,12 +29,12 @@ export class Network {
   @Column('varchar', { array: true })
   stakers!: string[];
 
-  @Column('bigint', { nullable: true, transformer: bigintTransformer })
+  @Column('numeric', { nullable: true, transformer: bigintTransformer })
   numStakers!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   totalStaked!: bigint;
 
-  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
+  @Column('numeric', { transformer: bigintArrayTransformer, array: true })
   stakedPercentiles!: bigint[];
 }
