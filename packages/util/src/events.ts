@@ -105,7 +105,6 @@ export class EventWatcher {
     const dbEvent = await this._indexer.getEvent(request.data.id);
     assert(dbEvent);
 
-    await this._indexer.updateBlockProgress(dbEvent.block.blockHash, dbEvent.index);
     const blockProgress = await this._indexer.getBlockProgress(dbEvent.block.blockHash);
 
     if (blockProgress) {

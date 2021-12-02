@@ -56,14 +56,6 @@ export class JobRunner {
 
     const event = dbEvent;
 
-    // Confirm that the parent block has been completely processed.
-    // We don't have to worry about aborting as this job will get retried later.
-    const parent = await this._indexer.getBlockProgress(event.block.parentHash);
-    if (!parent || !parent.isComplete) {
-      const message = `Abort processing of event ${id} as parent block not processed yet`;
-      throw new Error(message);
-    }
-
     const blockProgress = await this._indexer.getBlockProgress(event.block.blockHash);
     assert(blockProgress);
 
@@ -159,7 +151,7 @@ export class JobRunner {
         throw new Error(message);
       }
 
-      if (parentHash !== syncStatus.latestCanonicalBlockHash && !parent.isComplete) {
+      if (!parent.isComplete) {
         // Parent block indexing needs to finish before this block can be indexed.
         const message = `Indexing incomplete for parent block number ${parent.blockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash}, aborting`;
         log(message);

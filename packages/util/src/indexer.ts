@@ -253,7 +253,7 @@ export class Indexer {
     let res;
 
     try {
-      res = this._db.saveEventEntity(dbTx, dbEvent);
+      res = await this._db.saveEventEntity(dbTx, dbEvent);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();

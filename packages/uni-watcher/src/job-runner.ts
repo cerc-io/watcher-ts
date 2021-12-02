@@ -78,6 +78,7 @@ export class JobRunner {
         await this._indexer.processEvent(dbEvent);
       }
 
+      await this._indexer.updateBlockProgress(event.block.blockHash, event.index);
       await this._jobQueue.markComplete(job);
     });
   }

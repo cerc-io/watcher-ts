@@ -13,6 +13,8 @@ interface Config {
 
 type JobCallback = (job: any) => Promise<void>;
 
+const JOBS_PER_INTERVAL = 5;
+
 const log = debug('vulcanize:job-queue');
 
 export class JobQueue {
@@ -36,7 +38,7 @@ export class JobQueue {
 
       retentionDays: 30, // 30 days
 
-      newJobCheckIntervalSeconds: 1
+      newJobCheckInterval: 100
     });
 
     this._boss.on('error', error => log(error));
@@ -51,12 +53,12 @@ export class JobQueue {
   }
 
   async subscribe (queue: string, callback: JobCallback): Promise<string> {
-    return await this._boss.subscribe(queue, { teamSize: 1, teamConcurrency: 1 }, async (job: any) => {
+    return await this._boss.subscribe(queue, { teamSize: JOBS_PER_INTERVAL, teamConcurrency: 1 }, async (job: any) => {
       try {
         log(`Processing queue ${queue} job ${job.id}...`);
         await callback(job);
       } catch (error) {
-        log(`Error in queue ${queue}`);
+        log(`Error in queue ${queue} job ${job.id}`);
         log(error);
         throw error;
       }
@@ -64,7 +66,7 @@ export class JobQueue {
   }
 
   async onComplete (queue: string, callback: JobCallback): Promise<string> {
-    return await this._boss.onComplete(queue, async (job: any) => {
+    return await this._boss.onComplete(queue, { teamSize: JOBS_PER_INTERVAL, teamConcurrency: 1 }, async (job: any) => {
       const { id, data: { failed, createdOn } } = job;
       log(`Job onComplete for queue ${queue} job ${id} created ${createdOn} success ${!failed}`);
       await callback(job);
