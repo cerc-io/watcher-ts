@@ -17,7 +17,7 @@ export class Category {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   count!: bigint;
 
   @Column('varchar')

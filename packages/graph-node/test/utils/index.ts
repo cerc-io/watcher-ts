@@ -23,7 +23,8 @@ export const getDummyEventData = (): EventData => {
     difficulty: '0',
     gasLimit: '0',
     gasUsed: '0',
-    author: ZERO_ADDRESS
+    author: ZERO_ADDRESS,
+    size: '0'
   };
 
   const tx = {

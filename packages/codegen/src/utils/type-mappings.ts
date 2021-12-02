@@ -25,7 +25,7 @@ _tsToGql.set('boolean', 'Boolean');
 // Typescript to Postgres type-mapping.
 _tsToPg.set('string', 'varchar');
 _tsToPg.set('number', 'integer');
-_tsToPg.set('bigint', 'bigint');
+_tsToPg.set('bigint', 'numeric');
 _tsToPg.set('boolean', 'boolean');
 
 // Graphql to Typescript type-mapping.

@@ -17,9 +17,9 @@ export class Account {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   totalClaimed!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   totalSlashed!: bigint;
 }

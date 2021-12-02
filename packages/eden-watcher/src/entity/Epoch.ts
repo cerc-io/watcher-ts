@@ -21,7 +21,7 @@ export class Epoch {
   @Column('boolean')
   finalized!: boolean;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   epochNumber!: bigint;
 
   @Column('varchar', { nullable: true })
@@ -30,10 +30,10 @@ export class Epoch {
   @Column('varchar', { nullable: true })
   endBlock!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   producerBlocks!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   allBlocks!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

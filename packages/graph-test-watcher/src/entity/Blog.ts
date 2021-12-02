@@ -32,7 +32,7 @@ export class Blog {
   @Column('boolean')
   isActive!: boolean
 
-  @Column('bigint', { transformer: bigintArrayTransformer, array: true })
+  @Column('numeric', { transformer: bigintArrayTransformer, array: true })
   reviews!: bigint[];
 
   @Column('varchar')
