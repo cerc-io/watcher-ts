@@ -3,20 +3,14 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import Decimal from 'decimal.js';
 import { ColumnType } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
+
+import { GraphDecimal } from '@vulcanize/util';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
-
-// Customize Decimal according the limits of IEEE-754 decimal128.
-// Reference: https://github.com/graphprotocol/graph-node/blob/v0.24.2/graph/src/data/store/scalar.rs#L42
-export const MIN_EXP = -6143;
-export const MAX_EXP = 6144;
-export const PRECISION = 34;
-export const GraphDecimal = Decimal.clone({ precision: PRECISION });
 
 export const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
 export const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
@@ -32,9 +26,6 @@ export const DECIMAL128_MIN = '-9.999999999999999999999999999999999e+6144';
 export const DECIMAL128_PMIN = '1e-6143';
 // Maximum -ve decimal value.
 export const DECIMAL128_NMAX = '-1e-6143';
-
-// Constant used in function digitsToString.
-const LOG_BASE = 7;
 
 interface Transaction {
   hash: string;
@@ -570,40 +561,3 @@ export const resolveEntityFieldConflicts = (entity: any): any => {
 
   return entity;
 };
-
-// Get digits in a string from an array of digit numbers (Decimal().d)
-// https://github.com/MikeMcl/decimal.js/blob/master/decimal.mjs#L2516
-export function digitsToString (d: any) {
-  let i, k, ws;
-  const indexOfLastWord = d.length - 1;
-  let str = '';
-  let w = d[0];
-
-  if (indexOfLastWord > 0) {
-    str += w;
-    for (i = 1; i < indexOfLastWord; i++) {
-      ws = d[i] + '';
-      k = LOG_BASE - ws.length;
-      if (k) str += getZeroString(k);
-      str += ws;
-    }
-
-    w = d[i];
-    ws = w + '';
-    k = LOG_BASE - ws.length;
-    if (k) str += getZeroString(k);
-  } else if (w === 0) {
-    return '0';
-  }
-
-  // Remove trailing zeros of last w.
-  for (; w % 10 === 0;) w /= 10;
-
-  return str + w;
-}
-
-function getZeroString (k: any) {
-  let zs = '';
-  for (; k--;) zs += '0';
-  return zs;
-}

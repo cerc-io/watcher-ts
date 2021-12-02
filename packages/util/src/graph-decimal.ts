@@ -150,10 +150,10 @@ export class GraphDecimal {
     // Return n.value if n is an instance of GraphDecimal.
     if (n instanceof GraphDecimal) {
       n = n.value;
-      exp = _getGraphExp(n.d, n.e);
+      ({ exp } = getGraphDigitsAndExp(n.d, n.e));
     } else {
       const decimal = new Decimal(n);
-      exp = _getGraphExp(decimal.d, decimal.e);
+      ({ exp } = getGraphDigitsAndExp(decimal.d, decimal.e));
     }
 
     if (exp < MIN_EXP || exp > MAX_EXP) {
@@ -165,11 +165,14 @@ export class GraphDecimal {
 }
 
 // Get exponent from Decimal d and e according to format in graph-node.
-function _getGraphExp (d: any, e: number): number {
+export function getGraphDigitsAndExp (d: any, e: number): { digits: string, exp: number } {
   const digits = _digitsToString(d);
   const exp = e - digits.length + 1;
 
-  return exp;
+  return {
+    digits,
+    exp
+  };
 }
 
 // Get digits in a string from an array of digit numbers (Decimal().d)
