@@ -16,7 +16,7 @@ export class ProducerRewardCollectorChange {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   _blockNumber!: bigint;
 
   @Column('varchar')

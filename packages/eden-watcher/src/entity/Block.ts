@@ -40,24 +40,24 @@ export class Block {
   @Column('varchar')
   receiptsRoot!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   number!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   gasUsed!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   gasLimit!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   timestamp!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   difficulty!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   totalDifficulty!: bigint;
 
-  @Column('bigint', { nullable: true, transformer: bigintTransformer })
+  @Column('numeric', { nullable: true, transformer: bigintTransformer })
   size!: bigint;
 }

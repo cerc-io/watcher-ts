@@ -16,9 +16,9 @@ export class Staker {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   staked!: bigint;
 
-  @Column('bigint', { nullable: true, transformer: bigintTransformer })
+  @Column('numeric', { nullable: true, transformer: bigintTransformer })
   rank!: bigint;
 }

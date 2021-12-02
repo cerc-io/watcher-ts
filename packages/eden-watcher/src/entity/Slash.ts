@@ -17,12 +17,12 @@ export class Slash {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   timestamp!: bigint;
 
   @Column('varchar')
   account!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   slashed!: bigint;
 }
