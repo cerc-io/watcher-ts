@@ -24,16 +24,16 @@ export class SlotClaim {
   @Column('varchar')
   owner!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   winningBid!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   oldBid!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   startTime!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   expirationTime!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

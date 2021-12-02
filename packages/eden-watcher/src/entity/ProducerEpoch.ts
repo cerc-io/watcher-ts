@@ -24,10 +24,10 @@ export class ProducerEpoch {
   @Column('varchar')
   epoch!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   totalRewards!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   blocksProduced!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })

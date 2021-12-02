@@ -18,21 +18,21 @@ export class Author {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   blogCount!: bigint;
 
   @Column('varchar')
-  name!: string
+  name!: string;
 
   @Column('integer')
-  paramInt!: number
+  paramInt!: number;
 
-  @Column('bigint', { transformer: bigintTransformer })
-  paramBigInt!: number
+  @Column('numeric', { transformer: bigintTransformer })
+  paramBigInt!: bigint;
 
   @Column('varchar')
-  paramBytes!: string
+  paramBytes!: string;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  rating!: Decimal
+  rating!: Decimal;
 }

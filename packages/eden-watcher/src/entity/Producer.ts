@@ -22,12 +22,12 @@ export class Producer {
   @Column('varchar', { nullable: true })
   rewardCollector!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   rewards!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   confirmedBlocks!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   pendingEpochBlocks!: bigint;
 }
