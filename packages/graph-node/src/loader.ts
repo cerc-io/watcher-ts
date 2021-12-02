@@ -16,18 +16,14 @@ import BN from 'bn.js';
 import debug from 'debug';
 
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface } from '@vulcanize/util';
+import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp } from '@vulcanize/util';
 
 import { TypeId, Level } from './types';
 import {
   Block,
   fromEthereumValue,
   toEthereumValue,
-  resolveEntityFieldConflicts,
-  GraphDecimal,
-  digitsToString,
-  MIN_EXP,
-  MAX_EXP
+  resolveEntityFieldConflicts
 } from './utils';
 import { Database } from './database';
 
@@ -255,15 +251,16 @@ export const instantiate = async (
         // Creating decimal x.
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
-        const xDecimal = new GraphDecimal(__getString(xStringPtr));
+        const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
 
         // Create decimal y.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
-        const yDecimal = new GraphDecimal(__getString(yStringPtr));
+        const yDecimalString = __getString(yStringPtr);
 
         // Performing the decimal division operation.
-        const divResult = xDecimal.dividedBy(yDecimal);
+        const divResult = xDecimal.dividedBy(yDecimalString);
         const ptr = await __newString(divResult.toString());
         const divResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -284,10 +281,6 @@ export const instantiate = async (
         const expStringPtr = await expBigInt.toString();
         const exp = __getString(expStringPtr);
 
-        if (parseInt(exp) < MIN_EXP || parseInt(exp) > MAX_EXP) {
-          throw new Error(`Big decimal exponent '${exp}' is outside the '${MIN_EXP}' to '${MAX_EXP}' range`);
-        }
-
         const decimal = new GraphDecimal(`${digits}e${exp}`);
         const ptr = __newString(decimal.toFixed());
 
@@ -296,21 +289,23 @@ export const instantiate = async (
       'bigDecimal.fromString': async (s: number) => {
         const string = __getString(s);
 
-        // Creating a decimal with the configured precision applied.
-        const decimal = new GraphDecimal(string).toSignificantDigits();
+        // Creating a decimal using custom decimal implementation.
+        const decimal = new GraphDecimal(string);
 
-        // Convert from digits array to BigInt.
-        const digits = digitsToString(decimal.d);
+        // Get digits string and exp using decimal 'd' and 'e' properties.
+        const { digits, exp } = getGraphDigitsAndExp(decimal.value.d, decimal.value.e);
+
+        // Create a digits BigInt using digits string and decimal sign 's' property.
         const digitsBigNumber = BigNumber.from(digits);
-        const signBigNumber = BigNumber.from(decimal.s);
+        const signBigNumber = BigNumber.from(decimal.value.s);
         const digitsStringPtr = await __newString(digitsBigNumber.mul(signBigNumber).toString());
         const digitsBigInt = await BigInt.fromString(digitsStringPtr);
 
-        // Calculate exp after converting digits to BigInt above.
-        const exp = decimal.e - digits.length + 1;
+        // Create an exp BigInt.
         const expStringPtr = await __newString(exp.toString());
         const expBigInt = await BigInt.fromString(expStringPtr);
 
+        // Create a BigDecimal using digits and exp BigInts.
         const bigDecimal = await BigDecimal.__new(digitsBigInt);
         bigDecimal.exp = expBigInt;
 
@@ -321,14 +316,15 @@ export const instantiate = async (
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
 
         // Create decimal y string.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Perform the decimal sum operation.
-        const sumResult = GraphDecimal.sum(xDecimalString, yDecimalString);
+        // Perform the decimal plus operation.
+        const sumResult = xDecimal.plus(yDecimalString);
         const ptr = await __newString(sumResult.toString());
         const sumResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -339,14 +335,15 @@ export const instantiate = async (
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
 
         // Create decimal y string.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Perform the decimal sub operation.
-        const subResult = GraphDecimal.sub(xDecimalString, yDecimalString);
+        // Perform the decimal minus operation.
+        const subResult = xDecimal.minus(yDecimalString);
         const ptr = await __newString(subResult.toString());
         const subResultBigDecimal = await BigDecimal.fromString(ptr);
 
@@ -357,14 +354,15 @@ export const instantiate = async (
         const xBigDecimal = await BigDecimal.wrap(x);
         const xStringPtr = await xBigDecimal.toString();
         const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
 
         // Create decimal y string.
         const yBigDecimal = await BigDecimal.wrap(y);
         const yStringPtr = await yBigDecimal.toString();
         const yDecimalString = __getString(yStringPtr);
 
-        // Perform the decimal mul operation.
-        const mulResult = GraphDecimal.mul(xDecimalString, yDecimalString);
+        // Perform the decimal times operation.
+        const mulResult = xDecimal.times(yDecimalString);
         const ptr = await __newString(mulResult.toString());
         const mulResultBigDecimal = await BigDecimal.fromString(ptr);
 

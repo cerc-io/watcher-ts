@@ -20,7 +20,7 @@ export class _Test {
   @Column('varchar', { length: 42 })
   contractAddress!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   value!: bigint;
 
   @Column('text', { nullable: true })

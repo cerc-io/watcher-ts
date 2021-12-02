@@ -4,15 +4,15 @@
 
 import path from 'path';
 import { expect } from 'chai';
-import Decimal from 'decimal.js';
 import BN from 'bn.js';
+
+import { GraphDecimal } from '@vulcanize/util';
 
 import { instantiate } from './loader';
 import { getTestDatabase, getTestIndexer } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import {
-  PRECISION,
   UINT128_MAX,
   UINT256_MAX,
   INT256_MIN,
@@ -370,25 +370,25 @@ describe('numbers wasm tests', () => {
 
     it('should get bigDecimal for DECIMAL128_MAX', async () => {
       const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_MAX));
-      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should get bigDecimal for DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_MIN));
-      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should get bigDecimal for DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_NMAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should get bigDecimal for DECIMAL128_PMIN', async () => {
       const ptr = await testBigDecimalFromString(await __newString(DECIMAL128_PMIN));
-      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_PMIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
   });
@@ -407,37 +407,37 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal plus for DECIMAL128_MAX and 0', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MAX), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal plus for DECIMAL128_MIN and 0', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MIN), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal plus for DECIMAL128_PMIN and 0', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_PMIN), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_PMIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal plus for DECIMAL128_NMAX and 0', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_NMAX), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_NMAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal plus for DECIMAL128_MAX and DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MIN));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('0').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal plus for DECIMAL128_PMIN and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalPlus(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('0').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
   });
@@ -456,61 +456,61 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal minus for DECIMAL128_MAX and 0', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MAX), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for 0 and DECIMAL128_MAX', async () => {
       const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for DECIMAL128_MIN and 0', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MIN), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for 0 and DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_MIN));
-      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for DECIMAL128_PMIN and 0', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_PMIN), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_PMIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for 0 and DECIMAL128_PMIN', async () => {
       const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_PMIN));
-      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_NMAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for DECIMAL128_NMAX and 0', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_NMAX), await __newString('0'));
-      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_NMAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for 0 and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalMinus(await __newString('0'), await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_PMIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for DECIMAL128_MIN and DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_MIN), await __newString(DECIMAL128_MIN));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('0').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal minus for DECIMAL128_PMIN and DECIMAL128_PMIN', async () => {
       const ptr = await testBigDecimalMinus(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_PMIN));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('0').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
   });
@@ -544,25 +544,25 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal times for DECIMAL128_MAX and 1', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_MAX), await __newString('1'));
-      const expected = new Decimal(DECIMAL128_MAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal times for DECIMAL128_MAX and -1', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_MAX), await __newString('-1'));
-      const expected = new Decimal(DECIMAL128_MIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_MIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal times for DECIMAL128_PMIN and 1', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_PMIN), await __newString('1'));
-      const expected = new Decimal(DECIMAL128_PMIN).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_PMIN).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal times for DECIMAL128_PMIN and -1', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_PMIN), await __newString('-1'));
-      const expected = new Decimal(DECIMAL128_NMAX).toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal(DECIMAL128_NMAX).toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
@@ -576,7 +576,7 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal times for DECIMAL128_MAX and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalTimes(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal('-99.99999999999999999999999999999999').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('-99.99999999999999999999999999999999').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
   });
@@ -595,19 +595,19 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal dividedBy for negative decimal and DECIMAL128_MAX', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString('-10000.00'), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal('-1e-6141').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('-1e-6141').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal dividedBy for DECIMAL128_MAX and DECIMAL128_MAX', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal('1').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('1').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal dividedBy for DECIMAL128_MAX and DECIMAL128_MIN', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_MAX), await __newString(DECIMAL128_MIN));
-      const expected = new Decimal('-1').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('-1').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
@@ -621,13 +621,13 @@ describe('numbers wasm tests', () => {
 
     it('should execute bigDecimal dividedBy for 0 and DECIMAL128_MAX', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString('0'), await __newString(DECIMAL128_MAX));
-      const expected = new Decimal('0').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('0').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
 
     it('should execute bigDecimal dividedBy for DECIMAL128_PMIN and DECIMAL128_NMAX', async () => {
       const ptr = await testBigDecimalDividedBy(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
-      const expected = new Decimal('-1').toSignificantDigits(PRECISION).toFixed();
+      const expected = new GraphDecimal('-1').toFixed();
       expect(__getString(ptr)).to.equal(expected);
     });
   });

@@ -20,10 +20,10 @@ export class Distribution {
   @Column('varchar')
   distributor!: string;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   timestamp!: bigint;
 
-  @Column('bigint', { transformer: bigintTransformer })
+  @Column('numeric', { transformer: bigintTransformer })
   distributionNumber!: bigint;
 
   @Column('varchar')
