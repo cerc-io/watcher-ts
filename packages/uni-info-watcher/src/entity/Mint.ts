@@ -3,8 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import Decimal from 'decimal.js';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal, bigintTransformer } from '@vulcanize/util';
 
 import { Transaction } from './Transaction';
 import { Pool } from './Pool';
@@ -25,8 +24,8 @@ export class Mint {
   @ManyToOne(() => Transaction, transaction => transaction.mints, { onDelete: 'CASCADE' })
   transaction!: Transaction
 
-  @Column('bigint')
-  timestamp!: BigInt;
+  @Column('numeric', { transformer: bigintTransformer })
+  timestamp!: bigint;
 
   @ManyToOne(() => Pool, { onDelete: 'CASCADE' })
   pool!: Pool
@@ -46,21 +45,21 @@ export class Mint {
   @Column('varchar', { length: 42 })
   origin!: string
 
-  @Column('bigint')
+  @Column('numeric', { transformer: bigintTransformer })
   amount!: bigint
 
-  @Column('numeric', { transformer: decimalTransformer })
-  amount0!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  amount0!: GraphDecimal
 
-  @Column('numeric', { transformer: decimalTransformer })
-  amount1!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  amount1!: GraphDecimal
 
-  @Column('numeric', { transformer: decimalTransformer })
-  amountUSD!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  amountUSD!: GraphDecimal
 
-  @Column('bigint')
+  @Column('numeric', { transformer: bigintTransformer })
   tickLower!: bigint
 
-  @Column('bigint')
+  @Column('numeric', { transformer: bigintTransformer })
   tickUpper!: bigint
 }

@@ -2,9 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
 import { Entity, PrimaryColumn, Column, ManyToMany, JoinTable } from 'typeorm';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal, bigintTransformer } from '@vulcanize/util';
 
 import { Pool } from './Pool';
 
@@ -26,35 +25,35 @@ export class Token {
   @Column('varchar')
   name!: string;
 
-  @Column('numeric', { transformer: decimalTransformer })
-  totalSupply!: Decimal;
+  @Column('numeric', { transformer: bigintTransformer })
+  totalSupply!: bigint;
 
-  @Column('bigint')
+  @Column('numeric', { transformer: bigintTransformer })
   decimals!: bigint;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  derivedETH!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  derivedETH!: GraphDecimal;
 
-  @Column('bigint', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   txCount!: bigint;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLocked!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLocked!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedUSD!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedUSD!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volume!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volume!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volumeUSD!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volumeUSD!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  untrackedVolumeUSD!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  untrackedVolumeUSD!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  feesUSD!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  feesUSD!: GraphDecimal;
 
   @ManyToMany(() => Pool)
   @JoinTable()

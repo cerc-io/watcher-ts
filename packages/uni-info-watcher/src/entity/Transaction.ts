@@ -2,9 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
 import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal, bigintTransformer } from '@vulcanize/util';
 
 import { Mint } from './Mint';
 import { Burn } from './Burn';
@@ -22,11 +21,11 @@ export class Transaction {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  ethPriceUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  ethPriceUSD!: GraphDecimal
 
-  @Column('bigint')
-  timestamp!: BigInt;
+  @Column('numeric', { transformer: bigintTransformer })
+  timestamp!: bigint;
 
   @OneToMany(() => Mint, mint => mint.transaction)
   mints!: Mint[];

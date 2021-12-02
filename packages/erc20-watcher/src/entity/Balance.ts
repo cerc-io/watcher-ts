@@ -3,6 +3,7 @@
 //
 
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import { bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 @Index(['blockHash', 'blockNumber', 'token', 'owner'], { unique: true })
@@ -22,7 +23,7 @@ export class Balance {
   @Column('varchar', { length: 42 })
   owner!: string;
 
-  @Column('numeric')
+  @Column('numeric', { transformer: bigintTransformer })
   value!: bigint;
 
   @Column('text', { nullable: true })

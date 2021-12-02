@@ -3,9 +3,10 @@
 //
 
 import assert from 'assert';
-import Decimal from 'decimal.js';
 import { BigNumber } from 'ethers';
 import { QueryRunner } from 'typeorm';
+
+import { GraphDecimal } from '@vulcanize/util';
 
 import { exponentToBigDecimal, safeDiv } from '.';
 import { Database } from '../database';
@@ -43,30 +44,30 @@ export const WHITELIST_TOKENS: string[] = [
   '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9' // AAVE
 ];
 
-const MINIMUM_ETH_LOCKED = new Decimal(52);
+const MINIMUM_ETH_LOCKED = new GraphDecimal(52);
 const Q192 = 2 ** 192;
 
 // Constants used in demo.
 const ETH_PRICE_IN_USD = '3200.00';
 
-export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, token1: Token): Decimal[] => {
-  const num = new Decimal((sqrtPriceX96 * sqrtPriceX96).toString());
-  const denom = new Decimal(Q192.toString());
+export const sqrtPriceX96ToTokenPrices = (sqrtPriceX96: bigint, token0: Token, token1: Token): GraphDecimal[] => {
+  const num = new GraphDecimal((sqrtPriceX96 * sqrtPriceX96).toString());
+  const denom = new GraphDecimal(Q192.toString());
 
   const price1 = num
     .div(denom)
     .times(exponentToBigDecimal(token0.decimals))
     .div(exponentToBigDecimal(token1.decimals));
 
-  const price0 = safeDiv(new Decimal('1'), price1);
+  const price0 = safeDiv(new GraphDecimal('1'), price1);
 
   return [price0, price1];
 };
 
-export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: Block, isDemo: boolean): Promise<Decimal> => {
+export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: Block, isDemo: boolean): Promise<GraphDecimal> => {
   if (isDemo) {
     // For demo purpose in local development.
-    const ethPriceInUSD = new Decimal(ETH_PRICE_IN_USD);
+    const ethPriceInUSD = new GraphDecimal(ETH_PRICE_IN_USD);
     return ethPriceInUSD;
   }
 
@@ -76,7 +77,7 @@ export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: B
   if (usdcPool) {
     return usdcPool.token0Price;
   } else {
-    return new Decimal(0);
+    return new GraphDecimal(0);
   }
 };
 
@@ -84,16 +85,16 @@ export const getEthPriceInUSD = async (db: Database, dbTx: QueryRunner, block: B
  * Search through graph to find derived Eth per token.
  * @todo update to be derived ETH (add stablecoin estimates)
  **/
-export const findEthPerToken = async (db: Database, dbTx: QueryRunner, token: Token, isDemo: boolean): Promise<Decimal> => {
+export const findEthPerToken = async (db: Database, dbTx: QueryRunner, token: Token, isDemo: boolean): Promise<GraphDecimal> => {
   if (token.id === WETH_ADDRESS || isDemo) {
-    return new Decimal(1);
+    return new GraphDecimal(1);
   }
 
   const whiteList = token.whitelistPools;
   // For now just take USD from pool with greatest TVL.
   // Need to update this to actually detect best rate based on liquidity distribution.
-  let largestLiquidityETH = new Decimal(0);
-  let priceSoFar = new Decimal(0);
+  let largestLiquidityETH = new GraphDecimal(0);
+  let priceSoFar = new GraphDecimal(0);
 
   for (let i = 0; i < whiteList.length; ++i) {
     const poolAddress = whiteList[i].id;
@@ -139,12 +140,12 @@ export const findEthPerToken = async (db: Database, dbTx: QueryRunner, token: To
 export const getTrackedAmountUSD = async (
   db: Database,
   dbTx: QueryRunner,
-  tokenAmount0: Decimal,
+  tokenAmount0: GraphDecimal,
   token0: Token,
-  tokenAmount1: Decimal,
+  tokenAmount1: GraphDecimal,
   token1: Token,
   isDemo: boolean
-): Promise<Decimal> => {
+): Promise<GraphDecimal> => {
   const bundle = await db.getBundle(dbTx, { id: '1' });
   assert(bundle);
   const price0USD = token0.derivedETH.times(bundle.ethPriceUSD);
@@ -158,14 +159,14 @@ export const getTrackedAmountUSD = async (
 
   // Take double value of the whitelisted token amount.
   if (WHITELIST_TOKENS.includes(token0.id) && !WHITELIST_TOKENS.includes(token1.id)) {
-    return tokenAmount0.times(price0USD).times(new Decimal('2'));
+    return tokenAmount0.times(price0USD).times(new GraphDecimal('2'));
   }
 
   // Take double value of the whitelisted token amount.
   if (!WHITELIST_TOKENS.includes(token0.id) && WHITELIST_TOKENS.includes(token1.id)) {
-    return tokenAmount1.times(price1USD).times(new Decimal('2'));
+    return tokenAmount1.times(price1USD).times(new GraphDecimal('2'));
   }
 
   // Neither token is on white list, tracked amount is 0.
-  return new Decimal(0);
+  return new GraphDecimal(0);
 };

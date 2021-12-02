@@ -2,9 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
 import { Entity, Column, PrimaryColumn } from 'typeorm';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal, bigintTransformer } from '@vulcanize/util';
 
 @Entity()
 export class Factory {
@@ -18,32 +17,32 @@ export class Factory {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('bigint', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   poolCount!: bigint;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedETH!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedETH!: GraphDecimal;
 
-  @Column('bigint', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   txCount!: bigint;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedUSD!: Decimal;
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedUSD!: GraphDecimal;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalVolumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalVolumeUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalVolumeETH!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalVolumeETH!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalFeesUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalFeesUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalFeesETH!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalFeesETH!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  untrackedVolumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  untrackedVolumeUSD!: GraphDecimal
 
   // TODO: Add remaining fields when they are used.
 }

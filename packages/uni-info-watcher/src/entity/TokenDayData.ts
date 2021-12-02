@@ -3,8 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import Decimal from 'decimal.js';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal } from '@vulcanize/util';
 
 import { Token } from './Token';
 
@@ -26,36 +25,36 @@ export class TokenDayData {
   @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token!: Token
 
-  @Column('numeric', { transformer: decimalTransformer })
-  high!: Decimal;
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  high!: GraphDecimal;
 
-  @Column('numeric', { transformer: decimalTransformer })
-  low!: Decimal;
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  low!: GraphDecimal;
 
-  @Column('numeric', { transformer: decimalTransformer })
-  open!: Decimal;
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  open!: GraphDecimal;
 
-  @Column('numeric', { transformer: decimalTransformer })
-  close!: Decimal;
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  close!: GraphDecimal;
 
-  @Column('numeric', { transformer: decimalTransformer })
-  priceUSD!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  priceUSD!: GraphDecimal
 
-  @Column('numeric', { transformer: decimalTransformer })
-  totalValueLocked!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  totalValueLocked!: GraphDecimal
 
-  @Column('numeric', { transformer: decimalTransformer })
-  totalValueLockedUSD!: Decimal
+  @Column('numeric', { transformer: graphDecimalTransformer })
+  totalValueLockedUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volumeUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volume!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volume!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  untrackedVolumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  untrackedVolumeUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  feesUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  feesUSD!: GraphDecimal
 }

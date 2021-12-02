@@ -3,8 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column } from 'typeorm';
-import Decimal from 'decimal.js';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal } from '@vulcanize/util';
 
 @Entity()
 export class Bundle {
@@ -18,6 +17,6 @@ export class Bundle {
   @Column('integer')
   blockNumber!: number;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  ethPriceUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  ethPriceUSD!: GraphDecimal
 }

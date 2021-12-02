@@ -3,21 +3,42 @@
 //
 
 import assert from 'assert';
-import Decimal from 'decimal.js';
 import { ValueTransformer } from 'typeorm';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { utils, getDefaultProvider, providers } from 'ethers';
+import Decimal from 'decimal.js';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
 import { Config } from './config';
 import { JobQueue } from './job-queue';
+import { GraphDecimal } from './graph-decimal';
 
 /**
  * Method to wait for specified time.
  * @param time Time to wait in milliseconds
  */
 export const wait = async (time: number): Promise<void> => new Promise(resolve => setTimeout(resolve, time));
+
+/**
+ * Transformer used by typeorm entity for GraphDecimal type fields.
+ */
+export const graphDecimalTransformer: ValueTransformer = {
+  to: (value?: GraphDecimal) => {
+    if (value) {
+      return value.toFixed();
+    }
+
+    return value;
+  },
+  from: (value?: string) => {
+    if (value) {
+      return new GraphDecimal(value);
+    }
+
+    return value;
+  }
+};
 
 /**
  * Transformer used by typeorm entity for Decimal type fields.

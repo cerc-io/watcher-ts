@@ -11,14 +11,13 @@ import { providers, utils } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
 import { Token } from './entity/Token';
 import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
 import { createTick } from './utils/tick';
-import Decimal from 'decimal.js';
 import { Position } from './entity/Position';
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -874,12 +873,12 @@ export class Indexer implements IndexerInterface {
       let amount0Abs = amount0;
       let amount1Abs = amount1;
 
-      if (amount0.lt(new Decimal(0))) {
-        amount0Abs = amount0.times(new Decimal('-1'));
+      if (amount0.lt(new GraphDecimal(0))) {
+        amount0Abs = amount0.times(new GraphDecimal('-1'));
       }
 
-      if (amount1.lt(new Decimal(0))) {
-        amount1Abs = amount1.times(new Decimal('-1'));
+      if (amount1.lt(new GraphDecimal(0))) {
+        amount1Abs = amount1.times(new GraphDecimal('-1'));
       }
 
       const amount0ETH = amount0Abs.times(token0.derivedETH);
@@ -889,12 +888,12 @@ export class Indexer implements IndexerInterface {
 
       // Get amount that should be tracked only - div 2 because cant count both input and output as volume.
       const trackedAmountUSD = await getTrackedAmountUSD(this._db, dbTx, amount0Abs, token0, amount1Abs, token1, this._isDemo);
-      const amountTotalUSDTracked = trackedAmountUSD.div(new Decimal('2'));
+      const amountTotalUSDTracked = trackedAmountUSD.div(new GraphDecimal('2'));
       const amountTotalETHTracked = safeDiv(amountTotalUSDTracked, bundle.ethPriceUSD);
-      const amountTotalUSDUntracked = amount0USD.plus(amount1USD).div(new Decimal('2'));
+      const amountTotalUSDUntracked = amount0USD.plus(amount1USD).div(new GraphDecimal('2'));
 
-      const feesETH = amountTotalETHTracked.times(pool.feeTier.toString()).div(new Decimal('1000000'));
-      const feesUSD = amountTotalUSDTracked.times(pool.feeTier.toString()).div(new Decimal('1000000'));
+      const feesETH = amountTotalETHTracked.times(pool.feeTier.toString()).div(new GraphDecimal('1000000'));
+      const feesUSD = amountTotalUSDTracked.times(pool.feeTier.toString()).div(new GraphDecimal('1000000'));
 
       // Global updates.
       factory.txCount = BigInt(factory.txCount) + BigInt(1);

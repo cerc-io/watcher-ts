@@ -2,8 +2,9 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
 import { QueryRunner } from 'typeorm';
+
+import { GraphDecimal } from '@vulcanize/util';
 
 import { Pool } from '../entity/Pool';
 import { Database } from '../database';
@@ -19,10 +20,10 @@ export const createTick = async (db: Database, dbTx: QueryRunner, tickId: string
   tick.poolAddress = pool.id;
 
   // 1.0001^tick is token1/token0.
-  const price0 = bigDecimalExponated(new Decimal('1.0001'), tickIdx);
+  const price0 = bigDecimalExponated(new GraphDecimal('1.0001'), tickIdx);
 
   tick.price0 = price0;
-  tick.price1 = safeDiv(new Decimal(1), price0);
+  tick.price1 = safeDiv(new GraphDecimal(1), price0);
 
   return db.saveTick(dbTx, tick, block);
 };

@@ -4,10 +4,9 @@
 
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import Decimal from 'decimal.js';
 import _ from 'lodash';
 
-import { OrderDirection } from '@vulcanize/util';
+import { OrderDirection, GraphDecimal } from '@vulcanize/util';
 import { insertNDummyBlocks } from '@vulcanize/util/test';
 
 import { Database } from '../src/database';
@@ -102,7 +101,7 @@ export const checkTokenHourData = async (client: Client, tokenAddress: string): 
   const hourStartUnix = hourIndex * 3600;
   const tokenData = await client.getToken(tokenAddress);
   const bundles = await client.getBundles(1);
-  const tokenPrice = new Decimal(tokenData.token.derivedETH).times(bundles[0].ethPriceUSD);
+  const tokenPrice = new GraphDecimal(tokenData.token.derivedETH).times(bundles[0].ethPriceUSD);
 
   expect(tokenID).to.be.equal(tokenAddress);
   expect(periodStartUnix).to.be.equal(hourStartUnix);
@@ -203,7 +202,7 @@ export const insertDummyToken = async (db: Database, block: Block, token?: Token
     token.symbol = 'TEST';
     token.name = 'TestToken';
     token.id = tokenAddress;
-    token.totalSupply = new Decimal(0);
+    token.totalSupply = BigInt(0);
     token.decimals = BigInt(0);
   }
 

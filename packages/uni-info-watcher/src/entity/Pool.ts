@@ -2,9 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import Decimal from 'decimal.js';
 import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
-import { decimalTransformer } from '@vulcanize/util';
+import { graphDecimalTransformer, GraphDecimal, bigintTransformer } from '@vulcanize/util';
 
 import { Token } from './Token';
 
@@ -26,59 +25,59 @@ export class Pool {
   @ManyToOne(() => Token, { onDelete: 'CASCADE' })
   token1!: Token;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  token0Price!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  token0Price!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  token1Price!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  token1Price!: GraphDecimal
 
-  @Column('numeric')
+  @Column('numeric', { transformer: bigintTransformer })
   feeTier!: bigint
 
-  @Column('numeric', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   sqrtPrice!: bigint
 
-  @Column('bigint', { nullable: true })
+  @Column('numeric', { nullable: true, transformer: bigintTransformer })
   tick!: bigint | null
 
-  @Column('numeric', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   liquidity!: bigint
 
-  @Column('numeric', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   feeGrowthGlobal0X128!: bigint
 
-  @Column('numeric', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   feeGrowthGlobal1X128!: bigint
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedToken0!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedToken0!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedToken1!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedToken1!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  totalValueLockedETH!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  totalValueLockedETH!: GraphDecimal
 
-  @Column('bigint', { default: BigInt(0) })
+  @Column('numeric', { default: BigInt(0), transformer: bigintTransformer })
   txCount!: bigint;
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volumeToken0!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volumeToken0!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volumeToken1!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volumeToken1!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  volumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  volumeUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  untrackedVolumeUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  untrackedVolumeUSD!: GraphDecimal
 
-  @Column('numeric', { default: 0, transformer: decimalTransformer })
-  feesUSD!: Decimal
+  @Column('numeric', { default: 0, transformer: graphDecimalTransformer })
+  feesUSD!: GraphDecimal
 
   // TODO: Add remaining fields when they are used.
 }
