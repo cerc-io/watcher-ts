@@ -10,6 +10,8 @@ import { Database } from '../database';
 import { Factory } from '../entity/Factory';
 import { PoolDayData } from '../entity/PoolDayData';
 import { PoolHourData } from '../entity/PoolHourData';
+import { Tick } from '../entity/Tick';
+import { TickDayData } from '../entity/TickDayData';
 import { Token } from '../entity/Token';
 import { TokenDayData } from '../entity/TokenDayData';
 import { TokenHourData } from '../entity/TokenHourData';
@@ -228,4 +230,30 @@ export const updateTokenHourData = async (db: Database, dbTx: QueryRunner, token
   tokenHourData.totalValueLocked = token.totalValueLocked;
   tokenHourData.totalValueLockedUSD = token.totalValueLockedUSD;
   return db.saveTokenHourData(dbTx, tokenHourData, block);
+};
+
+export const updateTickDayData = async (db: Database, dbTx: QueryRunner, tick: Tick, event: { block: Block }): Promise<TickDayData> => {
+  const { block } = event;
+  const timestamp = block.timestamp;
+  const dayID = Math.floor(timestamp / 86400);
+  const dayStartTimestamp = dayID * 86400;
+
+  const tickDayDataID = tick.id
+    .concat('-')
+    .concat(dayID.toString());
+
+  let tickDayData = await db.getTickDayData(dbTx, { id: tickDayDataID, blockHash: block.hash });
+
+  if (!tickDayData) {
+    tickDayData = new TickDayData();
+    tickDayData.id = tickDayDataID;
+    tickDayData.date = dayStartTimestamp;
+    tickDayData.pool = tick.pool;
+    tickDayData.tick = tick;
+  }
+
+  tickDayData.liquidityGross = tick.liquidityGross;
+  tickDayData.liquidityNet = tick.liquidityNet;
+
+  return db.saveTickDayData(dbTx, tickDayData, block);
 };

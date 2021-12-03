@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { DeepPartial, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
-import { providers, utils } from 'ethers';
+import { providers, utils, BigNumber } from 'ethers';
 
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
@@ -14,10 +14,10 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
-import { updatePoolDayData, updatePoolHourData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
+import { updatePoolDayData, updatePoolHourData, updateTickDayData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
 import { Token } from './entity/Token';
 import { convertTokenToDecimal, loadTransaction, safeDiv } from './utils';
-import { createTick } from './utils/tick';
+import { createTick, feeTierToTickSpacing } from './utils/tick';
 import { Position } from './entity/Position';
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -31,6 +31,7 @@ import { Swap } from './entity/Swap';
 import { PositionSnapshot } from './entity/PositionSnapshot';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
+import { Tick } from './entity/Tick';
 
 const SYNC_DELTA = 5;
 
@@ -411,6 +412,12 @@ export class Indexer implements IndexerInterface {
       token1 = await this._initToken(block, token1Address);
     }
 
+    // Bail if we couldn't figure out the decimals.
+    if (token0.decimals === null || token1.decimals === null) {
+      log('mybug the decimal on token was null');
+      return;
+    }
+
     // Save entities to DB.
     const dbTx = await this._db.createTransactionRunner();
 
@@ -690,7 +697,10 @@ export class Indexer implements IndexerInterface {
         await this._db.saveTick(dbTx, upperTick, block)
       ]);
 
-      // Skipping update inner tick vars and tick day data as they are not queried.
+      // Update inner tick vars and save the ticks.
+      await this._updateTickFeeVarsAndSave(dbTx, lowerTick, block);
+      await this._updateTickFeeVarsAndSave(dbTx, upperTick, block);
+
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -806,6 +816,8 @@ export class Indexer implements IndexerInterface {
       await updateTokenHourData(this._db, dbTx, token0, { block });
       await updatePoolDayData(this._db, dbTx, { block, contractAddress });
       await updatePoolHourData(this._db, dbTx, { block, contractAddress });
+      await this._updateTickFeeVarsAndSave(dbTx, lowerTick, block);
+      await this._updateTickFeeVarsAndSave(dbTx, upperTick, block);
 
       [token0, token1] = await Promise.all([
         this._db.saveToken(dbTx, token0, block),
@@ -864,6 +876,9 @@ export class Indexer implements IndexerInterface {
       ]);
 
       assert(token0 && token1, 'Pool tokens not found.');
+
+      const oldTick = pool.tick;
+      assert(oldTick);
 
       // Amounts - 0/1 are token deltas. Can be positive or negative.
       const amount0 = convertTokenToDecimal(BigInt(swapEvent.amount0), BigInt(token0.decimals));
@@ -1055,7 +1070,44 @@ export class Indexer implements IndexerInterface {
       poolDayData.pool = pool;
       await this._db.savePoolDayData(dbTx, poolDayData, block);
 
-      // Skipping update of inner vars of current or crossed ticks as they are not queried.
+      // Update inner vars of current or crossed ticks.
+      const newTick = pool.tick;
+      assert(newTick);
+      const tickSpacing = feeTierToTickSpacing(pool.feeTier);
+      const modulo = newTick % tickSpacing;
+
+      if (modulo === BigInt(0)) {
+        // Current tick is initialized and needs to be updated.
+        this._loadTickUpdateFeeVarsAndSave(dbTx, Number(newTick), block, contractAddress);
+      }
+
+      const numIters = BigInt(
+        BigNumber.from(oldTick - newTick)
+          .abs()
+          .div(tickSpacing)
+          .toString()
+      );
+
+      if (numIters > BigInt(100)) {
+        // In case more than 100 ticks need to be updated ignore the update in
+        // order to avoid timeouts. From testing this behavior occurs only upon
+        // pool initialization. This should not be a big issue as the ticks get
+        // updated later. For early users this error also disappears when calling
+        // collect.
+      } else if (newTick > oldTick) {
+        const firstInitialized = oldTick + tickSpacing - modulo;
+
+        for (let i = firstInitialized; i < newTick; i = i + tickSpacing) {
+          this._loadTickUpdateFeeVarsAndSave(dbTx, Number(i), block, contractAddress);
+        }
+      } else if (newTick < oldTick) {
+        const firstInitialized = oldTick - modulo;
+
+        for (let i = firstInitialized; i >= newTick; i = i - tickSpacing) {
+          this._loadTickUpdateFeeVarsAndSave(dbTx, Number(i), block, contractAddress);
+        }
+      }
+
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -1162,7 +1214,6 @@ export class Indexer implements IndexerInterface {
       return;
     }
 
-    // Temp fix from Subgraph mapping code.
     if (utils.getAddress(position.pool.id) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
       return;
     }
@@ -1176,13 +1227,6 @@ export class Indexer implements IndexerInterface {
         position.transaction = transaction;
         position = await this._db.savePosition(dbTx, position, block);
       }
-
-      const token0 = position.token0;
-      const token1 = position.token1;
-      const amount0 = convertTokenToDecimal(BigInt(event.amount0), BigInt(token0.decimals));
-      const amount1 = convertTokenToDecimal(BigInt(event.amount1), BigInt(token1.decimals));
-      position.collectedFeesToken0 = position.collectedFeesToken0.plus(amount0);
-      position.collectedFeesToken1 = position.collectedFeesToken1.plus(amount1);
 
       await this._db.savePosition(dbTx, position, block);
 
@@ -1222,6 +1266,28 @@ export class Indexer implements IndexerInterface {
       throw error;
     } finally {
       await dbTx.release();
+    }
+  }
+
+  async _updateTickFeeVarsAndSave (dbTx: QueryRunner, tick: Tick, block: Block): Promise<void> {
+    // Skipping update feeGrowthOutside0X128 and feeGrowthOutside1X128 data as they are not queried.
+
+    await updateTickDayData(this._db, dbTx, tick, { block });
+  }
+
+  async _loadTickUpdateFeeVarsAndSave (dbTx:QueryRunner, tickId: number, block: Block, contractAddress: string): Promise<void> {
+    const poolAddress = contractAddress;
+
+    const tick = await this._db.getTick(
+      dbTx,
+      {
+        id: poolAddress.concat('#').concat(tickId.toString()),
+        blockHash: block.hash
+      }
+    );
+
+    if (tick) {
+      await this._updateTickFeeVarsAndSave(dbTx, tick, block);
     }
   }
 

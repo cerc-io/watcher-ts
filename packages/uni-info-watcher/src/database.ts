@@ -44,6 +44,7 @@ import { PositionSnapshot } from './entity/PositionSnapshot';
 import { BlockProgress } from './entity/BlockProgress';
 import { Block } from './events';
 import { SyncStatus } from './entity/SyncStatus';
+import { TickDayData } from './entity/TickDayData';
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions
@@ -396,6 +397,30 @@ export class Database implements DatabaseInterface {
     return entity;
   }
 
+  async getTickDayData (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<TickDayData>): Promise<TickDayData | undefined> {
+    const repo = queryRunner.manager.getRepository(TickDayData);
+    const whereOptions: FindConditions<TickDayData> = { id };
+
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
+    }
+
+    const findOptions = {
+      where: whereOptions,
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    let entity = await repo.findOne(findOptions as FindOneOptions<TickDayData>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+    }
+
+    return entity;
+  }
+
   async getTransaction (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<Transaction>): Promise<Transaction | undefined> {
     const repo = queryRunner.manager.getRepository(Transaction);
     const whereOptions: FindConditions<Transaction> = { id };
@@ -513,6 +538,13 @@ export class Database implements DatabaseInterface {
     tick.blockNumber = block.number;
     tick.blockHash = block.hash;
     return repo.save(tick);
+  }
+
+  async saveTickDayData (queryRunner: QueryRunner, tickDayData: TickDayData, block: Block): Promise<TickDayData> {
+    const repo = queryRunner.manager.getRepository(TickDayData);
+    tickDayData.blockNumber = block.number;
+    tickDayData.blockHash = block.hash;
+    return repo.save(tickDayData);
   }
 
   async savePosition (queryRunner: QueryRunner, position: Position, block: Block): Promise<Position> {

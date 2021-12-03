@@ -27,3 +27,20 @@ export const createTick = async (db: Database, dbTx: QueryRunner, tickId: string
 
   return db.saveTick(dbTx, tick, block);
 };
+
+export const feeTierToTickSpacing = (feeTier: bigint): bigint => {
+  if (feeTier === BigInt(10000)) {
+    return BigInt(200);
+  }
+  if (feeTier === BigInt(3000)) {
+    return BigInt(60);
+  }
+  if (feeTier === BigInt(500)) {
+    return BigInt(10);
+  }
+  if (feeTier === BigInt(100)) {
+    return BigInt(1);
+  }
+
+  throw Error('Unexpected fee tier');
+};

@@ -113,7 +113,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: token00.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(token00.id);
-      expect(searchedToken?.txCount).to.be.equal(token00.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(token00.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(token00.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(token00.blockHash);
 
@@ -189,7 +189,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: token00.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(token02.id);
-      expect(searchedToken?.txCount).to.be.equal(token02.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(token02.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(token02.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(token02.blockHash);
 
@@ -255,7 +255,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: token00.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(token30.id);
-      expect(searchedToken?.txCount).to.be.equal(token30.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(token30.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(token30.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(token30.blockHash);
 
@@ -325,7 +325,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: token08.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(token30.id);
-      expect(searchedToken?.txCount).to.be.equal(token30.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(token30.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(token30.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(token30.blockHash);
 
@@ -448,7 +448,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: tokenA00.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(tokenA00.id);
-      expect(searchedToken?.txCount).to.be.equal(tokenA00.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(tokenA00.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(tokenA00.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(tokenA00.blockHash);
 
@@ -525,7 +525,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: tokenA00.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(tokenA30.id);
-      expect(searchedToken?.txCount).to.be.equal(tokenA30.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(tokenA30.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(tokenA30.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(tokenA30.blockHash);
 
@@ -607,7 +607,7 @@ describe('getPrevEntityVersion', () => {
       const searchedToken = await db.getToken(dbTx, { id: tokenA08.id, blockHash: head.hash });
       expect(searchedToken).to.not.be.empty;
       expect(searchedToken?.id).to.be.equal(tokenA31.id);
-      expect(searchedToken?.txCount).to.be.equal(tokenA31.txCount.toString());
+      expect(searchedToken?.txCount).to.be.equal(tokenA31.txCount);
       expect(searchedToken?.blockNumber).to.be.equal(tokenA31.blockNumber);
       expect(searchedToken?.blockHash).to.be.equal(tokenA31.blockHash);
 
