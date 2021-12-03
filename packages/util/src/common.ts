@@ -1,7 +1,5 @@
 import debug from 'debug';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-
 import { JOB_KIND_PRUNE, QUEUE_BLOCK_PROCESSING, JOB_KIND_INDEX } from './constants';
 import { JobQueue } from './job-queue';
 import { IndexerInterface } from './types';
@@ -43,19 +41,17 @@ export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockN
 export const processBlockByNumber = async (
   jobQueue: JobQueue,
   indexer: IndexerInterface,
-  ethClient: EthClient,
   blockDelayInMilliSecs: number,
   blockNumber: number
 ): Promise<void> => {
   log(`Process block ${blockNumber}`);
 
   while (true) {
-    const result = await ethClient.getBlocksByNumber(blockNumber);
-    const { allEthHeaderCids: { nodes: blockNodes } } = result;
+    const blocks = await indexer.getBlocks({ blockNumber });
 
-    if (blockNodes.length) {
-      for (let bi = 0; bi < blockNodes.length; bi++) {
-        const { blockHash, blockNumber, parentHash, timestamp } = blockNodes[bi];
+    if (blocks.length) {
+      for (let bi = 0; bi < blocks.length; bi++) {
+        const { blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
         const blockProgress = await indexer.getBlockProgress(blockHash);
 
         if (blockProgress) {

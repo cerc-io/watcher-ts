@@ -101,8 +101,13 @@ export const main = async (): Promise<any> => {
     cache
   });
 
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
+    cache
+  });
+
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
-  const indexer = new Indexer(db, ethClient, ethProvider, mode);
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

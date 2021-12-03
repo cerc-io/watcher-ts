@@ -44,6 +44,7 @@ interface EventResult {
 export class Indexer {
   _db: Database
   _ethClient: EthClient
+  _postgraphileClient: EthClient
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
 
@@ -52,15 +53,16 @@ export class Indexer {
   _contract: ethers.utils.Interface
   _serverMode: string
 
-  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
+  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
     assert(db);
     assert(ethClient);
 
     this._db = db;
     this._ethClient = ethClient;
+    this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverMode = serverMode;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._postgraphileClient, this._ethProvider);
 
     const { abi, storageLayout } = artifacts;
 
@@ -331,8 +333,8 @@ export class Indexer {
     return this._baseIndexer.getSyncStatus();
   }
 
-  async getBlock (blockHash: string): Promise<any> {
-    return this._baseIndexer.getBlock(blockHash);
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    return this._baseIndexer.getBlocks(blockFilter);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {

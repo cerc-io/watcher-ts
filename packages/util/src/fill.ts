@@ -34,7 +34,7 @@ export const fillBlocks = async (
     currentBlockNumber = syncStatus.latestIndexedBlockNumber + 1;
   }
 
-  processBlockByNumber(jobQueue, indexer, ethClient, blockDelayInMilliSecs, currentBlockNumber);
+  processBlockByNumber(jobQueue, indexer, blockDelayInMilliSecs, currentBlockNumber);
 
   // Creating an AsyncIterable from AsyncIterator to iterate over the values.
   // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -55,7 +55,7 @@ export const fillBlocks = async (
       }
 
       currentBlockNumber++;
-      processBlockByNumber(jobQueue, indexer, ethClient, blockDelayInMilliSecs, currentBlockNumber);
+      processBlockByNumber(jobQueue, indexer, blockDelayInMilliSecs, currentBlockNumber);
     }
   }
 };

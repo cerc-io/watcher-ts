@@ -61,7 +61,7 @@ export class EventWatcher {
 
     const { ethServer: { blockDelayInMilliSecs } } = this._upstreamConfig;
 
-    processBlockByNumber(this._jobQueue, this._indexer, this._postgraphileClient, blockDelayInMilliSecs, blockNumber + 1);
+    processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, blockNumber + 1);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -76,7 +76,7 @@ export class EventWatcher {
       const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
       if (isComplete) {
-        processBlockByNumber(this._jobQueue, this._indexer, this._postgraphileClient, blockDelayInMilliSecs, blockNumber + 1);
+        processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, blockNumber + 1);
       }
     }
   }

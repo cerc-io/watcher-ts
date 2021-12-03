@@ -51,7 +51,7 @@ export class Indexer implements IndexerInterface {
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._postgraphileClient, this._ethProvider);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
@@ -384,8 +384,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getSyncStatus();
   }
 
-  async getBlock (blockHash: string): Promise<any> {
-    return this._baseIndexer.getBlock(blockHash);
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    return this._baseIndexer.getBlocks(blockFilter);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {

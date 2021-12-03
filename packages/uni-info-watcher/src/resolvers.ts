@@ -238,7 +238,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       blocks: async (_: any, { first, orderBy, orderDirection, where }: { first: number, orderBy: string, orderDirection: OrderDirection, where: { [key: string]: any } }) => {
         log('blocks', first, orderBy, orderDirection, where);
 
-        return indexer.getBlocks(where, { limit: first, orderBy, orderDirection });
+        return indexer.getBlockEntities(where, { limit: first, orderBy, orderDirection });
       },
 
       indexingStatusForCurrentVersion: async (_: any, { subgraphName }: { subgraphName: string }) => {

@@ -101,7 +101,6 @@ export const main = async (): Promise<any> => {
     tokenWatcher,
     cache: cacheConfig,
     ethServer: {
-      gqlApiEndpoint,
       gqlPostgraphileEndpoint,
       rpcProviderEndpoint
     }
@@ -111,9 +110,9 @@ export const main = async (): Promise<any> => {
   assert(gqlSubscriptionEndpoint, 'Missing upstream uniWatcher.gqlSubscriptionEndpoint');
 
   const cache = await getCache(cacheConfig);
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+
+  const postgraphileClient = new EthClient({
+    gqlEndpoint: gqlPostgraphileEndpoint,
     cache
   });
 
@@ -125,7 +124,7 @@ export const main = async (): Promise<any> => {
   const erc20Client = new ERC20Client(tokenWatcher);
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, ethProvider, mode);
+  const indexer = new Indexer(db, uniClient, erc20Client, postgraphileClient, ethProvider, mode);
 
   assert(jobQueueConfig, 'Missing job queue config');
 

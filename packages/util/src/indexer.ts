@@ -14,7 +14,6 @@ import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusIn
 import { UNKNOWN_EVENT_NAME } from './constants';
 
 const MAX_EVENTS_BLOCK_RANGE = 1000;
-const MISSING_BLOCKS_ERROR = 'sql: no rows in result set';
 
 const log = debug('vulcanize:indexer');
 
@@ -27,15 +26,15 @@ export interface ValueResult {
 
 export class Indexer {
   _db: DatabaseInterface;
-  _ethClient: EthClient;
+  _postgraphileClient: EthClient;
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
 
   constructor (db: DatabaseInterface, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
     this._db = db;
-    this._ethClient = ethClient;
+    this._postgraphileClient = ethClient;
     this._ethProvider = ethProvider;
-    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
+    this._getStorageAt = this._postgraphileClient.getStorageAt.bind(this._postgraphileClient);
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
@@ -106,29 +105,27 @@ export class Indexer {
     return res;
   }
 
-  async getBlock (blockHash: string): Promise<any> {
-    try {
-      const { block } = await this._ethClient.getBlockByHash(blockHash);
+  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    assert(blockFilter.blockHash || blockFilter.blockNumber);
+    const result = await this._postgraphileClient.getBlocks(blockFilter);
+    const { allEthHeaderCids: { nodes: blocks } } = result;
 
-      return block;
-    } catch (error) {
-      // If block is not present in header_cids, eth_getBlockByHash call is made to update statediff.
-      if (error instanceof Error && error.message === MISSING_BLOCKS_ERROR) {
-        try {
-          await this._ethProvider.getBlock(blockHash);
-        } catch (error: any) {
-          // eth_getBlockByHash will update statediff but takes some time.
-          // The block is not returned immediately and an error is thrown so that it is fetched in the next job retry.
-          if (error.code === ethers.utils.Logger.errors.SERVER_ERROR) {
-            throw new Error('Block not found');
-          }
-
+    if (!blocks.length) {
+      try {
+        const blockHashOrNumber = blockFilter.blockHash || blockFilter.blockNumber as string | number;
+        await this._ethProvider.getBlock(blockHashOrNumber);
+      } catch (error: any) {
+        // eth_getBlockByHash will update statediff but takes some time.
+        // The block is not returned immediately and an error is thrown so that it is fetched in the next job retry.
+        if (error.code !== ethers.utils.Logger.errors.SERVER_ERROR) {
           throw error;
         }
-      }
 
-      throw error;
+        log('Block not found. Fetching block after eth_call.');
+      }
     }
+
+    return blocks;
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {

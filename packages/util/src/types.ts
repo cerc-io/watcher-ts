@@ -50,7 +50,7 @@ export interface IndexerInterface {
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>;
-  getBlock (blockHash: string): Promise<any>
+  getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
   getBlockEvents (blockHash: string): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
