@@ -26,15 +26,17 @@ export interface ValueResult {
 
 export class Indexer {
   _db: DatabaseInterface;
+  _ethClient: EthClient;
   _postgraphileClient: EthClient;
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
 
-  constructor (db: DatabaseInterface, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
+  constructor (db: DatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
     this._db = db;
-    this._postgraphileClient = ethClient;
+    this._ethClient = ethClient;
+    this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._getStorageAt = this._postgraphileClient.getStorageAt.bind(this._postgraphileClient);
+    this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
