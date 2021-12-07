@@ -712,8 +712,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
   }
 
-  async getBlock (blockHash: string): Promise<any> {
-    return this._baseIndexer.getBlock(blockHash);
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    return this._baseIndexer.getBlocks(blockFilter);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
