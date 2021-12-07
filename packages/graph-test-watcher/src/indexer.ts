@@ -90,9 +90,8 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  _relationsMap: Map<any, { [key: string]: any }>
-
   _entityTypesMap: Map<string, { [key: string]: string }>
+  _relationsMap: Map<any, { [key: string]: any }>
 
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
     assert(db);
@@ -119,11 +118,11 @@ export class Indexer implements IndexerInterface {
 
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
 
-    this._relationsMap = new Map();
-    this._populateRelationsMap();
-
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
+
+    this._relationsMap = new Map();
+    this._populateRelationsMap();
   }
 
   getResultEvent (event: Event): ResultEvent {
