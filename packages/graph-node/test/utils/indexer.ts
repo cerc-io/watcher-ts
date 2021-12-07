@@ -25,8 +25,8 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  async getBlock (blockHash: string): Promise<any> {
-    assert(blockHash);
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    assert(blockFilter);
 
     return undefined;
   }
