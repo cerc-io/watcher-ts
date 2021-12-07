@@ -529,9 +529,23 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
 
     case 'numeric': {
       const valueStringPtr = await __newString(value.toString());
-      const bigDecimal = await BigDecimal.fromString(valueStringPtr);
+      const tsType = typeof value;
 
-      return Value.fromBigDecimal(bigDecimal);
+      switch (tsType) {
+        // Case: numeric type variable value has ts type bigint.
+        case 'bigint': {
+          const bigInt = await ExportBigInt.fromString(valueStringPtr);
+
+          return Value.fromBigInt(bigInt);
+        }
+
+        // Default: numeric type variable value has ts type Decimal.
+        default: {
+          const bigDecimal = await BigDecimal.fromString(valueStringPtr);
+
+          return Value.fromBigDecimal(bigDecimal);
+        }
+      }
     }
 
     // TODO: Support more types.
