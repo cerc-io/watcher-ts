@@ -92,6 +92,8 @@ export class Indexer implements IndexerInterface {
 
   _relationsMap: Map<any, { [key: string]: any }>
 
+  _entityTypesMap: Map<string, { [key: string]: string }>
+
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
@@ -119,6 +121,9 @@ export class Indexer implements IndexerInterface {
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
+
+    this._entityTypesMap = new Map();
+    this._populateEntityTypesMap();
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -746,6 +751,46 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  getEntityTypesMap (): Map<string, { [key: string]: string }> {
+    return this._entityTypesMap;
+  }
+
+  _populateEntityTypesMap (): void {
+    this._entityTypesMap.set(
+      'Author',
+      {
+        id: 'ID',
+        blogCount: 'BigInt',
+        name: 'String',
+        rating: 'BigDecimal',
+        paramInt: 'Int',
+        paramBigInt: 'BigInt',
+        paramBytes: 'Bytes'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Blog',
+      {
+        id: 'ID',
+        kind: 'BlogKind',
+        isActive: 'Boolean',
+        reviews: 'BigInt',
+        author: 'Author',
+        categories: 'Category'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Category',
+      {
+        id: 'ID',
+        name: 'String',
+        count: 'BigInt'
+      }
+    );
   }
 
   _populateRelationsMap (): void {

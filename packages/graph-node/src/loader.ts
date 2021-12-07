@@ -77,7 +77,13 @@ export const instantiate = async (
           return null;
         }
 
-        return database.toGraphEntity(instanceExports, entityName, entityData);
+        assert(indexer.getEntityTypesMap);
+        const entityTypesMap = indexer.getEntityTypesMap();
+
+        const entityTypes = entityTypesMap.get(entityName);
+        assert(entityTypes);
+
+        return database.toGraphEntity(instanceExports, entityName, entityData, entityTypes);
       },
       'store.set': async (entity: number, id: number, data: number) => {
         const entityName = __getString(entity);
