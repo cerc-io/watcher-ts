@@ -74,6 +74,7 @@ export interface IndexerInterface {
   cacheContract?: (contract: ContractInterface) => void;
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
+  getEntityTypesMap?: () => Map<string, { [key: string]: string }>
 }
 
 export interface EventWatcherInterface {
