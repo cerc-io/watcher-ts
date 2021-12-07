@@ -90,6 +90,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
+  _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
@@ -116,6 +117,9 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
 
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+
+    this._entityTypesMap = new Map();
+    this._populateEntityTypesMap();
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
@@ -746,6 +750,46 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  getEntityTypesMap (): Map<string, { [key: string]: string }> {
+    return this._entityTypesMap;
+  }
+
+  _populateEntityTypesMap (): void {
+    this._entityTypesMap.set(
+      'Author',
+      {
+        id: 'ID',
+        blogCount: 'BigInt',
+        name: 'String',
+        rating: 'BigDecimal',
+        paramInt: 'Int',
+        paramBigInt: 'BigInt',
+        paramBytes: 'Bytes'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Blog',
+      {
+        id: 'ID',
+        kind: 'BlogKind',
+        isActive: 'Boolean',
+        reviews: 'BigInt',
+        author: 'Author',
+        categories: 'Category'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Category',
+      {
+        id: 'ID',
+        name: 'String',
+        count: 'BigInt'
+      }
+    );
   }
 
   _populateRelationsMap (): void {

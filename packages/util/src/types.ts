@@ -65,6 +65,7 @@ export interface IndexerInterface {
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>;
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock?: number) => Promise<boolean>
+  getEntityTypesMap?: () => Map<string, { [key: string]: string }>
 }
 
 export interface EventWatcherInterface {

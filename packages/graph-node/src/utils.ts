@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import { ColumnType } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 
 import { GraphDecimal } from '@vulcanize/util';
@@ -382,9 +381,9 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   return config;
 };
 
-export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata) => {
+export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string) => {
   const { __newString, Value } = instanceExports;
-  const { type, isArray, propertyName } = field;
+  const { isArray, propertyName } = field;
 
   const entityKey = await __newString(propertyName);
   const entityValuePtr = await entityInstance.get(entityKey);
@@ -475,11 +474,10 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
   }
 };
 
-const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: ColumnType, value: any, isArray: boolean): Promise<any> => {
+const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
   const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
 
   if (isArray) {
-    // TODO: Implement handling array of Bytes type field.
     const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
     const dataArray = await Promise.all(dataArrayPromises);
     const arrayStoreValueId = await getIdOfType(TypeId.ArrayStoreValue);
@@ -489,54 +487,49 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
   }
 
   switch (type) {
-    case 'varchar': {
+    case 'ID':
+    case 'String': {
       const entityValue = await __newString(value);
-      const kind = await subgraphValue.kind;
 
-      switch (kind) {
-        case ValueKind.BYTES: {
-          const byteArray = await ByteArray.fromHexString(entityValue);
-          const bytes = await Bytes.fromByteArray(byteArray);
-
-          return Value.fromBytes(bytes);
-        }
-
-        default:
-          return Value.fromString(entityValue);
-      }
+      return Value.fromString(entityValue);
     }
 
-    case 'integer': {
+    case 'Boolean': {
+      return Value.fromBoolean(value ? 1 : 0);
+    }
+
+    case 'Int': {
       return Value.fromI32(value);
     }
 
-    case 'bigint': {
+    case 'BigInt': {
       const valueStringPtr = await __newString(value.toString());
       const bigInt = await ExportBigInt.fromString(valueStringPtr);
 
       return Value.fromBigInt(bigInt);
     }
 
-    case 'boolean': {
-      return Value.fromBoolean(value ? 1 : 0);
-    }
-
-    case 'enum': {
-      const entityValue = await __newString(value);
-
-      return Value.fromString(entityValue);
-    }
-
-    case 'numeric': {
+    case 'BigDecimal': {
       const valueStringPtr = await __newString(value.toString());
       const bigDecimal = await BigDecimal.fromString(valueStringPtr);
 
       return Value.fromBigDecimal(bigDecimal);
     }
 
-    // TODO: Support more types.
-    default:
-      throw new Error(`Unsupported type: ${type}`);
+    case 'Bytes': {
+      const entityValue = await __newString(value);
+      const byteArray = await ByteArray.fromHexString(entityValue);
+      const bytes = await Bytes.fromByteArray(byteArray);
+
+      return Value.fromBytes(bytes);
+    }
+
+    // Return default as string for enum or custom type.
+    default: {
+      const entityValue = await __newString(value);
+
+      return Value.fromString(entityValue);
+    }
   }
 };
 
