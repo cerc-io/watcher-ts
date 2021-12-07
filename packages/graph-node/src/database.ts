@@ -189,7 +189,7 @@ export class Database {
     await repo.save(dbEntity);
   }
 
-  async toGraphEntity (instanceExports: any, entity: string, data: any): Promise<any> {
+  async toGraphEntity (instanceExports: any, entity: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
     // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entity);
     const entityFields = repo.metadata.columns;
@@ -210,11 +210,11 @@ export class Database {
       // Fill _blockNumber as blockNumber and _blockHash as blockHash in the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(field.propertyName)) {
         field.propertyName = field.propertyName.slice(1);
-
-        return toEntityValue(instanceExports, entityInstance, data, field);
       }
 
-      return toEntityValue(instanceExports, entityInstance, data, field);
+      const gqlType = entityTypes[field.propertyName];
+
+      return toEntityValue(instanceExports, entityInstance, data, field, gqlType);
     }, {});
 
     await Promise.all(entityValuePromises);

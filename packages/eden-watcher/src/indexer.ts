@@ -133,6 +133,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
+  _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
@@ -178,6 +179,9 @@ export class Indexer implements IndexerInterface {
     this._contractMap.set(KIND_DISTRIBUTORGOVERNANCE, new ethers.utils.Interface(DistributorGovernanceABI));
 
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+
+    this._entityTypesMap = new Map();
+    this._populateEntityTypesMap();
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
@@ -1137,6 +1141,223 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  getEntityTypesMap (): Map<string, { [key: string]: string }> {
+    return this._entityTypesMap;
+  }
+
+  _populateEntityTypesMap (): void {
+    this._entityTypesMap.set(
+      'Producer',
+      {
+        id: 'ID',
+        active: 'Boolean',
+        rewardCollector: 'Bytes',
+        rewards: 'BigInt',
+        confirmedBlocks: 'BigInt',
+        pendingEpochBlocks: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'ProducerSet',
+      {
+        id: 'ID',
+        producers: 'Producer'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'ProducerSetChange',
+      {
+        id: 'ID',
+        blockNumber: 'BigInt',
+        producer: 'Bytes',
+        changeType: 'ProducerSetChangeType'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'ProducerRewardCollectorChange',
+      {
+        id: 'ID',
+        blockNumber: 'BigInt',
+        producer: 'Bytes',
+        rewardCollector: 'Bytes'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'RewardScheduleEntry',
+      {
+        id: 'ID',
+        startTime: 'BigInt',
+        epochDuration: 'BigInt',
+        rewardsPerEpoch: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'RewardSchedule',
+      {
+        id: 'ID',
+        rewardScheduleEntries: 'RewardScheduleEntry',
+        lastEpoch: 'Epoch',
+        pendingEpoch: 'Epoch',
+        activeRewardScheduleEntry: 'RewardScheduleEntry'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Block',
+      {
+        id: 'ID',
+        fromActiveProducer: 'Boolean',
+        hash: 'Bytes',
+        parentHash: 'Bytes',
+        unclesHash: 'Bytes',
+        author: 'Bytes',
+        stateRoot: 'Bytes',
+        transactionsRoot: 'Bytes',
+        receiptsRoot: 'Bytes',
+        number: 'BigInt',
+        gasUsed: 'BigInt',
+        gasLimit: 'BigInt',
+        timestamp: 'BigInt',
+        difficulty: 'BigInt',
+        totalDifficulty: 'BigInt',
+        size: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Epoch',
+      {
+        id: 'ID',
+        finalized: 'Boolean',
+        epochNumber: 'BigInt',
+        startBlock: 'Block',
+        endBlock: 'Block',
+        producerBlocks: 'BigInt',
+        allBlocks: 'BigInt',
+        producerBlocksRatio: 'BigDecimal'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'ProducerEpoch',
+      {
+        id: 'ID',
+        address: 'Bytes',
+        epoch: 'Epoch',
+        totalRewards: 'BigInt',
+        blocksProduced: 'BigInt',
+        blocksProducedRatio: 'BigDecimal'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'SlotClaim',
+      {
+        id: 'ID',
+        slot: 'Slot',
+        owner: 'Bytes',
+        winningBid: 'BigInt',
+        oldBid: 'BigInt',
+        startTime: 'BigInt',
+        expirationTime: 'BigInt',
+        taxRatePerDay: 'BigDecimal'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Slot',
+      {
+        id: 'ID',
+        owner: 'Bytes',
+        delegate: 'Bytes',
+        winningBid: 'BigInt',
+        oldBid: 'BigInt',
+        startTime: 'BigInt',
+        expirationTime: 'BigInt',
+        taxRatePerDay: 'BigDecimal'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Staker',
+      {
+        id: 'ID',
+        staked: 'BigInt',
+        rank: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Network',
+      {
+        id: 'ID',
+        slot0: 'Slot',
+        slot1: 'Slot',
+        slot2: 'Slot',
+        stakers: 'Staker',
+        numStakers: 'BigInt',
+        totalStaked: 'BigInt',
+        stakedPercentiles: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Distributor',
+      {
+        id: 'ID',
+        currentDistribution: 'Distribution'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Distribution',
+      {
+        id: 'ID',
+        distributor: 'Distributor',
+        timestamp: 'BigInt',
+        distributionNumber: 'BigInt',
+        merkleRoot: 'Bytes',
+        metadataURI: 'String'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Claim',
+      {
+        id: 'ID',
+        timestamp: 'BigInt',
+        index: 'BigInt',
+        account: 'Account',
+        totalEarned: 'BigInt',
+        claimed: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Account',
+      {
+        id: 'ID',
+        totalClaimed: 'BigInt',
+        totalSlashed: 'BigInt'
+      }
+    );
+
+    this._entityTypesMap.set(
+      'Slash',
+      {
+        id: 'ID',
+        timestamp: 'BigInt',
+        account: 'Account',
+        slashed: 'BigInt'
+      }
+    );
   }
 
   _populateRelationsMap (): void {
