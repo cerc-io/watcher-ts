@@ -100,6 +100,10 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(data);
   }
+
+  getEntityTypesMap (): Map<string, { [key: string]: string; }> {
+    return new Map();
+  }
 }
 
 class SyncStatus implements SyncStatusInterface {

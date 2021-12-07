@@ -296,13 +296,13 @@ type RewardSchedule {
 type Block {
   id: ID!
   fromActiveProducer: Boolean!
-  hash: String!
-  parentHash: String!
-  unclesHash: String!
-  author: String!
-  stateRoot: String!
-  transactionsRoot: String!
-  receiptsRoot: String!
+  hash: Bytes!
+  parentHash: Bytes!
+  unclesHash: Bytes!
+  author: Bytes!
+  stateRoot: Bytes!
+  transactionsRoot: Bytes!
+  receiptsRoot: Bytes!
   number: BigInt!
   gasUsed: BigInt!
   gasLimit: BigInt!
