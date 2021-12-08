@@ -383,12 +383,18 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
 
 export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string) => {
   const { __newString, Value } = instanceExports;
-  const { isArray, propertyName } = field;
+  const { isArray, propertyName, isNullable } = field;
 
   const entityKey = await __newString(propertyName);
   const entityValuePtr = await entityInstance.get(entityKey);
   const subgraphValue = Value.wrap(entityValuePtr);
   const value = data[propertyName];
+
+  // Check if the entity property is nullable.
+  // No need to set the property if the value is null as well.
+  if (isNullable && value === null) {
+    return;
+  }
 
   const entityValue = await formatEntityValue(instanceExports, subgraphValue, type, value, isArray);
 
