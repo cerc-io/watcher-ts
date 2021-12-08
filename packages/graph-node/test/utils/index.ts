@@ -2,9 +2,15 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import { getDefaultProvider } from 'ethers';
+
+import { BaseProvider } from '@ethersproject/providers';
+
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
 import { Indexer } from './indexer';
+
+const NETWORK_URL = 'http://127.0.0.1:8081';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -57,4 +63,10 @@ export const getTestDatabase = (): Database => {
 
 export const getTestIndexer = (): Indexer => {
   return new Indexer();
+};
+
+export const getTestProvider = (): BaseProvider => {
+  const provider = getDefaultProvider(NETWORK_URL);
+
+  return provider;
 };

@@ -5,9 +5,11 @@
 import assert from 'assert';
 import path from 'path';
 
+import { BaseProvider } from '@ethersproject/providers';
+
 import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
-import { getTestDatabase, getTestIndexer } from '../test/utils';
+import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -15,6 +17,7 @@ describe('eth-call wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
   const contractAddress = process.env.EXAMPLE_CONTRACT_ADDRESS;
   assert(contractAddress);
@@ -31,6 +34,7 @@ describe('eth-call wasm tests', () => {
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
   });
 
   it('should load the subgraph example wasm', async () => {
@@ -38,6 +42,7 @@ describe('eth-call wasm tests', () => {
     const instance = await instantiate(
       db,
       indexer,
+      provider,
       { event: {} },
       filePath,
       data
