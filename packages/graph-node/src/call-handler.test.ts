@@ -7,10 +7,12 @@ import chai, { assert, expect } from 'chai';
 import spies from 'chai-spies';
 import { utils } from 'ethers';
 
-import { getDummyEventData, getDummyGraphData, getTestDatabase, getTestIndexer } from '../test/utils';
+import { BaseProvider } from '@ethersproject/providers';
+
+import { getDummyEventData, getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import abi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 import { instantiate } from './loader';
-import { createEvent, createBlock, Block } from './utils';
+import { createEvent, createBlock, Block, EventData } from './utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -22,14 +24,19 @@ describe('call handler in mapping code', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
-  // Create dummy test data.
-  const dummyEventData = getDummyEventData();
-  const dummyGraphData = getDummyGraphData();
+  let dummyEventData: EventData;
+  let dummyGraphData: any;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
+
+    // Create dummy test data.
+    dummyEventData = await getDummyEventData();
+    dummyGraphData = getDummyGraphData();
 
     sandbox.on(indexer, 'createDiffStaged', (contractAddress: string, blockHash: string, data: any) => {
       assert(contractAddress);
@@ -63,6 +70,7 @@ describe('call handler in mapping code', () => {
     const instance = await instantiate(
       db,
       indexer,
+      provider,
       { event: { block: dummyEventData.block } },
       filePath,
       dummyGraphData
