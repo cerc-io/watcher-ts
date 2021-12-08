@@ -75,7 +75,7 @@ export class GraphWatcher {
       assert(this._indexer);
 
       return {
-        instance: await instantiate(this._database, this._indexer, this._context, filePath, data),
+        instance: await instantiate(this._database, this._indexer, this._ethProvider, this._context, filePath, data),
         contractInterface
       };
     }, {});

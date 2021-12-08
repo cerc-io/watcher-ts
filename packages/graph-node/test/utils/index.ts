@@ -2,17 +2,27 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import { BaseProvider } from '@ethersproject/providers';
+import { getCustomProvider } from '@vulcanize/util';
+
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
 import { Indexer } from './indexer';
 
+const NETWORK_URL = 'http://127.0.0.1:8081';
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-export const getDummyEventData = (): EventData => {
+export const getDummyEventData = async (): Promise<EventData> => {
+  // Get the latest mined block from the chain.
+  const provider = getCustomProvider(NETWORK_URL);
+  const blockNumber = await provider.getBlockNumber();
+  const ethersBlock = await provider.getBlock(blockNumber);
+
   const block = {
-    blockHash: ZERO_HASH,
-    blockNumber: '0',
+    blockHash: ethersBlock.hash,
+    blockNumber: ethersBlock.number.toString(),
     timestamp: '0',
     parentHash: ZERO_HASH,
     stateRoot: ZERO_HASH,
@@ -57,4 +67,10 @@ export const getTestDatabase = (): Database => {
 
 export const getTestIndexer = (): Indexer => {
   return new Indexer();
+};
+
+export const getTestProvider = (): BaseProvider => {
+  const provider = getCustomProvider(NETWORK_URL);
+
+  return provider;
 };

@@ -6,8 +6,10 @@ import path from 'path';
 import { expect } from 'chai';
 import { utils, BigNumber } from 'ethers';
 
+import { BaseProvider } from '@ethersproject/providers';
+
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer } from '../test/utils';
+import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -17,16 +19,19 @@ describe('typeConversion wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
 
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
     const instance = await instantiate(
       db,
       indexer,
-      { event: { } },
+      provider,
+      { event: {} },
       filePath
     );
     exports = instance.exports;
