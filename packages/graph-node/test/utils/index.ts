@@ -2,9 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { getDefaultProvider } from 'ethers';
-
 import { BaseProvider } from '@ethersproject/providers';
+import { getCustomProvider } from '@vulcanize/util';
 
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
@@ -66,7 +65,7 @@ export const getTestIndexer = (): Indexer => {
 };
 
 export const getTestProvider = (): BaseProvider => {
-  const provider = getDefaultProvider(NETWORK_URL);
+  const provider = getCustomProvider(NETWORK_URL);
 
   return provider;
 };
