@@ -8,7 +8,7 @@ import { wait } from './misc';
 import { createPruningJob } from './common';
 
 import { JobQueueConfig } from './config';
-import { JOB_KIND_INDEX, JOB_KIND_PRUNE, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
+import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENT, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 
@@ -46,34 +46,20 @@ export class JobRunner {
     }
   }
 
-  async processEvent (job: any): Promise<EventInterface> {
-    const { data: { id } } = job;
+  async processEvent (job: any): Promise<EventInterface | void> {
+    const { data: { kind } } = job;
 
-    log(`Processing event ${id}`);
+    switch (kind) {
+      case JOB_KIND_EVENT:
+        return this._processEvent(job);
 
-    const dbEvent = await this._indexer.getEvent(id);
-    assert(dbEvent);
+      case JOB_KIND_CONTRACT:
+        return this._updateWatchedContracts(job);
 
-    const event = dbEvent;
-
-    const blockProgress = await this._indexer.getBlockProgress(event.block.blockHash);
-    assert(blockProgress);
-
-    const events = await this._indexer.getBlockEvents(event.block.blockHash);
-    const eventIndex = events.findIndex((e: any) => e.id === event.id);
-    assert(eventIndex !== -1);
-
-    // Check if previous event in block has been processed exactly before this and abort if not.
-    if (eventIndex > 0) { // Skip the first event in the block.
-      const prevIndex = eventIndex - 1;
-      const prevEvent = events[prevIndex];
-      if (prevEvent.index !== blockProgress.lastProcessedEventIndex) {
-        throw new Error(`Events received out of order for block number ${event.block.blockNumber} hash ${event.block.blockHash},` +
-        ` prev event index ${prevEvent.index}, got event index ${event.index} and lastProcessedEventIndex ${blockProgress.lastProcessedEventIndex}, aborting`);
-      }
+      default:
+        log(`Invalid Job kind ${kind} in QUEUE_EVENT_PROCESSING.`);
+        break;
     }
-
-    return event;
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
@@ -180,8 +166,37 @@ export class JobRunner {
       const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
       for (let ei = 0; ei < events.length; ei++) {
-        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { id: events[ei].id, publish: true });
+        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENT, id: events[ei].id, publish: true });
       }
     }
+  }
+
+  async _processEvent (job: any): Promise<EventInterface> {
+    const { data: { id } } = job;
+
+    log(`Processing event ${id}`);
+
+    const event = await this._indexer.getEvent(id);
+    assert(event);
+    const eventIndex = event.index;
+
+    // Check if previous event in block has been processed exactly before this and abort if not.
+    if (eventIndex > 0) { // Skip the first event in the block.
+      const prevIndex = eventIndex - 1;
+
+      if (prevIndex !== event.block.lastProcessedEventIndex) {
+        throw new Error(`Events received out of order for block number ${event.block.blockNumber} hash ${event.block.blockHash},` +
+        ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${event.block.lastProcessedEventIndex}, aborting`);
+      }
+    }
+
+    return event;
+  }
+
+  async _updateWatchedContracts (job: any): Promise<void> {
+    const { data: { contract } } = job;
+
+    assert(this._indexer.cacheContract);
+    this._indexer.cacheContract(contract);
   }
 }

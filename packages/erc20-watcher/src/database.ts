@@ -15,8 +15,6 @@ import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 
-const CONTRACT_KIND = 'token';
-
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
@@ -76,10 +74,10 @@ export class Database {
     return repo.save(entity);
   }
 
-  async getContract (address: string): Promise<Contract | undefined> {
+  async getContracts (): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
 
-    return this._baseDatabase.getContract(repo, address);
+    return this._baseDatabase.getContracts(repo);
   }
 
   async createTransactionRunner (): Promise<QueryRunner> {
@@ -116,12 +114,10 @@ export class Database {
     return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
   }
 
-  async saveContract (address: string, startingBlock: number): Promise<void> {
-    await this._conn.transaction(async (tx) => {
-      const repo = tx.getRepository(Contract);
+  async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<Contract> {
+    const repo = queryRunner.manager.getRepository(Contract);
 
-      return this._baseDatabase.saveContract(repo, address, startingBlock, CONTRACT_KIND);
-    });
+    return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
   }
 
   async updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
@@ -171,10 +167,10 @@ export class Database {
     return this._baseDatabase.getBlockProgress(repo, blockHash);
   }
 
-  async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
-    return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
+    return this._baseDatabase.updateBlockProgress(repo, block, lastProcessedEventIndex);
   }
 
   async removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void> {

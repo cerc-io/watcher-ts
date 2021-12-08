@@ -34,9 +34,11 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Mutation: {
-      watchToken: (_: any, { token, startingBlock = 1 }: { token: string, startingBlock: number }): Promise<boolean> => {
+      watchToken: async (_: any, { token, startingBlock = 1 }: { token: string, startingBlock: number }): Promise<boolean> => {
         log('watchToken', token, startingBlock);
-        return indexer.watchContract(token, startingBlock);
+        await indexer.watchContract(token, startingBlock);
+
+        return true;
       }
     },
 

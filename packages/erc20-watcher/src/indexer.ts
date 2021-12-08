@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME } from '@vulcanize/util';
+import { EventInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -28,6 +28,8 @@ const ETH_CALL_MODE = 'eth_call';
 
 const TRANSFER_EVENT = 'Transfer';
 const APPROVAL_EVENT = 'Approval';
+
+const CONTRACT_KIND = 'token';
 
 interface EventResult {
   event: {
@@ -53,7 +55,7 @@ export class Indexer {
   _contract: ethers.utils.Interface
   _serverMode: string
 
-  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, serverMode: string) {
+  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, serverMode: string) {
     assert(db);
     assert(ethClient);
 
@@ -62,7 +64,7 @@ export class Indexer {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverMode = serverMode;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
 
     const { abi, storageLayout } = artifacts;
 
@@ -290,19 +292,16 @@ export class Indexer {
     return { eventName, eventInfo };
   }
 
-  async watchContract (address: string, startingBlock: number): Promise<boolean> {
-    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
-    await this._db.saveContract(ethers.utils.getAddress(address), startingBlock);
-
-    return true;
-  }
-
   async getEventsByFilter (blockHash: string, contract: string, name: string | null): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
   async isWatchedContract (address : string): Promise<Contract | undefined> {
     return this._baseIndexer.isWatchedContract(address);
+  }
+
+  async watchContract (address: string, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, CONTRACT_KIND, startingBlock);
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {
@@ -365,8 +364,8 @@ export class Indexer {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+    return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {

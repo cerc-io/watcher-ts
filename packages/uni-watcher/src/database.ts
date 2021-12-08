@@ -45,13 +45,13 @@ export class Database implements DatabaseInterface {
       .getOne();
   }
 
-  async getContract (address: string): Promise<Contract | undefined> {
+  async getContracts (): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
 
-    return this._baseDatabase.getContract(repo, address);
+    return this._baseDatabase.getContracts(repo);
   }
 
-  async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<void> {
+  async saveContract (queryRunner: QueryRunner, address: string, kind: string, startingBlock: number): Promise<Contract> {
     const repo = queryRunner.manager.getRepository(Contract);
 
     return this._baseDatabase.saveContract(repo, address, startingBlock, kind);
@@ -138,10 +138,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlockProgress(repo, blockHash);
   }
 
-  async updateBlockProgress (queryRunner: QueryRunner, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
-    return this._baseDatabase.updateBlockProgress(repo, blockHash, lastProcessedEventIndex);
+    return this._baseDatabase.updateBlockProgress(repo, block, lastProcessedEventIndex);
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {

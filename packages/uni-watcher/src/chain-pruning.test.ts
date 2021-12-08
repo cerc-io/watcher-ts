@@ -63,13 +63,13 @@ describe('chain pruning', () => {
 
     const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-    indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
-    assert(indexer, 'Could not create indexer object.');
-
     const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
     assert(dbConnectionString, 'Missing job queue db connection string');
 
     const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+
+    indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+    assert(indexer, 'Could not create indexer object.');
 
     jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   });

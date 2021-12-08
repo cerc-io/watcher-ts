@@ -58,12 +58,16 @@ export class JobRunner {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
       const event = await this._baseJobRunner.processEvent(job);
 
+      if (!event) {
+        return;
+      }
+
       // Check if event is processed.
       if (!event.block.isComplete && event.index !== event.block.lastProcessedEventIndex) {
         await this._indexer.processEvent(event);
       }
 
-      await this._indexer.updateBlockProgress(event.block.blockHash, event.index);
+      await this._indexer.updateBlockProgress(event.block, event.index);
       await this._jobQueue.markComplete(job);
     });
   }
@@ -132,8 +136,6 @@ export const main = async (): Promise<any> => {
   const erc20Client = new ERC20Client(tokenWatcher);
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, mode);
-
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -141,6 +143,8 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(db, uniClient, erc20Client, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

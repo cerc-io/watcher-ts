@@ -6,7 +6,7 @@ import { Contract, ethers, Signer } from 'ethers';
 import assert from 'assert';
 
 import {
-  getConfig
+  getConfig, getResetConfig, JobQueue
 } from '@vulcanize/util';
 import {
   deployWETH9Token,
@@ -19,23 +19,23 @@ import {
 
 import { Client as UniClient } from '../src/client';
 import { Database } from '../src/database';
-import { watchContract } from '../src/utils/index';
+import { Indexer } from '../src/indexer';
 
 const CONFIG_FILE = './environments/test.toml';
 
-const deployFactoryContract = async (db: Database, signer: Signer): Promise<Contract> => {
+const deployFactoryContract = async (indexer: Indexer, signer: Signer): Promise<Contract> => {
   // Deploy factory from uniswap package.
   const Factory = new ethers.ContractFactory(FACTORY_ABI, FACTORY_BYTECODE, signer);
   const factory = await Factory.deploy();
   assert(factory.address, 'Factory contract not deployed.');
 
   // Watch factory contract.
-  await watchContract(db, factory.address, 'factory', 100);
+  await indexer.watchContract(factory.address, 'factory', 100);
 
   return factory;
 };
 
-const deployNFPMContract = async (db: Database, signer: Signer, factory: Contract): Promise<void> => {
+const deployNFPMContract = async (indexer: Indexer, signer: Signer, factory: Contract): Promise<void> => {
   // Deploy weth9 token.
   const weth9Address = await deployWETH9Token(signer);
   assert(weth9Address, 'WETH9 token not deployed.');
@@ -45,18 +45,19 @@ const deployNFPMContract = async (db: Database, signer: Signer, factory: Contrac
   assert(nfpm.address, 'NFPM contract not deployed.');
 
   // Watch NFPM contract.
-  await watchContract(db, nfpm.address, 'nfpm', 100);
+  await indexer.watchContract(nfpm.address, 'nfpm', 100);
 };
 
 const main = async () => {
   // Get config.
   const config = await getConfig(CONFIG_FILE);
 
-  const { database: dbConfig, server: { host, port }, upstream: { ethServer: { rpcProviderEndpoint } } } = config;
+  const { database: dbConfig, server: { host, port }, jobQueue: jobQueueConfig } = config;
   assert(dbConfig, 'Missing dbConfig.');
   assert(host, 'Missing host.');
   assert(port, 'Missing port.');
-  assert(rpcProviderEndpoint, 'Missing rpcProviderEndpoint.');
+
+  const { ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
 
   // Initialize uniClient.
   const endpoint = `http://${host}:${port}/graphql`;
@@ -71,14 +72,22 @@ const main = async () => {
   const db = new Database(dbConfig);
   await db.init();
 
-  const provider = new ethers.providers.JsonRpcProvider(rpcProviderEndpoint);
+  const provider = ethProvider as ethers.providers.JsonRpcProvider;
   const signer = provider.getSigner();
+
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+  assert(dbConnectionString, 'Missing job queue db connection string');
+
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+  await jobQueue.start();
+
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
 
   let factory: Contract;
   // Checking whether factory is deployed.
   const factoryContract = await uniClient.getContract('factory');
   if (factoryContract == null) {
-    factory = await deployFactoryContract(db, signer);
+    factory = await deployFactoryContract(indexer, signer);
   } else {
     factory = new Contract(factoryContract.address, FACTORY_ABI, signer);
   }
@@ -86,7 +95,7 @@ const main = async () => {
   // Checking whether NFPM is deployed.
   const nfpmContract = await uniClient.getContract('nfpm');
   if (nfpmContract == null) {
-    await deployNFPMContract(db, signer, factory);
+    await deployNFPMContract(indexer, signer, factory);
   }
 
   // Closing the database.

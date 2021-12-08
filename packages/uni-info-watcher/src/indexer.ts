@@ -11,7 +11,7 @@ import { providers, utils, BigNumber } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal, JobQueue } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTickDayData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -48,7 +48,7 @@ export class Indexer implements IndexerInterface {
   _baseIndexer: BaseIndexer
   _isDemo: boolean
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, mode: string) {
+  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, jobQueue: JobQueue, mode: string) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
@@ -59,14 +59,14 @@ export class Indexer implements IndexerInterface {
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, ethProvider, jobQueue);
     this._isDemo = mode === 'demo';
   }
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSON.parse(event.eventInfo);
-    const { tx } = JSON.parse(event.extraInfo);
+    const { tx, eventIndex } = JSON.parse(event.extraInfo);
 
     return {
       block: {
@@ -78,7 +78,7 @@ export class Indexer implements IndexerInterface {
 
       tx,
       contract: event.contract,
-      eventIndex: event.index,
+      eventIndex,
 
       event: {
         __typename: event.eventName,
@@ -346,8 +346,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+    return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
   async _fetchAndSaveEvents (block: DeepPartial<BlockProgress>): Promise<void> {
@@ -365,10 +365,10 @@ export class Indexer implements IndexerInterface {
       } = events[i];
 
       const { __typename: eventName, ...eventInfo } = event;
-      const extraInfo = { tx };
+      const extraInfo = { tx, eventIndex };
 
       dbEvents.push({
-        index: eventIndex,
+        index: i,
         txHash: tx.hash,
         contract,
         eventName,

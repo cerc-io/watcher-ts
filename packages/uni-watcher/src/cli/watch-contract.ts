@@ -6,10 +6,10 @@ import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, getResetConfig, JobQueue } from '@vulcanize/util';
 
 import { Database } from '../database';
-import { watchContract } from '../utils/index';
+import { Indexer } from '../indexer';
 
 (async () => {
   const argv = await yargs.parserConfiguration({
@@ -43,14 +43,28 @@ import { watchContract } from '../utils/index';
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
-  const { database: dbConfig } = config;
+  const { database: dbConfig, jobQueue: jobQueueConfig } = config;
+  const { ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
 
   assert(dbConfig);
 
   const db = new Database(dbConfig);
   await db.init();
 
-  await watchContract(db, argv.address, argv.kind, argv.startingBlock);
+  assert(jobQueueConfig, 'Missing job queue config');
+
+  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
+  assert(dbConnectionString, 'Missing job queue db connection string');
+
+  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
+  await jobQueue.start();
+
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+  await indexer.init();
+
+  await indexer.watchContract(argv.address, argv.kind, argv.startingBlock);
 
   await db.close();
+  await jobQueue.stop();
+  process.exit();
 })();

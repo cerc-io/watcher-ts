@@ -153,20 +153,20 @@ export class Database {
       .getMany();
   }
 
-  async updateBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    const entity = await repo.findOne({ where: { blockHash } });
-    if (entity && !entity.isComplete) {
-      if (lastProcessedEventIndex <= entity.lastProcessedEventIndex) {
-        throw new Error(`Events processed out of order ${blockHash}, was ${entity.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
+  async updateBlockProgress (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<void> {
+    if (!block.isComplete) {
+      if (lastProcessedEventIndex <= block.lastProcessedEventIndex) {
+        throw new Error(`Events processed out of order ${block.blockHash}, was ${block.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
       }
 
-      entity.lastProcessedEventIndex = lastProcessedEventIndex;
-      entity.numProcessedEvents++;
-      if (entity.numProcessedEvents >= entity.numEvents) {
-        entity.isComplete = true;
+      block.lastProcessedEventIndex = lastProcessedEventIndex;
+      block.numProcessedEvents++;
+      if (block.numProcessedEvents >= block.numEvents) {
+        block.isComplete = true;
       }
 
-      await repo.save(entity);
+      const { id, ...blockData } = block;
+      await repo.update(id, blockData);
     }
   }
 
@@ -550,21 +550,24 @@ export class Database {
     return { canonicalBlockNumber, blockHashes };
   }
 
-  async getContract (repo: Repository<ContractInterface>, address: string): Promise<ContractInterface | undefined> {
+  async getContracts (repo: Repository<ContractInterface>): Promise<ContractInterface[]> {
     return repo.createQueryBuilder('contract')
-      .where('address = :address', { address })
-      .getOne();
+      .getMany();
   }
 
-  async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<void> {
-    const numRows = await repo
+  async saveContract (repo: Repository<ContractInterface>, address: string, startingBlock: number, kind?: string): Promise<ContractInterface> {
+    const contract = await repo
       .createQueryBuilder()
       .where('address = :address', { address })
-      .getCount();
+      .getOne();
 
-    if (numRows === 0) {
-      const entity = repo.create({ address, kind, startingBlock });
-      await repo.save(entity);
+    const entity = repo.create({ address, kind, startingBlock });
+
+    // If contract already present, overwrite fields.
+    if (contract) {
+      entity.id = contract.id;
     }
+
+    return repo.save(entity);
   }
 }

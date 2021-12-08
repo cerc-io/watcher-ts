@@ -11,7 +11,8 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
 
 import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusInterface, ContractInterface } from './types';
-import { UNKNOWN_EVENT_NAME } from './constants';
+import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING } from './constants';
+import { JobQueue } from './job-queue';
 
 const MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -30,13 +31,29 @@ export class Indexer {
   _postgraphileClient: EthClient;
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
+  _jobQueue: JobQueue;
 
-  constructor (db: DatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
+  _watchedContracts: { [key: string]: ContractInterface } = {};
+
+  constructor (db: DatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
     this._db = db;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
+    this._jobQueue = jobQueue;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
+  }
+
+  async fetchContracts (): Promise<void> {
+    assert(this._db.getContracts);
+
+    const contracts = await this._db.getContracts();
+
+    this._watchedContracts = contracts.reduce((acc: { [key: string]: ContractInterface }, contract) => {
+      acc[contract.address] = contract;
+
+      return acc;
+    }, {});
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
@@ -152,12 +169,12 @@ export class Indexer {
     }
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.updateBlockProgress(dbTx, blockHash, lastProcessedEventIndex);
+      res = await this._db.updateBlockProgress(dbTx, block, lastProcessedEventIndex);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -281,9 +298,39 @@ export class Indexer {
   }
 
   async isWatchedContract (address : string): Promise<ContractInterface | undefined> {
-    assert(this._db.getContract);
+    return this._watchedContracts[address];
+  }
 
-    return this._db.getContract(ethers.utils.getAddress(address));
+  async watchContract (address: string, kind: string, startingBlock: number): Promise<void> {
+    assert(this._db.saveContract);
+    const dbTx = await this._db.createTransactionRunner();
+
+    // Always use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress).
+    const contractAddress = ethers.utils.getAddress(address);
+
+    try {
+      const contract = await this._db.saveContract(dbTx, contractAddress, kind, startingBlock);
+      this.cacheContract(contract);
+      await dbTx.commitTransaction();
+
+      await this._jobQueue.pushJob(
+        QUEUE_EVENT_PROCESSING,
+        {
+          kind: JOB_KIND_CONTRACT,
+          contract
+        },
+        { priority: 1 }
+      );
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
+  cacheContract (contract: ContractInterface): void {
+    this._watchedContracts[contract.address] = contract;
   }
 
   async getStorageValue (storageLayout: StorageLayout, blockHash: string, token: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {

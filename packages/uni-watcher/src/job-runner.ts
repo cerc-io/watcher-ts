@@ -55,12 +55,17 @@ export class JobRunner {
 
   async subscribeEventProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      const event = await this._baseJobRunner.processEvent(job);
+      // TODO: Support two kind of jobs on the event processing queue.
+      // 1) processEvent  => Current single event
+      // 2) processEvents => Event range (multiple events)
+      let event = await this._baseJobRunner.processEvent(job);
 
-      let dbEvent;
-      const { data: { id } } = job;
+      if (!event) {
+        return;
+      }
 
       const watchedContract = await this._indexer.isWatchedContract(event.contract);
+
       if (watchedContract) {
         // We might not have parsed this event yet. This can happen if the contract was added
         // as a result of a previous event in the same block.
@@ -69,16 +74,13 @@ export class JobRunner {
           const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
           event.eventName = eventName;
           event.eventInfo = JSON.stringify(eventInfo);
-          dbEvent = await this._indexer.saveEventEntity(event);
+          event = await this._indexer.saveEventEntity(event);
         }
 
-        dbEvent = await this._indexer.getEvent(id);
-        assert(dbEvent);
-
-        await this._indexer.processEvent(dbEvent);
+        await this._indexer.processEvent(event);
       }
 
-      await this._indexer.updateBlockProgress(event.block.blockHash, event.index);
+      await this._indexer.updateBlockProgress(event.block, event.index);
       await this._jobQueue.markComplete(job);
     });
   }
@@ -125,8 +127,6 @@ export const main = async (): Promise<any> => {
 
   const ethProvider = getCustomProvider(rpcProviderEndpoint);
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider);
-
   assert(jobQueueConfig, 'Missing job queue config');
 
   const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
@@ -134,6 +134,9 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+  await indexer.init();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

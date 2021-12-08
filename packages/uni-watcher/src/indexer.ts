@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
@@ -46,16 +46,20 @@ export class Indexer implements IndexerInterface {
   _poolContract: ethers.utils.Interface
   _nfpmContract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
+  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
     this._db = db;
     this._ethClient = ethClient;
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
     this._nfpmContract = new ethers.utils.Interface(nfpmABI);
+  }
+
+  async init (): Promise<void> {
+    await this._baseIndexer.fetchContracts();
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -97,7 +101,7 @@ export class Indexer implements IndexerInterface {
     switch (re.event.__typename) {
       case 'PoolCreatedEvent': {
         const poolContract = ethers.utils.getAddress(re.event.pool);
-        await this._db.saveContract(dbTx, poolContract, KIND_POOL, dbEvent.block.blockNumber);
+        await this.watchContract(poolContract, KIND_POOL, dbEvent.block.blockNumber);
       }
     }
   }
@@ -343,6 +347,14 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isWatchedContract(address);
   }
 
+  async watchContract (address: string, kind: string, startingBlock: number): Promise<void> {
+    return this._baseIndexer.watchContract(address, kind, startingBlock);
+  }
+
+  cacheContract (contract: Contract): void {
+    return this._baseIndexer.cacheContract(contract);
+  }
+
   async saveEventEntity (dbEvent: Event): Promise<Event> {
     return this._baseIndexer.saveEventEntity(dbEvent);
   }
@@ -404,8 +416,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+    return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {

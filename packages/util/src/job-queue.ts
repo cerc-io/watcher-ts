@@ -52,6 +52,10 @@ export class JobQueue {
     await this._boss.start();
   }
 
+  async stop (): Promise<void> {
+    await this._boss.stop();
+  }
+
   async subscribe (queue: string, callback: JobCallback): Promise<string> {
     return await this._boss.subscribe(
       queue,
