@@ -5,8 +5,10 @@
 import path from 'path';
 import { expect } from 'chai';
 
+import { BaseProvider } from '@ethersproject/providers';
+
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer } from '../test/utils';
+import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -16,15 +18,18 @@ describe('wasm loader tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
 
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
     const instance = await instantiate(
       db,
       indexer,
+      provider,
       { event: {} },
       filePath
     );

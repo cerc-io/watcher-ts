@@ -8,12 +8,14 @@ import path from 'path';
 import chai from 'chai';
 import spies from 'chai-spies';
 
+import { BaseProvider } from '@ethersproject/providers';
+
 import { instantiate } from './loader';
-import { createEvent, Block, createBlock } from './utils';
+import { createEvent, Block, createBlock, EventData } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
-import { getDummyEventData, getTestDatabase, getTestIndexer } from '../test/utils';
+import { getDummyEventData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -26,13 +28,17 @@ const sandbox = chai.spy.sandbox();
 describe('eden wasm loader tests', async () => {
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
-  // Create dummy event data.
-  const dummyEventData = getDummyEventData();
+  let dummyEventData: EventData;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
+
+    // Create dummy test data.
+    dummyEventData = await getDummyEventData();
 
     sandbox.on(indexer, 'createDiffStaged', (contractAddress: string, blockHash: string, data: any) => {
       assert(contractAddress);
@@ -81,6 +87,7 @@ describe('eden wasm loader tests', async () => {
       ({ exports } = await instantiate(
         db,
         indexer,
+        provider,
         { event: { block: dummyEventData.block } },
         filePath,
         data
@@ -195,6 +202,7 @@ describe('eden wasm loader tests', async () => {
       const filePath = path.resolve(__dirname, '../test/subgraph/eden/EdenNetworkDistribution/EdenNetworkDistribution.wasm');
       ({ exports } = await instantiate(db,
         indexer,
+        provider,
         { event: { block: dummyEventData.block } },
         filePath,
         data
@@ -307,6 +315,7 @@ describe('eden wasm loader tests', async () => {
       ({ exports } = await instantiate(
         db,
         indexer,
+        provider,
         { event: { block: dummyEventData.block } },
         filePath,
         data
