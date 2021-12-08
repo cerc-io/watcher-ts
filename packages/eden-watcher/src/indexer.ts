@@ -51,8 +51,8 @@ import { Slash } from './entity/Slash';
 const log = debug('vulcanize:indexer');
 
 const KIND_EDENNETWORK = 'EdenNetwork';
-const KIND_MERKLEDISTRIBUTOR = 'MerkleDistributor';
-const KIND_DISTRIBUTORGOVERNANCE = 'DistributorGovernance';
+const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
+const KIND_DISTRIBUTORGOVERNANCE = 'EdenNetworkGovernance';
 
 const TRANSFER_EVENT = 'Transfer';
 const APPROVAL_EVENT = 'Approval';

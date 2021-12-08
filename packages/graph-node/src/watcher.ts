@@ -123,15 +123,24 @@ export class GraphWatcher {
       return;
     }
 
-    // Get event handler based on event signature.
-    const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => eventHandler.event === eventSignature);
+    const { instance: { exports: instanceExports }, contractInterface } = this._dataSourceMap[contract];
+
+    // Get event handler based on event topic (from event signature).
+    const eventTopic = contractInterface.getEventTopic(eventSignature);
+    const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => {
+      // The event signature we get from logDescription is different than that given in the subgraph yaml file.
+      // For eg. event in subgraph.yaml: Stake(indexed address,uint256); from logDescription: Stake(address,uint256)
+      // ethers.js doesn't recognize the subgraph event signature with indexed keyword before param type.
+      // Match event topics from cleaned subgraph event signature (Stake(indexed address,uint256) -> Stake(address,uint256)).
+      const subgraphEventTopic = contractInterface.getEventTopic(eventHandler.event.replace(/indexed /g, ''));
+
+      return subgraphEventTopic === eventTopic;
+    });
 
     if (!eventHandler) {
       log(`No handler configured in subgraph for event ${eventSignature}`);
       return;
     }
-
-    const { instance: { exports: instanceExports }, contractInterface } = this._dataSourceMap[contract];
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
