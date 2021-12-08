@@ -7,9 +7,10 @@ import { expect } from 'chai';
 import BN from 'bn.js';
 
 import { GraphDecimal } from '@vulcanize/util';
+import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer } from '../test/utils';
+import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import {
@@ -29,15 +30,18 @@ describe('numbers wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
+  let provider: BaseProvider;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
+    provider = getTestProvider();
 
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
     const instance = await instantiate(
       db,
       indexer,
+      provider,
       { event: {} },
       filePath
     );

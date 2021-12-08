@@ -7,7 +7,6 @@ import fs from 'fs/promises';
 import {
   utils,
   BigNumber,
-  getDefaultProvider,
   Contract,
   ContractInterface
 } from 'ethers';
@@ -15,6 +14,7 @@ import JSONbig from 'json-bigint';
 import BN from 'bn.js';
 import debug from 'debug';
 
+import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp } from '@vulcanize/util';
 
@@ -26,8 +26,6 @@ import {
   resolveEntityFieldConflicts
 } from './utils';
 import { Database } from './database';
-
-const NETWORK_URL = 'http://127.0.0.1:8081';
 
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
@@ -56,13 +54,13 @@ const log = debug('vulcanize:graph-node');
 export const instantiate = async (
   database: Database,
   indexer: IndexerInterface,
+  provider: BaseProvider,
   context: Context,
   filePath: string,
   data: GraphData = {}
 ): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
   const buffer = await fs.readFile(filePath);
-  const provider = getDefaultProvider(NETWORK_URL);
 
   const imports: WebAssembly.Imports = {
     index: {
@@ -160,8 +158,10 @@ export const instantiate = async (
 
           functionParams = await Promise.all(functionParamsPromise);
 
+          assert(context.event.block);
+
           // TODO: Check for function overloading.
-          let result = await contract[functionName](...functionParams);
+          let result = await contract[functionName](...functionParams, { blockTag: context.event.block.blockHash });
 
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);
