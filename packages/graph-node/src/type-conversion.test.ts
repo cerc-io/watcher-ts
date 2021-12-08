@@ -31,7 +31,7 @@ describe('typeConversion wasm tests', () => {
       db,
       indexer,
       provider,
-      { event: { } },
+      { event: {} },
       filePath
     );
     exports = instance.exports;

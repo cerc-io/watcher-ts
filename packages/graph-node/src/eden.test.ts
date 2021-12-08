@@ -11,7 +11,7 @@ import spies from 'chai-spies';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { createEvent, Block, createBlock } from './utils';
+import { createEvent, Block, createBlock, EventData } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
@@ -30,13 +30,15 @@ describe('eden wasm loader tests', async () => {
   let indexer: Indexer;
   let provider: BaseProvider;
 
-  // Create dummy event data.
-  const dummyEventData = getDummyEventData();
+  let dummyEventData: EventData;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+
+    // Create dummy test data.
+    dummyEventData = await getDummyEventData();
 
     sandbox.on(indexer, 'createDiffStaged', (contractAddress: string, blockHash: string, data: any) => {
       assert(contractAddress);

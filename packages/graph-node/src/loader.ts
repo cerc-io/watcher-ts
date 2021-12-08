@@ -158,8 +158,10 @@ export const instantiate = async (
 
           functionParams = await Promise.all(functionParamsPromise);
 
+          assert(context.event.block);
+
           // TODO: Check for function overloading.
-          let result = await contract[functionName](...functionParams);
+          let result = await contract[functionName](...functionParams, { blockTag: context.event.block.blockHash });
 
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);
