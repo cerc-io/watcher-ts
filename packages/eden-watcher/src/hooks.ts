@@ -6,7 +6,7 @@ import assert from 'assert';
 
 import { Indexer, ResultEvent } from './indexer';
 
-export async function createInitialCheckpoint (indexer: Indexer, contractAddress: string, blockHash: string): Promise<void> {
+export async function createInitialState (indexer: Indexer, contractAddress: string, blockHash: string): Promise<any> {
   assert(indexer);
   assert(blockHash);
   assert(contractAddress);
@@ -16,7 +16,7 @@ export async function createInitialCheckpoint (indexer: Indexer, contractAddress
     state: {}
   };
 
-  await indexer.createCheckpoint(contractAddress, blockHash, ipldBlockData);
+  return ipldBlockData;
 }
 
 export async function createStateDiff (indexer: Indexer, blockHash: string): Promise<void> {

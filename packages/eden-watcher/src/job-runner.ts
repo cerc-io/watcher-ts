@@ -58,10 +58,10 @@ export class JobRunner {
 
       await this._baseJobRunner.processBlock(job);
 
-      const { data: { kind, blockHash } } = job;
+      const { data: { kind, blockHash, blockNumber } } = job;
 
       if (kind === JOB_KIND_INDEX) {
-        await this._indexer.processBlock(blockHash);
+        await this._indexer.processBlock(blockHash, blockNumber);
       }
 
       await this._jobQueue.markComplete(job);

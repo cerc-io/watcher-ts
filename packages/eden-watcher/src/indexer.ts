@@ -29,7 +29,7 @@ import { IPLDBlock } from './entity/IPLDBlock';
 import EdenNetworkArtifacts from './artifacts/EdenNetwork.json';
 import MerkleDistributorArtifacts from './artifacts/MerkleDistributor.json';
 import DistributorGovernanceArtifacts from './artifacts/DistributorGovernance.json';
-import { createInitialCheckpoint, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
+import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { IPFSClient } from './ipfs';
 import { ProducerSet } from './entity/ProducerSet';
 import { Producer } from './entity/Producer';
@@ -252,6 +252,39 @@ export class Indexer implements IndexerInterface {
     await createStateDiff(this, blockHash);
   }
 
+  async createInitialState (blockHash: string, blockNumber: number): Promise<void> {
+    // Get all the contracts.
+    const contracts = await this._db.getContracts({});
+
+    // Create an initial state for each contract.
+    for (const contract of contracts) {
+      // Check if contract has checkpointing on.
+      if (contract.checkpoint) {
+        // Check if a 'diff' | 'checkpoint' ipldBlock already exists or blockNumber is < to startingBlock.
+        const existingIpldBlock = await this.getLatestIPLDBlock(contract.address, null);
+
+        if (existingIpldBlock || blockNumber < contract.startingBlock) {
+          continue;
+        }
+
+        // Call initial state hook.
+        const stateData = await createInitialState(this, contract.address, blockHash);
+
+        const block = await this.getBlockProgress(blockHash);
+        assert(block);
+
+        const ipldBlock = await this.prepareIPLDBlock(block, contract.address, stateData, 'init');
+        await this.saveOrUpdateIPLDBlock(ipldBlock);
+
+        // Push initial state to IPFS if configured.
+        if (this.isIPFSConfigured()) {
+          const ipldData = this.getIPLDData(ipldBlock);
+          await this.pushToIPFS(ipldData);
+        }
+      }
+    }
+  }
+
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
@@ -285,14 +318,15 @@ export class Indexer implements IndexerInterface {
     // Fetch the latest checkpoint for the contract.
     const checkpoint = await this.getLatestIPLDBlock(contractAddress, 'checkpoint');
 
-    // There should be an initial checkpoint at least.
-    // Return if initial checkpoint doesn't exist.
+    // There should be an initial state at least.
     if (!checkpoint) {
-      return;
+      // Fetch the initial state for the contract.
+      const initState = await this.getLatestIPLDBlock(contractAddress, 'init');
+      assert(initState, 'No initial state found');
+    } else {
+      // Check if the latest checkpoint is in the same block.
+      assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash');
     }
-
-    // Check if the latest checkpoint is in the same block.
-    assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash.');
 
     const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff');
     await this.saveOrUpdateIPLDBlock(ipldBlock);
@@ -303,7 +337,7 @@ export class Indexer implements IndexerInterface {
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
-    const { data: { blockHash, blockNumber } } = job;
+    const { data: { blockHash } } = job;
 
     // Get all the contracts.
     const contracts = await this._db.getContracts({});
@@ -312,17 +346,7 @@ export class Indexer implements IndexerInterface {
     for (const contract of contracts) {
       // Check if contract has checkpointing on.
       if (contract.checkpoint) {
-        // If a checkpoint doesn't already exist and blockNumber is equal to startingBlock, create an initial checkpoint.
-        const checkpointBlock = await this.getLatestIPLDBlock(contract.address, 'checkpoint');
-
-        if (!checkpointBlock) {
-          if (blockNumber >= contract.startingBlock) {
-            // Call initial checkpoint hook.
-            await createInitialCheckpoint(this, contract.address, blockHash);
-          }
-        } else {
-          await this.createCheckpoint(contract.address, blockHash, null, checkpointInterval);
-        }
+        await this.createCheckpoint(contract.address, blockHash, null, checkpointInterval);
       }
     }
   }
@@ -360,16 +384,16 @@ export class Indexer implements IndexerInterface {
 
     assert(currentBlock);
 
-    // Data is passed in case of initial checkpoint and checkpoint hook.
-    // Assumption: There should be no events for the contract at the starting block.
+    // Data is passed in case of checkpoint hook.
     if (data) {
+      // Create a checkpoint from the hook data without being concerned about diffs.
       const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
       await this.saveOrUpdateIPLDBlock(ipldBlock);
 
       return;
     }
 
-    // If data is not passed, create from previous checkpoint and diffs after that.
+    // If data is not passed, create from previous 'checkpoint' | 'init' and diffs after that.
 
     // Make sure the block is marked complete.
     assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
@@ -380,15 +404,6 @@ export class Indexer implements IndexerInterface {
     // Make sure the hooks have been processed for the block.
     assert(currentBlock.blockNumber <= hookStatus.latestProcessedBlockNumber, 'Block for a checkpoint should have hooks processed');
 
-    // Fetch the latest checkpoint for the contract.
-    const checkpointBlock = await this.getLatestIPLDBlock(contractAddress, 'checkpoint', currentBlock.blockNumber);
-    assert(checkpointBlock);
-
-    // Check (only if checkpointInterval is passed) if it is time for a new checkpoint.
-    if (checkpointInterval && checkpointBlock.block.blockNumber > (currentBlock.blockNumber - checkpointInterval)) {
-      return;
-    }
-
     // Call state checkpoint hook and check if default checkpoint is disabled.
     const disableDefaultCheckpoint = await createStateCheckpoint(this, contractAddress, currentBlock.blockHash);
 
@@ -398,14 +413,35 @@ export class Indexer implements IndexerInterface {
       return currentBlock.blockHash;
     }
 
-    const { block: { blockNumber: checkpointBlockNumber } } = checkpointBlock;
+    // Fetch the latest 'checkpoint' | 'init' for the contract.
+    let prevNonDiffBlock: IPLDBlock;
+    let getDiffBlockNumber: number;
+    const checkpointBlock = await this.getLatestIPLDBlock(contractAddress, 'checkpoint', currentBlock.blockNumber);
 
-    // Fetching all diff blocks after checkpoint.
-    const diffBlocks = await this.getDiffIPLDBlocksByCheckpoint(contractAddress, checkpointBlockNumber);
+    if (checkpointBlock) {
+      prevNonDiffBlock = checkpointBlock;
+      getDiffBlockNumber = checkpointBlock.block.blockNumber;
 
-    const checkpointBlockData = codec.decode(Buffer.from(checkpointBlock.data)) as any;
+      // Check (only if checkpointInterval is passed) if it is time for a new checkpoint.
+      if (checkpointInterval && checkpointBlock.block.blockNumber > (currentBlock.blockNumber - checkpointInterval)) {
+        return;
+      }
+    } else {
+      // There should be an initial state at least.
+      const initBlock = await this.getLatestIPLDBlock(contractAddress, 'init');
+      assert(initBlock, 'No initial state found');
+
+      prevNonDiffBlock = initBlock;
+      // Take block number previous to initial state block to get diffs after that.
+      getDiffBlockNumber = initBlock.block.blockNumber - 1;
+    }
+
+    // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
+    const diffBlocks = await this.getDiffIPLDBlocksByBlocknumber(contractAddress, getDiffBlockNumber);
+
+    const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
     data = {
-      state: checkpointBlockData.state
+      state: prevNonDiffBlockData.state
     };
 
     for (const diffBlock of diffBlocks) {
@@ -459,21 +495,21 @@ export class Indexer implements IndexerInterface {
     return res;
   }
 
-  async getDiffIPLDBlocksByCheckpoint (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
-    return this._db.getDiffIPLDBlocksByCheckpoint(contractAddress, checkpointBlockNumber);
+  async getDiffIPLDBlocksByBlocknumber (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
+    return this._db.getDiffIPLDBlocksByBlocknumber(contractAddress, checkpointBlockNumber);
   }
 
   async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind: string):Promise<any> {
-    assert(_.includes(['diff', 'checkpoint', 'diff_staged'], kind));
+    assert(_.includes(['init', 'diff', 'checkpoint', 'diff_staged'], kind));
 
-    // Get an existing 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress.
+    // Get an existing 'init' | 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress.
     const currentIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind });
 
     // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
     assert(currentIPLDBlocks.length <= 1);
     const currentIPLDBlock = currentIPLDBlocks[0];
 
-    // Update currentIPLDBlock if it exists and is of same kind.
+    // Update currentIPLDBlock of same kind if it exists.
     let ipldBlock;
     if (currentIPLDBlock) {
       ipldBlock = currentIPLDBlock;
@@ -576,7 +612,10 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
-  async processBlock (blockHash: string): Promise<void> {
+  async processBlock (blockHash: string, blockNumber: number): Promise<void> {
+    // Call a function to create initial state for contracts.
+    await this.createInitialState(blockHash, blockNumber);
+
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
   }

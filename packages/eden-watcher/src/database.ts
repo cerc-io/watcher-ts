@@ -143,8 +143,8 @@ export class Database implements DatabaseInterface {
     return result;
   }
 
-  // Fetch all diff IPLDBlocks after the specified checkpoint.
-  async getDiffIPLDBlocksByCheckpoint (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
+  // Fetch all diff IPLDBlocks after the specified block number.
+  async getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlock[]> {
     const repo = this._conn.getRepository(IPLDBlock);
 
     return repo.find({
@@ -154,7 +154,7 @@ export class Database implements DatabaseInterface {
         kind: 'diff',
         block: {
           isPruned: false,
-          blockNumber: MoreThan(checkpointBlockNumber)
+          blockNumber: MoreThan(blockNumber)
         }
       },
       order: {
