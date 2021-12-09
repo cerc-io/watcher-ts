@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, MoreThan } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase, MAX_REORG_DEPTH, DatabaseInterface } from '@vulcanize/util';
+import { IPLDDatabase as BaseDatabase, MAX_REORG_DEPTH, IPLDDatabaseInterface } from '@vulcanize/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -15,7 +15,7 @@ import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 
-export class Database implements DatabaseInterface {
+export class Database implements IPLDDatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
@@ -39,32 +39,19 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.close();
   }
 
+  getNewIPLDBlock (): IPLDBlock {
+    return new IPLDBlock();
+  }
+
   async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
     const repo = this._conn.getRepository(IPLDBlock);
-    return repo.find({ where, relations: ['block'] });
+    return this._baseDatabase.getIPLDBlocks(repo, where);
   }
 
   async getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
     const repo = this._conn.getRepository(IPLDBlock);
 
-    let queryBuilder = repo.createQueryBuilder('ipld_block')
-      .leftJoinAndSelect('ipld_block.block', 'block')
-      .where('block.is_pruned = false')
-      .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
-      .orderBy('block.block_number', 'DESC');
-
-    // Filter out blocks after the provided block number.
-    if (blockNumber) {
-      queryBuilder.andWhere('block.block_number <= :blockNumber', { blockNumber });
-    }
-
-    // Filter using kind if specified else order by id to give preference to checkpoint.
-    queryBuilder = kind
-      ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: 'diff_staged' })
-        .addOrderBy('ipld_block.id', 'DESC');
-
-    return queryBuilder.getOne();
+    return this._baseDatabase.getLatestIPLDBlock(repo, contractAddress, kind, blockNumber);
   }
 
   async getPrevIPLDBlock (queryRunner: QueryRunner, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
@@ -193,7 +180,7 @@ export class Database implements DatabaseInterface {
 
   async getContracts (where: FindConditions<Contract>): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
-    return repo.find({ where });
+    return this._baseDatabase.getContracts(repo, where);
   }
 
   async getContract (address: string): Promise<Contract | undefined> {

@@ -7,8 +7,6 @@ import debug from 'debug';
 import { DeepPartial } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
-import { sha256 } from 'multiformats/hashes/sha2';
-import { CID } from 'multiformats/cid';
 import _ from 'lodash';
 
 import { JsonFragment } from '@ethersproject/abi';
@@ -16,7 +14,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, Indexer as BaseIndexer, IndexerInterface, UNKNOWN_EVENT_NAME, ServerConfig, BlockHeight } from '@vulcanize/util';
+import { EventInterface, IPLDIndexer as BaseIndexer, IndexerInterface, UNKNOWN_EVENT_NAME, ServerConfig, BlockHeight } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
@@ -273,7 +271,7 @@ export class Indexer implements IndexerInterface {
         const block = await this.getBlockProgress(blockHash);
         assert(block);
 
-        const ipldBlock = await this.prepareIPLDBlock(block, contract.address, stateData, 'init');
+        const ipldBlock = await this._baseIndexer.prepareIPLDBlock(block, contract.address, stateData, 'init');
         await this.saveOrUpdateIPLDBlock(ipldBlock);
 
         // Push initial state to IPFS if configured.
@@ -290,7 +288,7 @@ export class Indexer implements IndexerInterface {
     assert(block);
 
     // Create a staged diff block.
-    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff_staged');
+    const ipldBlock = await this._baseIndexer.prepareIPLDBlock(block, contractAddress, data, 'diff_staged');
     await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
@@ -328,7 +326,7 @@ export class Indexer implements IndexerInterface {
       assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash');
     }
 
-    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff');
+    const ipldBlock = await this._baseIndexer.prepareIPLDBlock(block, contractAddress, data, 'diff');
     await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
@@ -387,7 +385,7 @@ export class Indexer implements IndexerInterface {
     // Data is passed in case of checkpoint hook.
     if (data) {
       // Create a checkpoint from the hook data without being concerned about diffs.
-      const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
+      const ipldBlock = await this._baseIndexer.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
       await this.saveOrUpdateIPLDBlock(ipldBlock);
 
       return;
@@ -449,7 +447,7 @@ export class Indexer implements IndexerInterface {
       data.state = _.merge(data.state, diff.state);
     }
 
-    const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
+    const ipldBlock = await this._baseIndexer.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
     await this.saveOrUpdateIPLDBlock(ipldBlock);
 
     return currentBlock.blockHash;
@@ -497,67 +495,6 @@ export class Indexer implements IndexerInterface {
 
   async getDiffIPLDBlocksByBlocknumber (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
     return this._db.getDiffIPLDBlocksByBlocknumber(contractAddress, checkpointBlockNumber);
-  }
-
-  async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind: string):Promise<any> {
-    assert(_.includes(['init', 'diff', 'checkpoint', 'diff_staged'], kind));
-
-    // Get an existing 'init' | 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress.
-    const currentIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind });
-
-    // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
-    assert(currentIPLDBlocks.length <= 1);
-    const currentIPLDBlock = currentIPLDBlocks[0];
-
-    // Update currentIPLDBlock of same kind if it exists.
-    let ipldBlock;
-    if (currentIPLDBlock) {
-      ipldBlock = currentIPLDBlock;
-
-      // Update the data field.
-      const oldData = codec.decode(Buffer.from(currentIPLDBlock.data));
-      data = _.merge(oldData, data);
-    } else {
-      ipldBlock = new IPLDBlock();
-
-      // Fetch the parent IPLDBlock.
-      const parentIPLDBlock = await this.getLatestIPLDBlock(contractAddress, null, block.blockNumber);
-
-      // Setting the meta-data for an IPLDBlock (done only once per block).
-      data.meta = {
-        id: contractAddress,
-        kind,
-        parent: {
-          '/': parentIPLDBlock ? parentIPLDBlock.cid : null
-        },
-        ethBlock: {
-          cid: {
-            '/': block.cid
-          },
-          num: block.blockNumber
-        }
-      };
-    }
-
-    // Encoding the data using dag-cbor codec.
-    const bytes = codec.encode(data);
-
-    // Calculating sha256 (multi)hash of the encoded data.
-    const hash = await sha256.digest(bytes);
-
-    // Calculating the CID: v1, code: dag-cbor, hash.
-    const cid = CID.create(1, codec.code, hash);
-
-    // Update ipldBlock with new data.
-    ipldBlock = Object.assign(ipldBlock, {
-      block,
-      contractAddress,
-      cid: cid.toString(),
-      kind: data.meta.kind,
-      data: Buffer.from(bytes)
-    });
-
-    return ipldBlock;
   }
 
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {

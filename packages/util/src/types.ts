@@ -96,3 +96,19 @@ export interface DatabaseInterface {
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContract?: (address: string) => Promise<ContractInterface | undefined>
 }
+
+export interface IPLDBlockInterface {
+  id: number;
+  block: BlockProgressInterface;
+  contractAddress: string;
+  cid: string;
+  kind: string;
+  data: Buffer;
+}
+
+export interface IPLDDatabaseInterface extends DatabaseInterface {
+  getContracts (where: FindConditions<ContractInterface>): Promise<ContractInterface[]>;
+  getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
+  getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
+  getNewIPLDBlock (): IPLDBlockInterface
+}
