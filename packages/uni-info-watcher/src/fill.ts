@@ -102,3 +102,8 @@ main().catch(err => {
 }).finally(() => {
   process.exit();
 });
+
+process.on('SIGINT', () => {
+  log(`Exiting process ${process.pid} with code 0`);
+  process.exit(0);
+});

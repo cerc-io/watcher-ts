@@ -151,3 +151,8 @@ main().then(() => {
 process.on('uncaughtException', err => {
   log('uncaughtException', err);
 });
+
+process.on('SIGINT', () => {
+  log(`Exiting process ${process.pid} with code 0`);
+  process.exit(0);
+});

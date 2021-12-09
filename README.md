@@ -4,7 +4,7 @@
 
 This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
 
-Install packages (Node.JS v15.11.0):
+Install packages (Node.JS v16.13.1):
 
 ```bash
 yarn
