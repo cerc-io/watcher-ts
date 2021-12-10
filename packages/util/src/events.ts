@@ -5,12 +5,13 @@
 import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
+import { Not } from 'typeorm';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX } from './constants';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { UpstreamConfig } from './config';
 
@@ -99,23 +100,30 @@ export class EventWatcher {
     }
   }
 
-  async eventProcessingCompleteHandler (job: any): Promise<EventInterface> {
-    const { data: { request } } = job;
+  async eventProcessingCompleteHandler (job: any): Promise<EventInterface[]> {
+    const { data: { request: { data: { blockHash } } } } = job;
+    assert(blockHash);
 
-    const dbEvent = await this._indexer.getEvent(request.data.id);
-    assert(dbEvent);
+    const blockProgress = await this._indexer.getBlockProgress(blockHash);
+    assert(blockProgress);
 
-    const blockProgress = await this._indexer.getBlockProgress(dbEvent.block.blockHash);
+    await this.publishBlockProgressToSubscribers(blockProgress);
 
-    if (blockProgress) {
-      await this.publishBlockProgressToSubscribers(blockProgress);
-
-      if (blockProgress.isComplete) {
-        await this._indexer.removeUnknownEvents(blockProgress);
-      }
+    if (blockProgress.isComplete) {
+      await this._indexer.removeUnknownEvents(blockProgress);
     }
 
-    return dbEvent;
+    return this._indexer.getBlockEvents(
+      blockProgress.blockHash,
+      {
+        where: {
+          eventName: Not(UNKNOWN_EVENT_NAME)
+        },
+        order: {
+          index: 'ASC'
+        }
+      }
+    );
   }
 
   async publishBlockProgressToSubscribers (blockProgress: BlockProgressInterface): Promise<void> {

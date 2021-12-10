@@ -30,3 +30,4 @@
   dbConnectionString = "postgres://postgres:postgres@localhost/erc20-watcher-job-queue"
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
+  eventsInBatch = 50

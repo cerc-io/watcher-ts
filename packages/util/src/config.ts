@@ -21,6 +21,7 @@ export interface JobQueueConfig {
   dbConnectionString: string;
   maxCompletionLagInSecs: number;
   jobDelayInMilliSecs?: number;
+  eventsInBatch: number;
 }
 
 interface ServerConfig {

@@ -4,13 +4,16 @@
 
 import assert from 'assert';
 import debug from 'debug';
+import { MoreThanOrEqual } from 'typeorm';
+
+import { JobQueueConfig } from './config';
+import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENTS, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, UNKNOWN_EVENT_NAME } from './constants';
+import { JobQueue } from './job-queue';
+import { EventInterface, IndexerInterface, SyncStatusInterface, BlockProgressInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 
-import { JobQueueConfig } from './config';
-import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENT, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
-import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
+const DEFAULT_EVENTS_IN_BATCH = 50;
 
 const log = debug('vulcanize:job-runner');
 
@@ -18,6 +21,7 @@ export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
+  _blockInProcess?: BlockProgressInterface
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._jobQueueConfig = jobQueueConfig;
@@ -44,22 +48,28 @@ export class JobRunner {
         log(`Invalid Job kind ${kind} in QUEUE_BLOCK_PROCESSING.`);
         break;
     }
+
+    await this._jobQueue.markComplete(job);
   }
 
   async processEvent (job: any): Promise<EventInterface | void> {
     const { data: { kind } } = job;
 
     switch (kind) {
-      case JOB_KIND_EVENT:
-        return this._processEvent(job);
+      case JOB_KIND_EVENTS:
+        await this._processEvents(job);
+        break;
 
       case JOB_KIND_CONTRACT:
-        return this._updateWatchedContracts(job);
+        await this._updateWatchedContracts(job);
+        break;
 
       default:
         log(`Invalid Job kind ${kind} in QUEUE_EVENT_PROCESSING.`);
         break;
     }
+
+    await this._jobQueue.markComplete(job);
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
@@ -165,32 +175,81 @@ export class JobRunner {
       await wait(jobDelayInMilliSecs);
       const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
-      for (let ei = 0; ei < events.length; ei++) {
-        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENT, id: events[ei].id, publish: true });
+      if (events.length) {
+        const block = events[0].block;
+
+        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: block.blockHash, publish: true });
       }
     }
   }
 
-  async _processEvent (job: any): Promise<EventInterface> {
-    const { data: { id } } = job;
+  async _processEvents (job: any): Promise<void> {
+    const { blockHash } = job.data;
 
-    log(`Processing event ${id}`);
+    let block = await this._indexer.getBlockProgress(blockHash);
+    assert(block);
 
-    const event = await this._indexer.getEvent(id);
-    assert(event);
-    const eventIndex = event.index;
+    while (!block.isComplete) {
+      // Fetch events in batches
+      const events: EventInterface[] = await this._indexer.getBlockEvents(
+        blockHash,
+        {
+          take: this._jobQueueConfig.eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
+          where: {
+            index: MoreThanOrEqual(block.lastProcessedEventIndex + 1)
+          },
+          order: {
+            index: 'ASC'
+          }
+        }
+      );
 
-    // Check if previous event in block has been processed exactly before this and abort if not.
-    if (eventIndex > 0) { // Skip the first event in the block.
-      const prevIndex = eventIndex - 1;
+      for (let event of events) {
+        // Process events in loop
 
-      if (prevIndex !== event.block.lastProcessedEventIndex) {
-        throw new Error(`Events received out of order for block number ${event.block.blockNumber} hash ${event.block.blockHash},` +
-        ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${event.block.lastProcessedEventIndex}, aborting`);
+        const eventIndex = event.index;
+        log(`Processing event ${event.id} index ${eventIndex}`);
+
+        // Check if previous event in block has been processed exactly before this and abort if not.
+        if (eventIndex > 0) { // Skip the first event in the block.
+          const prevIndex = eventIndex - 1;
+
+          if (prevIndex !== block.lastProcessedEventIndex) {
+            throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash},` +
+            ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
+          }
+        }
+
+        let watchedContract;
+
+        if (!this._indexer.isWatchedContract) {
+          // uni-info-watcher indexer doesn't have watched contracts implementation.
+          watchedContract = true;
+        } else {
+          watchedContract = await this._indexer.isWatchedContract(event.contract);
+        }
+
+        if (watchedContract) {
+          // We might not have parsed this event yet. This can happen if the contract was added
+          // as a result of a previous event in the same block.
+          if (event.eventName === UNKNOWN_EVENT_NAME) {
+            const logObj = JSON.parse(event.extraInfo);
+
+            assert(this._indexer.parseEventNameAndArgs);
+            assert(typeof watchedContract !== 'boolean');
+            const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
+
+            event.eventName = eventName;
+            event.eventInfo = JSON.stringify(eventInfo);
+            event = await this._indexer.saveEventEntity(event);
+          }
+
+          await this._indexer.processEvent(event);
+        }
+
+        block = await this._indexer.updateBlockProgress(block, event.index);
       }
     }
-
-    return event;
   }
 
   async _updateWatchedContracts (job: any): Promise<void> {

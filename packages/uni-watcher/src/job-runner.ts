@@ -23,7 +23,6 @@ import {
 
 import { Indexer } from './indexer';
 import { Database } from './database';
-import { UNKNOWN_EVENT_NAME } from './entity/Event';
 
 const log = debug('vulcanize:job-runner');
 
@@ -48,40 +47,12 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
-
-      await this._jobQueue.markComplete(job);
     });
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      // TODO: Support two kind of jobs on the event processing queue.
-      // 1) processEvent  => Current single event
-      // 2) processEvents => Event range (multiple events)
-      let event = await this._baseJobRunner.processEvent(job);
-
-      if (!event) {
-        return;
-      }
-
-      const watchedContract = await this._indexer.isWatchedContract(event.contract);
-
-      if (watchedContract) {
-        // We might not have parsed this event yet. This can happen if the contract was added
-        // as a result of a previous event in the same block.
-        if (event.eventName === UNKNOWN_EVENT_NAME) {
-          const logObj = JSON.parse(event.extraInfo);
-          const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
-          event.eventName = eventName;
-          event.eventInfo = JSON.stringify(eventInfo);
-          event = await this._indexer.saveEventEntity(event);
-        }
-
-        await this._indexer.processEvent(event);
-      }
-
-      await this._indexer.updateBlockProgress(event.block, event.index);
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processEvent(job);
     });
   }
 }

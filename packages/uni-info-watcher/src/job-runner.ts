@@ -49,26 +49,12 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
-
-      await this._jobQueue.markComplete(job);
     });
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      const event = await this._baseJobRunner.processEvent(job);
-
-      if (!event) {
-        return;
-      }
-
-      // Check if event is processed.
-      if (!event.block.isComplete && event.index !== event.block.lastProcessedEventIndex) {
-        await this._indexer.processEvent(event);
-      }
-
-      await this._indexer.updateBlockProgress(event.block, event.index);
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processEvent(job);
     });
   }
 }

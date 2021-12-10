@@ -153,7 +153,7 @@ export class Database {
       .getMany();
   }
 
-  async updateBlockProgress (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface> {
     if (!block.isComplete) {
       if (lastProcessedEventIndex <= block.lastProcessedEventIndex) {
         throw new Error(`Events processed out of order ${block.blockHash}, was ${block.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
@@ -165,9 +165,18 @@ export class Database {
         block.isComplete = true;
       }
 
-      const { id, ...blockData } = block;
-      await repo.update(id, blockData);
+      const { generatedMaps } = await repo.createQueryBuilder()
+        .update(block)
+        .set(block)
+        .where('id = :id', { id: block.id })
+        .whereEntity(block)
+        .returning('*')
+        .execute();
+
+      block = generatedMaps[0] as BlockProgressInterface;
     }
+
+    return block;
   }
 
   async markBlocksAsPruned (repo: Repository<BlockProgressInterface>, blocks: BlockProgressInterface[]): Promise<void> {
@@ -180,19 +189,26 @@ export class Database {
     return repo.findOne(id, { relations: ['block'] });
   }
 
-  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string, where: FindConditions<EventInterface> = {}): Promise<EventInterface[]> {
-    where.block = {
-      ...where.block,
-      blockHash
+  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string, options: FindManyOptions<EventInterface> = {}): Promise<EventInterface[]> {
+    if (!Array.isArray(options.where)) {
+      options.where = [options.where || {}];
+    }
+
+    options.where.forEach((where: FindConditions<EventInterface> = {}) => {
+      where.block = {
+        ...where.block,
+        blockHash
+      };
+    });
+
+    options.relations = ['block'];
+
+    options.order = {
+      ...options.order,
+      id: 'ASC'
     };
 
-    return repo.find({
-      where,
-      relations: ['block'],
-      order: {
-        id: 'ASC'
-      }
-    });
+    return repo.find(options);
   }
 
   async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void> {

@@ -78,10 +78,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.saveEventEntity(repo, entity);
   }
 
-  async getBlockEvents (blockHash: string, where: FindConditions<Event>): Promise<Event[]> {
+  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Event[]> {
     const repo = this._conn.getRepository(Event);
 
-    return this._baseDatabase.getBlockEvents(repo, blockHash, where);
+    return this._baseDatabase.getBlockEvents(repo, blockHash, options);
   }
 
   async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
@@ -138,7 +138,7 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlockProgress(repo, blockHash);
   }
 
-  async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
     return this._baseDatabase.updateBlockProgress(repo, block, lastProcessedEventIndex);

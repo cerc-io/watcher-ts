@@ -5,7 +5,7 @@
 import assert from 'assert';
 import debug from 'debug';
 import { JsonFragment } from '@ethersproject/abi';
-import { DeepPartial } from 'typeorm';
+import { DeepPartial, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
@@ -352,8 +352,8 @@ export class Indexer {
     return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
-  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
-    return this._baseIndexer.getBlockEvents(blockHash);
+  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Array<Event>> {
+    return this._baseIndexer.getBlockEvents(blockHash, options);
   }
 
   async removeUnknownEvents (block: BlockProgress): Promise<void> {
@@ -364,7 +364,7 @@ export class Indexer {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 

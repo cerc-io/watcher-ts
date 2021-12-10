@@ -84,16 +84,22 @@ export class EventWatcher {
         return;
       }
 
-      const dbEvent = await this._baseEventWatcher.eventProcessingCompleteHandler(job);
-
+      const dbEvents = await this._baseEventWatcher.eventProcessingCompleteHandler(job);
       const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
-      log(`Job onComplete event ${request.data.id} publish ${!!request.data.publish}`);
-      if (!failed && state === 'completed' && request.data.publish) {
-        // Check for max acceptable lag time between request and sending results to live subscribers.
-        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
-          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
-        } else {
-          log(`event ${request.data.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+
+      // Cannot publish individual event as they are processed together in a single job.
+      // TODO: Use a different pubsub to publish event from job-runner.
+      // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+      for (const dbEvent of dbEvents) {
+        log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
+
+        if (!failed && state === 'completed' && request.data.publish) {
+          // Check for max acceptable lag time between request and sending results to live subscribers.
+          if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+            await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+          } else {
+            log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+          }
         }
       }
     });

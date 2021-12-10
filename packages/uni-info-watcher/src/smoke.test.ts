@@ -768,19 +768,15 @@ describe('uni-info-watcher', () => {
         fee
       });
 
-      eventType = 'MintEvent';
-      await Promise.all([
-        transaction,
-        watchEvent(uniClient, eventType)
+      [eventValue] = await Promise.all([
+        // Wait for TransferEvent and get eventValue.
+        watchEvent(uniClient, 'TransferEvent'),
+        // Wait for MintEvent.
+        watchEvent(uniClient, 'MintEvent'),
+        // Wait for IncreaseLiquidityEvent.
+        watchEvent(uniClient, 'IncreaseLiquidityEvent'),
+        transaction
       ]);
-
-      // Wait for TransferEvent.
-      eventType = 'TransferEvent';
-      eventValue = await watchEvent(uniClient, eventType);
-
-      // Wait for IncreaseLiquidityEvent.
-      eventType = 'IncreaseLiquidityEvent';
-      await watchEvent(uniClient, eventType);
 
       // Sleeping for 15 sec for the events to be processed.
       await wait(15000);
@@ -831,7 +827,6 @@ describe('uni-info-watcher', () => {
 
     let oldPosition: any;
     let eventValue: any;
-    let eventType: string;
 
     const tokenId = 1;
     const amount0Desired = 15;
@@ -856,15 +851,13 @@ describe('uni-info-watcher', () => {
         deadline
       });
 
-      eventType = 'MintEvent';
-      await Promise.all([
-        transaction,
-        watchEvent(uniClient, eventType)
+      [eventValue] = await Promise.all([
+        // Wait for IncreaseLiquidityEvent and get eventValue.
+        watchEvent(uniClient, 'IncreaseLiquidityEvent'),
+        // Wait for MintEvent.
+        watchEvent(uniClient, 'MintEvent'),
+        transaction
       ]);
-
-      // Wait for IncreaseLiquidityEvent.
-      eventType = 'IncreaseLiquidityEvent';
-      eventValue = await watchEvent(uniClient, eventType);
 
       // Sleeping for 15 sec for the events to be processed.
       await wait(15000);
@@ -906,7 +899,6 @@ describe('uni-info-watcher', () => {
 
     let oldPosition: any;
     let eventValue: any;
-    let eventType: string;
 
     const tokenId = 1;
     const liquidity = 5;
@@ -929,15 +921,13 @@ describe('uni-info-watcher', () => {
         deadline
       });
 
-      eventType = 'BurnEvent';
-      await Promise.all([
-        transaction,
-        watchEvent(uniClient, eventType)
+      [eventValue] = await Promise.all([
+        // Wait for DecreaseLiquidityEvent and get eventValue.
+        watchEvent(uniClient, 'DecreaseLiquidityEvent'),
+        // Wait for BurnEvent
+        watchEvent(uniClient, 'BurnEvent'),
+        transaction
       ]);
-
-      // Wait for DecreaseLiquidityEvent.
-      eventType = 'DecreaseLiquidityEvent';
-      eventValue = await watchEvent(uniClient, eventType);
 
       // Sleeping for 15 sec for the events to be processed.
       await wait(15000);
@@ -978,8 +968,6 @@ describe('uni-info-watcher', () => {
     // Checked entities: Transaction.
     // Unchecked entities: Position.
 
-    let eventType: string;
-
     const tokenId = 1;
     const amount0Max = 15;
     const amount1Max = 15;
@@ -993,15 +981,13 @@ describe('uni-info-watcher', () => {
         amount1Max
       });
 
-      eventType = 'BurnEvent';
       await Promise.all([
         transaction,
-        watchEvent(uniClient, eventType)
+        // Wait for BurnEvent.
+        watchEvent(uniClient, 'BurnEvent'),
+        // Wait for CollectEvent.
+        watchEvent(uniClient, 'CollectEvent')
       ]);
-
-      // Wait for CollectEvent.
-      eventType = 'CollectEvent';
-      await watchEvent(uniClient, eventType);
 
       // Sleeping for 10 sec for the events to be processed.
       await wait(10000);

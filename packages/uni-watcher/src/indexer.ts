@@ -3,7 +3,7 @@
 //
 
 import debug from 'debug';
-import { DeepPartial, QueryRunner } from 'typeorm';
+import { DeepPartial, FindManyOptions, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import assert from 'assert';
@@ -372,8 +372,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
-  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
-    return this._baseIndexer.getBlockEvents(blockHash);
+  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Array<Event>> {
+    return this._baseIndexer.getBlockEvents(blockHash, options);
   }
 
   async removeUnknownEvents (block: BlockProgress): Promise<void> {
@@ -416,7 +416,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
@@ -426,19 +426,24 @@ export class Indexer implements IndexerInterface {
 
   async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<void> {
     assert(blockHash);
-    let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          {
-            ethTransactionCidsByHeaderId: {
-              nodes: transactions
+    const logsPromise = this._ethClient.getLogs({ blockHash });
+    const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
+
+    let [
+      { block, logs },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
             }
-          }
-        ]
+          ]
+        }
       }
-    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+    ] = await Promise.all([logsPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

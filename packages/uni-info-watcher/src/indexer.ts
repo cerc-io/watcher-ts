@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { DeepPartial, QueryRunner } from 'typeorm';
+import { DeepPartial, FindManyOptions, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { providers, utils, BigNumber } from 'ethers';
 
@@ -197,6 +197,10 @@ export class Indexer implements IndexerInterface {
     };
   }
 
+  async saveEventEntity (dbEvent: Event): Promise<Event> {
+    return this._baseIndexer.saveEventEntity(dbEvent);
+  }
+
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
@@ -306,8 +310,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
-  async getBlockEvents (blockHash: string): Promise<Array<Event>> {
-    return this._baseIndexer.getBlockEvents(blockHash);
+  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Array<Event>> {
+    return this._baseIndexer.getBlockEvents(blockHash, options);
   }
 
   async removeUnknownEvents (block: BlockProgress): Promise<void> {
@@ -346,7 +350,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<void> {
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 

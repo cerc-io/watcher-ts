@@ -60,22 +60,17 @@ export class JobQueue {
     return await this._boss.subscribe(
       queue,
       {
-        includeMetadata: true,
-        batchSize: JOBS_PER_INTERVAL
+        teamSize: JOBS_PER_INTERVAL,
+        teamConcurrency: 1
       },
-      async (jobs: any) => {
-        // TODO: Debug jobs not fetched in order from database and use teamSize instead of batchSize.
-        jobs = jobs.sort((a: any, b: any) => a.createdon - b.createdon);
-
-        for (const job of jobs) {
-          try {
-            log(`Processing queue ${queue} job ${job.id}...`);
-            await callback(job);
-          } catch (error) {
-            log(`Error in queue ${queue} job ${job.id}`);
-            log(error);
-            throw error;
-          }
+      async (job: any) => {
+        try {
+          log(`Processing queue ${queue} job ${job.id}...`);
+          await callback(job);
+        } catch (error) {
+          log(`Error in queue ${queue} job ${job.id}`);
+          log(error);
+          throw error;
         }
       }
     );
@@ -97,7 +92,7 @@ export class JobQueue {
     assert(this._boss);
 
     const jobId = await this._boss.publish(queue, job, options);
-    log(`Created job in queue ${queue}: ${jobId} data: ${job.id}`);
+    log(`Created job in queue ${queue}: ${jobId}`);
   }
 
   async deleteAllJobs (): Promise<void> {
