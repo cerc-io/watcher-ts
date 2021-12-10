@@ -6,7 +6,7 @@ import { FindConditions, MoreThan, Repository } from 'typeorm';
 
 import { IPLDBlockInterface, ContractInterface, HookStatusInterface } from './types';
 import { Database } from './database';
-import { MAX_REORG_DEPTH } from './constants';
+import { MAX_REORG_DEPTH, STATE_KIND_DIFF_STAGED, STATE_KIND_DIFF } from './constants';
 
 export class IPLDDatabase extends Database {
   async getContracts (repo: Repository<ContractInterface>, where: FindConditions<ContractInterface>): Promise<ContractInterface[]> {
@@ -28,7 +28,7 @@ export class IPLDDatabase extends Database {
     // Filter using kind if specified else order by id to give preference to checkpoint.
     queryBuilder = kind
       ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: 'diff_staged' })
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: STATE_KIND_DIFF_STAGED })
         .addOrderBy('ipld_block.id', 'DESC');
 
     return queryBuilder.getOne();
@@ -120,7 +120,7 @@ export class IPLDDatabase extends Database {
       relations: ['block'],
       where: {
         contractAddress,
-        kind: 'diff',
+        kind: STATE_KIND_DIFF,
         block: {
           isPruned: false,
           blockNumber: MoreThan(blockNumber)

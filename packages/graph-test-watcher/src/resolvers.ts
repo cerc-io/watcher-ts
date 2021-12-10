@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight } from '@vulcanize/util';
+import { ValueResult, BlockHeight, STATE_KIND_DIFF } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -121,7 +121,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
       },
 
-      getState: async (_: any, { blockHash, contractAddress, kind = 'diff' }: { blockHash: string, contractAddress: string, kind: string }) => {
+      getState: async (_: any, { blockHash, contractAddress, kind = STATE_KIND_DIFF }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
 
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
