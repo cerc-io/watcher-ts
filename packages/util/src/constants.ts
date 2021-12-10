@@ -23,3 +23,8 @@ export const UNKNOWN_EVENT_NAME = '__unknown__';
 
 export const KIND_ACTIVE = 'active';
 export const KIND_LAZY = 'lazy';
+
+export const STATE_KIND_INIT = 'init';
+export const STATE_KIND_DIFF_STAGED = 'diff_staged';
+export const STATE_KIND_DIFF = 'diff';
+export const STATE_KIND_CHECKPOINT = 'checkpoint';

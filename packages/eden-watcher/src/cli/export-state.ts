@@ -9,7 +9,7 @@ import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, STATE_KIND_CHECKPOINT } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
@@ -93,7 +93,7 @@ const main = async (): Promise<void> => {
     if (contract.checkpoint) {
       await indexer.createCheckpoint(contract.address, block.blockHash);
 
-      const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, 'checkpoint', block.blockNumber);
+      const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, STATE_KIND_CHECKPOINT, block.blockNumber);
       assert(ipldBlock);
 
       const data = indexer.getIPLDData(ipldBlock);
