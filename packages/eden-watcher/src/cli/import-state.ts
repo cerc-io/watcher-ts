@@ -110,8 +110,9 @@ export const main = async (): Promise<any> => {
     await db.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
-  // The staged IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
-  await indexer.removeStagedIPLDBlocks(block.blockNumber);
+  // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
+  await indexer.removeIPLDBlocks(block.blockNumber, 'diff_staged');
+  await indexer.removeIPLDBlocks(block.blockNumber, 'init');
 };
 
 main().catch(err => {
