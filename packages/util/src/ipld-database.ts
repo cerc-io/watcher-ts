@@ -85,6 +85,7 @@ export class IPLDDatabase extends Database {
       : queryResult.find((obj: any) => obj.id);
 
     let result: IPLDBlockInterface | undefined;
+
     if (latestRequiredResult) {
       result = await repo.findOne(latestRequiredResult.id, { relations: ['block'] });
     } else {

@@ -68,23 +68,14 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.getDiffIPLDBlocksByBlocknumber(repo, contractAddress, blockNumber);
   }
 
-  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
-    const dbTx = await this.createTransactionRunner();
+  async saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlock): Promise<IPLDBlock> {
     const repo = dbTx.manager.getRepository(IPLDBlock);
 
-    let res;
+    return this._baseDatabase.saveOrUpdateIPLDBlock(repo, ipldBlock);
+  }
 
-    try {
-      res = await this._baseDatabase.saveOrUpdateIPLDBlock(repo, ipldBlock);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+  async removeIPLDBlocks (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
+    await this._baseDatabase.removeEntities(dbTx, IPLDBlock, { relations: ['block'], where: { block: { blockNumber }, kind } });
   }
 
   async getHookStatus (): Promise<HookStatus | undefined> {

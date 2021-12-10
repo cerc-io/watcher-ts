@@ -15,31 +15,43 @@ import {
   IPLDDatabaseInterface,
   IndexerInterface,
   BlockProgressInterface,
-  IPFSClientInterface,
   IPLDBlockInterface,
   HookStatusInterface
 } from './types';
 import { Indexer } from './indexer';
 import { ServerConfig } from './config';
+import { IPFSClient } from './ipfs';
 
 export class IPLDIndexer extends Indexer {
+  _serverConfig: ServerConfig;
   _ipldDb: IPLDDatabaseInterface;
+  _ipfsClient: IPFSClient;
 
-  constructor (ipldDb: IPLDDatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider) {
+  constructor (
+    serverConfig: ServerConfig,
+    ipldDb: IPLDDatabaseInterface,
+    ethClient: EthClient,
+    postgraphileClient: EthClient,
+    ethProvider: ethers.providers.BaseProvider,
+    ipfsClient: IPFSClient
+  ) {
     super(ipldDb, ethClient, postgraphileClient, ethProvider);
+
+    this._serverConfig = serverConfig;
     this._ipldDb = ipldDb;
+    this._ipfsClient = ipfsClient;
   }
 
   getIPLDData (ipldBlock: IPLDBlockInterface): any {
     return codec.decode(Buffer.from(ipldBlock.data));
   }
 
-  async pushToIPFS (ipfsClient: IPFSClientInterface, data: any): Promise<void> {
-    await ipfsClient.push(data);
+  async pushToIPFS (data: any): Promise<void> {
+    await this._ipfsClient.push(data);
   }
 
-  isIPFSConfigured (serverConfig: ServerConfig): boolean {
-    const ipfsAddr = serverConfig.ipfsApiAddr;
+  isIPFSConfigured (): boolean {
+    const ipfsAddr = this._serverConfig.ipfsApiAddr;
 
     // Return false if ipfsAddr is undefined | null | empty string.
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
@@ -72,8 +84,7 @@ export class IPLDIndexer extends Indexer {
     assert(checkpointBlockHash);
 
     // Push checkpoint to IPFS if configured.
-    assert(indexer.getServerConfig);
-    if (this.isIPFSConfigured(indexer.getServerConfig())) {
+    if (this.isIPFSConfigured()) {
       const block = await this.getBlockProgress(checkpointBlockHash);
       const checkpointIPLDBlocks = await this._ipldDb.getIPLDBlocks({ block, contractAddress, kind: 'checkpoint' });
 
@@ -82,9 +93,7 @@ export class IPLDIndexer extends Indexer {
       const checkpointIPLDBlock = checkpointIPLDBlocks[0];
 
       const checkpointData = this.getIPLDData(checkpointIPLDBlock);
-
-      assert(indexer.getIPFSClient);
-      await this.pushToIPFS(indexer.getIPFSClient(), checkpointData);
+      await this.pushToIPFS(checkpointData);
     }
 
     return checkpointBlockHash;
@@ -117,15 +126,12 @@ export class IPLDIndexer extends Indexer {
         assert(block);
 
         const ipldBlock = await this.prepareIPLDBlock(block, contract.address, stateData, 'init');
-        await this._ipldDb.saveOrUpdateIPLDBlock(ipldBlock);
+        await this.saveOrUpdateIPLDBlock(ipldBlock);
 
         // Push initial state to IPFS if configured.
-        assert(indexer.getServerConfig);
-        if (this.isIPFSConfigured(indexer.getServerConfig())) {
+        if (this.isIPFSConfigured()) {
           const ipldData = this.getIPLDData(ipldBlock);
-
-          assert(indexer.getIPFSClient);
-          await this.pushToIPFS(indexer.getIPFSClient(), ipldData);
+          await this.pushToIPFS(ipldData);
         }
       }
     }
@@ -137,10 +143,10 @@ export class IPLDIndexer extends Indexer {
 
     // Create a staged diff block.
     const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff_staged');
-    await this._ipldDb.saveOrUpdateIPLDBlock(ipldBlock);
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
-  async finalizeDiffStaged (indexer: IndexerInterface, blockHash: string): Promise<void> {
+  async finalizeDiffStaged (blockHash: string): Promise<void> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
@@ -154,8 +160,7 @@ export class IPLDIndexer extends Indexer {
     }
 
     // Remove all the staged diff blocks for current blockNumber.
-    assert(indexer.removeIPLDBlocks);
-    await indexer.removeIPLDBlocks(block.blockNumber, 'diff_staged');
+    await this.removeIPLDBlocks(block.blockNumber, 'diff_staged');
   }
 
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
@@ -176,7 +181,7 @@ export class IPLDIndexer extends Indexer {
     }
 
     const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff');
-    await this._ipldDb.saveOrUpdateIPLDBlock(ipldBlock);
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   async createCheckpoint (indexer: IndexerInterface, contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
@@ -200,7 +205,7 @@ export class IPLDIndexer extends Indexer {
     if (data) {
       // Create a checkpoint from the hook data without being concerned about diffs.
       const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
-      await this._ipldDb.saveOrUpdateIPLDBlock(ipldBlock);
+      await this.saveOrUpdateIPLDBlock(ipldBlock);
 
       return;
     }
@@ -260,7 +265,7 @@ export class IPLDIndexer extends Indexer {
     }
 
     const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
-    await this._ipldDb.saveOrUpdateIPLDBlock(ipldBlock);
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
 
     return currentBlock.blockHash;
   }
@@ -277,6 +282,7 @@ export class IPLDIndexer extends Indexer {
 
     // Update currentIPLDBlock of same kind if it exists.
     let ipldBlock;
+
     if (currentIPLDBlock) {
       ipldBlock = currentIPLDBlock;
 
@@ -340,5 +346,36 @@ export class IPLDIndexer extends Indexer {
     assert(ipldBlocks.length <= 1);
 
     return ipldBlocks[0];
+  }
+
+  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._ipldDb.saveOrUpdateIPLDBlock(dbTx, ipldBlock);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async removeIPLDBlocks (blockNumber: number, kind: string): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      await this._ipldDb.removeIPLDBlocks(dbTx, blockNumber, kind);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 }

@@ -107,7 +107,7 @@ export const main = async (): Promise<any> => {
 
     ipldBlock.data = Buffer.from(codec.encode(ipldBlock.data));
 
-    await db.saveOrUpdateIPLDBlock(ipldBlock);
+    await indexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.

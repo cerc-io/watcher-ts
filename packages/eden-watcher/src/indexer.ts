@@ -13,7 +13,15 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { EventInterface, IPLDIndexer as BaseIndexer, IndexerInterface, UNKNOWN_EVENT_NAME, ServerConfig, BlockHeight, IPFSClientInterface } from '@vulcanize/util';
+import {
+  EventInterface,
+  IPLDIndexer as BaseIndexer,
+  IndexerInterface,
+  UNKNOWN_EVENT_NAME,
+  ServerConfig,
+  BlockHeight,
+  IPFSClient
+} from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
@@ -27,7 +35,6 @@ import EdenNetworkArtifacts from './artifacts/EdenNetwork.json';
 import MerkleDistributorArtifacts from './artifacts/MerkleDistributor.json';
 import DistributorGovernanceArtifacts from './artifacts/DistributorGovernance.json';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
-import { IPFSClient } from './ipfs';
 import { ProducerSet } from './entity/ProducerSet';
 import { Producer } from './entity/Producer';
 import { RewardSchedule } from './entity/RewardSchedule';
@@ -143,7 +150,8 @@ export class Indexer implements IndexerInterface {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+    this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._postgraphileClient, this._ethProvider, this._ipfsClient);
     this._graphWatcher = graphWatcher;
 
     this._abiMap = new Map();
@@ -174,8 +182,6 @@ export class Indexer implements IndexerInterface {
     this._abiMap.set(KIND_DISTRIBUTORGOVERNANCE, DistributorGovernanceABI);
     this._storageLayoutMap.set(KIND_DISTRIBUTORGOVERNANCE, DistributorGovernanceStorageLayout);
     this._contractMap.set(KIND_DISTRIBUTORGOVERNANCE, new ethers.utils.Interface(DistributorGovernanceABI));
-
-    this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
 
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
@@ -239,37 +245,15 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  getIPFSClient (): IPFSClientInterface {
-    return this._ipfsClient;
-  }
-
-  getServerConfig (): ServerConfig {
-    return this._serverConfig;
-  }
-
   async pushToIPFS (data: any): Promise<void> {
-    await this._baseIndexer.pushToIPFS(this._ipfsClient, data);
-  }
-
-  async removeIPLDBlocks (blockNumber: number, kind: string): Promise<void> {
-    const dbTx = await this._db.createTransactionRunner();
-
-    try {
-      await this._db.removeEntities(dbTx, IPLDBlock, { relations: ['block'], where: { block: { blockNumber }, kind } });
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
+    await this._baseIndexer.pushToIPFS(data);
   }
 
   async processCanonicalBlock (job: any): Promise<void> {
     const { data: { blockHash } } = job;
 
     // Finalize staged diff blocks if any.
-    await this._baseIndexer.finalizeDiffStaged(this, blockHash);
+    await this._baseIndexer.finalizeDiffStaged(blockHash);
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
@@ -281,7 +265,7 @@ export class Indexer implements IndexerInterface {
     if (checkpointInterval <= 0) return;
 
     const { data: { blockHash } } = job;
-    this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
+    await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
   }
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
@@ -309,7 +293,7 @@ export class Indexer implements IndexerInterface {
   }
 
   isIPFSConfigured (): boolean {
-    return this._baseIndexer.isIPFSConfigured(this._serverConfig);
+    return this._baseIndexer.isIPFSConfigured();
   }
 
   async createInitialState (contractAddress: string, blockHash: string): Promise<any> {
@@ -317,11 +301,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+    await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
   }
 
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    this._baseIndexer.createDiff(contractAddress, blockHash, data);
+    await this._baseIndexer.createDiff(contractAddress, blockHash, data);
   }
 
   async createStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
@@ -330,6 +314,14 @@ export class Indexer implements IndexerInterface {
 
   async createCheckpoint (contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
     return this._baseIndexer.createCheckpoint(this, contractAddress, blockHash, data, checkpointInterval);
+  }
+
+  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
+    return this._baseIndexer.saveOrUpdateIPLDBlock(ipldBlock);
+  }
+
+  async removeIPLDBlocks (blockNumber: number, kind: string): Promise<void> {
+    await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
   async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
