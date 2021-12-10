@@ -30,6 +30,11 @@ export interface SyncStatusInterface {
   latestCanonicalBlockNumber: number;
 }
 
+export interface HookStatusInterface {
+  id: number;
+  latestProcessedBlockNumber: number
+}
+
 export interface EventInterface {
   id: number;
   block: BlockProgressInterface;
@@ -48,6 +53,15 @@ export interface ContractInterface {
   startingBlock: number;
   kind: string;
   checkpoint: boolean;
+}
+
+export interface IPLDBlockInterface {
+  id: number;
+  block: BlockProgressInterface;
+  contractAddress: string;
+  cid: string;
+  kind: string;
+  data: Buffer;
 }
 
 export interface IndexerInterface {
@@ -71,9 +85,11 @@ export interface IndexerInterface {
   parseEventNameAndArgs?: (kind: string, logObj: any) => any;
   isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
   cacheContract?: (contract: ContractInterface) => void;
-  createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
+  createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
+  createInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
+  createStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
 }
 
 export interface EventWatcherInterface {
@@ -106,4 +122,14 @@ export interface DatabaseInterface {
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContracts?: () => Promise<ContractInterface[]>
   saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
+}
+
+export interface IPLDDatabaseInterface extends DatabaseInterface {
+  getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
+  getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
+  getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlockInterface[]>
+  getNewIPLDBlock (): IPLDBlockInterface
+  removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void>
+  saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>
+  getHookStatus (): Promise<HookStatusInterface | undefined>
 }
