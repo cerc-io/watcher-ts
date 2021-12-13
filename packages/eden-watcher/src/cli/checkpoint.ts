@@ -61,6 +61,7 @@ const main = async (): Promise<void> => {
   await jobQueue.start();
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  await indexer.init();
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
