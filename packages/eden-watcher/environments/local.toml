@@ -40,3 +40,4 @@
   dbConnectionString = "postgres://postgres:postgres@localhost/eden-watcher-job-queue"
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
+  eventsInBatch = 50

@@ -131,6 +131,10 @@ export class Indexer implements IndexerInterface {
     this._populateRelationsMap();
   }
 
+  async init (): Promise<void> {
+    await this._baseIndexer.fetchContracts();
+  }
+
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
     const eventFields = JSONbig.parse(event.eventInfo);
@@ -572,19 +576,24 @@ export class Indexer implements IndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<void> {
     assert(blockHash);
-    let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          {
-            ethTransactionCidsByHeaderId: {
-              nodes: transactions
+    const logsPromise = this._ethClient.getLogs({ blockHash });
+    const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
+
+    let [
+      { block, logs },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
             }
-          }
-        ]
+          ]
+        }
       }
-    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+    ] = await Promise.all([logsPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

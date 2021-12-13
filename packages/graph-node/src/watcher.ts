@@ -98,12 +98,19 @@ export class GraphWatcher {
   }
 
   async addContracts () {
-    assert(this._indexer?.watchContract);
+    assert(this._indexer);
+    assert(this._indexer.watchContract);
+    assert(this._indexer.isWatchedContract);
 
-    // Watching the contract(s).
+    // Watching the contract(s) if not watched already.
     for (const dataSource of this._dataSources) {
       const { source: { address, startBlock }, name } = dataSource;
-      await this._indexer.watchContract(address, name, true, startBlock);
+
+      const watchedContract = await this._indexer.isWatchedContract(address);
+
+      if (!watchedContract) {
+        await this._indexer.watchContract(address, name, true, startBlock);
+      }
     }
   }
 

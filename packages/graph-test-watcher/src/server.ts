@@ -61,6 +61,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  await indexer.init();
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
