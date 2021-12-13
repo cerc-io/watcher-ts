@@ -6,7 +6,7 @@ import { Contract, ethers, Signer } from 'ethers';
 import assert from 'assert';
 
 import {
-  getConfig, getResetConfig, JobQueue
+  getConfig, initClients, JobQueue
 } from '@vulcanize/util';
 import {
   deployWETH9Token,
@@ -57,7 +57,7 @@ const main = async () => {
   assert(host, 'Missing host.');
   assert(port, 'Missing port.');
 
-  const { ethClient, postgraphileClient, ethProvider } = await getResetConfig(config);
+  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
 
   // Initialize uniClient.
   const endpoint = `http://${host}:${port}/graphql`;

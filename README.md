@@ -140,3 +140,10 @@ If the watcher uses a job queue, start the job runner in another terminal:
 ```bash
 yarn job-runner
 ```
+
+
+## Known Issues
+
+* When authenticating to github packages for the first time, yarn install throws Unauthorized error in [graph-watcher-ts](https://github.com/vulcanize/graph-watcher-ts) repo even after setup.
+
+  To overcome this we need to run yarn install in `packages/graph-node` directory of graph-watcher repo. After this yarn install for graph-watcher-ts works properly even from root of the repo.

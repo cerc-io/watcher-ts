@@ -425,6 +425,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 
+  cacheContract (contract: Contract): void {
+    return this._baseIndexer.cacheContract(contract);
+  }
+
   async saveEventEntity (dbEvent: Event): Promise<Event> {
     return this._baseIndexer.saveEventEntity(dbEvent);
   }
