@@ -75,7 +75,7 @@
   yarn server
   ```
 
-GQL console: http://localhost:3008/graphql
+GQL console: http://localhost:3012/graphql
 
 * If the watcher is an `active` watcher:
 
