@@ -4,14 +4,15 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { MoreThanOrEqual } from 'typeorm';
+import { In } from 'typeorm';
 
 import { JobQueueConfig } from './config';
 import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENTS, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, UNKNOWN_EVENT_NAME } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface, SyncStatusInterface, BlockProgressInterface } from './types';
+import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob } from './common';
+import { OrderDirection } from './database';
 
 const DEFAULT_EVENTS_IN_BATCH = 50;
 
@@ -21,7 +22,6 @@ export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
-  _blockInProcess?: BlockProgressInterface
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._jobQueueConfig = jobQueueConfig;
@@ -121,12 +121,21 @@ export class JobRunner {
       throw new Error(message);
     }
 
+    let [parentBlock, blockProgress] = await this._indexer.getBlockProgressEntities(
+      {
+        blockHash: In([parentHash, blockHash])
+      },
+      {
+        order: {
+          blockNumber: 'ASC'
+        }
+      }
+    );
+
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
     // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
     if (blockHash !== syncStatus.latestCanonicalBlockHash) {
-      const parent = await this._indexer.getBlockProgress(parentHash);
-
-      if (!parent) {
+      if (!parentBlock || parentBlock.blockHash !== parentHash) {
         const blocks = await this._indexer.getBlocks({ blockHash: parentHash });
 
         if (!blocks.length) {
@@ -156,9 +165,9 @@ export class JobRunner {
         throw new Error(message);
       }
 
-      if (!parent.isComplete) {
+      if (!parentBlock.isComplete) {
         // Parent block indexing needs to finish before this block can be indexed.
-        const message = `Indexing incomplete for parent block number ${parent.blockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash}, aborting`;
+        const message = `Indexing incomplete for parent block number ${parentBlock.blockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash}, aborting`;
         log(message);
 
         throw new Error(message);
@@ -166,19 +175,15 @@ export class JobRunner {
     }
 
     // Check if block is being already processed.
-    const blockProgress = await this._indexer.getBlockProgress(blockHash);
-
     if (!blockProgress) {
       const { jobDelayInMilliSecs = 0 } = this._jobQueueConfig;
 
       // Delay required to process block.
       await wait(jobDelayInMilliSecs);
-      const events = await this._indexer.getOrFetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+      blockProgress = await this._indexer.fetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
 
-      if (events.length) {
-        const block = events[0].block;
-
-        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: block.blockHash, publish: true });
+      if (blockProgress.numEvents) {
+        await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
       }
     }
   }
@@ -194,13 +199,14 @@ export class JobRunner {
       const events: EventInterface[] = await this._indexer.getBlockEvents(
         blockHash,
         {
-          take: this._jobQueueConfig.eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
-          where: {
-            index: MoreThanOrEqual(block.lastProcessedEventIndex + 1)
-          },
-          order: {
-            index: 'ASC'
-          }
+          index: [
+            { value: block.lastProcessedEventIndex + 1, operator: 'gte', not: false }
+          ]
+        },
+        {
+          limit: this._jobQueueConfig.eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
+          orderBy: 'index',
+          orderDirection: OrderDirection.asc
         }
       );
 

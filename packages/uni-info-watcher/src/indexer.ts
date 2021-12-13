@@ -4,14 +4,14 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { DeepPartial, FindManyOptions, QueryRunner } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { providers, utils, BigNumber } from 'ethers';
 
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal, JobQueue } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal, JobQueue, Where } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTickDayData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -306,12 +306,12 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async getOrFetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<Array<Event>> {
-    return this._baseIndexer.getOrFetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
+  async fetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    return this._baseIndexer.fetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
-  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Array<Event>> {
-    return this._baseIndexer.getBlockEvents(blockHash, options);
+  async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
+    return this._baseIndexer.getBlockEvents(blockHash, where, queryOptions);
   }
 
   async removeUnknownEvents (block: BlockProgress): Promise<void> {
@@ -346,6 +346,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlockProgress(blockHash);
   }
 
+  async getBlockProgressEntities (where: FindConditions<BlockProgress>, options: FindManyOptions<BlockProgress>): Promise<BlockProgress[]> {
+    return this._baseIndexer.getBlockProgressEntities(where, options);
+  }
+
   async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
@@ -354,7 +358,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
-  async _fetchAndSaveEvents (block: DeepPartial<BlockProgress>): Promise<void> {
+  async _fetchAndSaveEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(block.blockHash);
     const events = await this._uniClient.getEvents(block.blockHash);
     const dbEvents: Array<DeepPartial<Event>> = [];
@@ -385,8 +389,10 @@ export class Indexer implements IndexerInterface {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      await this._db.saveEvents(dbTx, block, dbEvents);
+      const blockProgress = await this._db.saveEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
+
+      return blockProgress;
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;

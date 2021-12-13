@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase } from '@vulcanize/util';
+import { Database as BaseDatabase, QueryOptions, Where } from '@vulcanize/util';
 
 import { Allowance } from './entity/Allowance';
 import { Balance } from './entity/Balance';
@@ -101,13 +101,13 @@ export class Database {
     return this._baseDatabase.saveEventEntity(repo, entity);
   }
 
-  async getBlockEvents (blockHash: string, options: FindManyOptions<Event>): Promise<Event[]> {
+  async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Event[]> {
     const repo = this._conn.getRepository(Event);
 
-    return this._baseDatabase.getBlockEvents(repo, blockHash, options);
+    return this._baseDatabase.getBlockEvents(repo, blockHash, where, queryOptions);
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<void> {
+  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
     const blockRepo = queryRunner.manager.getRepository(BlockProgress);
     const eventRepo = queryRunner.manager.getRepository(Event);
 
@@ -165,6 +165,12 @@ export class Database {
   async getBlockProgress (blockHash: string): Promise<BlockProgress | undefined> {
     const repo = this._conn.getRepository(BlockProgress);
     return this._baseDatabase.getBlockProgress(repo, blockHash);
+  }
+
+  async getBlockProgressEntities (where: FindConditions<BlockProgress>, options: FindManyOptions<BlockProgress>): Promise<BlockProgress[]> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getBlockProgressEntities(repo, where, options);
   }
 
   async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {

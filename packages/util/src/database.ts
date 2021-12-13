@@ -13,7 +13,8 @@ import {
   FindManyOptions,
   In,
   QueryRunner,
-  Repository
+  Repository,
+  SelectQueryBuilder
 } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
@@ -147,6 +148,12 @@ export class Database {
     return repo.findOne({ where: { blockHash } });
   }
 
+  async getBlockProgressEntities (repo: Repository<BlockProgressInterface>, where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]> {
+    options.where = where;
+
+    return repo.find(options);
+  }
+
   async getBlocksAtHeight (repo: Repository<BlockProgressInterface>, height: number, isPruned: boolean): Promise<BlockProgressInterface[]> {
     return repo.createQueryBuilder('block_progress')
       .where('block_number = :height AND is_pruned = :isPruned', { height, isPruned })
@@ -166,7 +173,7 @@ export class Database {
       }
 
       const { generatedMaps } = await repo.createQueryBuilder()
-        .update(block)
+        .update()
         .set(block)
         .where('id = :id', { id: block.id })
         .whereEntity(block)
@@ -189,29 +196,23 @@ export class Database {
     return repo.findOne(id, { relations: ['block'] });
   }
 
-  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string, options: FindManyOptions<EventInterface> = {}): Promise<EventInterface[]> {
-    if (!Array.isArray(options.where)) {
-      options.where = [options.where || {}];
-    }
+  async getBlockEvents (repo: Repository<EventInterface>, blockHash: string, where: Where = {}, queryOptions: QueryOptions = {}): Promise<EventInterface[]> {
+    let queryBuilder = repo.createQueryBuilder('event')
+      .innerJoinAndSelect('event.block', 'block')
+      .where('block.block_hash = :blockHash AND block.is_pruned = false', { blockHash });
 
-    options.where.forEach((where: FindConditions<EventInterface> = {}) => {
-      where.block = {
-        ...where.block,
-        blockHash
-      };
-    });
+    queryBuilder = this._buildQuery(repo, queryBuilder, where, queryOptions);
+    queryBuilder.addOrderBy('event.id', 'ASC');
 
-    options.relations = ['block'];
+    const { limit = DEFAULT_LIMIT, skip = DEFAULT_SKIP } = queryOptions;
 
-    options.order = {
-      ...options.order,
-      id: 'ASC'
-    };
+    queryBuilder = queryBuilder.offset(skip)
+      .limit(limit);
 
-    return repo.find(options);
+    return queryBuilder.getMany();
   }
 
-  async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<void> {
+  async saveEvents (blockRepo: Repository<BlockProgressInterface>, eventRepo: Repository<EventInterface>, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface> {
     const {
       blockHash,
       blockNumber,
@@ -229,29 +230,32 @@ export class Database {
     // (1) Save all the events in the database.
     // (2) Add an entry to the block progress table.
     const numEvents = events.length;
-    let blockProgress = await blockRepo.findOne({ where: { blockHash } });
 
-    if (!blockProgress) {
-      const entity = blockRepo.create({
-        blockHash,
-        parentHash,
-        blockNumber,
-        blockTimestamp,
-        numEvents,
-        numProcessedEvents: 0,
-        lastProcessedEventIndex: -1,
-        isComplete: (numEvents === 0)
-      });
+    const entity = blockRepo.create({
+      blockHash,
+      parentHash,
+      blockNumber,
+      blockTimestamp,
+      numEvents,
+      numProcessedEvents: 0,
+      lastProcessedEventIndex: -1,
+      isComplete: (numEvents === 0)
+    });
 
-      blockProgress = await blockRepo.save(entity);
+    const blockProgress = await blockRepo.save(entity);
 
-      // Bulk insert events.
-      events.forEach(event => {
-        event.block = blockProgress;
-      });
+    // Bulk insert events.
+    events.forEach(event => {
+      event.block = blockProgress;
+    });
 
-      await eventRepo.createQueryBuilder().insert().values(events).execute();
-    }
+    await eventRepo.createQueryBuilder()
+      .insert()
+      .values(events)
+      .updateEntity(false)
+      .execute();
+
+    return blockProgress;
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {
@@ -396,62 +400,12 @@ export class Database {
       selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(property, alias);
     });
 
-    Object.entries(where).forEach(([field, filters]) => {
-      filters.forEach((filter, index) => {
-        // Form the where clause.
-        let { not, operator, value } = filter;
-        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-        assert(columnMetadata);
-        let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+    selectQueryBuilder = this._buildQuery(repo, selectQueryBuilder, where, queryOptions);
 
-        if (not) {
-          if (operator === 'equals') {
-            whereClause += '!';
-          } else {
-            whereClause += 'NOT ';
-          }
-        }
-
-        whereClause += `${OPERATOR_MAP[operator]} `;
-
-        if (['contains', 'starts'].some(el => el === operator)) {
-          whereClause += '%:';
-        } else if (operator === 'in') {
-          whereClause += '(:...';
-        } else {
-          // Convert to string type value as bigint type throws error in query.
-          value = value.toString();
-
-          whereClause += ':';
-        }
-
-        const variableName = `${field}${index}`;
-        whereClause += variableName;
-
-        if (['contains', 'ends'].some(el => el === operator)) {
-          whereClause += '%';
-        } else if (operator === 'in') {
-          whereClause += ')';
-
-          if (!value.length) {
-            whereClause = 'FALSE';
-          }
-        }
-
-        selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
-      });
-    });
-
-    const { limit = DEFAULT_LIMIT, orderBy, orderDirection, skip = DEFAULT_SKIP } = queryOptions;
+    const { limit = DEFAULT_LIMIT, skip = DEFAULT_SKIP } = queryOptions;
 
     selectQueryBuilder = selectQueryBuilder.skip(skip)
       .take(limit);
-
-    if (orderBy) {
-      const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
-      assert(columnMetadata);
-      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${columnMetadata.propertyAliasName}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
-    }
 
     return selectQueryBuilder.getMany();
   }
@@ -585,5 +539,65 @@ export class Database {
     }
 
     return repo.save(entity);
+  }
+
+  _buildQuery<Entity> (repo: Repository<Entity>, selectQueryBuilder: SelectQueryBuilder<Entity>, where: Where = {}, queryOptions: QueryOptions = {}): SelectQueryBuilder<Entity> {
+    const { tableName } = repo.metadata;
+
+    Object.entries(where).forEach(([field, filters]) => {
+      filters.forEach((filter, index) => {
+        // Form the where clause.
+        let { not, operator, value } = filter;
+        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+        assert(columnMetadata);
+        let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+
+        if (not) {
+          if (operator === 'equals') {
+            whereClause += '!';
+          } else {
+            whereClause += 'NOT ';
+          }
+        }
+
+        whereClause += `${OPERATOR_MAP[operator]} `;
+
+        if (['contains', 'starts'].some(el => el === operator)) {
+          whereClause += '%:';
+        } else if (operator === 'in') {
+          whereClause += '(:...';
+        } else {
+          // Convert to string type value as bigint type throws error in query.
+          value = value.toString();
+
+          whereClause += ':';
+        }
+
+        const variableName = `${field}${index}`;
+        whereClause += variableName;
+
+        if (['contains', 'ends'].some(el => el === operator)) {
+          whereClause += '%';
+        } else if (operator === 'in') {
+          whereClause += ')';
+
+          if (!value.length) {
+            whereClause = 'FALSE';
+          }
+        }
+
+        selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
+      });
+    });
+
+    const { orderBy, orderDirection } = queryOptions;
+
+    if (orderBy) {
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
+      assert(columnMetadata);
+      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${columnMetadata.propertyAliasName}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
+    }
+
+    return selectQueryBuilder;
   }
 }
