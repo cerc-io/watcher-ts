@@ -76,8 +76,7 @@ export class IPLDIndexer extends Indexer {
 
   async processCheckpoint (indexer: IndexerInterface, blockHash: string, checkpointInterval: number): Promise<void> {
     // Get all the contracts.
-    assert(this._ipldDb.getContracts);
-    const contracts = await this._ipldDb.getContracts();
+    const contracts = Object.values(this._watchedContracts);
 
     // For each contract, merge the diff till now to create a checkpoint.
     for (const contract of contracts) {
@@ -114,8 +113,7 @@ export class IPLDIndexer extends Indexer {
     blockNumber: number
   ): Promise<void> {
     // Get all the contracts.
-    assert(this._ipldDb.getContracts);
-    const contracts = await this._ipldDb.getContracts();
+    const contracts = Object.values(this._watchedContracts);
 
     // Create an initial state for each contract.
     for (const contract of contracts) {
