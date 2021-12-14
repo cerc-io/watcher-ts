@@ -431,6 +431,7 @@ export class Indexer implements IndexerInterface {
   async _fetchAndSaveEvents ({ blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
 
+    console.time('time:indexer#_fetchAndSaveEvents-logs_txs');
     const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
 
@@ -448,6 +449,8 @@ export class Indexer implements IndexerInterface {
         }
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
+
+    console.timeEnd('time:indexer#_fetchAndSaveEvents-logs_txs');
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

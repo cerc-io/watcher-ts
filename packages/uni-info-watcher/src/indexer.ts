@@ -90,6 +90,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async processEvent (dbEvent: Event): Promise<void> {
+    console.time('time:indexer#processEvent-mapping_code');
     const resultEvent = this.getResultEvent(dbEvent);
 
     // TODO: Process proof (proof.data) in event.
@@ -148,6 +149,7 @@ export class Indexer implements IndexerInterface {
     }
 
     log('Event processing completed for', eventName);
+    console.timeEnd('time:indexer#processEvent-mapping_code');
   }
 
   async getBlockEntities (where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
@@ -360,7 +362,11 @@ export class Indexer implements IndexerInterface {
 
   async _fetchAndSaveEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(block.blockHash);
+
+    console.time('time:indexer#_fetchAndSaveEvents-uni_watcher');
     const events = await this._uniClient.getEvents(block.blockHash);
+    console.timeEnd('time:indexer#_fetchAndSaveEvents-uni_watcher');
+
     const dbEvents: Array<DeepPartial<Event>> = [];
 
     for (let i = 0; i < events.length; i++) {
@@ -501,10 +507,20 @@ export class Indexer implements IndexerInterface {
     const token = new Token();
     token.id = tokenAddress;
 
-    const { value: symbol } = await this._erc20Client.getSymbol(block.hash, tokenAddress);
-    const { value: name } = await this._erc20Client.getName(block.hash, tokenAddress);
-    const { value: totalSupply } = await this._erc20Client.getTotalSupply(block.hash, tokenAddress);
-    const { value: decimals } = await this._erc20Client.getDecimals(block.hash, tokenAddress);
+    console.time('time:indexer#_initToken-eth_call_for_token');
+    const symbolPromise = this._erc20Client.getSymbol(block.hash, tokenAddress);
+    const namePromise = this._erc20Client.getName(block.hash, tokenAddress);
+    const totalSupplyPromise = this._erc20Client.getTotalSupply(block.hash, tokenAddress);
+    const decimalsPromise = this._erc20Client.getDecimals(block.hash, tokenAddress);
+
+    const [
+      { value: symbol },
+      { value: name },
+      { value: totalSupply },
+      { value: decimals }
+    ] = await Promise.all([symbolPromise, namePromise, totalSupplyPromise, decimalsPromise]);
+
+    console.timeEnd('time:indexer#_initToken-eth_call_for_token');
 
     token.symbol = symbol;
     token.name = name;
@@ -1311,7 +1327,9 @@ export class Indexer implements IndexerInterface {
       let positionResult;
 
       try {
+        console.time('time:indexer#_getPosition-eth_call_for_positions');
         ({ value: positionResult } = await this._uniClient.positions(blockHash, contractAddress, tokenId));
+        console.timeEnd('time:indexer#_getPosition-eth_call_for_positions');
       } catch (error: any) {
         // The contract call reverts in situations where the position is minted and deleted in the same block.
         // From my investigation this happens in calls from BancorSwap.
@@ -1327,7 +1345,10 @@ export class Indexer implements IndexerInterface {
         // TODO: In subgraph factory is fetched by hardcoded factory address.
         // Currently fetching first factory in database as only one exists.
         const [factory] = await this._db.getModelEntitiesNoTx(Factory, { hash: blockHash }, {}, { limit: 1 });
+
+        console.time('time:indexer#_getPosition-eth_call_for_getPool');
         const { value: poolAddress } = await this._uniClient.callGetPool(blockHash, factory.id, positionResult.token0, positionResult.token1, positionResult.fee);
+        console.timeEnd('time:indexer#_getPosition-eth_call_for_getPool');
 
         position = new Position();
         position.id = tokenId.toString();
@@ -1362,7 +1383,9 @@ export class Indexer implements IndexerInterface {
 
   async _updateFeeVars (position: Position, block: Block, contractAddress: string, tokenId: bigint): Promise<Position> {
     try {
+      console.time('time:indexer#_updateFeeVars-eth_call_for_positions');
       const { value: positionResult } = await this._uniClient.positions(block.hash, contractAddress, tokenId);
+      console.timeEnd('time:indexer#_updateFeeVars-eth_call_for_positions');
 
       if (positionResult) {
         position.feeGrowthInside0LastX128 = BigInt(positionResult.feeGrowthInside0LastX128.toString());
