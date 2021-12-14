@@ -258,8 +258,12 @@ export class Indexer implements IndexerInterface {
   async processCanonicalBlock (job: any): Promise<void> {
     const { data: { blockHash } } = job;
 
+    console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
+
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
+
+    console.timeEnd('time:indexer#processCanonicalBlock-finalize_auto_diffs');
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
@@ -271,7 +275,12 @@ export class Indexer implements IndexerInterface {
     if (checkpointInterval <= 0) return;
 
     const { data: { blockHash } } = job;
+
+    console.time('time:indexer#processCheckpoint-checkpoint');
+
     await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
+
+    console.timeEnd('time:indexer#processCheckpoint-checkpoint');
   }
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
@@ -307,7 +316,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    console.time('time:indexer#createDiffStaged-auto_diff');
+
     await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+
+    console.timeEnd('time:indexer#createDiffStaged-auto_diff');
   }
 
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
@@ -341,8 +354,12 @@ export class Indexer implements IndexerInterface {
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
+    console.time('time:indexer#processEvent-mapping_code');
+
     // Call subgraph handler for event.
     await this._graphWatcher.handleEvent(resultEvent);
+
+    console.timeEnd('time:indexer#processEvent-mapping_code');
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
@@ -354,11 +371,19 @@ export class Indexer implements IndexerInterface {
   }
 
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
+    console.time('time:indexer#processBlock-init_state');
+
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
 
+    console.timeEnd('time:indexer#processBlock-init_state');
+
+    console.time('time:indexer#processBlock-mapping_code');
+
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
+
+    console.timeEnd('time:indexer#processBlock-mapping_code');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -1256,6 +1281,8 @@ export class Indexer implements IndexerInterface {
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
 
+    console.time('time:indexer#_fetchAndSaveEvents-logs_txs');
+
     const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
 
@@ -1273,6 +1300,8 @@ export class Indexer implements IndexerInterface {
         }
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
+
+    console.timeEnd('time:indexer#_fetchAndSaveEvents-logs_txs');
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

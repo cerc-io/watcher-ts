@@ -12,6 +12,8 @@ import { processBlockByNumber } from './common';
 
 const log = debug('vulcanize:fill');
 
+const DEFAULT_PREFETCH_BATCH_SIZE = 10;
+
 export const fillBlocks = async (
   jobQueue: JobQueue,
   indexer: IndexerInterface,
@@ -20,11 +22,11 @@ export const fillBlocks = async (
   argv: {
     startBlock: number,
     endBlock: number,
-    prefetch: boolean,
-    batchBlocks: number,
+    prefetch?: boolean,
+    batchBlocks?: number,
   }
 ): Promise<any> => {
-  let { startBlock, endBlock, prefetch, batchBlocks } = argv;
+  let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE } = argv;
   assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
   const syncStatus = await indexer.getSyncStatus();
 
@@ -137,4 +139,6 @@ const prefetchBlocks = async (
       process.exit(0);
     }
   }
+
+  console.timeEnd('time:fill#fillBlocks-process_blocks');
 };
