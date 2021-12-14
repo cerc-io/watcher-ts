@@ -204,7 +204,11 @@ export class JobRunner {
     let block = await this._indexer.getBlockProgress(blockHash);
     assert(block);
 
+    console.time('time:job-runner#_processEvents-events');
+
     while (!block.isComplete) {
+      console.time('time:job-runner#_processEvents-fetching_events_batch');
+
       // Fetch events in batches
       const events: EventInterface[] = await this._indexer.getBlockEvents(
         blockHash,
@@ -219,6 +223,10 @@ export class JobRunner {
           orderDirection: OrderDirection.asc
         }
       );
+
+      console.timeEnd('time:job-runner#_processEvents-fetching_events_batch');
+
+      console.time('time:job-runner#_processEvents-processing_events_batch');
 
       for (let event of events) {
         // Process events in loop
@@ -265,7 +273,11 @@ export class JobRunner {
 
         block = await this._indexer.updateBlockProgress(block, event.index);
       }
+
+      console.timeEnd('time:job-runner#_processEvents-processing_events_batch');
     }
+
+    console.timeEnd('time:job-runner#_processEvents-events');
   }
 
   async _updateWatchedContracts (job: any): Promise<void> {
