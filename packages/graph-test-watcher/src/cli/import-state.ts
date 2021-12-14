@@ -82,7 +82,6 @@ export const main = async (): Promise<any> => {
   await fillBlocks(
     jobQueue,
     indexer,
-    postgraphileClient,
     eventWatcher,
     config.upstream.ethServer.blockDelayInMilliSecs,
     {
