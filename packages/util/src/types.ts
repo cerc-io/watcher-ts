@@ -95,8 +95,8 @@ export interface IndexerInterface {
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
-  createInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
-  createStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
+  processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
+  processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
 }
 
 export interface EventWatcherInterface {

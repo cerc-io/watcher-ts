@@ -256,6 +256,16 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.pushToIPFS(data);
   }
 
+  async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
+    // Call initial state hook.
+    return createInitialState(this, contractAddress, blockHash);
+  }
+
+  async processStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
+    // Call checkpoint hook.
+    return createStateCheckpoint(this, contractAddress, blockHash);
+  }
+
   async processCanonicalBlock (job: any): Promise<void> {
     const { data: { blockHash } } = job;
 
@@ -303,14 +313,12 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isIPFSConfigured();
   }
 
-  async createInitialState (contractAddress: string, blockHash: string): Promise<any> {
-    return createInitialState(this, contractAddress, blockHash);
-  }
-
+  // Method used to create auto diffs (diff_staged).
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
     await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
   }
 
+  // Method to be used by createStateDiff hook.
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
@@ -318,12 +326,20 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.createDiff(contractAddress, block, data);
   }
 
-  async createStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
-    return createStateCheckpoint(this, contractAddress, blockHash);
+  // Method to be used by createStateCheckpoint hook.
+  async createStateCheckpoint (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    return this._baseIndexer.createStateCheckpoint(contractAddress, block, data);
   }
 
-  async createCheckpoint (contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
-    return this._baseIndexer.createCheckpoint(this, contractAddress, blockHash, data, checkpointInterval);
+  // Method to be used by checkpoint CLI.
+  async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    return this._baseIndexer.createCheckpoint(this, contractAddress, block);
   }
 
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
@@ -425,10 +441,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async getLatestHooksProcessedBlock (): Promise<BlockProgress> {
-    const hookStatus = await this.getHookStatus();
-    assert(hookStatus);
-
-    return this._baseIndexer.getLatestHooksProcessedBlock(hookStatus);
+    return this._baseIndexer.getLatestHooksProcessedBlock();
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {

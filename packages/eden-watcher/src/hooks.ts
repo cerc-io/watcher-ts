@@ -23,6 +23,7 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
     state: {}
   };
 
+  // Return initial state data to be saved.
   return ipldBlockData;
 }
 
@@ -34,6 +35,8 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
 export async function createStateDiff (indexer: Indexer, blockHash: string): Promise<void> {
   assert(indexer);
   assert(blockHash);
+
+  // Use indexer.createStateDiff() method to create a custom diff.
 }
 
 /**
@@ -47,6 +50,8 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
   assert(indexer);
   assert(blockHash);
   assert(contractAddress);
+
+  // Use indexer.createStateCheckpoint() method to create a custom checkpoint.
 
   return false;
 }

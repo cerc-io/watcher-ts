@@ -16,7 +16,6 @@ import {
   IndexerInterface,
   BlockProgressInterface,
   IPLDBlockInterface,
-  HookStatusInterface,
   StateKind
 } from './types';
 import { Indexer } from './indexer';
@@ -69,7 +68,12 @@ export class IPLDIndexer extends Indexer {
     return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
   }
 
-  async getLatestHooksProcessedBlock (hookStatus: HookStatusInterface): Promise<BlockProgressInterface> {
+  async getLatestHooksProcessedBlock (): Promise<BlockProgressInterface> {
+    // Get current hookStatus.
+    const hookStatus = await this._ipldDb.getHookStatus();
+    assert(hookStatus);
+
+    // Get all the blocks at height hookStatus.latestProcessedBlockNumber.
     const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
 
     // There can exactly one block at hookStatus.latestProcessedBlockNumber height.
@@ -82,22 +86,45 @@ export class IPLDIndexer extends Indexer {
     // Get all the contracts.
     const contracts = Object.values(this._watchedContracts);
 
+    // Getting the block for checkpoint.
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
     // For each contract, merge the diff till now to create a checkpoint.
     for (const contract of contracts) {
+      const initBlockNumber = this._ipldStatusMap[contract.address].init;
+
       // Check if contract has checkpointing on.
-      if (contract.checkpoint) {
-        await this.createCheckpoint(indexer, contract.address, blockHash, null, checkpointInterval);
+      // Check if an init is already created.
+      // Check if it's time for a checkpoint or the init is in current block.
+      if (
+        contract.checkpoint &&
+        initBlockNumber &&
+        (block.blockNumber % checkpointInterval === 0 || initBlockNumber === block.blockNumber)
+      ) {
+        await this.createCheckpoint(indexer, contract.address, block);
       }
     }
   }
 
   async processCLICheckpoint (indexer: IndexerInterface, contractAddress: string, blockHash?: string): Promise<string | undefined> {
-    const checkpointBlockHash = await this.createCheckpoint(indexer, contractAddress, blockHash);
+    // Getting the block for checkpoint.
+    let block;
+
+    if (blockHash) {
+      block = await this.getBlockProgress(blockHash);
+    } else {
+      // In case of empty blockHash from checkpoint CLI, get the latest processed block from hookStatus for the checkpoint.
+      block = await this.getLatestHooksProcessedBlock();
+    }
+
+    assert(block);
+
+    const checkpointBlockHash = await this.createCheckpoint(indexer, contractAddress, block);
     assert(checkpointBlockHash);
 
     // Push checkpoint to IPFS if configured.
     if (this.isIPFSConfigured()) {
-      const block = await this.getBlockProgress(checkpointBlockHash);
       const checkpointIPLDBlocks = await this._ipldDb.getIPLDBlocks({ block, contractAddress, kind: StateKind.Checkpoint });
 
       // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
@@ -109,6 +136,12 @@ export class IPLDIndexer extends Indexer {
     }
 
     return checkpointBlockHash;
+  }
+
+  async createStateCheckpoint (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
+    // Create a checkpoint from the hook data without being concerned about diffs.
+    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, StateKind.Checkpoint);
+    await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   async createInit (
@@ -131,8 +164,8 @@ export class IPLDIndexer extends Indexer {
         }
 
         // Call initial state hook.
-        assert(indexer.createInitialState);
-        const stateData = await indexer.createInitialState(contract.address, blockHash);
+        assert(indexer.processInitialState);
+        const stateData = await indexer.processInitialState(contract.address, blockHash);
 
         const block = await this.getBlockProgress(blockHash);
         assert(block);
@@ -176,17 +209,17 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createDiff (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
-    // Fetch the latest checkpoint block number for the contract.
+    // Fetch the latest checkpoint block number for the contract from ipld status map.
     const checkpointBlockNumber = this._ipldStatusMap[contractAddress].checkpoint;
 
-    // There should be an initial state at least.
     if (!checkpointBlockNumber) {
-      // Fetch the initial state block number for the contract.
+      // Fetch the initial state block number for the contract from ipld status map.
       const initBlockNumber = this._ipldStatusMap[contractAddress].init;
 
+      // There should be an initial state at least.
       assert(initBlockNumber, 'No initial state found');
     } else if (checkpointBlockNumber === block.blockNumber) {
-      // Check if the latest checkpoint is in the same block.
+      // Check if the latest checkpoint is in the same block if block number is same.
       const checkpoint = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint);
       assert(checkpoint);
 
@@ -197,43 +230,20 @@ export class IPLDIndexer extends Indexer {
     await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
-  async createCheckpoint (indexer: IndexerInterface, contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
+  async createCheckpoint (indexer: IndexerInterface, contractAddress: string, currentBlock: BlockProgressInterface): Promise<string | undefined> {
+    // Make sure the block is marked complete.
+    assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
+
     // Get current hookStatus.
     const hookStatus = await this._ipldDb.getHookStatus();
     assert(hookStatus);
-
-    // Getting the current block.
-    let currentBlock;
-
-    if (blockHash) {
-      currentBlock = await this.getBlockProgress(blockHash);
-    } else {
-      // In case of empty blockHash from checkpoint CLI, get the latest processed block from hookStatus for the checkpoint.
-      currentBlock = await this.getLatestHooksProcessedBlock(hookStatus);
-    }
-
-    assert(currentBlock);
-
-    // Data is passed in case of checkpoint hook.
-    if (data) {
-      // Create a checkpoint from the hook data without being concerned about diffs.
-      const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, StateKind.Checkpoint);
-      await this.saveOrUpdateIPLDBlock(ipldBlock);
-
-      return;
-    }
-
-    // If data is not passed, create from previous 'checkpoint' | 'init' and diffs after that.
-
-    // Make sure the block is marked complete.
-    assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
 
     // Make sure the hooks have been processed for the block.
     assert(currentBlock.blockNumber <= hookStatus.latestProcessedBlockNumber, 'Block for a checkpoint should have hooks processed');
 
     // Call state checkpoint hook and check if default checkpoint is disabled.
-    assert(indexer.createStateCheckpoint);
-    const disableDefaultCheckpoint = await indexer.createStateCheckpoint(contractAddress, currentBlock.blockHash);
+    assert(indexer.processStateCheckpoint);
+    const disableDefaultCheckpoint = await indexer.processStateCheckpoint(contractAddress, currentBlock.blockHash);
 
     if (disableDefaultCheckpoint) {
       // Return if default checkpoint is disabled.
@@ -241,7 +251,7 @@ export class IPLDIndexer extends Indexer {
       return currentBlock.blockHash;
     }
 
-    // Fetch the latest 'checkpoint' | 'init' for the contract.
+    // Fetch the latest 'checkpoint' | 'init' for the contract to fetch diffs after it.
     let prevNonDiffBlock: IPLDBlockInterface;
     let getDiffBlockNumber: number;
     const checkpointBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, currentBlock.blockNumber);
@@ -249,18 +259,13 @@ export class IPLDIndexer extends Indexer {
     if (checkpointBlock) {
       prevNonDiffBlock = checkpointBlock;
       getDiffBlockNumber = checkpointBlock.block.blockNumber;
-
-      // Check (only if checkpointInterval is passed) if it is time for a new checkpoint.
-      if (checkpointInterval && checkpointBlock.block.blockNumber > (currentBlock.blockNumber - checkpointInterval)) {
-        return;
-      }
     } else {
       // There should be an initial state at least.
       const initBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Init);
       assert(initBlock, 'No initial state found');
 
       prevNonDiffBlock = initBlock;
-      // Take block number previous to initial state block to get diffs after that.
+      // Take block number previous to initial state block as the checkpoint is to be created in the same block.
       getDiffBlockNumber = initBlock.block.blockNumber - 1;
     }
 
@@ -268,7 +273,7 @@ export class IPLDIndexer extends Indexer {
     const diffBlocks = await this._ipldDb.getDiffIPLDBlocksByBlocknumber(contractAddress, getDiffBlockNumber);
 
     const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
-    data = {
+    const data = {
       state: prevNonDiffBlockData.state
     };
 
