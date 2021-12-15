@@ -71,7 +71,7 @@ export class IPLDIndexer extends Indexer {
   async getLatestHooksProcessedBlock (): Promise<BlockProgressInterface> {
     // Get current hookStatus.
     const hookStatus = await this._ipldDb.getHookStatus();
-    assert(hookStatus);
+    assert(hookStatus, 'Hook status not found');
 
     // Get all the blocks at height hookStatus.latestProcessedBlockNumber.
     const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
@@ -121,7 +121,7 @@ export class IPLDIndexer extends Indexer {
     assert(block);
 
     const checkpointBlockHash = await this.createCheckpoint(indexer, contractAddress, block);
-    assert(checkpointBlockHash);
+    assert(checkpointBlockHash, 'Checkpoint not created');
 
     // Push checkpoint to IPFS if configured.
     if (this.isIPFSConfigured()) {
@@ -139,6 +139,10 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createStateCheckpoint (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
+    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+      return;
+    }
+
     // Create a checkpoint from the hook data without being concerned about diffs.
     const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, StateKind.Checkpoint);
     await this.saveOrUpdateIPLDBlock(ipldBlock);
@@ -156,10 +160,17 @@ export class IPLDIndexer extends Indexer {
     for (const contract of contracts) {
       // Check if contract has checkpointing on.
       if (contract.checkpoint) {
-        // Check if a 'init' | 'diff' | 'checkpoint' ipldBlock already exists or blockNumber is < to startingBlock.
-        const existingIpldBlockNumber = this._ipldStatusMap[contract.address].init || this._ipldStatusMap[contract.address].diff || this._ipldStatusMap[contract.address].checkpoint;
+        // Check if starting block not reached yet.
+        if (blockNumber < contract.startingBlock) {
+          continue;
+        }
 
-        if (existingIpldBlockNumber || blockNumber < contract.startingBlock) {
+        // Check if a 'init' or 'diff' or 'checkpoint' ipldBlock already exists.
+        if (
+          this._ipldStatusMap[contract.address].init ||
+          this._ipldStatusMap[contract.address].diff ||
+          this._ipldStatusMap[contract.address].checkpoint
+        ) {
           continue;
         }
 
@@ -186,6 +197,10 @@ export class IPLDIndexer extends Indexer {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
+    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+      return;
+    }
+
     // Create a staged diff block.
     const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, StateKind.DiffStaged);
     await this.saveOrUpdateIPLDBlock(ipldBlock);
@@ -209,6 +224,10 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createDiff (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
+    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+      return;
+    }
+
     // Fetch the latest checkpoint block number for the contract from ipld status map.
     const checkpointBlockNumber = this._ipldStatusMap[contractAddress].checkpoint;
 
@@ -231,6 +250,10 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createCheckpoint (indexer: IndexerInterface, contractAddress: string, currentBlock: BlockProgressInterface): Promise<string | undefined> {
+    if (currentBlock.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+      return;
+    }
+
     // Make sure the block is marked complete.
     assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
 
