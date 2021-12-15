@@ -24,7 +24,8 @@ import {
   Where,
   QueryOptions,
   BlockHeight,
-  IPFSClient
+  IPFSClient,
+  StateKind
 } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
@@ -134,6 +135,7 @@ export class Indexer implements IndexerInterface {
 
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
+    await this._baseIndexer.fetchIPLDStatus();
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -281,7 +283,7 @@ export class Indexer implements IndexerInterface {
     return this._db.getPrevIPLDBlock(blockHash, contractAddress, kind);
   }
 
-  async getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
+  async getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
     return this._db.getLatestIPLDBlock(contractAddress, kind, blockNumber);
   }
 
@@ -325,7 +327,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
-  async removeIPLDBlocks (blockNumber: number, kind: string): Promise<void> {
+  async removeIPLDBlocks (blockNumber: number, kind: StateKind): Promise<void> {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
@@ -427,6 +429,8 @@ export class Indexer implements IndexerInterface {
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    this._baseIndexer.updateIPLDStatusMap(address, {});
+
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 

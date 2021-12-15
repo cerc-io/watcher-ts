@@ -3,6 +3,9 @@
 //
 
 import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
+
+import { StateKind } from '@vulcanize/util';
+
 import { BlockProgress } from './BlockProgress';
 
 @Entity()
@@ -22,8 +25,11 @@ export class IPLDBlock {
   @Column('varchar')
   cid!: string;
 
-  @Column('varchar')
-  kind!: string;
+  @Column({
+    type: 'enum',
+    enum: StateKind
+  })
+  kind!: StateKind;
 
   @Column('bytea')
   data!: Buffer;
