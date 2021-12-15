@@ -312,7 +312,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    await this._baseIndexer.createDiff(contractAddress, blockHash, data);
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    await this._baseIndexer.createDiff(contractAddress, block, data);
   }
 
   async createStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {

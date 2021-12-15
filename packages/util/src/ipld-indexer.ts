@@ -168,17 +168,14 @@ export class IPLDIndexer extends Indexer {
     // For each staged block, create a diff block.
     for (const stagedBlock of stagedBlocks) {
       const data = codec.decode(Buffer.from(stagedBlock.data));
-      await this.createDiff(stagedBlock.contractAddress, stagedBlock.block.blockHash, data);
+      await this.createDiff(stagedBlock.contractAddress, block, data);
     }
 
     // Remove all the staged diff blocks for current blockNumber.
     await this.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
   }
 
-  async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    const block = await this.getBlockProgress(blockHash);
-    assert(block);
-
+  async createDiff (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
     // Fetch the latest checkpoint block number for the contract.
     const checkpointBlockNumber = this._ipldStatusMap[contractAddress].checkpoint;
 
@@ -186,11 +183,13 @@ export class IPLDIndexer extends Indexer {
     if (!checkpointBlockNumber) {
       // Fetch the initial state block number for the contract.
       const initBlockNumber = this._ipldStatusMap[contractAddress].init;
+
       assert(initBlockNumber, 'No initial state found');
     } else if (checkpointBlockNumber === block.blockNumber) {
       // Check if the latest checkpoint is in the same block.
       const checkpoint = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint);
       assert(checkpoint);
+
       assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash');
     }
 
