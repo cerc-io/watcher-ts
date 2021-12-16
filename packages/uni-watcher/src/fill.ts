@@ -42,6 +42,16 @@ export const main = async (): Promise<any> => {
       require: true,
       demandOption: true,
       describe: 'Block number to stop processing at'
+    },
+    prefetch: {
+      type: 'boolean',
+      default: false,
+      describe: 'Block and events prefetch mode'
+    },
+    batchBlocks: {
+      type: 'number',
+      default: 10,
+      describe: 'Number of blocks prefetched in batch'
     }
   }).argv;
 
@@ -91,7 +101,7 @@ export const main = async (): Promise<any> => {
 
   assert(jobQueueConfig, 'Missing job queue config');
 
-  await fillBlocks(jobQueue, indexer, postgraphileClient, eventWatcher, blockDelayInMilliSecs, argv);
+  await fillBlocks(jobQueue, indexer, eventWatcher, blockDelayInMilliSecs, argv);
 };
 
 main().catch(err => {

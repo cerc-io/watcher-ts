@@ -37,6 +37,8 @@ const OPERATOR_MAP = {
   ends: 'LIKE'
 };
 
+const INSERT_EVENTS_BATCH = 100;
+
 export interface BlockHeight {
   number?: number;
   hash?: string;
@@ -249,11 +251,17 @@ export class Database {
       event.block = blockProgress;
     });
 
-    await eventRepo.createQueryBuilder()
-      .insert()
-      .values(events)
-      .updateEntity(false)
-      .execute();
+    const eventBatches = _.chunk(events, INSERT_EVENTS_BATCH);
+
+    const insertPromises = eventBatches.map(async events => {
+      await eventRepo.createQueryBuilder()
+        .insert()
+        .values(events)
+        .updateEntity(false)
+        .execute();
+    });
+
+    await Promise.all(insertPromises);
 
     return blockProgress;
   }
@@ -424,7 +432,9 @@ export class Database {
         FROM
           block_progress b
           LEFT JOIN
-            ${repo.metadata.tableName} e ON e.block_hash = b.block_hash
+            ${repo.metadata.tableName} e
+            ON e.block_hash = b.block_hash
+            AND e.id = $2
         WHERE
           b.block_hash = $1
         UNION ALL

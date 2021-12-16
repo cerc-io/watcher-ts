@@ -141,7 +141,7 @@ export class Indexer {
           throw error;
         }
 
-        log('Block not found. Fetching block after eth_call.');
+        log('Block not found. Fetching block after RPC call.');
       }
     }
 

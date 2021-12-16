@@ -17,6 +17,7 @@ export interface BlockProgressInterface {
   lastProcessedEventIndex: number;
   isComplete: boolean;
   isPruned: boolean;
+  createdAt: Date;
 }
 
 export interface SyncStatusInterface {
