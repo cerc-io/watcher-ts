@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
 import path from 'path';
 
-import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, Where } from '@vulcanize/util';
+import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@vulcanize/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -49,7 +49,7 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.getIPLDBlocks(repo, where);
   }
 
-  async getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
+  async getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
     const repo = this._conn.getRepository(IPLDBlock);
 
     return this._baseDatabase.getLatestIPLDBlock(repo, contractAddress, kind, blockNumber);
@@ -75,7 +75,9 @@ export class Database implements IPLDDatabaseInterface {
   }
 
   async removeIPLDBlocks (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
-    await this._baseDatabase.removeEntities(dbTx, IPLDBlock, { relations: ['block'], where: { block: { blockNumber }, kind } });
+    const repo = dbTx.manager.getRepository(IPLDBlock);
+
+    await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
   }
 
   async getHookStatus (): Promise<HookStatus | undefined> {
