@@ -172,8 +172,8 @@ export class GraphWatcher {
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
-      // Check if block handler(s) are configured.
-      if (!dataSource.mapping.blockHandlers) {
+      // Check if block handler(s) are configured and start block has been reached.
+      if (!dataSource.mapping.blockHandlers || blockData.blockNumber < dataSource.source.startBlock) {
         continue;
       }
 

@@ -4,12 +4,12 @@
 
 import { FindConditions, MoreThan, Repository } from 'typeorm';
 
-import { IPLDBlockInterface, HookStatusInterface } from './types';
+import { IPLDBlockInterface, HookStatusInterface, StateKind } from './types';
 import { Database } from './database';
-import { MAX_REORG_DEPTH, STATE_KIND_DIFF_STAGED, STATE_KIND_DIFF } from './constants';
+import { MAX_REORG_DEPTH } from './constants';
 
 export class IPLDDatabase extends Database {
-  async getLatestIPLDBlock (repo: Repository<IPLDBlockInterface>, contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined> {
+  async getLatestIPLDBlock (repo: Repository<IPLDBlockInterface>, contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined> {
     let queryBuilder = repo.createQueryBuilder('ipld_block')
       .leftJoinAndSelect('ipld_block.block', 'block')
       .where('block.is_pruned = false')
@@ -24,7 +24,7 @@ export class IPLDDatabase extends Database {
     // Filter using kind if specified else order by id to give preference to checkpoint.
     queryBuilder = kind
       ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: STATE_KIND_DIFF_STAGED })
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged })
         .addOrderBy('ipld_block.id', 'DESC');
 
     return queryBuilder.getOne();
@@ -116,7 +116,7 @@ export class IPLDDatabase extends Database {
       relations: ['block'],
       where: {
         contractAddress,
-        kind: STATE_KIND_DIFF,
+        kind: StateKind.Diff,
         block: {
           isPruned: false,
           blockNumber: MoreThan(blockNumber)
@@ -130,6 +130,15 @@ export class IPLDDatabase extends Database {
 
   async saveOrUpdateIPLDBlock (repo: Repository<IPLDBlockInterface>, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface> {
     return repo.save(ipldBlock);
+  }
+
+  async removeIPLDBlocks (repo: Repository<IPLDBlockInterface>, blockNumber: number, kind: string): Promise<void> {
+    const entities = await repo.find({ relations: ['block'], where: { block: { blockNumber }, kind } });
+
+    // Delete if entities found.
+    if (entities.length) {
+      await repo.delete(entities.map((entity) => entity.id));
+    }
   }
 
   async getHookStatus (repo: Repository<HookStatusInterface>): Promise<HookStatusInterface | undefined> {

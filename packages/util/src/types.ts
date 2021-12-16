@@ -6,6 +6,13 @@ import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner }
 
 import { Where, QueryOptions } from './database';
 
+export enum StateKind {
+  Diff = 'diff',
+  Init = 'init',
+  DiffStaged = 'diff_staged',
+  Checkpoint = 'checkpoint'
+}
+
 export interface BlockProgressInterface {
   id: number;
   cid: string;
@@ -61,7 +68,7 @@ export interface IPLDBlockInterface {
   block: BlockProgressInterface;
   contractAddress: string;
   cid: string;
-  kind: string;
+  kind: StateKind;
   data: Buffer;
 }
 
@@ -89,8 +96,8 @@ export interface IndexerInterface {
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
-  createInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
-  createStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
+  processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
+  processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
 }
 
 export interface EventWatcherInterface {
@@ -126,11 +133,11 @@ export interface DatabaseInterface {
 }
 
 export interface IPLDDatabaseInterface extends DatabaseInterface {
-  getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
+  getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
   getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
   getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlockInterface[]>
   getNewIPLDBlock (): IPLDBlockInterface
-  removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void>
+  removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
   saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>
   getHookStatus (): Promise<HookStatusInterface | undefined>
 }
