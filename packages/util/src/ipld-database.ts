@@ -134,7 +134,11 @@ export class IPLDDatabase extends Database {
 
   async removeIPLDBlocks (repo: Repository<IPLDBlockInterface>, blockNumber: number, kind: string): Promise<void> {
     const entities = await repo.find({ relations: ['block'], where: { block: { blockNumber }, kind } });
-    await repo.delete(entities.map((entity) => entity.id));
+
+    // Delete if entities found.
+    if (entities.length) {
+      await repo.delete(entities.map((entity) => entity.id));
+    }
   }
 
   async getHookStatus (repo: Repository<HookStatusInterface>): Promise<HookStatusInterface | undefined> {

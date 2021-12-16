@@ -92,14 +92,16 @@ export class IPLDIndexer extends Indexer {
 
     // For each contract, merge the diff till now to create a checkpoint.
     for (const contract of contracts) {
-      const initBlockNumber = this._ipldStatusMap[contract.address].init;
+      // Get IPLD status for the contract.
+      const ipldStatus = this._ipldStatusMap[contract.address];
+      assert(ipldStatus, `IPLD status for contract ${contract.address} not found`);
+
+      const initBlockNumber = ipldStatus.init;
 
       // Check if contract has checkpointing on.
-      // Check if an init is already created.
       // Check if it's time for a checkpoint or the init is in current block.
       if (
         contract.checkpoint &&
-        initBlockNumber &&
         (block.blockNumber % checkpointInterval === 0 || initBlockNumber === block.blockNumber)
       ) {
         await this.createCheckpoint(indexer, contract.address, block);
@@ -139,7 +141,11 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createStateCheckpoint (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
-    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+    // Get the contract.
+    const contract = this._watchedContracts[contractAddress];
+    assert(contract, `Contract ${contractAddress} not watched`);
+
+    if (block.blockNumber < contract.startingBlock) {
       return;
     }
 
@@ -165,11 +171,18 @@ export class IPLDIndexer extends Indexer {
           continue;
         }
 
-        // Check if a 'init' or 'diff' or 'checkpoint' ipldBlock already exists.
+        // Get IPLD status for the contract.
+        const ipldStatus = this._ipldStatusMap[contract.address];
+        assert(ipldStatus, `IPLD status for contract ${contract.address} not found`);
+
+        // Check if a 'init' IPLDBlock already exists.
+        // Or if a 'diff' IPLDBlock already exists.
+        // Or if a 'checkpoint' IPLDBlock already exists.
+        // (A watcher with imported state won't have an init IPLDBlock, but it will have the imported checkpoint)
         if (
-          this._ipldStatusMap[contract.address].init ||
-          this._ipldStatusMap[contract.address].diff ||
-          this._ipldStatusMap[contract.address].checkpoint
+          ipldStatus.init ||
+          ipldStatus.diff ||
+          ipldStatus.checkpoint
         ) {
           continue;
         }
@@ -197,7 +210,11 @@ export class IPLDIndexer extends Indexer {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
-    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+    // Get the contract.
+    const contract = this._watchedContracts[contractAddress];
+    assert(contract, `Contract ${contractAddress} not watched`);
+
+    if (block.blockNumber < contract.startingBlock) {
       return;
     }
 
@@ -225,16 +242,24 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createDiff (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
-    if (block.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+    // Get the contract.
+    const contract = this._watchedContracts[contractAddress];
+    assert(contract, `Contract ${contractAddress} not watched`);
+
+    if (block.blockNumber < contract.startingBlock) {
       return;
     }
 
-    // Fetch the latest checkpoint block number for the contract from ipld status map.
-    const checkpointBlockNumber = this._ipldStatusMap[contractAddress].checkpoint;
+    // Get IPLD status for the contract.
+    const ipldStatus = this._ipldStatusMap[contractAddress];
+    assert(ipldStatus, `IPLD status for contract ${contractAddress} not found`);
+
+    // Get the latest checkpoint block number.
+    const checkpointBlockNumber = ipldStatus.checkpoint;
 
     if (!checkpointBlockNumber) {
-      // Fetch the initial state block number for the contract from ipld status map.
-      const initBlockNumber = this._ipldStatusMap[contractAddress].init;
+      // Get the initial state block number.
+      const initBlockNumber = ipldStatus.init;
 
       // There should be an initial state at least.
       assert(initBlockNumber, 'No initial state found');
@@ -251,7 +276,11 @@ export class IPLDIndexer extends Indexer {
   }
 
   async createCheckpoint (indexer: IndexerInterface, contractAddress: string, currentBlock: BlockProgressInterface): Promise<string | undefined> {
-    if (currentBlock.blockNumber < this._watchedContracts[contractAddress].startingBlock) {
+    // Get the contract.
+    const contract = this._watchedContracts[contractAddress];
+    assert(contract, `Contract ${contractAddress} not watched`);
+
+    if (currentBlock.blockNumber < contract.startingBlock) {
       return;
     }
 
@@ -281,8 +310,15 @@ export class IPLDIndexer extends Indexer {
     const checkpointBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, currentBlock.blockNumber);
 
     if (checkpointBlock) {
+      const checkpointBlockNumber = checkpointBlock.block.blockNumber;
+
       prevNonDiffBlock = checkpointBlock;
-      getDiffBlockNumber = checkpointBlock.block.blockNumber;
+      getDiffBlockNumber = checkpointBlockNumber;
+
+      // Update IPLD status map with the latest checkpoint info.
+      // Essential while importing state as checkpoint at the snapshot block is added by import-state CLI.
+      // (job-runner won't have the updated ipld status)
+      this.updateIPLDStatusMap(contractAddress, { checkpoint: checkpointBlockNumber });
     } else {
       // There should be an initial state at least.
       const initBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Init);
@@ -315,9 +351,13 @@ export class IPLDIndexer extends Indexer {
   async prepareIPLDBlock (block: BlockProgressInterface, contractAddress: string, data: any, kind: StateKind):Promise<any> {
     let ipldBlock: IPLDBlockInterface;
 
-    // Get an existing 'init' | 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress.
+    // Get IPLD status for the contract.
+    const ipldStatus = this._ipldStatusMap[contractAddress];
+    assert(ipldStatus, `IPLD status for contract ${contractAddress} not found`);
+
+    // Get an existing 'init' | 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress to update.
     let currentIPLDBlock: IPLDBlockInterface | undefined;
-    const prevIPLDBlockNumber = this._ipldStatusMap[contractAddress][kind];
+    const prevIPLDBlockNumber = ipldStatus[kind];
 
     if (prevIPLDBlockNumber && prevIPLDBlockNumber === block.blockNumber) {
       const currentIPLDBlocks = await this._ipldDb.getIPLDBlocks({ block, contractAddress, kind });
@@ -335,12 +375,13 @@ export class IPLDIndexer extends Indexer {
       const oldData = codec.decode(Buffer.from(ipldBlock.data));
       data = _.merge(oldData, data);
     } else {
+      // Create a new IPLDBlock instance.
       ipldBlock = this._ipldDb.getNewIPLDBlock();
 
       // Fetch the parent IPLDBlock.
       const parentIPLDBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, null, block.blockNumber);
 
-      // Setting the meta-data for an IPLDBlock (done only once per block).
+      // Setting the meta-data for an IPLDBlock (done only once per IPLD block).
       data.meta = {
         id: contractAddress,
         kind,
@@ -402,7 +443,12 @@ export class IPLDIndexer extends Indexer {
 
       await dbTx.commitTransaction();
 
-      this._ipldStatusMap[res.contractAddress][res.kind] = res.block.blockNumber;
+      // Get IPLD status for the contract.
+      const ipldStatus = this._ipldStatusMap[res.contractAddress];
+      assert(ipldStatus, `IPLD status for contract ${res.contractAddress} not found`);
+
+      // Update the IPLD status for the kind.
+      ipldStatus[res.kind] = res.block.blockNumber;
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;
@@ -446,6 +492,8 @@ export class IPLDIndexer extends Indexer {
   }
 
   async updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void> {
-    this._ipldStatusMap[address] = _.merge(this._ipldStatusMap[address], ipldStatus);
+    // Get and update IPLD status for the contract.
+    const ipldStatusOld = this._ipldStatusMap[address];
+    this._ipldStatusMap[address] = _.merge(ipldStatusOld, ipldStatus);
   }
 }
