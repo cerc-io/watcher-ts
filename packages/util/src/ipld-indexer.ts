@@ -220,6 +220,7 @@ export class IPLDIndexer extends Indexer {
     }
 
     // Remove all the staged diff blocks for current blockNumber.
+    // (Including staged diff blocks associated with pruned blocks)
     await this.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
   }
 

@@ -75,7 +75,9 @@ export class Database implements IPLDDatabaseInterface {
   }
 
   async removeIPLDBlocks (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
-    await this._baseDatabase.removeEntities(dbTx, IPLDBlock, { relations: ['block'], where: { block: { blockNumber }, kind } });
+    const repo = dbTx.manager.getRepository(IPLDBlock);
+
+    await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
   }
 
   async getHookStatus (): Promise<HookStatus | undefined> {
