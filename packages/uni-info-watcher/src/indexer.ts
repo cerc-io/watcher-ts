@@ -904,7 +904,8 @@ export class Indexer implements IndexerInterface {
       assert(token0 && token1, 'Pool tokens not found.');
 
       const oldTick = pool.tick;
-      assert(oldTick);
+      // Check that the tick value is not null (can be zero).
+      assert(oldTick !== null);
 
       // Amounts - 0/1 are token deltas. Can be positive or negative.
       const amount0 = convertTokenToDecimal(BigInt(swapEvent.amount0), BigInt(token0.decimals));
@@ -1098,7 +1099,9 @@ export class Indexer implements IndexerInterface {
 
       // Update inner vars of current or crossed ticks.
       const newTick = pool.tick;
-      assert(newTick);
+      // Check that the tick value is not null (can be zero).
+      assert(newTick !== null);
+
       const tickSpacing = feeTierToTickSpacing(pool.feeTier);
       const modulo = newTick % tickSpacing;
 
