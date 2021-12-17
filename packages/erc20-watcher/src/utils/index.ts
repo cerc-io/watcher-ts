@@ -24,7 +24,7 @@ export const fetchTokenSymbol = async (ethProvider: BaseProvider, blockHash: str
       const result = await contractSymbolBytes.symbol({ blockTag: blockHash });
 
       // For broken pairs that have no symbol function exposed.
-      if (!isNullEthValue(result)) {
+      if (!isNullEthValue(utils.hexlify(result))) {
         symbolValue = utils.parseBytes32String(result);
       } else {
         // Try with the static definition.
@@ -56,7 +56,7 @@ export const fetchTokenName = async (ethProvider: BaseProvider, blockHash: strin
       const result = await contractNameBytes.name({ blockTag: blockHash });
 
       // For broken pairs that have no name function exposed.
-      if (!isNullEthValue(result)) {
+      if (!isNullEthValue(utils.hexlify(result))) {
         nameValue = utils.parseBytes32String(result);
       } else {
         // Try with the static definition.

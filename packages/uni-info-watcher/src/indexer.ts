@@ -406,7 +406,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async _handlePoolCreated (block: Block, contractAddress: string, tx: Transaction, poolCreatedEvent: PoolCreatedEvent): Promise<void> {
-    const { token0: token0Address, token1: token1Address, fee, pool: poolAddress } = poolCreatedEvent;
+    let { token0: token0Address, token1: token1Address, fee, pool: poolAddress } = poolCreatedEvent;
+    // Get the addresses in lowercase.
+    token0Address = utils.hexlify(token0Address);
+    token1Address = utils.hexlify(token1Address);
+    poolAddress = utils.hexlify(poolAddress);
 
     // Temp fix from Subgraph mapping code.
     if (utils.getAddress(poolAddress) === utils.getAddress('0x8fe8d9bb8eeba3ed688069c3d6b556c9ca258248')) {
@@ -533,8 +537,10 @@ export class Indexer implements IndexerInterface {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      const pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
-      assert(pool, `Pool ${contractAddress} not found.`);
+      // Get the contract address in lowercase as pool address.
+      const poolAddress = utils.hexlify(contractAddress);
+      const pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
+      assert(pool, `Pool ${poolAddress} not found.`);
 
       // Update Pool.
       pool.sqrtPrice = BigInt(sqrtPriceX96);
@@ -584,7 +590,9 @@ export class Indexer implements IndexerInterface {
     try {
       const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
-      const poolAddress = contractAddress;
+
+      // Get the contract address in lowercase as pool address.
+      const poolAddress = utils.hexlify(contractAddress);
       let pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
       assert(pool);
 
@@ -742,7 +750,9 @@ export class Indexer implements IndexerInterface {
     try {
       const bundle = await this._db.getBundle(dbTx, { id: '1', blockHash: block.hash });
       assert(bundle);
-      const poolAddress = contractAddress;
+
+      // Get the contract address in lowercase as pool address.
+      const poolAddress = utils.hexlify(contractAddress);
       let pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
       assert(pool);
 
@@ -888,7 +898,9 @@ export class Indexer implements IndexerInterface {
       // Currently fetching first factory in database as only one exists.
       const [factory] = await this._db.getModelEntities(dbTx, Factory, { hash: block.hash }, {}, { limit: 1 });
 
-      let pool = await this._db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
+      // Get the contract address in lowercase as pool address.
+      const poolAddress = utils.hexlify(contractAddress);
+      let pool = await this._db.getPool(dbTx, { id: poolAddress, blockHash: block.hash });
       assert(pool);
 
       // Hot fix for bad pricing.
@@ -1305,7 +1317,8 @@ export class Indexer implements IndexerInterface {
   }
 
   async _loadTickUpdateFeeVarsAndSave (dbTx:QueryRunner, tickId: number, block: Block, contractAddress: string): Promise<void> {
-    const poolAddress = contractAddress;
+    // Get the contract address in lowercase as pool address.
+    const poolAddress = utils.hexlify(contractAddress);
 
     const tick = await this._db.getTick(
       dbTx,
@@ -1348,8 +1361,11 @@ export class Indexer implements IndexerInterface {
         const [factory] = await this._db.getModelEntitiesNoTx(Factory, { hash: blockHash }, {}, { limit: 1 });
 
         console.time('time:indexer#_getPosition-eth_call_for_getPool');
-        const { value: poolAddress } = await this._uniClient.callGetPool(blockHash, factory.id, positionResult.token0, positionResult.token1, positionResult.fee);
+        let { value: poolAddress } = await this._uniClient.callGetPool(blockHash, factory.id, positionResult.token0, positionResult.token1, positionResult.fee);
         console.timeEnd('time:indexer#_getPosition-eth_call_for_getPool');
+
+        // Get the pool address in lowercase.
+        poolAddress = utils.hexlify(poolAddress);
 
         position = new Position();
         position.id = tokenId.toString();
@@ -1359,8 +1375,8 @@ export class Indexer implements IndexerInterface {
         position.pool = pool;
 
         const [token0, token1] = await Promise.all([
-          this._db.getTokenNoTx({ id: positionResult.token0, blockHash }),
-          this._db.getTokenNoTx({ id: positionResult.token1, blockHash })
+          this._db.getTokenNoTx({ id: utils.hexlify(positionResult.token0), blockHash }),
+          this._db.getTokenNoTx({ id: utils.hexlify(positionResult.token1), blockHash })
         ]);
         assert(token0 && token1);
         position.token0 = token0;

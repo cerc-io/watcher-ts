@@ -83,11 +83,12 @@ export class StaticTokenDefinition {
   // Helper for hardcoded tokens.
   static fromAddress (tokenAddress: string) : StaticTokenDefinition | null {
     const staticDefinitions = this.getStaticDefinitions();
+    const tokenAddressHex = utils.hexlify(tokenAddress);
 
     // Search the definition using the address.
     for (let i = 0; i < staticDefinitions.length; i++) {
       const staticDefinition = staticDefinitions[i];
-      if (utils.getAddress(staticDefinition.address) === utils.getAddress(tokenAddress)) {
+      if (utils.getAddress(utils.hexlify(staticDefinition.address)) === utils.getAddress(tokenAddressHex)) {
         return staticDefinition;
       }
     }

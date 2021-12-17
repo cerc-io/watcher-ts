@@ -3,7 +3,7 @@
 //
 
 import { expect } from 'chai';
-import { ethers, Contract, Signer, constants } from 'ethers';
+import { ethers, Contract, Signer, constants, utils } from 'ethers';
 import 'mocha';
 import _ from 'lodash';
 
@@ -121,6 +121,10 @@ describe('uni-info-watcher', () => {
     before(async () => {
       // Deploy 2 tokens.
       ({ token0Address, token1Address } = await deployTokens(signer));
+      // Convert the addresses to lowercase.
+      token0Address = utils.hexlify(token0Address);
+      token1Address = utils.hexlify(token1Address);
+
       expect(token0Address).to.not.be.empty;
       expect(token1Address).to.not.be.empty;
     });
@@ -175,8 +179,11 @@ describe('uni-info-watcher', () => {
 
       // Initializing the token variables.
       token0Address = await pool.token0();
+      token0Address = utils.hexlify(token0Address);
       token0 = new Contract(token0Address, TESTERC20_ABI, signer);
+
       token1Address = await pool.token1();
+      token1Address = utils.hexlify(token1Address);
       token1 = new Contract(token1Address, TESTERC20_ABI, signer);
     });
   });
@@ -812,7 +819,7 @@ describe('uni-info-watcher', () => {
 
       const expectedOwner = eventValue.event.to;
 
-      expect(position.pool.id).to.be.equal(pool.address);
+      expect(position.pool.id).to.be.equal(utils.hexlify(pool.address));
       expect(position.token0.id).to.be.equal(token0.address);
       expect(position.token1.id).to.be.equal(token1.address);
       expect(positionTickLower).to.be.equal(tickLower.toString());

@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { QueryRunner } from 'typeorm';
 
 import { GraphDecimal } from '@vulcanize/util';
@@ -31,11 +31,13 @@ export const convertTokenToDecimal = (tokenAmount: bigint, exchangeDecimals: big
 
 export const loadTransaction = async (db: Database, dbTx: QueryRunner, event: { block: Block, tx: Transaction }): Promise<TransactionEntity> => {
   const { tx, block } = event;
-  let transaction = await db.getTransaction(dbTx, { id: tx.hash, blockHash: block.hash });
+  // Get the txHash in lowercase.
+  const txHash = utils.hexlify(tx.hash);
+  let transaction = await db.getTransaction(dbTx, { id: txHash, blockHash: block.hash });
 
   if (!transaction) {
     transaction = new TransactionEntity();
-    transaction.id = tx.hash;
+    transaction.id = txHash;
   }
 
   transaction.blockNumber = block.number;

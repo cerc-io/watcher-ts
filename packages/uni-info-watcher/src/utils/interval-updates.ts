@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { QueryRunner } from 'typeorm';
 
 import { Database } from '../database';
@@ -53,11 +53,11 @@ export const updatePoolDayData = async (db: Database, dbTx: QueryRunner, event: 
   const dayID = Math.floor(block.timestamp / 86400);
   const dayStartTimestamp = dayID * 86400;
 
-  const dayPoolID = contractAddress
+  const dayPoolID = utils.hexlify(contractAddress)
     .concat('-')
     .concat(dayID.toString());
 
-  const pool = await db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
+  const pool = await db.getPool(dbTx, { id: utils.hexlify(contractAddress), blockHash: block.hash });
   assert(pool);
 
   let poolDayData = await db.getPoolDayData(dbTx, { id: dayPoolID, blockHash: block.hash });
@@ -101,11 +101,11 @@ export const updatePoolHourData = async (db: Database, dbTx: QueryRunner, event:
   const hourIndex = Math.floor(block.timestamp / 3600); // Get unique hour within unix history.
   const hourStartUnix = hourIndex * 3600; // Want the rounded effect.
 
-  const hourPoolID = contractAddress
+  const hourPoolID = utils.hexlify(contractAddress)
     .concat('-')
     .concat(hourIndex.toString());
 
-  const pool = await db.getPool(dbTx, { id: contractAddress, blockHash: block.hash });
+  const pool = await db.getPool(dbTx, { id: utils.hexlify(contractAddress), blockHash: block.hash });
   assert(pool);
 
   let poolHourData = await db.getPoolHourData(dbTx, { id: hourPoolID, blockHash: block.hash });
