@@ -90,6 +90,7 @@ export class JobRunner {
       // Should be at least 1.
       assert(blocksAtHeight.length);
 
+      let newCanonicalBlockHash;
       // We have more than one node at this height, so prune all nodes not reachable from indexed block at max reorg depth from prune height.
       // This will lead to orphaned nodes, which will get pruned at the next height.
       if (blocksAtHeight.length > 1) {
@@ -97,6 +98,7 @@ export class JobRunner {
 
         // Get ancestor blockHash from indexed block at prune height.
         const ancestorBlockHash = await this._indexer.getAncestorAtDepth(indexedBlock.blockHash, MAX_REORG_DEPTH);
+        newCanonicalBlockHash = ancestorBlockHash;
 
         const blocksToBePruned = blocksAtHeight.filter(block => ancestorBlockHash !== block.blockHash);
 
@@ -104,7 +106,12 @@ export class JobRunner {
           // Mark blocks pruned which are not the ancestor block.
           await this._indexer.markBlocksAsPruned(blocksToBePruned);
         }
+      } else {
+        newCanonicalBlockHash = blocksAtHeight[0].blockHash;
       }
+
+      // Update the canonical block in the SyncStatus.
+      await this._indexer.updateSyncStatusCanonicalBlock(newCanonicalBlockHash, pruneBlockHeight);
     }
   }
 

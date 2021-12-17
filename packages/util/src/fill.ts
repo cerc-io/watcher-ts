@@ -131,6 +131,12 @@ const prefetchBlocks = async (
       }
     });
 
-    await Promise.all(fetchBlockPromises);
+    try {
+      await Promise.all(fetchBlockPromises);
+    } catch (error: any) {
+      log(error.message);
+      log('Exiting gracefully');
+      process.exit(0);
+    }
   }
 };
