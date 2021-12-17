@@ -910,8 +910,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
@@ -1301,8 +1301,6 @@ export class Indexer implements IndexerInterface {
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
 
-    console.time('time:indexer#_fetchAndSaveEvents-logs_txs');
-
     const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
 
@@ -1320,8 +1318,6 @@ export class Indexer implements IndexerInterface {
         }
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
-
-    console.timeEnd('time:indexer#_fetchAndSaveEvents-logs_txs');
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
