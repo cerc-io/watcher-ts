@@ -9,7 +9,7 @@ import { In } from 'typeorm';
 import { JobQueueConfig } from './config';
 import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENTS, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, UNKNOWN_EVENT_NAME } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
+import { EventInterface, IndexerInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 import { OrderDirection } from './database';
@@ -32,16 +32,13 @@ export class JobRunner {
   async processBlock (job: any): Promise<void> {
     const { data: { kind } } = job;
 
-    const syncStatus = await this._indexer.getSyncStatus();
-    assert(syncStatus);
-
     switch (kind) {
       case JOB_KIND_INDEX:
-        await this._indexBlock(job, syncStatus);
+        await this._indexBlock(job);
         break;
 
       case JOB_KIND_PRUNE:
-        await this._pruneChain(job, syncStatus);
+        await this._pruneChain(job);
         break;
 
       default:
@@ -72,8 +69,11 @@ export class JobRunner {
     await this._jobQueue.markComplete(job);
   }
 
-  async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
+  async _pruneChain (job: any): Promise<void> {
     const { pruneBlockHeight } = job.data;
+
+    const syncStatus = await this._indexer.getSyncStatus();
+    assert(syncStatus);
 
     log(`Processing chain pruning at ${pruneBlockHeight}`);
 
@@ -115,10 +115,14 @@ export class JobRunner {
     }
   }
 
-  async _indexBlock (job: any, syncStatus: SyncStatusInterface): Promise<void> {
-    console.time('time:job-runner#_indexBlock');
+  async _indexBlock (job: any): Promise<void> {
+    const indexBlockStartTime = new Date();
+
     const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
     log(`Processing block number ${blockNumber} hash ${blockHash} `);
+
+    const syncStatus = await this._indexer.updateSyncStatusChainHead(blockHash, blockNumber);
+    assert(syncStatus);
 
     // Check if chain pruning is caught up.
     if ((syncStatus.latestIndexedBlockNumber - syncStatus.latestCanonicalBlockNumber) > MAX_REORG_DEPTH) {
@@ -143,6 +147,10 @@ export class JobRunner {
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
     // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
     if (blockHash !== syncStatus.latestCanonicalBlockHash) {
+      // Create a higher priority job to index parent block and then abort.
+      // We don't have to worry about aborting as this job will get retried later.
+      const newPriority = (priority || 0) + 1;
+
       if (!parentBlock || parentBlock.blockHash !== parentHash) {
         const blocks = await this._indexer.getBlocks({ blockHash: parentHash });
 
@@ -155,9 +163,6 @@ export class JobRunner {
 
         const [{ blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
 
-        // Create a higher priority job to index parent block and then abort.
-        // We don't have to worry about aborting as this job will get retried later.
-        const newPriority = (priority || 0) + 1;
         await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
           kind: JOB_KIND_INDEX,
           blockHash: parentHash,
@@ -178,6 +183,15 @@ export class JobRunner {
         const message = `Indexing incomplete for parent block number ${parentBlock.blockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash}, aborting`;
         log(message);
 
+        await this._jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
+          kind: JOB_KIND_INDEX,
+          blockHash: parentHash,
+          blockNumber: parentBlock.blockNumber,
+          parentHash: parentBlock.parentHash,
+          timestamp: parentBlock.blockTimestamp,
+          priority: newPriority
+        }, { priority: newPriority });
+
         throw new Error(message);
       }
     } else {
@@ -192,12 +206,13 @@ export class JobRunner {
       blockProgress = await this._indexer.fetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
     }
 
-    // Check if block is being already processed.
-    if (blockProgress.numProcessedEvents === 0 && blockProgress.numEvents) {
+    // Check if block has unprocessed events.
+    if (blockProgress.numProcessedEvents < blockProgress.numEvents) {
       await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
     }
 
-    console.timeEnd('time:job-runner#_indexBlock');
+    const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();
+    log(`time:job-runner#_indexBlock: ${indexBlockDuration}ms`);
   }
 
   async _processEvents (job: any): Promise<void> {

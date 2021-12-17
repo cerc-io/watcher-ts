@@ -125,7 +125,7 @@ export class Database {
     return await repo.save(entity);
   }
 
-  async updateSyncStatusChainHead (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusChainHead (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     let entity = await repo.findOne();
     if (!entity) {
       entity = repo.create({
@@ -138,7 +138,7 @@ export class Database {
       });
     }
 
-    if (blockNumber >= entity.chainHeadBlockNumber) {
+    if (force || blockNumber >= entity.chainHeadBlockNumber) {
       entity.chainHeadBlockHash = blockHash;
       entity.chainHeadBlockNumber = blockNumber;
     }

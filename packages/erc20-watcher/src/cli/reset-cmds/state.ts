@@ -70,6 +70,8 @@ export const handler = async (argv: any): Promise<void> => {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
 
+    await indexer.updateSyncStatusChainHead(blockProgress.blockHash, blockProgress.blockNumber, true);
+
     dbTx.commitTransaction();
   } catch (error) {
     await dbTx.rollbackTransaction();

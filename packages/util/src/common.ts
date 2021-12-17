@@ -46,9 +46,16 @@ export const processBlockByNumber = async (
 ): Promise<void> => {
   log(`Process block ${blockNumber}`);
 
-  while (true) {
-    const blockProgressEntities = await indexer.getBlocksAtHeight(blockNumber, false);
+  console.time('time:common#processBlockByNumber-get-blockProgress-syncStatus');
 
+  const [blockProgressEntities, syncStatus] = await Promise.all([
+    indexer.getBlocksAtHeight(blockNumber, false),
+    indexer.getSyncStatus()
+  ]);
+
+  console.timeEnd('time:common#processBlockByNumber-get-blockProgress-syncStatus');
+
+  while (true) {
     let blocks = blockProgressEntities.map((block: any) => {
       block.timestamp = block.blockTimestamp;
 
@@ -65,12 +72,8 @@ export const processBlockByNumber = async (
       for (let bi = 0; bi < blocks.length; bi++) {
         const { blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
 
-        console.time('time:common#processBlockByNumber-updateSyncStatusChainHead');
-        const syncStatus = await indexer.updateSyncStatusChainHead(blockHash, blockNumber);
-        console.timeEnd('time:common#processBlockByNumber-updateSyncStatusChainHead');
-
-        // Stop old blocks from getting pushed to job queue. They are already retried after fail.
-        if (syncStatus.latestIndexedBlockNumber < blockNumber) {
+        // Stop blocks already pushed to job queue. They are already retried after fail.
+        if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
           await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
         }
       }

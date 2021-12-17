@@ -91,12 +91,12 @@ export class Indexer {
     return res;
   }
 
-  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber);
+      res = await this._db.updateSyncStatusChainHead(dbTx, blockHash, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();

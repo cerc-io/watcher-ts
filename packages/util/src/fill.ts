@@ -29,21 +29,17 @@ export const fillBlocks = async (
 
   const syncStatus = await indexer.getSyncStatus();
 
-  if (prefetch) {
-    if (syncStatus) {
-      startBlock = syncStatus.chainHeadBlockNumber + 1;
+  if (syncStatus) {
+    if (startBlock > syncStatus.chainHeadBlockNumber + 1) {
+      throw new Error(`Missing blocks between startBlock ${startBlock} and chainHeadBlockNumber ${syncStatus.chainHeadBlockNumber}`);
     }
 
-    await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
-    return;
+    startBlock = syncStatus.chainHeadBlockNumber + 1;
   }
 
-  if (syncStatus && syncStatus.latestIndexedBlockNumber > -1) {
-    if (startBlock > syncStatus.latestIndexedBlockNumber + 1) {
-      throw new Error(`Missing blocks between startBlock ${startBlock} and latestIndexedBlockNumber ${syncStatus.latestIndexedBlockNumber}`);
-    }
-
-    startBlock = syncStatus.latestIndexedBlockNumber + 1;
+  if (prefetch) {
+    await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
+    return;
   }
 
   await eventWatcher.initBlockProcessingOnCompleteHandler();
@@ -135,7 +131,7 @@ const prefetchBlocks = async (
       await Promise.all(fetchBlockPromises);
     } catch (error: any) {
       log(error.message);
-      log('Exiting gracefully');
+      log('Exiting as upstream block not available for prefetch');
       process.exit(0);
     }
   }

@@ -34,6 +34,7 @@ export class JobQueue {
       retryDelay: 1,
       retryBackoff: true,
 
+      // Time before active job fails by expiration.
       expireInHours: 24 * 7, // 7 days
 
       retentionDays: 30, // 30 days

@@ -628,10 +628,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.updateSyncStatusCanonicalBlock(repo, blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber, force);
   }
 
   async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {

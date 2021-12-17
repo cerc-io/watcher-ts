@@ -320,8 +320,8 @@ export class Indexer {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
