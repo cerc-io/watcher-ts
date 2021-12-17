@@ -74,7 +74,16 @@ export const processBlockByNumber = async (
 
         // Stop blocks already pushed to job queue. They are already retried after fail.
         if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
-          await jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, { kind: JOB_KIND_INDEX, blockHash, blockNumber, parentHash, timestamp });
+          await jobQueue.pushJob(
+            QUEUE_BLOCK_PROCESSING,
+            {
+              kind: JOB_KIND_INDEX,
+              blockNumber: Number(blockNumber),
+              blockHash,
+              parentHash,
+              timestamp
+            }
+          );
         }
       }
 

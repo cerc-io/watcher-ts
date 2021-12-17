@@ -46,7 +46,6 @@ export const fillBlocks = async (
   await eventWatcher.initEventProcessingOnCompleteHandler();
 
   const numberOfBlocks = endBlock - startBlock + 1;
-  console.time(`time:fill#fillBlocks-process_block_${startBlock}`);
 
   processBlockByNumber(jobQueue, indexer, blockDelayInMilliSecs, startBlock);
 
@@ -65,10 +64,6 @@ export const fillBlocks = async (
     const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
     if (isComplete) {
-      console.timeEnd(`time:fill#fillBlocks-process_block_${blockNumber}`);
-
-      console.time(`time:fill#fillBlocks-process_block_${blockNumber + 1}`);
-
       const blocksProcessed = blockNumber - startBlock + 1;
       const completePercentage = Math.round(blocksProcessed / numberOfBlocks * 100);
       log(`Processed ${blocksProcessed} of ${numberOfBlocks} blocks (${completePercentage}%)`);

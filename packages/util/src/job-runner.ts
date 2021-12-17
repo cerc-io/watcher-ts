@@ -22,6 +22,7 @@ export class JobRunner {
   _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
+  _blockProcessStartTime?: Date
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._jobQueueConfig = jobQueueConfig;
@@ -116,9 +117,18 @@ export class JobRunner {
   }
 
   async _indexBlock (job: any): Promise<void> {
+    const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
+
     const indexBlockStartTime = new Date();
 
-    const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
+    // Log time taken to complete processing of previous block.
+    if (this._blockProcessStartTime) {
+      const blockProcessDuration = indexBlockStartTime.getTime() - this._blockProcessStartTime.getTime();
+      log(`time:job-runner#_indexBlock-process-block-${blockNumber - 1}: ${blockProcessDuration}ms`);
+      log(`Total block process time (${blockNumber - 1}): ${blockProcessDuration}ms`);
+    }
+
+    this._blockProcessStartTime = indexBlockStartTime;
     log(`Processing block number ${blockNumber} hash ${blockHash} `);
 
     const syncStatus = await this._indexer.updateSyncStatusChainHead(blockHash, blockNumber);
@@ -218,9 +228,9 @@ export class JobRunner {
   async _processEvents (job: any): Promise<void> {
     const { blockHash } = job.data;
 
-    console.time('time:job-runner#_processEvents-get-block-process');
+    console.time('time:job-runner#_processEvents-get-block-progress');
     let block = await this._indexer.getBlockProgress(blockHash);
-    console.timeEnd('time:job-runner#_processEvents-get-block-process');
+    console.timeEnd('time:job-runner#_processEvents-get-block-progress');
     assert(block);
 
     console.time('time:job-runner#_processEvents-events');
