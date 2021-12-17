@@ -39,6 +39,16 @@ export const main = async (): Promise<any> => {
       type: 'number',
       demandOption: true,
       describe: 'Block number to stop processing at'
+    },
+    prefetch: {
+      type: 'boolean',
+      default: false,
+      describe: 'Block and events prefetch mode'
+    },
+    batchBlocks: {
+      type: 'number',
+      default: 10,
+      describe: 'Number of blocks prefetched in batch'
     }
   }).argv;
 

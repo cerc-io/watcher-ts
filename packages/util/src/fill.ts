@@ -123,11 +123,11 @@ const prefetchBlocks = async (
     }
 
     const fetchBlockPromises = blocks.map(async block => {
-      const { blockHash, blockNumber, parentHash, timestamp } = block;
+      const { cid, blockHash, blockNumber, parentHash, timestamp } = block;
       const blockProgress = await indexer.getBlockProgress(blockHash);
 
       if (!blockProgress) {
-        await indexer.fetchBlockEvents({ blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+        await indexer.fetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
       }
     });
 
