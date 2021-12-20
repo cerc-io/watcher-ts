@@ -203,6 +203,9 @@ export class JobRunner {
         }, { priority: newPriority });
 
         throw new Error(message);
+      } else {
+        // Remove the unknown events of the parent block if it is marked complete.
+        await this._indexer.removeUnknownEvents(parentBlock);
       }
     } else {
       blockProgress = parentBlock;

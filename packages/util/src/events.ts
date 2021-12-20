@@ -109,10 +109,6 @@ export class EventWatcher {
 
     await this.publishBlockProgressToSubscribers(blockProgress);
 
-    if (blockProgress.isComplete) {
-      await this._indexer.removeUnknownEvents(blockProgress);
-    }
-
     return this._indexer.getBlockEvents(
       blockProgress.blockHash,
       {
