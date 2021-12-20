@@ -30,7 +30,7 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify",
+    "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify --runtime stub --maximumMemory 10",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
     "test": "yarn asbuild:debug && DEBUG=vulcanize:* mocha src/**/*.test.ts",

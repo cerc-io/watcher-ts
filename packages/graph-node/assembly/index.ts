@@ -80,3 +80,7 @@ export function testLog (): void {
   log.error('Error message', []);
   log.critical('Critical message', []);
 }
+
+export function testMemory (value: string): void {
+  log.debug('testMemory value:', [value.slice(0, 10)]);
+}

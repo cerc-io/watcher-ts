@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { DeepPartial } from 'typeorm';
+import { FindConditions, FindManyOptions } from 'typeorm';
 
 import {
   IndexerInterface,
@@ -51,19 +51,19 @@ export class Indexer implements IndexerInterface {
     return '';
   }
 
-  async getOrFetchBlockEvents (block: DeepPartial<BlockProgressInterface>): Promise<Array<EventInterface>> {
-    assert(block);
-
-    return [];
+  async fetchBlockEvents (block: BlockProgressInterface): Promise<BlockProgressInterface> {
+    return block;
   }
 
   async removeUnknownEvents (block: BlockProgressInterface): Promise<void> {
     assert(block);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    assert(blockHash);
+  async updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface> {
+    assert(block);
     assert(lastProcessedEventIndex);
+
+    return block;
   }
 
   async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
@@ -103,6 +103,21 @@ export class Indexer implements IndexerInterface {
 
   getEntityTypesMap (): Map<string, { [key: string]: string; }> {
     return new Map();
+  }
+
+  async getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]> {
+    assert(where);
+    assert(options);
+
+    return [];
+  }
+
+  async saveEventEntity (dbEvent: EventInterface): Promise<EventInterface> {
+    return dbEvent;
+  }
+
+  async processEvent (event: EventInterface): Promise<void> {
+    assert(event);
   }
 }
 
