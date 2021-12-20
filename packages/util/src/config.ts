@@ -33,6 +33,7 @@ export interface ServerConfig {
   checkpointInterval: number;
   ipfsApiAddr: string;
   subgraphPath: string;
+  subgraphRestartBlocks: number;
 }
 
 export interface UpstreamConfig {

@@ -9,15 +9,13 @@ import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
 
-import { ResultObject, instantiate as reInstantiate } from '@vulcanize/assemblyscript/lib/loader';
+import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
 import { Context, GraphData, instantiate } from './loader';
 import { Database } from './database';
-
-const RESTART_INSTANCE_BLOCKS = 5;
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -25,7 +23,6 @@ interface DataSource {
   instance: ResultObject & { exports: any },
   contractInterface: utils.Interface,
   data: GraphData,
-  filePath: string
 }
 
 export class GraphWatcher {
@@ -34,6 +31,7 @@ export class GraphWatcher {
   _postgraphileClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
+  _subgraphRestartBlocks: number;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
@@ -41,11 +39,12 @@ export class GraphWatcher {
     event: {}
   }
 
-  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, subgraphPath: string) {
+  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._subgraphPath = subgraphPath;
+    this._subgraphPath = serverConfig.subgraphPath;
+    this._subgraphRestartBlocks = serverConfig.subgraphRestartBlocks;
   }
 
   async init () {
@@ -81,8 +80,7 @@ export class GraphWatcher {
       return {
         instance: await instantiate(this._database, this._indexer, this._ethProvider, this._context, filePath, data),
         contractInterface,
-        data,
-        filePath
+        data
       };
     }, {});
 
@@ -168,7 +166,19 @@ export class GraphWatcher {
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    await instanceExports[eventHandler.handler](ethereumEvent);
+    try {
+      await instanceExports[eventHandler.handler](ethereumEvent);
+    } catch (error) {
+      if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
+        if (error.message === 'unreachable') {
+          // Reintantiate WASM for out of memory error.
+          this._reInitWasm(dataSource.source.address);
+        }
+      }
+
+      // Job will retry after throwing error.
+      throw error;
+    }
   }
 
   async handleBlock (blockHash: string) {
@@ -178,18 +188,13 @@ export class GraphWatcher {
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
-      if (blockData.blockNumber % RESTART_INSTANCE_BLOCKS === 0) {
-        const { data, filePath } = this._dataSourceMap[dataSource.source.address];
-        assert(this._indexer);
-
-        this._dataSourceMap[dataSource.source.address].instance = await instantiate(
-          this._database,
-          this._indexer,
-          this._ethProvider,
-          this._context,
-          filePath,
-          data
-        );
+      // Reinstantiate WASM after every N blocks.
+      if (blockData.blockNumber % this._subgraphRestartBlocks === 0) {
+        // The WASM instance allocates memory as required and the limit is 4GB.
+        // https://stackoverflow.com/a/40453962
+        // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
+        // https://github.com/WebAssembly/memory64/blob/main/proposals/memory64/Overview.md#motivation
+        await this._reInitWasm(dataSource.source.address);
       }
 
       // Check if block handler(s) are configured and start block has been reached.
@@ -197,34 +202,28 @@ export class GraphWatcher {
         continue;
       }
 
-      // Retry block handler if out of memory.
-      while (true) {
-        const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
+      const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
 
-        // Create ethereum block to be passed to a wasm block handler.
-        const ethereumBlock = await createBlock(instanceExports, blockData);
+      // Create ethereum block to be passed to a wasm block handler.
+      const ethereumBlock = await createBlock(instanceExports, blockData);
 
-        // Call all the block handlers one after the another for a contract.
-        const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
-          await instanceExports[blockHandler.handler](ethereumBlock);
-        });
+      // Call all the block handlers one after the another for a contract.
+      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+        await instanceExports[blockHandler.handler](ethereumBlock);
+      });
 
-        try {
-          await Promise.all(blockHandlerPromises);
-
-          break;
-        } catch (error) {
-          if (
-            !(
-              error instanceof WebAssembly.RuntimeError
-              // && error?.message !== 'unreachable'
-            )
-          ) {
-            throw error;
+      try {
+        await Promise.all(blockHandlerPromises);
+      } catch (error) {
+        if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
+          if (error.message === 'unreachable') {
+            // Reintantiate WASM for out of memory error.
+            this._reInitWasm(dataSource.source.address);
           }
-
-          this._dataSourceMap[dataSource.source.address].instance = await reInstantiate(module);
         }
+
+        // Job will retry after throwing error.
+        throw error;
       }
     }
   }
@@ -239,5 +238,28 @@ export class GraphWatcher {
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
+  }
+
+  /**
+   * Method to reinstantiate WASM instance for specified contract address.
+   * @param contractAddress
+   */
+  async _reInitWasm (contractAddress: string): Promise<void> {
+    const { data, instance: { module } } = this._dataSourceMap[contractAddress];
+    assert(this._indexer);
+
+    // Reinstantiate with existing module.
+    this._dataSourceMap[contractAddress].instance = await instantiate(
+      this._database,
+      this._indexer,
+      this._ethProvider,
+      this._context,
+      module,
+      data
+    );
+
+    // Important to call _start for built subgraphs on instantiation!
+    // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
+    this._dataSourceMap[contractAddress].instance.exports._start();
   }
 }

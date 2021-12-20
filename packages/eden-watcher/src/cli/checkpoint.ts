@@ -49,7 +49,7 @@ const main = async (): Promise<void> => {
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server.subgraphPath);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server);
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
