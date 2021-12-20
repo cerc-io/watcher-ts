@@ -38,7 +38,7 @@ interface DataSource {
   address: string
 }
 
-interface GraphData {
+export interface GraphData {
   abis?: {[key: string]: ContractInterface};
   dataSource?: DataSource;
 }
@@ -56,11 +56,16 @@ export const instantiate = async (
   indexer: IndexerInterface,
   provider: BaseProvider,
   context: Context,
-  filePath: string,
+  filePathOrModule: string | WebAssembly.Module,
   data: GraphData = {}
 ): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
-  const buffer = await fs.readFile(filePath);
+
+  let source = filePathOrModule;
+
+  if (!(filePathOrModule instanceof WebAssembly.Module)) {
+    source = await fs.readFile(filePathOrModule);
+  }
 
   const imports: WebAssembly.Imports = {
     index: {
@@ -580,7 +585,7 @@ export const instantiate = async (
     }
   };
 
-  const instance = await loader.instantiate(buffer, imports);
+  const instance = await loader.instantiate(source, imports);
   const { exports: instanceExports } = instance;
 
   const { __getString, __newString, __getArray, __newArray } = instanceExports;

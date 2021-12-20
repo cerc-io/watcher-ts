@@ -9,19 +9,23 @@ import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
 
-import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+import { ResultObject, instantiate as reInstantiate } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { IndexerInterface, getFullBlock, BlockHeight } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
-import { Context, instantiate } from './loader';
+import { Context, GraphData, instantiate } from './loader';
 import { Database } from './database';
+
+const RESTART_INSTANCE_BLOCKS = 5;
 
 const log = debug('vulcanize:graph-watcher');
 
 interface DataSource {
   instance: ResultObject & { exports: any },
-  contractInterface: utils.Interface
+  contractInterface: utils.Interface,
+  data: GraphData,
+  filePath: string
 }
 
 export class GraphWatcher {
@@ -76,7 +80,9 @@ export class GraphWatcher {
 
       return {
         instance: await instantiate(this._database, this._indexer, this._ethProvider, this._context, filePath, data),
-        contractInterface
+        contractInterface,
+        data,
+        filePath
       };
     }, {});
 
@@ -172,22 +178,54 @@ export class GraphWatcher {
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
+      if (blockData.blockNumber % RESTART_INSTANCE_BLOCKS === 0) {
+        const { data, filePath } = this._dataSourceMap[dataSource.source.address];
+        assert(this._indexer);
+
+        this._dataSourceMap[dataSource.source.address].instance = await instantiate(
+          this._database,
+          this._indexer,
+          this._ethProvider,
+          this._context,
+          filePath,
+          data
+        );
+      }
+
       // Check if block handler(s) are configured and start block has been reached.
       if (!dataSource.mapping.blockHandlers || blockData.blockNumber < dataSource.source.startBlock) {
         continue;
       }
 
-      const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
+      // Retry block handler if out of memory.
+      while (true) {
+        const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
 
-      // Create ethereum block to be passed to a wasm block handler.
-      const ethereumBlock = await createBlock(instanceExports, blockData);
+        // Create ethereum block to be passed to a wasm block handler.
+        const ethereumBlock = await createBlock(instanceExports, blockData);
 
-      // Call all the block handlers one after the another for a contract.
-      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
-        await instanceExports[blockHandler.handler](ethereumBlock);
-      });
+        // Call all the block handlers one after the another for a contract.
+        const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+          await instanceExports[blockHandler.handler](ethereumBlock);
+        });
 
-      await Promise.all(blockHandlerPromises);
+        try {
+          await Promise.all(blockHandlerPromises);
+
+          break;
+        } catch (error) {
+          if (
+            !(
+              error instanceof WebAssembly.RuntimeError
+              // && error?.message !== 'unreachable'
+            )
+          ) {
+            throw error;
+          }
+
+          this._dataSourceMap[dataSource.source.address].instance = await reInstantiate(module);
+        }
+      }
     }
   }
 

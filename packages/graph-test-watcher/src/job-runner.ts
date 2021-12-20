@@ -57,12 +57,6 @@ export class JobRunner {
       // TODO Call pre-block hook here (Directly or indirectly (Like done through indexer.processEvent for events)).
 
       await this._baseJobRunner.processBlock(job);
-
-      const { data: { kind, blockHash, blockNumber } } = job;
-
-      if (kind === JOB_KIND_INDEX) {
-        await this._indexer.processBlock(blockHash, blockNumber);
-      }
     });
   }
 

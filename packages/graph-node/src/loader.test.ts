@@ -20,6 +20,7 @@ describe('wasm loader tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let module: WebAssembly.Module;
 
   before(async () => {
     db = getTestDatabase();
@@ -36,6 +37,7 @@ describe('wasm loader tests', () => {
     );
 
     exports = instance.exports;
+    module = instance.module;
   });
 
   it('should execute exported function', async () => {
@@ -100,5 +102,19 @@ describe('wasm loader tests', () => {
       expect(error).to.be.instanceof(WebAssembly.RuntimeError);
       expect(error.message).to.equal('unreachable');
     }
+  });
+
+  it('should reinstantiate wasm', async () => {
+    const instance = await instantiate(
+      db,
+      indexer,
+      provider,
+      { event: {} },
+      module
+    );
+
+    exports = instance.exports;
+    const { callGraphAPI } = exports;
+    await callGraphAPI();
   });
 });
