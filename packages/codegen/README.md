@@ -21,11 +21,11 @@
 * Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-file <input-file-path> --contract-name <contract-name> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-path [subgraph-build-path]
+  yarn codegen --input-files <input-file-paths> --contract-names <contract-names> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-path [subgraph-build-path]
   ```
 
-    * `input-file`(alias: `i`): Input contract file path or an URL (required).
-    * `contract-name`(alias: `c`): Main contract name (required).
+    * `input-files`(alias: `i`): Input contract file path(s) or URL(s) (required).
+    * `contract-names`(alias: `c`): Contract name(s) (in order of `input-files`) (required).
     * `output-folder`(alias: `o`): Output folder path. (logs output using `stdout` if not provided).
     * `mode`(alias: `m`): Code generation mode (default: `all`).
     * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
@@ -33,35 +33,41 @@
     * `port` (alias: `p`): Server port (default: `3008`).
     * `subgraph-path` (alias: `s`): Path to the subgraph build.
 
-  **Note**: When passed an *URL* as `input-file`, it is assumed that it points to an already flattened contract file.
+  **Note**: When passed an *URL* in `input-files`, it is assumed that it points to an already flattened contract file.
 
   Examples:
 
   Generate code in `storage` mode, `lazy` kind.
 
   ```bash
-  yarn codegen --input-file ./test/examples/contracts/ERC721.sol --contract-name ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
+  yarn codegen --input-files ./test/examples/contracts/ERC721.sol --contract-names ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
   ```
 
   Generate code in `eth_call` mode using a contract provided by an URL.
 
   ```bash
-  yarn codegen --input-file https://git.io/Jupci --contract-name ERC721 --output-folder ../my-erc721-watcher --mode eth_call
+  yarn codegen --input-files https://git.io/Jupci --contract-names ERC721 --output-folder ../my-erc721-watcher --mode eth_call
   ```
 
   Generate code for `ERC721` in both `eth_call` and `storage` mode, `active` kind.
 
   ```bash
-  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-name ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
+  yarn codegen --input-files ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-names ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
   ```
 
   Generate code for `ERC20` contract in both `eth_call` and `storage` mode, `active` kind:
 
   ```bash
-  yarn codegen --input-file ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-name ERC20 --output-folder ../demo-erc20-watcher --mode all --kind active
+  yarn codegen --input-files ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-names ERC20 --output-folder ../demo-erc20-watcher --mode all --kind active
   ```
 
   This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
+
+  Generate code for `Eden` contracts in `storage` mode, `active` kind:
+
+  ```bash
+  yarn codegen --input-files ~/vulcanize/governance/contracts/EdenNetwork.sol ~/vulcanize/governance/contracts/MerkleDistributor.sol ~/vulcanize/governance/contracts/DistributorGovernance.sol --contract-names EdenNetwork MerkleDistributor DistributorGovernance --output-folder ../demo-eden-watcher --mode storage --kind active --subgraph-path ~/vulcanize/eden-data/packages/subgraph/build
+  ```
 
 ## Run Generated Watcher
 

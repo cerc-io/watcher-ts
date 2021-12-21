@@ -7,6 +7,8 @@ import fetch from 'node-fetch';
 import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import assert from 'assert';
+import { Writable } from 'stream';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
@@ -35,17 +37,17 @@ import { exportInspectCID } from './inspect-cid';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
-    .option('input-file', {
+    .option('input-files', {
       alias: 'i',
       demandOption: true,
-      describe: 'Input contract file path or an url.',
-      type: 'string'
+      describe: 'Input contract file path(s) or url(s).',
+      type: 'array'
     })
-    .option('contract-name', {
+    .option('contract-names', {
       alias: 'c',
       demandOption: true,
-      describe: 'Main contract name.',
-      type: 'string'
+      describe: 'Contract name(s).',
+      type: 'array'
     })
     .option('output-folder', {
       alias: 'o',
@@ -85,47 +87,57 @@ const main = async (): Promise<void> => {
     })
     .argv;
 
-  let data: string;
-  if (argv['input-file'].startsWith('http')) {
-    // Assume flattened file in case of URL.
-    const response = await fetch(argv['input-file']);
-    data = await response.text();
-  } else {
-    data = argv.flatten
-      ? await flatten(path.resolve(argv['input-file']))
-      : fs.readFileSync(path.resolve(argv['input-file'])).toString();
+  // Create an array of flattened contract strings.
+  const contractStrings: string[] = [];
+
+  for (const inputFile of argv['input-files']) {
+    assert(typeof inputFile === 'string', 'Input file path should be a string');
+
+    if (inputFile.startsWith('http')) {
+      // Assume flattened file in case of URL.
+      const response = await fetch(inputFile);
+      const contractString = await response.text();
+      contractStrings.push(contractString);
+    } else {
+      contractStrings.push(argv.flatten
+        ? await flatten(path.resolve(inputFile))
+        : fs.readFileSync(path.resolve(inputFile)).toString()
+      );
+    }
   }
 
   const visitor = new Visitor();
 
-  parseAndVisit(data, visitor, argv.mode);
+  parseAndVisit(contractStrings, visitor, argv.mode);
 
-  generateWatcher(data, visitor, argv);
+  generateWatcher(contractStrings, visitor, argv);
 };
 
-function parseAndVisit (data: string, visitor: Visitor, mode: string) {
-  // Get the abstract syntax tree for the flattened contract.
-  const ast = parse(data);
+function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: string) {
+  for (const contractString of contractStrings) {
+    // Get the abstract syntax tree for the flattened contract.
+    const ast = parse(contractString);
 
-  // Filter out library nodes.
-  ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
+    // Filter out library nodes.
+    ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
 
-  if ([MODE_ALL, MODE_ETH_CALL].some(value => value === mode)) {
-    visit(ast, {
-      FunctionDefinition: visitor.functionDefinitionVisitor.bind(visitor),
-      EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
-    });
-  }
+    if ([MODE_ALL, MODE_ETH_CALL].includes(mode)) {
+      visit(ast, {
+        FunctionDefinition: visitor.functionDefinitionVisitor.bind(visitor),
+        EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
+      });
+    }
 
-  if ([MODE_ALL, MODE_STORAGE].some(value => value === mode)) {
-    visit(ast, {
-      StateVariableDeclaration: visitor.stateVariableDeclarationVisitor.bind(visitor),
-      EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
-    });
+    if ([MODE_ALL, MODE_STORAGE].includes(mode)) {
+      visit(ast, {
+        StateVariableDeclaration: visitor.stateVariableDeclarationVisitor.bind(visitor),
+        EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
+      });
+    }
   }
 }
 
-function generateWatcher (data: string, visitor: Visitor, argv: any) {
+function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any) {
   // Prepare directory structure for the watcher.
   let outputDir = '';
   if (argv['output-folder']) {
@@ -145,13 +157,34 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     if (!fs.existsSync(resetCmdsFolder)) fs.mkdirSync(resetCmdsFolder, { recursive: true });
   }
 
-  const inputFileName = path.basename(argv['input-file'], '.sol');
+  let outStream: Writable;
 
+  const contractNames = argv['contract-names'];
+  const inputFileNames: string[] = [];
+
+  // Export artifacts for the contracts.
+  argv['input-files'].forEach((inputFile: string, index: number) => {
+    const inputFileName = path.basename(inputFile, '.sol');
+    inputFileNames.push(inputFileName);
+
+    outStream = outputDir
+      ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))
+      : process.stdout;
+
+    exportArtifacts(
+      outStream,
+      contractStrings[index],
+      `${inputFileName}.sol`,
+      contractNames[index]
+    );
+  });
+
+  // Register the handlebar helpers to be used in the templates.
   registerHandlebarHelpers();
 
   visitor.visitSubgraph(argv['subgraph-path']);
 
-  let outStream = outputDir
+  outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
   const schemaContent = visitor.exportSchema(outStream);
@@ -164,7 +197,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/indexer.ts'))
     : process.stdout;
-  visitor.exportIndexer(outStream, inputFileName, argv['contract-name']);
+  visitor.exportIndexer(outStream, inputFileNames);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))
@@ -175,16 +208,6 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
   exportConfig(argv.kind, argv.port, path.basename(outputDir), outStream, argv['subgraph-path']);
-
-  outStream = outputDir
-    ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))
-    : process.stdout;
-  exportArtifacts(
-    outStream,
-    data,
-    `${inputFileName}.sol`,
-    argv['contract-name']
-  );
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/database.ts'))
@@ -242,6 +265,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   exportFill(outStream);
 
   let rcOutStream, ignoreOutStream;
+
   if (outputDir) {
     rcOutStream = fs.createWriteStream(path.join(outputDir, '.eslintrc.json'));
     ignoreOutStream = fs.createWriteStream(path.join(outputDir, '.eslintignore'));
@@ -249,6 +273,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     rcOutStream = process.stdout;
     ignoreOutStream = process.stdout;
   }
+
   exportLint(rcOutStream, ignoreOutStream);
 
   outStream = outputDir
@@ -257,6 +282,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
 
   let resetOutStream, resetJQOutStream, resetStateOutStream;
+
   if (outputDir) {
     resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
     resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
@@ -266,6 +292,7 @@ function generateWatcher (data: string, visitor: Visitor, argv: any) {
     resetJQOutStream = process.stdout;
     resetStateOutStream = process.stdout;
   }
+
   visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
 
   outStream = outputDir
