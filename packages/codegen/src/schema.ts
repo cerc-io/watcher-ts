@@ -36,7 +36,7 @@ export class Schema {
 
     // TODO: Handle cases where returnType/params type is an array.
     const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType);
+    assert(tsReturnType, `ts type for sol type ${returnType} for ${name} not found`);
 
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
@@ -51,7 +51,7 @@ export class Schema {
     if (params.length > 0) {
       queryObject[name].args = params.reduce((acc, curr) => {
         const tsCurrType = getTsForSol(curr.type);
-        assert(tsCurrType);
+        assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
         acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
         return acc;
       }, queryObject[name].args);
@@ -81,7 +81,7 @@ export class Schema {
     if (params.length > 0) {
       typeObject.fields = params.reduce((acc, curr) => {
         const tsCurrType = getTsForSol(curr.type);
-        assert(tsCurrType);
+        assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
         acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
         return acc;
       }, typeObject.fields);
