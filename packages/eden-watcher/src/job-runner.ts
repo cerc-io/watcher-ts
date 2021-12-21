@@ -21,8 +21,7 @@ import {
   QUEUE_IPFS,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  initClients,
-  JOB_KIND_INDEX
+  initClients
 } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
@@ -57,12 +56,6 @@ export class JobRunner {
       // TODO Call pre-block hook here (Directly or indirectly (Like done through indexer.processEvent for events)).
 
       await this._baseJobRunner.processBlock(job);
-
-      const { data: { kind, blockHash, blockNumber } } = job;
-
-      if (kind === JOB_KIND_INDEX) {
-        await this._indexer.processBlock(blockHash, blockNumber);
-      }
     });
   }
 
@@ -138,7 +131,7 @@ export const main = async (): Promise<any> => {
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server.subgraphPath);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server);
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');

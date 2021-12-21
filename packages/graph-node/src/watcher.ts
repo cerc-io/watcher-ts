@@ -11,17 +11,18 @@ import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
-import { Context, instantiate } from './loader';
+import { Context, GraphData, instantiate } from './loader';
 import { Database } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
 interface DataSource {
-  instance: ResultObject & { exports: any },
-  contractInterface: utils.Interface
+  instance?: ResultObject & { exports: any },
+  contractInterface: utils.Interface,
+  data: GraphData,
 }
 
 export class GraphWatcher {
@@ -30,6 +31,7 @@ export class GraphWatcher {
   _postgraphileClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
+  _wasmRestartBlocksInterval: number;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
@@ -37,11 +39,12 @@ export class GraphWatcher {
     event: {}
   }
 
-  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, subgraphPath: string) {
+  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._subgraphPath = subgraphPath;
+    this._subgraphPath = serverConfig.subgraphPath;
+    this._wasmRestartBlocksInterval = serverConfig.wasmRestartBlocksInterval;
   }
 
   async init () {
@@ -76,7 +79,8 @@ export class GraphWatcher {
 
       return {
         instance: await instantiate(this._database, this._indexer, this._ethProvider, this._context, filePath, data),
-        contractInterface
+        contractInterface,
+        data
       };
     }, {});
 
@@ -130,7 +134,9 @@ export class GraphWatcher {
       return;
     }
 
-    const { instance: { exports: instanceExports }, contractInterface } = this._dataSourceMap[contract];
+    const { instance, contractInterface } = this._dataSourceMap[contract];
+    assert(instance);
+    const { exports: instanceExports } = instance;
 
     // Get event handler based on event topic (from event signature).
     const eventTopic = contractInterface.getEventTopic(eventSignature);
@@ -162,7 +168,7 @@ export class GraphWatcher {
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    await instanceExports[eventHandler.handler](ethereumEvent);
+    await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.source.address);
   }
 
   async handleBlock (blockHash: string) {
@@ -172,12 +178,23 @@ export class GraphWatcher {
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
+      // Reinstantiate WASM after every N blocks.
+      if (blockData.blockNumber % this._wasmRestartBlocksInterval === 0) {
+        // The WASM instance allocates memory as required and the limit is 4GB.
+        // https://stackoverflow.com/a/40453962
+        // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
+        // https://github.com/WebAssembly/memory64/blob/main/proposals/memory64/Overview.md#motivation
+        await this._reInitWasm(dataSource.source.address);
+      }
+
       // Check if block handler(s) are configured and start block has been reached.
       if (!dataSource.mapping.blockHandlers || blockData.blockNumber < dataSource.source.startBlock) {
         continue;
       }
 
-      const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
+      const { instance } = this._dataSourceMap[dataSource.source.address];
+      assert(instance);
+      const { exports: instanceExports } = instance;
 
       // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(instanceExports, blockData);
@@ -187,7 +204,7 @@ export class GraphWatcher {
         await instanceExports[blockHandler.handler](ethereumBlock);
       });
 
-      await Promise.all(blockHandlerPromises);
+      await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.source.address);
     }
   }
 
@@ -201,5 +218,49 @@ export class GraphWatcher {
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
+  }
+
+  /**
+   * Method to reinstantiate WASM instance for specified contract address.
+   * @param contractAddress
+   */
+  async _reInitWasm (contractAddress: string): Promise<void> {
+    const { data, instance } = this._dataSourceMap[contractAddress];
+
+    assert(instance);
+    const { module } = instance;
+    delete this._dataSourceMap[contractAddress].instance;
+
+    assert(this._indexer);
+
+    // Reinstantiate with existing module.
+    this._dataSourceMap[contractAddress].instance = await instantiate(
+      this._database,
+      this._indexer,
+      this._ethProvider,
+      this._context,
+      module,
+      data
+    );
+
+    // Important to call _start for built subgraphs on instantiation!
+    // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
+    this._dataSourceMap[contractAddress].instance!.exports._start();
+  }
+
+  async _handleMemoryError (handlerPromise: Promise<any>, contractAddress: string): Promise<void> {
+    try {
+      await handlerPromise;
+    } catch (error) {
+      if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
+        if (error.message === 'unreachable') {
+          // Reintantiate WASM for out of memory error.
+          this._reInitWasm(contractAddress);
+        }
+      }
+
+      // Job will retry after throwing error.
+      throw error;
+    }
   }
 }

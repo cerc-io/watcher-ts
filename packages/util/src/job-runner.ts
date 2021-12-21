@@ -232,6 +232,10 @@ export class JobRunner {
       await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
     }
 
+    if (this._indexer.processBlock) {
+      await this._indexer.processBlock(blockHash, blockNumber);
+    }
+
     const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();
     log(`time:job-runner#_indexBlock: ${indexBlockDuration}ms`);
   }
