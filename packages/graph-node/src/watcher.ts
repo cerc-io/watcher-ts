@@ -20,7 +20,7 @@ import { Database } from './database';
 const log = debug('vulcanize:graph-watcher');
 
 interface DataSource {
-  instance: ResultObject & { exports: any },
+  instance?: ResultObject & { exports: any },
   contractInterface: utils.Interface,
   data: GraphData,
 }
@@ -31,7 +31,7 @@ export class GraphWatcher {
   _postgraphileClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
-  _subgraphRestartBlocks: number;
+  _wasmRestartBlocksInterval: number;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
 
@@ -44,7 +44,7 @@ export class GraphWatcher {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._subgraphPath = serverConfig.subgraphPath;
-    this._subgraphRestartBlocks = serverConfig.subgraphRestartBlocks;
+    this._wasmRestartBlocksInterval = serverConfig.wasmRestartBlocksInterval;
   }
 
   async init () {
@@ -134,7 +134,9 @@ export class GraphWatcher {
       return;
     }
 
-    const { instance: { exports: instanceExports }, contractInterface } = this._dataSourceMap[contract];
+    const { instance, contractInterface } = this._dataSourceMap[contract];
+    assert(instance);
+    const { exports: instanceExports } = instance;
 
     // Get event handler based on event topic (from event signature).
     const eventTopic = contractInterface.getEventTopic(eventSignature);
@@ -166,19 +168,7 @@ export class GraphWatcher {
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    try {
-      await instanceExports[eventHandler.handler](ethereumEvent);
-    } catch (error) {
-      if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
-        if (error.message === 'unreachable') {
-          // Reintantiate WASM for out of memory error.
-          this._reInitWasm(dataSource.source.address);
-        }
-      }
-
-      // Job will retry after throwing error.
-      throw error;
-    }
+    await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.source.address);
   }
 
   async handleBlock (blockHash: string) {
@@ -189,7 +179,7 @@ export class GraphWatcher {
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
       // Reinstantiate WASM after every N blocks.
-      if (blockData.blockNumber % this._subgraphRestartBlocks === 0) {
+      if (blockData.blockNumber % this._wasmRestartBlocksInterval === 0) {
         // The WASM instance allocates memory as required and the limit is 4GB.
         // https://stackoverflow.com/a/40453962
         // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
@@ -202,7 +192,9 @@ export class GraphWatcher {
         continue;
       }
 
-      const { instance: { exports: instanceExports } } = this._dataSourceMap[dataSource.source.address];
+      const { instance } = this._dataSourceMap[dataSource.source.address];
+      assert(instance);
+      const { exports: instanceExports } = instance;
 
       // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(instanceExports, blockData);
@@ -212,19 +204,7 @@ export class GraphWatcher {
         await instanceExports[blockHandler.handler](ethereumBlock);
       });
 
-      try {
-        await Promise.all(blockHandlerPromises);
-      } catch (error) {
-        if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
-          if (error.message === 'unreachable') {
-            // Reintantiate WASM for out of memory error.
-            this._reInitWasm(dataSource.source.address);
-          }
-        }
-
-        // Job will retry after throwing error.
-        throw error;
-      }
+      await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.source.address);
     }
   }
 
@@ -245,7 +225,12 @@ export class GraphWatcher {
    * @param contractAddress
    */
   async _reInitWasm (contractAddress: string): Promise<void> {
-    const { data, instance: { module } } = this._dataSourceMap[contractAddress];
+    const { data, instance } = this._dataSourceMap[contractAddress];
+
+    assert(instance);
+    const { module } = instance;
+    delete this._dataSourceMap[contractAddress].instance;
+
     assert(this._indexer);
 
     // Reinstantiate with existing module.
@@ -260,6 +245,22 @@ export class GraphWatcher {
 
     // Important to call _start for built subgraphs on instantiation!
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
-    this._dataSourceMap[contractAddress].instance.exports._start();
+    this._dataSourceMap[contractAddress].instance!.exports._start();
+  }
+
+  async _handleMemoryError (handlerPromise: Promise<any>, contractAddress: string): Promise<void> {
+    try {
+      await handlerPromise;
+    } catch (error) {
+      if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
+        if (error.message === 'unreachable') {
+          // Reintantiate WASM for out of memory error.
+          this._reInitWasm(contractAddress);
+        }
+      }
+
+      // Job will retry after throwing error.
+      throw error;
+    }
   }
 }

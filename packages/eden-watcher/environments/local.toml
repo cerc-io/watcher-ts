@@ -13,7 +13,7 @@
   ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
   subgraphPath = "../graph-node/test/subgraph/eden"
-  subgraphRestartBlocks = 20
+  wasmRestartBlocksInterval = 20
 
 [database]
   type = "postgres"

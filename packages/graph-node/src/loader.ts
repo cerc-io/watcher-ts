@@ -34,13 +34,11 @@ const BN_ENDIANNESS = 'le';
 
 type idOfType = (TypeId: number) => number
 
-interface DataSource {
-  address: string
-}
-
 export interface GraphData {
   abis?: {[key: string]: ContractInterface};
-  dataSource?: DataSource;
+  dataSource?: {
+    address: string
+  };
 }
 
 export interface Context {
