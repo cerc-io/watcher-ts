@@ -98,6 +98,7 @@ export interface IndexerInterface {
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
+  processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
 }
 
 export interface EventWatcherInterface {

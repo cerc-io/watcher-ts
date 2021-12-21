@@ -4,6 +4,7 @@
 
 import path from 'path';
 import { expect } from 'chai';
+import { utils } from 'ethers';
 
 import { BaseProvider } from '@ethersproject/providers';
 
@@ -19,6 +20,7 @@ describe('wasm loader tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let module: WebAssembly.Module;
 
   before(async () => {
     db = getTestDatabase();
@@ -35,6 +37,7 @@ describe('wasm loader tests', () => {
     );
 
     exports = instance.exports;
+    module = instance.module;
   });
 
   it('should execute exported function', async () => {
@@ -75,5 +78,43 @@ describe('wasm loader tests', () => {
 
     // Should print all log messages for different levels.
     await testLog();
+  });
+
+  it('should throw out of memory error', async () => {
+    // Maximum memory is set to 10 pages (640KB) when compiling using asc maximumMemory option.
+    // https://www.assemblyscript.org/compiler.html#command-line-options
+
+    const { testMemory, __newString, memory } = exports;
+
+    try {
+      // Continue loop until memory size reaches max size 640KB
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/buffer
+      while (memory.buffer.byteLength <= 1024 * 640) {
+        // Create long string of 100KB.
+        const longString = utils.hexValue(utils.randomBytes(1024 * 100 / 2));
+
+        const stringPtr = await __newString(longString);
+        await testMemory(stringPtr);
+      }
+
+      expect.fail('wasm code should throw error');
+    } catch (error) {
+      expect(error).to.be.instanceof(WebAssembly.RuntimeError);
+      expect(error.message).to.equal('unreachable');
+    }
+  });
+
+  it('should reinstantiate wasm', async () => {
+    const instance = await instantiate(
+      db,
+      indexer,
+      provider,
+      { event: {} },
+      module
+    );
+
+    exports = instance.exports;
+    const { callGraphAPI } = exports;
+    await callGraphAPI();
   });
 });
