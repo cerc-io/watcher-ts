@@ -77,7 +77,7 @@ export class EventWatcher {
       const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
       if (isComplete) {
-        processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, blockNumber + 1);
+        await processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, blockNumber + 1);
       }
     }
   }

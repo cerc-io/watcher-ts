@@ -9,7 +9,7 @@ import { In } from 'typeorm';
 import { JobQueueConfig } from './config';
 import { JOB_KIND_INDEX, JOB_KIND_PRUNE, JOB_KIND_EVENTS, JOB_KIND_CONTRACT, MAX_REORG_DEPTH, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, UNKNOWN_EVENT_NAME } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface } from './types';
+import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 import { OrderDirection } from './database';
@@ -33,13 +33,16 @@ export class JobRunner {
   async processBlock (job: any): Promise<void> {
     const { data: { kind } } = job;
 
+    const syncStatus = await this._indexer.getSyncStatus();
+    assert(syncStatus);
+
     switch (kind) {
       case JOB_KIND_INDEX:
-        await this._indexBlock(job);
+        await this._indexBlock(job, syncStatus);
         break;
 
       case JOB_KIND_PRUNE:
-        await this._pruneChain(job);
+        await this._pruneChain(job, syncStatus);
         break;
 
       default:
@@ -70,11 +73,8 @@ export class JobRunner {
     await this._jobQueue.markComplete(job);
   }
 
-  async _pruneChain (job: any): Promise<void> {
+  async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
     const { pruneBlockHeight } = job.data;
-
-    const syncStatus = await this._indexer.getSyncStatus();
-    assert(syncStatus);
 
     log(`Processing chain pruning at ${pruneBlockHeight}`);
 
@@ -116,7 +116,7 @@ export class JobRunner {
     }
   }
 
-  async _indexBlock (job: any): Promise<void> {
+  async _indexBlock (job: any, syncStatus: SyncStatusInterface): Promise<void> {
     const { data: { blockHash, blockNumber, parentHash, priority, timestamp } } = job;
 
     const indexBlockStartTime = new Date();
@@ -130,9 +130,6 @@ export class JobRunner {
 
     this._blockProcessStartTime = indexBlockStartTime;
     log(`Processing block number ${blockNumber} hash ${blockHash} `);
-
-    const syncStatus = await this._indexer.updateSyncStatusChainHead(blockHash, blockNumber);
-    assert(syncStatus);
 
     // Check if chain pruning is caught up.
     if ((syncStatus.latestIndexedBlockNumber - syncStatus.latestCanonicalBlockNumber) > MAX_REORG_DEPTH) {

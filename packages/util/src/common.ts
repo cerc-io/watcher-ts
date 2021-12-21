@@ -87,6 +87,8 @@ export const processBlockByNumber = async (
         }
       }
 
+      await indexer.updateSyncStatusChainHead(blocks[0].blockHash, blocks[0].blockNumber);
+
       return;
     }
 
