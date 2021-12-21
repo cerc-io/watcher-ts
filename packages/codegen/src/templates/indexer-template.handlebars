@@ -26,7 +26,11 @@ import { SyncStatus } from './entity/SyncStatus';
 import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
+
+{{#each inputFileNames as | inputFileName |}}
 import artifacts from './artifacts/{{inputFileName}}.json';
+{{/each}}
+
 import { createInitialCheckpoint, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { IPFSClient } from './ipfs';
 
