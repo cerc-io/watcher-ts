@@ -118,6 +118,7 @@ export class Visitor {
     this._schema.addSubgraphSchema(subgraphSchemaDocument);
     this._entity.addSubgraphEntities(subgraphSchemaDocument);
     this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
+    this._reset.addSubgraphEntities(subgraphSchemaDocument);
   }
 
   /**

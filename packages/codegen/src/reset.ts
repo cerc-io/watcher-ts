@@ -50,6 +50,20 @@ export class Reset {
     this._queries.push(queryObject);
   }
 
+  addSubgraphEntities (subgraphSchemaDocument: any): void {
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    subgraphTypeDefs.forEach((def: any) => {
+      if (def.kind !== 'ObjectTypeDefinition') {
+        return;
+      }
+
+      this._queries.push({
+        entityName: def.name.value
+      });
+    });
+  }
+
   /**
    * Writes the reset.ts, job-queue.ts, state.ts files generated from templates to respective streams.
    * @param outStream A writable output stream to write the database file to.
