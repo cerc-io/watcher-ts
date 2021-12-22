@@ -35,9 +35,13 @@ columns:
     tsType: string
     columnType: Column
   - name: kind
-    pgType: varchar
-    tsType: string
+    tsType: StateKind
     columnType: Column
+    columnOptions:
+      - option: type
+        value: "'enum'"
+      - option: enum
+        value: StateKind
   - name: data
     pgType: bytea
     tsType: Buffer
@@ -50,6 +54,9 @@ imports:
       - Index
       - ManyToOne
     from: typeorm
+  - toImport:
+      - StateKind
+    from: '@vulcanize/util'
   - toImport:
       - BlockProgress
     from: ./BlockProgress

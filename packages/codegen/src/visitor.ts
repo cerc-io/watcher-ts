@@ -45,8 +45,16 @@ export class Visitor {
         return { name: item.name, type: item.typeName.name };
       });
 
+      const typeName = node.returnParameters[0].typeName;
+
+      // TODO Handle user defined type return.
+      if (typeName.type === 'UserDefinedTypeName') {
+        // Skip in case of UserDefinedTypeName.
+        return;
+      }
+
       // TODO Handle multiple return parameters and array return type.
-      const returnType = node.returnParameters[0].typeName.name;
+      const returnType = typeName.name;
 
       this._schema.addQuery(name, params, returnType);
       this._resolvers.addQuery(name, params, returnType);
@@ -72,6 +80,13 @@ export class Visitor {
     const params: Param[] = [];
 
     let typeName = variable.typeName;
+
+    // TODO Handle user defined type.
+    if (typeName.type === 'UserDefinedTypeName') {
+      // Skip in case of UserDefinedTypeName.
+      return;
+    }
+
     let numParams = 0;
 
     // If the variable type is mapping, extract key as a param:

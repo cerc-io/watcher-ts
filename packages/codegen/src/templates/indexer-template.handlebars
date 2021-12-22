@@ -7,32 +7,40 @@ import debug from 'debug';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
-import { sha256 } from 'multiformats/hashes/sha2';
-import { CID } from 'multiformats/cid';
-import _ from 'lodash';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, Where, QueryOptions, updateStateForElementaryType, updateStateForMappingType, JobQueue } from '@vulcanize/util';
+import {
+  IPLDIndexer as BaseIndexer,
+  IndexerInterface,
+  ValueResult,
+  UNKNOWN_EVENT_NAME,
+  ServerConfig,
+  JobQueue,
+  Where,
+  QueryOptions,
+  updateStateForElementaryType,
+  updateStateForMappingType,
+  BlockHeight,
+  IPFSClient,
+  StateKind
+} from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
+{{#each inputFileNames as | inputFileName |}}
+import artifacts from './artifacts/{{inputFileName}}.json';
+{{/each}}
 import { Database } from './database';
+import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
 import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
-
-{{#each inputFileNames as | inputFileName |}}
-import artifacts from './artifacts/{{inputFileName}}.json';
-{{/each}}
-
-import { createInitialCheckpoint, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
-import { IPFSClient } from './ipfs';
 
 const log = debug('vulcanize:indexer');
 
@@ -93,6 +101,9 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
+  _entityTypesMap: Map<string, { [key: string]: string }>
+  _relationsMap: Map<any, { [key: string]: any }>
+
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
@@ -103,7 +114,8 @@ export class Indexer implements IndexerInterface {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
+    this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+    this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue, this._ipfsClient);
     this._graphWatcher = graphWatcher;
 
     const { abi, storageLayout } = artifacts;
@@ -116,11 +128,13 @@ export class Indexer implements IndexerInterface {
 
     this._contract = new ethers.utils.Interface(this._abi);
 
-    this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+    this._entityTypesMap = new Map();
+    this._relationsMap = new Map();
   }
 
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
+    await this._baseIndexer.fetchIPLDStatus();
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -258,58 +272,28 @@ export class Indexer implements IndexerInterface {
   }
 
   {{/each}}
+  async pushToIPFS (data: any): Promise<void> {
+    await this._baseIndexer.pushToIPFS(data);
+  }
+
+  async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
+    // Call initial state hook.
+    return createInitialState(this, contractAddress, blockHash);
+  }
+
+  async processStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
+    // Call checkpoint hook.
+    return createStateCheckpoint(this, contractAddress, blockHash);
+  }
+
   async processCanonicalBlock (job: any): Promise<void> {
     const { data: { blockHash } } = job;
 
     // Finalize staged diff blocks if any.
-    await this.finalizeDiffStaged(blockHash);
+    await this._baseIndexer.finalizeDiffStaged(blockHash);
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
-  }
-
-  async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    const block = await this.getBlockProgress(blockHash);
-    assert(block);
-
-    // Create a staged diff block.
-    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff_staged');
-    await this.saveOrUpdateIPLDBlock(ipldBlock);
-  }
-
-  async finalizeDiffStaged (blockHash: string): Promise<void> {
-    const block = await this.getBlockProgress(blockHash);
-    assert(block);
-
-    // Get all the staged diff blocks for the given blockHash.
-    const stagedBlocks = await this._db.getIPLDBlocks({ block, kind: 'diff_staged' });
-
-    // For each staged block, create a diff block.
-    for (const stagedBlock of stagedBlocks) {
-      const data = codec.decode(Buffer.from(stagedBlock.data));
-      await this.createDiff(stagedBlock.contractAddress, stagedBlock.block.blockHash, data);
-    }
-
-    // Remove all the staged diff blocks for current blockNumber.
-    await this.removeStagedIPLDBlocks(block.blockNumber);
-  }
-
-  async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
-    const block = await this.getBlockProgress(blockHash);
-    assert(block);
-
-    // Fetch the latest checkpoint for the contract.
-    const checkpoint = await this.getLatestIPLDBlock(contractAddress, 'checkpoint');
-
-    // There should be an initial checkpoint at least.
-    // Assumption: There should be no events for the contract at the starting block.
-    assert(checkpoint, 'Initial checkpoint doesn\'t exist');
-
-    // Check if the latest checkpoint is in the same block.
-    assert(checkpoint.block.blockHash !== block.blockHash, 'Checkpoint already created for the block hash.');
-
-    const ipldBlock = await this.prepareIPLDBlock(block, contractAddress, data, 'diff');
-    await this.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   async processCheckpoint (job: any): Promise<void> {
@@ -317,256 +301,81 @@ export class Indexer implements IndexerInterface {
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
-    const { data: { blockHash, blockNumber } } = job;
-
-    // Get all the contracts.
-    const contracts = await this._db.getContracts({});
-
-    // For each contract, merge the diff till now to create a checkpoint.
-    for (const contract of contracts) {
-      // Check if contract has checkpointing on.
-      if (contract.checkpoint) {
-        // If a checkpoint doesn't already exist and blockNumber is equal to startingBlock, create an initial checkpoint.
-        const checkpointBlock = await this.getLatestIPLDBlock(contract.address, 'checkpoint');
-
-        if (!checkpointBlock) {
-          if (blockNumber === contract.startingBlock) {
-            // Call initial checkpoint hook.
-            await createInitialCheckpoint(this, contract.address, blockHash);
-          }
-        } else {
-          await this.createCheckpoint(contract.address, blockHash, null, checkpointInterval);
-        }
-      }
-    }
+    const { data: { blockHash } } = job;
+    await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
   }
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
-    const checkpointBlockHash = await this.createCheckpoint(contractAddress, blockHash);
-    assert(checkpointBlockHash);
-
-    const block = await this.getBlockProgress(checkpointBlockHash);
-    const checkpointIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind: 'checkpoint' });
-
-    // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
-    assert(checkpointIPLDBlocks.length <= 1);
-    const checkpointIPLDBlock = checkpointIPLDBlocks[0];
-
-    const checkpointData = this.getIPLDData(checkpointIPLDBlock);
-
-    await this.pushToIPFS(checkpointData);
-
-    return checkpointBlockHash;
-  }
-
-  async createCheckpoint (contractAddress: string, blockHash?: string, data?: any, checkpointInterval?: number): Promise<string | undefined> {
-    const syncStatus = await this.getSyncStatus();
-    assert(syncStatus);
-
-    // Getting the current block.
-    let currentBlock;
-
-    if (blockHash) {
-      currentBlock = await this.getBlockProgress(blockHash);
-    } else {
-      // In case of empty blockHash from checkpoint CLI, get the latest canonical block for the checkpoint.
-      currentBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
-    }
-
-    assert(currentBlock);
-
-    // Data is passed in case of initial checkpoint and checkpoint hook.
-    // Assumption: There should be no events for the contract at the starting block.
-    if (data) {
-      const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
-      await this.saveOrUpdateIPLDBlock(ipldBlock);
-
-      return;
-    }
-
-    // If data is not passed, create from previous checkpoint and diffs after that.
-
-    // Make sure the block is marked complete.
-    assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
-
-    // Make sure the block is in the pruned region.
-    assert(currentBlock.blockNumber <= syncStatus.latestCanonicalBlockNumber, 'Block for a checkpoint should be in the pruned region');
-
-    // Fetch the latest checkpoint for the contract.
-    const checkpointBlock = await this.getLatestIPLDBlock(contractAddress, 'checkpoint', currentBlock.blockNumber);
-    assert(checkpointBlock);
-
-    // Check (only if checkpointInterval is passed) if it is time for a new checkpoint.
-    if (checkpointInterval && checkpointBlock.block.blockNumber > (currentBlock.blockNumber - checkpointInterval)) {
-      return;
-    }
-
-    // Call state checkpoint hook and check if default checkpoint is disabled.
-    const disableDefaultCheckpoint = await createStateCheckpoint(this, contractAddress, currentBlock.blockHash);
-
-    if (disableDefaultCheckpoint) {
-      // Return if default checkpoint is disabled.
-      // Return block hash for checkpoint CLI.
-      return currentBlock.blockHash;
-    }
-
-    const { block: { blockNumber: checkpointBlockNumber } } = checkpointBlock;
-
-    // Fetching all diff blocks after checkpoint.
-    const diffBlocks = await this.getDiffIPLDBlocksByCheckpoint(contractAddress, checkpointBlockNumber);
-
-    const checkpointBlockData = codec.decode(Buffer.from(checkpointBlock.data)) as any;
-    data = {
-      state: checkpointBlockData.state
-    };
-
-    for (const diffBlock of diffBlocks) {
-      const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
-      data.state = _.merge(data.state, diff.state);
-    }
-
-    const ipldBlock = await this.prepareIPLDBlock(currentBlock, contractAddress, data, 'checkpoint');
-    await this.saveOrUpdateIPLDBlock(ipldBlock);
-
-    return currentBlock.blockHash;
-  }
-
-  getIPLDData (ipldBlock: IPLDBlock): any {
-    return codec.decode(Buffer.from(ipldBlock.data));
-  }
-
-  async getIPLDBlocksByHash (blockHash: string): Promise<IPLDBlock[]> {
-    const block = await this.getBlockProgress(blockHash);
-    assert(block);
-
-    return this._db.getIPLDBlocks({ block });
-  }
-
-  async getIPLDBlockByCid (cid: string): Promise<IPLDBlock | undefined> {
-    const ipldBlocks = await this._db.getIPLDBlocks({ cid });
-
-    // There can be only one IPLDBlock with a particular cid.
-    assert(ipldBlocks.length <= 1);
-
-    return ipldBlocks[0];
-  }
-
-  async getLatestIPLDBlock (contractAddress: string, kind: string | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
-    return this._db.getLatestIPLDBlock(contractAddress, kind, blockNumber);
+    return this._baseIndexer.processCLICheckpoint(this, contractAddress, blockHash);
   }
 
   async getPrevIPLDBlock (blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.getPrevIPLDBlock(dbTx, blockHash, contractAddress, kind);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-    return res;
+    return this._db.getPrevIPLDBlock(blockHash, contractAddress, kind);
   }
 
-  async getDiffIPLDBlocksByCheckpoint (contractAddress: string, checkpointBlockNumber: number): Promise<IPLDBlock[]> {
-    return this._db.getDiffIPLDBlocksByCheckpoint(contractAddress, checkpointBlockNumber);
+  async getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
+    return this._db.getLatestIPLDBlock(contractAddress, kind, blockNumber);
   }
 
-  async prepareIPLDBlock (block: BlockProgress, contractAddress: string, data: any, kind: string):Promise<any> {
-    assert(_.includes(['diff', 'checkpoint', 'diff_staged'], kind));
-
-    // Get an existing 'diff' | 'diff_staged' | 'checkpoint' IPLDBlock for current block, contractAddress.
-    const currentIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind });
-
-    // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
-    assert(currentIPLDBlocks.length <= 1);
-    const currentIPLDBlock = currentIPLDBlocks[0];
-
-    // Update currentIPLDBlock if it exists and is of same kind.
-    let ipldBlock;
-    if (currentIPLDBlock) {
-      ipldBlock = currentIPLDBlock;
-
-      // Update the data field.
-      const oldData = codec.decode(Buffer.from(currentIPLDBlock.data));
-      data = _.merge(oldData, data);
-    } else {
-      ipldBlock = new IPLDBlock();
-
-      // Fetch the parent IPLDBlock.
-      const parentIPLDBlock = await this.getLatestIPLDBlock(contractAddress, null, block.blockNumber);
-
-      // Setting the meta-data for an IPLDBlock (done only once per block).
-      data.meta = {
-        id: contractAddress,
-        kind,
-        parent: {
-          '/': parentIPLDBlock ? parentIPLDBlock.cid : null
-        },
-        ethBlock: {
-          cid: {
-            '/': block.cid
-          },
-          num: block.blockNumber
-        }
-      };
-    }
-
-    // Encoding the data using dag-cbor codec.
-    const bytes = codec.encode(data);
-
-    // Calculating sha256 (multi)hash of the encoded data.
-    const hash = await sha256.digest(bytes);
-
-    // Calculating the CID: v1, code: dag-cbor, hash.
-    const cid = CID.create(1, codec.code, hash);
-
-    // Update ipldBlock with new data.
-    ipldBlock = Object.assign(ipldBlock, {
-      block,
-      contractAddress,
-      cid: cid.toString(),
-      kind: data.meta.kind,
-      data: Buffer.from(bytes)
-    });
-
-    return ipldBlock;
+  async getIPLDBlocksByHash (blockHash: string): Promise<IPLDBlock[]> {
+    return this._baseIndexer.getIPLDBlocksByHash(blockHash);
   }
 
-  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
-    return this._db.saveOrUpdateIPLDBlock(ipldBlock);
+  async getIPLDBlockByCid (cid: string): Promise<IPLDBlock | undefined> {
+    return this._baseIndexer.getIPLDBlockByCid(cid);
   }
 
-  async removeStagedIPLDBlocks (blockNumber: number): Promise<void> {
-    const dbTx = await this._db.createTransactionRunner();
-
-    try {
-      await this._db.removeEntities(dbTx, IPLDBlock, { relations: ['block'], where: { block: { blockNumber }, kind: 'diff_staged' } });
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-  }
-
-  async pushToIPFS (data: any): Promise<void> {
-    await this._ipfsClient.push(data);
+  getIPLDData (ipldBlock: IPLDBlock): any {
+    return this._baseIndexer.getIPLDData(ipldBlock);
   }
 
   isIPFSConfigured (): boolean {
-    const ipfsAddr = this._serverConfig.ipfsApiAddr;
-
-    // Return false if ipfsAddr is undefined | null | empty string.
-    return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
+    return this._baseIndexer.isIPFSConfigured();
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, blockHash: string): Promise<Entity | undefined> {
-    return this._graphWatcher.getEntity(entity, id, blockHash);
+  // Method used to create auto diffs (diff_staged).
+  async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+  }
+
+  // Method to be used by createStateDiff hook.
+  async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    await this._baseIndexer.createDiff(contractAddress, block, data);
+  }
+
+  // Method to be used by createStateCheckpoint hook.
+  async createStateCheckpoint (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    return this._baseIndexer.createStateCheckpoint(contractAddress, block, data);
+  }
+
+  // Method to be used by checkpoint CLI.
+  async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
+    const block = await this.getBlockProgress(blockHash);
+    assert(block);
+
+    return this._baseIndexer.createCheckpoint(this, contractAddress, block);
+  }
+
+  async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
+    return this._baseIndexer.saveOrUpdateIPLDBlock(ipldBlock);
+  }
+
+  async removeIPLDBlocks (blockNumber: number, kind: StateKind): Promise<void> {
+    await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
+  }
+
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
+    const relations = this._relationsMap.get(entity) || {};
+
+    const data = await this._graphWatcher.getEntity(entity, id, relations, block);
+
+    return data;
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {
@@ -584,6 +393,14 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
+  async processBlock (blockHash: string, blockNumber: number): Promise<void> {
+    // Call a function to create initial state for contracts.
+    await this._baseIndexer.createInit(this, blockHash, blockNumber);
+
+    // Call subgraph handler for block.
+    await this._graphWatcher.handleBlock(blockHash);
+  }
+
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};
@@ -595,7 +412,9 @@ export class Indexer implements IndexerInterface {
       {{#each events as | event |}}
       case {{capitalize event.name}}_EVENT: {
         eventName = logDescription.name;
+        {{#if event.params}}
         const { {{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}} } = logDescription.args;
+        {{/if}}
         eventInfo = {
           {{#each event.params}}
           {{#if (compare this.type 'bigint')}}
@@ -619,31 +438,8 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
-    this._baseIndexer.updateIPLDStatusMap(address, {});
-
-    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
-  }
-
-  cacheContract (contract: Contract): void {
-    return this._baseIndexer.cacheContract(contract);
-  }
-
   async getHookStatus (): Promise<HookStatus | undefined> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.getHookStatus(dbTx);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
+    return this._db.getHookStatus();
   }
 
   async updateHookStatusProcessedBlock (blockNumber: number, force?: boolean): Promise<HookStatus> {
@@ -663,11 +459,32 @@ export class Indexer implements IndexerInterface {
     return res;
   }
 
-  async getLatestCanonicalBlock (): Promise<BlockProgress | undefined> {
+  async getLatestCanonicalBlock (): Promise<BlockProgress> {
     const syncStatus = await this.getSyncStatus();
     assert(syncStatus);
 
-    return this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    const latestCanonicalBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    assert(latestCanonicalBlock);
+
+    return latestCanonicalBlock;
+  }
+
+  async getLatestHooksProcessedBlock (): Promise<BlockProgress> {
+    return this._baseIndexer.getLatestHooksProcessedBlock();
+  }
+
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    this._baseIndexer.updateIPLDStatusMap(address, {});
+
+    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
+
+  cacheContract (contract: Contract): void {
+    return this._baseIndexer.cacheContract(contract);
+  }
+
+  async saveEventEntity (dbEvent: Event): Promise<Event> {
+    return this._baseIndexer.saveEventEntity(dbEvent);
   }
 
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {
@@ -690,6 +507,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getSyncStatus();
   }
 
+  async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
+    return this._baseIndexer.getBlocks(blockFilter);
+  }
+
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
@@ -700,10 +521,6 @@ export class Indexer implements IndexerInterface {
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
-  }
-
-  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    return this._baseIndexer.getBlocks(blockFilter);
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
