@@ -282,7 +282,8 @@ export class Entity {
 
   _addBigIntTransformerOption (entityObject: any): void {
     entityObject.columns.forEach((column: any) => {
-      if (column.tsType === 'bigint') {
+      // Implement bigintTransformer for bigint types.
+      if (['bigint', 'bigint[]'].includes(column.tsType)) {
         column.columnOptions.push(
           {
             option: 'transformer',
@@ -310,6 +311,11 @@ export class Entity {
 
   _addSubgraphColumns (subgraphTypeDefs: any, entityObject: any, def: any): any {
     def.fields.forEach((field: any) => {
+      if (field.directives.some((directive: any) => directive.name.value === 'derivedFrom')) {
+        // Do not add column if it is a derived field.
+        return;
+      }
+
       let name = field.name.value;
 
       // Column id is already added.
@@ -331,79 +337,51 @@ export class Entity {
       const { typeName, array, nullable } = this._getFieldType(field.type);
       let tsType = getTsForGql(typeName);
 
-      if (tsType) {
-        // Handle basic array types.
-        if (array) {
-          columnObject.columnOptions.push({
-            option: 'array',
-            value: 'true'
-          });
-
-          columnObject.tsType = `${tsType}[]`;
-        } else {
-          columnObject.tsType = tsType;
-        }
-      } else {
-        // TODO Handle array of custom types.
-        tsType = typeName;
-        columnObject.tsType = tsType;
+      if (!tsType) {
+        tsType = 'string';
       }
 
-      const pgType = getPgForTs(tsType);
+      columnObject.tsType = tsType;
 
-      // If basic type: create a column.
-      if (pgType) {
-        columnObject.pgType = pgType;
-      } else {
-        if (subgraphTypeDefs.some((typeDef: any) => typeDef.kind === 'EnumTypeDefinition' && typeDef.name.value === typeName)) {
-          // Create enum type column.
+      // Handle basic array types.
+      if (array) {
+        columnObject.columnOptions.push({
+          option: 'array',
+          value: 'true'
+        });
 
-          const entityImport = entityObject.imports.find(({ from }: any) => from === '../types');
+        columnObject.tsType = `${tsType}[]`;
+      }
 
-          if (!entityImport) {
-            entityObject.imports.push(
-              {
-                toImport: new Set([typeName]),
-                from: '../types'
-              }
-            );
-          } else {
-            entityImport.toImport.add(typeName);
-          }
+      if (subgraphTypeDefs.some((typeDef: any) => typeDef.kind === 'EnumTypeDefinition' && typeDef.name.value === typeName)) {
+        // Create enum type column.
 
-          columnObject.columnOptions.push(
+        const entityImport = entityObject.imports.find(({ from }: any) => from === '../types');
+
+        if (!entityImport) {
+          entityObject.imports.push(
             {
-              option: 'type',
-              value: "'enum'"
-            },
-            {
-              option: 'enum',
-              value: typeName
+              toImport: new Set([typeName]),
+              from: '../types'
             }
           );
         } else {
-          // Create a relation.
-
-          columnObject.columnType = 'ManyToOne';
-          columnObject.lhs = '()';
-          columnObject.rhs = tsType;
-
-          entityObject.imports[0].toImport.add('ManyToOne');
-
-          // Check if type import already added.
-          const importObject = entityObject.imports.find((element: any) => {
-            return element.from === `./${tsType}`;
-          });
-
-          if (!importObject) {
-            entityObject.imports.push(
-              {
-                toImport: new Set([tsType]),
-                from: `./${tsType}`
-              }
-            );
-          }
+          entityImport.toImport.add(typeName);
         }
+
+        columnObject.columnOptions.push(
+          {
+            option: 'type',
+            value: "'enum'"
+          },
+          {
+            option: 'enum',
+            value: typeName
+          }
+        );
+      } else {
+        // Enum type does not require pgType.
+        columnObject.pgType = getPgForTs(tsType);
       }
 
       if (nullable) {
