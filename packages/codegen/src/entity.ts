@@ -310,11 +310,16 @@ export class Entity {
 
   _addSubgraphColumns (entityObject: any, def: any): any {
     def.fields.forEach((field: any) => {
-      const name = field.name.value;
+      let name = field.name.value;
 
-      // Filter out already added columns.
-      if (['id', 'blockHash', 'blockNumber'].includes(name)) {
+      // Column id is already added.
+      if (name === 'id') {
         return;
+      }
+
+      // Handle column with existing name.
+      if (['blockHash', 'blockNumber'].includes(name)) {
+        name = `_${name}`;
       }
 
       const columnObject: any = {
