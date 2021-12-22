@@ -20,12 +20,14 @@ export class {{className}} {{~#if implements}} implements {{implements}} {{~/if}
   {{#each columns as | column |}}
   {{#if (compare column.columnType 'ManyToOne')}}
   @{{column.columnType}}({{column.lhs}} => {{column.rhs}}
+  {{~#if column.columnOptions}}, {{/if}}
   {{~else}}
   @{{column.columnType}}(
   {{~#if column.pgType~}} '{{column.pgType}}'
+  {{~#if column.columnOptions}}, {{/if}}
   {{~/if}}
   {{~/if}}
-  {{~#if column.columnOptions}}, {
+  {{~#if column.columnOptions}}{
   {{~#each column.columnOptions}} {{this.option}}: {{{this.value}}}
   {{~#unless @last}},{{/unless}}
   {{~/each}} }

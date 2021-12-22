@@ -14,12 +14,13 @@ const ACCOUNTS = [
 ];
 
 /**
- * Hook function to create an initial checkpoint.
+ * Hook function to store an initial state.
  * @param indexer Indexer instance.
- * @param block Concerned block.
+ * @param blockHash Hash of the concerned block.
  * @param contractAddress Address of the concerned contract.
+ * @returns Data block to be stored.
  */
-export async function createInitialCheckpoint (indexer: Indexer, contractAddress: string, blockHash: string): Promise<void> {
+export async function createInitialState (indexer: Indexer, contractAddress: string, blockHash: string): Promise<any> {  assert(indexer);
   assert(indexer);
   assert(blockHash);
   assert(contractAddress);
@@ -33,11 +34,12 @@ export async function createInitialCheckpoint (indexer: Indexer, contractAddress
     ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [account], balance.value.toString());
   }
 
-  await indexer.createCheckpoint(contractAddress, blockHash, ipldBlockData);
+  // Return initial state data to be saved.
+  return ipldBlockData;
 }
 
 /**
- * Hook function to create state diffs.
+ * Hook function to create state diff.
  * @param indexer Indexer instance that contains methods to fetch the contract varaiable values.
  * @param blockHash Block hash of the concerned block.
  */
@@ -100,6 +102,7 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
       }
     }
 
+    // Use indexer.createStateDiff() method to create a custom state.
     await indexer.createDiff(contractAddress, blockHash, ipldBlockData);
   }
 }
@@ -124,6 +127,7 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
     ipldBlockData = updateStateForMappingType(ipldBlockData, '_balances', [account], balance.value.toString());
   }
 
+  // Use indexer.createStateCheckpoint() method to create a custom checkpoint.
   await indexer.createCheckpoint(contractAddress, blockHash, ipldBlockData);
 
   return false;
@@ -132,7 +136,7 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 /**
  * Event hook function.
  * @param indexer Indexer instance that contains methods to fetch and update the contract values in the database.
- * @param eventData ResultEvent object containing necessary information.
+ * @param eventData ResultEvent object containing event information.
  */
 export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Promise<void> {
   assert(indexer);
