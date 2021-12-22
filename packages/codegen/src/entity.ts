@@ -244,6 +244,9 @@ export class Entity {
       // Add subgraph entity specific columns.
       entityObject = this._addSubgraphColumns(subgraphTypeDefs, entityObject, def);
 
+      // Add decimalTransformer column option if required.
+      this._addDecimalTransformerOption(entityObject);
+
       // Add bigintTransformer column option if required.
       this._addBigIntTransformerOption(entityObject);
 
@@ -303,6 +306,44 @@ export class Entity {
             {
               toImport: new Set(['bigintTransformer']),
               from: '@vulcanize/util'
+            }
+          );
+        }
+      }
+    });
+  }
+
+  _addDecimalTransformerOption (entityObject: any): void {
+    entityObject.columns.forEach((column: any) => {
+      // Implement decimalTransformer for Decimal types.
+      if (['Decimal', 'Decimal[]'].includes(column.tsType)) {
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'decimalTransformer'
+          }
+        );
+
+        const importObject = entityObject.imports.find((element: any) => {
+          return element.from === '@vulcanize/util';
+        });
+
+        if (importObject) {
+          importObject.toImport.add('decimalTransformer');
+        } else {
+          entityObject.imports.push(
+            {
+              toImport: new Set(['decimalTransformer']),
+              from: '@vulcanize/util'
+            }
+          );
+        }
+
+        if (!entityObject.imports.some((element: any) => element.from === 'decimal.js')) {
+          entityObject.imports.push(
+            {
+              toImport: new Set(['Decimal']),
+              from: 'decimal.js'
             }
           );
         }
