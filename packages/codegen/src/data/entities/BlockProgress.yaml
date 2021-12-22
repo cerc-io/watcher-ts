@@ -61,12 +61,16 @@ columns:
     columnOptions:
       - option: default
         value: false
+  - name: createdAt
+    tsType: Date
+    columnType: CreateDateColumn
 imports:
   - toImport:
       - Entity
       - PrimaryGeneratedColumn
       - Column
       - Index
+      - CreateDateColumn
     from: typeorm
   - toImport:
       - BlockProgressInterface
