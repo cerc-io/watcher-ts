@@ -12,17 +12,20 @@ import _ from 'lodash';
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
+import { getFieldType } from './utils/subgraph';
 
 const TEMPLATE_FILE = './templates/indexer-template.handlebars';
 
 export class Indexer {
   _queries: Array<any>;
   _events: Array<any>;
+  _subgraphEntities: Array<any>;
   _templateString: string;
 
   constructor () {
     this._queries = [];
     this._events = [];
+    this._subgraphEntities = [];
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   }
 
@@ -99,6 +102,70 @@ export class Indexer {
     this._events.push(eventObject);
   }
 
+  addSubgraphEntities (subgraphSchemaDocument: any): void {
+    // Add subgraph entities for creating the relations and entity types maps in the indexer.
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    subgraphTypeDefs.forEach((def: any) => {
+      if (def.kind !== 'ObjectTypeDefinition') {
+        return;
+      }
+
+      let entityObject: any = {
+        className: def.name.value,
+        columns: [],
+        relations: []
+      };
+
+      entityObject = this._addSubgraphColumns(subgraphTypeDefs, entityObject, def);
+
+      this._subgraphEntities.push(entityObject);
+    });
+  }
+
+  _addSubgraphColumns (subgraphTypeDefs: any, entityObject: any, def: any): any {
+    // Process each field of the entity type def.
+    def.fields.forEach((field: any) => {
+      const columnObject: any = {
+        name: field.name.value,
+        type: '',
+        isRelation: false,
+        isArray: false
+      };
+
+      // Process field properties.
+      const { typeName, array } = getFieldType(field.type);
+
+      columnObject.type = typeName;
+      columnObject.isArray = array;
+
+      // Add a relation if the type is a object type available in subgraph type defs.
+      const columnType = subgraphTypeDefs.find((def: any) => {
+        return def.name.value === typeName && def.kind === 'ObjectTypeDefinition';
+      });
+
+      if (columnType) {
+        columnObject.isRelation = true;
+
+        // Process the derivedFrom directive for the relation field.
+        const { isDerived, derivedFromField } = this._getDerivedFrom(field.directives);
+
+        if (isDerived) {
+          columnObject.isDerived = true;
+          columnObject.derivedFromField = derivedFromField;
+        } else {
+          columnObject.isDerived = false;
+        }
+
+        entityObject.relations.push(columnObject);
+      }
+
+      entityObject.columns.push(columnObject);
+    });
+
+    return entityObject;
+  }
+
   /**
    * Writes the indexer file generated from a template to a stream.
    * @param outStream A writable output stream to write the indexer file to.
@@ -110,6 +177,7 @@ export class Indexer {
     const obj = {
       inputFileNames,
       queries: this._queries,
+      subgraphEntities: this._subgraphEntities,
       constants: {
         MODE_ETH_CALL,
         MODE_STORAGE
@@ -119,5 +187,22 @@ export class Indexer {
 
     const indexer = template(obj);
     outStream.write(indexer);
+  }
+
+  _getDerivedFrom (directives: any): { isDerived: boolean, derivedFromField: string } {
+    const derivedFromDirective = directives.find((directive: any) => {
+      return directive.name.value === 'derivedFrom';
+    });
+
+    let isDerived = false;
+    let derivedFromField = '';
+
+    // Get the derivedFrom field name if derivedFrom directive is present.
+    if (derivedFromDirective) {
+      isDerived = true;
+      derivedFromField = derivedFromDirective.arguments[0].value.value;
+    }
+
+    return { isDerived, derivedFromField };
   }
 }
