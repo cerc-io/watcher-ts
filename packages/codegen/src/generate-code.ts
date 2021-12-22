@@ -263,6 +263,11 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
     : process.stdout;
   exportFill(outStream);
 
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))
+    : process.stdout;
+  visitor.exportTypes(outStream);
+
   let rcOutStream, ignoreOutStream;
 
   if (outputDir) {

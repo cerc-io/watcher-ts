@@ -14,6 +14,7 @@ import { Reset } from './reset';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { parseSubgraphSchema } from './utils/subgraph';
+import { Types } from './types';
 
 export class Visitor {
   _schema: Schema;
@@ -23,6 +24,7 @@ export class Visitor {
   _database: Database;
   _client: Client;
   _reset: Reset;
+  _types: Types;
 
   constructor () {
     this._schema = new Schema();
@@ -32,6 +34,7 @@ export class Visitor {
     this._database = new Database();
     this._client = new Client();
     this._reset = new Reset();
+    this._types = new Types();
   }
 
   /**
@@ -131,6 +134,7 @@ export class Visitor {
     const subgraphSchemaDocument = parseSubgraphSchema(subgraphPath);
 
     this._schema.addSubgraphSchema(subgraphSchemaDocument);
+    this._types.addSubgraphTypes(subgraphSchemaDocument);
     this._entity.addSubgraphEntities(subgraphSchemaDocument);
     this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
     this._reset.addSubgraphEntities(subgraphSchemaDocument);
@@ -196,5 +200,13 @@ export class Visitor {
    */
   exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable): void {
     this._reset.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
+  }
+
+  /**
+   * Writes the types file generated from a template to a stream.
+   * @param outStream A writable output stream to write the database file to.
+   */
+  exportTypes (outStream: Writable): void {
+    this._types.exportTypes(outStream);
   }
 }
