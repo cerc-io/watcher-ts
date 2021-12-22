@@ -80,7 +80,10 @@ export class EventWatcher implements EventWatcherInterface {
 
       await this._baseEventWatcher.blockProcessingCompleteHandler(job);
 
-      await this.createHooksJob(kind);
+      // If it's a pruning job: Create a hooks job.
+      if (kind === JOB_KIND_PRUNE) {
+        await this.createHooksJob();
+      }
     });
   }
 
@@ -148,20 +151,18 @@ export class EventWatcher implements EventWatcherInterface {
     }
   }
 
-  async createHooksJob (kind: string): Promise<void> {
-    // If it's a pruning job: Create a hook job for the latest canonical block.
-    if (kind === JOB_KIND_PRUNE) {
-      const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
-      assert(latestCanonicalBlock);
+  async createHooksJob (): Promise<void> {
+    // Get the latest canonical block
+    const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
 
-      await this._jobQueue.pushJob(
-        QUEUE_HOOKS,
-        {
-          blockHash: latestCanonicalBlock.blockHash,
-          blockNumber: latestCanonicalBlock.blockNumber
-        }
-      );
-    }
+    // Create a hooks job for parent block of latestCanonicalBlock because pruning for first block is skipped as it is assumed to be a canonical block.
+    await this._jobQueue.pushJob(
+      QUEUE_HOOKS,
+      {
+        blockHash: latestCanonicalBlock.parentHash,
+        blockNumber: latestCanonicalBlock.blockNumber - 1
+      }
+    );
   }
 
   async createCheckpointJob (blockHash: string, blockNumber: number): Promise<void> {

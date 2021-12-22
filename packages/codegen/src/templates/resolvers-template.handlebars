@@ -6,7 +6,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
-import { ValueResult } from '@vulcanize/util';
+import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -38,10 +38,11 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Mutation: {
-      watchContract: (_: any, { address, kind, checkpoint, startingBlock }: { address: string, kind: string, checkpoint: boolean, startingBlock: number }): Promise<boolean> => {
+      watchContract: async (_: any, { address, kind, checkpoint, startingBlock = 1 }: { address: string, kind: string, checkpoint: boolean, startingBlock: number }): Promise<boolean> => {
         log('watchContract', address, kind, checkpoint, startingBlock);
+        await indexer.watchContract(address, kind, checkpoint, startingBlock);
 
-        return indexer.watchContract(address, kind, checkpoint, startingBlock);
+        return true;
       }
     },
 
@@ -59,10 +60,10 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       {{/each}}
 
       {{~#each subgraphQueries}}
-      {{this.queryName}}: async (_: any, { id, blockHash }: { id: string, blockHash: string }): Promise<{{this.entityName}} | undefined> => {
-        log('{{this.queryName}}', id, blockHash);
+      {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<{{this.entityName}} | undefined> => {
+        log('{{this.queryName}}', id, block);
 
-        return indexer.getSubgraphEntity({{this.entityName}}, id, blockHash);
+        return indexer.getSubgraphEntity({{this.entityName}}, id, block);
       },
 
       {{/each}}
@@ -98,7 +99,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
       },
 
-      getState: async (_: any, { blockHash, contractAddress, kind = 'diff' }: { blockHash: string, contractAddress: string, kind: string }) => {
+      getState: async (_: any, { blockHash, contractAddress, kind = StateKind.Diff }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
 
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
