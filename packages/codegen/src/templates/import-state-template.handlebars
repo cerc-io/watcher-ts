@@ -11,7 +11,7 @@ import { PubSub } from 'apollo-server-express';
 import fs from 'fs';
 import path from 'path';
 
-import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
@@ -50,15 +50,11 @@ export const main = async (): Promise<any> => {
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server.subgraphPath);
+  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
-
-  graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
@@ -68,6 +64,12 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  await indexer.init();
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
@@ -80,7 +82,6 @@ export const main = async (): Promise<any> => {
   await fillBlocks(
     jobQueue,
     indexer,
-    postgraphileClient,
     eventWatcher,
     config.upstream.ethServer.blockDelayInMilliSecs,
     {
@@ -91,7 +92,7 @@ export const main = async (): Promise<any> => {
 
   // Fill the Contracts.
   for (const contract of importData.contracts) {
-    await db.saveContract(contract.address, contract.kind, contract.checkpoint, contract.startingBlock);
+    await indexer.watchContract(contract.address, contract.kind, contract.checkpoint, contract.startingBlock);
   }
 
   // Get the snapshot block.
@@ -107,8 +108,12 @@ export const main = async (): Promise<any> => {
 
     ipldBlock.data = Buffer.from(codec.encode(ipldBlock.data));
 
-    await db.saveOrUpdateIPLDBlock(ipldBlock);
+    await indexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
+
+  // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
+  await indexer.removeIPLDBlocks(block.blockNumber, StateKind.Init);
+  await indexer.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
 };
 
 main().catch(err => {
