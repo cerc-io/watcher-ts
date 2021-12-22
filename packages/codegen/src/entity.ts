@@ -11,6 +11,7 @@ import { Writable } from 'stream';
 
 import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { getFieldType } from './utils/subgraph';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -334,7 +335,7 @@ export class Entity {
         columnType: 'Column'
       };
 
-      const { typeName, array, nullable } = this._getFieldType(field.type);
+      const { typeName, array, nullable } = getFieldType(field.type);
       let tsType = getTsForGql(typeName);
 
       if (!tsType) {
@@ -395,20 +396,5 @@ export class Entity {
     });
 
     return entityObject;
-  }
-
-  _getFieldType (typeNode: any): { typeName: string, array: boolean, nullable: boolean } {
-    if (typeNode.kind === 'ListType') {
-      return { typeName: this._getFieldType(typeNode.type).typeName, array: true, nullable: true };
-    }
-
-    if (typeNode.kind === 'NonNullType') {
-      const fieldType = this._getFieldType(typeNode.type);
-
-      return { typeName: fieldType.typeName, array: fieldType.array, nullable: false };
-    }
-
-    // If 'NamedType'.
-    return { typeName: typeNode.name.value, array: false, nullable: true };
   }
 }

@@ -42,6 +42,10 @@ import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 
+{{#each subgraphEntities as | subgraphEntity |}}
+import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
+{{/each}}
+
 const log = debug('vulcanize:indexer');
 
 {{#each events as | event |}}
@@ -129,7 +133,10 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
 
     this._entityTypesMap = new Map();
+    this._populateEntityTypesMap();
+
     this._relationsMap = new Map();
+    this._populateRelationsMap();
   }
 
   async init (): Promise<void> {
@@ -561,6 +568,48 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  getEntityTypesMap (): Map<string, { [key: string]: string }> {
+    return this._entityTypesMap;
+  }
+
+  _populateEntityTypesMap (): void {
+  {{#each subgraphEntities as | subgraphEntity |}}
+    this._entityTypesMap.set('{{subgraphEntity.className}}', {
+      {{#each subgraphEntity.columns as | column |}}
+      {{#unless column.isDerived}}
+      {{~#unless @first}},
+      {{/unless}}
+      {{column.name}}: '{{column.type}}'
+      {{~/unless}}
+      {{/each}}
+
+    });
+  {{/each}}
+  }
+
+  _populateRelationsMap (): void {
+  {{#each subgraphEntities as | subgraphEntity |}}
+    {{#if subgraphEntity.relations}}
+    this._relationsMap.set({{subgraphEntity.className}}, {
+      {{#each subgraphEntity.relations as | relation |}}
+      {{~#unless @first}},
+      {{/unless}}
+      {{relation.name}}: {
+        entity: {{relation.type}},
+        isArray: {{relation.isArray}},
+        isDerived: {{relation.isDerived}}
+        {{~#if relation.isDerived}},
+        field: '{{relation.derivedFromField}}'
+        {{~/if}}
+
+      }
+      {{~/each}}
+
+    });
+    {{/if}}
+  {{/each}}
   }
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {

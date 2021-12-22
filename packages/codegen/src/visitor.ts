@@ -76,6 +76,7 @@ export class Visitor {
   stateVariableDeclarationVisitor (node: any): void {
     // TODO Handle multiples variables in a single line.
     // TODO Handle array types.
+    // TODO Handle user defined type .
     const variable = node.variables[0];
     const name: string = variable.name;
     const stateVariableType: string = variable.typeName.type;
@@ -83,13 +84,6 @@ export class Visitor {
     const params: Param[] = [];
 
     let typeName = variable.typeName;
-
-    // TODO Handle user defined type.
-    if (typeName.type === 'UserDefinedTypeName') {
-      // Skip in case of UserDefinedTypeName.
-      return;
-    }
-
     let numParams = 0;
 
     // If the variable type is mapping, extract key as a param:
@@ -98,6 +92,11 @@ export class Visitor {
       params.push({ name: `key${numParams.toString()}`, type: typeName.keyType.name });
       typeName = typeName.valueType;
       numParams++;
+    }
+
+    if (['UserDefinedTypeName', 'ArrayTypeName'].includes(typeName.type)) {
+      // Skip in case of UserDefinedTypeName | ArrayTypeName.
+      return;
     }
 
     const returnType = typeName.name;
@@ -138,6 +137,7 @@ export class Visitor {
     this._entity.addSubgraphEntities(subgraphSchemaDocument);
     this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
     this._reset.addSubgraphEntities(subgraphSchemaDocument);
+    this._indexer.addSubgraphEntities(subgraphSchemaDocument);
   }
 
   /**
