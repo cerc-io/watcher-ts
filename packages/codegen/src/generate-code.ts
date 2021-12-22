@@ -32,7 +32,6 @@ import { exportFill } from './fill';
 import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
-import { exportIPFS } from './ipfs';
 import { exportInspectCID } from './inspect-cid';
 
 const main = async (): Promise<void> => {
@@ -304,11 +303,6 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))
     : process.stdout;
   importState(outStream);
-
-  outStream = outputDir
-    ? fs.createWriteStream(path.join(outputDir, 'src/ipfs.ts'))
-    : process.stdout;
-  exportIPFS(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
