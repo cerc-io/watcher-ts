@@ -20,9 +20,6 @@ export function parseSubgraphSchema (subgraphPath: string): any {
   const subgraphTypeDefs = subgraphSchemaDocument.definitions;
 
   subgraphTypeDefs.forEach((def: any) => {
-    // Remove type directives.
-    def.directives = [];
-
     if (def.kind === 'ObjectTypeDefinition') {
       def.fields.forEach((field: any) => {
         // Parse the field type.
@@ -35,6 +32,21 @@ export function parseSubgraphSchema (subgraphPath: string): any {
 
   // Return a modified subgraph-schema DocumentNode.
   return subgraphSchemaDocument;
+}
+
+export function getFieldType (typeNode: any): { typeName: string, array: boolean, nullable: boolean } {
+  if (typeNode.kind === 'ListType') {
+    return { typeName: getFieldType(typeNode.type).typeName, array: true, nullable: true };
+  }
+
+  if (typeNode.kind === 'NonNullType') {
+    const fieldType = getFieldType(typeNode.type);
+
+    return { typeName: fieldType.typeName, array: fieldType.array, nullable: false };
+  }
+
+  // If 'NamedType'.
+  return { typeName: typeNode.name.value, array: false, nullable: true };
 }
 
 function parseType (typeNode: any): any {
