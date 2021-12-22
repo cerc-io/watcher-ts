@@ -15,6 +15,7 @@ _solToTs.set('uint16', 'number');
 _solToTs.set('uint64', 'bigint');
 _solToTs.set('uint128', 'bigint');
 _solToTs.set('uint256', 'bigint');
+_solToTs.set('uint', 'bigint');
 _solToTs.set('address', 'string');
 _solToTs.set('bool', 'boolean');
 _solToTs.set('bytes', 'string');
