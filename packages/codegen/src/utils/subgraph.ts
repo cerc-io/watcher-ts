@@ -25,9 +25,6 @@ export function parseSubgraphSchema (subgraphPath: string): any {
 
     if (def.kind === 'ObjectTypeDefinition') {
       def.fields.forEach((field: any) => {
-        // Remove field directives.
-        field.directives = [];
-
         // Parse the field type.
         field.type = parseType(field.type);
       });
