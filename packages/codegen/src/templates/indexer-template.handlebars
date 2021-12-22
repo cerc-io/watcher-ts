@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { DeepPartial, FindConditions } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -16,7 +16,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, Where, QueryOptions, updateStateForElementaryType, updateStateForMappingType } from '@vulcanize/util';
+import { Indexer as BaseIndexer, IndexerInterface, ValueResult, UNKNOWN_EVENT_NAME, ServerConfig, Where, QueryOptions, updateStateForElementaryType, updateStateForMappingType, JobQueue } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 import { Database } from './database';
@@ -93,7 +93,7 @@ export class Indexer implements IndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, graphWatcher: GraphWatcher) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
     assert(postgraphileClient);
@@ -103,7 +103,7 @@ export class Indexer implements IndexerInterface {
     this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
     this._graphWatcher = graphWatcher;
 
     const { abi, storageLayout } = artifacts;
@@ -117,6 +117,10 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
 
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+  }
+
+  async init (): Promise<void> {
+    await this._baseIndexer.fetchContracts();
   }
 
   getResultEvent (event: Event): ResultEvent {
@@ -615,22 +619,14 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock?: number): Promise<boolean> {
-    // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
-    // If a contract identifier is passed as address instead, no need to convert to checksum address.
-    // Customize: use the kind input to filter out non-contract-address input to address.
-    const formattedAddress = (kind === '__protocol__') ? address : ethers.utils.getAddress(address);
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    this._baseIndexer.updateIPLDStatusMap(address, {});
 
-    if (!startingBlock) {
-      const syncStatus = await this.getSyncStatus();
-      assert(syncStatus);
+    return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
 
-      startingBlock = syncStatus.latestIndexedBlockNumber;
-    }
-
-    await this._db.saveContract(formattedAddress, kind, checkpoint, startingBlock);
-
-    return true;
+  cacheContract (contract: Contract): void {
+    return this._baseIndexer.cacheContract(contract);
   }
 
   async getHookStatus (): Promise<HookStatus | undefined> {
@@ -698,8 +694,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.updateSyncStatusIndexedBlock(blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusChainHead (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber);
+  async updateSyncStatusChainHead (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusChainHead(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
@@ -742,8 +738,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
-  async updateBlockProgress (blockHash: string, lastProcessedEventIndex: number): Promise<void> {
-    return this._baseIndexer.updateBlockProgress(blockHash, lastProcessedEventIndex);
+  async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
+    return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
@@ -752,19 +748,24 @@ export class Indexer implements IndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-    let { block, logs } = await this._ethClient.getLogs({ blockHash });
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          {
-            ethTransactionCidsByHeaderId: {
-              nodes: transactions
+    const logsPromise = this._ethClient.getLogs({ blockHash });
+    const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
+
+    let [
+      { block, logs },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
             }
-          }
-        ]
+          ]
+        }
       }
-    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+    ] = await Promise.all([logsPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

@@ -11,7 +11,7 @@
 
   # IPFS API address (can be taken from the output on running the IPFS daemon).
   ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
-  
+
   {{#if subgraphPath}}
   subgraphPath = "{{subgraphPath}}"
   {{/if}}
@@ -42,3 +42,4 @@
   dbConnectionString = "postgres://postgres:postgres@localhost/{{folderName}}-job-queue"
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
+  eventsInBatch = 50

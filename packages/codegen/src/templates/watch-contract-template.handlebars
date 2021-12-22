@@ -82,6 +82,8 @@ const main = async (): Promise<void> => {
   await indexer.watchContract(argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
 
   await db.close();
+  await jobQueue.stop();
+  process.exit();
 };
 
 main().catch(err => {
