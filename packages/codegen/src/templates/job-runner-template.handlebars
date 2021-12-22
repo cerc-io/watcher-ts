@@ -56,22 +56,12 @@ export class JobRunner {
       // TODO Call pre-block hook here (Directly or indirectly (Like done through indexer.processEvent for events)).
 
       await this._baseJobRunner.processBlock(job);
-
-      await this._jobQueue.markComplete(job);
     });
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      const event = await this._baseJobRunner.processEvent(job);
-
-      const watchedContract = await this._indexer.isWatchedContract(event.contract);
-      if (watchedContract) {
-        await this._indexer.processEvent(event);
-      }
-
-      await this._indexer.updateBlockProgress(event.block.blockHash, event.index);
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processEvent(job);
     });
   }
 
@@ -135,11 +125,6 @@ export const main = async (): Promise<any> => {
 
   const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server.subgraphPath);
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, graphWatcher);
-
-  graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -148,6 +133,15 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+
+  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  await indexer.init();
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
+
+  // Watching all the contracts in the subgraph.
+  await graphWatcher.addContracts();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
@@ -161,4 +155,9 @@ main().then(() => {
 
 process.on('uncaughtException', err => {
   log('uncaughtException', err);
+});
+
+process.on('SIGINT', () => {
+  log(`Exiting process ${process.pid} with code 0`);
+  process.exit(0);
 });
