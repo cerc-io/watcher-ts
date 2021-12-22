@@ -241,7 +241,7 @@ export class Entity {
       });
 
       // Add subgraph entity specific columns.
-      entityObject = this._addSubgraphColumns(entityObject, def);
+      entityObject = this._addSubgraphColumns(subgraphTypeDefs, entityObject, def);
 
       // Add bigintTransformer column option if required.
       this._addBigIntTransformerOption(entityObject);
@@ -308,18 +308,24 @@ export class Entity {
     });
   }
 
-  _addSubgraphColumns (entityObject: any, def: any): any {
+  _addSubgraphColumns (subgraphTypeDefs: any, entityObject: any, def: any): any {
     def.fields.forEach((field: any) => {
-      const name = field.name.value;
+      let name = field.name.value;
 
-      // Filter out already added columns.
-      if (['id', 'blockHash', 'blockNumber'].includes(name)) {
+      // Column id is already added.
+      if (name === 'id') {
         return;
+      }
+
+      // Handle column with existing name.
+      if (['blockHash', 'blockNumber'].includes(name)) {
+        name = `_${name}`;
       }
 
       const columnObject: any = {
         name,
-        columnOptions: []
+        columnOptions: [],
+        columnType: 'Column'
       };
 
       const { typeName, array, nullable } = this._getFieldType(field.type);
@@ -345,29 +351,58 @@ export class Entity {
 
       const pgType = getPgForTs(tsType);
 
-      // If basic type: create a column. If unknown: create a relation.
+      // If basic type: create a column.
       if (pgType) {
-        columnObject.columnType = 'Column';
         columnObject.pgType = pgType;
       } else {
-        columnObject.columnType = 'ManyToOne';
-        columnObject.lhs = '()';
-        columnObject.rhs = tsType;
+        if (subgraphTypeDefs.some((typeDef: any) => typeDef.kind === 'EnumTypeDefinition' && typeDef.name.value === typeName)) {
+          // Create enum type column.
 
-        entityObject.imports[0].toImport.add('ManyToOne');
+          const entityImport = entityObject.imports.find(({ from }: any) => from === '../types');
 
-        // Check if type import already added.
-        const importObject = entityObject.imports.find((element: any) => {
-          return element.from === `./${tsType}`;
-        });
+          if (!entityImport) {
+            entityObject.imports.push(
+              {
+                toImport: new Set([typeName]),
+                from: '../types'
+              }
+            );
+          } else {
+            entityImport.toImport.add(typeName);
+          }
 
-        if (!importObject) {
-          entityObject.imports.push(
+          columnObject.columnOptions.push(
             {
-              toImport: new Set([tsType]),
-              from: `./${tsType}`
+              option: 'type',
+              value: "'enum'"
+            },
+            {
+              option: 'enum',
+              value: typeName
             }
           );
+        } else {
+          // Create a relation.
+
+          columnObject.columnType = 'ManyToOne';
+          columnObject.lhs = '()';
+          columnObject.rhs = tsType;
+
+          entityObject.imports[0].toImport.add('ManyToOne');
+
+          // Check if type import already added.
+          const importObject = entityObject.imports.find((element: any) => {
+            return element.from === `./${tsType}`;
+          });
+
+          if (!importObject) {
+            entityObject.imports.push(
+              {
+                toImport: new Set([tsType]),
+                from: `./${tsType}`
+              }
+            );
+          }
         }
       }
 
