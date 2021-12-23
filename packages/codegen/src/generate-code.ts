@@ -9,12 +9,13 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import assert from 'assert';
 import { Writable } from 'stream';
+import yaml from 'js-yaml';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
 import { KIND_ACTIVE, KIND_LAZY } from '@vulcanize/util';
 
-import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE } from './utils/constants';
+import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
@@ -33,86 +34,50 @@ import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
+import { getContractKinds } from './utils/subgraph';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
-    .option('input-files', {
-      alias: 'i',
-      demandOption: true,
-      describe: 'Input contract file path(s) or url(s).',
-      type: 'array'
-    })
-    .option('contract-names', {
+    .option('config-file', {
       alias: 'c',
       demandOption: true,
-      describe: 'Contract name(s).',
-      type: 'array'
-    })
-    .option('output-folder', {
-      alias: 'o',
-      describe: 'Output folder path.',
-      type: 'string'
-    })
-    .option('mode', {
-      alias: 'm',
-      describe: 'Code generation mode.',
-      type: 'string',
-      default: MODE_ALL,
-      choices: [MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE]
-    })
-    .option('kind', {
-      alias: 'k',
-      describe: 'Watcher kind.',
-      type: 'string',
-      default: KIND_ACTIVE,
-      choices: [KIND_ACTIVE, KIND_LAZY]
-    })
-    .option('port', {
-      alias: 'p',
-      describe: 'Server port.',
-      type: 'number',
-      default: 3008
-    })
-    .option('flatten', {
-      alias: 'f',
-      describe: 'Flatten the input contract file.',
-      type: 'boolean',
-      default: true
-    })
-    .option('subgraph-path', {
-      alias: 's',
-      describe: 'Path to the subgraph build.',
+      describe: 'Watcher generation config file path (yaml)',
       type: 'string'
     })
     .argv;
 
-  // Create an array of flattened contract strings.
-  const contractStrings: string[] = [];
+  const config = getConfig(path.resolve(argv['config-file']));
 
-  for (const inputFile of argv['input-files']) {
-    assert(typeof inputFile === 'string', 'Input file path should be a string');
+  // Create an array of flattened contract strings.
+  const contracts: any = [];
+
+  for (const contract of config.contracts) {
+    const inputFile = contract.path;
+    assert(typeof inputFile === 'string', 'Contract input file path should be a string');
+
+    let contractString;
 
     if (inputFile.startsWith('http')) {
       // Assume flattened file in case of URL.
       const response = await fetch(inputFile);
-      const contractString = await response.text();
-      contractStrings.push(contractString);
+      contractString = await response.text();
     } else {
-      contractStrings.push(argv.flatten
+      contractString = config.flatten
         ? await flatten(path.resolve(inputFile))
-        : fs.readFileSync(path.resolve(inputFile)).toString()
-      );
+        : fs.readFileSync(path.resolve(inputFile)).toString();
     }
+
+    contracts.push({ contractString, contractKind: contract.kind });
   }
 
   const visitor = new Visitor();
 
-  parseAndVisit(contractStrings, visitor, argv.mode);
+  parseAndVisit(visitor, contracts, config.mode);
 
-  generateWatcher(contractStrings, visitor, argv);
+  generateWatcher(visitor, contracts, config);
 };
 
-function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: string) {
+function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
   const eventDefinitionVisitor = visitor.eventDefinitionVisitor.bind(visitor);
   let functionDefinitionVisitor;
   let stateVariableDeclarationVisitor;
@@ -127,12 +92,14 @@ function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: strin
     stateVariableDeclarationVisitor = visitor.stateVariableDeclarationVisitor.bind(visitor);
   }
 
-  for (const contractString of contractStrings) {
+  for (const contract of contracts) {
     // Get the abstract syntax tree for the flattened contract.
-    const ast = parse(contractString);
+    const ast = parse(contract.contractString);
 
     // Filter out library nodes.
     ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
+
+    visitor.setContractKind(contract.contractKind);
 
     visit(ast, {
       FunctionDefinition: functionDefinitionVisitor,
@@ -142,11 +109,11 @@ function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: strin
   }
 }
 
-function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any) {
+function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   // Prepare directory structure for the watcher.
   let outputDir = '';
-  if (argv['output-folder']) {
-    outputDir = path.resolve(argv['output-folder']);
+  if (config.outputFolder) {
+    outputDir = path.resolve(config.outputFolder);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const environmentsFolder = path.join(outputDir, 'environments');
@@ -164,30 +131,26 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
 
   let outStream: Writable;
 
-  const contractNames = argv['contract-names'];
-  const inputFileNames: string[] = [];
-
   // Export artifacts for the contracts.
-  argv['input-files'].forEach((inputFile: string, index: number) => {
-    const inputFileName = path.basename(inputFile, '.sol');
-    inputFileNames.push(inputFileName);
+  config.contracts.forEach((contract: any, index: number) => {
+    const inputFileName = path.basename(contract.path, '.sol');
 
     outStream = outputDir
-      ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${inputFileName}.json`))
+      ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${contract.name}.json`))
       : process.stdout;
 
     exportArtifacts(
       outStream,
-      contractStrings[index],
+      contracts[index].contractString,
       `${inputFileName}.sol`,
-      contractNames[index]
+      contract.name
     );
   });
 
   // Register the handlebar helpers to be used in the templates.
   registerHandlebarHelpers();
 
-  visitor.visitSubgraph(argv['subgraph-path']);
+  visitor.visitSubgraph(config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
@@ -202,7 +165,7 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/indexer.ts'))
     : process.stdout;
-  visitor.exportIndexer(outStream, inputFileNames);
+  visitor.exportIndexer(outStream, config.contracts);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))
@@ -212,7 +175,7 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
-  exportConfig(argv.kind, argv.port, path.basename(outputDir), outStream, argv['subgraph-path']);
+  exportConfig(config.kind, config.port, path.basename(outputDir), outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/database.ts'))
@@ -237,7 +200,7 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
     : process.stdout;
-  exportReadme(path.basename(outputDir), argv['contract-name'], outStream);
+  exportReadme(path.basename(outputDir), config.port, outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/events.ts'))
@@ -319,6 +282,50 @@ function generateWatcher (contractStrings: string[], visitor: Visitor, argv: any
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
     : process.stdout;
   exportInspectCID(outStream);
+}
+
+function getConfig (configFile: string): any {
+  assert(fs.existsSync(configFile), `Config file not found at ${configFile}`);
+
+  // Read config.
+  const inputConfig = yaml.load(fs.readFileSync(configFile, 'utf8')) as any;
+
+  // Run validations on config fields.
+  if (inputConfig.mode) {
+    assert([MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE].includes(inputConfig.mode), 'Invalid code generation mode');
+  }
+
+  if (inputConfig.kind) {
+    assert([KIND_ACTIVE, KIND_LAZY].includes(inputConfig.kind), 'Invalid watcher kind');
+  }
+
+  if (inputConfig.port) {
+    assert(typeof inputConfig.port === 'number', 'Invalid watcher server port');
+  }
+
+  // Check that every input contract kind is present in the subgraph config.
+  if (inputConfig.subgraphPath) {
+    const subgraphKinds: string[] = getContractKinds(inputConfig.subgraphPath);
+    const inputKinds: string[] = inputConfig.contracts.map((contract: any) => contract.kind);
+
+    assert(
+      inputKinds.every((inputKind: string) => subgraphKinds.includes(inputKind)),
+      'Input contract kind not available in the subgraph.'
+    );
+  }
+
+  const inputFlatten = inputConfig.flatten;
+  const flatten = (inputFlatten === undefined || inputFlatten === null) ? true : inputFlatten;
+
+  return {
+    contracts: inputConfig.contracts,
+    outputFolder: inputConfig.outputFolder,
+    mode: inputConfig.mode || MODE_ALL,
+    kind: inputConfig.kind || KIND_ACTIVE,
+    port: inputConfig.port || DEFAULT_PORT,
+    flatten,
+    subgraphPath: inputConfig.subgraphPath
+  };
 }
 
 main().catch(err => {

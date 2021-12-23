@@ -30,8 +30,8 @@ import {
 } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
-{{#each inputFileNames as | inputFileName |}}
-import artifacts from './artifacts/{{inputFileName}}.json';
+{{#each contracts as | contract |}}
+import {{contract.name}}Artifacts from './artifacts/{{contract.name}}.json';
 {{/each}}
 import { Database } from './database';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
@@ -48,8 +48,12 @@ import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.classNam
 
 const log = debug('vulcanize:indexer');
 
-{{#each events as | event |}}
-const {{capitalize event.name}}_EVENT = '{{event.name}}';
+{{#each contracts as | contract |}}
+const KIND_{{capitalize contract.name}} = '{{contract.kind}}';
+{{/each}}
+
+{{#each uniqueEvents as | event |}}
+const {{capitalize event}}_EVENT = '{{event}}';
 {{/each}}
 
 export type ResultEvent = {
@@ -99,9 +103,9 @@ export class Indexer implements IndexerInterface {
   _serverConfig: ServerConfig
   _graphWatcher: GraphWatcher;
 
-  _abi: JsonFragment[]
-  _storageLayout: StorageLayout
-  _contract: ethers.utils.Interface
+  _abiMap: Map<string, JsonFragment[]>
+  _storageLayoutMap: Map<string, StorageLayout>
+  _contractMap: Map<string, ethers.utils.Interface>
 
   _ipfsClient: IPFSClient
 
@@ -122,16 +126,22 @@ export class Indexer implements IndexerInterface {
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue, this._ipfsClient);
     this._graphWatcher = graphWatcher;
 
-    const { abi, storageLayout } = artifacts;
+    this._abiMap = new Map();
+    this._storageLayoutMap = new Map();
+    this._contractMap = new Map();
 
-    assert(abi);
-    assert(storageLayout);
+    {{#each contracts as | contract |}}
+    const { abi: {{contract.name}}ABI, storageLayout: {{contract.name}}StorageLayout } = {{contract.name}}Artifacts;
+    assert({{contract.name}}ABI);
+    assert({{contract.name}}StorageLayout);
 
-    this._abi = abi;
-    this._storageLayout = storageLayout;
+    {{/each}}
+    {{#each contracts as | contract |}}
+    this._abiMap.set(KIND_{{capitalize contract.name}}, {{contract.name}}ABI);
+    this._storageLayoutMap.set(KIND_{{capitalize contract.name}}, {{contract.name}}StorageLayout);
+    this._contractMap.set(KIND_{{capitalize contract.name}}, new ethers.utils.Interface({{contract.name}}ABI));
 
-    this._contract = new ethers.utils.Interface(this._abi);
-
+    {{/each}}
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
 
@@ -413,10 +423,37 @@ export class Indexer implements IndexerInterface {
     let eventInfo = {};
 
     const { topics, data } = logObj;
-    const logDescription = this._contract.parseLog({ data, topics });
+
+    const contract = this._contractMap.get(kind);
+    assert(contract);
+
+    const logDescription = contract.parseLog({ data, topics });
+
+    switch (kind) {
+      {{#each contracts as | contract |}}
+      case KIND_{{capitalize contract.name}}: {
+        ({ eventName, eventInfo } = this.parse{{contract.name}}Event(logDescription));
+
+        break;
+      }
+      {{/each}}
+    }
+
+    return {
+      eventName,
+      eventInfo,
+      eventSignature: logDescription.signature
+    };
+  }
+
+  {{#each contracts as | contract |}}
+  parse{{contract.name}}Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
 
     switch (logDescription.name) {
-      {{#each events as | event |}}
+      {{#each ../events as | event |}}
+      {{#if (compare contract.kind event.kind)}}
       case {{capitalize event.name}}_EVENT: {
         eventName = logDescription.name;
         {{#if event.params}}
@@ -435,16 +472,17 @@ export class Indexer implements IndexerInterface {
 
         break;
       }
+      {{/if}}
       {{/each}}
     }
 
     return {
       eventName,
-      eventInfo,
-      eventSignature: logDescription.signature
+      eventInfo
     };
   }
 
+  {{/each}}
   async getHookStatus (): Promise<HookStatus | undefined> {
     return this._db.getHookStatus();
   }

@@ -1,13 +1,14 @@
 import path from 'path';
 import assert from 'assert';
 import fs from 'fs';
+import yaml from 'js-yaml';
 
 import { loadFilesSync } from '@graphql-tools/load-files';
 
 export function parseSubgraphSchema (subgraphPath: string): any {
   const subgraphSchemaPath = path.join(path.resolve(subgraphPath), '/schema.graphql');
 
-  assert(fs.existsSync(subgraphSchemaPath));
+  assert(fs.existsSync(subgraphSchemaPath), `Schema file not found at ${subgraphSchemaPath}`);
   const typesArray = loadFilesSync(subgraphSchemaPath);
 
   // Get a subgraph-schema DocumentNode with existing types.
@@ -42,6 +43,19 @@ export function getFieldType (typeNode: any): { typeName: string, array: boolean
 
   // If 'NamedType'.
   return { typeName: typeNode.name.value, array: false, nullable: true };
+}
+
+export function getContractKinds (subgraphPath: string): string[] {
+  const subgraphConfigPath = path.join(path.resolve(subgraphPath), '/subgraph.yaml');
+
+  assert(fs.existsSync(subgraphConfigPath), `Subgraph config file not found at ${subgraphConfigPath}`);
+  const subgraph = yaml.load(fs.readFileSync(subgraphConfigPath, 'utf8')) as any;
+
+  const contractKinds: string[] = subgraph.dataSources.map((dataSource: any) => {
+    return dataSource.name;
+  });
+
+  return contractKinds;
 }
 
 function parseType (typeNode: any): any {
