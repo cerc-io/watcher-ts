@@ -14,7 +14,7 @@ import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
 import { KIND_ACTIVE, KIND_LAZY } from '@vulcanize/util';
 
-import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL } from './utils/constants';
+import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE } from './utils/constants';
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
@@ -58,7 +58,7 @@ const main = async (): Promise<void> => {
       describe: 'Code generation mode.',
       type: 'string',
       default: MODE_ALL,
-      choices: [MODE_ETH_CALL, MODE_STORAGE, MODE_ALL]
+      choices: [MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE]
     })
     .option('kind', {
       alias: 'k',
@@ -113,6 +113,20 @@ const main = async (): Promise<void> => {
 };
 
 function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: string) {
+  const eventDefinitionVisitor = visitor.eventDefinitionVisitor.bind(visitor);
+  let functionDefinitionVisitor;
+  let stateVariableDeclarationVisitor;
+
+  // Visit function definitions only if mode is MODE_ETH_CALL | MODE_ALL.
+  if ([MODE_ALL, MODE_ETH_CALL].includes(mode)) {
+    functionDefinitionVisitor = visitor.functionDefinitionVisitor.bind(visitor);
+  }
+
+  // Visit state variable declarations only if mode is MODE_STORAGE | MODE_ALL.
+  if ([MODE_ALL, MODE_STORAGE].includes(mode)) {
+    stateVariableDeclarationVisitor = visitor.stateVariableDeclarationVisitor.bind(visitor);
+  }
+
   for (const contractString of contractStrings) {
     // Get the abstract syntax tree for the flattened contract.
     const ast = parse(contractString);
@@ -120,19 +134,11 @@ function parseAndVisit (contractStrings: string[], visitor: Visitor, mode: strin
     // Filter out library nodes.
     ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
 
-    if ([MODE_ALL, MODE_ETH_CALL].includes(mode)) {
-      visit(ast, {
-        FunctionDefinition: visitor.functionDefinitionVisitor.bind(visitor),
-        EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
-      });
-    }
-
-    if ([MODE_ALL, MODE_STORAGE].includes(mode)) {
-      visit(ast, {
-        StateVariableDeclaration: visitor.stateVariableDeclarationVisitor.bind(visitor),
-        EventDefinition: visitor.eventDefinitionVisitor.bind(visitor)
-      });
-    }
+    visit(ast, {
+      FunctionDefinition: functionDefinitionVisitor,
+      StateVariableDeclaration: stateVariableDeclarationVisitor,
+      EventDefinition: eventDefinitionVisitor
+    });
   }
 }
 
