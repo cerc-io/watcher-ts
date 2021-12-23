@@ -4,11 +4,6 @@ import fs from 'fs';
 
 import { loadFilesSync } from '@graphql-tools/load-files';
 
-const SCALAR_MAPPING: any = {
-  BigDecimal: 'String',
-  Bytes: 'String'
-};
-
 export function parseSubgraphSchema (subgraphPath: string): any {
   const subgraphSchemaPath = path.join(path.resolve(subgraphPath), '/schema.graphql');
 
@@ -51,15 +46,7 @@ export function getFieldType (typeNode: any): { typeName: string, array: boolean
 
 function parseType (typeNode: any): any {
   // Check if 'NamedType' is reached.
-  if (typeNode.kind === 'NamedType') {
-    const typeName: string = typeNode.name.value;
-
-    // TODO Handle extra types provided by the graph.
-    // Replace unknown scalars using SCALAR_MAPPING.
-    if (typeName in SCALAR_MAPPING) {
-      typeNode.name.value = SCALAR_MAPPING[typeName];
-    }
-  } else {
+  if (typeNode.kind !== 'NamedType') {
     typeNode.type = parseType(typeNode.type);
   }
 

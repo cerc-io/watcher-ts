@@ -17,10 +17,8 @@ import { IPLDBlock } from './entity/IPLDBlock';
 
 {{#each queries as | query |}}
 import { {{query.entityName}} } from './entity/{{query.entityName}}';
-{{#unless @last}}
-
-{{/unless}}
 {{/each}}
+
 export class Database implements IPLDDatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
