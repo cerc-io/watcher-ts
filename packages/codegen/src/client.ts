@@ -79,6 +79,7 @@ export class Client {
   }
 
   _exportGql (schemaContent: string, gqlDir: string): void {
-    gqlGenerate(schemaContent, gqlDir);
+    // TODO: Implement nested queries for subgraph entities.
+    gqlGenerate(schemaContent, gqlDir, 2);
   }
 }

@@ -14,7 +14,6 @@ import { SyncStatus } from './entity/SyncStatus';
 import { HookStatus } from './entity/HookStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
-
 {{#each queries as | query |}}
 import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/each}}
@@ -39,7 +38,9 @@ export class Database implements IPLDDatabaseInterface {
 
   async init (): Promise<void> {
     this._conn = await this._baseDatabase.init();
+    {{#if queries}}
     this._setPropColMaps();
+    {{/if}}
   }
 
   async close (): Promise<void> {
@@ -249,10 +250,12 @@ export class Database implements IPLDDatabaseInterface {
       return acc.set(curr.propertyName, curr.databaseName);
     }, new Map<string, string>());
   }
+  {{#if queries}}
 
   _setPropColMaps (): void {
     {{#each queries as | query |}}
     this._propColMaps.{{query.entityName}} = this._getPropertyColumnMapForEntity('{{query.entityName}}');
     {{/each}}
   }
+  {{/if}}
 }

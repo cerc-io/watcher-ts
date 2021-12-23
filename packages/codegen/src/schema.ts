@@ -85,6 +85,11 @@ export class Schema {
         acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
         return acc;
       }, typeObject.fields);
+    } else {
+      // Types must define one or more fields.
+      typeObject.fields = {
+        dummy: 'String'
+      };
     }
 
     // Create a type composer to add the required type in the schema composer.
