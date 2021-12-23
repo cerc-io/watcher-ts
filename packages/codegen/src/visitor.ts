@@ -3,6 +3,7 @@
 //
 
 import { Writable } from 'stream';
+import assert from 'assert';
 
 import { Database } from './database';
 import { Entity } from './entity';
@@ -26,6 +27,8 @@ export class Visitor {
   _reset: Reset;
   _types: Types;
 
+  _contract?: { name: string, kind: string };
+
   constructor () {
     this._schema = new Schema();
     this._resolvers = new Resolvers();
@@ -35,6 +38,13 @@ export class Visitor {
     this._client = new Client();
     this._reset = new Reset();
     this._types = new Types();
+  }
+
+  setContract (name: string, kind: string): void {
+    this._contract = {
+      name,
+      kind
+    };
   }
 
   /**
@@ -61,11 +71,13 @@ export class Visitor {
 
       this._schema.addQuery(name, params, returnType);
       this._resolvers.addQuery(name, params, returnType);
-      this._indexer.addQuery(MODE_ETH_CALL, name, params, returnType);
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
       this._client.addQuery(name, params, returnType);
       this._reset.addQuery(name);
+
+      assert(this._contract);
+      this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
     }
   }
 
@@ -103,11 +115,13 @@ export class Visitor {
 
     this._schema.addQuery(name, params, returnType);
     this._resolvers.addQuery(name, params, returnType);
-    this._indexer.addQuery(MODE_STORAGE, name, params, returnType, stateVariableType);
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
     this._client.addQuery(name, params, returnType);
     this._reset.addQuery(name);
+
+    assert(this._contract);
+    this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, returnType, stateVariableType);
   }
 
   /**
@@ -121,7 +135,9 @@ export class Visitor {
     });
 
     this._schema.addEventType(name, params);
-    this._indexer.addEvent(name, params);
+
+    assert(this._contract);
+    this._indexer.addEvent(name, params, this._contract.kind);
   }
 
   visitSubgraph (subgraphPath?: string): void {
@@ -160,10 +176,10 @@ export class Visitor {
   /**
    * Writes the indexer file generated from a template to a stream.
    * @param outStream A writable output stream to write the indexer file to.
-   * @param inputFileName Input contract file names to be passed to the template.
+   * @param contracts Input contracts to be passed to the template.
    */
-  exportIndexer (outStream: Writable, inputFileNames: string[]): void {
-    this._indexer.exportIndexer(outStream, inputFileNames);
+  exportIndexer (outStream: Writable, contracts: any[]): void {
+    this._indexer.exportIndexer(outStream, contracts);
   }
 
   /**

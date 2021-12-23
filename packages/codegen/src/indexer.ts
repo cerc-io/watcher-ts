@@ -37,7 +37,7 @@ export class Indexer {
    * @param returnType Return type for the query.
    * @param stateVariableTypeName Type of the state variable in case of state variable query.
    */
-  addQuery (mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
+  addQuery (contract: string, mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
@@ -50,7 +50,8 @@ export class Indexer {
       params: _.cloneDeep(params),
       returnType,
       mode,
-      stateVariableType
+      stateVariableType,
+      contract
     };
 
     if (name.charAt(0) === '_') {
@@ -81,15 +82,16 @@ export class Indexer {
     this._queries.push(queryObject);
   }
 
-  addEvent (name: string, params: Array<Param>): void {
+  addEvent (name: string, params: Array<Param>, contractKind: string): void {
     // Check if the event is already added.
-    if (this._events.some(event => event.name === name)) {
+    if (this._events.some(event => event.name === name && event.kind === contractKind)) {
       return;
     }
 
     const eventObject = {
       name,
-      params: _.cloneDeep(params)
+      params: _.cloneDeep(params),
+      kind: contractKind
     };
 
     eventObject.params = eventObject.params.map((param) => {
@@ -169,20 +171,23 @@ export class Indexer {
   /**
    * Writes the indexer file generated from a template to a stream.
    * @param outStream A writable output stream to write the indexer file to.
-   * @param inputFileName Input contract file name to be passed to the template.
+   * @param contracts Input contracts to be passed to the template.
    */
-  exportIndexer (outStream: Writable, inputFileNames: string[]): void {
+  exportIndexer (outStream: Writable, contracts: any[]): void {
     const template = Handlebars.compile(this._templateString);
 
+    const eventNames = this._events.map((event: any) => event.name);
+
     const obj = {
-      inputFileNames,
+      contracts,
       queries: this._queries,
       subgraphEntities: this._subgraphEntities,
       constants: {
         MODE_ETH_CALL,
         MODE_STORAGE
       },
-      events: this._events
+      events: this._events,
+      uniqueEvents: new Set(eventNames)
     };
 
     const indexer = template(obj);
