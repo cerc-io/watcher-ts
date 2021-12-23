@@ -5,6 +5,8 @@
 import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
+import Decimal from 'decimal.js';
+import { GraphQLScalarType } from 'graphql';
 
 import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
 
@@ -22,6 +24,19 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
   return {
     BigInt: new BigInt('bigInt'),
+
+    BigDecimal: new GraphQLScalarType({
+      name: 'BigDecimal',
+      description: 'BigDecimal custom scalar type',
+      parseValue (value) {
+        // value from the client
+        return new Decimal(value);
+      },
+      serialize (value: Decimal) {
+        // value sent to the client
+        return value.toFixed();
+      }
+    }),
 
     Event: {
       __resolveType: (obj: any) => {
