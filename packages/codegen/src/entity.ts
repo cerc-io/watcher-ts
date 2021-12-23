@@ -427,22 +427,6 @@ export class Entity {
       const { typeName, array, nullable } = getFieldType(field.type);
       let tsType = getTsForGql(typeName);
 
-      if (!tsType) {
-        tsType = 'string';
-      }
-
-      columnObject.tsType = tsType;
-
-      // Handle basic array types.
-      if (array) {
-        columnObject.columnOptions.push({
-          option: 'array',
-          value: 'true'
-        });
-
-        columnObject.tsType = `${tsType}[]`;
-      }
-
       if (subgraphTypeDefs.some((typeDef: any) => typeDef.kind === 'EnumTypeDefinition' && typeDef.name.value === typeName)) {
         // Create enum type column.
 
@@ -469,9 +453,27 @@ export class Entity {
             value: typeName
           }
         );
+
+        columnObject.tsType = typeName;
       } else {
+        if (!tsType) {
+          tsType = 'string';
+        }
+
+        columnObject.tsType = tsType;
+
         // Enum type does not require pgType.
         columnObject.pgType = getPgForTs(tsType);
+      }
+
+      // Handle basic array types.
+      if (array) {
+        columnObject.columnOptions.push({
+          option: 'array',
+          value: 'true'
+        });
+
+        columnObject.tsType = `${tsType}[]`;
       }
 
       if (nullable) {

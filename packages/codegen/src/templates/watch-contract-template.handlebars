@@ -83,7 +83,6 @@ const main = async (): Promise<void> => {
 
   await db.close();
   await jobQueue.stop();
-  process.exit();
 };
 
 main().catch(err => {
