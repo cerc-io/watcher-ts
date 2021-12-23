@@ -198,6 +198,18 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(typeComposer);
 
+    // Create a scalar type composer to add the scalar BigDecimal in the schema composer.
+    typeComposer = this._composer.createScalarTC({
+      name: 'BigDecimal'
+    });
+    this._composer.addSchemaMustHaveType(typeComposer);
+
+    // Create a scalar type composer to add the scalar Bytes in the schema composer.
+    typeComposer = this._composer.createScalarTC({
+      name: 'Bytes'
+    });
+    this._composer.addSchemaMustHaveType(typeComposer);
+
     // Create a type composer to add the type Proof in the schema composer.
     typeComposer = this._composer.createObjectTC({
       name: 'Proof',
@@ -243,19 +255,10 @@ export class Schema {
       }
     });
     this._composer.addSchemaMustHaveType(typeComposer);
-  }
 
-  /**
-   * Adds types 'ResultEvent' and 'WatchedEvent' to the schema.
-   */
-  _addEventsRelatedTypes (): void {
-    let typeComposer;
-
-    // Create Ethereum types.
     // Create the Block type.
-    const blockName = 'Block';
     typeComposer = this._composer.createObjectTC({
-      name: blockName,
+      name: '_Block_',
       fields: {
         cid: 'String!',
         hash: 'String!',
@@ -265,9 +268,17 @@ export class Schema {
       }
     });
     this._composer.addSchemaMustHaveType(typeComposer);
+  }
 
+  /**
+   * Adds types 'ResultEvent' and 'WatchedEvent' to the schema.
+   */
+  _addEventsRelatedTypes (): void {
+    let typeComposer;
+
+    // Create Ethereum types.
     // Create the Transaction type.
-    const transactionName = 'Transaction';
+    const transactionName = '_Transaction_';
     typeComposer = this._composer.createObjectTC({
       name: transactionName,
       fields: {
@@ -285,7 +296,7 @@ export class Schema {
       name: resultEventName,
       fields: {
         // Get type composer object for 'blockName' type from the schema composer.
-        block: () => this._composer.getOTC(blockName).NonNull,
+        block: () => this._composer.getOTC('_Block_').NonNull,
         tx: () => this._composer.getOTC(transactionName).NonNull,
         contract: 'String!',
         eventIndex: 'Int!',
@@ -326,7 +337,7 @@ export class Schema {
     const typeComposer = this._composer.createObjectTC({
       name: 'ResultIPLDBlock',
       fields: {
-        block: () => this._composer.getOTC('Block').NonNull,
+        block: () => this._composer.getOTC('_Block_').NonNull,
         contractAddress: 'String!',
         cid: 'String!',
         kind: 'String!',
