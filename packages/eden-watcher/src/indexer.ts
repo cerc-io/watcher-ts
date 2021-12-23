@@ -1191,6 +1191,16 @@ export class Indexer implements IndexerInterface {
         isArray: true,
         isDerived: false
       },
+      lastEpoch: {
+        entity: Epoch,
+        isArray: false,
+        isDerived: false
+      },
+      pendingEpoch: {
+        entity: Epoch,
+        isArray: false,
+        isDerived: false
+      },
       activeRewardScheduleEntry: {
         entity: RewardScheduleEntry,
         isArray: false,
@@ -1234,6 +1244,21 @@ export class Indexer implements IndexerInterface {
     });
 
     this._relationsMap.set(Network, {
+      slot0: {
+        entity: Slot,
+        isArray: false,
+        isDerived: false
+      },
+      slot1: {
+        entity: Slot,
+        isArray: false,
+        isDerived: false
+      },
+      slot2: {
+        entity: Slot,
+        isArray: false,
+        isDerived: false
+      },
       stakers: {
         entity: Staker,
         isArray: true,
