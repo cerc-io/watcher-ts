@@ -27,7 +27,7 @@ export class Visitor {
   _reset: Reset;
   _types: Types;
 
-  _contractKind?: string;
+  _contract?: { name: string, kind: string };
 
   constructor () {
     this._schema = new Schema();
@@ -40,8 +40,11 @@ export class Visitor {
     this._types = new Types();
   }
 
-  setContractKind (kind: string): void {
-    this._contractKind = kind;
+  setContract (name: string, kind: string): void {
+    this._contract = {
+      name,
+      kind
+    };
   }
 
   /**
@@ -68,11 +71,13 @@ export class Visitor {
 
       this._schema.addQuery(name, params, returnType);
       this._resolvers.addQuery(name, params, returnType);
-      this._indexer.addQuery(MODE_ETH_CALL, name, params, returnType);
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
       this._client.addQuery(name, params, returnType);
       this._reset.addQuery(name);
+
+      assert(this._contract);
+      this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
     }
   }
 
@@ -110,11 +115,13 @@ export class Visitor {
 
     this._schema.addQuery(name, params, returnType);
     this._resolvers.addQuery(name, params, returnType);
-    this._indexer.addQuery(MODE_STORAGE, name, params, returnType, stateVariableType);
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
     this._client.addQuery(name, params, returnType);
     this._reset.addQuery(name);
+
+    assert(this._contract);
+    this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, returnType, stateVariableType);
   }
 
   /**
@@ -129,8 +136,8 @@ export class Visitor {
 
     this._schema.addEventType(name, params);
 
-    assert(this._contractKind);
-    this._indexer.addEvent(name, params, this._contractKind);
+    assert(this._contract);
+    this._indexer.addEvent(name, params, this._contract.kind);
   }
 
   visitSubgraph (subgraphPath?: string): void {

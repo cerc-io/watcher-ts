@@ -67,7 +67,7 @@ const main = async (): Promise<void> => {
         : fs.readFileSync(path.resolve(inputFile)).toString();
     }
 
-    contracts.push({ contractString, contractKind: contract.kind });
+    contracts.push({ contractString, contractName: contract.name, contractKind: contract.kind });
   }
 
   const visitor = new Visitor();
@@ -99,7 +99,7 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
     // Filter out library nodes.
     ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
 
-    visitor.setContractKind(contract.contractKind);
+    visitor.setContract(contract.contractName, contract.contractKind);
 
     visit(ast, {
       FunctionDefinition: functionDefinitionVisitor,

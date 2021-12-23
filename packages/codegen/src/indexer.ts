@@ -37,7 +37,7 @@ export class Indexer {
    * @param returnType Return type for the query.
    * @param stateVariableTypeName Type of the state variable in case of state variable query.
    */
-  addQuery (mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
+  addQuery (contract: string, mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
@@ -50,7 +50,8 @@ export class Indexer {
       params: _.cloneDeep(params),
       returnType,
       mode,
-      stateVariableType
+      stateVariableType,
+      contract
     };
 
     if (name.charAt(0) === '_') {

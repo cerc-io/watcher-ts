@@ -234,7 +234,10 @@ export class Indexer implements IndexerInterface {
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
-    const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
+    const abi = this._abiMap.get(KIND_{{capitalize query.contract}});
+    assert(abi);
+
+    const contract = new ethers.Contract(contractAddress, abi, this._ethProvider);
     {{#if (compare query.returnType 'bigint')}}
     let value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
@@ -249,8 +252,11 @@ export class Indexer implements IndexerInterface {
     {{/if}}
 
     {{~#if (compare query.mode @root.constants.MODE_STORAGE)}}
+    const storageLayout = this._storageLayoutMap.get(KIND_{{capitalize query.contract}});
+    assert(storageLayout);
+
     const result = await this._baseIndexer.getStorageValue(
-      this._storageLayout,
+      storageLayout,
       blockHash,
       contractAddress,
       '{{query.name}}'{{#if query.params.length}},{{/if}}
