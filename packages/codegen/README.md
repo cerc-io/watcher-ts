@@ -6,68 +6,69 @@
 
   * Install required packages:
 
-      ```bash
-      yarn
-      ```
+    ```bash
+    yarn
+    ```
 
   * Build files:
 
-      ```bash
-      yarn build
-      ```
+    ```bash
+    yarn build
+    ```
 
 ## Run
 
-* Run the following command to generate a watcher from a contract file:
+* Create a `.yaml` config file in the following format for generating a watcher:
 
-  ```bash
-  yarn codegen --input-files <input-file-paths> --contract-names <contract-names> --output-folder [output-folder] --mode [eth_call | storage | all | none] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-path [subgraph-build-path]
+  ```yaml
+  # Example config.yaml
+  # Contracts to watch (required).
+  contracts:
+      # Contract name.
+    - name: Example
+      # Contract file path or an url.
+      path: ../graph-node/test/contracts/Example.sol
+      # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+      kind: Example1
+
+  # Output folder path (logs output using `stdout` if not provided).
+  outputFolder: ../test-watcher
+
+  # Code generation mode [eth_call | storage | all | none] (default: all).
+  mode: all
+
+  # Kind of watcher [lazy | active] (default: active).
+  kind: active
+
+  # Watcher server port (default: 3008).
+  port: 3008
+
+  # Flatten the input contract file(s) [true | false] (default: true).
+  flatten: true
+
+  # Path to the subgraph build (optional).
+  subgraphPath: ../graph-node/test/subgraph/example1/build
+
+  # NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.
   ```
 
-    * `input-files`(alias: `i`): Input contract file path(s) or URL(s) (required).
-    * `contract-names`(alias: `c`): Contract name(s) (in order of `input-files`) (required).
-    * `output-folder`(alias: `o`): Output folder path. (logs output using `stdout` if not provided).
-    * `mode`(alias: `m`): Code generation mode (default: `all`).
-    * `flatten`(alias: `f`): Flatten the input contract file (default: `true`).
-    * `kind` (alias: `k`): Kind of watcher (default: `active`).
-    * `port` (alias: `p`): Server port (default: `3008`).
-    * `subgraph-path` (alias: `s`): Path to the subgraph build.
-
-  **Note**: When passed an *URL* in `input-files`, it is assumed that it points to an already flattened contract file.
-
-  Examples:
-
-  Generate code in `storage` mode, `lazy` kind.
+* Run the following command to generate a watcher from contract(s):
 
   ```bash
-  yarn codegen --input-files ./test/examples/contracts/ERC721.sol --contract-names ERC721 --output-folder ../my-erc721-watcher --mode storage --kind lazy
+  yarn codegen --config-file <config-file-path>
   ```
 
-  Generate code in `eth_call` mode using a contract provided by an URL.
+  * `config-file`(alias: `c`): Watcher generation config file path (yaml) (required).
 
-  ```bash
-  yarn codegen --input-files https://git.io/Jupci --contract-names ERC721 --output-folder ../my-erc721-watcher --mode eth_call
-  ```
+  Example:
 
-  Generate code for `ERC721` in both `eth_call` and `storage` mode, `active` kind.
+  * Generate code using a config file `config.yaml`:
 
-  ```bash
-  yarn codegen --input-files ../../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol --contract-names ERC721 --output-folder ../demo-erc721-watcher --mode all --kind active
-  ```
+    ```bash
+    yarn codegen --config-file ./config.yaml
+    ```
 
-  Generate code for `ERC20` contract in both `eth_call` and `storage` mode, `active` kind:
-
-  ```bash
-  yarn codegen --input-files ../../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol --contract-names ERC20 --output-folder ../demo-erc20-watcher --mode all --kind active
-  ```
-
-  This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
-
-  Generate code for `Eden` contracts in `none` mode, `active` kind:
-
-  ```bash
-  yarn codegen --input-files ~/vulcanize/governance/contracts/EdenNetwork.sol ~/vulcanize/governance/contracts/MerkleDistributor.sol ~/vulcanize/governance/contracts/DistributorGovernance.sol --contract-names EdenNetwork MerkleDistributor DistributorGovernance --output-folder ../demo-eden-watcher --mode none --kind active --subgraph-path ~/vulcanize/eden-data/packages/subgraph/build
-  ```
+  This will create a folder containing the generated code at the path provided in config. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
 ## Run Generated Watcher
 
@@ -103,13 +104,11 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in `src/hooks.ts` to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in `src/hooks.ts` to save an initial state `IPLDBlock` using the `Indexer` object.
 
   * Edit the custom hook function `createStateDiff` (triggered on a block) in `src/hooks.ts` to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
 
   * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in `src/hooks.ts` to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
-
-* The existing example hooks in `src/hooks.ts` are for an `ERC20` contract.
 
 ### Run
 
