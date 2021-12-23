@@ -21,7 +21,7 @@
 * Run the following command to generate a watcher from a contract file:
 
   ```bash
-  yarn codegen --input-files <input-file-paths> --contract-names <contract-names> --output-folder [output-folder] --mode [eth_call | storage | all] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-path [subgraph-build-path]
+  yarn codegen --input-files <input-file-paths> --contract-names <contract-names> --output-folder [output-folder] --mode [eth_call | storage | all | none] --flatten [true | false] --kind [lazy | active] --port [server-port] --subgraph-path [subgraph-build-path]
   ```
 
     * `input-files`(alias: `i`): Input contract file path(s) or URL(s) (required).
@@ -63,10 +63,10 @@
 
   This will create a folder called `demo-erc20-watcher` containing the generated code at the specified path. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
-  Generate code for `Eden` contracts in `storage` mode, `active` kind:
+  Generate code for `Eden` contracts in `none` mode, `active` kind:
 
   ```bash
-  yarn codegen --input-files ~/vulcanize/governance/contracts/EdenNetwork.sol ~/vulcanize/governance/contracts/MerkleDistributor.sol ~/vulcanize/governance/contracts/DistributorGovernance.sol --contract-names EdenNetwork MerkleDistributor DistributorGovernance --output-folder ../demo-eden-watcher --mode storage --kind active --subgraph-path ~/vulcanize/eden-data/packages/subgraph/build
+  yarn codegen --input-files ~/vulcanize/governance/contracts/EdenNetwork.sol ~/vulcanize/governance/contracts/MerkleDistributor.sol ~/vulcanize/governance/contracts/DistributorGovernance.sol --contract-names EdenNetwork MerkleDistributor DistributorGovernance --output-folder ../demo-eden-watcher --mode none --kind active --subgraph-path ~/vulcanize/eden-data/packages/subgraph/build
   ```
 
 ## Run Generated Watcher
