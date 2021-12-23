@@ -33,12 +33,15 @@ _tsToPg.set('string', 'varchar');
 _tsToPg.set('number', 'integer');
 _tsToPg.set('bigint', 'numeric');
 _tsToPg.set('boolean', 'boolean');
+_tsToPg.set('Decimal', 'numeric');
 
 // Graphql to Typescript type-mapping.
 _gqlToTs.set('String', 'string');
 _gqlToTs.set('Int', 'number');
 _gqlToTs.set('BigInt', 'bigint');
 _gqlToTs.set('Boolean', 'boolean');
+_gqlToTs.set('BigDecimal', 'Decimal');
+_gqlToTs.set('Bytes', 'string');
 
 function getTsForSol (solType: string): string | undefined {
   return _solToTs.get(solType);

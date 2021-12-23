@@ -244,6 +244,9 @@ export class Entity {
       // Add subgraph entity specific columns.
       entityObject = this._addSubgraphColumns(subgraphTypeDefs, entityObject, def);
 
+      // Add decimalTransformer column option if required.
+      this._addDecimalTransformerOption(entityObject);
+
       // Add bigintTransformer column option if required.
       this._addBigIntTransformerOption(entityObject);
 
@@ -282,9 +285,13 @@ export class Entity {
   }
 
   _addBigIntTransformerOption (entityObject: any): void {
+    let importObject = entityObject.imports.find((element: any) => {
+      return element.from === '@vulcanize/util';
+    });
+
     entityObject.columns.forEach((column: any) => {
-      // Implement bigintTransformer for bigint types.
-      if (['bigint', 'bigint[]'].includes(column.tsType)) {
+      // Implement bigintTransformer for bigint type.
+      if (column.tsType === 'bigint') {
         column.columnOptions.push(
           {
             option: 'transformer',
@@ -292,22 +299,104 @@ export class Entity {
           }
         );
 
-        const importObject = entityObject.imports.find((element: any) => {
-          return element.from === '@vulcanize/util';
-        });
-
         if (importObject) {
           importObject.toImport.add('bigintTransformer');
         } else {
-          entityObject.imports.push(
-            {
-              toImport: new Set(['bigintTransformer']),
-              from: '@vulcanize/util'
-            }
-          );
+          importObject = {
+            toImport: new Set(['bigintTransformer']),
+            from: '@vulcanize/util'
+          };
+
+          entityObject.imports.push(importObject);
+        }
+      }
+
+      // Implement bigintArrayTransformer for array of bigint type.
+      if (column.tsType === 'bigint[]') {
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'bigintArrayTransformer'
+          }
+        );
+
+        if (importObject) {
+          importObject.toImport.add('bigintArrayTransformer');
+        } else {
+          importObject = {
+            toImport: new Set(['bigintArrayTransformer']),
+            from: '@vulcanize/util'
+          };
+
+          entityObject.imports.push(importObject);
         }
       }
     });
+  }
+
+  _addDecimalTransformerOption (entityObject: any): void {
+    let importObject = entityObject.imports.find((element: any) => {
+      return element.from === '@vulcanize/util';
+    });
+
+    let isDecimalRequired = false;
+
+    entityObject.columns.forEach((column: any) => {
+      // Implement decimalTransformer for Decimal type.
+      if (column.tsType === 'Decimal') {
+        isDecimalRequired = true;
+
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'decimalTransformer'
+          }
+        );
+
+        if (importObject) {
+          importObject.toImport.add('decimalTransformer');
+        } else {
+          importObject = {
+            toImport: new Set(['decimalTransformer']),
+            from: '@vulcanize/util'
+          };
+
+          entityObject.imports.push(importObject);
+        }
+      }
+
+      // Implement decimalArrayTransformer for array of Decimal type.
+      if (column.tsType === 'Decimal[]') {
+        isDecimalRequired = true;
+
+        column.columnOptions.push(
+          {
+            option: 'transformer',
+            value: 'decimalArrayTransformer'
+          }
+        );
+
+        if (importObject) {
+          importObject.toImport.add('decimalArrayTransformer');
+        } else {
+          importObject = {
+            toImport: new Set(['decimalArrayTransformer']),
+            from: '@vulcanize/util'
+          };
+
+          entityObject.imports.push(importObject);
+        }
+      }
+    });
+
+    if (isDecimalRequired) {
+      entityObject.imports.push(
+        {
+          toImport: new Set(['Decimal']),
+          from: 'decimal.js'
+        }
+      );
+    }
   }
 
   _addSubgraphColumns (subgraphTypeDefs: any, entityObject: any, def: any): any {
