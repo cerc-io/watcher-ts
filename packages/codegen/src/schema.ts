@@ -156,6 +156,16 @@ export class Schema {
     const subgraphTypeDefsString = print(modifiedSchemaDocument);
     this._composer.addTypeDefs(subgraphTypeDefsString);
 
+    // Create the Block_height input needed in subgraph queries.
+    const typeComposer = this._composer.createInputTC({
+      name: 'Block_height',
+      fields: {
+        hash: 'Bytes',
+        number: 'Int'
+      }
+    });
+    this._composer.addSchemaMustHaveType(typeComposer);
+
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
   }
@@ -178,7 +188,7 @@ export class Schema {
         type: this._composer.getAnyTC(subgraphType).NonNull,
         args: {
           id: 'String!',
-          blockHash: 'String!'
+          block: 'Block_height'
         }
       };
 
