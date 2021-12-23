@@ -1,0 +1,43 @@
+# Config to generate eden-watcher using codegen.
+# Contracts to watch (required).
+contracts:
+    # Contract name.
+  - name: EdenNetwork
+    # Contract file path or an url.
+    path: ~/eden/governance/contracts/EdenNetwork.sol
+    # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+    kind: EdenNetwork
+  
+    # Contract name.
+  - name: MerkleDistributor
+    # Contract file path or an url.
+    path: ~/eden/governance/contracts/MerkleDistributor.sol
+    # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+    kind: EdenNetworkDistribution
+
+    # Contract name.
+  - name: DistributorGovernance
+    # Contract file path or an url.
+    path: ~/eden/governance/contracts/DistributorGovernance.sol
+    # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+    kind: EdenNetworkGovernance
+
+# Output folder path (logs output using `stdout` if not provided).
+outputFolder: ../demo-eden-watcher
+
+# Code generation mode [eth_call | storage | all | none] (default: all).
+mode: none
+
+# Kind of watcher [lazy | active] (default: active).
+kind: active
+
+# Watcher server port (default: 3008).
+port: 3012
+
+# Flatten the input contract file(s) [true | false] (default: true).
+flatten: true
+
+# Path to the subgraph build (optional).
+subgraphPath: ~/eden/eden-data/packages/subgraph/build
+
+# NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.

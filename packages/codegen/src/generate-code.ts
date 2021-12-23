@@ -10,6 +10,7 @@ import { hideBin } from 'yargs/helpers';
 import assert from 'assert';
 import { Writable } from 'stream';
 import yaml from 'js-yaml';
+import os from 'os';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
@@ -34,7 +35,7 @@ import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
-import { getContractKinds } from './utils/subgraph';
+import { getContractKindList } from './utils/subgraph';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -304,8 +305,13 @@ function getConfig (configFile: string): any {
   }
 
   // Check that every input contract kind is present in the subgraph config.
+  let subgraphPath;
+
   if (inputConfig.subgraphPath) {
-    const subgraphKinds: string[] = getContractKinds(inputConfig.subgraphPath);
+    // Resolve path.
+    subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
+
+    const subgraphKinds: string[] = getContractKindList(subgraphPath);
     const inputKinds: string[] = inputConfig.contracts.map((contract: any) => contract.kind);
 
     assert(
@@ -317,14 +323,20 @@ function getConfig (configFile: string): any {
   const inputFlatten = inputConfig.flatten;
   const flatten = (inputFlatten === undefined || inputFlatten === null) ? true : inputFlatten;
 
+  // Resolve paths.
+  const contracts = inputConfig.contracts.map((contract: any) => {
+    contract.path = contract.path.replace(/^~/, os.homedir());
+    return contract;
+  });
+
   return {
-    contracts: inputConfig.contracts,
+    contracts,
     outputFolder: inputConfig.outputFolder,
     mode: inputConfig.mode || MODE_ALL,
     kind: inputConfig.kind || KIND_ACTIVE,
     port: inputConfig.port || DEFAULT_PORT,
     flatten,
-    subgraphPath: inputConfig.subgraphPath
+    subgraphPath
   };
 }
 

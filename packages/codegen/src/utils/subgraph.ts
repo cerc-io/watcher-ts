@@ -45,7 +45,7 @@ export function getFieldType (typeNode: any): { typeName: string, array: boolean
   return { typeName: typeNode.name.value, array: false, nullable: true };
 }
 
-export function getContractKinds (subgraphPath: string): string[] {
+export function getContractKindList (subgraphPath: string): string[] {
   const subgraphConfigPath = path.join(path.resolve(subgraphPath), '/subgraph.yaml');
 
   assert(fs.existsSync(subgraphConfigPath), `Subgraph config file not found at ${subgraphConfigPath}`);
