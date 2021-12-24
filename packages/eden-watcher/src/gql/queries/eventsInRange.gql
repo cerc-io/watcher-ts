@@ -67,6 +67,70 @@ query eventsInRange($fromBlockNumber: Int!, $toBlockNumber: Int!){
                 withdrawer
                 withdrawalAmount
             }
+            ... on ApprovalForAllEvent {
+                owner
+                operator
+                approved
+            }
+            ... on BlockProducerAddedEvent {
+                producer
+            }
+            ... on BlockProducerRemovedEvent {
+                producer
+            }
+            ... on BlockProducerRewardCollectorChangedEvent {
+                producer
+                collector
+            }
+            ... on RewardScheduleChangedEvent {
+                dummy
+            }
+            ... on ClaimedEvent {
+                index
+                totalEarned
+                account
+                claimed
+            }
+            ... on SlashedEvent {
+                account
+                slashed
+            }
+            ... on MerkleRootUpdatedEvent {
+                merkleRoot
+                distributionNumber
+                metadataURI
+            }
+            ... on AccountUpdatedEvent {
+                account
+                totalClaimed
+                totalSlashed
+            }
+            ... on PermanentURIEvent {
+                value
+                id
+            }
+            ... on GovernanceChangedEvent {
+                from
+                to
+            }
+            ... on UpdateThresholdChangedEvent {
+                updateThreshold
+            }
+            ... on RoleAdminChangedEvent {
+                role
+                previousAdminRole
+                newAdminRole
+            }
+            ... on RoleGrantedEvent {
+                role
+                account
+                sender
+            }
+            ... on RoleRevokedEvent {
+                role
+                account
+                sender
+            }
         }
         proof{
             data

@@ -59,13 +59,11 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial state `IPLDBlock` using the `Indexer` object.
 
   * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
 
   * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
-
-* The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
 
 ## Run
 
@@ -97,7 +95,7 @@ GQL console: http://localhost:3012/graphql
     * `starting-block`: Starting block for the contract (default: `1`).
 
     Examples:
-    
+
     Watch a contract with its address and checkpointing on:
 
     ```bash
@@ -117,7 +115,7 @@ GQL console: http://localhost:3012/graphql
     ```
 
     * `start-block`: Block number to start filling from.
-    * `end-block`: Block number till which to fill. 
+    * `end-block`: Block number till which to fill.
 
   * To create a checkpoint for a contract:
 
@@ -141,7 +139,7 @@ GQL console: http://localhost:3012/graphql
       ```bash
       yarn reset job-queue --block-number <previous-block-number>
       ```
-    
+
     * `block-number`: Block number to which to reset the watcher.
 
   * To export and import the watcher state:
@@ -159,7 +157,7 @@ GQL console: http://localhost:3012/graphql
       ```bash
       yarn job-runner
       ```
-    
+
     * Import watcher state:
 
       ```bash
@@ -167,7 +165,7 @@ GQL console: http://localhost:3012/graphql
       ```
 
       * `import-file`: Path of JSON file from which to import the watcher data.
-    
+
     * Run fill:
 
       ```bash
