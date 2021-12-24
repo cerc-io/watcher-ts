@@ -121,7 +121,7 @@ export class EventWatcher implements EventWatcherInterface {
     this._jobQueue.onComplete(QUEUE_HOOKS, async (job) => {
       const { data: { request: { data: { blockNumber, blockHash } } } } = job;
 
-      await this._indexer.updateHookStatusProcessedBlock(blockNumber);
+      await this._indexer.updateIPLDStatusHooksBlock(blockNumber);
 
       // Create a checkpoint job after completion of a hook job.
       await this.createCheckpointJob(blockHash, blockNumber);

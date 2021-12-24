@@ -64,8 +64,8 @@ export const handler = async (argv: any): Promise<void> => {
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
 
-  const hooksStatus = await indexer.getHookStatus();
-  assert(hooksStatus, 'Missing hooksStatus');
+  const ipldStatus = await indexer.getIPLDStatus();
+  assert(ipldStatus, 'Missing ipldStatus');
 
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
@@ -91,7 +91,7 @@ export const handler = async (argv: any): Promise<void> => {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
 
-    if (hooksStatus.latestProcessedBlockNumber > blockProgress.blockNumber) {
+    if (ipldStatus.latestProcessedBlockNumber > blockProgress.blockNumber) {
       await indexer.updateHookStatusProcessedBlock(blockProgress.blockNumber, true);
     }
 

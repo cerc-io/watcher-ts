@@ -4,7 +4,7 @@
 
 import { FindConditions, MoreThan, Repository } from 'typeorm';
 
-import { IPLDBlockInterface, HookStatusInterface, StateKind } from './types';
+import { IPLDBlockInterface, IpldStatusInterface, StateKind } from './types';
 import { Database } from './database';
 import { MAX_REORG_DEPTH } from './constants';
 
@@ -141,21 +141,21 @@ export class IPLDDatabase extends Database {
     }
   }
 
-  async getHookStatus (repo: Repository<HookStatusInterface>): Promise<HookStatusInterface | undefined> {
+  async getIPLDStatus (repo: Repository<IpldStatusInterface>): Promise<IpldStatusInterface | undefined> {
     return repo.findOne();
   }
 
-  async updateHookStatusProcessedBlock (repo: Repository<HookStatusInterface>, blockNumber: number, force?: boolean): Promise<HookStatusInterface> {
+  async updateIPLDStatusHooksBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
     let entity = await repo.findOne();
 
     if (!entity) {
       entity = repo.create({
-        latestProcessedBlockNumber: blockNumber
+        latestHooksBlockNumber: blockNumber
       });
     }
 
-    if (force || blockNumber > entity.latestProcessedBlockNumber) {
-      entity.latestProcessedBlockNumber = blockNumber;
+    if (force || blockNumber > entity.latestHooksBlockNumber) {
+      entity.latestHooksBlockNumber = blockNumber;
     }
 
     return repo.save(entity);
