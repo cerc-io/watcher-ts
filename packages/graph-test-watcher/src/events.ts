@@ -13,12 +13,8 @@ import {
   EventWatcherInterface,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
-  QUEUE_BLOCK_CHECKPOINT,
-  QUEUE_HOOKS,
-  QUEUE_IPFS,
   UNKNOWN_EVENT_NAME,
-  UpstreamConfig,
-  JOB_KIND_PRUNE
+  UpstreamConfig
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -60,8 +56,6 @@ export class EventWatcher implements EventWatcherInterface {
 
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
-    await this.initHooksOnCompleteHandler();
-    await this.initBlockCheckpointOnCompleteHandler();
     this._baseEventWatcher.startBlockProcessing();
   }
 
@@ -71,7 +65,7 @@ export class EventWatcher implements EventWatcherInterface {
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
     this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
-      const { id, data: { failed, request: { data: { kind } } } } = job;
+      const { id, data: { failed } } = job;
 
       if (failed) {
         log(`Job ${id} for queue ${QUEUE_BLOCK_PROCESSING} failed`);
@@ -79,11 +73,6 @@ export class EventWatcher implements EventWatcherInterface {
       }
 
       await this._baseEventWatcher.blockProcessingCompleteHandler(job);
-
-      // If it's a pruning job: Create a hooks job.
-      if (kind === JOB_KIND_PRUNE) {
-        await this.createHooksJob();
-      }
     });
   }
 
@@ -117,27 +106,6 @@ export class EventWatcher implements EventWatcherInterface {
     });
   }
 
-  async initHooksOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_HOOKS, async (job) => {
-      const { data: { request: { data: { blockNumber, blockHash } } } } = job;
-
-      await this._indexer.updateIPLDStatusHooksBlock(blockNumber);
-
-      // Create a checkpoint job after completion of a hook job.
-      await this.createCheckpointJob(blockHash, blockNumber);
-    });
-  }
-
-  async initBlockCheckpointOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_BLOCK_CHECKPOINT, async (job) => {
-      const { data: { request: { data: { blockHash } } } } = job;
-
-      if (this._indexer.isIPFSConfigured()) {
-        await this.createIPFSPutJob(blockHash);
-      }
-    });
-  }
-
   async publishEventToSubscribers (dbEvent: Event, timeElapsedInSeconds: number): Promise<void> {
     if (dbEvent && dbEvent.eventName !== UNKNOWN_EVENT_NAME) {
       const resultEvent = this._indexer.getResultEvent(dbEvent);
@@ -148,40 +116,6 @@ export class EventWatcher implements EventWatcherInterface {
       await this._pubsub.publish(EVENT, {
         onEvent: resultEvent
       });
-    }
-  }
-
-  async createHooksJob (): Promise<void> {
-    // Get the latest canonical block
-    const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
-
-    // Create a hooks job for parent block of latestCanonicalBlock because pruning for first block is skipped as it is assumed to be a canonical block.
-    await this._jobQueue.pushJob(
-      QUEUE_HOOKS,
-      {
-        blockHash: latestCanonicalBlock.parentHash,
-        blockNumber: latestCanonicalBlock.blockNumber - 1
-      }
-    );
-  }
-
-  async createCheckpointJob (blockHash: string, blockNumber: number): Promise<void> {
-    await this._jobQueue.pushJob(
-      QUEUE_BLOCK_CHECKPOINT,
-      {
-        blockHash,
-        blockNumber
-      }
-    );
-  }
-
-  async createIPFSPutJob (blockHash: string): Promise<void> {
-    const ipldBlocks = await this._indexer.getIPLDBlocksByHash(blockHash);
-
-    for (const ipldBlock of ipldBlocks) {
-      const data = this._indexer.getIPLDData(ipldBlock);
-
-      await this._jobQueue.pushJob(QUEUE_IPFS, { data });
     }
   }
 }
