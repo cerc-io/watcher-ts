@@ -70,11 +70,11 @@ export class IPLDIndexer extends Indexer {
 
   async getLatestHooksProcessedBlock (): Promise<BlockProgressInterface> {
     // Get current hookStatus.
-    const hookStatus = await this._ipldDb.getHookStatus();
-    assert(hookStatus, 'Hook status not found');
+    const ipldStatus = await this._ipldDb.getIPLDStatus();
+    assert(ipldStatus, 'ipld status not found');
 
     // Get all the blocks at height hookStatus.latestProcessedBlockNumber.
-    const blocksAtHeight = await this.getBlocksAtHeight(hookStatus.latestProcessedBlockNumber, false);
+    const blocksAtHeight = await this.getBlocksAtHeight(ipldStatus.latestHooksBlockNumber, false);
 
     // There can exactly one block at hookStatus.latestProcessedBlockNumber height.
     assert(blocksAtHeight.length === 1);
@@ -288,11 +288,11 @@ export class IPLDIndexer extends Indexer {
     assert(currentBlock.isComplete, 'Block for a checkpoint should be marked as complete');
 
     // Get current hookStatus.
-    const hookStatus = await this._ipldDb.getHookStatus();
-    assert(hookStatus);
+    const ipldStatus = await this._ipldDb.getIPLDStatus();
+    assert(ipldStatus);
 
     // Make sure the hooks have been processed for the block.
-    assert(currentBlock.blockNumber <= hookStatus.latestProcessedBlockNumber, 'Block for a checkpoint should have hooks processed');
+    assert(currentBlock.blockNumber <= ipldStatus.latestHooksBlockNumber, 'Block for a checkpoint should have hooks processed');
 
     // Call state checkpoint hook and check if default checkpoint is disabled.
     assert(indexer.processStateCheckpoint);

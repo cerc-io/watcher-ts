@@ -38,9 +38,11 @@ export interface SyncStatusInterface {
   latestCanonicalBlockNumber: number;
 }
 
-export interface HookStatusInterface {
+export interface IpldStatusInterface {
   id: number;
-  latestProcessedBlockNumber: number
+  latestHooksBlockNumber: number;
+  latestCheckpointBlockNumber: number;
+  latestIpfsBlockNumber: number
 }
 
 export interface EventInterface {
@@ -140,5 +142,5 @@ export interface IPLDDatabaseInterface extends DatabaseInterface {
   getNewIPLDBlock (): IPLDBlockInterface
   removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
   saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>
-  getHookStatus (): Promise<HookStatusInterface | undefined>
+  getIPLDStatus (): Promise<IpldStatusInterface | undefined>
 }
