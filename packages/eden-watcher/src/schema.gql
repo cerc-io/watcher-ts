@@ -92,8 +92,8 @@ type SlotClaimedEvent {
   slot: Int!
   owner: String!
   delegate: String!
-  newBidAmount: Int!
-  oldBidAmount: Int!
+  newBidAmount: BigInt!
+  oldBidAmount: BigInt!
   taxNumerator: Int!
   taxDenominator: Int!
 }
