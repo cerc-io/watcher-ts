@@ -4,6 +4,8 @@
 
 import assert from 'assert';
 
+// import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
+
 import { Indexer, ResultEvent } from './indexer';
 
 /**
@@ -18,12 +20,16 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
   assert(blockHash);
   assert(contractAddress);
 
-  // Store an empty state in an IPLDBlock.
+  // Store the desired initial state in an IPLDBlock.
   const ipldBlockData: any = {
     state: {}
   };
 
-  // Use updateStateForMappingType to update initial state.
+  // Use updateStateForElementaryType to update initial state with an elementary property.
+  // Eg. const ipldBlockData = updateStateForElementaryType(ipldBlockData, '_totalBalance', result.value.toString());
+
+  // Use updateStateForMappingType to update initial state with a nested property.
+  // Eg. const ipldBlockData = updateStateForMappingType(ipldBlockData, '_allowances', [owner, spender], allowance.value.toString());
 
   // Return initial state data to be saved.
   return ipldBlockData;
@@ -38,7 +44,7 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
   assert(indexer);
   assert(blockHash);
 
-  // Use indexer.createStateDiff() method to create a custom diff.
+  // Use indexer.createStateDiff() method to save custom state diff(s).
 }
 
 /**
@@ -55,6 +61,8 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 
   // Use indexer.createStateCheckpoint() method to create a custom checkpoint.
 
+  // Return false to update the state created by this hook by auto-generated checkpoint state.
+  // Return true to disable update of the state created by this hook by auto-generated checkpoint state.
   return false;
 }
 
@@ -66,4 +74,7 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Promise<void> {
   assert(indexer);
   assert(eventData);
+
+  // Use indexer methods to index data.
+  // Pass `diff` parameter to indexer methods as true to save an auto-generated state from the indexed data.
 }
