@@ -11,7 +11,7 @@ import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, Stat
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { HookStatus } from './entity/HookStatus';
+import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 {{#each queries as | query |}}
@@ -120,16 +120,28 @@ export class Database implements IPLDDatabaseInterface {
     await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
   }
 
-  async getHookStatus (): Promise<HookStatus | undefined> {
-    const repo = this._conn.getRepository(HookStatus);
+  async getIPLDStatus (): Promise<IpldStatus | undefined> {
+    const repo = this._conn.getRepository(IpldStatus);
 
-    return this._baseDatabase.getHookStatus(repo);
+    return this._baseDatabase.getIPLDStatus(repo);
   }
 
-  async updateHookStatusProcessedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<HookStatus> {
-    const repo = queryRunner.manager.getRepository(HookStatus);
+  async updateIPLDStatusHooksBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const repo = queryRunner.manager.getRepository(IpldStatus);
 
-    return this._baseDatabase.updateHookStatusProcessedBlock(repo, blockNumber, force);
+    return this._baseDatabase.updateIPLDStatusHooksBlock(repo, blockNumber, force);
+  }
+
+  async updateIPLDStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const repo = queryRunner.manager.getRepository(IpldStatus);
+
+    return this._baseDatabase.updateIPLDStatusCheckpointBlock(repo, blockNumber, force);
+  }
+
+  async updateIPLDStatusIPFSBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const repo = queryRunner.manager.getRepository(IpldStatus);
+
+    return this._baseDatabase.updateIPLDStatusIPFSBlock(repo, blockNumber, force);
   }
 
   async getContracts (): Promise<Contract[]> {

@@ -38,7 +38,7 @@ import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { HookStatus } from './entity/HookStatus';
+import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 
@@ -309,9 +309,7 @@ export class Indexer implements IndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (job: any): Promise<void> {
-    const { data: { blockHash } } = job;
-
+  async processCanonicalBlock (blockHash: string): Promise<void> {
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
 
@@ -319,12 +317,11 @@ export class Indexer implements IndexerInterface {
     await createStateDiff(this, blockHash);
   }
 
-  async processCheckpoint (job: any): Promise<void> {
+  async processCheckpoint (blockHash: string): Promise<void> {
     // Return if checkpointInterval is <= 0.
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
-    const { data: { blockHash } } = job;
     await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
   }
 
@@ -489,16 +486,50 @@ export class Indexer implements IndexerInterface {
   }
 
   {{/each}}
-  async getHookStatus (): Promise<HookStatus | undefined> {
-    return this._db.getHookStatus();
+  async getIPLDStatus (): Promise<IpldStatus | undefined> {
+    return this._db.getIPLDStatus();
   }
 
-  async updateHookStatusProcessedBlock (blockNumber: number, force?: boolean): Promise<HookStatus> {
+  async updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.updateHookStatusProcessedBlock(dbTx, blockNumber, force);
+      res = await this._db.updateIPLDStatusHooksBlock(dbTx, blockNumber, force);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateIPLDStatusCheckpointBlock(dbTx, blockNumber, force);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateIPLDStatusIPFSBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateIPLDStatusIPFSBlock(dbTx, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
