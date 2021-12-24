@@ -57,18 +57,21 @@ type ResultEvent {
   proof: Proof
 }
 
-union Event = TransferERC20Event | ApprovalERC20Event | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent | TransferERC721Event | ApprovalERC721Event | ApprovalForAllEvent | BlockProducerAddedEvent | BlockProducerRemovedEvent | BlockProducerRewardCollectorChangedEvent | ClaimedEvent | SlashedEvent | MerkleRootUpdatedEvent | AccountUpdatedEvent | PermanentURIEvent | GovernanceChangedEvent | UpdateThresholdChangedEvent | RoleAdminChangedEvent | RoleGrantedEvent | RoleRevokedEvent | RewardScheduleChangedEvent
+union Event = TransferEvent | ApprovalEvent | AuthorizationUsedEvent | AdminUpdatedEvent | TaxRateUpdatedEvent | SlotClaimedEvent | SlotDelegateUpdatedEvent | StakeEvent | UnstakeEvent | WithdrawEvent | ApprovalForAllEvent | BlockProducerAddedEvent | BlockProducerRemovedEvent | BlockProducerRewardCollectorChangedEvent | ClaimedEvent | SlashedEvent | MerkleRootUpdatedEvent | AccountUpdatedEvent | PermanentURIEvent | GovernanceChangedEvent | UpdateThresholdChangedEvent | RoleAdminChangedEvent | RoleGrantedEvent | RoleRevokedEvent | RewardScheduleChangedEvent
 
-type TransferERC20Event {
+type TransferEvent {
   from: String!
   to: String!
-  value: BigInt!
+  value: BigInt
+  tokenId: BigInt
 }
 
-type ApprovalERC20Event {
+type ApprovalEvent {
   owner: String!
-  spender: String!
-  value: BigInt!
+  spender: String
+  value: BigInt
+  approved: String
+  tokenId: BigInt
 }
 
 type AuthorizationUsedEvent {
@@ -118,18 +121,6 @@ type UnstakeEvent {
 type WithdrawEvent {
   withdrawer: String!
   withdrawalAmount: BigInt!
-}
-
-type TransferERC721Event {
-  from: String!
-  to: String!
-  tokenId: BigInt!
-}
-
-type ApprovalERC721Event {
-  owner: String!
-  approved: String!
-  tokenId: BigInt!
 }
 
 type ApprovalForAllEvent {
