@@ -266,9 +266,7 @@ export class Indexer implements IndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (job: any): Promise<void> {
-    const { data: { blockHash } } = job;
-
+  async processCanonicalBlock (blockHash: string): Promise<void> {
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
 
@@ -276,12 +274,11 @@ export class Indexer implements IndexerInterface {
     await createStateDiff(this, blockHash);
   }
 
-  async processCheckpoint (job: any): Promise<void> {
+  async processCheckpoint (blockHash: string): Promise<void> {
     // Return if checkpointInterval is <= 0.
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
-    const { data: { blockHash } } = job;
     await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
   }
 
@@ -419,6 +416,40 @@ export class Indexer implements IndexerInterface {
 
     try {
       res = await this._db.updateIPLDStatusHooksBlock(dbTx, blockNumber, force);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateIPLDStatusCheckpointBlock(dbTx, blockNumber, force);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateIPLDStatusIPFSBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateIPLDStatusIPFSBlock(dbTx, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();

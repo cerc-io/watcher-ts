@@ -46,14 +46,6 @@ export const fillBlocks = async (
   await eventWatcher.initBlockProcessingOnCompleteHandler();
   await eventWatcher.initEventProcessingOnCompleteHandler();
 
-  if (eventWatcher.initHooksOnCompleteHandler) {
-    await eventWatcher.initHooksOnCompleteHandler();
-  }
-
-  if (eventWatcher.initBlockCheckpointOnCompleteHandler) {
-    await eventWatcher.initBlockCheckpointOnCompleteHandler();
-  }
-
   const numberOfBlocks = endBlock - startBlock + 1;
 
   processBlockByNumber(jobQueue, indexer, blockDelayInMilliSecs, startBlock);

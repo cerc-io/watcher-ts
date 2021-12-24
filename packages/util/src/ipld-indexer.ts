@@ -71,7 +71,7 @@ export class IPLDIndexer extends Indexer {
   async getLatestHooksProcessedBlock (): Promise<BlockProgressInterface> {
     // Get current hookStatus.
     const ipldStatus = await this._ipldDb.getIPLDStatus();
-    assert(ipldStatus, 'ipld status not found');
+    assert(ipldStatus, 'IPLD status not found');
 
     // Get all the blocks at height hookStatus.latestProcessedBlockNumber.
     const blocksAtHeight = await this.getBlocksAtHeight(ipldStatus.latestHooksBlockNumber, false);
