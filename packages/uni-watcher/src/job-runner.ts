@@ -46,6 +46,8 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
+
+      await this._jobQueue.markComplete(job);
     });
   }
 

@@ -55,8 +55,6 @@ export class JobRunner {
         log(`Invalid Job kind ${kind} in QUEUE_BLOCK_PROCESSING.`);
         break;
     }
-
-    await this._jobQueue.markComplete(job);
   }
 
   async processEvent (job: any): Promise<EventInterface | void> {

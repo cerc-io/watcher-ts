@@ -126,6 +126,18 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.updateIPLDStatusHooksBlock(repo, blockNumber, force);
   }
 
+  async updateIPLDStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const repo = queryRunner.manager.getRepository(IpldStatus);
+
+    return this._baseDatabase.updateIPLDStatusCheckpointBlock(repo, blockNumber, force);
+  }
+
+  async updateIPLDStatusIPFSBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    const repo = queryRunner.manager.getRepository(IpldStatus);
+
+    return this._baseDatabase.updateIPLDStatusIPFSBlock(repo, blockNumber, force);
+  }
+
   async getContracts (): Promise<Contract[]> {
     const repo = this._conn.getRepository(Contract);
 

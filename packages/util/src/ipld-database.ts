@@ -3,6 +3,7 @@
 //
 
 import { FindConditions, MoreThan, Repository } from 'typeorm';
+import assert from 'assert';
 
 import { IPLDBlockInterface, IpldStatusInterface, StateKind } from './types';
 import { Database } from './database';
@@ -150,12 +151,36 @@ export class IPLDDatabase extends Database {
 
     if (!entity) {
       entity = repo.create({
-        latestHooksBlockNumber: blockNumber
+        latestHooksBlockNumber: blockNumber,
+        latestCheckpointBlockNumber: -1,
+        latestIPFSBlockNumber: -1
       });
     }
 
     if (force || blockNumber > entity.latestHooksBlockNumber) {
       entity.latestHooksBlockNumber = blockNumber;
+    }
+
+    return repo.save(entity);
+  }
+
+  async updateIPLDStatusCheckpointBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
+
+    if (force || blockNumber > entity.latestCheckpointBlockNumber) {
+      entity.latestCheckpointBlockNumber = blockNumber;
+    }
+
+    return repo.save(entity);
+  }
+
+  async updateIPLDStatusIPFSBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
+
+    if (force || blockNumber > entity.latestIPFSBlockNumber) {
+      entity.latestIPFSBlockNumber = blockNumber;
     }
 
     return repo.save(entity);

@@ -42,7 +42,7 @@ export interface IpldStatusInterface {
   id: number;
   latestHooksBlockNumber: number;
   latestCheckpointBlockNumber: number;
-  latestIpfsBlockNumber: number
+  latestIPFSBlockNumber: number
 }
 
 export interface EventInterface {
@@ -107,8 +107,6 @@ export interface EventWatcherInterface {
   getBlockProgressEventIterator (): AsyncIterator<any>
   initBlockProcessingOnCompleteHandler (): Promise<void>
   initEventProcessingOnCompleteHandler (): Promise<void>
-  initHooksOnCompleteHandler?: () => Promise<void>
-  initBlockCheckpointOnCompleteHandler?: () => Promise<void>
 }
 
 export interface DatabaseInterface {
