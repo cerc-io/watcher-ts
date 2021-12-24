@@ -20,11 +20,14 @@ subscription onEvent{
                 from
                 to
                 value
+                tokenId
             }
             ... on ApprovalEvent {
                 owner
                 spender
                 value
+                approved
+                tokenId
             }
             ... on AuthorizationUsedEvent {
                 authorizer
