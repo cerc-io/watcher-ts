@@ -69,17 +69,17 @@ export class JobRunner {
     await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
       const { data: { blockNumber } } = job;
 
-      const hookStatus = await this._indexer.getHookStatus();
+      const ipldStatus = await this._indexer.getIPLDStatus();
 
-      if (hookStatus) {
-        if (hookStatus.latestProcessedBlockNumber < (blockNumber - 1)) {
+      if (ipldStatus) {
+        if (ipldStatus.latestHooksBlockNumber < (blockNumber - 1)) {
           const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
           log(message);
 
           throw new Error(message);
         }
 
-        if (hookStatus.latestProcessedBlockNumber > (blockNumber - 1)) {
+        if (ipldStatus.latestHooksBlockNumber > (blockNumber - 1)) {
           log(`Hooks for blockNumber ${blockNumber} already processed`);
 
           return;

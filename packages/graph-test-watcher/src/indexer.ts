@@ -33,7 +33,7 @@ import { Database } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { HookStatus } from './entity/HookStatus';
+import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 import artifacts from './artifacts/Example.json';
@@ -409,16 +409,16 @@ export class Indexer implements IndexerInterface {
     };
   }
 
-  async getHookStatus (): Promise<HookStatus | undefined> {
-    return this._db.getHookStatus();
+  async getIPLDStatus (): Promise<IpldStatus | undefined> {
+    return this._db.getIPLDStatus();
   }
 
-  async updateHookStatusProcessedBlock (blockNumber: number, force?: boolean): Promise<HookStatus> {
+  async updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.updateHookStatusProcessedBlock(dbTx, blockNumber, force);
+      res = await this._db.updateIPLDStatusHooksBlock(dbTx, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
