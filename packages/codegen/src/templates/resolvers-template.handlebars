@@ -75,7 +75,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       {{/each}}
 
       {{~#each subgraphQueries}}
-      {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<{{this.entityName}} | undefined> => {
+      {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('{{this.queryName}}', id, block);
 
         return indexer.getSubgraphEntity({{this.entityName}}, id, block);
