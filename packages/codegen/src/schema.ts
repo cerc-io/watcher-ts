@@ -71,6 +71,8 @@ export class Schema {
 
     // Check if the type is already added.
     if (this._composer.has(name)) {
+      this._resolveEventConflict(name, params);
+
       return;
     }
 
@@ -421,5 +423,39 @@ export class Schema {
     const eventUnion = this._composer.getOrCreateUTC('Event');
     // Add a new type to the union.
     eventUnion.addType(this._composer.getOTC(event));
+  }
+
+  _resolveEventConflict (name: string, params: Array<Param>): void {
+    const eventTC = this._composer.getOTC(name);
+    const currentFields = eventTC.getFieldNames();
+
+    // Get the common fields.
+    let commonFields: string[] = [];
+    commonFields = params.reduce((acc, curr) => {
+      if (currentFields.includes(curr.name)) {
+        acc.push(curr.name);
+      }
+      return acc;
+    }, commonFields);
+
+    // Make the current fields that are uncommon nullable.
+    currentFields.forEach((field: string) => {
+      if (!commonFields.includes(field)) {
+        eventTC.makeFieldNullable(field);
+      }
+    });
+
+    // Get the new fields.
+    const newFields: any = {};
+    params.forEach((param: Param) => {
+      if (!commonFields.includes(param.name)) {
+        const tsCurrType = getTsForSol(param.type);
+        assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
+        newFields[param.name] = `${getGqlForTs(tsCurrType)}`;
+      }
+    });
+
+    // Add the new fields to the current type.
+    eventTC.addFields(newFields);
   }
 }
