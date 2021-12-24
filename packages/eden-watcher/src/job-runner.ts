@@ -54,8 +54,6 @@ export class JobRunner {
 
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-      // TODO Call pre-block hook here (Directly or indirectly (Like done through indexer.processEvent for events)).
-
       await this._baseJobRunner.processBlock(job);
 
       const { data: { kind } } = job;
@@ -64,6 +62,8 @@ export class JobRunner {
       if (kind === JOB_KIND_PRUNE) {
         await this.createHooksJob();
       }
+
+      await this._jobQueue.markComplete(job);
     });
   }
 
@@ -118,8 +118,9 @@ export class JobRunner {
 
       // Get the current IPLD Status.
       const ipldStatus = await this._indexer.getIPLDStatus();
+      assert(ipldStatus);
 
-      if (ipldStatus) {
+      if (ipldStatus.latestCheckpointBlockNumber >= 0) {
         if (ipldStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
           // Create a checkpoint job for parent block.
           const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
@@ -158,8 +159,9 @@ export class JobRunner {
       const { data: { blockHash, blockNumber } } = job;
 
       const ipldStatus = await this._indexer.getIPLDStatus();
+      assert(ipldStatus);
 
-      if (ipldStatus) {
+      if (ipldStatus.latestIPFSBlockNumber >= 0) {
         if (ipldStatus.latestIPFSBlockNumber < (blockNumber - 1)) {
           // Create a IPFS job for parent block.
           const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
