@@ -23,6 +23,7 @@
   ```yaml
   # Example config.yaml
   # Contracts to watch (required).
+  # Can pass empty array ([]) when using subgraphPath.
   contracts:
       # Contract name.
     - name: Example
@@ -34,8 +35,8 @@
   # Output folder path (logs output using `stdout` if not provided).
   outputFolder: ../test-watcher
 
-  # Code generation mode [eth_call | storage | all | none] (default: all).
-  mode: all
+  # Code generation mode [eth_call | storage | all | none] (default: none).
+  mode: none
 
   # Kind of watcher [lazy | active] (default: active).
   kind: active
@@ -47,6 +48,7 @@
   flatten: true
 
   # Path to the subgraph build (optional).
+  # Can set empty contracts array when using subgraphPath.
   subgraphPath: ../graph-node/test/subgraph/example1/build
 
   # NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.
@@ -149,7 +151,7 @@
     ```bash
     yarn checkpoint --address <contract-address> --block-hash [block-hash]
     ```
-  
+
   * To reset the watcher to a previous block number:
 
     * Reset state:
@@ -175,7 +177,7 @@
     ```bash
     yarn import-state --import-file <import-file-path>
     ```
-  
+
   * To inspect a CID:
 
     ```bash

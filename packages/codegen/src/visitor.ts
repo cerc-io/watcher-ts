@@ -4,6 +4,7 @@
 
 import { Writable } from 'stream';
 import assert from 'assert';
+import { utils } from 'ethers';
 
 import { Database } from './database';
 import { Entity } from './entity';
@@ -125,19 +126,22 @@ export class Visitor {
   }
 
   /**
-   * Visitor function for event definitions.
-   * @param node ASTNode for an event definition.
+   * Function to parse event definitions.
+   * @param abi Contract ABI.
    */
-  eventDefinitionVisitor (node: any): void {
-    const name = node.name;
-    const params = node.parameters.map((item: any) => {
-      return { name: item.name, type: item.typeName.name };
+  parseEvents (abi: any): void {
+    const contractInterface = new utils.Interface(abi);
+
+    Object.values(contractInterface.events).forEach(event => {
+      const params = event.inputs.map(input => {
+        return { name: input.name, type: input.type };
+      });
+
+      this._schema.addEventType(event.name, params);
+
+      assert(this._contract);
+      this._indexer.addEvent(event.name, params, this._contract.kind);
     });
-
-    this._schema.addEventType(name, params);
-
-    assert(this._contract);
-    this._indexer.addEvent(name, params, this._contract.kind);
   }
 
   visitSubgraph (subgraphPath?: string): void {
