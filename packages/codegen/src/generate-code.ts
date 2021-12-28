@@ -20,7 +20,7 @@ import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from '
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
-import { exportArtifacts } from './artifacts';
+import { generateArtifacts } from './artifacts';
 import { exportPackage } from './package';
 import { exportTSConfig } from './tsconfig';
 import { exportReadme } from './readme';
@@ -35,7 +35,7 @@ import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
-import { getContractKindList } from './utils/subgraph';
+import { getSubgraphConfig } from './utils/subgraph';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -50,25 +50,48 @@ const main = async (): Promise<void> => {
   const config = getConfig(path.resolve(argv['config-file']));
 
   // Create an array of flattened contract strings.
-  const contracts: any = [];
+  const contracts: any[] = [];
 
   for (const contract of config.contracts) {
-    const inputFile = contract.path;
-    assert(typeof inputFile === 'string', 'Contract input file path should be a string');
+    const { path: inputFile, abiPath, name, kind } = contract;
 
-    let contractString;
+    const contractData: any = {
+      contractName: name,
+      contractKind: kind
+    };
 
-    if (inputFile.startsWith('http')) {
-      // Assume flattened file in case of URL.
-      const response = await fetch(inputFile);
-      contractString = await response.text();
-    } else {
-      contractString = config.flatten
-        ? await flatten(path.resolve(inputFile))
-        : fs.readFileSync(path.resolve(inputFile)).toString();
+    if (abiPath) {
+      const abiString = fs.readFileSync(path.resolve(abiPath)).toString();
+      contractData.contractAbi = JSON.parse(abiString);
     }
 
-    contracts.push({ contractString, contractName: contract.name, contractKind: contract.kind });
+    if (inputFile) {
+      assert(typeof inputFile === 'string', 'Contract input file path should be a string');
+
+      if (inputFile.startsWith('http')) {
+        // Assume flattened file in case of URL.
+        const response = await fetch(inputFile);
+        contractData.contractString = await response.text();
+      } else {
+        contractData.contractString = config.flatten
+          ? await flatten(path.resolve(inputFile))
+          : fs.readFileSync(path.resolve(inputFile)).toString();
+      }
+
+      // Generate artifacts from contract.
+      const inputFileName = path.basename(inputFile, '.sol');
+
+      const { abi, storageLayout } = generateArtifacts(
+        contractData.contractString,
+        `${inputFileName}.sol`,
+        contractData.contractName
+      );
+
+      contractData.contractAbi = abi;
+      contractData.contractStorageLayout = storageLayout;
+    }
+
+    contracts.push(contractData);
   }
 
   const visitor = new Visitor();
@@ -79,7 +102,6 @@ const main = async (): Promise<void> => {
 };
 
 function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
-  const eventDefinitionVisitor = visitor.eventDefinitionVisitor.bind(visitor);
   let functionDefinitionVisitor;
   let stateVariableDeclarationVisitor;
 
@@ -94,19 +116,21 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
   }
 
   for (const contract of contracts) {
-    // Get the abstract syntax tree for the flattened contract.
-    const ast = parse(contract.contractString);
-
-    // Filter out library nodes.
-    ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
-
     visitor.setContract(contract.contractName, contract.contractKind);
+    visitor.parseEvents(contract.contractAbi);
 
-    visit(ast, {
-      FunctionDefinition: functionDefinitionVisitor,
-      StateVariableDeclaration: stateVariableDeclarationVisitor,
-      EventDefinition: eventDefinitionVisitor
-    });
+    if (contract.contractString) {
+      // Get the abstract syntax tree for the flattened contract.
+      const ast = parse(contract.contractString);
+
+      // Filter out library nodes.
+      ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
+
+      visit(ast, {
+        StateVariableDeclaration: stateVariableDeclarationVisitor,
+        FunctionDefinition: functionDefinitionVisitor
+      });
+    }
   }
 }
 
@@ -133,19 +157,12 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   let outStream: Writable;
 
   // Export artifacts for the contracts.
-  config.contracts.forEach((contract: any, index: number) => {
-    const inputFileName = path.basename(contract.path, '.sol');
-
+  contracts.forEach((contract: any) => {
     outStream = outputDir
-      ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${contract.name}.json`))
+      ? fs.createWriteStream(path.join(outputDir, 'src/artifacts/', `${contract.contractName}.json`))
       : process.stdout;
 
-    exportArtifacts(
-      outStream,
-      contracts[index].contractString,
-      `${inputFileName}.sol`,
-      contract.name
-    );
+    outStream.write(JSON.stringify({ abi: contract.contractAbi, storageLayout: contract.contractStorageLayout }, null, 2));
   });
 
   // Register the handlebar helpers to be used in the templates.
@@ -166,7 +183,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/indexer.ts'))
     : process.stdout;
-  visitor.exportIndexer(outStream, config.contracts);
+  visitor.exportIndexer(outStream, contracts);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))
@@ -304,30 +321,37 @@ function getConfig (configFile: string): any {
     assert(typeof inputConfig.port === 'number', 'Invalid watcher server port');
   }
 
-  // Check that every input contract kind is present in the subgraph config.
-  let subgraphPath;
-
-  if (inputConfig.subgraphPath) {
-    // Resolve path.
-    subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
-
-    const subgraphKinds: string[] = getContractKindList(subgraphPath);
-    const inputKinds: string[] = inputConfig.contracts.map((contract: any) => contract.kind);
-
-    assert(
-      inputKinds.every((inputKind: string) => subgraphKinds.includes(inputKind)),
-      'Input contract kind not available in the subgraph.'
-    );
-  }
-
-  const inputFlatten = inputConfig.flatten;
-  const flatten = (inputFlatten === undefined || inputFlatten === null) ? true : inputFlatten;
-
   // Resolve paths.
   const contracts = inputConfig.contracts.map((contract: any) => {
     contract.path = contract.path.replace(/^~/, os.homedir());
     return contract;
   });
+
+  let subgraphPath: any;
+  let subgraphConfig;
+
+  if (inputConfig.subgraphPath) {
+    // Resolve path.
+    subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
+    subgraphConfig = getSubgraphConfig(subgraphPath);
+
+    // Add contracts missing for dataSources in subgraph config.
+    subgraphConfig.dataSources.forEach((dataSource: any) => {
+      if (!contracts.some((contract: any) => contract.kind === dataSource.name)) {
+        const abi = dataSource.mapping.abis.find((abi: any) => abi.name === dataSource.source.abi);
+        const abiPath = path.resolve(subgraphPath, abi.file);
+
+        contracts.push({
+          name: dataSource.name,
+          kind: dataSource.name,
+          abiPath
+        });
+      }
+    });
+  }
+
+  const inputFlatten = inputConfig.flatten;
+  const flatten = (inputFlatten === undefined || inputFlatten === null) ? true : inputFlatten;
 
   return {
     contracts,
@@ -336,7 +360,8 @@ function getConfig (configFile: string): any {
     kind: inputConfig.kind || KIND_ACTIVE,
     port: inputConfig.port || DEFAULT_PORT,
     flatten,
-    subgraphPath
+    subgraphPath,
+    subgraphConfig
   };
 }
 

@@ -45,17 +45,11 @@ export function getFieldType (typeNode: any): { typeName: string, array: boolean
   return { typeName: typeNode.name.value, array: false, nullable: true };
 }
 
-export function getContractKindList (subgraphPath: string): string[] {
+export function getSubgraphConfig (subgraphPath: string): any {
   const subgraphConfigPath = path.join(path.resolve(subgraphPath), '/subgraph.yaml');
 
   assert(fs.existsSync(subgraphConfigPath), `Subgraph config file not found at ${subgraphConfigPath}`);
-  const subgraph = yaml.load(fs.readFileSync(subgraphConfigPath, 'utf8')) as any;
-
-  const contractKinds: string[] = subgraph.dataSources.map((dataSource: any) => {
-    return dataSource.name;
-  });
-
-  return contractKinds;
+  return yaml.load(fs.readFileSync(subgraphConfigPath, 'utf8')) as any;
 }
 
 function parseType (typeNode: any): any {

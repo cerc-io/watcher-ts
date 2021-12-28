@@ -31,7 +31,7 @@ import {
 import { GraphWatcher } from '@vulcanize/graph-node';
 
 {{#each contracts as | contract |}}
-import {{contract.name}}Artifacts from './artifacts/{{contract.name}}.json';
+import {{contract.contractName}}Artifacts from './artifacts/{{contract.contractName}}.json';
 {{/each}}
 import { Database } from './database';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
@@ -49,7 +49,7 @@ import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.classNam
 const log = debug('vulcanize:indexer');
 
 {{#each contracts as | contract |}}
-const KIND_{{capitalize contract.name}} = '{{contract.kind}}';
+const KIND_{{capitalize contract.contractName}} = '{{contract.contractKind}}';
 {{/each}}
 
 {{#each uniqueEvents as | event |}}
@@ -131,15 +131,22 @@ export class Indexer implements IndexerInterface {
     this._contractMap = new Map();
 
     {{#each contracts as | contract |}}
-    const { abi: {{contract.name}}ABI, storageLayout: {{contract.name}}StorageLayout } = {{contract.name}}Artifacts;
-    assert({{contract.name}}ABI);
-    assert({{contract.name}}StorageLayout);
+    const {
+      abi: {{contract.contractName}}ABI,
+      {{#if contract.contractStorageLayout}}
+      storageLayout: {{contract.contractName}}StorageLayout
+      {{/if}}
+    } = {{contract.contractName}}Artifacts;
 
     {{/each}}
     {{#each contracts as | contract |}}
-    this._abiMap.set(KIND_{{capitalize contract.name}}, {{contract.name}}ABI);
-    this._storageLayoutMap.set(KIND_{{capitalize contract.name}}, {{contract.name}}StorageLayout);
-    this._contractMap.set(KIND_{{capitalize contract.name}}, new ethers.utils.Interface({{contract.name}}ABI));
+    assert({{contract.contractName}}ABI);
+    this._abiMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}ABI);
+    {{#if contract.contractStorageLayout}}
+    assert({{contract.contractName}}StorageLayout);
+    this._storageLayoutMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}StorageLayout);
+    {{/if}}
+    this._contractMap.set(KIND_{{capitalize contract.contractName}}, new ethers.utils.Interface({{contract.contractName}}ABI));
 
     {{/each}}
     this._entityTypesMap = new Map();
@@ -434,8 +441,8 @@ export class Indexer implements IndexerInterface {
 
     switch (kind) {
       {{#each contracts as | contract |}}
-      case KIND_{{capitalize contract.name}}: {
-        ({ eventName, eventInfo } = this.parse{{contract.name}}Event(logDescription));
+      case KIND_{{capitalize contract.contractName}}: {
+        ({ eventName, eventInfo } = this.parse{{contract.contractName}}Event(logDescription));
 
         break;
       }
@@ -450,13 +457,13 @@ export class Indexer implements IndexerInterface {
   }
 
   {{#each contracts as | contract |}}
-  parse{{contract.name}}Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+  parse{{contract.contractName}}Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};
 
     switch (logDescription.name) {
       {{#each ../events as | event |}}
-      {{#if (compare contract.kind event.kind)}}
+      {{#if (compare contract.contractKind event.kind)}}
       case {{capitalize event.name}}_EVENT: {
         eventName = logDescription.name;
         {{#if event.params}}
