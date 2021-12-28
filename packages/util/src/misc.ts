@@ -211,3 +211,16 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
     size: BigInt(size).toString()
   };
 };
+
+export const getExtraTxData = (rlpData: string): any => {
+  // Deecode the transaction data.
+  const header = EthDecoder.decodeTransaction(EthDecoder.decodeData(rlpData));
+  assert(header);
+
+  return {
+    value: header.Amount.toString(),
+    gasLimit: header.GasLimit.toString(),
+    gasPrice: header.GasPrice.toString(),
+    input: header.Data
+  };
+};

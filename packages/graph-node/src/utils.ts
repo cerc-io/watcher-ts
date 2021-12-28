@@ -5,7 +5,7 @@ import debug from 'debug';
 import yaml from 'js-yaml';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 
-import { GraphDecimal } from '@vulcanize/util';
+import { getExtraTxData, GraphDecimal } from '@vulcanize/util';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
 
@@ -31,6 +31,7 @@ interface Transaction {
   index: number;
   from: string;
   to: string;
+  rlpData: string;
 }
 
 export interface Block {
@@ -231,16 +232,20 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const txToStringPtr = await __newString(tx.to);
   const txTo = tx.to && await Address.fromString(txToStringPtr);
 
-  const txValuePtr = await BigInt.fromI32(0);
-  const txGasLimitPtr = await BigInt.fromI32(0);
-  const txGasPricePtr = await BigInt.fromI32(0);
-  const txinputPtr = await Bytes.empty();
+  const { value, gasLimit, gasPrice, input } = getExtraTxData(tx.rlpData);
 
-  // Missing fields from watcher in transaction data:
-  // value
-  // gasLimit
-  // gasPrice
-  // input
+  const valueStringPtr = await __newString(value);
+  const txValuePtr = await BigInt.fromString(valueStringPtr);
+
+  const gasLimitStringPtr = await __newString(gasLimit);
+  const txGasLimitPtr = await BigInt.fromString(gasLimitStringPtr);
+
+  const gasPriceStringPtr = await __newString(gasPrice);
+  const txGasPricePtr = await BigInt.fromString(gasPriceStringPtr);
+
+  const inputStringPtr = await __newString(input);
+  const txInputPtr = await Bytes.fromString(inputStringPtr);
+
   const transaction = await ethereum.Transaction.__new(
     txHash,
     txIndex,
@@ -249,7 +254,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     txValuePtr,
     txGasLimitPtr,
     txGasPricePtr,
-    txinputPtr
+    txInputPtr
   );
 
   const eventParamArrayPromise = inputs.map(async input => {

@@ -57,6 +57,9 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
           index
           src
           dst
+          blockByMhKey {
+            data
+          }
         }
       }
     }
