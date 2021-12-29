@@ -42,9 +42,7 @@ export interface GraphData {
 }
 
 export interface Context {
-  event: {
-    block?: Block
-  }
+  block?: Block
 }
 
 const log = debug('vulcanize:graph-node');
@@ -71,8 +69,8 @@ export const instantiate = async (
         const entityName = __getString(entity);
         const entityId = __getString(id);
 
-        assert(context.event.block);
-        const entityData = await database.getEntity(entityName, entityId, context.event.block.blockHash);
+        assert(context.block);
+        const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
 
         if (!entityData) {
           return null;
@@ -91,8 +89,8 @@ export const instantiate = async (
 
         const entityInstance = await Entity.wrap(data);
 
-        assert(context.event.block);
-        let dbData = await database.fromGraphEntity(instanceExports, context.event.block, entityName, entityInstance);
+        assert(context.block);
+        let dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
 
         // Resolve any field name conflicts in the dbData for auto-diff.
@@ -108,7 +106,7 @@ export const instantiate = async (
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
         assert(dataSource?.address);
-        await indexer.createDiffStaged(dataSource.address, context.event.block.blockHash, diffData);
+        await indexer.createDiffStaged(dataSource.address, context.block.blockHash, diffData);
       },
 
       'log.log': (level: number, msg: number) => {
@@ -161,10 +159,10 @@ export const instantiate = async (
 
           functionParams = await Promise.all(functionParamsPromise);
 
-          assert(context.event.block);
+          assert(context.block);
 
           // TODO: Check for function overloading.
-          let result = await contract[functionName](...functionParams, { blockTag: context.event.block.blockHash });
+          let result = await contract[functionName](...functionParams, { blockTag: context.block.blockHash });
 
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);

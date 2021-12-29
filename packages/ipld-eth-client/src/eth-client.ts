@@ -92,6 +92,16 @@ export class EthClient {
     );
   }
 
+  async getFullTransaction ({ headerId, txHash }: { headerId: number, txHash: string }): Promise<any> {
+    return this._graphqlClient.query(
+      ethQueries.getFullTransaction,
+      {
+        headerId,
+        txHash
+      }
+    );
+  }
+
   async getBlockByHash (blockHash?: string): Promise<any> {
     const { block } = await this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
     block.number = parseInt(block.number, 16);

@@ -194,6 +194,7 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
   const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
 
   return {
+    headerId: fullBlock.id,
     cid: fullBlock.cid,
     blockNumber: fullBlock.blockNumber,
     blockHash: fullBlock.blockHash,
@@ -209,5 +210,28 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
     gasUsed: header.GasUsed.toString(),
     author: header.Beneficiary,
     size: BigInt(size).toString()
+  };
+};
+
+export const getFullTransaction = async (ethClient: EthClient, headerId: number, txHash: string): Promise<any> => {
+  const {
+    ethTransactionCidByHeaderIdAndTxHash: fullTx
+  } = await ethClient.getFullTransaction({ headerId, txHash });
+
+  assert(fullTx.blockByMhKey);
+
+  // Decode the transaction data.
+  const extraData = EthDecoder.decodeTransaction(EthDecoder.decodeData(fullTx.blockByMhKey.data));
+  assert(extraData);
+
+  return {
+    hash: txHash,
+    from: fullTx.src,
+    to: fullTx.dst,
+    index: fullTx.index,
+    value: extraData.Amount.toString(),
+    gasLimit: extraData.GasLimit.toString(),
+    gasPrice: extraData.GasPrice.toString(),
+    input: extraData.Data
   };
 };

@@ -26,14 +26,19 @@ export const DECIMAL128_PMIN = '1e-6143';
 // Maximum -ve decimal value.
 export const DECIMAL128_NMAX = '-1e-6143';
 
-interface Transaction {
+export interface Transaction {
   hash: string;
   index: number;
   from: string;
   to: string;
+  value: string;
+  gasLimit: string;
+  gasPrice: string;
+  input: string;
 }
 
 export interface Block {
+  headerId: number;
   blockHash: string;
   blockNumber: string;
   timestamp: string;
@@ -231,16 +236,19 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const txToStringPtr = await __newString(tx.to);
   const txTo = tx.to && await Address.fromString(txToStringPtr);
 
-  const txValuePtr = await BigInt.fromI32(0);
-  const txGasLimitPtr = await BigInt.fromI32(0);
-  const txGasPricePtr = await BigInt.fromI32(0);
-  const txinputPtr = await Bytes.empty();
+  const valueStringPtr = await __newString(tx.value);
+  const txValuePtr = await BigInt.fromString(valueStringPtr);
 
-  // Missing fields from watcher in transaction data:
-  // value
-  // gasLimit
-  // gasPrice
-  // input
+  const gasLimitStringPtr = await __newString(tx.gasLimit);
+  const txGasLimitPtr = await BigInt.fromString(gasLimitStringPtr);
+
+  const gasPriceStringPtr = await __newString(tx.gasPrice);
+  const txGasPricePtr = await BigInt.fromString(gasPriceStringPtr);
+
+  const inputStringPtr = await __newString(tx.input);
+  const txInputByteArray = await ByteArray.fromHexString(inputStringPtr);
+  const txInputPtr = await Bytes.fromByteArray(txInputByteArray);
+
   const transaction = await ethereum.Transaction.__new(
     txHash,
     txIndex,
@@ -249,7 +257,7 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
     txValuePtr,
     txGasLimitPtr,
     txGasPricePtr,
-    txinputPtr
+    txInputPtr
   );
 
   const eventParamArrayPromise = inputs.map(async input => {

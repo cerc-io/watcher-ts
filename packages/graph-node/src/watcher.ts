@@ -11,9 +11,9 @@ import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction } from '@vulcanize/util';
 
-import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
 import { Database } from './database';
 
@@ -34,10 +34,9 @@ export class GraphWatcher {
   _wasmRestartBlocksInterval: number;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
+  _transactionsMap: Map<string, Transaction> = new Map()
 
-  _context: Context = {
-    event: {}
-  }
+  _context: Context = {}
 
   constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
@@ -119,12 +118,14 @@ export class GraphWatcher {
   }
 
   async handleEvent (eventData: any) {
-    const { contract, event, eventSignature, block, tx, eventIndex } = eventData;
+    const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
-    // TODO: Use blockData fetched in handleBlock.
-    const blockData = await getFullBlock(this._postgraphileClient, this._ethProvider, block.hash);
+    if (!this._context.block) {
+      this._context.block = await getFullBlock(this._postgraphileClient, this._ethProvider, block.hash);
+    }
 
-    this._context.event.block = blockData;
+    const blockData = this._context.block;
+    assert(blockData);
 
     // Get dataSource in subgraph yaml based on contract address.
     const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
@@ -157,6 +158,8 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
+    const tx = await this._getTransactionData(blockData.headerId, txHash);
+
     const data = {
       block: blockData,
       inputs: eventFragment.inputs,
@@ -174,7 +177,10 @@ export class GraphWatcher {
   async handleBlock (blockHash: string) {
     const blockData = await getFullBlock(this._postgraphileClient, this._ethProvider, blockHash);
 
-    this._context.event.block = blockData;
+    this._context.block = blockData;
+
+    // Clear transactions map on handling new block.
+    this._transactionsMap.clear();
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
@@ -262,5 +268,19 @@ export class GraphWatcher {
       // Job will retry after throwing error.
       throw error;
     }
+  }
+
+  async _getTransactionData (headerId: number, txHash: string): Promise<Transaction> {
+    let transaction = this._transactionsMap.get(txHash);
+
+    if (transaction) {
+      return transaction;
+    }
+
+    transaction = await getFullTransaction(this._postgraphileClient, headerId, txHash);
+    assert(transaction);
+    this._transactionsMap.set(txHash, transaction);
+
+    return transaction;
   }
 }
