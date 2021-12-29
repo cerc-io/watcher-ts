@@ -63,6 +63,49 @@ export interface EventData {
   eventIndex: number;
 }
 
+export const getEthereumTypes = async (instanceExports: any, value: any): Promise<any> => {
+  const {
+    __getArray,
+    ethereum
+  } = instanceExports;
+
+  const kind = await value.kind;
+
+  switch (kind) {
+    case EthereumValueKind.ADDRESS:
+      return 'address';
+
+    case EthereumValueKind.BOOL:
+      return 'bool';
+
+    case EthereumValueKind.BYTES:
+    case EthereumValueKind.FIXED_BYTES:
+      return 'bytes';
+
+    case EthereumValueKind.INT:
+      return 'int256';
+
+    case EthereumValueKind.UINT: {
+      return 'uint256';
+    }
+
+    case EthereumValueKind.TUPLE: {
+      let values = await value.toTuple();
+      values = await __getArray(values);
+
+      const valuePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return getEthereumTypes(instanceExports, value);
+      });
+
+      return Promise.all(valuePromises);
+    }
+
+    default:
+      break;
+  }
+};
+
 /**
  * Method to get value from graph-ts ethereum.Value wasm instance.
  * @param instanceExports
@@ -71,9 +114,11 @@ export interface EventData {
  */
 export const fromEthereumValue = async (instanceExports: any, value: any): Promise<any> => {
   const {
+    __getArray,
     __getString,
     BigInt,
-    Address
+    Address,
+    ethereum
   } = instanceExports;
 
   const kind = await value.kind;
@@ -105,6 +150,18 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
       return BigNumber.from(bigIntString);
+    }
+
+    case EthereumValueKind.TUPLE: {
+      let values = await value.toTuple();
+      values = await __getArray(values);
+
+      const valuePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return fromEthereumValue(instanceExports, value);
+      });
+
+      return Promise.all(valuePromises);
     }
 
     default:

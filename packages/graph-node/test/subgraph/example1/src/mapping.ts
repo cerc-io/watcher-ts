@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -439,4 +439,32 @@ export function testBigIntToHex (value: string): string[] {
   log.debug('bigInt.toHex result 2: {}', [res2]);
 
   return [res1, res2];
+}
+
+export function testEthereumEncode (): string {
+  const address = ethereum.Value.fromAddress(Address.fromString('0x0000000000000000000000000000000000000420'));
+  const bigInt = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(62));
+
+  const tupleArray: Array<ethereum.Value> = [
+    address,
+    bigInt
+  ];
+
+  const tuple = changetype<ethereum.Tuple>(tupleArray);
+
+  const encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!;
+  log.debug('encoded: {}', [encoded.toHex()]);
+
+  return encoded.toHex();
+}
+
+export function testEthereumDecode (encoded: string): string[] {
+  const decoded = ethereum.decode('(address,uint256)', Bytes.fromByteArray(ByteArray.fromHexString(encoded)));
+  const tupleValues = decoded!.toTuple();
+  const addressString = tupleValues[0].toAddress().toString();
+  const bigIntString = tupleValues[1].toBigInt().toString();
+  log.debug('decoded address: {}', [addressString]);
+  log.debug('decoded bigInt: {}', [bigIntString]);
+
+  return [addressString, bigIntString];
 }
