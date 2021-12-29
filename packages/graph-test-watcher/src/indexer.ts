@@ -59,7 +59,6 @@ export type ResultEvent = {
     from: string;
     to: string;
     index: number;
-    rlpData: string;
   };
 
   contract: string;
@@ -157,8 +156,7 @@ export class Indexer implements IndexerInterface {
         hash: event.txHash,
         from: tx.src,
         to: tx.dst,
-        index: tx.index,
-        rlpData: tx.blockByMhKey.data
+        index: tx.index
       },
 
       contract: event.contract,

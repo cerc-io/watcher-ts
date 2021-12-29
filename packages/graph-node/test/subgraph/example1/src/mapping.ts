@@ -8,21 +8,11 @@ import { Author, Blog, Category } from '../generated/schema';
 
 export function handleTest (event: Test): void {
   log.debug('event.address: {}', [event.address.toHexString()]);
-  // log.debug('event.params.param1: {}', [event.params.param1]);
-  // log.debug('event.params.param2: {}', [event.params.param2.toString()]);
-  // log.debug('event.params.param3: {}', [event.params.param3.toString()]);
-  // log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
-  // log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
-
-  // event
-  log.debug('event.transactionLogIndex: {}', [event.transactionLogIndex.toString()]);
-  log.debug('event.logType: {}', [event.logType]);
-
-  // transaction
-  log.debug('event.transaction.value: {}', [event.transaction.value.toString()]);
-  log.debug('event.transaction.gasLimit: {}', [event.transaction.gasLimit.toString()]);
-  log.debug('event.transaction.gasPrice: {}', [event.transaction.gasPrice.toString()]);
-  log.debug('event.transaction.input: {}', [event.transaction.input.toString()]);
+  log.debug('event.params.param1: {}', [event.params.param1]);
+  log.debug('event.params.param2: {}', [event.params.param2.toString()]);
+  log.debug('event.params.param3: {}', [event.params.param3.toString()]);
+  log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
+  log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type

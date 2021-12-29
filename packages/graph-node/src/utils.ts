@@ -5,7 +5,7 @@ import debug from 'debug';
 import yaml from 'js-yaml';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 
-import { getExtraTxData, GraphDecimal } from '@vulcanize/util';
+import { GraphDecimal } from '@vulcanize/util';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
 
@@ -26,15 +26,19 @@ export const DECIMAL128_PMIN = '1e-6143';
 // Maximum -ve decimal value.
 export const DECIMAL128_NMAX = '-1e-6143';
 
-interface Transaction {
+export interface Transaction {
   hash: string;
   index: number;
   from: string;
   to: string;
-  rlpData: string;
+  value: string;
+  gasLimit: string;
+  gasPrice: string;
+  input: string;
 }
 
 export interface Block {
+  headerId: number;
   blockHash: string;
   blockNumber: string;
   timestamp: string;
@@ -232,19 +236,18 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const txToStringPtr = await __newString(tx.to);
   const txTo = tx.to && await Address.fromString(txToStringPtr);
 
-  const { value, gasLimit, gasPrice, input } = getExtraTxData(tx.rlpData);
-
-  const valueStringPtr = await __newString(value);
+  const valueStringPtr = await __newString(tx.value);
   const txValuePtr = await BigInt.fromString(valueStringPtr);
 
-  const gasLimitStringPtr = await __newString(gasLimit);
+  const gasLimitStringPtr = await __newString(tx.gasLimit);
   const txGasLimitPtr = await BigInt.fromString(gasLimitStringPtr);
 
-  const gasPriceStringPtr = await __newString(gasPrice);
+  const gasPriceStringPtr = await __newString(tx.gasPrice);
   const txGasPricePtr = await BigInt.fromString(gasPriceStringPtr);
 
-  const inputStringPtr = await __newString(input);
-  const txInputPtr = await Bytes.fromString(inputStringPtr);
+  const inputStringPtr = await __newString(tx.input);
+  const txInputByteArray = await ByteArray.fromHexString(inputStringPtr);
+  const txInputPtr = await Bytes.fromByteArray(txInputByteArray);
 
   const transaction = await ethereum.Transaction.__new(
     txHash,

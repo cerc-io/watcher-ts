@@ -57,9 +57,6 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
           index
           src
           dst
-          blockByMhKey {
-            data
-          }
         }
       }
     }
@@ -89,6 +86,7 @@ export const getFullBlocks = gql`
 query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
   allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {
     nodes {
+      id
       cid
       blockNumber
       blockHash
@@ -104,6 +102,21 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
         key
         data
       }
+    }
+  }
+}
+`;
+
+export const getFullTransaction = gql`
+query ethTransactionCidByHeaderIdAndTxHash($headerId: Int!, $txHash: String!) {
+  ethTransactionCidByHeaderIdAndTxHash(headerId: $headerId, txHash: $txHash) {
+    cid
+    txHash
+    index
+    src
+    dst
+    blockByMhKey {
+      data
     }
   }
 }
@@ -161,6 +174,7 @@ export default {
   getBlockWithTransactions,
   getBlocks,
   getFullBlocks,
+  getFullTransaction,
   getBlockByHash,
   subscribeBlocks,
   subscribeTransactions

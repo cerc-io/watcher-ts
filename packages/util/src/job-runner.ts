@@ -225,13 +225,13 @@ export class JobRunner {
       blockProgress = await this._indexer.fetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
     }
 
+    if (this._indexer.processBlock) {
+      await this._indexer.processBlock(blockHash, blockNumber);
+    }
+
     // Check if block has unprocessed events.
     if (blockProgress.numProcessedEvents < blockProgress.numEvents) {
       await this._jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
-    }
-
-    if (this._indexer.processBlock) {
-      await this._indexer.processBlock(blockHash, blockNumber);
     }
 
     const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();
