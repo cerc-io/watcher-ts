@@ -443,15 +443,28 @@ export function testBigIntToHex (value: string): string[] {
 
 export function testEthereumEncode (): string {
   const address = ethereum.Value.fromAddress(Address.fromString('0x0000000000000000000000000000000000000420'));
-  const bigInt = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(62));
+  const bigInt1 = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(62));
+  const bigInt2 = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(63));
+  const bool = ethereum.Value.fromBoolean(true);
+
+  const fixedSizedArray = ethereum.Value.fromFixedSizedArray([
+    bigInt1,
+    bigInt2
+  ]);
 
   const tupleArray: Array<ethereum.Value> = [
-    address,
-    bigInt
+    fixedSizedArray,
+    bool
   ];
 
-  const tuple = changetype<ethereum.Tuple>(tupleArray);
-  const encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!;
+  const tuple = ethereum.Value.fromTuple(changetype<ethereum.Tuple>(tupleArray));
+
+  const token: Array<ethereum.Value> = [
+    address,
+    tuple
+  ];
+
+  const encoded = ethereum.encode(ethereum.Value.fromTuple(changetype<ethereum.Tuple>(token)))!;
 
   log.debug('encoded: {}', [encoded.toHex()]);
 
@@ -459,13 +472,25 @@ export function testEthereumEncode (): string {
 }
 
 export function testEthereumDecode (encoded: string): string[] {
-  const decoded = ethereum.decode('(address,uint256)', Bytes.fromByteArray(ByteArray.fromHexString(encoded)));
+  const decoded = ethereum.decode('(address,(uint256[2],bool))', Bytes.fromByteArray(ByteArray.fromHexString(encoded)));
   const tupleValues = decoded!.toTuple();
-  const addressString = tupleValues[0].toAddress().toHexString();
-  const bigIntString = tupleValues[1].toBigInt().toString();
 
-  log.debug('decoded address: {}', [addressString]);
-  log.debug('decoded bigInt: {}', [bigIntString]);
+  const decodedAddress = tupleValues[0].toAddress();
+  const decodedTuple = tupleValues[1].toTuple();
+  const decodedFixedSizedArray = decodedTuple[0].toArray();
+  const decodedBigInt1 = decodedFixedSizedArray[0].toBigInt();
+  const decodedBigInt2 = decodedFixedSizedArray[1].toBigInt();
+  const decodedBool = decodedTuple[1].toBoolean();
 
-  return [addressString, bigIntString];
+  log.debug('decoded address: {}', [decodedAddress.toHex()]);
+  log.debug('decoded bigInt1: {}', [decodedBigInt1.toString()]);
+  log.debug('decoded bigInt2: {}', [decodedBigInt2.toString()]);
+  log.debug('decoded bool: {}', [decodedBool.toString()]);
+
+  return [
+    decodedAddress.toHex(),
+    decodedBigInt1.toString(),
+    decodedBigInt2.toString(),
+    decodedBool.toString()
+  ];
 }

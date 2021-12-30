@@ -198,26 +198,17 @@ export const instantiate = async (
       },
       'ethereum.encode': async (token: number) => {
         const ethValue = await ethereum.Value.wrap(token);
-        let data = await fromEthereumValue(instanceExports, ethValue);
 
-        if (!Array.isArray(data)) {
-          data = [data];
-        }
+        const data = await fromEthereumValue(instanceExports, ethValue);
+        const type = await getEthereumTypes(instanceExports, ethValue);
 
-        let types = await getEthereumTypes(instanceExports, ethValue);
-
-        if (!Array.isArray(types)) {
-          types = [types];
-        }
-
-        const encoded = utils.defaultAbiCoder.encode(types, data);
-
+        const encoded = utils.defaultAbiCoder.encode([type], [data]);
         const encodedString = await __newString(encoded);
+
         return ByteArray.fromHexString(encodedString);
       },
       'ethereum.decode': async (types: number, data: number) => {
         const typesString = __getString(types);
-
         const byteArray = await ByteArray.wrap(data);
         const bytesHex = await byteArray.toHex();
         const dataString = __getString(bytesHex);

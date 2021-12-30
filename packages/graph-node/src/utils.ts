@@ -89,16 +89,36 @@ export const getEthereumTypes = async (instanceExports: any, value: any): Promis
       return 'uint256';
     }
 
+    case EthereumValueKind.ARRAY: {
+      const valuesPtr = await value.toArray();
+      const [firstValuePtr] = await __getArray(valuesPtr);
+      const firstValue = await ethereum.Value.wrap(firstValuePtr);
+      const type = await getEthereumTypes(instanceExports, firstValue);
+
+      return `${type}[]`;
+    }
+
+    case EthereumValueKind.FIXED_ARRAY: {
+      const valuesPtr = await value.toArray();
+      const values = await __getArray(valuesPtr);
+      const firstValue = await ethereum.Value.wrap(values[0]);
+      const type = await getEthereumTypes(instanceExports, firstValue);
+
+      return `${type}[${values.length}]`;
+    }
+
     case EthereumValueKind.TUPLE: {
       let values = await value.toTuple();
       values = await __getArray(values);
 
-      const valuePromises = values.map(async (value: any) => {
+      const typePromises = values.map(async (value: any) => {
         value = await ethereum.Value.wrap(value);
         return getEthereumTypes(instanceExports, value);
       });
 
-      return Promise.all(valuePromises);
+      const types = await Promise.all(typePromises);
+
+      return `tuple(${types.join(',')})`;
     }
 
     default:
@@ -152,6 +172,19 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
       return BigNumber.from(bigIntString);
     }
 
+    case EthereumValueKind.ARRAY:
+    case EthereumValueKind.FIXED_ARRAY: {
+      const valuesPtr = await value.toArray();
+      const values = __getArray(valuesPtr);
+
+      const valuePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return fromEthereumValue(instanceExports, value);
+      });
+
+      return Promise.all(valuePromises);
+    }
+
     case EthereumValueKind.TUPLE: {
       let values = await value.toTuple();
       values = await __getArray(values);
@@ -188,7 +221,26 @@ export const toEthereumValue = async (instanceExports: any, output: utils.ParamT
     id_of_type: getIdOfType
   } = instanceExports;
 
-  const { type } = output;
+  const { type, baseType, arrayChildren } = output;
+
+  // For array type.
+  if (baseType === 'array') {
+    const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
+
+    // Get values for array elements.
+    const ethereumValuePromises = value.map(
+      async (value: any) => toEthereumValue(
+        instanceExports,
+        arrayChildren,
+        value
+      )
+    );
+
+    const ethereumValues: any[] = await Promise.all(ethereumValuePromises);
+    const ethereumValuesArray = await __newArray(arrayEthereumValueId, ethereumValues);
+
+    return ethereum.Value.fromArray(ethereumValuesArray);
+  }
 
   // For tuple type.
   if (type === 'tuple') {
