@@ -23,7 +23,8 @@ import {
   Block,
   fromEthereumValue,
   toEthereumValue,
-  resolveEntityFieldConflicts
+  resolveEntityFieldConflicts,
+  getEthereumTypes
 } from './utils';
 import { Database } from './database';
 
@@ -194,6 +195,27 @@ export const instantiate = async (
           console.log('eth_call error', err);
           return null;
         }
+      },
+      'ethereum.encode': async (token: number) => {
+        const ethValue = await ethereum.Value.wrap(token);
+
+        const data = await fromEthereumValue(instanceExports, ethValue);
+        const type = await getEthereumTypes(instanceExports, ethValue);
+
+        const encoded = utils.defaultAbiCoder.encode([type], [data]);
+        const encodedString = await __newString(encoded);
+
+        return ByteArray.fromHexString(encodedString);
+      },
+      'ethereum.decode': async (types: number, data: number) => {
+        const typesString = __getString(types);
+        const byteArray = await ByteArray.wrap(data);
+        const bytesHex = await byteArray.toHex();
+        const dataString = __getString(bytesHex);
+
+        const [decoded] = utils.defaultAbiCoder.decode([typesString], dataString);
+
+        return toEthereumValue(instanceExports, utils.ParamType.from(typesString), decoded);
       }
     },
     conversion: {
@@ -593,6 +615,7 @@ export const instantiate = async (
   const Address: any = instanceExports.Address as any;
   const ethereum: any = instanceExports.ethereum as any;
   const Entity: any = instanceExports.Entity as any;
+  const ByteArray: any = instanceExports.ByteArray as any;
 
   return instance;
 };

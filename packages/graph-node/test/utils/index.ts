@@ -21,6 +21,7 @@ export const getDummyEventData = async (): Promise<EventData> => {
   const ethersBlock = await provider.getBlock(blockNumber);
 
   const block = {
+    headerId: 0,
     blockHash: ethersBlock.hash,
     blockNumber: ethersBlock.number.toString(),
     timestamp: '0',
@@ -41,7 +42,11 @@ export const getDummyEventData = async (): Promise<EventData> => {
     hash: ZERO_HASH,
     index: 0,
     from: ZERO_ADDRESS,
-    to: ZERO_ADDRESS
+    to: ZERO_ADDRESS,
+    value: '0',
+    gasLimit: '0',
+    gasPrice: '0',
+    input: ZERO_HASH
   };
 
   return {
