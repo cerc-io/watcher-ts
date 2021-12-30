@@ -61,7 +61,8 @@ export const getDummyEventData = async (): Promise<EventData> => {
 export const getDummyGraphData = (): any => {
   return {
     dataSource: {
-      address: ZERO_ADDRESS
+      address: ZERO_ADDRESS,
+      network: 'mainnet'
     }
   };
 };

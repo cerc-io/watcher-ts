@@ -76,7 +76,8 @@ describe('eden wasm loader tests', async () => {
         EdenNetwork: edenNetworkAbi
       },
       dataSource: {
-        address: contractAddress
+        address: contractAddress,
+        network: 'mainnet'
       }
     };
 
@@ -192,7 +193,8 @@ describe('eden wasm loader tests', async () => {
         Distribution: merkleDistributorAbi
       },
       dataSource: {
-        address: contractAddress
+        address: contractAddress,
+        network: 'mainnet'
       }
     };
 
@@ -304,7 +306,8 @@ describe('eden wasm loader tests', async () => {
         Governance: distributorGovernanceAbi
       },
       dataSource: {
-        address: contractAddress
+        address: contractAddress,
+        network: 'mainnet'
       }
     };
 

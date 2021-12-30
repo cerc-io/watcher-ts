@@ -115,6 +115,16 @@ export const instantiate = async (
         log('log %s | %s', Level[level], __getString(msg));
       },
 
+      'crypto.keccak256': async (input: number) => {
+        const byteArray = await ByteArray.wrap(input);
+        const hexStringPtr = await byteArray.toHexString();
+        const hexString = __getString(hexStringPtr);
+        const keccak256 = utils.keccak256(hexString);
+        const keccak256Ptr = await __newString(keccak256);
+
+        return ByteArray.fromHexString(keccak256Ptr);
+      },
+
       'test.asyncMethod': async () => {
         console.log('before timer start');
         await new Promise(resolve => {

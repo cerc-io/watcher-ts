@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -506,4 +506,13 @@ export function testEthereumDecode (encoded: string): string[] {
     decodedBigInt2.toString(),
     decodedBool.toString()
   ];
+}
+
+export function testCrypto (hexString: string): string {
+  const byteArray = ByteArray.fromHexString(hexString);
+  const keccak256 = crypto.keccak256(byteArray);
+  const keccak256String = keccak256.toHex();
+  log.debug('keccak256 string: {}', [keccak256String]);
+
+  return keccak256String;
 }
