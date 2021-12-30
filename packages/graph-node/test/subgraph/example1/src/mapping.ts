@@ -14,6 +14,9 @@ export function handleTest (event: Test): void {
   log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
   log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
 
+  log.debug('dataSource.network: {}', [dataSource.network()]);
+  log.debug('dataSource.context: {}', [dataSource.context().entries.length.toString()]);
+
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
   let author = Author.load(event.transaction.from.toHex());

@@ -38,7 +38,8 @@ type idOfType = (TypeId: number) => number
 export interface GraphData {
   abis?: {[key: string]: ContractInterface};
   dataSource?: {
-    address: string
+    address: string,
+    network: string;
   };
 }
 
@@ -599,6 +600,16 @@ export const instantiate = async (
         assert(dataSource);
         const addressStringPtr = await __newString(dataSource.address);
         return Address.fromString(addressStringPtr);
+      },
+      'dataSource.context': async () => {
+        // TODO: Implement use in data source templates.
+        // https://thegraph.com/docs/en/developer/create-subgraph-hosted/#data-source-context
+
+        return Entity.__new();
+      },
+      'dataSource.network': async () => {
+        assert(dataSource);
+        return __newString(dataSource.network);
       }
     }
   };
