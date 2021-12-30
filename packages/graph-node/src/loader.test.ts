@@ -32,7 +32,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
-      { event: {} },
+      {},
       filePath
     );
 
@@ -109,7 +109,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
-      { event: {} },
+      {},
       module
     );
 

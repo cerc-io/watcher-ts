@@ -216,10 +216,15 @@ export const instantiate = async (
         return ByteArray.fromHexString(encodedString);
       },
       'ethereum.decode': async (types: number, data: number) => {
-        log('types', __getString(types));
+        const typesString = __getString(types);
+
         const byteArray = await ByteArray.wrap(data);
         const bytesHex = await byteArray.toHex();
-        log('data', __getString(bytesHex));
+        const dataString = __getString(bytesHex);
+
+        const [decoded] = utils.defaultAbiCoder.decode([typesString], dataString);
+
+        return toEthereumValue(instanceExports, utils.ParamType.from(typesString), decoded);
       }
     },
     conversion: {

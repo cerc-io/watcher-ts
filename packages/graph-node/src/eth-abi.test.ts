@@ -12,11 +12,12 @@ import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils'
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
-describe('eth-call wasm tests', () => {
+describe('ethereum ABI encode decode', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let encoded: string;
 
   before(async () => {
     db = getTestDatabase();
@@ -44,8 +45,21 @@ describe('eth-call wasm tests', () => {
   it('should encode data', async () => {
     const { testEthereumEncode, __getString } = exports;
 
-    const encoded = await testEthereumEncode();
-    const encodedString = __getString(encoded);
-    expect(encodedString).to.equal('0x0000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000003e');
+    const encodedPtr = await testEthereumEncode();
+    encoded = __getString(encodedPtr);
+
+    expect(encoded).to.equal('0x0000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000003e');
+  });
+
+  it('should decode data', async () => {
+    const { testEthereumDecode, __getString, __getArray, __newString } = exports;
+
+    const encodedString = await __newString(encoded);
+    const decodedArrayPtr = await testEthereumDecode(encodedString);
+    const decodedArray = __getArray(decodedArrayPtr);
+    const [addressString, bigIntString] = decodedArray.map((value: any) => __getString(value));
+
+    expect(addressString).to.equal('0x0000000000000000000000000000000000000420');
+    expect(bigIntString).to.equal('62');
   });
 });

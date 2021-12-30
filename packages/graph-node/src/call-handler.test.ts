@@ -71,7 +71,7 @@ describe('call handler in mapping code', () => {
       db,
       indexer,
       provider,
-      { event: { block: dummyEventData.block } },
+      { block: dummyEventData.block },
       filePath,
       dummyGraphData
     );

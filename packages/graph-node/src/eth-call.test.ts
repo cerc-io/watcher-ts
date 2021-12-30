@@ -49,7 +49,7 @@ describe('eth-call wasm tests', () => {
       db,
       indexer,
       provider,
-      { event: { block: dummyEventData.block } },
+      { block: dummyEventData.block },
       filePath,
       data
     );

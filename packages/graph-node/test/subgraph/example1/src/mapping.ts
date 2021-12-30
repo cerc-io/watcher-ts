@@ -451,8 +451,8 @@ export function testEthereumEncode (): string {
   ];
 
   const tuple = changetype<ethereum.Tuple>(tupleArray);
-
   const encoded = ethereum.encode(ethereum.Value.fromTuple(tuple))!;
+
   log.debug('encoded: {}', [encoded.toHex()]);
 
   return encoded.toHex();
@@ -461,8 +461,9 @@ export function testEthereumEncode (): string {
 export function testEthereumDecode (encoded: string): string[] {
   const decoded = ethereum.decode('(address,uint256)', Bytes.fromByteArray(ByteArray.fromHexString(encoded)));
   const tupleValues = decoded!.toTuple();
-  const addressString = tupleValues[0].toAddress().toString();
+  const addressString = tupleValues[0].toAddress().toHexString();
   const bigIntString = tupleValues[1].toBigInt().toString();
+
   log.debug('decoded address: {}', [addressString]);
   log.debug('decoded bigInt: {}', [bigIntString]);
 
