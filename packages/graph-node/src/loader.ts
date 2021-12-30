@@ -38,7 +38,8 @@ type idOfType = (TypeId: number) => number
 export interface GraphData {
   abis?: {[key: string]: ContractInterface};
   dataSource?: {
-    address: string
+    address: string,
+    network: string;
   };
 }
 
@@ -112,6 +113,16 @@ export const instantiate = async (
 
       'log.log': (level: number, msg: number) => {
         log('log %s | %s', Level[level], __getString(msg));
+      },
+
+      'crypto.keccak256': async (input: number) => {
+        const byteArray = await ByteArray.wrap(input);
+        const hexStringPtr = await byteArray.toHexString();
+        const hexString = __getString(hexStringPtr);
+        const keccak256 = utils.keccak256(hexString);
+        const keccak256Ptr = await __newString(keccak256);
+
+        return ByteArray.fromHexString(keccak256Ptr);
       },
 
       'test.asyncMethod': async () => {
@@ -599,6 +610,16 @@ export const instantiate = async (
         assert(dataSource);
         const addressStringPtr = await __newString(dataSource.address);
         return Address.fromString(addressStringPtr);
+      },
+      'dataSource.context': async () => {
+        // TODO: Implement use in data source templates.
+        // https://thegraph.com/docs/en/developer/create-subgraph-hosted/#data-source-context
+
+        return Entity.__new();
+      },
+      'dataSource.network': async () => {
+        assert(dataSource);
+        return __newString(dataSource.network);
       }
     }
   };

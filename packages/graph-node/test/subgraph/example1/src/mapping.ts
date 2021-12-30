@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -13,6 +13,9 @@ export function handleTest (event: Test): void {
   log.debug('event.params.param3: {}', [event.params.param3.toString()]);
   log.debug('event.block.hash: {}', [event.block.hash.toHexString()]);
   log.debug('event.block.stateRoot: {}', [event.block.stateRoot.toHexString()]);
+
+  log.debug('dataSource.network: {}', [dataSource.network()]);
+  log.debug('dataSource.context: {}', [dataSource.context().entries.length.toString()]);
 
   // Entities can be loaded from the store using a string ID; this ID
   // needs to be unique across all entities of the same type
@@ -503,4 +506,13 @@ export function testEthereumDecode (encoded: string): string[] {
     decodedBigInt2.toString(),
     decodedBool.toString()
   ];
+}
+
+export function testCrypto (hexString: string): string {
+  const byteArray = ByteArray.fromHexString(hexString);
+  const keccak256 = crypto.keccak256(byteArray);
+  const keccak256String = keccak256.toHex();
+  log.debug('keccak256 string: {}', [keccak256String]);
+
+  return keccak256String;
 }

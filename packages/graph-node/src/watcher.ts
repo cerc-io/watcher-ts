@@ -36,7 +36,7 @@ export class GraphWatcher {
   _dataSourceMap: { [key: string]: DataSource } = {};
   _transactionsMap: Map<string, Transaction> = new Map()
 
-  _context: Context = {}
+  _context: Context = {};
 
   constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
@@ -52,7 +52,7 @@ export class GraphWatcher {
 
     // Create wasm instance and contract interface for each dataSource in subgraph yaml.
     const dataPromises = this._dataSources.map(async (dataSource: any) => {
-      const { source: { address, abi }, mapping } = dataSource;
+      const { source: { address, abi }, mapping, network } = dataSource;
       const { abis, file } = mapping;
 
       const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
@@ -68,7 +68,8 @@ export class GraphWatcher {
       const data = {
         abis: abisMap,
         dataSource: {
-          address
+          address,
+          network
         }
       };
 

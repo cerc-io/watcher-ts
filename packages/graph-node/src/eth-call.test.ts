@@ -28,7 +28,8 @@ describe('eth-call wasm tests', () => {
       Example1: exampleAbi
     },
     dataSource: {
-      address: contractAddress
+      address: contractAddress,
+      network: 'mainnet'
     }
   };
 
