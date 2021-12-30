@@ -50,7 +50,7 @@ describe('ethereum ABI encode decode', () => {
 
     expect(encoded)
       .to
-      .equal('0x0000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000003e000000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000001');
+      .equal('0x0000000000000000000000000000000000000000000000000000000000000420583bc7e1bc4799a225663353b82eb36d925399e6ef2799a6a95909f5ab8ac945000000000000000000000000000000000000000000000000000000000000003e000000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000001');
   });
 
   it('should decode data', async () => {
@@ -59,9 +59,10 @@ describe('ethereum ABI encode decode', () => {
     const encodedString = await __newString(encoded);
     const decodedArrayPtr = await testEthereumDecode(encodedString);
     const decodedArray = __getArray(decodedArrayPtr);
-    const [addressString, bigInt1String, bigInt2String, boolString] = decodedArray.map((value: any) => __getString(value));
+    const [addressString, bytesString, bigInt1String, bigInt2String, boolString] = decodedArray.map((value: any) => __getString(value));
 
     expect(addressString).to.equal('0x0000000000000000000000000000000000000420');
+    expect(bytesString).to.equal('0x583bc7e1bc4799a225663353b82eb36d925399e6ef2799a6a95909f5ab8ac945');
     expect(bigInt1String).to.equal('62');
     expect(bigInt2String).to.equal('63');
     expect(boolString).to.equal('true');

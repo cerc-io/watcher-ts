@@ -66,6 +66,7 @@ export interface EventData {
 export const getEthereumTypes = async (instanceExports: any, value: any): Promise<any> => {
   const {
     __getArray,
+    Bytes,
     ethereum
   } = instanceExports;
 
@@ -78,9 +79,19 @@ export const getEthereumTypes = async (instanceExports: any, value: any): Promis
     case EthereumValueKind.BOOL:
       return 'bool';
 
+    case EthereumValueKind.STRING:
+      return 'string';
+
     case EthereumValueKind.BYTES:
-    case EthereumValueKind.FIXED_BYTES:
       return 'bytes';
+
+    case EthereumValueKind.FIXED_BYTES: {
+      const bytesPtr = await value.toBytes();
+      const bytes = await Bytes.wrap(bytesPtr);
+      const length = await bytes.length;
+
+      return `bytes${length}`;
+    }
 
     case EthereumValueKind.INT:
       return 'int256';
@@ -138,6 +149,7 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
     __getString,
     BigInt,
     Address,
+    Bytes,
     ethereum
   } = instanceExports;
 
@@ -156,9 +168,15 @@ export const fromEthereumValue = async (instanceExports: any, value: any): Promi
       return Boolean(bool);
     }
 
+    case EthereumValueKind.STRING: {
+      const stringPtr = await value.toString();
+      return __getString(stringPtr);
+    }
+
     case EthereumValueKind.BYTES:
     case EthereumValueKind.FIXED_BYTES: {
-      const bytes = await value.toBytes();
+      const bytesPtr = await value.toBytes();
+      const bytes = await Bytes.wrap(bytesPtr);
       const bytesStringPtr = await bytes.toHexString();
       return __getString(bytesStringPtr);
     }
