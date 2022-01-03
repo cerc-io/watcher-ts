@@ -3,6 +3,7 @@
 //
 
 // Enum types from @graphprotocol/graph-ts.
+
 export enum TypeId {
   String = 0,
   ArrayBuffer = 1,
@@ -88,4 +89,13 @@ export enum Level {
   WARNING = 2,
   INFO = 3,
   DEBUG = 4,
+}
+
+export enum JSONValueKind {
+  NULL = 0,
+  BOOL = 1,
+  NUMBER = 2,
+  STRING = 3,
+  ARRAY = 4,
+  OBJECT = 5,
 }

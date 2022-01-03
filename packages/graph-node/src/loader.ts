@@ -24,7 +24,8 @@ import {
   fromEthereumValue,
   toEthereumValue,
   resolveEntityFieldConflicts,
-  getEthereumTypes
+  getEthereumTypes,
+  toJSONValue
 } from './utils';
 import { Database } from './database';
 
@@ -620,6 +621,28 @@ export const instantiate = async (
       'dataSource.network': async () => {
         assert(dataSource);
         return __newString(dataSource.network);
+      }
+    },
+    json: {
+      'json.fromBytes': async (bytes: number) => {
+        const byteArray = await ByteArray.wrap(bytes);
+        const jsonStringPtr = await byteArray.toString();
+        const json = JSON.parse(__getString(jsonStringPtr));
+        const jsonValue = await toJSONValue(instanceExports, json);
+
+        return jsonValue;
+      },
+      'json.toI64': async (decimal: number) => {
+        log('json.toI64');
+      },
+      'json.toU64': async (decimal: number) => {
+        log('json.toU64');
+      },
+      'json.toF64': async (decimal: number) => {
+        log('json.toF64');
+      },
+      'json.toBigInt': async (decimal: number) => {
+        log('json.toBigInt');
       }
     }
   };

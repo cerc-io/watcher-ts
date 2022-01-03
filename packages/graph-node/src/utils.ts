@@ -695,3 +695,50 @@ export const resolveEntityFieldConflicts = (entity: any): any => {
 
   return entity;
 };
+
+export const toJSONValue = async (instanceExports: any, value: any): Promise<any> => {
+  const { CustomJSONValue, JSONValueTypedMap, __newString, __newArray, id_of_type: getIdOfType } = instanceExports;
+
+  if (!value) {
+    return CustomJSONValue.fromNull();
+  }
+
+  if (Array.isArray(value)) {
+    const arrayPromise = value.map(async (el: any) => toJSONValue(instanceExports, el));
+    const array = await Promise.all(arrayPromise);
+    const arrayJsonValueId = await getIdOfType(TypeId.ArrayJsonValue);
+    const arrayPtr = __newArray(arrayJsonValueId, array);
+
+    return CustomJSONValue.fromArray(arrayPtr);
+  }
+
+  if (typeof value === 'object') {
+    const map = await JSONValueTypedMap.__new();
+
+    const valuePromises = Object.entries(value).map(async ([key, value]) => {
+      const valuePtr = await toJSONValue(instanceExports, value);
+      const keyPtr = await __newString(key);
+      await map.set(keyPtr, valuePtr);
+    });
+
+    await Promise.all(valuePromises);
+
+    return CustomJSONValue.fromObject(map);
+  }
+
+  if (typeof value === 'string') {
+    const stringPtr = await __newString(value);
+
+    return CustomJSONValue.fromString(stringPtr);
+  }
+
+  if (typeof value === 'number') {
+    const stringPtr = await __newString(value.toString());
+
+    return CustomJSONValue.fromNumber(stringPtr);
+  }
+
+  if (typeof value === 'boolean') {
+    return CustomJSONValue.fromBoolean(value);
+  }
+};

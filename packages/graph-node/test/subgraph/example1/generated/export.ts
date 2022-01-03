@@ -9,8 +9,56 @@ import {
   ByteArray,
   Bytes,
   Entity,
-  Value
+  Value,
+  JSONValue,
+  TypedMap,
+  JSONValueKind
 } from '@graphprotocol/graph-ts';
+
+export class JSONValueTypedMap extends TypedMap<string, JSONValue> {}
+
+export class CustomJSONValue extends JSONValue {
+  static fromArray(input: Array<JSONValue>): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.ARRAY;
+    jsonValue.data = changetype<u32>(input);
+    return jsonValue;
+  }
+
+  static fromObject(object: TypedMap<string, JSONValue>): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.OBJECT;
+    jsonValue.data = changetype<u32>(object);
+    return jsonValue;
+  }
+
+  static fromNumber(n: string): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.NUMBER;
+    jsonValue.data = changetype<u32>(n);
+    return jsonValue;
+  }
+
+  static fromBoolean(b: boolean): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.BOOL;
+    jsonValue.data = b ? 1 : 0;
+    return jsonValue;
+  }
+
+  static fromString(s: string): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.STRING;
+    jsonValue.data = changetype<u32>(s);
+    return jsonValue;
+  }
+
+  static fromNull(): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.NULL;
+    return jsonValue;
+  }
+}
 
 export {
   BigDecimal,
@@ -22,5 +70,6 @@ export {
   Address,
   ByteArray,
   Bytes,
-  Value
+  Value,
+  JSONValue
 }
