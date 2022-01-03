@@ -548,7 +548,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
   const {
     __getString,
     __getArray,
-    BigInt: ExportBigInt,
+    BigInt: ASBigInt,
     Bytes,
     BigDecimal,
     Value
@@ -583,7 +583,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 
     case ValueKind.BIGINT: {
       const bigIntPtr = await value.toBigInt();
-      const bigInt = ExportBigInt.wrap(bigIntPtr);
+      const bigInt = ASBigInt.wrap(bigIntPtr);
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
 
@@ -616,7 +616,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 };
 
 const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
-  const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
+  const { __newString, __newArray, BigInt: ASBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
 
   if (isArray) {
     const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
@@ -645,7 +645,7 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
 
     case 'BigInt': {
       const valueStringPtr = await __newString(value.toString());
-      const bigInt = await ExportBigInt.fromString(valueStringPtr);
+      const bigInt = await ASBigInt.fromString(valueStringPtr);
 
       return Value.fromBigInt(bigInt);
     }
@@ -743,7 +743,7 @@ export const toJSONValue = async (instanceExports: any, value: any): Promise<any
   }
 };
 
-export const jsonFromBytes = async (instanceExports: any, bytesPtr: number) => {
+export const jsonFromBytes = async (instanceExports: any, bytesPtr: number): Promise<any> => {
   const { ByteArray, __getString } = instanceExports;
 
   const byteArray = await ByteArray.wrap(bytesPtr);

@@ -14,12 +14,20 @@ import {
   TypedMap,
   JSONValueKind,
   Result,
-  Wrapped,
-  json
+  Wrapped
 } from '@graphprotocol/graph-ts';
 
+// All exports are used in JS host API implementations.
+
+/**
+ * Class used to create TypedMap<string, JSONValue> instance in json fromBytes host API.
+ */
 export class JSONValueTypedMap extends TypedMap<string, JSONValue> {}
 
+/**
+ * Class used to create JSONValue instances from different value types.
+ * Implementation is based on Value class in graph-ts. https://github.com/graphprotocol/graph-ts/blob/master/common/value.ts#L188
+ */
 export class CustomJSONValue extends JSONValue {
   static fromArray(input: Array<JSONValue>): JSONValue {
     const jsonValue = new JSONValue();
@@ -63,6 +71,9 @@ export class CustomJSONValue extends JSONValue {
   }
 }
 
+/**
+ * Class used to create Result instance in json try_fromBytes host API.
+ */
 export class JSONResult extends Result<JSONValue, boolean> {
   constructor (value: JSONValue | null) {
     super();
@@ -86,7 +97,5 @@ export {
   ByteArray,
   Bytes,
   Value,
-  JSONValue,
-
-  json
+  JSONValue
 }

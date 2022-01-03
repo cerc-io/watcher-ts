@@ -256,7 +256,7 @@ export const instantiate = async (
         return ptr;
       },
       'typeConversion.bigIntToHex': async (bigInt: number) => {
-        const bigIntInstance = await BigInt.wrap(bigInt);
+        const bigIntInstance = await ASBigInt.wrap(bigInt);
         const bigIntString = await bigIntInstance.toString();
 
         const bigNumber = BigNumber.from(__getString(bigIntString));
@@ -311,10 +311,10 @@ export const instantiate = async (
         const bigDecimalInstance = BigDecimal.wrap(bigDecimal);
 
         const digitsPtr = await bigDecimalInstance.digits;
-        const digitsBigInt = BigInt.wrap(digitsPtr);
+        const digitsBigInt = ASBigInt.wrap(digitsPtr);
 
         const expPtr = await bigDecimalInstance.exp;
-        const expBigInt = BigInt.wrap(expPtr);
+        const expBigInt = ASBigInt.wrap(expPtr);
 
         const digitsStringPtr = await digitsBigInt.toString();
         const digits = __getString(digitsStringPtr);
@@ -340,11 +340,11 @@ export const instantiate = async (
         const digitsBigNumber = BigNumber.from(digits);
         const signBigNumber = BigNumber.from(decimal.value.s);
         const digitsStringPtr = await __newString(digitsBigNumber.mul(signBigNumber).toString());
-        const digitsBigInt = await BigInt.fromString(digitsStringPtr);
+        const digitsBigInt = await ASBigInt.fromString(digitsStringPtr);
 
         // Create an exp BigInt.
         const expStringPtr = await __newString(exp.toString());
-        const expBigInt = await BigInt.fromString(expStringPtr);
+        const expBigInt = await ASBigInt.fromString(expStringPtr);
 
         // Create a BigDecimal using digits and exp BigInts.
         const bigDecimal = await BigDecimal.__new(digitsBigInt);
@@ -430,73 +430,73 @@ export const instantiate = async (
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
         const ptr = await __newArray(uint8ArrayId, bytes);
-        const bigInt = await BigInt.fromSignedBytes(ptr);
+        const bigInt = await ASBigInt.fromSignedBytes(ptr);
 
         return bigInt;
       },
       'bigInt.plus': async (x: number, y: number) => {
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const sum = xBigNumber.add(yBigNumber);
         const ptr = await __newString(sum.toString());
-        const sumBigInt = await BigInt.fromString(ptr);
+        const sumBigInt = await ASBigInt.fromString(ptr);
 
         return sumBigInt;
       },
       'bigInt.minus': async (x: number, y: number) => {
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const diff = xBigNumber.sub(yBigNumber);
         const ptr = await __newString(diff.toString());
-        const diffBigInt = BigInt.fromString(ptr);
+        const diffBigInt = ASBigInt.fromString(ptr);
 
         return diffBigInt;
       },
       'bigInt.times': async (x: number, y: number) => {
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const product = xBigNumber.mul(yBigNumber);
         const ptr = await __newString(product.toString());
-        const productBigInt = BigInt.fromString(ptr);
+        const productBigInt = ASBigInt.fromString(ptr);
 
         return productBigInt;
       },
       'bigInt.dividedBy': async (x: number, y: number) => {
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         const quotient = xBigNumber.div(yBigNumber);
         const ptr = await __newString(quotient.toString());
-        const quotientBigInt = BigInt.fromString(ptr);
+        const quotientBigInt = ASBigInt.fromString(ptr);
 
         return quotientBigInt;
       },
       'bigInt.dividedByDecimal': async (x: number, y: number) => {
         // Create a decimal out of bigInt x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xDecimal = new GraphDecimal(__getString(xStringPtr));
 
@@ -514,94 +514,94 @@ export const instantiate = async (
       },
       'bigInt.mod': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Create a bigNumber y.
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         // Perform the bigNumber mod operation.
         const remainder = xBigNumber.mod(yBigNumber);
         const ptr = await __newString(remainder.toString());
-        const remainderBigInt = BigInt.fromString(ptr);
+        const remainderBigInt = ASBigInt.fromString(ptr);
 
         return remainderBigInt;
       },
       'bigInt.bitOr': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Create a bigNumber y.
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         // Perform the bigNumber bit or operation.
         const res = xBigNumber.or(yBigNumber);
         const ptr = await __newString(res.toString());
-        const resBigInt = BigInt.fromString(ptr);
+        const resBigInt = ASBigInt.fromString(ptr);
 
         return resBigInt;
       },
       'bigInt.bitAnd': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Create a bigNumber y.
-        const yBigInt = await BigInt.wrap(y);
+        const yBigInt = await ASBigInt.wrap(y);
         const yStringPtr = await yBigInt.toString();
         const yBigNumber = BigNumber.from(__getString(yStringPtr));
 
         // Perform the bigNumber bit and operation.
         const res = xBigNumber.and(yBigNumber);
         const ptr = await __newString(res.toString());
-        const resBigInt = BigInt.fromString(ptr);
+        const resBigInt = ASBigInt.fromString(ptr);
 
         return resBigInt;
       },
       'bigInt.leftShift': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Perform the bigNumber left shift operation.
         const res = xBigNumber.shl(y);
         const ptr = await __newString(res.toString());
-        const resBigInt = BigInt.fromString(ptr);
+        const resBigInt = ASBigInt.fromString(ptr);
 
         return resBigInt;
       },
       'bigInt.rightShift': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Perform the bigNumber right shift operation.
         const res = xBigNumber.shr(y);
         const ptr = await __newString(res.toString());
-        const resBigInt = BigInt.fromString(ptr);
+        const resBigInt = ASBigInt.fromString(ptr);
 
         return resBigInt;
       },
       'bigInt.pow': async (x: number, y: number) => {
         // Create a bigNumber x.
-        const xBigInt = await BigInt.wrap(x);
+        const xBigInt = await ASBigInt.wrap(x);
         const xStringPtr = await xBigInt.toString();
         const xBigNumber = BigNumber.from(__getString(xStringPtr));
 
         // Perform the bigNumber pow operation.
         const res = xBigNumber.pow(y);
         const ptr = await __newString(res.toString());
-        const resBigInt = BigInt.fromString(ptr);
+        const resBigInt = ASBigInt.fromString(ptr);
 
         return resBigInt;
       }
@@ -638,17 +638,20 @@ export const instantiate = async (
           return JSONResult.__new(null);
         }
       },
+      // TODO: Number methods do not work as 64bit values are not supported in js.
+      // Tried solution in https://github.com/AssemblyScript/assemblyscript/issues/117#issuecomment-531556954
       'json.toI64': async (decimal: number) => {
-        log('json.toI64');
+        return BigInt(__getString(decimal));
       },
       'json.toU64': async (decimal: number) => {
-        log('json.toU64');
+        return BigInt(__getString(decimal));
       },
       'json.toF64': async (decimal: number) => {
-        log('json.toF64');
+        return BigInt(__getString(decimal));
       },
+      // TODO: Debug toBigInt not working.
       'json.toBigInt': async (decimal: number) => {
-        log('json.toBigInt');
+        return ASBigInt.fromString(decimal);
       }
     }
   };
@@ -661,7 +664,7 @@ export const instantiate = async (
   // TODO: Assign from types file generated by graph-cli
   const getIdOfType: idOfType = instanceExports.id_of_type as idOfType;
   const BigDecimal: any = instanceExports.BigDecimal as any;
-  const BigInt: any = instanceExports.BigInt as any;
+  const ASBigInt: any = instanceExports.BigInt as any;
   const Address: any = instanceExports.Address as any;
   const ethereum: any = instanceExports.ethereum as any;
   const Entity: any = instanceExports.Entity as any;

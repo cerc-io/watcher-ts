@@ -521,8 +521,8 @@ export function testJsonFromBytes (): void {
   const jsonString = `
   {
     "stringValue": "abc",
-    "arrayValue": [ 1, 2, 3 ],
     "numberValue": 123,
+    "arrayValue": [ 1, 2, 3 ],
     "boolValue": true,
     "nullValue": null
   }
@@ -535,12 +535,23 @@ export function testJsonFromBytes (): void {
   const jsonData = json.fromBytes(data);
   assert(jsonData.kind === JSONValueKind.OBJECT, 'JSON value is not an object');
 
-  const objectValue = jsonData.toObject().get('stringValue')!;
-  assert(objectValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
+  const stringValue = jsonData.toObject().get('stringValue')!;
+  assert(stringValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
 
-  // Strict equal comparison does not work.
+  // https://www.assemblyscript.org/basics.html#triple-equals
   // eslint-disable-next-line eqeqeq
-  assert(objectValue.toString() == 'abc', 'JSON object values are not equal');
+  assert(stringValue.toString() == 'abc', 'JSON object values are not equal');
+
+  const numberValue = jsonData.toObject().get('numberValue')!;
+  assert(numberValue.kind === JSONValueKind.NUMBER, 'JSON value is not a number');
+
+  // TODO: Debug json toI64 failing test case.
+  // const i64Value = numberValue.toI64();
+  // assert(i64Value == 123, 'values are not equal');
+
+  // TODO: Debug json toBigInt failing test case.
+  // const bigIntValue = numberValue.toBigInt();
+  // assert(bigIntValue.toString() == '123', 'values are not equal');
 }
 
 export function testJsonTryFromBytes (): void {
@@ -576,7 +587,7 @@ export function testJsonTryFromBytes (): void {
   const objectValue = jsonData.toObject().get('stringValue')!;
   assert(objectValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
 
-  // Strict equal comparison does not work.
+  // https://www.assemblyscript.org/basics.html#triple-equals
   // eslint-disable-next-line eqeqeq
   assert(objectValue.toString() == 'abc', 'JSON object values are not equal');
 }
