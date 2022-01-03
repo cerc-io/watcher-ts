@@ -548,7 +548,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
   const {
     __getString,
     __getArray,
-    BigInt: ExportBigInt,
+    BigInt: ASBigInt,
     Bytes,
     BigDecimal,
     Value
@@ -583,7 +583,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 
     case ValueKind.BIGINT: {
       const bigIntPtr = await value.toBigInt();
-      const bigInt = ExportBigInt.wrap(bigIntPtr);
+      const bigInt = ASBigInt.wrap(bigIntPtr);
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
 
@@ -616,7 +616,7 @@ const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
 };
 
 const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
-  const { __newString, __newArray, BigInt: ExportBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
+  const { __newString, __newArray, BigInt: ASBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
 
   if (isArray) {
     const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
@@ -645,7 +645,7 @@ const formatEntityValue = async (instanceExports: any, subgraphValue: any, type:
 
     case 'BigInt': {
       const valueStringPtr = await __newString(value.toString());
-      const bigInt = await ExportBigInt.fromString(valueStringPtr);
+      const bigInt = await ASBigInt.fromString(valueStringPtr);
 
       return Value.fromBigInt(bigInt);
     }
@@ -694,4 +694,62 @@ export const resolveEntityFieldConflicts = (entity: any): any => {
   }
 
   return entity;
+};
+
+export const toJSONValue = async (instanceExports: any, value: any): Promise<any> => {
+  const { CustomJSONValue, JSONValueTypedMap, __newString, __newArray, id_of_type: getIdOfType } = instanceExports;
+
+  if (!value) {
+    return CustomJSONValue.fromNull();
+  }
+
+  if (Array.isArray(value)) {
+    const arrayPromise = value.map(async (el: any) => toJSONValue(instanceExports, el));
+    const array = await Promise.all(arrayPromise);
+    const arrayJsonValueId = await getIdOfType(TypeId.ArrayJsonValue);
+    const arrayPtr = __newArray(arrayJsonValueId, array);
+
+    return CustomJSONValue.fromArray(arrayPtr);
+  }
+
+  if (typeof value === 'object') {
+    const map = await JSONValueTypedMap.__new();
+
+    const valuePromises = Object.entries(value).map(async ([key, value]) => {
+      const valuePtr = await toJSONValue(instanceExports, value);
+      const keyPtr = await __newString(key);
+      await map.set(keyPtr, valuePtr);
+    });
+
+    await Promise.all(valuePromises);
+
+    return CustomJSONValue.fromObject(map);
+  }
+
+  if (typeof value === 'string') {
+    const stringPtr = await __newString(value);
+
+    return CustomJSONValue.fromString(stringPtr);
+  }
+
+  if (typeof value === 'number') {
+    const stringPtr = await __newString(value.toString());
+
+    return CustomJSONValue.fromNumber(stringPtr);
+  }
+
+  if (typeof value === 'boolean') {
+    return CustomJSONValue.fromBoolean(value);
+  }
+};
+
+export const jsonFromBytes = async (instanceExports: any, bytesPtr: number): Promise<any> => {
+  const { ByteArray, __getString } = instanceExports;
+
+  const byteArray = await ByteArray.wrap(bytesPtr);
+  const jsonStringPtr = await byteArray.toString();
+  const json = JSON.parse(__getString(jsonStringPtr));
+  const jsonValue = await toJSONValue(instanceExports, json);
+
+  return jsonValue;
 };

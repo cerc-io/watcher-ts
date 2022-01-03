@@ -9,8 +9,82 @@ import {
   ByteArray,
   Bytes,
   Entity,
-  Value
+  Value,
+  JSONValue,
+  TypedMap,
+  JSONValueKind,
+  Result,
+  Wrapped
 } from '@graphprotocol/graph-ts';
+
+// All exports are used in JS host API implementations.
+
+/**
+ * Class used to create TypedMap<string, JSONValue> instance in json fromBytes host API.
+ */
+export class JSONValueTypedMap extends TypedMap<string, JSONValue> {}
+
+/**
+ * Class used to create JSONValue instances from different value types.
+ * Implementation is based on Value class in graph-ts. https://github.com/graphprotocol/graph-ts/blob/master/common/value.ts#L188
+ */
+export class CustomJSONValue extends JSONValue {
+  static fromArray(input: Array<JSONValue>): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.ARRAY;
+    jsonValue.data = changetype<u32>(input);
+    return jsonValue;
+  }
+
+  static fromObject(object: TypedMap<string, JSONValue>): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.OBJECT;
+    jsonValue.data = changetype<u32>(object);
+    return jsonValue;
+  }
+
+  static fromNumber(n: string): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.NUMBER;
+    jsonValue.data = changetype<u32>(n);
+    return jsonValue;
+  }
+
+  static fromBoolean(b: boolean): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.BOOL;
+    jsonValue.data = b ? 1 : 0;
+    return jsonValue;
+  }
+
+  static fromString(s: string): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.STRING;
+    jsonValue.data = changetype<u32>(s);
+    return jsonValue;
+  }
+
+  static fromNull(): JSONValue {
+    const jsonValue = new JSONValue();
+    jsonValue.kind = JSONValueKind.NULL;
+    return jsonValue;
+  }
+}
+
+/**
+ * Class used to create Result instance in json try_fromBytes host API.
+ */
+export class JSONResult extends Result<JSONValue, boolean> {
+  constructor (value: JSONValue | null) {
+    super();
+
+    if (value) {
+      this._value = new Wrapped(value);
+    } else {
+      this._error = new Wrapped(true);
+    }
+  }
+}
 
 export {
   BigDecimal,
@@ -22,5 +96,6 @@ export {
   Address,
   ByteArray,
   Bytes,
-  Value
+  Value,
+  JSONValue
 }

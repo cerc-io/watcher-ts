@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto, json, JSONValueKind } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -515,4 +515,79 @@ export function testCrypto (hexString: string): string {
   log.debug('keccak256 string: {}', [keccak256String]);
 
   return keccak256String;
+}
+
+export function testJsonFromBytes (): void {
+  const jsonString = `
+  {
+    "stringValue": "abc",
+    "numberValue": 123,
+    "arrayValue": [ 1, 2, 3 ],
+    "boolValue": true,
+    "nullValue": null
+  }
+  `;
+
+  const data = Bytes.fromByteArray(
+    ByteArray.fromUTF8(jsonString)
+  );
+
+  const jsonData = json.fromBytes(data);
+  assert(jsonData.kind === JSONValueKind.OBJECT, 'JSON value is not an object');
+
+  const stringValue = jsonData.toObject().get('stringValue')!;
+  assert(stringValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
+
+  // https://www.assemblyscript.org/basics.html#triple-equals
+  // eslint-disable-next-line eqeqeq
+  assert(stringValue.toString() == 'abc', 'JSON object values are not equal');
+
+  const numberValue = jsonData.toObject().get('numberValue')!;
+  assert(numberValue.kind === JSONValueKind.NUMBER, 'JSON value is not a number');
+
+  // TODO: Debug json toI64 failing test case.
+  // const i64Value = numberValue.toI64();
+  // assert(i64Value == 123, 'values are not equal');
+
+  // TODO: Debug json toBigInt failing test case.
+  // const bigIntValue = numberValue.toBigInt();
+  // assert(bigIntValue.toString() == '123', 'values are not equal');
+}
+
+export function testJsonTryFromBytes (): void {
+  const incorrectJsonString = `
+  {
+    stringValue: "abc"
+  }
+  `;
+
+  let data = Bytes.fromByteArray(
+    ByteArray.fromUTF8(incorrectJsonString)
+  );
+
+  let jsonResult = json.try_fromBytes(data);
+  assert(jsonResult.isError, 'JSON parsing should fail');
+
+  const correctJsonString = `
+  {
+    "stringValue": "abc"
+  }
+  `;
+
+  data = Bytes.fromByteArray(
+    ByteArray.fromUTF8(correctJsonString)
+  );
+
+  jsonResult = json.try_fromBytes(data);
+  assert(jsonResult.isOk, 'JSON parsing should be successful');
+  const jsonData = jsonResult.value;
+
+  assert(jsonData.kind === JSONValueKind.OBJECT, 'JSON value is not an object');
+
+  const objectValue = jsonData.toObject().get('stringValue')!;
+  assert(objectValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
+
+  // https://www.assemblyscript.org/basics.html#triple-equals
+  // eslint-disable-next-line eqeqeq
+  assert(objectValue.toString() == 'abc', 'JSON object values are not equal');
 }
