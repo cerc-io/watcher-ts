@@ -12,7 +12,10 @@ import {
   Value,
   JSONValue,
   TypedMap,
-  JSONValueKind
+  JSONValueKind,
+  Result,
+  Wrapped,
+  json
 } from '@graphprotocol/graph-ts';
 
 export class JSONValueTypedMap extends TypedMap<string, JSONValue> {}
@@ -60,6 +63,18 @@ export class CustomJSONValue extends JSONValue {
   }
 }
 
+export class JSONResult extends Result<JSONValue, boolean> {
+  constructor (value: JSONValue | null) {
+    super();
+
+    if (value) {
+      this._value = new Wrapped(value);
+    } else {
+      this._error = new Wrapped(true);
+    }
+  }
+}
+
 export {
   BigDecimal,
   BigInt,
@@ -71,5 +86,7 @@ export {
   ByteArray,
   Bytes,
   Value,
-  JSONValue
+  JSONValue,
+
+  json
 }

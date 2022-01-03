@@ -742,3 +742,14 @@ export const toJSONValue = async (instanceExports: any, value: any): Promise<any
     return CustomJSONValue.fromBoolean(value);
   }
 };
+
+export const jsonFromBytes = async (instanceExports: any, bytesPtr: number) => {
+  const { ByteArray, __getString } = instanceExports;
+
+  const byteArray = await ByteArray.wrap(bytesPtr);
+  const jsonStringPtr = await byteArray.toString();
+  const json = JSON.parse(__getString(jsonStringPtr));
+  const jsonValue = await toJSONValue(instanceExports, json);
+
+  return jsonValue;
+};

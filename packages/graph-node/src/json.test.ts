@@ -11,7 +11,7 @@ import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils'
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
-describe('ipfs host api', () => {
+describe('json host api', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
@@ -44,5 +44,11 @@ describe('ipfs host api', () => {
     const { testJsonFromBytes } = exports;
 
     await testJsonFromBytes();
+  });
+
+  it('should parse JSON safely', async () => {
+    const { testJsonTryFromBytes } = exports;
+
+    await testJsonTryFromBytes();
   });
 });

@@ -1,4 +1,4 @@
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto, ipfs, json, JSONValueKind } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto, json, JSONValueKind } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -527,6 +527,7 @@ export function testJsonFromBytes (): void {
     "nullValue": null
   }
   `;
+
   const data = Bytes.fromByteArray(
     ByteArray.fromUTF8(jsonString)
   );
@@ -537,5 +538,45 @@ export function testJsonFromBytes (): void {
   const objectValue = jsonData.toObject().get('stringValue')!;
   assert(objectValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
 
-  assert(objectValue.toString() === 'abc', 'JSON object values are not equal');
+  // Strict equal comparison does not work.
+  // eslint-disable-next-line eqeqeq
+  assert(objectValue.toString() == 'abc', 'JSON object values are not equal');
+}
+
+export function testJsonTryFromBytes (): void {
+  const incorrectJsonString = `
+  {
+    stringValue: "abc"
+  }
+  `;
+
+  let data = Bytes.fromByteArray(
+    ByteArray.fromUTF8(incorrectJsonString)
+  );
+
+  let jsonResult = json.try_fromBytes(data);
+  assert(jsonResult.isError, 'JSON parsing should fail');
+
+  const correctJsonString = `
+  {
+    "stringValue": "abc"
+  }
+  `;
+
+  data = Bytes.fromByteArray(
+    ByteArray.fromUTF8(correctJsonString)
+  );
+
+  jsonResult = json.try_fromBytes(data);
+  assert(jsonResult.isOk, 'JSON parsing should be successful');
+  const jsonData = jsonResult.value;
+
+  assert(jsonData.kind === JSONValueKind.OBJECT, 'JSON value is not an object');
+
+  const objectValue = jsonData.toObject().get('stringValue')!;
+  assert(objectValue.kind === JSONValueKind.STRING, 'JSON value is not a string');
+
+  // Strict equal comparison does not work.
+  // eslint-disable-next-line eqeqeq
+  assert(objectValue.toString() == 'abc', 'JSON object values are not equal');
 }

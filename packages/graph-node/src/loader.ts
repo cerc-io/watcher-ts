@@ -25,7 +25,7 @@ import {
   toEthereumValue,
   resolveEntityFieldConflicts,
   getEthereumTypes,
-  toJSONValue
+  jsonFromBytes
 } from './utils';
 import { Database } from './database';
 
@@ -625,12 +625,18 @@ export const instantiate = async (
     },
     json: {
       'json.fromBytes': async (bytes: number) => {
-        const byteArray = await ByteArray.wrap(bytes);
-        const jsonStringPtr = await byteArray.toString();
-        const json = JSON.parse(__getString(jsonStringPtr));
-        const jsonValue = await toJSONValue(instanceExports, json);
+        return jsonFromBytes(instanceExports, bytes);
+      },
+      'json.try_fromBytes': async (bytes: number) => {
+        try {
+          const jsonValue = await jsonFromBytes(instanceExports, bytes);
 
-        return jsonValue;
+          return JSONResult.__new(jsonValue);
+        } catch (error) {
+          log('json.try_fromBytes error', error);
+
+          return JSONResult.__new(null);
+        }
       },
       'json.toI64': async (decimal: number) => {
         log('json.toI64');
@@ -660,6 +666,7 @@ export const instantiate = async (
   const ethereum: any = instanceExports.ethereum as any;
   const Entity: any = instanceExports.Entity as any;
   const ByteArray: any = instanceExports.ByteArray as any;
+  const JSONResult: any = instanceExports.JSONResult as any;
 
   return instance;
 };
