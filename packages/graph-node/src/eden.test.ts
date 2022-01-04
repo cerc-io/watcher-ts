@@ -89,7 +89,12 @@ describe('eden wasm loader tests', async () => {
         db,
         indexer,
         provider,
-        { block: dummyEventData.block, event: { contract: contractAddress } },
+        {
+          block: dummyEventData.block,
+          event: {
+            contract: contractAddress
+          }
+        },
         filePath,
         data
       ));
@@ -205,7 +210,12 @@ describe('eden wasm loader tests', async () => {
       ({ exports } = await instantiate(db,
         indexer,
         provider,
-        { block: dummyEventData.block, event: { contract: contractAddress } },
+        {
+          block: dummyEventData.block,
+          event: {
+            contract: contractAddress
+          }
+        },
         filePath,
         data
       ));
@@ -319,7 +329,12 @@ describe('eden wasm loader tests', async () => {
         db,
         indexer,
         provider,
-        { block: dummyEventData.block, event: { contract: contractAddress } },
+        {
+          block: dummyEventData.block,
+          event: {
+            contract: contractAddress
+          }
+        },
         filePath,
         data
       ));

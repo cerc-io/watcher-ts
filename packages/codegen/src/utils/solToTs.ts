@@ -1,0 +1,112 @@
+//
+// Copyright 2021 Vulcanize, Inc.
+//
+
+const solToTs: Map<string, string> = new Map();
+
+// Solidity to Typescript type-mapping.
+solToTs.set('string', 'string');
+solToTs.set('address', 'string');
+solToTs.set('bool', 'boolean');
+
+solToTs.set('int8', 'number');
+solToTs.set('int16', 'number');
+solToTs.set('int24', 'number');
+solToTs.set('int32', 'number');
+solToTs.set('int48', 'number');
+solToTs.set('int56', 'bigint');
+solToTs.set('int64', 'bigint');
+solToTs.set('int72', 'bigint');
+solToTs.set('int80', 'bigint');
+solToTs.set('int88', 'bigint');
+solToTs.set('int96', 'bigint');
+solToTs.set('int104', 'bigint');
+solToTs.set('int112', 'bigint');
+solToTs.set('int120', 'bigint');
+solToTs.set('int128', 'bigint');
+solToTs.set('int136', 'bigint');
+solToTs.set('int144', 'bigint');
+solToTs.set('int152', 'bigint');
+solToTs.set('int160', 'bigint');
+solToTs.set('int168', 'bigint');
+solToTs.set('int176', 'bigint');
+solToTs.set('int184', 'bigint');
+solToTs.set('int192', 'bigint');
+solToTs.set('int200', 'bigint');
+solToTs.set('int208', 'bigint');
+solToTs.set('int216', 'bigint');
+solToTs.set('int224', 'bigint');
+solToTs.set('int232', 'bigint');
+solToTs.set('int240', 'bigint');
+solToTs.set('int248', 'bigint');
+solToTs.set('int256', 'bigint');
+solToTs.set('int', 'bigint');
+
+solToTs.set('uint8', 'number');
+solToTs.set('uint16', 'number');
+solToTs.set('uint24', 'number');
+solToTs.set('uint32', 'number');
+solToTs.set('uint48', 'number');
+solToTs.set('uint56', 'bigint');
+solToTs.set('uint64', 'bigint');
+solToTs.set('uint72', 'bigint');
+solToTs.set('uint80', 'bigint');
+solToTs.set('uint88', 'bigint');
+solToTs.set('uint96', 'bigint');
+solToTs.set('uint104', 'bigint');
+solToTs.set('uint112', 'bigint');
+solToTs.set('uint120', 'bigint');
+solToTs.set('uint128', 'bigint');
+solToTs.set('uint136', 'bigint');
+solToTs.set('uint144', 'bigint');
+solToTs.set('uint152', 'bigint');
+solToTs.set('uint160', 'bigint');
+solToTs.set('uint168', 'bigint');
+solToTs.set('uint176', 'bigint');
+solToTs.set('uint184', 'bigint');
+solToTs.set('uint192', 'bigint');
+solToTs.set('uint200', 'bigint');
+solToTs.set('uint208', 'bigint');
+solToTs.set('uint216', 'bigint');
+solToTs.set('uint224', 'bigint');
+solToTs.set('uint232', 'bigint');
+solToTs.set('uint240', 'bigint');
+solToTs.set('uint248', 'bigint');
+solToTs.set('uint256', 'bigint');
+solToTs.set('uint', 'bigint');
+
+solToTs.set('bytes', 'string');
+solToTs.set('bytes1', 'string');
+solToTs.set('bytes2', 'string');
+solToTs.set('bytes3', 'string');
+solToTs.set('bytes4', 'string');
+solToTs.set('bytes5', 'string');
+solToTs.set('bytes6', 'string');
+solToTs.set('bytes7', 'string');
+solToTs.set('bytes8', 'string');
+solToTs.set('bytes9', 'string');
+solToTs.set('bytes10', 'string');
+solToTs.set('bytes11', 'string');
+solToTs.set('bytes12', 'string');
+solToTs.set('bytes13', 'string');
+solToTs.set('bytes14', 'string');
+solToTs.set('bytes15', 'string');
+solToTs.set('bytes16', 'string');
+solToTs.set('bytes17', 'string');
+solToTs.set('bytes18', 'string');
+solToTs.set('bytes19', 'string');
+solToTs.set('bytes20', 'string');
+solToTs.set('bytes21', 'string');
+solToTs.set('bytes22', 'string');
+solToTs.set('bytes23', 'string');
+solToTs.set('bytes24', 'string');
+solToTs.set('bytes25', 'string');
+solToTs.set('bytes26', 'string');
+solToTs.set('bytes27', 'string');
+solToTs.set('bytes28', 'string');
+solToTs.set('bytes29', 'string');
+solToTs.set('bytes30', 'string');
+solToTs.set('bytes31', 'string');
+solToTs.set('bytes32', 'string');
+
+export { solToTs };

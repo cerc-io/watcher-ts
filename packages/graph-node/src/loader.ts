@@ -39,16 +39,13 @@ type idOfType = (TypeId: number) => number
 export interface GraphData {
   abis?: {[key: string]: ContractInterface};
   dataSource: {
-    address?: string,
     network: string;
   };
 }
 
 export interface Context {
   block?: Block
-  event?: {
-    contract: string
-  }
+  contractAddress?: string
 }
 
 const log = debug('vulcanize:graph-node');

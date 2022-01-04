@@ -155,6 +155,7 @@ export class Schema {
     });
 
     // Re-assigning the typeDefs.
+    // Using JSON stringify and parse as lodash cloneDeep throws error.
     const modifiedSchemaDocument = JSON.parse(JSON.stringify(subgraphSchemaDocument));
     modifiedSchemaDocument.definitions = subgraphTypeDefs;
 
