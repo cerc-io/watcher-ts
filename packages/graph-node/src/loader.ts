@@ -108,8 +108,8 @@ export const instantiate = async (
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
-        assert(context.event);
-        await indexer.createDiffStaged(context.event.contract, context.block.blockHash, diffData);
+        assert(context.contractAddress);
+        await indexer.createDiffStaged(context.contractAddress, context.block.blockHash, diffData);
       },
 
       'log.log': (level: number, msg: number) => {
@@ -609,8 +609,8 @@ export const instantiate = async (
     },
     datasource: {
       'dataSource.address': async () => {
-        assert(dataSource.address);
-        const addressStringPtr = await __newString(dataSource.address);
+        assert(context.contractAddress);
+        const addressStringPtr = await __newString(context.contractAddress);
         return Address.fromString(addressStringPtr);
       },
       'dataSource.context': async () => {

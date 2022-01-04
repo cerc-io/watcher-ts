@@ -68,7 +68,6 @@ export class GraphWatcher {
       const data = {
         abis: abisMap,
         dataSource: {
-          address,
           network
         }
       };
@@ -143,9 +142,7 @@ export class GraphWatcher {
       return;
     }
 
-    this._context.event = {
-      contract
-    };
+    this._context.contractAddress = contract;
 
     const { instance, contractInterface } = this._dataSourceMap[watchedContract.kind];
     assert(instance);
@@ -216,6 +213,9 @@ export class GraphWatcher {
 
       // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(instanceExports, blockData);
+
+      // TODO: Get contract addresses for data source templates from watched contracts.
+      this._context.contractAddress = dataSource.source.address;
 
       // Call all the block handlers one after the another for a contract.
       const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
