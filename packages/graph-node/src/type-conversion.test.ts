@@ -9,7 +9,7 @@ import { utils, BigNumber } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -26,13 +26,16 @@ describe('typeConversion wasm tests', () => {
     indexer = getTestIndexer();
     provider = getTestProvider();
 
+    const dummyGraphData = getDummyGraphData();
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
+
     const instance = await instantiate(
       db,
       indexer,
       provider,
       {},
-      filePath
+      filePath,
+      dummyGraphData
     );
     exports = instance.exports;
     const { _start } = exports;

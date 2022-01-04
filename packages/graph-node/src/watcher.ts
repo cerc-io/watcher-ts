@@ -139,7 +139,7 @@ export class GraphWatcher {
     const dataSource = this._dataSources.find(dataSource => dataSource.name === watchedContract.kind);
 
     if (!dataSource) {
-      log(`Subgraph doesnt have configuration for contract ${contract}`);
+      log(`Subgraph doesn't have configuration for contract ${contract}`);
       return;
     }
 

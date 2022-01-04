@@ -9,7 +9,7 @@ import { utils } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -26,14 +26,18 @@ describe('crypto host api', () => {
   });
 
   it('should load the subgraph example wasm', async () => {
+    const dummyGraphData = getDummyGraphData();
     const filePath = path.resolve(__dirname, '../test/subgraph/example1/build/Example1/Example1.wasm');
+
     const instance = await instantiate(
       db,
       indexer,
       provider,
       {},
-      filePath
+      filePath,
+      dummyGraphData
     );
+
     exports = instance.exports;
     const { _start } = exports;
 

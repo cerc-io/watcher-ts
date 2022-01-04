@@ -9,7 +9,7 @@ import { utils } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -21,19 +21,23 @@ describe('wasm loader tests', () => {
   let indexer: Indexer;
   let provider: BaseProvider;
   let module: WebAssembly.Module;
+  let dummyGraphData: any;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    dummyGraphData = getDummyGraphData();
 
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
+
     const instance = await instantiate(
       db,
       indexer,
       provider,
       {},
-      filePath
+      filePath,
+      dummyGraphData
     );
 
     exports = instance.exports;
@@ -110,7 +114,8 @@ describe('wasm loader tests', () => {
       indexer,
       provider,
       {},
-      module
+      module,
+      dummyGraphData
     );
 
     exports = instance.exports;
