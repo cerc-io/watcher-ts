@@ -335,19 +335,21 @@ function getConfig (configFile: string): any {
     subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
     subgraphConfig = getSubgraphConfig(subgraphPath);
 
-    // Add contracts missing for dataSources in subgraph config.
-    subgraphConfig.dataSources.forEach((dataSource: any) => {
-      if (!contracts.some((contract: any) => contract.kind === dataSource.name)) {
-        const abi = dataSource.mapping.abis.find((abi: any) => abi.name === dataSource.source.abi);
-        const abiPath = path.resolve(subgraphPath, abi.file);
+    // Add contracts missing for dataSources and templates in subgraph config.
+    subgraphConfig.dataSources
+      .concat(subgraphConfig.templates ?? [])
+      .forEach((dataSource: any) => {
+        if (!contracts.some((contract: any) => contract.kind === dataSource.name)) {
+          const abi = dataSource.mapping.abis.find((abi: any) => abi.name === dataSource.source.abi);
+          const abiPath = path.resolve(subgraphPath, abi.file);
 
-        contracts.push({
-          name: dataSource.name,
-          kind: dataSource.name,
-          abiPath
-        });
-      }
-    });
+          contracts.push({
+            name: dataSource.name,
+            kind: dataSource.name,
+            abiPath
+          });
+        }
+      });
   }
 
   const inputFlatten = inputConfig.flatten;

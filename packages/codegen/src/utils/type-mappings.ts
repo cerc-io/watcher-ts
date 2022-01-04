@@ -10,10 +10,14 @@ const _gqlToTs: Map<string, string> = new Map();
 // TODO Get typemapping from ethersjs.
 // Solidity to Typescript type-mapping.
 _solToTs.set('string', 'string');
+_solToTs.set('int24', 'number');
+_solToTs.set('int256', 'bigint');
 _solToTs.set('uint8', 'number');
 _solToTs.set('uint16', 'number');
+_solToTs.set('uint24', 'number');
 _solToTs.set('uint64', 'bigint');
 _solToTs.set('uint128', 'bigint');
+_solToTs.set('uint160', 'bigint');
 _solToTs.set('uint256', 'bigint');
 _solToTs.set('uint', 'bigint');
 _solToTs.set('address', 'string');
