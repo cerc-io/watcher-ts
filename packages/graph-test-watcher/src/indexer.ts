@@ -36,7 +36,9 @@ import { SyncStatus } from './entity/SyncStatus';
 import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
-import artifacts from './artifacts/Example.json';
+import Example1Artifacts from './artifacts/Example.json';
+import FactoryArtifacts from './artifacts/Factory.json';
+import PoolArtifacts from './artifacts/Pool.json';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Author } from './entity/Author';
 import { Blog } from './entity/Blog';
@@ -44,7 +46,13 @@ import { Category } from './entity/Category';
 
 const log = debug('vulcanize:indexer');
 
+const KIND_EXAMPLE1 = 'Example1';
+const KIND_FACTORY = 'Factory';
+const KIND_POOL = 'Pool';
+
 const TEST_EVENT = 'Test';
+const POOLCREATED_EVENT = 'PoolCreated';
+const INITIALIZE_EVENT = 'Initialize';
 
 export type ResultEvent = {
   block: {
@@ -93,9 +101,9 @@ export class Indexer implements IndexerInterface {
   _serverConfig: ServerConfig
   _graphWatcher: GraphWatcher;
 
-  _abi: JsonFragment[]
-  _storageLayout: StorageLayout
-  _contract: ethers.utils.Interface
+  _abiMap: Map<string, JsonFragment[]>
+  _storageLayoutMap: Map<string, StorageLayout>
+  _contractMap: Map<string, ethers.utils.Interface>
 
   _ipfsClient: IPFSClient
 
@@ -116,15 +124,36 @@ export class Indexer implements IndexerInterface {
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue, this._ipfsClient);
     this._graphWatcher = graphWatcher;
 
-    const { abi, storageLayout } = artifacts;
+    this._abiMap = new Map();
+    this._storageLayoutMap = new Map();
+    this._contractMap = new Map();
 
-    assert(abi);
-    assert(storageLayout);
+    const {
+      abi: Example1ABI,
+      storageLayout: Example1StorageLayout
+    } = Example1Artifacts;
 
-    this._abi = abi;
-    this._storageLayout = storageLayout;
+    const {
+      abi: FactoryABI
+    } = FactoryArtifacts;
 
-    this._contract = new ethers.utils.Interface(this._abi);
+    const {
+      abi: PoolABI
+    } = PoolArtifacts;
+
+    assert(Example1ABI);
+    assert(Example1StorageLayout);
+    this._abiMap.set(KIND_EXAMPLE1, Example1ABI);
+    this._storageLayoutMap.set(KIND_EXAMPLE1, Example1StorageLayout);
+    this._contractMap.set(KIND_EXAMPLE1, new ethers.utils.Interface(Example1ABI));
+
+    assert(FactoryABI);
+    this._abiMap.set(KIND_FACTORY, FactoryABI);
+    this._contractMap.set(KIND_FACTORY, new ethers.utils.Interface(FactoryABI));
+
+    assert(PoolABI);
+    this._abiMap.set(KIND_POOL, PoolABI);
+    this._contractMap.set(KIND_POOL, new ethers.utils.Interface(PoolABI));
 
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
@@ -209,7 +238,10 @@ export class Indexer implements IndexerInterface {
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const contract = new ethers.Contract(contractAddress, this._abi, this._ethProvider);
+    const abi = this._abiMap.get(KIND_EXAMPLE1);
+    assert(abi);
+
+    const contract = new ethers.Contract(contractAddress, abi, this._ethProvider);
     const value = await contract.getMethod({ blockTag: blockHash });
 
     const result: ValueResult = { value };
@@ -235,8 +267,11 @@ export class Indexer implements IndexerInterface {
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
+    const storageLayout = this._storageLayoutMap.get(KIND_EXAMPLE1);
+    assert(storageLayout);
+
     const result = await this._baseIndexer.getStorageValue(
-      this._storageLayout,
+      storageLayout,
       blockHash,
       contractAddress,
       '_test'
@@ -383,7 +418,40 @@ export class Indexer implements IndexerInterface {
     let eventInfo = {};
 
     const { topics, data } = logObj;
-    const logDescription = this._contract.parseLog({ data, topics });
+
+    const contract = this._contractMap.get(kind);
+    assert(contract);
+
+    const logDescription = contract.parseLog({ data, topics });
+
+    switch (kind) {
+      case KIND_EXAMPLE1: {
+        ({ eventName, eventInfo } = this.parseExample1Event(logDescription));
+
+        break;
+      }
+      case KIND_FACTORY: {
+        ({ eventName, eventInfo } = this.parseFactoryEvent(logDescription));
+
+        break;
+      }
+      case KIND_POOL: {
+        ({ eventName, eventInfo } = this.parsePoolEvent(logDescription));
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo,
+      eventSignature: logDescription.signature
+    };
+  }
+
+  parseExample1Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
 
     switch (logDescription.name) {
       case TEST_EVENT: {
@@ -401,8 +469,56 @@ export class Indexer implements IndexerInterface {
 
     return {
       eventName,
-      eventInfo,
-      eventSignature: logDescription.signature
+      eventInfo
+    };
+  }
+
+  parseFactoryEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
+
+    switch (logDescription.name) {
+      case POOLCREATED_EVENT: {
+        eventName = logDescription.name;
+        const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
+        eventInfo = {
+          token0,
+          token1,
+          fee,
+          tickSpacing,
+          pool
+        };
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo
+    };
+  }
+
+  parsePoolEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    let eventName = UNKNOWN_EVENT_NAME;
+    let eventInfo = {};
+
+    switch (logDescription.name) {
+      case INITIALIZE_EVENT: {
+        eventName = logDescription.name;
+        const { sqrtPriceX96, tick } = logDescription.args;
+        eventInfo = {
+          sqrtPriceX96: BigInt(sqrtPriceX96.toString()),
+          tick
+        };
+
+        break;
+      }
+    }
+
+    return {
+      eventName,
+      eventInfo
     };
   }
 
@@ -495,6 +611,10 @@ export class Indexer implements IndexerInterface {
 
   async isWatchedContract (address : string): Promise<Contract | undefined> {
     return this._baseIndexer.isWatchedContract(address);
+  }
+
+  getContractsByKind (kind: string): Contract[] {
+    return this._baseIndexer.getContractsByKind(kind);
   }
 
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {

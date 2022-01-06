@@ -73,12 +73,6 @@ export const handler = async (argv: any): Promise<void> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const syncStatus = await indexer.getSyncStatus();
-  assert(syncStatus, 'Missing syncStatus');
-
-  const ipldStatus = await indexer.getIPLDStatus();
-  assert(ipldStatus, 'Missing ipldStatus');
-
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
   assert(!blockProgresses.some(block => !block.isComplete), `Incomplete block at block number ${argv.blockNumber} with unprocessed events`);
@@ -95,6 +89,9 @@ export const handler = async (argv: any): Promise<void> => {
 
     await Promise.all(removeEntitiesPromise);
 
+    const syncStatus = await indexer.getSyncStatus();
+    assert(syncStatus, 'Missing syncStatus');
+
     if (syncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
       await indexer.updateSyncStatusIndexedBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
@@ -103,16 +100,20 @@ export const handler = async (argv: any): Promise<void> => {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
 
-    if (ipldStatus.latestHooksBlockNumber > blockProgress.blockNumber) {
-      await indexer.updateIPLDStatusHooksBlock(blockProgress.blockNumber, true);
-    }
+    const ipldStatus = await indexer.getIPLDStatus();
 
-    if (ipldStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
-      await indexer.updateIPLDStatusCheckpointBlock(blockProgress.blockNumber, true);
-    }
+    if (ipldStatus) {
+      if (ipldStatus.latestHooksBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateIPLDStatusHooksBlock(blockProgress.blockNumber, true);
+      }
 
-    if (ipldStatus.latestIPFSBlockNumber > blockProgress.blockNumber) {
-      await indexer.updateIPLDStatusIPFSBlock(blockProgress.blockNumber, true);
+      if (ipldStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateIPLDStatusCheckpointBlock(blockProgress.blockNumber, true);
+      }
+
+      if (ipldStatus.latestIPFSBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateIPLDStatusIPFSBlock(blockProgress.blockNumber, true);
+      }
     }
 
     await indexer.updateSyncStatusChainHead(blockProgress.blockHash, blockProgress.blockNumber, true);

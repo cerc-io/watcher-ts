@@ -2,25 +2,11 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-const _solToTs: Map<string, string> = new Map();
+import { solToTs } from './solToTs';
+
 const _tsToGql: Map<string, string> = new Map();
 const _tsToPg: Map<string, string> = new Map();
 const _gqlToTs: Map<string, string> = new Map();
-
-// TODO Get typemapping from ethersjs.
-// Solidity to Typescript type-mapping.
-_solToTs.set('string', 'string');
-_solToTs.set('uint8', 'number');
-_solToTs.set('uint16', 'number');
-_solToTs.set('uint64', 'bigint');
-_solToTs.set('uint128', 'bigint');
-_solToTs.set('uint256', 'bigint');
-_solToTs.set('uint', 'bigint');
-_solToTs.set('address', 'string');
-_solToTs.set('bool', 'boolean');
-_solToTs.set('bytes', 'string');
-_solToTs.set('bytes4', 'string');
-_solToTs.set('bytes32', 'string');
 
 // Typescript to Graphql type-mapping.
 _tsToGql.set('string', 'String');
@@ -44,7 +30,7 @@ _gqlToTs.set('BigDecimal', 'Decimal');
 _gqlToTs.set('Bytes', 'string');
 
 function getTsForSol (solType: string): string | undefined {
-  return _solToTs.get(solType);
+  return solToTs.get(solType);
 }
 
 function getGqlForTs (tsType: string): string | undefined {

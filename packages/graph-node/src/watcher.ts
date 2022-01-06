@@ -47,12 +47,12 @@ export class GraphWatcher {
   }
 
   async init () {
-    const { dataSources } = await getSubgraphConfig(this._subgraphPath);
-    this._dataSources = dataSources;
+    const { dataSources, templates = [] } = await getSubgraphConfig(this._subgraphPath);
+    this._dataSources = dataSources.concat(templates);
 
-    // Create wasm instance and contract interface for each dataSource in subgraph yaml.
+    // Create wasm instance and contract interface for each dataSource and template in subgraph yaml.
     const dataPromises = this._dataSources.map(async (dataSource: any) => {
-      const { source: { address, abi }, mapping, network } = dataSource;
+      const { source: { abi }, mapping, network } = dataSource;
       const { abis, file } = mapping;
 
       const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
@@ -68,7 +68,6 @@ export class GraphWatcher {
       const data = {
         abis: abisMap,
         dataSource: {
-          address,
           network
         }
       };
@@ -94,8 +93,8 @@ export class GraphWatcher {
       // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
       instance.exports._start();
 
-      const { source: { address } } = dataSource;
-      acc[address] = data[index];
+      const { name } = dataSource;
+      acc[name] = data[index];
 
       return acc;
     }, {});
@@ -110,10 +109,13 @@ export class GraphWatcher {
     for (const dataSource of this._dataSources) {
       const { source: { address, startBlock }, name } = dataSource;
 
-      const watchedContract = await this._indexer.isWatchedContract(address);
+      // Skip for templates as they are added dynamically.
+      if (address) {
+        const watchedContract = await this._indexer.isWatchedContract(address);
 
-      if (!watchedContract) {
-        await this._indexer.watchContract(address, name, true, startBlock);
+        if (!watchedContract) {
+          await this._indexer.watchContract(address, name, true, startBlock);
+        }
       }
     }
   }
@@ -128,15 +130,21 @@ export class GraphWatcher {
     const blockData = this._context.block;
     assert(blockData);
 
+    assert(this._indexer && this._indexer.isWatchedContract);
+    const watchedContract = await this._indexer.isWatchedContract(contract);
+    assert(watchedContract);
+
     // Get dataSource in subgraph yaml based on contract address.
-    const dataSource = this._dataSources.find(dataSource => dataSource.source.address === contract);
+    const dataSource = this._dataSources.find(dataSource => dataSource.name === watchedContract.kind);
 
     if (!dataSource) {
-      log(`Subgraph doesnt have configuration for contract ${contract}`);
+      log(`Subgraph doesn't have configuration for contract ${contract}`);
       return;
     }
 
-    const { instance, contractInterface } = this._dataSourceMap[contract];
+    this._context.contractAddress = contract;
+
+    const { instance, contractInterface } = this._dataSourceMap[watchedContract.kind];
     assert(instance);
     const { exports: instanceExports } = instance;
 
@@ -172,7 +180,7 @@ export class GraphWatcher {
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.source.address);
+    await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
   }
 
   async handleBlock (blockHash: string) {
@@ -191,27 +199,47 @@ export class GraphWatcher {
         // https://stackoverflow.com/a/40453962
         // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
         // https://github.com/WebAssembly/memory64/blob/main/proposals/memory64/Overview.md#motivation
-        await this._reInitWasm(dataSource.source.address);
+        await this._reInitWasm(dataSource.name);
       }
 
-      // Check if block handler(s) are configured and start block has been reached.
-      if (!dataSource.mapping.blockHandlers || blockData.blockNumber < dataSource.source.startBlock) {
+      // Check if block handler(s) are configured.
+      if (!dataSource.mapping.blockHandlers) {
         continue;
       }
 
-      const { instance } = this._dataSourceMap[dataSource.source.address];
+      const { instance } = this._dataSourceMap[dataSource.name];
       assert(instance);
       const { exports: instanceExports } = instance;
 
       // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(instanceExports, blockData);
 
-      // Call all the block handlers one after the another for a contract.
-      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
-        await instanceExports[blockHandler.handler](ethereumBlock);
-      });
+      let contractAddressList: string[] = [];
 
-      await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.source.address);
+      if (dataSource.source.address) {
+        // Check if start block has been reached.
+        if (blockData.blockNumber >= dataSource.source.startBlock) {
+          contractAddressList.push(dataSource.source.address);
+        }
+      } else {
+        // Data source templates will have multiple watched contracts.
+        assert(this._indexer?.getContractsByKind);
+        const watchedContracts = this._indexer.getContractsByKind(dataSource.name);
+
+        contractAddressList = watchedContracts.filter(contract => blockData.blockNumber >= contract.startingBlock)
+          .map(contract => contract.address);
+      }
+
+      for (const contractAddress of contractAddressList) {
+        this._context.contractAddress = contractAddress;
+
+        // Call all the block handlers one after another for a contract.
+        const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+          await instanceExports[blockHandler.handler](ethereumBlock);
+        });
+
+        await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
+      }
     }
   }
 
@@ -228,20 +256,20 @@ export class GraphWatcher {
   }
 
   /**
-   * Method to reinstantiate WASM instance for specified contract address.
-   * @param contractAddress
+   * Method to reinstantiate WASM instance for specified dataSource.
+   * @param dataSourceName
    */
-  async _reInitWasm (contractAddress: string): Promise<void> {
-    const { data, instance } = this._dataSourceMap[contractAddress];
+  async _reInitWasm (dataSourceName: string): Promise<void> {
+    const { data, instance } = this._dataSourceMap[dataSourceName];
 
     assert(instance);
     const { module } = instance;
-    delete this._dataSourceMap[contractAddress].instance;
+    delete this._dataSourceMap[dataSourceName].instance;
 
     assert(this._indexer);
 
     // Reinstantiate with existing module.
-    this._dataSourceMap[contractAddress].instance = await instantiate(
+    this._dataSourceMap[dataSourceName].instance = await instantiate(
       this._database,
       this._indexer,
       this._ethProvider,
@@ -252,17 +280,17 @@ export class GraphWatcher {
 
     // Important to call _start for built subgraphs on instantiation!
     // TODO: Check api version https://github.com/graphprotocol/graph-node/blob/6098daa8955bdfac597cec87080af5449807e874/runtime/wasm/src/module/mod.rs#L533
-    this._dataSourceMap[contractAddress].instance!.exports._start();
+    this._dataSourceMap[dataSourceName].instance!.exports._start();
   }
 
-  async _handleMemoryError (handlerPromise: Promise<any>, contractAddress: string): Promise<void> {
+  async _handleMemoryError (handlerPromise: Promise<any>, dataSourceName: string): Promise<void> {
     try {
       await handlerPromise;
     } catch (error) {
       if (error instanceof WebAssembly.RuntimeError && error instanceof Error) {
         if (error.message === 'unreachable') {
           // Reintantiate WASM for out of memory error.
-          this._reInitWasm(contractAddress);
+          this._reInitWasm(dataSourceName);
         }
       }
 

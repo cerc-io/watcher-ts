@@ -6,7 +6,6 @@ import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
-import _ from 'lodash';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -156,7 +155,8 @@ export class Schema {
     });
 
     // Re-assigning the typeDefs.
-    const modifiedSchemaDocument = _.cloneDeep(subgraphSchemaDocument);
+    // Using JSON stringify and parse as lodash cloneDeep throws error.
+    const modifiedSchemaDocument = JSON.parse(JSON.stringify(subgraphSchemaDocument));
     modifiedSchemaDocument.definitions = subgraphTypeDefs;
 
     // Adding subgraph-schema types to the schema composer.

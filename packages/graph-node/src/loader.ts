@@ -38,14 +38,14 @@ type idOfType = (TypeId: number) => number
 
 export interface GraphData {
   abis?: {[key: string]: ContractInterface};
-  dataSource?: {
-    address: string,
+  dataSource: {
     network: string;
   };
 }
 
 export interface Context {
   block?: Block
+  contractAddress?: string
 }
 
 const log = debug('vulcanize:graph-node');
@@ -56,7 +56,7 @@ export const instantiate = async (
   provider: BaseProvider,
   context: Context,
   filePathOrModule: string | WebAssembly.Module,
-  data: GraphData = {}
+  data: GraphData
 ): Promise<loader.ResultObject & { exports: any }> => {
   const { abis = {}, dataSource } = data;
 
@@ -108,8 +108,8 @@ export const instantiate = async (
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
-        assert(dataSource?.address);
-        await indexer.createDiffStaged(dataSource.address, context.block.blockHash, diffData);
+        assert(context.contractAddress);
+        await indexer.createDiffStaged(context.contractAddress, context.block.blockHash, diffData);
       },
 
       'log.log': (level: number, msg: number) => {
@@ -203,8 +203,9 @@ export const instantiate = async (
           const res = await __newArray(arrayEthereumValueId, resultPtrArray);
 
           return res;
-        } catch (err) {
-          console.log('eth_call error', err);
+        } catch (err: any) {
+          log('eth_call error', err.message);
+
           return null;
         }
       },
@@ -608,8 +609,8 @@ export const instantiate = async (
     },
     datasource: {
       'dataSource.address': async () => {
-        assert(dataSource);
-        const addressStringPtr = await __newString(dataSource.address);
+        assert(context.contractAddress);
+        const addressStringPtr = await __newString(context.contractAddress);
         return Address.fromString(addressStringPtr);
       },
       'dataSource.context': async () => {
@@ -621,6 +622,15 @@ export const instantiate = async (
       'dataSource.network': async () => {
         assert(dataSource);
         return __newString(dataSource.network);
+      },
+      'dataSource.create': async (name: number, params: number) => {
+        const [addressStringPtr] = __getArray(params);
+        const addressString = __getString(addressStringPtr);
+        const contractKind = __getString(name);
+
+        assert(indexer.watchContract);
+        assert(context.block);
+        await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber));
       }
     },
     json: {

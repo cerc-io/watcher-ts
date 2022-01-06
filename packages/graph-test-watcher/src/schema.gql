@@ -57,12 +57,25 @@ type ResultEvent {
   proof: Proof
 }
 
-union Event = TestEvent
+union Event = TestEvent | PoolCreatedEvent | InitializeEvent
 
 type TestEvent {
   param1: String!
   param2: Int!
   param3: BigInt!
+}
+
+type PoolCreatedEvent {
+  token0: String!
+  token1: String!
+  fee: Int!
+  tickSpacing: Int!
+  pool: String!
+}
+
+type InitializeEvent {
+  sqrtPriceX96: BigInt!
+  tick: Int!
 }
 
 type ResultIPLDBlock {
