@@ -52,7 +52,7 @@ export class GraphWatcher {
 
     // Create wasm instance and contract interface for each dataSource and template in subgraph yaml.
     const dataPromises = this._dataSources.map(async (dataSource: any) => {
-      const { source: { address, abi }, mapping, network } = dataSource;
+      const { source: { abi }, mapping, network } = dataSource;
       const { abis, file } = mapping;
 
       const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
@@ -202,8 +202,8 @@ export class GraphWatcher {
         await this._reInitWasm(dataSource.name);
       }
 
-      // Check if block handler(s) are configured and start block has been reached.
-      if (!dataSource.mapping.blockHandlers || blockData.blockNumber < dataSource.source.startBlock) {
+      // Check if block handler(s) are configured.
+      if (!dataSource.mapping.blockHandlers) {
         continue;
       }
 
@@ -214,15 +214,32 @@ export class GraphWatcher {
       // Create ethereum block to be passed to a wasm block handler.
       const ethereumBlock = await createBlock(instanceExports, blockData);
 
-      // TODO: Get contract addresses for data source templates from watched contracts.
-      this._context.contractAddress = dataSource.source.address;
+      let contractAddressList: string[] = [];
 
-      // Call all the block handlers one after the another for a contract.
-      const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
-        await instanceExports[blockHandler.handler](ethereumBlock);
-      });
+      if (dataSource.source.address) {
+        // Check if start block has been reached.
+        if (blockData.blockNumber >= dataSource.source.startBlock) {
+          contractAddressList.push(dataSource.source.address);
+        }
+      } else {
+        // Data source templates will have multiple watched contracts.
+        assert(this._indexer?.getContractsByKind);
+        const watchedContracts = this._indexer.getContractsByKind(dataSource.name);
 
-      await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
+        contractAddressList = watchedContracts.filter(contract => blockData.blockNumber >= contract.startingBlock)
+          .map(contract => contract.address);
+      }
+
+      for (const contractAddress of contractAddressList) {
+        this._context.contractAddress = contractAddress;
+
+        // Call all the block handlers one after another for a contract.
+        const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {
+          await instanceExports[blockHandler.handler](ethereumBlock);
+        });
+
+        await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
+      }
     }
   }
 

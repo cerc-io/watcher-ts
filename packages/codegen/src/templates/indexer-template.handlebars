@@ -584,6 +584,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.isWatchedContract(address);
   }
 
+  getContractsByKind (kind: string): Contract[] {
+    return this._baseIndexer.getContractsByKind(kind);
+  }
+
   async getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }> {
     return this._baseIndexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
   }

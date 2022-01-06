@@ -91,9 +91,7 @@ describe('eden wasm loader tests', async () => {
         provider,
         {
           block: dummyEventData.block,
-          event: {
-            contract: contractAddress
-          }
+          contractAddress
         },
         filePath,
         data
@@ -212,9 +210,7 @@ describe('eden wasm loader tests', async () => {
         provider,
         {
           block: dummyEventData.block,
-          event: {
-            contract: contractAddress
-          }
+          contractAddress
         },
         filePath,
         data
@@ -331,9 +327,7 @@ describe('eden wasm loader tests', async () => {
         provider,
         {
           block: dummyEventData.block,
-          event: {
-            contract: contractAddress
-          }
+          contractAddress
         },
         filePath,
         data

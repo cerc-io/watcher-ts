@@ -94,6 +94,7 @@ export interface IndexerInterface {
   processEvent (event: EventInterface): Promise<void>;
   parseEventNameAndArgs?: (kind: string, logObj: any) => any;
   isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
+  getContractsByKind?: (kind: string) => ContractInterface[];
   cacheContract?: (contract: ContractInterface) => void;
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
