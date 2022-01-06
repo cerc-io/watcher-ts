@@ -38,13 +38,13 @@ dataSources:
       entities: []
       abis:
         - name: Factory
-          file: ./abis/factory.json
+          file: ./abis/uniswap-v3/factory.json
         - name: Pool
-          file: ./abis/pool.json
+          file: ./abis/uniswap-v3/pool.json
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address,indexed uint24,int24,address)
           handler: handlePoolCreated
-      file: ./src/factory.ts
+      file: ./src/uniswap-v3/factory.ts
 templates:
   - kind: ethereum/contract
     name: Pool
@@ -56,10 +56,10 @@ templates:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities: []
-      file: ./src/pool.ts
+      file: ./src/uniswap-v3/pool.ts
       abis:
         - name: Pool
-          file: ./abis/pool.json
+          file: ./abis/uniswap-v3/pool.json
       blockHandlers:
         - handler: handleBlock
       eventHandlers:

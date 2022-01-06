@@ -56,9 +56,9 @@ export const instantiate = async (
   provider: BaseProvider,
   context: Context,
   filePathOrModule: string | WebAssembly.Module,
-  data: GraphData
+  graphData: GraphData
 ): Promise<loader.ResultObject & { exports: any }> => {
-  const { abis = {}, dataSource } = data;
+  const { abis = {}, dataSource } = graphData;
 
   let source = filePathOrModule;
 
@@ -627,6 +627,21 @@ export const instantiate = async (
         const [addressStringPtr] = __getArray(params);
         const addressString = __getString(addressStringPtr);
         const contractKind = __getString(name);
+
+        assert(indexer.watchContract);
+        assert(context.block);
+        await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber));
+      },
+      'dataSource.createWithContext': async (name: number, params: number, contextPtr: number) => {
+        const contextEntity = await Entity.wrap(contextPtr);
+        const [addressStringPtr] = __getArray(params);
+        const addressString = __getString(addressStringPtr);
+        const contractKind = __getString(name);
+
+        // TODO: set context for new contract.
+        const entriesPtr = await contextEntity.entries;
+        const entries = __getArray(entriesPtr);
+        log('context entries length:', entries.length);
 
         assert(indexer.watchContract);
         assert(context.block);
