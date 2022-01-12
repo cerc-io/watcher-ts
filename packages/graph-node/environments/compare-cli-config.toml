@@ -4,3 +4,4 @@
 
 [queries]
   queryDir = "../graph-test-watcher/src/gql/queries"
+  names = []

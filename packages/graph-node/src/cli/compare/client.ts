@@ -24,15 +24,12 @@ export class Client {
     this._graphqlClient = new GraphQLClient(config);
   }
 
-  async getEntity ({ blockHash, queryName, id }: { blockHash: string, queryName: string, id: string }): Promise<any> {
+  async getResult (queryName: string, params: { [key: string]: any }): Promise<any> {
     const entityQuery = fs.readFileSync(path.resolve(this._queryDir, `${queryName}.gql`), 'utf8');
 
     return this._graphqlClient.query(
       gql(entityQuery),
-      {
-        id,
-        blockHash
-      }
+      params
     );
   }
 }
