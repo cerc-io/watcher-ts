@@ -5,7 +5,7 @@
 import yargs from 'yargs';
 import 'reflect-metadata';
 
-import { compareQuery, Config, getConfig } from './utils';
+import { compareQuery, Config, getClients, getConfig } from './utils';
 
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -61,7 +61,9 @@ export const main = async (): Promise<void> => {
     hash: blockHash
   };
 
-  const resultDiff = await compareQuery(config, queryName, { id, block }, argv.rawJson, argv.queryDir);
+  const clients = await getClients(config, argv.queryDir);
+
+  const resultDiff = await compareQuery(clients, queryName, { id, block }, argv.rawJson);
 
   if (resultDiff) {
     console.log(resultDiff);

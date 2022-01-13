@@ -4,8 +4,11 @@
 
 import yargs from 'yargs';
 import 'reflect-metadata';
+import debug from 'debug';
 
-import { compareQuery, Config, getConfig } from './utils';
+import { compareQuery, Config, getClients, getConfig } from './utils';
+
+const log = debug('vulcanize:compare-blocks');
 
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -46,24 +49,29 @@ export const main = async (): Promise<void> => {
   const queryNames = config.queries.names;
   let diffFound = false;
 
+  const clients = await getClients(config, queryDir);
+
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
     const block = { number: blockNumber };
+    console.time(`time:compare-block-${blockNumber}`);
 
     for (const queryName of queryNames) {
       try {
-        console.log(`At block ${blockNumber} for query ${queryName}:`);
-        const resultDiff = await compareQuery(config, queryName, { block }, rawJson, queryDir);
+        log(`At block ${blockNumber} for query ${queryName}:`);
+        const resultDiff = await compareQuery(clients, queryName, { block }, rawJson);
 
         if (resultDiff) {
           diffFound = true;
-          console.log(resultDiff);
+          log('Results mismatch:', resultDiff);
         } else {
-          console.log('Results match.');
+          log('Results match.');
         }
       } catch (err: any) {
-        console.log('Error:', err.message);
+        log('Error:', err.message);
       }
     }
+
+    console.timeEnd(`time:compare-block-${blockNumber}`);
   }
 
   if (diffFound) {

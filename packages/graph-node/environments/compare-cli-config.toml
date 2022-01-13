@@ -5,3 +5,11 @@
 [queries]
   queryDir = "../graph-test-watcher/src/gql/queries"
   names = []
+
+[cache]
+  endpoint = "gqlEndpoint1"
+
+  [cache.config]
+    name = "subgraph-requests"
+    enabled = true
+    deleteOnStart = false

@@ -194,7 +194,7 @@ export class Schema {
         // Get type composer object for return type from the schema composer.
         type: this._composer.getAnyTC(subgraphType).NonNull,
         args: {
-          id: 'String!',
+          id: 'ID!',
           block: 'Block_height'
         }
       };

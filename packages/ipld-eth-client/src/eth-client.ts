@@ -11,7 +11,7 @@ import ethQueries from './eth-queries';
 import { padKey } from './utils';
 import { GraphQLClient, GraphQLConfig } from './graphql-client';
 
-interface Config extends GraphQLConfig {
+export interface Config extends GraphQLConfig {
   cache: Cache | undefined;
 }
 
