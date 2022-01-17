@@ -1,0 +1,9 @@
+#! /usr/bin/env node
+
+const { main } = require('../dist/cli/compare/compare-blocks')
+
+main().catch(err => {
+  console.log(err);
+}).finally(() => {
+  process.exit(0);
+});

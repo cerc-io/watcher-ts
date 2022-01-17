@@ -92,7 +92,7 @@ export const handler = async (argv: any): Promise<void> => {
 
     const ipldStatus = await indexer.getIPLDStatus();
 
-    if(ipldStatus) {
+    if (ipldStatus) {
       if (ipldStatus.latestHooksBlockNumber > blockProgress.blockNumber) {
         await indexer.updateIPLDStatusHooksBlock(blockProgress.blockNumber, true);
       }

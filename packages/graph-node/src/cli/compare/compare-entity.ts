@@ -4,28 +4,8 @@
 
 import yargs from 'yargs';
 import 'reflect-metadata';
-import path from 'path';
-import toml from 'toml';
-import fs from 'fs-extra';
-import assert from 'assert';
-import util from 'util';
-import { diffString, diff } from 'json-diff';
 
-import { Client } from './client';
-
-interface EndpointConfig {
-  gqlEndpoint1: string;
-  gqlEndpoint2: string;
-}
-
-interface QueryConfig {
-  queryDir: string;
-}
-
-interface Config {
-  endpoints: EndpointConfig;
-  queries: QueryConfig;
-}
+import { compareQuery, Config, getClients, getConfig } from './utils';
 
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -45,8 +25,11 @@ export const main = async (): Promise<void> => {
     blockHash: {
       alias: 'b',
       type: 'string',
-      demandOption: true,
-      describe: 'Blockhash'
+      describe: 'Block hash'
+    },
+    blockNumber: {
+      type: 'number',
+      describe: 'Block number'
     },
     queryName: {
       alias: 'q',
@@ -57,7 +40,6 @@ export const main = async (): Promise<void> => {
     entityId: {
       alias: 'i',
       type: 'string',
-      demandOption: true,
       describe: 'Id of the entity to be queried'
     },
     rawJson: {
@@ -70,75 +52,21 @@ export const main = async (): Promise<void> => {
 
   const config: Config = await getConfig(argv.configFile);
 
-  const { client1, client2 } = await getClients(config, argv.queryDir);
-
   const queryName = argv.queryName;
   const id = argv.entityId;
   const blockHash = argv.blockHash;
 
-  const result1 = await client1.getEntity({ blockHash, queryName, id });
-  const result2 = await client2.getEntity({ blockHash, queryName, id });
+  const block = {
+    number: argv.blockNumber,
+    hash: blockHash
+  };
 
-  // Getting the diff of two result objects.
-  let resultDiff;
-  if (argv.rawJson) {
-    resultDiff = diff(result1, result2);
+  const clients = await getClients(config, argv.queryDir);
 
-    if (resultDiff) {
-      // Use util.inspect to extend depth limit in the output.
-      resultDiff = util.inspect(diff(result1, result2), false, null);
-    }
-  } else {
-    resultDiff = diffString(result1, result2);
-  }
+  const resultDiff = await compareQuery(clients, queryName, { id, block }, argv.rawJson);
 
   if (resultDiff) {
     console.log(resultDiff);
     process.exit(1);
   }
 };
-
-async function getConfig (configFile: string): Promise<Config> {
-  const configFilePath = path.resolve(configFile);
-  const fileExists = await fs.pathExists(configFilePath);
-  if (!fileExists) {
-    throw new Error(`Config file not found: ${configFilePath}`);
-  }
-
-  const config = toml.parse(await fs.readFile(configFilePath, 'utf8'));
-
-  return config;
-}
-
-async function getClients (config: Config, queryDir?: string): Promise<{
-  client1: Client,
-  client2: Client
-}> {
-  assert(config.endpoints, 'Missing endpoints config');
-
-  const gqlEndpoint1 = config.endpoints.gqlEndpoint1;
-  const gqlEndpoint2 = config.endpoints.gqlEndpoint2;
-
-  assert(gqlEndpoint1, 'Missing endpoint one');
-  assert(gqlEndpoint2, 'Missing endpoint two');
-
-  if (!queryDir) {
-    assert(config.queries, 'Missing queries config');
-    queryDir = config.queries.queryDir;
-  }
-
-  assert(queryDir, 'Query directory not provided');
-
-  const client1 = new Client({
-    gqlEndpoint: gqlEndpoint1
-  }, queryDir);
-
-  const client2 = new Client({
-    gqlEndpoint: gqlEndpoint2
-  }, queryDir);
-
-  return {
-    client1,
-    client2
-  };
-}
