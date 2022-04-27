@@ -14,7 +14,7 @@ import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import { EventData } from './utils';
 
-describe('eth-call wasm tests', () => {
+xdescribe('eth-call wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;

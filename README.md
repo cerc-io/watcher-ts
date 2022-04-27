@@ -35,7 +35,11 @@ Install packages (Node.JS v16.13.1):
 yarn
 ```
 
-### Services
+## Tests
+
+* [graph-node](./packages/graph-node/README.md)
+
+## Services
 
 The default config files used by the watchers assume the following services are setup and running on localhost:
 
@@ -43,13 +47,13 @@ The default config files used by the watchers assume the following services are 
 * `vulcanize/ipld-eth-server` with native GQL API enabled, on port 8082
 * `postgraphile` on the `vulcanize/ipld-eth-server` database, on port 5000
 
-#### Note
+### Note
 
 * In `vulcanize/ipld-eth-server`, add the following statement to `[ethereum]` section in `environments/config.toml`:
 
   `chainConfig = "./chain.json" # ETH_CHAIN_CONFIG`
 
-### Databases
+## Databases
 
 Note: Requires `postgres12`.
 
