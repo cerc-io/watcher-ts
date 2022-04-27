@@ -4,13 +4,28 @@
 
 There are packages used from github so we need to follow the following steps to install them:
 
-* To install this package we need to follow steps required to install github packages.
+1. Create a github PAT (personal access token) if it does not already exist.
 
-  https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#installing-a-package
+   https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-token
 
-* We will need to authenticate to github packages. Follow the steps in https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages.
+2. Configure the PAT with scopes mentioned in https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages#about-scopes-and-permissions-for-package-registries. This is required to install or publish github packages.
 
-  Use personal access token to authenticate to github packages ( https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token).
+3. Follow the steps in https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token to authenticate to github packages. We can also run the follwing to authenticate by logging in to npm.
+
+   ```bash
+   $ npm login --scope=@vulcanize --registry=https://npm.pkg.github.com
+
+   > Username: USERNAME
+   > Password: TOKEN
+   > Email: PUBLIC-EMAIL-ADDRESS
+   ```
+
+   Replace with the following:
+   - `USERNAME`: GitHub username
+   - `TOKEN`: Personal access token (configured above)
+   - `PUBLIC-EMAIL-ADDRESS`: Email address
+
+4. When authenticating to github packages for the first time, yarn install may throw Unauthorized error. To overcome this we need to run yarn install in `packages/graph-node` directory of graph-watcher repo. After this yarn install for graph-watcher-ts works properly even from root of the repo.
 
 This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
 
@@ -20,7 +35,11 @@ Install packages (Node.JS v16.13.1):
 yarn
 ```
 
-### Services
+## Tests
+
+* [graph-node](./packages/graph-node/README.md)
+
+## Services
 
 The default config files used by the watchers assume the following services are setup and running on localhost:
 
@@ -28,13 +47,13 @@ The default config files used by the watchers assume the following services are 
 * `vulcanize/ipld-eth-server` with native GQL API enabled, on port 8082
 * `postgraphile` on the `vulcanize/ipld-eth-server` database, on port 5000
 
-#### Note
+### Note
 
 * In `vulcanize/ipld-eth-server`, add the following statement to `[ethereum]` section in `environments/config.toml`:
 
   `chainConfig = "./chain.json" # ETH_CHAIN_CONFIG`
 
-### Databases
+## Databases
 
 Note: Requires `postgres12`.
 
@@ -140,10 +159,3 @@ If the watcher uses a job queue, start the job runner in another terminal:
 ```bash
 yarn job-runner
 ```
-
-
-## Known Issues
-
-* When authenticating to github packages for the first time, yarn install throws Unauthorized error in [graph-watcher-ts](https://github.com/vulcanize/graph-watcher-ts) repo even after setup.
-
-  To overcome this we need to run yarn install in `packages/graph-node` directory of graph-watcher repo. After this yarn install for graph-watcher-ts works properly even from root of the repo.

@@ -20,7 +20,7 @@ chai.use(spies);
 
 const sandbox = chai.spy.sandbox();
 
-describe('call handler in mapping code', () => {
+xdescribe('call handler in mapping code', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;

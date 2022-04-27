@@ -25,7 +25,7 @@ chai.use(spies);
 
 const sandbox = chai.spy.sandbox();
 
-describe('eden wasm loader tests', async () => {
+xdescribe('eden wasm loader tests', async () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
