@@ -213,10 +213,10 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
   };
 };
 
-export const getFullTransaction = async (ethClient: EthClient, headerId: number, txHash: string): Promise<any> => {
+export const getFullTransaction = async (ethClient: EthClient, txHash: string): Promise<any> => {
   const {
-    ethTransactionCidByHeaderIdAndTxHash: fullTx
-  } = await ethClient.getFullTransaction({ headerId, txHash });
+    ethTransactionCidByTxHash: fullTx
+  } = await ethClient.getFullTransaction(txHash);
 
   assert(fullTx.blockByMhKey);
 

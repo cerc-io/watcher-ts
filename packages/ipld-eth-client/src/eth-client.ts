@@ -92,11 +92,10 @@ export class EthClient {
     );
   }
 
-  async getFullTransaction ({ headerId, txHash }: { headerId: number, txHash: string }): Promise<any> {
+  async getFullTransaction (txHash: string): Promise<any> {
     return this._graphqlClient.query(
       ethQueries.getFullTransaction,
       {
-        headerId,
         txHash
       }
     );
