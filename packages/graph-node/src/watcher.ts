@@ -167,7 +167,7 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const tx = await this._getTransactionData(blockData.headerId, txHash);
+    const tx = await this._getTransactionData(txHash);
 
     const data = {
       block: blockData,
@@ -299,14 +299,14 @@ export class GraphWatcher {
     }
   }
 
-  async _getTransactionData (headerId: number, txHash: string): Promise<Transaction> {
+  async _getTransactionData (txHash: string): Promise<Transaction> {
     let transaction = this._transactionsMap.get(txHash);
 
     if (transaction) {
       return transaction;
     }
 
-    transaction = await getFullTransaction(this._postgraphileClient, headerId, txHash);
+    transaction = await getFullTransaction(this._postgraphileClient, txHash);
     assert(transaction);
     this._transactionsMap.set(txHash, transaction);
 

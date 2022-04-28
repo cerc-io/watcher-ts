@@ -86,7 +86,6 @@ export const getFullBlocks = gql`
 query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
   allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {
     nodes {
-      id
       cid
       blockNumber
       blockHash
@@ -108,8 +107,8 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 `;
 
 export const getFullTransaction = gql`
-query ethTransactionCidByHeaderIdAndTxHash($headerId: Int!, $txHash: String!) {
-  ethTransactionCidByHeaderIdAndTxHash(headerId: $headerId, txHash: $txHash) {
+query ethTransactionCidByTxHash($txHash: String!) {
+  ethTransactionCidByTxHash(txHash: $txHash) {
     cid
     txHash
     index

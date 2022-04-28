@@ -35,6 +35,12 @@ Install packages (Node.JS v16.13.1):
 yarn
 ```
 
+Build packages:
+
+```bash
+yarn build
+```
+
 ## Tests
 
 * [graph-node](./packages/graph-node/README.md)
@@ -52,6 +58,10 @@ The default config files used by the watchers assume the following services are 
 * In `vulcanize/ipld-eth-server`, add the following statement to `[ethereum]` section in `environments/config.toml`:
 
   `chainConfig = "./chain.json" # ETH_CHAIN_CONFIG`
+
+## Watchers
+
+* [eden-watcher](./packages/eden-watcher/README.md)
 
 ## Databases
 
