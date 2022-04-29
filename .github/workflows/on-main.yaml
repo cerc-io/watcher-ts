@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,6 +26,28 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
       - name: Linter check
         run: yarn lint
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
+      - run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+      - name: Run tests
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+        run: |
+          yarn build
+          yarn test:init
+          yarn test
   build:
     name: Run docker build
     runs-on: ubuntu-latest

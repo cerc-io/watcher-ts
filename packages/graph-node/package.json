@@ -5,6 +5,8 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@graphprotocol/graph-ts": "^0.22.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@types/chai": "^4.2.18",
     "@types/chai-spies": "^1.0.3",
     "@types/js-yaml": "^4.0.4",
@@ -20,13 +22,11 @@
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
     "ethers": "^5.2.0",
+    "hardhat": "^2.3.0",
+    "mocha": "^8.4.0",
     "nodemon": "^2.0.7",
     "ts-node": "^10.0.0",
-    "typescript": "^4.3.2",
-    "mocha": "^8.4.0",
-    "hardhat": "^2.3.0",
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-waffle": "^2.0.1"
+    "typescript": "^4.3.2"
   },
   "bin": {
     "compare-entity": "bin/compare-entity"
@@ -37,6 +37,7 @@
     "asbuild:debug": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target debug --runPasses asyncify --runtime stub --maximumMemory 10",
     "asbuild:release": "asc assembly/index.ts --lib ./node_modules --exportRuntime --target release --runPasses asyncify",
     "asbuild": "yarn asbuild:debug && yarn asbuild:release",
+    "test:init": "cp .env.example .env && yarn build:example",
     "test": "yarn asbuild:debug && DEBUG=vulcanize:* node node_modules/.bin/_mocha src/**/*.test.ts",
     "build:example": "cd test/subgraph/example1 && yarn && yarn codegen && yarn build",
     "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts",

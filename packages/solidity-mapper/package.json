@@ -29,6 +29,7 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "test:init": "cp .env.example .env",
     "test": "hardhat test",
     "build": "tsc",
     "test:geth-rpc": "hardhat --network private test",
