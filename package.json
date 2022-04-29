@@ -13,7 +13,8 @@
   },
   "scripts": {
     "lint": "lerna run lint --stream",
-    "test": "lerna run test --stream --no-bail",
+    "test:init": "lerna run test:init --stream --ignore @vulcanize/*-watcher",
+    "test": "lerna run test --stream --ignore @vulcanize/*-watcher",
     "build": "lerna run build --stream",
     "build:watch": "lerna run build --stream --parallel -- -w",
     "build:contracts": "lerna run build:contracts",

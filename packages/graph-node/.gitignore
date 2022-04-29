@@ -6,3 +6,7 @@ tmp/
 temp/
 
 .env
+
+#Hardhat files
+cache
+artifacts
