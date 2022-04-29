@@ -14,13 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
       - run: yarn
         # https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#use-private-packages
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN can't access packages from other private repositories.
+          # https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
       - name: Linter check
         run: yarn lint
   build:
