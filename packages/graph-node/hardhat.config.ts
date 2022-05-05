@@ -5,6 +5,7 @@
 import '@nomiclabs/hardhat-waffle';
 
 import './test/tasks/example-deploy';
+import './test/tasks/example-test';
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
