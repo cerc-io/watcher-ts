@@ -45,6 +45,10 @@ yarn build
 
 * [graph-node](./packages/graph-node/README.md)
 
+## Demos
+
+* [IPLD statediff and checkpointing](./ipld-demo.md)
+
 ## Services
 
 The default config files used by the watchers assume the following services are setup and running on localhost:

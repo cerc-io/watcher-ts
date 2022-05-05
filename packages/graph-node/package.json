@@ -42,7 +42,8 @@
     "build:example": "cd test/subgraph/example1 && yarn && yarn codegen && yarn build",
     "watch": "DEBUG=vulcanize:* nodemon --watch src src/watcher.ts",
     "compare-entity": "node bin/compare-entity",
-    "example:deploy": "hardhat --network localhost example-deploy"
+    "example:deploy": "hardhat --network localhost example-deploy",
+    "example:test": "hardhat --network localhost example-test"
   },
   "dependencies": {
     "@apollo/client": "^3.3.19",

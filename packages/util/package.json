@@ -12,7 +12,8 @@
     "lodash": "^4.17.21",
     "multiformats": "^9.4.8",
     "pg-boss": "^6.1.0",
-    "toml": "^3.0.0"
+    "toml": "^3.0.0",
+    "ipfs-http-client": "^56.0.3"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.11",

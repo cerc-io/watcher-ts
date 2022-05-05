@@ -12,6 +12,6 @@ export class IPFSClient {
   }
 
   async push (data: any): Promise<void> {
-    await this._client.dag.put(data, { format: 'dag-cbor', hashAlg: 'sha2-256' });
+    await this._client.dag.put(data, { storeCodec: 'dag-cbor', hashAlg: 'sha2-256' });
   }
 }
