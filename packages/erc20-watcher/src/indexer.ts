@@ -76,6 +76,10 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
   }
 
+  async init (): Promise<void> {
+    await this._baseIndexer.fetchContracts();
+  }
+
   getResultEvent (event: Event): EventResult {
     const eventFields = JSON.parse(event.eventInfo);
 
@@ -301,6 +305,10 @@ export class Indexer implements IndexerInterface {
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
+
+  cacheContract (contract: Contract): void {
+    return this._baseIndexer.cacheContract(contract);
   }
 
   async saveEventEntity (dbEvent: Event): Promise<Event> {

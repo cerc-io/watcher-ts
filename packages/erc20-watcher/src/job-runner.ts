@@ -83,6 +83,7 @@ export const main = async (): Promise<any> => {
   await jobQueue.start();
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, config.server.mode);
+  await indexer.init();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

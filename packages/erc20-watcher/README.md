@@ -33,8 +33,33 @@ createdb erc20-watcher
 ```
 
 Update `environments/local.toml` with database connection settings for both the databases.
+```toml
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "erc20-watcher"
+  username = "postgres"
+  password = "postgres"
 
-Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/erc20-watcher-job-queue"
+```
+
+Update the `upstream` config in `environments/local.toml`. Provide the `ipld-eth-server` GQL and RPC API and the `indexer-db` postgraphile endpoints.
+```toml
+[upstream]
+  [upstream.ethServer]
+    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
+    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8081"
+```
+
+Ensure that watcher is of active kind. Update the kind in `server` config to active.
+```toml
+[server]
+  kind = "active"
+```
 
 ## Run
 
@@ -69,6 +94,11 @@ $ yarn job-runner -f environments/local.toml
 ```
 
 GQL console: http://localhost:3001/graphql
+
+Deploy an ERC20 token:
+```bash
+$ yarn token:deploy
+```
 
 Start watching a token:
 
