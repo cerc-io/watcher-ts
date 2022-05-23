@@ -209,12 +209,14 @@ export class Indexer {
   }
 
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<EventInterface>> {
-    if (contract) {
-      const watchedContract = await this.isWatchedContract(contract);
-      if (!watchedContract) {
-        throw new Error('Not a watched contract');
-      }
-    }
+    // TODO: Uncomment after implementing hot reload of watched contracts in server process.
+    // This doesn't affect functionality as we already have a filter condition on the contract in the query.
+    // if (contract) {
+    //   const watchedContract = await this.isWatchedContract(contract);
+    //   if (!watchedContract) {
+    //     throw new Error('Not a watched contract');
+    //   }
+    // }
 
     const where: Where = {
       eventName: [{

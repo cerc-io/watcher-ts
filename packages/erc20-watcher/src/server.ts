@@ -56,6 +56,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
   const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
+  await indexer.init();
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 
