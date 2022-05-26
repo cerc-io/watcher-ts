@@ -64,7 +64,9 @@ export const main = async (): Promise<any> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
+  {{/if}}
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
 

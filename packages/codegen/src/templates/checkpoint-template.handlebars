@@ -64,7 +64,9 @@ const main = async (): Promise<void> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
+  {{/if}}
 
   const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
 

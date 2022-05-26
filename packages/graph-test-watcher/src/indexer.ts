@@ -15,7 +15,6 @@ import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
-  IndexerInterface,
   ValueResult,
   UNKNOWN_EVENT_NAME,
   ServerConfig,
@@ -25,7 +24,9 @@ import {
   QueryOptions,
   BlockHeight,
   IPFSClient,
-  StateKind
+  StateKind,
+  IPLDIndexerInterface,
+  IpldStatus as IpldStatusInterface
 } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
@@ -92,7 +93,7 @@ export type ResultIPLDBlock = {
   data: string;
 };
 
-export class Indexer implements IndexerInterface {
+export class Indexer implements IPLDIndexerInterface {
   _db: Database
   _ethClient: EthClient
   _ethProvider: BaseProvider
@@ -592,9 +593,13 @@ export class Indexer implements IndexerInterface {
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
-    this._baseIndexer.updateIPLDStatusMap(address, {});
+    await this.updateIPLDStatusMap(address, {});
 
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
+
+  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatusInterface): Promise<void> {
+    await this._baseIndexer.updateIPLDStatusMap(address, ipldStatus);
   }
 
   cacheContract (contract: Contract): void {

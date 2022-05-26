@@ -77,7 +77,9 @@ const main = async (): Promise<void> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
+  {{/if}}
 
   await indexer.watchContract(argv.address, argv.kind, argv.checkpoint, argv.startingBlock);
 

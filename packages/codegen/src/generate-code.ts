@@ -188,7 +188,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))
     : process.stdout;
-  exportServer(outStream);
+  exportServer(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
@@ -228,17 +228,17 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
     : process.stdout;
-  exportJobRunner(outStream);
+  exportJobRunner(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
-  exportWatchContract(outStream);
+  exportWatchContract(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint.ts'))
     : process.stdout;
-  exportCheckpoint(outStream);
+  exportCheckpoint(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'))
@@ -248,7 +248,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
-  exportFill(outStream);
+  exportFill(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))
@@ -284,22 +284,22 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     resetStateOutStream = process.stdout;
   }
 
-  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
+  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))
     : process.stdout;
-  exportState(outStream);
+  exportState(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))
     : process.stdout;
-  importState(outStream);
+  importState(outStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
     : process.stdout;
-  exportInspectCID(outStream);
+  exportInspectCID(outStream, config.subgraphPath);
 }
 
 function getConfig (configFile: string): any {

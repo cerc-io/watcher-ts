@@ -61,7 +61,9 @@ const main = async (): Promise<void> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
+  {{/if}}
 
   const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
   assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');

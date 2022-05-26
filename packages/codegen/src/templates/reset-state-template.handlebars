@@ -57,7 +57,9 @@ export const handler = async (argv: any): Promise<void> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
+  {{/if}}
 
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);

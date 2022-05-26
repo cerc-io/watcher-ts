@@ -15,5 +15,7 @@ task('token-deploy', 'Deploys GLD token')
     const Token = await hre.ethers.getContractFactory('GLDToken');
     const token = await Token.deploy(hre.ethers.BigNumber.from(initialSupply));
 
+    const receipt = await token.deployTransaction.wait();
     console.log('GLD Token deployed to:', token.address);
+    console.log('Deployed at block:', receipt.blockNumber, receipt.blockHash);
   });

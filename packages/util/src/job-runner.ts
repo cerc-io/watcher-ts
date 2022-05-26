@@ -18,7 +18,7 @@ import {
   QUEUE_EVENT_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
+import { EventInterface, IndexerInterface, IPLDIndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob } from './common';
 import { OrderDirection } from './database';
@@ -28,7 +28,7 @@ const DEFAULT_EVENTS_IN_BATCH = 50;
 const log = debug('vulcanize:job-runner');
 
 export class JobRunner {
-  _indexer: IndexerInterface
+  _indexer: IndexerInterface | IPLDIndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
@@ -331,5 +331,10 @@ export class JobRunner {
 
     assert(this._indexer.cacheContract);
     this._indexer.cacheContract(contract);
+
+    const ipldIndexer = this._indexer as IPLDIndexerInterface;
+    if (ipldIndexer.updateIPLDStatusMap) {
+      ipldIndexer.updateIPLDStatusMap(contract.address, {});
+    }
   }
 }

@@ -271,10 +271,12 @@ export const main = async (): Promise<any> => {
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
+  {{#if subgraphPath}}
   await graphWatcher.init();
 
   // Watching all the contracts in the subgraph.
   await graphWatcher.addContracts();
+  {{/if}}
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
