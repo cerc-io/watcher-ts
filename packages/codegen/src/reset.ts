@@ -75,7 +75,7 @@ export class Reset {
    * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
    * @param resetStateOutStream A writable output stream to write the reset state file to.
    */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable): void {
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
     const resetTemplate = Handlebars.compile(this._resetTemplateString);
     const resetString = resetTemplate({});
     resetOutStream.write(resetString);
@@ -86,7 +86,8 @@ export class Reset {
 
     const resetStateTemplate = Handlebars.compile(this._resetStateTemplateString);
     const obj = {
-      queries: this._queries
+      queries: this._queries,
+      subgraphPath
     };
     const resetState = resetStateTemplate(obj);
     resetStateOutStream.write(resetState);

@@ -218,8 +218,8 @@ export class Visitor {
    * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
    * @param resetStateOutStream A writable output stream to write the reset state file to.
    */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable): void {
-    this._reset.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream);
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
+    this._reset.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, subgraphPath);
   }
 
   /**

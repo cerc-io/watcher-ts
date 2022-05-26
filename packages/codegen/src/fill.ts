@@ -13,9 +13,9 @@ const TEMPLATE_FILE = './templates/fill-template.handlebars';
  * Writes the fill file generated from a template to a stream.
  * @param outStream A writable output stream to write the fill file to.
  */
-export function exportFill (outStream: Writable): void {
+export function exportFill (outStream: Writable, subgraphPath: string): void {
   const templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   const template = Handlebars.compile(templateString);
-  const fill = template({});
+  const fill = template({ subgraphPath });
   outStream.write(fill);
 }
