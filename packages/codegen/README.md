@@ -82,7 +82,7 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.9.0) daemon:
+* Run the IPFS (go-ipfs version 0.12.2) daemon:
 
   ```bash
   ipfs daemon

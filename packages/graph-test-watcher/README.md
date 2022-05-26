@@ -8,7 +8,7 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.9.0) daemon:
+* Run the IPFS (go-ipfs version 0.12.2) daemon:
 
   ```bash
   ipfs daemon
@@ -97,7 +97,7 @@ GQL console: http://localhost:3008/graphql
     * `starting-block`: Starting block for the contract (default: `1`).
 
     Examples:
-    
+
     Watch a contract with its address and checkpointing on:
 
     ```bash
@@ -117,7 +117,7 @@ GQL console: http://localhost:3008/graphql
     ```
 
     * `start-block`: Block number to start filling from.
-    * `end-block`: Block number till which to fill. 
+    * `end-block`: Block number till which to fill.
 
   * To create a checkpoint for a contract:
 
@@ -141,7 +141,7 @@ GQL console: http://localhost:3008/graphql
       ```bash
       yarn reset job-queue --block-number <previous-block-number>
       ```
-    
+
     * `block-number`: Block number to which to reset the watcher.
 
   * To export and import the watcher state:
@@ -159,7 +159,7 @@ GQL console: http://localhost:3008/graphql
       ```bash
       yarn job-runner
       ```
-    
+
     * Import watcher state:
 
       ```bash
@@ -167,7 +167,7 @@ GQL console: http://localhost:3008/graphql
       ```
 
       * `import-file`: Path of JSON file from which to import the watcher data.
-    
+
     * Run fill:
 
       ```bash
