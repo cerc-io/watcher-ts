@@ -28,7 +28,7 @@ task('token-transfer-from', 'Send tokens as spender')
       const TransferEvent = receipt.events.find(el => el.event === 'Transfer');
 
       if (TransferEvent && TransferEvent.args) {
-        console.log('Transfer Event');
+        console.log('Transfer Event at block:', receipt.blockNumber, receipt.blockHash);
         console.log('from:', TransferEvent.args.from.toString());
         console.log('to:', TransferEvent.args.to.toString());
         console.log('value:', TransferEvent.args.value.toString());

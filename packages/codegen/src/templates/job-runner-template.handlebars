@@ -269,12 +269,14 @@ export const main = async (): Promise<any> => {
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
-
   graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
 
-  // Watching all the contracts in the subgraph.
-  await graphWatcher.addContracts();
+  if (config.server.subgraphPath) {
+    await graphWatcher.init();
+
+    // Watching all the contracts in the subgraph.
+    await graphWatcher.addContracts();
+  }
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

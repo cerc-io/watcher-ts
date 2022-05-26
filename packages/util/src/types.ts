@@ -5,6 +5,7 @@
 import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 
 import { Where, QueryOptions } from './database';
+import { IpldStatus } from './ipld-indexer';
 
 export enum StateKind {
   Diff = 'diff',
@@ -102,6 +103,10 @@ export interface IndexerInterface {
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
+}
+
+export interface IPLDIndexerInterface extends IndexerInterface {
+  updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void>
 }
 
 export interface EventWatcherInterface {

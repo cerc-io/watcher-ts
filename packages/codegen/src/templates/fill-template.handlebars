@@ -74,9 +74,11 @@ export const main = async (): Promise<any> => {
 
   const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
-
   graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
+
+  if (config.server.subgraphPath) {
+    await graphWatcher.init();
+  }
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries

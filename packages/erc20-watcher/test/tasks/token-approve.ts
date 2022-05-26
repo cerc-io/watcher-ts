@@ -25,7 +25,7 @@ task('token-approve', 'Move tokens to recipient')
       const TransferEvent = receipt.events.find(el => el.event === 'Approval');
 
       if (TransferEvent && TransferEvent.args) {
-        console.log('Approval Event');
+        console.log('Approval Event at block:', receipt.blockNumber, receipt.blockHash);
         console.log('owner:', TransferEvent.args.owner.toString());
         console.log('spender:', TransferEvent.args.spender.toString());
         console.log('value:', TransferEvent.args.value.toString());
