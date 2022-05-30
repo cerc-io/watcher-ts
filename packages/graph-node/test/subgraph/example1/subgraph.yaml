@@ -6,7 +6,7 @@ dataSources:
     name: Example1
     network: mainnet
     source:
-      address: "0xD5567AFC3C6c1325698F27d97b74D9ea9c44295e"
+      address: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1"
       abi: Example1
       startBlock: 10
     mapping:
