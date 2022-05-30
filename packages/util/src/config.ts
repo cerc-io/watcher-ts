@@ -96,7 +96,6 @@ export const initClients = async (config: Config): Promise<{
 
   const ethClient = new EthClient({
     gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
     cache
   });
 

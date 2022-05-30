@@ -92,7 +92,6 @@ describe('uni-watcher', () => {
     const cache = await getCache(cacheConfig);
     ethClient = new EthClient({
       gqlEndpoint: gqlApiEndpoint,
-      gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
       cache
     });
 

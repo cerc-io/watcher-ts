@@ -52,7 +52,6 @@ describe('chain pruning', () => {
     const cache = await getCache(cacheConfig);
     const ethClient = new EthClient({
       gqlEndpoint: gqlApiEndpoint,
-      gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
       cache
     });
 
