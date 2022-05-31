@@ -36,7 +36,7 @@ export const main = async (): Promise<any> => {
     .argv;
 
   const config: Config = await getConfig(argv.f);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   const { host, port } = config.server;
 
@@ -56,10 +56,10 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
   await indexer.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
   await eventWatcher.start();
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);

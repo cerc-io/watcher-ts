@@ -27,7 +27,7 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   // Initialize database.
   const db = new Database(config.database);
@@ -40,7 +40,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');

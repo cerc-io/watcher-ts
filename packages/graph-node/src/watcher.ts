@@ -28,7 +28,7 @@ interface DataSource {
 export class GraphWatcher {
   _database: Database;
   _indexer?: IndexerInterface;
-  _postgraphileClient: EthClient;
+  _ethClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
   _wasmRestartBlocksInterval: number;
@@ -38,9 +38,9 @@ export class GraphWatcher {
 
   _context: Context = {};
 
-  constructor (database: Database, postgraphileClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
+  constructor (database: Database, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
-    this._postgraphileClient = postgraphileClient;
+    this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._subgraphPath = serverConfig.subgraphPath;
     this._wasmRestartBlocksInterval = serverConfig.wasmRestartBlocksInterval;
@@ -124,7 +124,7 @@ export class GraphWatcher {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
     if (!this._context.block) {
-      this._context.block = await getFullBlock(this._postgraphileClient, this._ethProvider, block.hash);
+      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash);
     }
 
     const blockData = this._context.block;
@@ -184,7 +184,7 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string) {
-    const blockData = await getFullBlock(this._postgraphileClient, this._ethProvider, blockHash);
+    const blockData = await getFullBlock(this._ethClient, this._ethProvider, blockHash);
 
     this._context.block = blockData;
 
@@ -306,7 +306,7 @@ export class GraphWatcher {
       return transaction;
     }
 
-    transaction = await getFullTransaction(this._postgraphileClient, txHash);
+    transaction = await getFullTransaction(this._ethClient, txHash);
     assert(transaction);
     this._transactionsMap.set(txHash, transaction);
 

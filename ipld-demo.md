@@ -20,7 +20,6 @@
 
   * [vulcanize/go-ethereum](https://github.com/vulcanize/go-ethereum) ([v1.10.17-statediff-3.2.0](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.17-statediff-3.2.0)) on port 8545.
   * [vulcanize/ipld-eth-server](https://github.com/vulcanize/ipld-eth-server) ([v3.0.0](https://github.com/vulcanize/ipld-eth-server/releases/tag/v3.0.0)) with native GQL API enabled on port 8082 and RPC API enabled on port 8081.
-  * [postgraphile](https://github.com/vulcanize/postgraphile) ([v1.1.1](https://github.com/vulcanize/postgraphile/releases/tag/v1.1.1)) on the `vulcanize/ipld-eth-server` database, on port 5000
 
 * Deploy `Example` contract:
 

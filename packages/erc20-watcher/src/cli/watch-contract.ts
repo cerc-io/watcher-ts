@@ -44,7 +44,7 @@ import { CONTRACT_KIND } from '../utils/index';
 
   const config: Config = await getConfig(argv.configFile);
   const { database: dbConfig, server: { mode }, jobQueue: jobQueueConfig } = config;
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   assert(dbConfig);
 
@@ -59,7 +59,7 @@ import { CONTRACT_KIND } from '../utils/index';
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue, mode);
 
   await indexer.watchContract(argv.address, CONTRACT_KIND, argv.checkpoint, argv.startingBlock);
 

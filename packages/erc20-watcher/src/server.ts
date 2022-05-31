@@ -36,7 +36,7 @@ export const main = async (): Promise<any> => {
     .argv;
 
   const config: Config = await getConfig(argv.f);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   const { host, port, mode, kind: watcherKind } = config.server;
 
@@ -55,10 +55,10 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, mode);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue, mode);
   await indexer.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();

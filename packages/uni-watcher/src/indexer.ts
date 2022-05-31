@@ -38,7 +38,6 @@ type ResultEvent = {
 export class Indexer implements IndexerInterface {
   _db: Database
   _ethClient: EthClient
-  _postgraphileClient: EthClient
   _baseIndexer: BaseIndexer
   _ethProvider: ethers.providers.BaseProvider
 
@@ -46,12 +45,11 @@ export class Indexer implements IndexerInterface {
   _poolContract: ethers.utils.Interface
   _nfpmContract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
+  constructor (db: Database, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
     this._db = db;
     this._ethClient = ethClient;
-    this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._postgraphileClient, this._ethProvider, jobQueue);
+    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider, jobQueue);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
@@ -433,7 +431,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
 
     const logsPromise = this._ethClient.getLogs({ blockHash });
-    const transactionsPromise = this._postgraphileClient.getBlockWithTransactions({ blockHash });
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
 
     let [
       { block, logs },

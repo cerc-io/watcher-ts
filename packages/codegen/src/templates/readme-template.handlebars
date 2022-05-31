@@ -45,7 +45,7 @@
 
   * Update the database connection settings.
 
-  * Update the `upstream` config and provide the `ipld-eth-server` GQL API and the `indexer-db` postgraphile endpoints.
+  * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
   * Update the `server` config with state checkpoint settings and provide the IPFS API address.
 

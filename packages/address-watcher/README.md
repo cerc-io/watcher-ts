@@ -34,7 +34,7 @@ createdb address-watcher
 
 Update `environments/local.toml` with database connection settings for both the databases.
 
-Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API, the `indexer-db` postgraphile and the tracing API (`debug_traceTransaction` RPC provider) endpoints.
+Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the tracing API (`debug_traceTransaction` RPC provider) endpoints.
 
 ## Run
 

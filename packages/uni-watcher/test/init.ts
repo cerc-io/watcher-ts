@@ -57,7 +57,7 @@ const main = async () => {
   assert(host, 'Missing host.');
   assert(port, 'Missing port.');
 
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   // Initialize uniClient.
   const endpoint = `http://${host}:${port}/graphql`;
@@ -81,7 +81,7 @@ const main = async () => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
 
   let factory: Contract;
   // Checking whether factory is deployed.

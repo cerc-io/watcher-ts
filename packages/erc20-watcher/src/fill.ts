@@ -54,7 +54,7 @@ export const main = async (): Promise<any> => {
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   const db = new Database(config.database);
   await db.init();
@@ -72,9 +72,9 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue, config.server.mode);
+  const indexer = new Indexer(db, ethClient, ethProvider, jobQueue, config.server.mode);
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
   await fillBlocks(jobQueue, indexer, eventWatcher, config.upstream.ethServer.blockDelayInMilliSecs, argv);
 };
