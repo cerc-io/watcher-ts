@@ -38,16 +38,18 @@ export class EventWatcher {
 
   async watchBlocksAtChainHead (): Promise<void> {
     log('Started watching upstream blocks...');
-    this._subscription = await this._ethClient.watchBlocks(async (value) => {
-      const { blockHash, blockNumber } = _.get(value, 'data.listen.relatedNode');
-      log('watchBlock', blockHash, blockNumber);
 
-      const events = await this._indexer.getOrFetchBlockEvents(blockHash);
+    // TODO: Update to pull based watcher.
+    // this._subscription = await this._ethClient.watchBlocks(async (value) => {
+    //   const { blockHash, blockNumber } = _.get(value, 'data.listen.relatedNode');
+    //   log('watchBlock', blockHash, blockNumber);
 
-      for (let ei = 0; ei < events.length; ei++) {
-        await this.publishLighthouseEventToSubscribers(events[ei]);
-      }
-    });
+    //   const events = await this._indexer.getOrFetchBlockEvents(blockHash);
+
+    //   for (let ei = 0; ei < events.length; ei++) {
+    //     await this.publishLighthouseEventToSubscribers(events[ei]);
+    //   }
+    // });
   }
 
   async publishLighthouseEventToSubscribers (resultEvent: ResultEvent): Promise<void> {

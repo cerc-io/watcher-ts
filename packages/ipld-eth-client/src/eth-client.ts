@@ -132,14 +132,6 @@ export class EthClient {
     return { logs, block };
   }
 
-  async watchBlocks (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    return this._graphqlClient.subscribe(ethQueries.subscribeBlocks, onNext);
-  }
-
-  async watchTransactions (onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    return this._graphqlClient.subscribe(ethQueries.subscribeTransactions, onNext);
-  }
-
   async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {
     const keyObj = {
       queryName,

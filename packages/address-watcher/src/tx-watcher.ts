@@ -67,11 +67,12 @@ export class TxWatcher {
       }
     });
 
-    this._watchTxSubscription = await this._ethClient.watchTransactions(async (value) => {
-      const { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } = _.get(value, 'data.listen.relatedNode');
-      log('watchTransaction', JSON.stringify({ txHash, blockHash, blockNumber }, null, 2));
-      await this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, blockHash, publish: true });
-    });
+    // TODO: Update to pull based watcher.
+    // this._watchTxSubscription = await this._ethClient.watchTransactions(async (value) => {
+    //   const { txHash, ethHeaderCidByHeaderId: { blockHash, blockNumber } } = _.get(value, 'data.listen.relatedNode');
+    //   log('watchTransaction', JSON.stringify({ txHash, blockHash, blockNumber }, null, 2));
+    //   await this._jobQueue.pushJob(QUEUE_TX_TRACING, { txHash, blockHash, publish: true });
+    // });
   }
 
   async publishAddressEventToSubscribers (txHash: string, timeElapsedInSeconds: number): Promise<void> {
