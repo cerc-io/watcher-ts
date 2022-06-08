@@ -132,10 +132,8 @@ export class Indexer implements IPLDIndexerInterface {
     this._contractMap.set(KIND_ERC721, new ethers.utils.Interface(ERC721ABI));
 
     this._entityTypesMap = new Map();
-    this._populateEntityTypesMap();
 
     this._relationsMap = new Map();
-    this._populateRelationsMap();
   }
 
   async init (): Promise<void> {
