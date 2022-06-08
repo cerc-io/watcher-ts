@@ -1,0 +1,8 @@
+query _name($blockHash: String!, $contractAddress: String!){
+    _name(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}

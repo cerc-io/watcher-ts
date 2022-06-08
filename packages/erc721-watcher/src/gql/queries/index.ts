@@ -1,0 +1,21 @@
+import fs from 'fs';
+import path from 'path';
+
+export const events = fs.readFileSync(path.join(__dirname, 'events.gql'), 'utf8');
+export const eventsInRange = fs.readFileSync(path.join(__dirname, 'eventsInRange.gql'), 'utf8');
+export const supportsInterface = fs.readFileSync(path.join(__dirname, 'supportsInterface.gql'), 'utf8');
+export const balanceOf = fs.readFileSync(path.join(__dirname, 'balanceOf.gql'), 'utf8');
+export const ownerOf = fs.readFileSync(path.join(__dirname, 'ownerOf.gql'), 'utf8');
+export const getApproved = fs.readFileSync(path.join(__dirname, 'getApproved.gql'), 'utf8');
+export const isApprovedForAll = fs.readFileSync(path.join(__dirname, 'isApprovedForAll.gql'), 'utf8');
+export const name = fs.readFileSync(path.join(__dirname, 'name.gql'), 'utf8');
+export const symbol = fs.readFileSync(path.join(__dirname, 'symbol.gql'), 'utf8');
+export const tokenURI = fs.readFileSync(path.join(__dirname, 'tokenURI.gql'), 'utf8');
+export const _name = fs.readFileSync(path.join(__dirname, '_name.gql'), 'utf8');
+export const _symbol = fs.readFileSync(path.join(__dirname, '_symbol.gql'), 'utf8');
+export const _owners = fs.readFileSync(path.join(__dirname, '_owners.gql'), 'utf8');
+export const _balances = fs.readFileSync(path.join(__dirname, '_balances.gql'), 'utf8');
+export const _tokenApprovals = fs.readFileSync(path.join(__dirname, '_tokenApprovals.gql'), 'utf8');
+export const _operatorApprovals = fs.readFileSync(path.join(__dirname, '_operatorApprovals.gql'), 'utf8');
+export const getStateByCID = fs.readFileSync(path.join(__dirname, 'getStateByCID.gql'), 'utf8');
+export const getState = fs.readFileSync(path.join(__dirname, 'getState.gql'), 'utf8');
