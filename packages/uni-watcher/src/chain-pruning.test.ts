@@ -45,19 +45,12 @@ describe('chain pruning', () => {
 
     // Create an Indexer object.
     assert(upstream, 'Missing upstream config');
-    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
+    const { ethServer: { gqlApiEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
     assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-    assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
 
     const cache = await getCache(cacheConfig);
     const ethClient = new EthClient({
       gqlEndpoint: gqlApiEndpoint,
-      gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-      cache
-    });
-
-    const postgraphileClient = new EthClient({
-      gqlEndpoint: gqlPostgraphileEndpoint,
       cache
     });
 
@@ -68,7 +61,7 @@ describe('chain pruning', () => {
 
     const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-    indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+    indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
     assert(indexer, 'Could not create indexer object.');
 
     jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);

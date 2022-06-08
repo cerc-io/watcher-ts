@@ -8,7 +8,6 @@
 [upstream]
   [upstream.ethServer]
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
-    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
 
   [upstream.cache]
     name = "requests"

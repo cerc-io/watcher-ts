@@ -188,7 +188,7 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
   const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
   assert(header);
 
-  // TODO: Calculate size from rlp encoded data provided by postgraphile.
+  // TODO: Calculate size from rlp encoded data.
   // Get block info from JSON RPC API provided by ipld-eth-server.
   const provider = ethProvider as providers.JsonRpcProvider;
   const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);

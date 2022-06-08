@@ -47,7 +47,7 @@ export const builder = {
 export const handler = async (argv: any): Promise<void> => {
   const config = await getConfig(argv.configFile);
   await resetJobs(config);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   // Initialize database.
   const db = new Database(config.database);
@@ -56,7 +56,7 @@ export const handler = async (argv: any): Promise<void> => {
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server);
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
@@ -67,7 +67,7 @@ export const handler = async (argv: any): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);

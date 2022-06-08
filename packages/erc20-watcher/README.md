@@ -46,12 +46,11 @@ Update `environments/local.toml` with database connection settings for both the 
   dbConnectionString = "postgres://postgres:postgres@localhost/erc20-watcher-job-queue"
 ```
 
-Update the `upstream` config in `environments/local.toml`. Provide the `ipld-eth-server` GQL and RPC API and the `indexer-db` postgraphile endpoints.
+Update the `upstream` config in `environments/local.toml`. Provide the `ipld-eth-server` GQL and RPC API endpoints.
 ```toml
 [upstream]
   [upstream.ethServer]
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
-    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
     rpcProviderEndpoint = "http://127.0.0.1:8081"
 ```
 

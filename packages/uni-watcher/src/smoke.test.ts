@@ -64,7 +64,6 @@ describe('uni-watcher', () => {
   let db: Database;
   let uniClient: UniClient;
   let ethClient: EthClient;
-  let postgraphileClient: EthClient;
   let ethProvider: ethers.providers.JsonRpcProvider;
   let jobQueue: JobQueue;
   let signer: Signer;
@@ -80,9 +79,8 @@ describe('uni-watcher', () => {
     assert(host, 'Missing host.');
     assert(port, 'Missing port.');
 
-    const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
+    const { ethServer: { gqlApiEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstream;
     assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint.');
-    assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint.');
     assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint.');
     assert(cacheConfig, 'Missing dbConfig.');
 
@@ -92,12 +90,6 @@ describe('uni-watcher', () => {
     const cache = await getCache(cacheConfig);
     ethClient = new EthClient({
       gqlEndpoint: gqlApiEndpoint,
-      gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-      cache
-    });
-
-    postgraphileClient = new EthClient({
-      gqlEndpoint: gqlPostgraphileEndpoint,
       cache
     });
 
@@ -135,7 +127,7 @@ describe('uni-watcher', () => {
     factory = new Contract(factoryContract.address, FACTORY_ABI, signer);
 
     // Verifying with the db.
-    const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+    const indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
     await indexer.init();
     assert(await indexer.isWatchedContract(factory.address), 'Factory contract not added to the database.');
   });
@@ -271,7 +263,7 @@ describe('uni-watcher', () => {
     nfpm = new Contract(nfpmContract.address, NFPM_ABI, signer);
 
     // Verifying with the db.
-    const indexer = new Indexer(db, ethClient, postgraphileClient, ethProvider, jobQueue);
+    const indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
     await indexer.init();
     assert(await indexer.isWatchedContract(nfpm.address), 'NFPM contract not added to the database.');
   });

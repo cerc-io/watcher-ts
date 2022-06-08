@@ -42,7 +42,7 @@ export const main = async (): Promise<any> => {
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
-  const { ethClient, postgraphileClient, ethProvider } = await initClients(config);
+  const { ethClient, ethProvider } = await initClients(config);
 
   const db = new Database(config.database);
   await db.init();
@@ -50,7 +50,7 @@ export const main = async (): Promise<any> => {
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
 
-  const graphWatcher = new GraphWatcher(graphDb, postgraphileClient, ethProvider, config.server);
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
@@ -65,13 +65,13 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, postgraphileClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, postgraphileClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
   // Import data.
   const importFilePath = path.resolve(argv.importFile);

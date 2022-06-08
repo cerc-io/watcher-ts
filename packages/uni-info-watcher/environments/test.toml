@@ -18,7 +18,6 @@
 [upstream]
   [upstream.ethServer]
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
-    gqlPostgraphileEndpoint = "http://127.0.0.1:5000/graphql"
     rpcProviderEndpoint = "http://127.0.0.1:8545"
     blockDelayInMilliSecs = 2000
 

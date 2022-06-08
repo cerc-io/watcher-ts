@@ -29,17 +29,15 @@ export interface ValueResult {
 export class Indexer {
   _db: DatabaseInterface;
   _ethClient: EthClient;
-  _postgraphileClient: EthClient;
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
   _jobQueue: JobQueue;
 
   _watchedContracts: { [key: string]: ContractInterface } = {};
 
-  constructor (db: DatabaseInterface, ethClient: EthClient, postgraphileClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
+  constructor (db: DatabaseInterface, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
     this._db = db;
     this._ethClient = ethClient;
-    this._postgraphileClient = postgraphileClient;
     this._ethProvider = ethProvider;
     this._jobQueue = jobQueue;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
@@ -127,7 +125,7 @@ export class Indexer {
 
   async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
     assert(blockFilter.blockHash || blockFilter.blockNumber);
-    const result = await this._postgraphileClient.getBlocks(blockFilter);
+    const result = await this._ethClient.getBlocks(blockFilter);
     const { allEthHeaderCids: { nodes: blocks } } = result;
 
     if (!blocks.length) {

@@ -37,15 +37,13 @@ export interface Config extends BaseConfig {
 export class Indexer {
   _config: Config
   _ethClient: EthClient
-  _postgraphileClient: EthClient
 
   _lighthouseContract: ethers.utils.Interface
 
-  constructor (config: Config, ethClient: EthClient, postgraphileClient: EthClient) {
+  constructor (config: Config, ethClient: EthClient) {
     assert(config.watch);
     this._config = config;
     this._ethClient = ethClient;
-    this._postgraphileClient = postgraphileClient;
 
     this._lighthouseContract = new ethers.utils.Interface(lighthouseABI);
   }
@@ -96,7 +94,7 @@ export class Indexer {
           }
         ]
       }
-    } = await this._postgraphileClient.getBlockWithTransactions({ blockHash });
+    } = await this._ethClient.getBlockWithTransactions({ blockHash });
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

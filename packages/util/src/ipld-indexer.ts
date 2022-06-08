@@ -41,12 +41,11 @@ export class IPLDIndexer extends Indexer {
     serverConfig: ServerConfig,
     ipldDb: IPLDDatabaseInterface,
     ethClient: EthClient,
-    postgraphileClient: EthClient,
     ethProvider: ethers.providers.BaseProvider,
     jobQueue: JobQueue,
     ipfsClient: IPFSClient
   ) {
-    super(ipldDb, ethClient, postgraphileClient, ethProvider, jobQueue);
+    super(ipldDb, ethClient, ethProvider, jobQueue);
 
     this._serverConfig = serverConfig;
     this._ipldDb = ipldDb;

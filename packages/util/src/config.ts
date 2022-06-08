@@ -40,7 +40,6 @@ export interface UpstreamConfig {
   cache: CacheConfig,
   ethServer: {
     gqlApiEndpoint: string;
-    gqlPostgraphileEndpoint: string;
     rpcProviderEndpoint: string;
     blockDelayInMilliSecs: number;
   }
@@ -77,7 +76,6 @@ export const getConfig = async (configFile: string): Promise<Config> => {
 
 export const initClients = async (config: Config): Promise<{
   ethClient: EthClient,
-  postgraphileClient: EthClient,
   ethProvider: BaseProvider
 }> => {
   const { database: dbConfig, upstream: upstreamConfig, server: serverConfig } = config;
@@ -86,22 +84,15 @@ export const initClients = async (config: Config): Promise<{
   assert(dbConfig, 'Missing database config');
   assert(upstreamConfig, 'Missing upstream config');
 
-  const { ethServer: { gqlApiEndpoint, gqlPostgraphileEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstreamConfig;
+  const { ethServer: { gqlApiEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstreamConfig;
 
   assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
   assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint');
 
   const cache = await getCache(cacheConfig);
 
   const ethClient = new EthClient({
     gqlEndpoint: gqlApiEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
-    cache
-  });
-
-  const postgraphileClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
     cache
   });
 
@@ -109,7 +100,6 @@ export const initClients = async (config: Config): Promise<{
 
   return {
     ethClient,
-    postgraphileClient,
     ethProvider
   };
 };

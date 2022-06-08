@@ -55,14 +55,13 @@ export const main = async (): Promise<any> => {
   await db.init();
 
   assert(upstream, 'Missing upstream config');
-  const { ethServer: { gqlPostgraphileEndpoint }, traceProviderEndpoint, cache: cacheConfig } = upstream;
-  assert(gqlPostgraphileEndpoint, 'Missing upstream ethServer.gqlPostgraphileEndpoint');
+  const { ethServer: { gqlApiEndpoint }, traceProviderEndpoint, cache: cacheConfig } = upstream;
+  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
   assert(traceProviderEndpoint, 'Missing upstream traceProviderEndpoint');
 
   const cache = await getCache(cacheConfig);
   const ethClient = new EthClient({
-    gqlEndpoint: gqlPostgraphileEndpoint,
-    gqlSubscriptionEndpoint: gqlPostgraphileEndpoint,
+    gqlEndpoint: gqlApiEndpoint,
     cache
   });
 

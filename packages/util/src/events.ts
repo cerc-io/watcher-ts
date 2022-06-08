@@ -21,17 +21,15 @@ export const BlockProgressEvent = 'block-progress-event';
 
 export class EventWatcher {
   _ethClient: EthClient
-  _postgraphileClient: EthClient
   _indexer: IndexerInterface
   _subscription?: ZenObservable.Subscription
   _pubsub: PubSub
   _jobQueue: JobQueue
   _upstreamConfig: UpstreamConfig
 
-  constructor (upstreamConfig: UpstreamConfig, ethClient: EthClient, postgraphileClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+  constructor (upstreamConfig: UpstreamConfig, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._upstreamConfig = upstreamConfig;
     this._ethClient = ethClient;
-    this._postgraphileClient = postgraphileClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
