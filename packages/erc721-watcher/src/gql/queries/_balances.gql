@@ -1,0 +1,8 @@
+query _balances($blockHash: String!, $contractAddress: String!, $key0: String!){
+    _balances(blockHash: $blockHash, contractAddress: $contractAddress, key0: $key0){
+        value
+        proof{
+            data
+        }
+    }
+}

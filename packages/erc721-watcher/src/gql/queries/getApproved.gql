@@ -1,0 +1,8 @@
+query getApproved($blockHash: String!, $contractAddress: String!, $tokenId: BigInt!){
+    getApproved(blockHash: $blockHash, contractAddress: $contractAddress, tokenId: $tokenId){
+        value
+        proof{
+            data
+        }
+    }
+}

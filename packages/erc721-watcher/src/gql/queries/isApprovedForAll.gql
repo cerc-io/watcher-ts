@@ -1,0 +1,8 @@
+query isApprovedForAll($blockHash: String!, $contractAddress: String!, $owner: String!, $operator: String!){
+    isApprovedForAll(blockHash: $blockHash, contractAddress: $contractAddress, owner: $owner, operator: $operator){
+        value
+        proof{
+            data
+        }
+    }
+}

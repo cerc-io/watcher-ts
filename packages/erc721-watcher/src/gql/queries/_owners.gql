@@ -1,0 +1,8 @@
+query _owners($blockHash: String!, $contractAddress: String!, $key0: BigInt!){
+    _owners(blockHash: $blockHash, contractAddress: $contractAddress, key0: $key0){
+        value
+        proof{
+            data
+        }
+    }
+}

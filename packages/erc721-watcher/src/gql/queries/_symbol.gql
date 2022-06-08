@@ -1,0 +1,8 @@
+query _symbol($blockHash: String!, $contractAddress: String!){
+    _symbol(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}
