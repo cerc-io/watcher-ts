@@ -10,7 +10,7 @@
   checkpointInterval = 2000
 
   # IPFS API address (can be taken from the output on running the IPFS daemon).
-  # ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
+  ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
 
 [database]
