@@ -7,6 +7,7 @@ import assert from 'assert';
 import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
+import { TransferCount } from './entity/TransferCount';
 
 /**
  * Hook function to store an initial state.
@@ -94,18 +95,25 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       // Update owner for the tokenId in database.
       await indexer._owners(eventData.block.hash, eventData.contract, tokenId, true);
 
-      // Update custom state diffs with properties name and symbol.
+      // Update custom state diffs with transferCount.
       // {
-      //   "name": "TestNFT",
-      //   "symbol": "TNFT"
+      //   "transferCount": "1"
       // }
-      const { value: name } = await indexer.name(eventData.block.hash, eventData.contract);
-      const nameUpdate = updateStateForElementaryType({}, 'name', name);
-      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, nameUpdate);
+      let transferCount = await indexer.transferCount(eventData.block.hash, eventData.contract);
 
-      const { value: symbol } = await indexer.symbol(eventData.block.hash, eventData.contract);
-      const symbolUpdate = updateStateForElementaryType({}, 'symbol', symbol);
-      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, symbolUpdate);
+      if (!transferCount) {
+        transferCount = new TransferCount();
+        transferCount.blockHash = eventData.block.hash;
+        transferCount.blockNumber = eventData.block.number;
+        transferCount.id = eventData.contract;
+        transferCount.count = 0;
+      }
+
+      transferCount.count++;
+
+      const stateUpdate = updateStateForElementaryType({}, 'transferCount', String(transferCount.count));
+      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, stateUpdate);
+      await indexer.saveOrUpdateTransferCount(transferCount);
 
       break;
     }

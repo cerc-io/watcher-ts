@@ -40,6 +40,7 @@ import { SyncStatus } from './entity/SyncStatus';
 import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
+import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:indexer');
 
@@ -428,6 +429,39 @@ export class Indexer implements IPLDIndexerInterface {
     await this._db.saveTokenURI({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbig.stringify(result.proof) });
 
     return result;
+  }
+
+  async transferCount (blockHash: string, contractAddress: string): Promise<TransferCount | undefined> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.getTransferCount(dbTx, { id: contractAddress, blockHash });
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async saveOrUpdateTransferCount (transferCount: TransferCount) {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      await this._db.saveTransferCount(dbTx, transferCount);
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
   }
 
   async _name (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {

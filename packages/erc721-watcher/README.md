@@ -143,7 +143,7 @@
   }
   ```
 
-* Run the following GQL query (`storage`) in generated watcher graphql endpoint http://127.0.0.1:3006/graphql
+* Run the following GQL query (`storage`) in generated watcher GraphQL endpoint http://127.0.0.1:3006/graphql
 
   ```graphql
   query {
@@ -212,7 +212,9 @@
 
   * A Transfer event to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc shall be visible in the subscription at endpoint.
 
-  * An auto-generated diff_staged IPLDBlock should be added with parent cid pointing to the initial checkpoint IPLDBlock.
+  * An auto-generated `diff_staged` IPLDBlock should be added with parent cid pointing to the initial checkpoint IPLDBlock.
+
+  * Custom property `transferCount` should be 1 initially.
 
 * Run the getState query at the endpoint to get the latest IPLDBlock for NFT_ADDRESS:
 
@@ -288,7 +290,9 @@
 
     * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
-    * An auto-generated diff_staged IPLDBlock should be added with parent cid pointing to the previous IPLDBlock.
+    * An auto-generated `diff_staged` IPLDBlock should be added with parent cid pointing to the previous IPLDBlock.
+
+    * Custom property `transferCount` should be incremented after transfer. This can be checked in the getState query and in IPFS webUI mentioned in the steps later.
 
   * Get the latest blockHash and replace the blockHash in the above query. The result should be different and the token should be transferred to the recipient.
 
@@ -309,6 +313,8 @@
 * All the diff and checkpoint IPLDBlocks should pushed to IPFS.
 
 * Open IPFS WebUI http://127.0.0.1:5001/webui and search for IPLDBlocks using their CIDs.
+
+* The state should have auto indexed data and also custom property `transferCount` according to code in hooks file `handleEvent` method.
 
 ## Customize
 

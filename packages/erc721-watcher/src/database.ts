@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions } from 'typeorm';
 import path from 'path';
 
 import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@vulcanize/util';
@@ -28,6 +28,7 @@ import { _Owners } from './entity/_Owners';
 import { _Balances } from './entity/_Balances';
 import { _TokenApprovals } from './entity/_TokenApprovals';
 import { _OperatorApprovals } from './entity/_OperatorApprovals';
+import { TransferCount } from './entity/TransferCount';
 
 export class Database implements IPLDDatabaseInterface {
   _config: ConnectionOptions;
@@ -126,6 +127,35 @@ export class Database implements IPLDDatabaseInterface {
         contractAddress,
         tokenId
       });
+  }
+
+  async getTransferCount (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<TransferCount>): Promise<TransferCount | undefined> {
+    const repo = queryRunner.manager.getRepository(TransferCount);
+    const whereOptions: FindConditions<TransferCount> = { id };
+
+    if (blockHash) {
+      whereOptions.blockHash = blockHash;
+    }
+
+    const findOptions = {
+      where: whereOptions,
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    let entity = await repo.findOne(findOptions as FindOneOptions<TransferCount>);
+
+    if (!entity && findOptions.where.blockHash) {
+      entity = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+    }
+
+    return entity;
+  }
+
+  async saveTransferCount (queryRunner: QueryRunner, transferCount: TransferCount): Promise<TransferCount> {
+    const repo = queryRunner.manager.getRepository(TransferCount);
+    return repo.save(transferCount);
   }
 
   async _getName ({ blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<_Name | undefined> {
