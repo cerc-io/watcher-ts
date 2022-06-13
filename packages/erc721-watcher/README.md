@@ -102,6 +102,82 @@
   export RECIPIENT_ADDRESS="<RECIPIENT_ADDRESS>"
   ```
 
+* To get the current block hash at any time, run:
+
+  ```bash
+  yarn block:latest
+  ```
+
+* Run the following GQL query (`eth_call`) in generated watcher GraphQL endpoint http://127.0.0.1:3006/graphql
+
+  ```graphql
+  query {
+    name(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+    symbol(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+    balanceOf(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+  }
+  ```
+
+* Run the following GQL query (`storage`) in generated watcher graphql endpoint http://127.0.0.1:3006/graphql
+
+  ```graphql
+  query {
+    _name(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+    _symbol(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+    _balances(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "NFT_ADDRESS"
+      key0: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+  }
+  ```
+
 * Run the following GQL subscription in generated watcher GraphQL endpoint:
 
   ```graphql
@@ -165,13 +241,7 @@
 
   `diff` IPLDBlocks get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
 
-* To get the current block hash at any time, run:
-
-  ```bash
-  yarn block:latest
-  ```
-
-* Run the following query for `balanceOf` and `ownerOf` (`eth_call`):
+* Get the latest blockHash and run the following query for `balanceOf` and `ownerOf` (`eth_call`):
 
   ```graphql
   query {
@@ -224,7 +294,7 @@
 
   * Run the getState query again at the endpoint with the event blockHash.
 
-  * After the `diff` block has been created, create a checkpoint using CLI in `packages/erc721-watcher`:
+  * After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
 
     ```bash
     yarn checkpoint --address $NFT_ADDRESS

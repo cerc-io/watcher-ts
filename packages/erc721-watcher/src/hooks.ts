@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 
-// import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
+import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
 
@@ -93,6 +93,19 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
 
       // Update owner for the tokenId in database.
       await indexer._owners(eventData.block.hash, eventData.contract, tokenId, true);
+
+      // Update custom state diffs with properties name and symbol.
+      // {
+      //   "name": "TestNFT",
+      //   "symbol": "TNFT"
+      // }
+      const { value: name } = await indexer.name(eventData.block.hash, eventData.contract);
+      const nameUpdate = updateStateForElementaryType({}, 'name', name);
+      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, nameUpdate);
+
+      const { value: symbol } = await indexer.symbol(eventData.block.hash, eventData.contract);
+      const symbolUpdate = updateStateForElementaryType({}, 'symbol', symbol);
+      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, symbolUpdate);
 
       break;
     }
