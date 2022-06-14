@@ -95,10 +95,11 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       // Update owner for the tokenId in database.
       await indexer._owners(eventData.block.hash, eventData.contract, tokenId, true);
 
-      // Update custom state diffs with transferCount.
+      // Code to update a custom state prop transferCount.
       // {
       //   "transferCount": "1"
       // }
+      // Fetch transferCount entity from database.
       let transferCount = await indexer.transferCount(eventData.block.hash, eventData.contract);
 
       if (!transferCount) {
@@ -109,10 +110,14 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
         transferCount.count = 0;
       }
 
+      // Increment count on transfer event.
       transferCount.count++;
 
+      // Update state for custom prop transferCount.
       const stateUpdate = updateStateForElementaryType({}, 'transferCount', String(transferCount.count));
       await indexer.createDiffStaged(eventData.contract, eventData.block.hash, stateUpdate);
+
+      // Save transferCount to database.
       await indexer.saveOrUpdateTransferCount(transferCount);
 
       break;

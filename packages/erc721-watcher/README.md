@@ -241,7 +241,9 @@
   }
   ```
 
-  `diff` IPLDBlocks get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
+  * `diff` IPLDBlocks get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
+
+  * `data` contains the default state and also the custom state prop `transferCount` that is indexed in [hooks.ts](./src/hooks.ts) file.
 
 * Get the latest blockHash and run the following query for `balanceOf` and `ownerOf` (`eth_call`):
 
@@ -280,35 +282,35 @@
   }
   ```
 
-  * Transfer token
+* Transfer token
 
-    ```bash
-    yarn nft:transfer --nft $NFT_ADDRESS --from 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --to $RECIPIENT_ADDRESS --token-id 1
-    ```
+  ```bash
+  yarn nft:transfer --nft $NFT_ADDRESS --from 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --to $RECIPIENT_ADDRESS --token-id 1
+  ```
 
-    * An Approval event for ZERO_ADDRESS (0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc) shall be visible in the subscription at endpoint.
+  * An Approval event for ZERO_ADDRESS (0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc) shall be visible in the subscription at endpoint.
 
-    * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
+  * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
-    * An auto-generated `diff_staged` IPLDBlock should be added with parent cid pointing to the previous IPLDBlock.
+  * An auto-generated `diff_staged` IPLDBlock should be added with parent cid pointing to the previous IPLDBlock.
 
-    * Custom property `transferCount` should be incremented after transfer. This can be checked in the getState query and in IPFS webUI mentioned in the steps later.
+  * Custom property `transferCount` should be incremented after transfer. This can be checked in the getState query and in IPFS webUI mentioned in the steps later.
 
-  * Get the latest blockHash and replace the blockHash in the above query. The result should be different and the token should be transferred to the recipient.
+* Get the latest blockHash and replace the blockHash in the above query. The result should be different and the token should be transferred to the recipient.
 
-  * Run the getState query again at the endpoint with the event blockHash.
+* Run the getState query again at the endpoint with the event blockHash.
 
-  * After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
+* After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
 
-    ```bash
-    yarn checkpoint --address $NFT_ADDRESS
-    ```
+  ```bash
+  yarn checkpoint --address $NFT_ADDRESS
+  ```
 
-    * Run the getState query again with the output blockHash and kind checkpoint at the endpoint.
+  * Run the getState query again with the output blockHash and kind checkpoint at the endpoint.
 
-    * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
+  * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
-    * The IPLDBlock entries can be seen in pg-admin in table ipld_block.
+  * The IPLDBlock entries can be seen in pg-admin in table ipld_block.
 
 * All the diff and checkpoint IPLDBlocks should pushed to IPFS.
 
