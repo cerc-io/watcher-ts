@@ -1,0 +1,8 @@
+query isRevoked($blockHash: String!, $contractAddress: String!, $key0: String!){
+    isRevoked(blockHash: $blockHash, contractAddress: $contractAddress, key0: $key0){
+        value
+        proof{
+            data
+        }
+    }
+}

@@ -1,0 +1,3 @@
+mutation watchContract($address: String!, $kind: String!, $checkpoint: Boolean!, $startingBlock: Int){
+    watchContract(address: $address, kind: $kind, checkpoint: $checkpoint, startingBlock: $startingBlock)
+}

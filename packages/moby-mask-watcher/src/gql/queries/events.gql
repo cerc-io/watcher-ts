@@ -1,0 +1,40 @@
+query events($blockHash: String!, $contractAddress: String!, $name: String){
+    events(blockHash: $blockHash, contractAddress: $contractAddress, name: $name){
+        block{
+            cid
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        tx{
+            hash
+            index
+            from
+            to
+        }
+        contract
+        eventIndex
+        event{
+            ... on DelegationTriggeredEvent {
+                principal
+                agent
+            }
+            ... on MemberStatusUpdatedEvent {
+                entity
+                isMember
+            }
+            ... on OwnershipTransferredEvent {
+                previousOwner
+                newOwner
+            }
+            ... on PhisherStatusUpdatedEvent {
+                entity
+                isPhisher
+            }
+        }
+        proof{
+            data
+        }
+    }
+}
