@@ -1,0 +1,41 @@
+[server]
+  host = "127.0.0.1"
+  port = 3010
+  kind = "active"
+
+  # Checkpointing state.
+  checkpointing = true
+
+  # Checkpoint interval in number of blocks.
+  checkpointInterval = 2000
+
+  # IPFS API address (can be taken from the output on running the IPFS daemon).
+  ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
+
+
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "moby-mask-watcher"
+  username = "postgres"
+  password = "postgres"
+  synchronize = true
+  logging = false
+
+[upstream]
+  [upstream.ethServer]
+    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8081"
+    blockDelayInMilliSecs = 2000
+
+  [upstream.cache]
+    name = "requests"
+    enabled = false
+    deleteOnStart = false
+
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/moby-mask-watcher-job-queue"
+  maxCompletionLagInSecs = 300
+  jobDelayInMilliSecs = 100
+  eventsInBatch = 50
