@@ -15,9 +15,8 @@ jobs:
       - name: Docker Login to Registry
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u vulcanize --password-stdin
       - name: Docker Pull
-        run: docker pull ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}}
+        run: docker pull ghcr.io/vulcanize/graph-watcher-ts:${{steps.vars.outputs.sha}}
       - name: Tag docker image
-        run: docker tag ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.sha}} ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.tag}}
+        run: docker tag ghcr.io/vulcanize/graph-watcher-ts:${{steps.vars.outputs.sha}} ghcr.io/vulcanize/graph-watcher-ts:${{steps.vars.outputs.tag}}
       - name: Docker Push to Github Hub
-        run: docker push ghcr.io/vulcanize/watcher-ts:${{steps.vars.outputs.tag}}
-
+        run: docker push ghcr.io/vulcanize/graph-watcher-ts:${{steps.vars.outputs.tag}}

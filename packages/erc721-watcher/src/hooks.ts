@@ -4,9 +4,10 @@
 
 import assert from 'assert';
 
-// import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
+import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
+import { TransferCount } from './entity/TransferCount';
 
 /**
  * Hook function to store an initial state.
@@ -75,6 +76,69 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
   assert(indexer);
   assert(eventData);
 
-  // Use indexer methods to index data.
-  // Pass `diff` parameter to indexer methods as true to save an auto-generated state from the indexed data.
+  // Perform indexing based on the type of event.
+  switch (eventData.event.__typename) {
+    case 'TransferEvent': {
+      // Get event fields from eventData.
+      const { from, to, tokenId } = eventData.event;
+
+      // Update balance entry for the sender in database.
+      if (from !== '0x0000000000000000000000000000000000000000') {
+        await indexer._balances(eventData.block.hash, eventData.contract, from, true);
+      }
+
+      // Update balance entry for the receiver in database.
+      if (to !== '0x0000000000000000000000000000000000000000') {
+        await indexer._balances(eventData.block.hash, eventData.contract, to, true);
+      }
+
+      // Update owner for the tokenId in database.
+      await indexer._owners(eventData.block.hash, eventData.contract, tokenId, true);
+
+      // Code to update a custom state property transferCount.
+      // {
+      //   "transferCount": "1"
+      // }
+      // Fetch transferCount entity from database.
+      let transferCount = await indexer.transferCount(eventData.block.hash, eventData.contract);
+
+      if (!transferCount) {
+        transferCount = new TransferCount();
+        transferCount.blockHash = eventData.block.hash;
+        transferCount.blockNumber = eventData.block.number;
+        transferCount.id = eventData.contract;
+        transferCount.count = 0;
+      }
+
+      // Increment count on transfer event.
+      transferCount.count++;
+
+      // Update state for custom property transferCount.
+      const stateUpdate = updateStateForElementaryType({}, 'transferCount', transferCount.count);
+      await indexer.createDiffStaged(eventData.contract, eventData.block.hash, stateUpdate);
+
+      // Save transferCount to database.
+      await indexer.saveOrUpdateTransferCount(transferCount);
+
+      break;
+    }
+    case 'ApprovalEvent': {
+      // Get event fields from eventData.
+      const { tokenId } = eventData.event;
+
+      // Update tokenApprovals for the tokenId in database.
+      await indexer._tokenApprovals(eventData.block.hash, eventData.contract, tokenId, true);
+
+      break;
+    }
+    case 'ApprovalForAllEvent': {
+      // Get event fields from eventData.
+      const { owner, operator } = eventData.event;
+
+      // Update operatorApprovals for the tokenId in database.
+      await indexer._operatorApprovals(eventData.block.hash, eventData.contract, owner, operator, true);
+
+      break;
+    }
+  }
 }

@@ -8,6 +8,12 @@
   yarn
   ```
 
+* Run the IPFS (go-ipfs version 0.12.2) daemon:
+
+  ```bash
+  ipfs daemon
+  ```
+
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -37,9 +43,9 @@
 
 * The following core services should be setup and running on localhost:
   
-  * `vulcanize/go-ethereum` [v1.10.18-statediff-3.2.2](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-3.2.2) on port 8545
+  * `vulcanize/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
   
-  * `vulcanize/ipld-eth-server` [v3.2.2](https://github.com/vulcanize/ipld-eth-server/releases/tag/v3.2.2) with native GQL API enabled, on port 8082
+  * `vulcanize/ipld-eth-server` [v4.0.3-alpha](https://github.com/vulcanize/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
 
 * In the [config file](./environments/local.toml):
 
@@ -47,157 +53,7 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-## Demo
-
-* Deploy an ERC721 token:
-
-  ```bash
-  yarn nft:deploy
-  # NFT deployed to: NFT_ADDRESS
-  ```
-
-  Export the address of the deployed token to a shell variable for later use:
-
-  ```bash
-  export NFT_ADDRESS="<NFT_ADDRESS>"
-  ```
-
-* Open `http://localhost:3006/graphql` (GraphQL Playground) in a browser window
-
-* Connect MetaMask to `http://localhost:8545` (with chain ID `41337`)
-
-* Add a second account to Metamask and export the account address to a shell variable for later use:
-
-  ```bash
-  export RECIPIENT_ADDRESS="<RECIPIENT_ADDRESS>"
-  ```
-
-* To get the current block hash at any time, run:
-
-  ```bash
-  yarn block:latest
-  ```
-
-* Run the following GQL query (`eth_call`) in generated watcher graphql endpoint http://127.0.0.1:3006/graphql
-
-  ```graphql
-  query {
-    name(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    symbol(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    balanceOf(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-  }
-  ```
-
-* Run the following GQL query (`storage`) in generated watcher graphql endpoint http://127.0.0.1:3006/graphql
-
-  ```graphql
-  query {
-    _name(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    _symbol(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    _balances(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-      key0: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-  }
-  ```
-
-* Mint token
-
-  ```bash
-  yarn nft:mint --nft $NFT_ADDRESS --to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --token-id 1
-  ```
-
-* Get the latest blockHash and run the following query for `balanceOf` and `ownerOf` (`eth_call`):
-
-  ```graphql
-  query {
-    fromBalanceOf: balanceOf(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    toBalanceOf: balanceOf(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-      owner: "RECIPIENT_ADDRESS"
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-    ownerOf(
-      blockHash: "LATEST_BLOCK_HASH"
-      contractAddress: "NFT_ADDRESS"
-      tokenId: 1
-    ) {
-      value
-      proof {
-        data
-      }
-    }
-  }
-  ```
-
-  * Transfer token
-
-    ```bash
-    yarn nft:transfer --nft $NFT_ADDRESS --from 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --to $RECIPIENT_ADDRESS --token-id 1
-    ```
-
-  * Get the latest blockHash and replace the blockHash in the above query. The result should be different and the token should be transferred to the recipient.
+  * Update the `server` config with state checkpoint settings and provide the IPFS API address.
 
 ## Customize
 
@@ -216,6 +72,8 @@
   * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
 
 ## Run
+
+Follow the steps below or follow the [Demo](./demo.md)
 
 * Run the watcher:
 
