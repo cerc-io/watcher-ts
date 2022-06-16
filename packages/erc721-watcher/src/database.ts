@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual } from 'typeorm';
 import path from 'path';
 
 import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@vulcanize/util';
@@ -129,12 +129,16 @@ export class Database implements IPLDDatabaseInterface {
       });
   }
 
-  async getTransferCount (queryRunner: QueryRunner, { id, blockHash }: DeepPartial<TransferCount>): Promise<TransferCount | undefined> {
+  async getTransferCount (queryRunner: QueryRunner, { id, blockHash, blockNumber }: DeepPartial<TransferCount>): Promise<TransferCount | undefined> {
     const repo = queryRunner.manager.getRepository(TransferCount);
     const whereOptions: FindConditions<TransferCount> = { id };
 
     if (blockHash) {
       whereOptions.blockHash = blockHash;
+    }
+
+    if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
     }
 
     const findOptions = {

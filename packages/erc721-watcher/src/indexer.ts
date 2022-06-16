@@ -431,12 +431,12 @@ export class Indexer implements IPLDIndexerInterface {
     return result;
   }
 
-  async transferCount (blockHash: string, contractAddress: string): Promise<TransferCount | undefined> {
+  async getTransferCount (id: string, block: BlockHeight): Promise<TransferCount | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.getTransferCount(dbTx, { id: contractAddress, blockHash });
+      res = await this._db.getTransferCount(dbTx, { id, blockHash: block.hash, blockNumber: block.number });
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
