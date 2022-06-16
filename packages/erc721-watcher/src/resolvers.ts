@@ -12,6 +12,7 @@ import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:resolver');
 
@@ -126,6 +127,12 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       _operatorApprovals: (_: any, { blockHash, contractAddress, key0, key1 }: { blockHash: string, contractAddress: string, key0: string, key1: string }): Promise<ValueResult> => {
         log('_operatorApprovals', blockHash, contractAddress, key0, key1);
         return indexer._operatorApprovals(blockHash, contractAddress, key0, key1);
+      },
+
+      transferCount: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+        log('transferCount', id, block);
+
+        return indexer.getTransferCount(id, block);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {

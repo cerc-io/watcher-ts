@@ -100,15 +100,16 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
       //   "transferCount": "1"
       // }
       // Fetch transferCount entity from database.
-      let transferCount = await indexer.transferCount(eventData.block.hash, eventData.contract);
+      let transferCount = await indexer.getTransferCount(eventData.contract, eventData.block);
 
       if (!transferCount) {
         transferCount = new TransferCount();
-        transferCount.blockHash = eventData.block.hash;
-        transferCount.blockNumber = eventData.block.number;
         transferCount.id = eventData.contract;
         transferCount.count = 0;
       }
+
+      transferCount.blockHash = eventData.block.hash;
+      transferCount.blockNumber = eventData.block.number;
 
       // Increment count on transfer event.
       transferCount.count++;

@@ -161,7 +161,7 @@
 
   * Custom property `transferCount` should be 1 initially.
 
-* Run the getState query at the endpoint to get the latest IPLDBlock for NFT_ADDRESS:
+* Run the `getState` query at the endpoint to get the latest IPLDBlock for NFT_ADDRESS:
 
   ```graphql
   query {
@@ -190,7 +190,25 @@
 
   * `data` contains the default state and also the custom state property `transferCount` that is indexed in [hooks.ts](./src/hooks.ts) file.
 
-* Get the latest blockHash and run the following query for `balanceOf` and `ownerOf` (`eth_call`):
+* Get the latest blockHash and run the following query for `transferCount` entity:
+
+  ```graphql
+  query {
+    transferCount(
+      block: {
+        hash: "LATEST_BLOCK_HASH"
+      }
+      id: "NFT_ADDRESS"
+    ) {
+      id
+      count
+    }
+  }
+  ```
+
+  *Note: Contract address is assigned to the Entity ID.*
+
+* With the latest blockHash, run the following query for `balanceOf` and `ownerOf` (`eth_call`):
 
   ```graphql
   query {
@@ -239,11 +257,13 @@
 
   * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the previous IPLDBlock.
 
-  * Custom property `transferCount` should be incremented after transfer. This can be checked in the getState query and in IPFS webUI mentioned in the later steps.
+  * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query and in IPFS webUI mentioned in the later steps.
 
-* Get the latest blockHash and replace the blockHash in the above query. The result should be different and the token should be transferred to the recipient.
+* Get the latest blockHash and replace the blockHash in the above `eth_call` query. The result should be different and the token should be transferred to the recipient.
 
-* Run the getState query again at the endpoint with the event blockHash.
+* Run the `getState` query again at the endpoint with the event blockHash.
+
+* Run the `transferCount` entity query again with the latest blockHash. The updated count should be returned.
 
 * After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
 
@@ -251,7 +271,7 @@
   yarn checkpoint --address $NFT_ADDRESS
   ```
 
-  * Run the getState query again with the output blockHash and kind checkpoint at the endpoint.
+  * Run the `getState` query again with the output blockHash and kind checkpoint at the endpoint.
 
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 

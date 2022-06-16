@@ -4,6 +4,11 @@ scalar BigDecimal
 
 scalar Bytes
 
+input Block_height {
+  hash: Bytes
+  number: Int
+}
+
 type Proof {
   data: String!
 }
@@ -99,6 +104,12 @@ type Query {
   _operatorApprovals(blockHash: String!, contractAddress: String!, key0: String!, key1: String!): ResultBoolean!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  transferCount(id: String!, block: Block_height): TransferCount!
+}
+
+type TransferCount {
+  id: ID!
+  count: Int!
 }
 
 type Mutation {
