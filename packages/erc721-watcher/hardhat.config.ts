@@ -8,6 +8,7 @@ import './test/tasks/nft-deploy';
 import './test/tasks/nft-mint';
 import './test/tasks/nft-transfer';
 import './test/tasks/block-latest';
+import './test/tasks/account';
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more

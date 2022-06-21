@@ -1,6 +1,76 @@
 # Demo
 
-* For setup follow the [steps in Readme](./README.md#setup).
+* Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) and [go-ethereum](https://github.com/vulcanize/stack-orchestrator) repos.
+
+* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo.
+
+  ```bash
+  # In go-ethereum repo.
+  git checkout v1.10.19-statediff-4.0.2-alpha
+  ```
+
+* Create a `config.sh` file in `stack-orchestrator` repo.
+
+  ```sh
+  # Path to go-ethereum repo.
+  vulcanize_go_ethereum=~/vulcanize/go-ethereum
+
+  genesis_file_path='start-up-files/go-ethereum/auto-genesis.json'
+  extra_args='--metrics --metrics.expensive --metrics.addr 0.0.0.0 --metrics.port 6060'
+  db_write=true
+  eth_forward_eth_calls=false
+  eth_proxy_on_error=true
+  eth_http_path='go-ethereum:8545'
+  ```
+
+* Run the stack-orchestrator for watcher
+
+  ```bash
+  cd stack-orchestrator/helper-scripts 
+  ```
+
+  ```bash
+  ./wrapper.sh -b watcher \
+        -s v4 \
+        -l latest \
+        -v remove \
+        -p ../config.sh
+  ```
+
+* Run the IPFS (go-ipfs version 0.12.2) daemon:
+
+  ```bash
+  ipfs daemon
+  ```
+
+* In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
+
+* Create a postgres12 database for the watcher:
+
+  ```bash
+  sudo su - postgres
+  createdb erc721-watcher
+  ```
+
+* Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+
+  ```
+  createdb erc721-watcher-job-queue
+  ```
+
+  ```
+  postgres@tesla:~$ psql -U postgres -h localhost erc721-watcher-job-queue
+  Password for user postgres:
+  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+  Type "help" for help.
+
+  erc721-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  CREATE EXTENSION
+  erc721-watcher-job-queue=# exit
+  ```
+
+* In the [config file](./environments/local.toml) update the `database` connection settings.
 
 * Run the watcher:
 
@@ -39,7 +109,17 @@
   }
   ```
 
-* Connect MetaMask to `http://localhost:8545` (with chain ID `41337`)
+* Get the signer account address and export to a shell variable:
+  
+  ```bash
+  yarn account
+  ```
+
+  ```bash
+  export SIGNER_ADDRESS="<SIGNER_ADDRESS>"
+  ```
+
+* Connect MetaMask to `http://localhost:8545` (with chain ID `99`)
 
 * Add a second account to Metamask and export the account address to a shell variable for later use:
 
@@ -78,7 +158,7 @@
     balanceOf(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      owner: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -113,7 +193,7 @@
     _balances(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      key0: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      key0: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -152,10 +232,10 @@
 * Mint token
 
   ```bash
-  yarn nft:mint --nft $NFT_ADDRESS --to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --token-id 1
+  yarn nft:mint --nft $NFT_ADDRESS --to $SIGNER_ADDRESS --token-id 1
   ```
 
-  * A Transfer event to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc shall be visible in the subscription at endpoint.
+  * A Transfer event to SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
   * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the initial checkpoint IPLDBlock.
 
@@ -215,7 +295,7 @@
     fromBalanceOf: balanceOf(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      owner: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -248,10 +328,10 @@
 * Transfer token
 
   ```bash
-  yarn nft:transfer --nft $NFT_ADDRESS --from 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --to $RECIPIENT_ADDRESS --token-id 1
+  yarn nft:transfer --nft $NFT_ADDRESS --from $SIGNER_ADDRESS --to $RECIPIENT_ADDRESS --token-id 1
   ```
 
-  * An Approval event for ZERO_ADDRESS (0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc) shall be visible in the subscription at endpoint.
+  * An Approval event for SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
   * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
