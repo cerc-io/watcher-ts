@@ -1,40 +1,43 @@
 # Demo
 
-* Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) and [go-ethereum](https://github.com/vulcanize/stack-orchestrator) repos.
+* Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) repo.
 
-* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo.
+* Create a `config.sh` file.
+
+  ```bash
+  cd stack-orchestrator/helper-scripts
+  ./create-config.sh
+  ```
+
+* Setup the required repositories.
+
+  ```bash
+  ./setup-repositories.sh
+  
+  ## Use ssh for cloning repos
+  # ./setup-repositories.sh -p ssh
+  ```
+
+* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
 
   ```bash
   # In go-ethereum repo.
   git checkout v1.10.19-statediff-4.0.2-alpha
   ```
 
-* Create a `config.sh` file in `stack-orchestrator` repo.
-
-  ```sh
-  # Path to go-ethereum repo.
-  vulcanize_go_ethereum=~/vulcanize/go-ethereum
-
-  genesis_file_path='start-up-files/go-ethereum/auto-genesis.json'
-  extra_args='--metrics --metrics.expensive --metrics.addr 0.0.0.0 --metrics.port 6060'
-  db_write=true
-  eth_forward_eth_calls=false
-  eth_proxy_on_error=true
-  eth_http_path='go-ethereum:8545'
-  ```
-
-* Run the stack-orchestrator for watcher
+* Run the stack-orchestrator
 
   ```bash
   cd stack-orchestrator/helper-scripts 
   ```
 
   ```bash
-  ./wrapper.sh -b watcher \
-        -s v4 \
-        -l latest \
-        -v remove \
-        -p ../config.sh
+  ./wrapper.sh -f true \
+    -m true \
+    -s v4 \
+    -l latest \
+    -v remove \
+    -p ../config.sh
   ```
 
 * Run the IPFS (go-ipfs version 0.12.2) daemon:
