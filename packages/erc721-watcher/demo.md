@@ -12,10 +12,7 @@
 * Setup the required repositories.
 
   ```bash
-  ./setup-repositories.sh
-  
-  ## Use ssh for cloning repos
-  # ./setup-repositories.sh -p ssh
+  ./setup-repositories.sh -p ssh
   ```
 
 * Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
@@ -23,6 +20,14 @@
   ```bash
   # In go-ethereum repo.
   git checkout v1.10.19-statediff-4.0.2-alpha
+  ```
+
+* To run the stack-orchestrator, the docker-compose version used is:
+
+  ```bash
+  docker-compose version
+  
+  # docker-compose version 1.29.2, build 5becea4c
   ```
 
 * Run the stack-orchestrator
@@ -44,7 +49,10 @@
 
   ```bash
   ipfs daemon
+
+  # API server listening on /ip4/127.0.0.1/tcp/5001
   ```
+  The IPFS API address can be seen in the output.
 
 * In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
 
@@ -52,12 +60,19 @@
 
   ```bash
   sudo su - postgres
+  
+  # If database already exists
+  # dropdb erc721-watcher
+
   createdb erc721-watcher
   ```
 
 * Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
-  ```
+  ```bash
+  # If database already exists
+  # dropdb erc721-watcher-job-queue
+
   createdb erc721-watcher-job-queue
   ```
 
@@ -354,7 +369,7 @@
   yarn checkpoint --address $NFT_ADDRESS
   ```
 
-  * Run the `getState` query again with the output blockHash and kind checkpoint at the endpoint.
+  * Run the `getState` query again with the output blockHash and kind `checkpoint` at the endpoint.
 
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
