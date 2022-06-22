@@ -1,6 +1,94 @@
 # Demo
 
-* For setup follow the [steps in Readme](./README.md#setup).
+* Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) repo.
+
+* Create a `config.sh` file.
+
+  ```bash
+  cd stack-orchestrator/helper-scripts
+  ./create-config.sh
+  ```
+
+* Setup the required repositories.
+
+  ```bash
+  ./setup-repositories.sh -p ssh
+  ```
+
+* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
+
+  ```bash
+  # In go-ethereum repo.
+  git checkout v1.10.19-statediff-4.0.2-alpha
+  ```
+
+* To run the stack-orchestrator, the docker-compose version used is:
+
+  ```bash
+  docker-compose version
+  
+  # docker-compose version 1.29.2, build 5becea4c
+  ```
+
+* Run the stack-orchestrator
+
+  ```bash
+  cd stack-orchestrator/helper-scripts 
+  ```
+
+  ```bash
+  ./wrapper.sh -f true \
+    -m true \
+    -s v4 \
+    -l latest \
+    -v remove \
+    -p ../config.sh
+  ```
+
+* Run the IPFS (go-ipfs version 0.12.2) daemon:
+
+  ```bash
+  ipfs daemon
+
+  # API server listening on /ip4/127.0.0.1/tcp/5001
+  ```
+  The IPFS API address can be seen in the output.
+
+* In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
+
+* Create a postgres12 database for the watcher:
+
+  ```bash
+  sudo su - postgres
+  
+  # If database already exists
+  # dropdb erc721-watcher
+
+  createdb erc721-watcher
+  ```
+
+* Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+
+  ```bash
+  # If database already exists
+  # dropdb erc721-watcher-job-queue
+
+  createdb erc721-watcher-job-queue
+  ```
+
+  ```
+  postgres@tesla:~$ psql -U postgres -h localhost erc721-watcher-job-queue
+  Password for user postgres:
+  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+  Type "help" for help.
+
+  erc721-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  CREATE EXTENSION
+  erc721-watcher-job-queue=# exit
+  ```
+
+* In the [config file](./environments/local.toml) update the `database` connection settings.
 
 * Run the watcher:
 
@@ -39,7 +127,17 @@
   }
   ```
 
-* Connect MetaMask to `http://localhost:8545` (with chain ID `41337`)
+* Get the signer account address and export to a shell variable:
+  
+  ```bash
+  yarn account
+  ```
+
+  ```bash
+  export SIGNER_ADDRESS="<SIGNER_ADDRESS>"
+  ```
+
+* Connect MetaMask to `http://localhost:8545` (with chain ID `99`)
 
 * Add a second account to Metamask and export the account address to a shell variable for later use:
 
@@ -78,7 +176,7 @@
     balanceOf(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      owner: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -113,7 +211,7 @@
     _balances(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      key0: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      key0: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -152,10 +250,10 @@
 * Mint token
 
   ```bash
-  yarn nft:mint --nft $NFT_ADDRESS --to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --token-id 1
+  yarn nft:mint --nft $NFT_ADDRESS --to $SIGNER_ADDRESS --token-id 1
   ```
 
-  * A Transfer event to 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc shall be visible in the subscription at endpoint.
+  * A Transfer event to SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
   * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the initial checkpoint IPLDBlock.
 
@@ -215,7 +313,7 @@
     fromBalanceOf: balanceOf(
       blockHash: "LATEST_BLOCK_HASH"
       contractAddress: "NFT_ADDRESS"
-      owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc"
+      owner: "SIGNER_ADDRESS"
     ) {
       value
       proof {
@@ -248,10 +346,10 @@
 * Transfer token
 
   ```bash
-  yarn nft:transfer --nft $NFT_ADDRESS --from 0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc --to $RECIPIENT_ADDRESS --token-id 1
+  yarn nft:transfer --nft $NFT_ADDRESS --from $SIGNER_ADDRESS --to $RECIPIENT_ADDRESS --token-id 1
   ```
 
-  * An Approval event for ZERO_ADDRESS (0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc) shall be visible in the subscription at endpoint.
+  * An Approval event for SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
   * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
@@ -271,7 +369,7 @@
   yarn checkpoint --address $NFT_ADDRESS
   ```
 
-  * Run the `getState` query again with the output blockHash and kind checkpoint at the endpoint.
+  * Run the `getState` query again with the output blockHash and kind `checkpoint` at the endpoint.
 
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
