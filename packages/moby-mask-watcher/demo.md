@@ -51,17 +51,6 @@
     -p ../config.sh
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-
-  # API server listening on /ip4/127.0.0.1/tcp/5001
-  ```
-  The IPFS API address can be seen in the output.
-
-* In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
-
 * Create a postgres12 database for the watcher:
 
   ```bash
