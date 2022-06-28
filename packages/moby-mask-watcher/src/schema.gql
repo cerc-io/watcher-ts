@@ -4,6 +4,11 @@ scalar BigDecimal
 
 scalar Bytes
 
+type Block_height {
+  hash: Bytes
+  number: Int
+}
+
 type Proof {
   data: String!
 }
@@ -93,6 +98,7 @@ type Query {
   isMember(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  latestBlock: Block_height
 }
 
 type Mutation {

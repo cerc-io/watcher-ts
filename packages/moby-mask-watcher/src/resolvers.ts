@@ -126,6 +126,12 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
 
         return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
+      },
+
+      latestBlock: async () => {
+        log('latestBlock');
+
+        return indexer.getLatestBlock();
       }
     }
   };
