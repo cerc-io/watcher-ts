@@ -67,6 +67,8 @@
 
 ## Run
 
+Follow the steps below or follow the [Demo](./demo.md)
+
 * Run the watcher:
 
   ```bash

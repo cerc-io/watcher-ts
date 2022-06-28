@@ -790,6 +790,13 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
+  // Get latest block using eth client.
+  async getLatestBlock (): Promise<BlockHeight> {
+    const { block } = await this._ethClient.getBlockByHash();
+
+    return block;
+  }
+
   getEntityTypesMap (): Map<string, { [key: string]: string }> {
     return this._entityTypesMap;
   }
