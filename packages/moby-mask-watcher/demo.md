@@ -97,6 +97,12 @@
   yarn server
   ```
 
+* Run the job-runner:
+
+  ```bash
+  yarn job-runner
+  ```
+
 * Clone the [MobyMask](https://github.com/vulcanize/MobyMask) repo.
 
 * Checkout to the branch with changes for using this watcher:
@@ -130,6 +136,42 @@
   export MOBY_ADDRESS="<MOBY_ADDRESS>"
   ```
 
+* Run the following GQL mutation in watcher GraphQL endpoint http://127.0.0.1:3010/graphql
+
+  ```graphql
+  mutation {
+    watchContract(
+      address: "MOBY_ADDRESS"
+      kind: "PhisherRegistry"
+      checkpoint: true
+    )
+  }
+  ```
+
+* Run the following GQL subscription in generated watcher GraphQL endpoint:
+
+  ```graphql
+  subscription {
+    onEvent {
+      event {
+        __typename
+        ... on PhisherStatusUpdatedEvent {
+          entity
+          isPhisher
+        },
+        ... on MemberStatusUpdatedEvent {
+          entity
+          isMember
+        }
+      },
+      block {
+        number
+        hash
+      }
+    }
+  }
+  ```
+
 * Update isPhiser and isMember lists with names
 
   ```bash
@@ -139,6 +181,8 @@
   ```bash
   yarn claimMember --contract $MOBY_ADDRESS --name memberName
   ```
+
+* The events should be visible in the subscription at GQL endpoint.
 
 * Check the names in the watcher GraphQL playground http://localhost:3010/graphql
 
