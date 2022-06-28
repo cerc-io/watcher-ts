@@ -577,7 +577,7 @@ export class Indexer implements IPLDIndexerInterface {
     switch (logDescription.name) {
       case DELEGATIONTRIGGERED_EVENT: {
         eventName = logDescription.name;
-        const { principal, agent } = logDescription.args;
+        const [principal, agent] = logDescription.args;
         eventInfo = {
           principal,
           agent
@@ -587,9 +587,10 @@ export class Indexer implements IPLDIndexerInterface {
       }
       case MEMBERSTATUSUPDATED_EVENT: {
         eventName = logDescription.name;
-        const { entity, isMember } = logDescription.args;
+        const [entity, isMember] = logDescription.args;
         eventInfo = {
-          entity,
+          // Indexed reference type arg
+          entity: entity.hash,
           isMember
         };
 
@@ -597,7 +598,7 @@ export class Indexer implements IPLDIndexerInterface {
       }
       case OWNERSHIPTRANSFERRED_EVENT: {
         eventName = logDescription.name;
-        const { previousOwner, newOwner } = logDescription.args;
+        const [previousOwner, newOwner] = logDescription.args;
         eventInfo = {
           previousOwner,
           newOwner
@@ -607,9 +608,10 @@ export class Indexer implements IPLDIndexerInterface {
       }
       case PHISHERSTATUSUPDATED_EVENT: {
         eventName = logDescription.name;
-        const { entity, isPhisher } = logDescription.args;
+        const [entity, isPhisher] = logDescription.args;
         eventInfo = {
-          entity,
+          // Indexed reference type arg
+          entity: entity.hash,
           isPhisher
         };
 
