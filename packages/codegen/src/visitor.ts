@@ -133,14 +133,10 @@ export class Visitor {
     const contractInterface = new utils.Interface(abi);
 
     Object.values(contractInterface.events).forEach(event => {
-      const params = event.inputs.map(input => {
-        return { name: input.name, type: input.type };
-      });
-
-      this._schema.addEventType(event.name, params);
+      this._schema.addEventType(event.name, event.inputs);
 
       assert(this._contract);
-      this._indexer.addEvent(event.name, params, this._contract.kind);
+      this._indexer.addEvent(event.name, event.inputs, this._contract.kind);
     });
   }
 

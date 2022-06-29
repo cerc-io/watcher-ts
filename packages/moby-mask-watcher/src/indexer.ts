@@ -589,7 +589,6 @@ export class Indexer implements IPLDIndexerInterface {
         eventName = logDescription.name;
         const [entity, isMember] = logDescription.args;
         eventInfo = {
-          // Indexed reference type arg
           entity: entity.hash,
           isMember
         };
@@ -610,7 +609,6 @@ export class Indexer implements IPLDIndexerInterface {
         eventName = logDescription.name;
         const [entity, isPhisher] = logDescription.args;
         eventInfo = {
-          // Indexed reference type arg
           entity: entity.hash,
           isPhisher
         };

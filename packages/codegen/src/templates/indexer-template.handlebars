@@ -465,12 +465,14 @@ export class Indexer implements IPLDIndexerInterface {
       case {{capitalize event.name}}_EVENT: {
         eventName = logDescription.name;
         {{#if event.params}}
-        const [ {{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}} ] = logDescription.args;
+        const [{{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}}] = logDescription.args;
         {{/if}}
         eventInfo = {
           {{#each event.params}}
           {{#if (compare this.type 'bigint')}}
           {{this.name}}: BigInt({{this.name}}.toString())
+          {{~else if this.isIndexedReferenceType}}
+          {{this.name}}: {{this.name}}.hash
           {{~else}}
           {{this.name}}
           {{~/if}}
