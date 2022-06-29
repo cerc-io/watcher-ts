@@ -6,6 +6,7 @@ import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print } from 'graphql';
 import { SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
+import { utils } from 'ethers';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -65,7 +66,7 @@ export class Schema {
    * @param name Event name.
    * @param params Event parameters.
    */
-  addEventType (name: string, params: Array<Param>): void {
+  addEventType (name: string, params: Array<utils.ParamType>): void {
     name = `${name}Event`;
 
     // Check if the type is already added.

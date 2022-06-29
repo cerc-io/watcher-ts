@@ -109,7 +109,7 @@
 
   ```bash
   # In MobyMask repo.
-  git checkout ng-use-watcher
+  git checkout use-laconic-watcher-as-hosted-index
   ```
 
 * Run yarn to install the packages
@@ -204,7 +204,7 @@
       isPhisher(
         blockHash: "LATEST_BLOCK_HASH"
         contractAddress: "MOBY_ADDRESS",
-        key0: "phisherName"
+        key0: "TWT:phishername"
       ) {
         value
         proof {
@@ -215,7 +215,7 @@
       isMember(
         blockHash: "LATEST_BLOCK_HASH"
         contractAddress: "MOBY_ADDRESS",
-        key0: "memberName"
+        key0: "TWT:membername"
       ) {
         value
         proof {
