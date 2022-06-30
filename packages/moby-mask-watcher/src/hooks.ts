@@ -3,10 +3,11 @@
 //
 
 import assert from 'assert';
+import { utils } from 'ethers';
 
 // import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
 
-import { Indexer, ResultEvent } from './indexer';
+import { Indexer, KIND_PHISHERREGISTRY, ResultEvent } from './indexer';
 
 /**
  * Hook function to store an initial state.
@@ -75,6 +76,34 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
   assert(indexer);
   assert(eventData);
 
-  // Use indexer methods to index data.
-  // Pass `diff` parameter to indexer methods as true to save an auto-generated state from the indexed data.
+  // Perform indexing based on the type of event.
+  switch (eventData.event.__typename) {
+    // In case of PhisherRegistry 'PhisherStatusUpdated' event.
+    case 'PhisherStatusUpdatedEvent': {
+      const txArgs = await getTxArgs(indexer, KIND_PHISHERREGISTRY, eventData.tx.hash);
+
+      // Update isPhisher entry for the identifier in database.
+      await indexer.isPhisher(eventData.block.hash, eventData.contract, txArgs.identifier, true);
+
+      break;
+    }
+    // In case of PhisherRegistry 'MemberStatusUpdated' event.
+    case 'MemberStatusUpdatedEvent': {
+      const txArgs = await getTxArgs(indexer, KIND_PHISHERREGISTRY, eventData.tx.hash);
+
+      // Update isPhisher entry for the identifier in database.
+      await indexer.isMember(eventData.block.hash, eventData.contract, txArgs.identifier, true);
+
+      break;
+    }
+  }
 }
+
+// Get transaction arguments for specified txHash.
+const getTxArgs = async (indexer: Indexer, contractKind: string, txHash: string): Promise<utils.Result> => {
+  const tx = await indexer.getFullTransaction(txHash);
+  const contractInterface = await indexer.getContractInterface(contractKind);
+  assert(contractInterface);
+  const txDescription = contractInterface.parseTransaction({ data: tx.input });
+  return txDescription.args;
+};
