@@ -2,12 +2,6 @@
 
 * Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) repo.
 
-* Checkout the `develop` branch in stack-orchestrator repo.
-
-  ```bash
-  git checkout develop
-  ```
-
 * Create a `config.sh` file.
 
   ```bash
@@ -25,7 +19,7 @@
 
   ```bash
   # In go-ethereum repo.
-  git checkout v1.10.19-statediff-4.0.3-alpha
+  git checkout v1.10.19-statediff-4.0.4-alpha
   ```
 
 * To run the stack-orchestrator, the docker-compose version used is:
@@ -148,6 +142,44 @@
   }
   ```
 
+* Get the latest block
+
+    ```graphql
+    query {
+      latestBlock {
+        hash
+        number
+      }
+    }
+    ```
+
+* Run the following GQL query in GraphQL endpoint
+
+  ```graphql
+  query {
+    isPhisher(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "MOBY_ADDRESS"
+      key0: "TWT:phishername"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+    isMember(
+      blockHash: "LATEST_BLOCK_HASH"
+      contractAddress: "MOBY_ADDRESS"
+      key0: "TWT:membername"
+    ) {
+      value
+      proof {
+        data
+      }
+    }
+  }
+  ```
+
 * Run the following GQL subscription in generated watcher GraphQL endpoint:
 
   ```graphql
@@ -182,45 +214,36 @@
   yarn claimMember --contract $MOBY_ADDRESS --name memberName
   ```
 
-* The events should be visible in the subscription at GQL endpoint.
+* The events should be visible in the subscription at GQL endpoint. Note down the event blockHash from result.
 
-* Check the names in the watcher GraphQL playground http://localhost:3010/graphql
+* The isMember and isPhisher lists should be indexed. Check the database (moby-mask-watcher) tables `is_phisher` and `is_member`, there should be entries at the event blockHash and the value should be true. The data is indexed in `handleEvent` method in the [hooks file](./src/hooks.ts).
 
-  * Get the latest block
+* Update the the previous query with event blockHash and check isPhisher and isMember in GraphQL playground
 
-    ```graphql
-    query {
-      latestBlock {
-        hash
-        number
+  ```graphql
+  query {
+    isPhisher(
+      blockHash: "EVENT_BLOCK_HASH"
+      contractAddress: "MOBY_ADDRESS",
+      key0: "TWT:phishername"
+    ) {
+      value
+      proof {
+        data
       }
     }
-    ```
-
-  * Check the `isPhisher` and `isMember` maps
-
-    ```graphql
-    query {
-      isPhisher(
-        blockHash: "LATEST_BLOCK_HASH"
-        contractAddress: "MOBY_ADDRESS",
-        key0: "TWT:phishername"
-      ) {
-        value
-        proof {
-          data
-        }
-      }
-      
-      isMember(
-        blockHash: "LATEST_BLOCK_HASH"
-        contractAddress: "MOBY_ADDRESS",
-        key0: "TWT:membername"
-      ) {
-        value
-        proof {
-          data
-        }
+    
+    isMember(
+      blockHash: "EVENT_BLOCK_HASH"
+      contractAddress: "MOBY_ADDRESS",
+      key0: "TWT:membername"
+    ) {
+      value
+      proof {
+        data
       }
     }
-    ```
+  }
+  ```
+
+  The data is fetched from watcher database as it is already indexed.

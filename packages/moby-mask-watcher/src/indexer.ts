@@ -27,7 +27,8 @@ import {
   BlockHeight,
   IPFSClient,
   StateKind,
-  IpldStatus as IpldStatusInterface
+  IpldStatus as IpldStatusInterface,
+  getFullTransaction
 } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
@@ -43,7 +44,7 @@ import { IPLDBlock } from './entity/IPLDBlock';
 
 const log = debug('vulcanize:indexer');
 
-const KIND_PHISHERREGISTRY = 'PhisherRegistry';
+export const KIND_PHISHERREGISTRY = 'PhisherRegistry';
 
 const DELEGATIONTRIGGERED_EVENT = 'DelegationTriggered';
 const MEMBERSTATUSUPDATED_EVENT = 'MemberStatusUpdated';
@@ -795,6 +796,16 @@ export class Indexer implements IPLDIndexerInterface {
     const { block } = await this._ethClient.getBlockByHash();
 
     return block;
+  }
+
+  // Get full transaction data.
+  async getFullTransaction (txHash: string): Promise<any> {
+    return getFullTransaction(this._ethClient, txHash);
+  }
+
+  // Get contract interface for specified contract kind.
+  async getContractInterface (kind: string): Promise<ethers.utils.Interface | undefined> {
+    return this._contractMap.get(kind);
   }
 
   getEntityTypesMap (): Map<string, { [key: string]: string }> {
