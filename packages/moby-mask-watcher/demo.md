@@ -79,9 +79,10 @@
 
 * In the [config file](./environments/local.toml) update the `database` connection settings.
 
-* In `graph-watcher` repo, install and build packages:
+* In `graph-watcher` repo, follow the instructions in [Setup](../../README.md#setup) for installing and building packages.
 
   ```bash
+  # After setup
   yarn && yarn build
   ```
 
@@ -247,3 +248,25 @@
   ```
 
   The data is fetched from watcher database as it is already indexed.
+
+## Reset / Clean up
+
+* Reset and clear deployments in MobyMask repo:
+
+  ```bash
+  cd packages/hardhat
+
+  # Remove previous deployments in local network if any
+  cd deployments
+  git clean -xdf
+  ```
+
+* To close down services in stack-orchestrator, hit `ctrl + c` in the terminal where it was run.
+
+* To stop and remove stack-orchestrator services running in background run:
+
+  ```bash
+  cd stack-orchestrator
+
+  docker-compose -f ./docker/latest/docker-compose-db-sharding.yml down -v --remove-orphans
+  ```

@@ -90,6 +90,13 @@
 
 * In the [config file](./environments/local.toml) update the `database` connection settings.
 
+* In `graph-watcher` repo, follow the instructions in [Setup](../../README.md#setup) for installing and building packages.
+
+  ```bash
+  # After setup
+  yarn && yarn build
+  ```
+
 * Run the watcher:
 
   ```bash
@@ -380,3 +387,15 @@
 * Open IPFS WebUI http://127.0.0.1:5001/webui and search for IPLDBlocks using their CIDs.
 
 * The state should have auto indexed data and also custom property `transferCount` according to code in [hooks](./src/hooks.ts) file `handleEvent` method.
+
+## Reset / Clean up
+
+* To close down services in stack-orchestrator, hit `ctrl + c` in the terminal where it was run.
+
+* To stop and remove stack-orchestrator services running in background run:
+
+  ```bash
+  cd stack-orchestrator
+
+  docker-compose -f ./docker/latest/docker-compose-db-sharding.yml down -v --remove-orphans
+  ```
