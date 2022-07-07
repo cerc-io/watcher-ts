@@ -1,4 +1,4 @@
-# moby-mask-watcher
+# mobymask-watcher
 
 ## Setup
 
@@ -18,7 +18,7 @@
 
   ```bash
   sudo su - postgres
-  createdb moby-mask-watcher
+  createdb mobymask-watcher
   ```
 
 * If the watcher is an `active` watcher:
@@ -26,19 +26,19 @@
   Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
   ```
-  createdb moby-mask-watcher-job-queue
+  createdb mobymask-watcher-job-queue
   ```
 
   ```
-  postgres@tesla:~$ psql -U postgres -h localhost moby-mask-watcher-job-queue
+  postgres@tesla:~$ psql -U postgres -h localhost mobymask-watcher-job-queue
   Password for user postgres:
   psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
   SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
   Type "help" for help.
 
-  moby-mask-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  mobymask-watcher-job-queue=# CREATE EXTENSION pgcrypto;
   CREATE EXTENSION
-  moby-mask-watcher-job-queue=# exit
+  mobymask-watcher-job-queue=# exit
   ```
 
 * In the [config file](./environments/local.toml):

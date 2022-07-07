@@ -51,30 +51,30 @@
   sudo su - postgres
   
   # If database already exists
-  # dropdb moby-mask-watcher
+  # dropdb mobymask-watcher
 
-  createdb moby-mask-watcher
+  createdb mobymask-watcher
   ```
 
 * Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
   ```bash
   # If database already exists
-  # dropdb moby-mask-watcher-job-queue
+  # dropdb mobymask-watcher-job-queue
 
-  createdb moby-mask-watcher-job-queue
+  createdb mobymask-watcher-job-queue
   ```
 
   ```
-  postgres@tesla:~$ psql -U postgres -h localhost moby-mask-watcher-job-queue
+  postgres@tesla:~$ psql -U postgres -h localhost mobymask-watcher-job-queue
   Password for user postgres:
   psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
   SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
   Type "help" for help.
 
-  moby-mask-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  mobymask-watcher-job-queue=# CREATE EXTENSION pgcrypto;
   CREATE EXTENSION
-  moby-mask-watcher-job-queue=# exit
+  mobymask-watcher-job-queue=# exit
   ```
 
 * In the [config file](./environments/local.toml) update the `database` connection settings.
@@ -86,7 +86,7 @@
   yarn && yarn build
   ```
 
-* Change directory to `packages/moby-mask-watcher/` and run the watcher:
+* Change directory to `packages/mobymask-watcher/` and run the watcher:
 
   ```bash
   yarn server
@@ -217,7 +217,7 @@
 
 * The events should be visible in the subscription at GQL endpoint. Note down the event blockHash from result.
 
-* The isMember and isPhisher lists should be indexed. Check the database (moby-mask-watcher) tables `is_phisher` and `is_member`, there should be entries at the event blockHash and the value should be true. The data is indexed in `handleEvent` method in the [hooks file](./src/hooks.ts).
+* The isMember and isPhisher lists should be indexed. Check the database (mobymask-watcher) tables `is_phisher` and `is_member`, there should be entries at the event blockHash and the value should be true. The data is indexed in `handleEvent` method in the [hooks file](./src/hooks.ts).
 
 * Update the the previous query with event blockHash and check isPhisher and isMember in GraphQL playground
 

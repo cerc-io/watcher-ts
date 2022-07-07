@@ -103,11 +103,6 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
 
-        const { expected, actual } = await indexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
-        if (expected !== actual) {
-          throw new Error(`Range not available, expected ${expected}, got ${actual} blocks in range`);
-        }
-
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
       },
