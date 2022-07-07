@@ -90,7 +90,7 @@
 
 * In the [config file](./environments/local.toml) update the `database` connection settings.
 
-* In `graph-watcher` repo, follow the instructions in [Setup](../../README.md#setup) for installing and building packages.
+* In `watcher-ts` repo, follow the instructions in [Setup](../../README.md#setup) for installing and building packages.
 
   ```bash
   # After setup

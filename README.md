@@ -25,7 +25,7 @@ There are packages used from github so we need to follow the following steps to 
    - `TOKEN`: Personal access token (configured above)
    - `PUBLIC-EMAIL-ADDRESS`: Email address
 
-4. When authenticating to github packages for the first time, yarn install may throw Unauthorized error. To overcome this we need to run yarn install in `packages/graph-node` directory of graph-watcher repo. After this yarn install for graph-watcher-ts works properly even from root of the repo.
+4. When authenticating to github packages for the first time, yarn install may throw Unauthorized error. To overcome this we need to run yarn install in `packages/graph-node` directory. After this yarn install for watcher-ts works properly even from root of the repo.
 
 This project uses [yarn workspaces](https://classic.yarnpkg.com/en/docs/workspaces/).
 
