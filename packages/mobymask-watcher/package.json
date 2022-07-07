@@ -1,7 +1,7 @@
 {
-  "name": "@vulcanize/moby-mask-watcher",
+  "name": "@vulcanize/mobymask-watcher",
   "version": "0.1.0",
-  "description": "moby-mask-watcher",
+  "description": "mobymask-watcher",
   "private": true,
   "main": "dist/index.js",
   "scripts": {
