@@ -1,6 +1,6 @@
 # Demo for IPLD statediff and checkpointing
 
-* In the root of `graph-watcher-ts`, run:
+* In the root of `watcher-ts`, run:
 
   ```bash
   yarn && yarn build
