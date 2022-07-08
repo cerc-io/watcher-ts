@@ -787,7 +787,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   // Get contract interface for specified contract kind.
-  async getContractInterface (kind: string): Promise<ethers.utils.Interface | undefined> {
+  getContractInterface (kind: string): ethers.utils.Interface | undefined {
     return this._contractMap.get(kind);
   }
 

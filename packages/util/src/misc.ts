@@ -221,17 +221,17 @@ export const getFullTransaction = async (ethClient: EthClient, txHash: string): 
   assert(fullTx.blockByMhKey);
 
   // Decode the transaction data.
-  const extraData = EthDecoder.decodeTransaction(EthDecoder.decodeData(fullTx.blockByMhKey.data));
-  assert(extraData);
+  const txData = utils.parseTransaction(EthDecoder.decodeData(fullTx.blockByMhKey.data));
+  assert(txData);
 
   return {
     hash: txHash,
     from: fullTx.src,
     to: fullTx.dst,
     index: fullTx.index,
-    value: extraData.Amount.toString(),
-    gasLimit: extraData.GasLimit.toString(),
-    gasPrice: extraData.GasPrice.toString(),
-    input: extraData.Data
+    value: txData.value.toString(),
+    gasLimit: txData.gasLimit.toString(),
+    gasPrice: txData.gasPrice?.toString(),
+    input: txData.data
   };
 };

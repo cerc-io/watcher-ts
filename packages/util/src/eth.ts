@@ -55,19 +55,3 @@ export function decodeHeader (rlp : Uint8Array): any {
 export function decodeData (hexLiteral: string): Uint8Array {
   return Uint8Array.from(Buffer.from(hexLiteral.slice(2), 'hex'));
 }
-
-export function decodeTransaction (rlp : Uint8Array): any {
-  try {
-    const data = utils.RLP.decode(rlp);
-
-    return {
-      GasPrice: decodeInteger(data[1], BigInt(0)),
-      GasLimit: decodeInteger(data[2], BigInt(0)),
-      Amount: decodeInteger(data[4], BigInt(0)),
-      Data: data[5]
-    };
-  } catch (error: any) {
-    log(error);
-    return undefined;
-  }
-}
