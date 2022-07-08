@@ -15,7 +15,8 @@
     "checkpoint": "DEBUG=vulcanize:* ts-node src/cli/checkpoint.ts",
     "export-state": "DEBUG=vulcanize:* ts-node src/cli/export-state.ts",
     "import-state": "DEBUG=vulcanize:* ts-node src/cli/import-state.ts",
-    "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts"
+    "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts",
+    "index-block": "DEBUG=vulcanize:* ts-node src/cli/index-block.ts"
   },
   "repository": {
     "type": "git",
