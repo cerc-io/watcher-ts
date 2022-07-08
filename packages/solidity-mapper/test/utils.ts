@@ -4,7 +4,7 @@
 
 /* eslint-disable no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ContractInterface } from '@ethersproject/contracts';
+import { ContractInterface } from 'ethers';
 import '@nomiclabs/hardhat-ethers';
 import { artifacts, ethers } from 'hardhat';
 import { CompilerOutput, CompilerOutputBytecode } from 'hardhat/types';
