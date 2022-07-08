@@ -10,7 +10,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';
@@ -43,11 +42,6 @@ const main = async (): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -57,10 +51,8 @@ const main = async (): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
   await indexer.init();
-
-  graphWatcher.setIndexer(indexer);
 
   const exportData: any = {
     snapshotBlock: {},

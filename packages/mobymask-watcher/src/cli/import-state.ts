@@ -12,7 +12,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';
@@ -47,11 +46,6 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
   const pubsub = new PubSub();
@@ -65,10 +59,8 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
   await indexer.init();
-
-  graphWatcher.setIndexer(indexer);
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
