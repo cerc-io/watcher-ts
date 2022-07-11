@@ -7,7 +7,7 @@
     "@vulcanize/solidity-mapper": "^0.1.0",
     "debug": "^4.3.1",
     "decimal.js": "^10.3.1",
-    "ethers": "^5.2.0",
+    "ethers": "^5.4.4",
     "fs-extra": "^10.0.0",
     "lodash": "^4.17.21",
     "multiformats": "^9.4.8",

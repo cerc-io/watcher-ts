@@ -3,11 +3,10 @@
 //
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract } from '@ethersproject/contracts';
 import { expect } from 'chai';
 import '@nomiclabs/hardhat-ethers';
 import { ethers } from 'hardhat';
-import { ContractTransaction } from 'ethers';
+import { ContractTransaction, Contract } from 'ethers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 

@@ -30,7 +30,6 @@ import {
   IpldStatus as IpldStatusInterface,
   getFullTransaction
 } from '@vulcanize/util';
-import { GraphWatcher } from '@vulcanize/graph-node';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
 import { Database } from './database';
@@ -95,7 +94,6 @@ export class Indexer implements IPLDIndexerInterface {
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
-  _graphWatcher: GraphWatcher;
 
   _abiMap: Map<string, JsonFragment[]>
   _storageLayoutMap: Map<string, StorageLayout>
@@ -106,7 +104,7 @@ export class Indexer implements IPLDIndexerInterface {
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
@@ -116,7 +114,6 @@ export class Indexer implements IPLDIndexerInterface {
     this._serverConfig = serverConfig;
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, this._ipfsClient);
-    this._graphWatcher = graphWatcher;
 
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();
@@ -514,19 +511,8 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
-    const relations = this._relationsMap.get(entity) || {};
-
-    const data = await this._graphWatcher.getEntity(entity, id, relations, block);
-
-    return data;
-  }
-
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
-
-    // Call subgraph handler for event.
-    await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
@@ -540,9 +526,6 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
-
-    // Call subgraph handler for block.
-    await this._graphWatcher.handleBlock(blockHash);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -804,7 +787,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   // Get contract interface for specified contract kind.
-  async getContractInterface (kind: string): Promise<ethers.utils.Interface | undefined> {
+  getContractInterface (kind: string): ethers.utils.Interface | undefined {
     return this._contractMap.get(kind);
   }
 

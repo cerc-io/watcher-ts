@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/vulcanize/watcher-ts#readme",
   "dependencies": {
-    "ethers": "^5.3.1",
+    "ethers": "^5.4.4",
     "yargs": "^17.0.1"
   },
   "devDependencies": {

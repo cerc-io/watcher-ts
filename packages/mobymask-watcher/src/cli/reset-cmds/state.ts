@@ -2,13 +2,11 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
 import { getConfig, initClients, resetJobs, JobQueue } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
@@ -42,11 +40,6 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -56,10 +49,8 @@ export const handler = async (argv: any): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
   await indexer.init();
-
-  graphWatcher.setIndexer(indexer);
 
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
