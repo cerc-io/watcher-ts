@@ -154,12 +154,6 @@ export class EventWatcher {
       if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
         await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
       }
-
-      // Publish block progress event if no events exist.
-      // Event for blocks with events will be pusblished from eventProcessingCompleteHandler.
-      if (blockProgress.numEvents === 0) {
-        await this.publishBlockProgressToSubscribers(blockProgress);
-      }
     } else {
       log(`block not indexed for ${blockHash} ${blockNumber}`);
     }

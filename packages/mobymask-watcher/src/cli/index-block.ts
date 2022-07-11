@@ -34,7 +34,7 @@ const main = async (): Promise<void> => {
       type: 'number',
       require: true,
       demandOption: true,
-      describe: 'Starting block'
+      describe: 'Block number to index'
     }
   }).argv;
 
@@ -69,6 +69,8 @@ const main = async (): Promise<void> => {
 
     console.timeEnd('time:index-block#getBlocks-ipld-eth-server');
   }
+
+  assert(blockProgressEntities.length, `No blocks fetched for block number ${argv.block}.`);
 
   for (let blockProgress of blockProgressEntities) {
     // Check if blockProgress fetched from database.
