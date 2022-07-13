@@ -15,7 +15,7 @@ import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING } from '.
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
 
-const MAX_EVENTS_BLOCK_RANGE = 1000;
+const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
 const log = debug('vulcanize:indexer');
 
@@ -292,13 +292,13 @@ export class Indexer {
     return this._db.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
   }
 
-  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>> {
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number, maxBlockRange: number = DEFAULT_MAX_EVENTS_BLOCK_RANGE): Promise<Array<EventInterface>> {
     if (toBlockNumber <= fromBlockNumber) {
       throw new Error('toBlockNumber should be greater than fromBlockNumber');
     }
 
-    if ((toBlockNumber - fromBlockNumber) > MAX_EVENTS_BLOCK_RANGE) {
-      throw new Error(`Max range (${MAX_EVENTS_BLOCK_RANGE}) exceeded`);
+    if (maxBlockRange > -1 && (toBlockNumber - fromBlockNumber) > maxBlockRange) {
+      throw new Error(`Max range (${maxBlockRange}) exceeded`);
     }
 
     return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
