@@ -108,9 +108,15 @@ export class GraphQLClient {
   }
 
   async query (query: DocumentNode | TypedDocumentNode, variables: { [key: string]: any }): Promise<any> {
-    const { data: result } = await this._client.query({ query, variables });
+    try {
+      const { data: result } = await this._client.query({ query, variables });
 
-    return result;
+      return result;
+    } catch (error) {
+      log(`Error for query: ${query}`);
+      log(error);
+      throw error;
+    }
   }
 
   async mutate (mutation: DocumentNode | TypedDocumentNode, variables: { [key: string]: any }): Promise<any> {

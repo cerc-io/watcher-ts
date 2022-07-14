@@ -799,24 +799,27 @@ export class Indexer implements IPLDIndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
+    log(`DEBUG: Fetching for blockHash: ${blockHash}`);
 
     const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
 
-    let [
-      { block, logs },
-      {
-        allEthHeaderCids: {
-          nodes: [
-            {
-              ethTransactionCidsByHeaderId: {
-                nodes: transactions
-              }
+    log('DEBUG: Fetching logs');
+    let { block, logs } = await logsPromise;
+    log(`DEBUG: Fetched for block: ${block.number} logs count: ${logs.length}`);
+    log('DEBUG: Fetching txs');
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          {
+            ethTransactionCidsByHeaderId: {
+              nodes: transactions
             }
-          ]
-        }
+          }
+        ]
       }
-    ] = await Promise.all([logsPromise, transactionsPromise]);
+    } = await transactionsPromise;
+    log(`DEBUG: Fetched txs: ${transactions.length}`);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
