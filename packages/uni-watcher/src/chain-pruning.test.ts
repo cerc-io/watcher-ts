@@ -61,7 +61,7 @@ describe('chain pruning', () => {
 
     const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-    indexer = new Indexer(db, ethClient, ethProvider, jobQueue);
+    indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
     assert(indexer, 'Could not create indexer object.');
 
     jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);

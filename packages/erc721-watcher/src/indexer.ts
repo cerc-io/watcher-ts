@@ -137,6 +137,10 @@ export class Indexer implements IPLDIndexerInterface {
     this._relationsMap = new Map();
   }
 
+  get serverConfig () {
+    return this._serverConfig;
+  }
+
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchIPLDStatus();

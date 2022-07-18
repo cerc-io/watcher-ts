@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -46,20 +46,22 @@ export class Indexer implements IndexerInterface {
   _ethClient: EthClient
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
+  _serverConfig: ServerConfig
 
   _abi: JsonFragment[]
   _storageLayout: StorageLayout
   _contract: ethers.utils.Interface
   _serverMode: string
 
-  constructor (db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, serverMode: string) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
-    this._serverMode = serverMode;
+    this._serverConfig = serverConfig;
+    this._serverMode = serverConfig.mode;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider, jobQueue);
 
     const { abi, storageLayout } = artifacts;
@@ -71,6 +73,10 @@ export class Indexer implements IndexerInterface {
     this._storageLayout = storageLayout;
 
     this._contract = new ethers.utils.Interface(this._abi);
+  }
+
+  get serverConfig () {
+    return this._serverConfig;
   }
 
   async init (): Promise<void> {
