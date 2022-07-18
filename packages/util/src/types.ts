@@ -4,6 +4,7 @@
 
 import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 
+import { ServerConfig } from './config';
 import { Where, QueryOptions } from './database';
 import { IpldStatus } from './ipld-indexer';
 
@@ -76,6 +77,7 @@ export interface IPLDBlockInterface {
 }
 
 export interface IndexerInterface {
+  readonly serverConfig: ServerConfig
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEvent (id: string): Promise<EventInterface | undefined>

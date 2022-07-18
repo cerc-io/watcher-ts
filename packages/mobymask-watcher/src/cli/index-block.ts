@@ -138,8 +138,14 @@ main().catch(err => {
 const processEvent = async (indexer: Indexer, block: BlockProgress, event: Event) => {
   const eventIndex = event.index;
 
+  // Check that events are processed in order.
+  if (eventIndex <= block.lastProcessedEventIndex) {
+    throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
+  }
+
   // Check if previous event in block has been processed exactly before this and abort if not.
-  if (eventIndex > 0) { // Skip the first event in the block.
+  // Skip check if logs fetched are filtered by contract address.
+  if (!indexer.serverConfig.filterLogs) {
     const prevIndex = eventIndex - 1;
 
     if (prevIndex !== block.lastProcessedEventIndex) {

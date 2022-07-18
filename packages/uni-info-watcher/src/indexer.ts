@@ -11,7 +11,7 @@ import { providers, utils, BigNumber } from 'ethers';
 import { Client as UniClient } from '@vulcanize/uni-watcher';
 import { Client as ERC20Client } from '@vulcanize/erc20-watcher';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal, JobQueue, Where } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, QueryOptions, OrderDirection, BlockHeight, Relation, GraphDecimal, JobQueue, Where, ServerConfig } from '@vulcanize/util';
 
 import { findEthPerToken, getEthPriceInUSD, getTrackedAmountUSD, sqrtPriceX96ToTokenPrices, WHITELIST_TOKENS } from './utils/pricing';
 import { updatePoolDayData, updatePoolHourData, updateTickDayData, updateTokenDayData, updateTokenHourData, updateUniswapDayData } from './utils/interval-updates';
@@ -46,8 +46,9 @@ export class Indexer implements IndexerInterface {
   _ethClient: EthClient
   _baseIndexer: BaseIndexer
   _isDemo: boolean
+  _serverConfig: ServerConfig
 
-  constructor (db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, ethProvider: providers.BaseProvider, jobQueue: JobQueue, mode: string) {
+  constructor (serverConfig: ServerConfig, db: Database, uniClient: UniClient, erc20Client: ERC20Client, ethClient: EthClient, ethProvider: providers.BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(uniClient);
     assert(erc20Client);
@@ -57,8 +58,13 @@ export class Indexer implements IndexerInterface {
     this._uniClient = uniClient;
     this._erc20Client = erc20Client;
     this._ethClient = ethClient;
+    this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, ethProvider, jobQueue);
-    this._isDemo = mode === 'demo';
+    this._isDemo = serverConfig.mode === 'demo';
+  }
+
+  get serverConfig () {
+    return this._serverConfig;
   }
 
   getResultEvent (event: Event): ResultEvent {

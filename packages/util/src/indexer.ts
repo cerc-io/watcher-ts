@@ -315,6 +315,10 @@ export class Indexer {
     return watchedContracts;
   }
 
+  getWatchedContracts (): ContractInterface[] {
+    return Object.values(this._watchedContracts);
+  }
+
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     assert(this._db.saveContract);
     const dbTx = await this._db.createTransactionRunner();

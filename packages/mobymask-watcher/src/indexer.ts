@@ -137,6 +137,10 @@ export class Indexer implements IPLDIndexerInterface {
     this._relationsMap = new Map();
   }
 
+  get serverConfig () {
+    return this._serverConfig;
+  }
+
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchIPLDStatus();
@@ -799,24 +803,43 @@ export class Indexer implements IPLDIndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
+    let block: any, logs: any[];
 
-    const logsPromise = this._ethClient.getLogs({ blockHash });
-    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this._baseIndexer.getWatchedContracts();
 
-    let [
-      { block, logs },
-      {
-        allEthHeaderCids: {
-          nodes: [
-            {
-              ethTransactionCidsByHeaderId: {
-                nodes: transactions
-              }
+      // TODO: Query logs by multiple contracts.
+      const contractlogsWithBlockPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+        blockHash,
+        contract: watchedContract.address
+      }));
+
+      const contractlogsWithBlock = await Promise.all(contractlogsWithBlockPromises);
+
+      // Flatten logs by contract and sort by index.
+      logs = contractlogsWithBlock.map(data => {
+        return data.logs;
+      }).flat()
+        .sort((a, b) => {
+          return a.index - b.index;
+        });
+
+      ({ block } = await this._ethClient.getBlockByHash(blockHash));
+    } else {
+      ({ block, logs } = await this._ethClient.getLogs({ blockHash }));
+    }
+
+    const {
+      allEthHeaderCids: {
+        nodes: [
+          {
+            ethTransactionCidsByHeaderId: {
+              nodes: transactions
             }
-          ]
-        }
+          }
+        ]
       }
-    ] = await Promise.all([logsPromise, transactionsPromise]);
+    } = await this._ethClient.getBlockWithTransactions({ blockHash });
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

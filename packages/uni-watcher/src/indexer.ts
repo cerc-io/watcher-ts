@@ -3,13 +3,13 @@
 //
 
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, QueryRunner, Server } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import assert from 'assert';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions } from '@vulcanize/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig } from '@vulcanize/util';
 
 import { Database } from './database';
 import { Event, UNKNOWN_EVENT_NAME } from './entity/Event';
@@ -40,20 +40,26 @@ export class Indexer implements IndexerInterface {
   _ethClient: EthClient
   _baseIndexer: BaseIndexer
   _ethProvider: ethers.providers.BaseProvider
+  _serverConfig: ServerConfig
 
   _factoryContract: ethers.utils.Interface
   _poolContract: ethers.utils.Interface
   _nfpmContract: ethers.utils.Interface
 
-  constructor (db: Database, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: ethers.providers.BaseProvider, jobQueue: JobQueue) {
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
+    this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider, jobQueue);
 
     this._factoryContract = new ethers.utils.Interface(factoryABI);
     this._poolContract = new ethers.utils.Interface(poolABI);
     this._nfpmContract = new ethers.utils.Interface(nfpmABI);
+  }
+
+  get serverConfig () {
+    return this._serverConfig;
   }
 
   async init (): Promise<void> {

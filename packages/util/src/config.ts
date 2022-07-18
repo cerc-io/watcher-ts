@@ -34,6 +34,7 @@ export interface ServerConfig {
   ipfsApiAddr: string;
   subgraphPath: string;
   wasmRestartBlocksInterval: number;
+  filterLogs: boolean;
 }
 
 export interface UpstreamConfig {

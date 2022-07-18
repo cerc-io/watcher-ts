@@ -5,10 +5,15 @@ import {
   IndexerInterface,
   BlockProgressInterface,
   EventInterface,
-  SyncStatusInterface
+  SyncStatusInterface,
+  ServerConfig as ServerConfigInterface
 } from '@vulcanize/util';
 
 export class Indexer implements IndexerInterface {
+  get serverConfig () {
+    return new ServerConfig();
+  }
+
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {
     assert(blockHash);
 
@@ -138,5 +143,31 @@ class SyncStatus implements SyncStatusInterface {
     this.latestIndexedBlockNumber = 0;
     this.latestCanonicalBlockHash = '0';
     this.latestCanonicalBlockNumber = 0;
+  }
+}
+
+class ServerConfig implements ServerConfigInterface {
+  host: string;
+  port: number;
+  mode: string;
+  kind: string;
+  checkpointing: boolean;
+  checkpointInterval: number;
+  ipfsApiAddr: string;
+  subgraphPath: string;
+  wasmRestartBlocksInterval: number;
+  filterLogs: boolean;
+
+  constructor () {
+    this.host = '';
+    this.port = 0;
+    this.mode = '';
+    this.kind = '';
+    this.checkpointing = false;
+    this.checkpointInterval = 0;
+    this.ipfsApiAddr = '';
+    this.subgraphPath = '';
+    this.wasmRestartBlocksInterval = 0;
+    this.filterLogs = false;
   }
 }
