@@ -34,4 +34,10 @@ export class SyncStatus implements SyncStatusInterface {
 
   @Column('integer')
   latestCanonicalBlockNumber!: number;
+
+  @Column('varchar', { length: 66 })
+  initialIndexedBlockHash!: string;
+
+  @Column('integer')
+  initialIndexedBlockNumber!: number;
 }

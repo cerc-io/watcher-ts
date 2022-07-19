@@ -9,7 +9,7 @@ import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 
 import { JsonFragment } from '@ethersproject/abi';
-import { BaseProvider } from '@ethersproject/providers';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
 import { StorageLayout } from '@vulcanize/solidity-mapper';
@@ -40,6 +40,12 @@ import { SyncStatus } from './entity/SyncStatus';
 import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
+import { IsMember } from './entity/IsMember';
+import { IsPhisher } from './entity/IsPhisher';
+import { IsRevoked } from './entity/IsRevoked';
+import { _Owner } from './entity/_Owner';
+import { MultiNonce } from './entity/MultiNonce';
+import { DomainHash } from './entity/DomainHash';
 
 const log = debug('vulcanize:indexer');
 
@@ -93,7 +99,7 @@ export type ResultIPLDBlock = {
 export class Indexer implements IPLDIndexerInterface {
   _db: Database
   _ethClient: EthClient
-  _ethProvider: BaseProvider
+  _ethProvider: JsonRpcProvider
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
 
@@ -106,7 +112,7 @@ export class Indexer implements IPLDIndexerInterface {
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
@@ -214,18 +220,37 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('domainHash: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: ''
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      'domainHash'
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(DomainHash, { blockNumber, contractAddress });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        'domainHash'
+      );
+    }
 
     await this._db.saveDomainHash({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
 
@@ -250,20 +275,39 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('multiNonce: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: 0
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      'multiNonce',
-      key0,
-      key1
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(MultiNonce, { blockNumber, contractAddress, key0, key1 });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        'multiNonce',
+        key0,
+        key1
+      );
+    }
 
     await this._db.saveMultiNonce({ blockHash, blockNumber, contractAddress, key0, key1, value: result.value, proof: JSONbig.stringify(result.proof) });
 
@@ -288,18 +332,37 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('_owner: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: ''
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      '_owner'
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(_Owner, { blockNumber, contractAddress });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        '_owner'
+      );
+    }
 
     await this._db._saveOwner({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
 
@@ -324,19 +387,38 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('isRevoked: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: false
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      'isRevoked',
-      key0
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(IsRevoked, { blockNumber, contractAddress, key0 });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        'isRevoked',
+        key0
+      );
+    }
 
     await this._db.saveIsRevoked({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
 
@@ -361,19 +443,38 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('isPhisher: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: false
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      'isPhisher',
-      key0
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(IsPhisher, { blockNumber, contractAddress, key0 });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        'isPhisher',
+        key0
+      );
+    }
 
     await this._db.saveIsPhisher({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
 
@@ -398,19 +499,38 @@ export class Indexer implements IPLDIndexerInterface {
 
     log('isMember: db miss, fetching from upstream server');
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const [{ number }, syncStatus] = await Promise.all([
+      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this.getSyncStatus()
+    ]);
+
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-    assert(storageLayout);
+    let result: ValueResult = {
+      value: false
+    };
 
-    const result = await this._baseIndexer.getStorageValue(
-      storageLayout,
-      blockHash,
-      contractAddress,
-      'isMember',
-      key0
-    );
+    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
+      const entity = await this._db.getPrevEntity(IsMember, { blockNumber, contractAddress, key0 });
+
+      if (entity) {
+        result = {
+          value: entity.value,
+          proof: JSON.parse(entity.proof)
+        };
+      }
+    } else {
+      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
+      assert(storageLayout);
+
+      result = await this._baseIndexer.getStorageValue(
+        storageLayout,
+        blockHash,
+        contractAddress,
+        'isMember',
+        key0
+      );
+    }
 
     await this._db.saveIsMember({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
 

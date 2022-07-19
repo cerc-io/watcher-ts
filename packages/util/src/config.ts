@@ -11,7 +11,7 @@ import { ConnectionOptions } from 'typeorm';
 
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { BaseProvider } from '@ethersproject/providers';
+import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
 
 import { getCustomProvider } from './misc';
 
@@ -77,7 +77,7 @@ export const getConfig = async (configFile: string): Promise<Config> => {
 
 export const initClients = async (config: Config): Promise<{
   ethClient: EthClient,
-  ethProvider: BaseProvider
+  ethProvider: JsonRpcProvider
 }> => {
   const { database: dbConfig, upstream: upstreamConfig, server: serverConfig } = config;
 

@@ -134,7 +134,9 @@ export class Database {
         latestCanonicalBlockHash: blockHash,
         latestCanonicalBlockNumber: blockNumber,
         latestIndexedBlockHash: '',
-        latestIndexedBlockNumber: -1
+        latestIndexedBlockNumber: -1,
+        initialIndexedBlockHash: blockHash,
+        initialIndexedBlockNumber: blockNumber
       });
     }
 

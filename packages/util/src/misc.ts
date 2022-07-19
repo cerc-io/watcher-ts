@@ -6,7 +6,7 @@ import assert from 'assert';
 import { ValueTransformer } from 'typeorm';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { utils, getDefaultProvider, providers } from 'ethers';
+import { utils, providers } from 'ethers';
 import Decimal from 'decimal.js';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
@@ -144,8 +144,8 @@ export const getResetYargs = (): yargs.Argv => {
     });
 };
 
-export const getCustomProvider = (network?: providers.Network | string, options?: any): providers.BaseProvider => {
-  const provider = getDefaultProvider(network, options);
+export const getCustomProvider = (url?: utils.ConnectionInfo | string, network?: providers.Networkish): providers.JsonRpcProvider => {
+  const provider = new providers.JsonRpcProvider(url, network);
   provider.formatter = new CustomFormatter();
   return provider;
 };
