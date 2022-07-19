@@ -208,297 +208,199 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async domainHash (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {
-    const entity = await this._db.getDomainHash({ blockHash, contractAddress });
+    let entity = await this._db.getDomainHash({ blockHash, contractAddress });
+
     if (entity) {
       log('domainHash: db hit.');
-
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
-    }
-
-    log('domainHash: db miss, fetching from upstream server');
-
-    const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
-      this.getSyncStatus()
-    ]);
-
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
-    let result: ValueResult = {
-      value: ''
-    };
-
-    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(DomainHash, { blockNumber, contractAddress });
-
-      if (entity) {
-        result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
-        };
-      }
     } else {
-      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-      assert(storageLayout);
+      log('domainHash: db miss, fetching from upstream server');
 
-      result = await this._baseIndexer.getStorageValue(
-        storageLayout,
+      entity = await this._getStorageEntity(
         blockHash,
         contractAddress,
-        'domainHash'
+        DomainHash,
+        'domainHash',
+        {},
+        ''
       );
+
+      await this._db.saveDomainHash(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForElementaryType({}, 'domainHash', entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    await this._db.saveDomainHash({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForElementaryType({}, 'domainHash', result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
   }
 
   async multiNonce (blockHash: string, contractAddress: string, key0: string, key1: bigint, diff = false): Promise<ValueResult> {
-    const entity = await this._db.getMultiNonce({ blockHash, contractAddress, key0, key1 });
+    let entity = await this._db.getMultiNonce({ blockHash, contractAddress, key0, key1 });
+
     if (entity) {
       log('multiNonce: db hit.');
-
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
-    }
-
-    log('multiNonce: db miss, fetching from upstream server');
-
-    const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
-      this.getSyncStatus()
-    ]);
-
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
-    let result: ValueResult = {
-      value: 0
-    };
-
-    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(MultiNonce, { blockNumber, contractAddress, key0, key1 });
-
-      if (entity) {
-        result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
-        };
-      }
     } else {
-      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-      assert(storageLayout);
+      log('multiNonce: db miss, fetching from upstream server');
 
-      result = await this._baseIndexer.getStorageValue(
-        storageLayout,
+      entity = await this._getStorageEntity(
         blockHash,
         contractAddress,
+        MultiNonce,
         'multiNonce',
-        key0,
-        key1
+        { key0, key1 },
+        BigInt(0)
       );
+
+      await this._db.saveMultiNonce(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForMappingType({}, 'multiNonce', [key0.toString(), key1.toString()], entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    await this._db.saveMultiNonce({ blockHash, blockNumber, contractAddress, key0, key1, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForMappingType({}, 'multiNonce', [key0.toString(), key1.toString()], result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
   }
 
   async _owner (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {
-    const entity = await this._db._getOwner({ blockHash, contractAddress });
+    let entity = await this._db._getOwner({ blockHash, contractAddress });
+
     if (entity) {
       log('_owner: db hit.');
-
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
-    }
-
-    log('_owner: db miss, fetching from upstream server');
-
-    const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
-      this.getSyncStatus()
-    ]);
-
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
-    let result: ValueResult = {
-      value: ''
-    };
-
-    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(_Owner, { blockNumber, contractAddress });
-
-      if (entity) {
-        result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
-        };
-      }
     } else {
-      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-      assert(storageLayout);
+      log('_owner: db miss, fetching from upstream server');
 
-      result = await this._baseIndexer.getStorageValue(
-        storageLayout,
+      entity = await this._getStorageEntity(
         blockHash,
         contractAddress,
-        '_owner'
+        _Owner,
+        '_owner',
+        {},
+        ''
       );
+
+      await this._db._saveOwner(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForElementaryType({}, '_owner', entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    await this._db._saveOwner({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForElementaryType({}, '_owner', result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
   }
 
   async isRevoked (blockHash: string, contractAddress: string, key0: string, diff = false): Promise<ValueResult> {
-    const entity = await this._db.getIsRevoked({ blockHash, contractAddress, key0 });
+    let entity = await this._db.getIsRevoked({ blockHash, contractAddress, key0 });
+
     if (entity) {
       log('isRevoked: db hit.');
-
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
-    }
-
-    log('isRevoked: db miss, fetching from upstream server');
-
-    const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
-      this.getSyncStatus()
-    ]);
-
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
-    let result: ValueResult = {
-      value: false
-    };
-
-    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(IsRevoked, { blockNumber, contractAddress, key0 });
-
-      if (entity) {
-        result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
-        };
-      }
     } else {
-      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-      assert(storageLayout);
+      log('isRevoked: db miss, fetching from upstream server');
 
-      result = await this._baseIndexer.getStorageValue(
-        storageLayout,
+      entity = await this._getStorageEntity(
         blockHash,
         contractAddress,
+        IsRevoked,
         'isRevoked',
-        key0
+        { key0 },
+        false
       );
+
+      await this._db.saveIsRevoked(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForMappingType({}, 'isRevoked', [key0.toString()], entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    await this._db.saveIsRevoked({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForMappingType({}, 'isRevoked', [key0.toString()], result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
   }
 
   async isPhisher (blockHash: string, contractAddress: string, key0: string, diff = false): Promise<ValueResult> {
-    const entity = await this._db.getIsPhisher({ blockHash, contractAddress, key0 });
+    let entity = await this._db.getIsPhisher({ blockHash, contractAddress, key0 });
+
     if (entity) {
       log('isPhisher: db hit.');
-
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
-    }
-
-    log('isPhisher: db miss, fetching from upstream server');
-
-    const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
-      this.getSyncStatus()
-    ]);
-
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
-
-    let result: ValueResult = {
-      value: false
-    };
-
-    if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(IsPhisher, { blockNumber, contractAddress, key0 });
-
-      if (entity) {
-        result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
-        };
-      }
     } else {
-      const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
-      assert(storageLayout);
+      log('isPhisher: db miss, fetching from upstream server');
 
-      result = await this._baseIndexer.getStorageValue(
-        storageLayout,
+      entity = await this._getStorageEntity(
         blockHash,
         contractAddress,
+        IsPhisher,
         'isPhisher',
-        key0
+        { key0 },
+        false
       );
+
+      await this._db.saveIsPhisher(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForMappingType({}, 'isPhisher', [key0.toString()], entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    await this._db.saveIsPhisher({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForMappingType({}, 'isPhisher', [key0.toString()], result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
   }
 
   async isMember (blockHash: string, contractAddress: string, key0: string, diff = false): Promise<ValueResult> {
-    const entity = await this._db.getIsMember({ blockHash, contractAddress, key0 });
+    let entity = await this._db.getIsMember({ blockHash, contractAddress, key0 });
+
     if (entity) {
       log('isMember: db hit.');
+    } else {
+      log('isMember: db miss, fetching from upstream server');
 
-      return {
-        value: entity.value,
-        proof: JSON.parse(entity.proof)
-      };
+      entity = await this._getStorageEntity(
+        blockHash,
+        contractAddress,
+        IsMember,
+        'isMember',
+        { key0 },
+        false
+      );
+
+      await this._db.saveIsMember(entity);
+
+      if (diff) {
+        const stateUpdate = updateStateForMappingType({}, 'isMember', [key0.toString()], entity.value.toString());
+        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
+      }
     }
 
-    log('isMember: db miss, fetching from upstream server');
+    return {
+      value: entity.value,
+      proof: JSON.parse(entity.proof)
+    };
+  }
 
+  async _getStorageEntity<Entity> (
+    blockHash: string,
+    contractAddress: string,
+    entity: new () => Entity,
+    storageVariableName: string,
+    mappingKeys: {[key: string]: any},
+    defaultValue: any
+  ): Promise<Entity> {
     const [{ number }, syncStatus] = await Promise.all([
       this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
       this.getSyncStatus()
@@ -507,16 +409,17 @@ export class Indexer implements IPLDIndexerInterface {
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
     let result: ValueResult = {
-      value: false
+      value: defaultValue
     };
 
     if (syncStatus && blockNumber < syncStatus.initialIndexedBlockNumber) {
-      const entity = await this._db.getPrevEntity(IsMember, { blockNumber, contractAddress, key0 });
+      const entityFields: any = { blockNumber, contractAddress, ...mappingKeys };
+      const entityData: any = await this._db.getPrevEntity(entity, entityFields);
 
-      if (entity) {
+      if (entityData) {
         result = {
-          value: entity.value,
-          proof: JSON.parse(entity.proof)
+          value: entityData.value,
+          proof: JSON.parse(entityData.proof)
         };
       }
     } else {
@@ -527,19 +430,19 @@ export class Indexer implements IPLDIndexerInterface {
         storageLayout,
         blockHash,
         contractAddress,
-        'isMember',
-        key0
+        storageVariableName,
+        ...Object.values(mappingKeys)
       );
     }
 
-    await this._db.saveIsMember({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
-
-    if (diff) {
-      const stateUpdate = updateStateForMappingType({}, 'isMember', [key0.toString()], result.value.toString());
-      await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-    }
-
-    return result;
+    return {
+      blockHash,
+      blockNumber,
+      contractAddress,
+      ...mappingKeys,
+      value: result.value,
+      proof: JSONbig.stringify(result.proof)
+    } as any;
   }
 
   async pushToIPFS (data: any): Promise<void> {

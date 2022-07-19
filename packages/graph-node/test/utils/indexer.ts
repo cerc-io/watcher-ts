@@ -134,6 +134,8 @@ class SyncStatus implements SyncStatusInterface {
   latestIndexedBlockNumber: number;
   latestCanonicalBlockHash: string;
   latestCanonicalBlockNumber: number;
+  initialIndexedBlockHash: string;
+  initialIndexedBlockNumber: number;
 
   constructor () {
     this.id = 0;
@@ -143,6 +145,8 @@ class SyncStatus implements SyncStatusInterface {
     this.latestIndexedBlockNumber = 0;
     this.latestCanonicalBlockHash = '0';
     this.latestCanonicalBlockNumber = 0;
+    this.initialIndexedBlockHash = '0';
+    this.initialIndexedBlockNumber = 0;
   }
 }
 
