@@ -441,7 +441,7 @@ export class Indexer implements IPLDIndexerInterface {
       contractAddress,
       ...mappingKeys,
       value: result.value,
-      proof: JSONbig.stringify(result.proof)
+      proof: result.proof ? JSONbig.stringify(result.proof) : null
     } as any;
   }
 
