@@ -38,6 +38,8 @@ export interface SyncStatusInterface {
   latestIndexedBlockNumber: number;
   latestCanonicalBlockHash: string;
   latestCanonicalBlockNumber: number;
+  initialIndexedBlockHash: string;
+  initialIndexedBlockNumber: number;
 }
 
 export interface IpldStatusInterface {

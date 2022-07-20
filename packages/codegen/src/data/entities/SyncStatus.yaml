@@ -38,6 +38,17 @@ columns:
     pgType: integer
     tsType: number
     columnType: Column
+  - name: initialIndexedBlockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: initialIndexedBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
 imports:
   - toImport:
       - Entity

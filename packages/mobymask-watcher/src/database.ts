@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, LessThanOrEqual } from 'typeorm';
 import path from 'path';
 
 import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@vulcanize/util';
@@ -98,6 +98,16 @@ export class Database implements IPLDDatabaseInterface {
         blockHash,
         contractAddress,
         key0
+      });
+  }
+
+  async getPrevEntity<Entity> (entity: new () => Entity, fields: { blockNumber: number } & DeepPartial<Entity>): Promise<Entity | undefined> {
+    return this._conn.getRepository(entity)
+      .findOne({
+        where: {
+          ...fields,
+          blockNumber: LessThanOrEqual(fields.blockNumber)
+        }
       });
   }
 
