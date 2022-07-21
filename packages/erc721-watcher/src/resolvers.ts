@@ -12,7 +12,6 @@ import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
-import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:resolver');
 

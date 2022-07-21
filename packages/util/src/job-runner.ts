@@ -13,17 +13,13 @@ import {
   JOB_KIND_EVENTS,
   JOB_KIND_CONTRACT,
   MAX_REORG_DEPTH,
-  UNKNOWN_EVENT_NAME,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, IPLDIndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
-import { createPruningJob } from './common';
-import { OrderDirection } from './database';
-
-const DEFAULT_EVENTS_IN_BATCH = 50;
+import { createPruningJob, processBatchEvents } from './common';
 
 const log = debug('vulcanize:job-runner');
 
@@ -241,92 +237,13 @@ export class JobRunner {
     const { blockHash } = job.data;
 
     console.time('time:job-runner#_processEvents-get-block-progress');
-    let block = await this._indexer.getBlockProgress(blockHash);
+    const block = await this._indexer.getBlockProgress(blockHash);
     console.timeEnd('time:job-runner#_processEvents-get-block-progress');
     assert(block);
 
     console.time('time:job-runner#_processEvents-events');
 
-    while (!block.isComplete) {
-      console.time('time:job-runner#_processEvents-fetching_events_batch');
-
-      // Fetch events in batches
-      const events: EventInterface[] = await this._indexer.getBlockEvents(
-        blockHash,
-        {
-          index: [
-            { value: block.lastProcessedEventIndex + 1, operator: 'gte', not: false }
-          ]
-        },
-        {
-          limit: this._jobQueueConfig.eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
-          orderBy: 'index',
-          orderDirection: OrderDirection.asc
-        }
-      );
-
-      console.timeEnd('time:job-runner#_processEvents-fetching_events_batch');
-
-      if (events.length) {
-        log(`Processing events batch from index ${events[0].index} to ${events[0].index + events.length - 1}`);
-      }
-
-      console.time('time:job-runner#_processEvents-processing_events_batch');
-
-      for (let event of events) {
-        // Process events in loop
-
-        const eventIndex = event.index;
-        // log(`Processing event ${event.id} index ${eventIndex}`);
-
-        // Check that events are processed in order.
-        if (eventIndex <= block.lastProcessedEventIndex) {
-          throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-        }
-
-        // Check if previous event in block has been processed exactly before this and abort if not.
-        // Skip check if logs fetched are filtered by contract address.
-        if (!this._indexer.serverConfig.filterLogs) {
-          const prevIndex = eventIndex - 1;
-
-          if (prevIndex !== block.lastProcessedEventIndex) {
-            throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash},` +
-            ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-          }
-        }
-
-        let watchedContract;
-
-        if (!this._indexer.isWatchedContract) {
-          // uni-info-watcher indexer doesn't have watched contracts implementation.
-          watchedContract = true;
-        } else {
-          watchedContract = await this._indexer.isWatchedContract(event.contract);
-        }
-
-        if (watchedContract) {
-          // We might not have parsed this event yet. This can happen if the contract was added
-          // as a result of a previous event in the same block.
-          if (event.eventName === UNKNOWN_EVENT_NAME) {
-            const logObj = JSON.parse(event.extraInfo);
-
-            assert(this._indexer.parseEventNameAndArgs);
-            assert(typeof watchedContract !== 'boolean');
-            const { eventName, eventInfo } = this._indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
-
-            event.eventName = eventName;
-            event.eventInfo = JSON.stringify(eventInfo);
-            event = await this._indexer.saveEventEntity(event);
-          }
-
-          await this._indexer.processEvent(event);
-        }
-
-        block = await this._indexer.updateBlockProgress(block, event.index);
-      }
-
-      console.timeEnd('time:job-runner#_processEvents-processing_events_batch');
-    }
+    await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch);
 
     console.timeEnd('time:job-runner#_processEvents-events');
   }

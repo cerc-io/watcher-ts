@@ -63,7 +63,7 @@ export class Indexer implements IndexerInterface {
     this._isDemo = serverConfig.mode === 'demo';
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 

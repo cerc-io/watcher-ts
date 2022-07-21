@@ -12,7 +12,7 @@
   # IPFS API address (can be taken from the output on running the IPFS daemon).
   ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
-  {{#if subgraphPath}}
+  {{#if (subgraphPath)}}
   subgraphPath = "{{subgraphPath}}"
   wasmRestartBlocksInterval = 20
   {{/if}}

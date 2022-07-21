@@ -75,7 +75,7 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 

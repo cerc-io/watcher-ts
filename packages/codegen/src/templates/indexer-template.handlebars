@@ -24,12 +24,16 @@ import {
   QueryOptions,
   updateStateForElementaryType,
   updateStateForMappingType,
+  {{#if (subgraphPath)}}
   BlockHeight,
+  {{/if}}
   IPFSClient,
   StateKind,
   IpldStatus as IpldStatusInterface
 } from '@vulcanize/util';
+{{#if (subgraphPath)}}
 import { GraphWatcher } from '@vulcanize/graph-node';
+{{/if}}
 
 {{#each contracts as | contract |}}
 import {{contract.contractName}}Artifacts from './artifacts/{{contract.contractName}}.json';
@@ -101,7 +105,9 @@ export class Indexer implements IPLDIndexerInterface {
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
+  {{#if (subgraphPath)}}
   _graphWatcher: GraphWatcher;
+  {{/if}}
 
   _abiMap: Map<string, JsonFragment[]>
   _storageLayoutMap: Map<string, StorageLayout>
@@ -109,10 +115,12 @@ export class Indexer implements IPLDIndexerInterface {
 
   _ipfsClient: IPFSClient
 
+  {{#if (subgraphPath)}}
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
-
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
+  
+  {{/if}}
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue{{#if (subgraphPath)}}, graphWatcher: GraphWatcher{{/if}}) {
     assert(db);
     assert(ethClient);
 
@@ -122,7 +130,9 @@ export class Indexer implements IPLDIndexerInterface {
     this._serverConfig = serverConfig;
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, this._ipfsClient);
+    {{#if (subgraphPath)}}
     this._graphWatcher = graphWatcher;
+    {{/if}}
 
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();
@@ -147,14 +157,16 @@ export class Indexer implements IPLDIndexerInterface {
     this._contractMap.set(KIND_{{capitalize contract.contractName}}, new ethers.utils.Interface({{contract.contractName}}ABI));
 
     {{/each}}
+    {{#if (subgraphPath)}}
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
+    {{/if}}
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 
@@ -399,6 +411,7 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
+  {{#if (subgraphPath)}}
   async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
     const relations = this._relationsMap.get(entity) || {};
 
@@ -407,12 +420,16 @@ export class Indexer implements IPLDIndexerInterface {
     return data;
   }
 
+  {{/if}}
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
+    {{#if (subgraphPath)}}
     // Call subgraph handler for event.
     await this._graphWatcher.handleEvent(resultEvent);
 
+    {{/if}}
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
   }
@@ -425,9 +442,11 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
+    {{#if (subgraphPath)}}
 
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
+    {{/if}}
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -664,10 +683,14 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
+  {{#if (subgraphPath)}}
   getEntityTypesMap (): Map<string, { [key: string]: string }> {
     return this._entityTypesMap;
   }
 
+  {{/if}}
+
+  {{#if (subgraphPath)}}
   _populateEntityTypesMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     this._entityTypesMap.set('{{subgraphEntity.className}}', {
@@ -682,7 +705,9 @@ export class Indexer implements IPLDIndexerInterface {
     });
   {{/each}}
   }
+  {{/if}}
 
+  {{#if (subgraphPath)}}
   _populateRelationsMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     {{#if subgraphEntity.relations}}
@@ -705,6 +730,7 @@ export class Indexer implements IPLDIndexerInterface {
     {{/if}}
   {{/each}}
   }
+  {{/if}}
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);

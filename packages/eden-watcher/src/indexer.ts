@@ -191,7 +191,7 @@ export class Indexer implements IPLDIndexerInterface {
     this._populateRelationsMap();
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 

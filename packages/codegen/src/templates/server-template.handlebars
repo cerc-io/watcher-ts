@@ -15,7 +15,9 @@ import 'graphql-import-node';
 import { createServer } from 'http';
 
 import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients } from '@vulcanize/util';
+{{#if (subgraphPath)}}
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+{{/if}}
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -42,11 +44,13 @@ export const main = async (): Promise<any> => {
 
   const db = new Database(config.database);
   await db.init();
-
+  {{#if (subgraphPath)}}
+  
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
-
+  
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
+  {{/if}}
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
@@ -60,11 +64,11 @@ export const main = async (): Promise<any> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await indexer.init();
+  {{#if (subgraphPath)}}
 
   graphWatcher.setIndexer(indexer);
-  {{#if subgraphPath}}
   await graphWatcher.init();
   {{/if}}
 

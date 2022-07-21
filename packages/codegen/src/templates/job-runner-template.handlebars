@@ -2,7 +2,9 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+{{#if (subgraphPath)}}
 import path from 'path';
+{{/if}}
 import assert from 'assert';
 import 'reflect-metadata';
 import yargs from 'yargs';
@@ -24,7 +26,9 @@ import {
   DEFAULT_CONFIG_PATH,
   initClients
 } from '@vulcanize/util';
+{{#if (subgraphPath)}}
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+{{/if}}
 
 import { Indexer } from './indexer';
 import { Database } from './database';
@@ -252,11 +256,13 @@ export const main = async (): Promise<any> => {
 
   const db = new Database(config.database);
   await db.init();
-
+  {{#if (subgraphPath)}}
+  
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
-
+  
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
+  {{/if}}
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
@@ -267,11 +273,11 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await indexer.init();
+  {{#if (subgraphPath)}}
 
   graphWatcher.setIndexer(indexer);
-  {{#if subgraphPath}}
   await graphWatcher.init();
 
   // Watching all the contracts in the subgraph.

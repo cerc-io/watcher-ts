@@ -7,10 +7,11 @@ import Handlebars from 'handlebars';
 
 import { reservedNames } from './types';
 
-export function registerHandlebarHelpers (): void {
+export function registerHandlebarHelpers (config: any): void {
   Handlebars.registerHelper('compare', compareHelper);
   Handlebars.registerHelper('capitalize', capitalizeHelper);
   Handlebars.registerHelper('reservedNameCheck', reservedNameCheckHelper);
+  Handlebars.registerHelper('subgraphPath', () => config.subgraphPath);
 }
 
 /**

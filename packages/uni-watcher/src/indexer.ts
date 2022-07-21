@@ -3,7 +3,7 @@
 //
 
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions, QueryRunner, Server } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import assert from 'assert';
@@ -58,7 +58,7 @@ export class Indexer implements IndexerInterface {
     this._nfpmContract = new ethers.utils.Interface(nfpmABI);
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 
