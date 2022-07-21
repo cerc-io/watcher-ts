@@ -55,8 +55,6 @@ const MEMBERSTATUSUPDATED_EVENT = 'MemberStatusUpdated';
 const OWNERSHIPTRANSFERRED_EVENT = 'OwnershipTransferred';
 const PHISHERSTATUSUPDATED_EVENT = 'PhisherStatusUpdated';
 
-const MAX_EVENTS_BLOCK_RANGE = -1;
-
 export type ResultEvent = {
   block: {
     cid: string;
@@ -701,7 +699,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
-    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, MAX_EVENTS_BLOCK_RANGE);
+    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, this._serverConfig.maxEventsBlockRange);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {

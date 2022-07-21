@@ -620,7 +620,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
-    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber);
+    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, this._serverConfig.maxEventsBlockRange);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {

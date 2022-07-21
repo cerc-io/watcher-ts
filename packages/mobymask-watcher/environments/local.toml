@@ -15,6 +15,10 @@
   # Boolean to filter logs by contract.
   filterLogs = true
 
+  # Max block range for which to return events in eventsInRange GQL query.
+  # Use -1 for skipping check on block range.
+  maxEventsBlockRange = -1
+
 [database]
   type = "postgres"
   host = "localhost"

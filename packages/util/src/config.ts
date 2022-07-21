@@ -35,6 +35,7 @@ export interface ServerConfig {
   subgraphPath: string;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
+  maxEventsBlockRange: number;
 }
 
 export interface UpstreamConfig {
