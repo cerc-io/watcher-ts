@@ -15,7 +15,10 @@
   {{#if (subgraphPath)}}
   subgraphPath = "{{subgraphPath}}"
   wasmRestartBlocksInterval = 20
+
   {{/if}}
+  # Boolean to filter logs by contract.
+  filterLogs = false
 
 [database]
   type = "postgres"

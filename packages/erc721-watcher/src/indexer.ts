@@ -1029,12 +1029,34 @@ export class Indexer implements IPLDIndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-
-    const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    const blockPromise = this._ethClient.getBlockByHash(blockHash);
+    let logs: any[];
+
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this._baseIndexer.getWatchedContracts();
+
+      // TODO: Query logs by multiple contracts.
+      const contractlogsPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+        blockHash,
+        contract: watchedContract.address
+      }));
+
+      const contractlogs = await Promise.all(contractlogsPromises);
+
+      // Flatten logs by contract and sort by index.
+      logs = contractlogs.map(data => {
+        return data.logs;
+      }).flat()
+        .sort((a, b) => {
+          return a.index - b.index;
+        });
+    } else {
+      ({ logs } = await this._ethClient.getLogs({ blockHash }));
+    }
 
     let [
-      { block, logs },
+      { block },
       {
         allEthHeaderCids: {
           nodes: [
@@ -1046,7 +1068,7 @@ export class Indexer implements IPLDIndexerInterface {
           ]
         }
       }
-    ] = await Promise.all([logsPromise, transactionsPromise]);
+    ] = await Promise.all([blockPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

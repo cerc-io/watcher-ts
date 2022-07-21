@@ -826,43 +826,46 @@ export class Indexer implements IPLDIndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-    let block: any, logs: any[];
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    const blockPromise = this._ethClient.getBlockByHash(blockHash);
+    let logs: any[];
 
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this._baseIndexer.getWatchedContracts();
 
       // TODO: Query logs by multiple contracts.
-      const contractlogsWithBlockPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+      const contractlogsPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
         blockHash,
         contract: watchedContract.address
       }));
 
-      const contractlogsWithBlock = await Promise.all(contractlogsWithBlockPromises);
+      const contractlogs = await Promise.all(contractlogsPromises);
 
       // Flatten logs by contract and sort by index.
-      logs = contractlogsWithBlock.map(data => {
+      logs = contractlogs.map(data => {
         return data.logs;
       }).flat()
         .sort((a, b) => {
           return a.index - b.index;
         });
-
-      ({ block } = await this._ethClient.getBlockByHash(blockHash));
     } else {
-      ({ block, logs } = await this._ethClient.getLogs({ blockHash }));
+      ({ logs } = await this._ethClient.getLogs({ blockHash }));
     }
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          {
-            ethTransactionCidsByHeaderId: {
-              nodes: transactions
+    let [
+      { block },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
             }
-          }
-        ]
+          ]
+        }
       }
-    } = await this._ethClient.getBlockWithTransactions({ blockHash });
+    ] = await Promise.all([blockPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
