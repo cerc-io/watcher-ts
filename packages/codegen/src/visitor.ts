@@ -93,8 +93,12 @@ export class Visitor {
     const variable = node.variables[0];
     const name: string = variable.name;
     const stateVariableType: string = variable.typeName.type;
-
     const params: Param[] = [];
+
+    if (variable.isImmutable) {
+      // Skip in case variable is immutable.
+      return;
+    }
 
     let typeName = variable.typeName;
     let numParams = 0;

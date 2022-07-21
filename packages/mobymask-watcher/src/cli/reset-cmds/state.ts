@@ -12,7 +12,6 @@ import { Database } from '../../database';
 import { Indexer } from '../../indexer';
 import { BlockProgress } from '../../entity/BlockProgress';
 
-import { DomainHash } from '../../entity/DomainHash';
 import { MultiNonce } from '../../entity/MultiNonce';
 import { _Owner } from '../../entity/_Owner';
 import { IsRevoked } from '../../entity/IsRevoked';
@@ -60,7 +59,7 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const entities = [BlockProgress, DomainHash, MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
+    const entities = [BlockProgress, MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
 
     const removeEntitiesPromise = entities.map(async entityClass => {
       return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });

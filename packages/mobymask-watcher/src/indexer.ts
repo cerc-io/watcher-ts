@@ -45,7 +45,6 @@ import { IsPhisher } from './entity/IsPhisher';
 import { IsRevoked } from './entity/IsRevoked';
 import { _Owner } from './entity/_Owner';
 import { MultiNonce } from './entity/MultiNonce';
-import { DomainHash } from './entity/DomainHash';
 
 const log = debug('vulcanize:indexer');
 
@@ -109,9 +108,6 @@ export class Indexer implements IPLDIndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  _entityTypesMap: Map<string, { [key: string]: string }>
-  _relationsMap: Map<any, { [key: string]: any }>
-
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
@@ -137,10 +133,6 @@ export class Indexer implements IPLDIndexerInterface {
     assert(PhisherRegistryStorageLayout);
     this._storageLayoutMap.set(KIND_PHISHERREGISTRY, PhisherRegistryStorageLayout);
     this._contractMap.set(KIND_PHISHERREGISTRY, new ethers.utils.Interface(PhisherRegistryABI));
-
-    this._entityTypesMap = new Map();
-
-    this._relationsMap = new Map();
   }
 
   get serverConfig (): ServerConfig {
@@ -204,37 +196,6 @@ export class Indexer implements IPLDIndexerInterface {
       cid: ipldBlock.cid,
       kind: ipldBlock.kind,
       data: JSON.stringify(data)
-    };
-  }
-
-  async domainHash (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {
-    let entity = await this._db.getDomainHash({ blockHash, contractAddress });
-
-    if (entity) {
-      log('domainHash: db hit.');
-    } else {
-      log('domainHash: db miss, fetching from upstream server');
-
-      entity = await this._getStorageEntity(
-        blockHash,
-        contractAddress,
-        DomainHash,
-        'domainHash',
-        {},
-        ''
-      );
-
-      await this._db.saveDomainHash(entity);
-
-      if (diff) {
-        const stateUpdate = updateStateForElementaryType({}, 'domainHash', entity.value.toString());
-        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-      }
-    }
-
-    return {
-      value: entity.value,
-      proof: JSON.parse(entity.proof)
     };
   }
 
@@ -818,10 +779,6 @@ export class Indexer implements IPLDIndexerInterface {
   // Get contract interface for specified contract kind.
   getContractInterface (kind: string): ethers.utils.Interface | undefined {
     return this._contractMap.get(kind);
-  }
-
-  getEntityTypesMap (): Map<string, { [key: string]: string }> {
-    return this._entityTypesMap;
   }
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {

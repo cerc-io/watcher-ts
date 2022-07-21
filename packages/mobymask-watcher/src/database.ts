@@ -14,7 +14,6 @@ import { SyncStatus } from './entity/SyncStatus';
 import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
-import { DomainHash } from './entity/DomainHash';
 import { MultiNonce } from './entity/MultiNonce';
 import { _Owner } from './entity/_Owner';
 import { IsRevoked } from './entity/IsRevoked';
@@ -46,14 +45,6 @@ export class Database implements IPLDDatabaseInterface {
 
   async close (): Promise<void> {
     return this._baseDatabase.close();
-  }
-
-  async getDomainHash ({ blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<DomainHash | undefined> {
-    return this._conn.getRepository(DomainHash)
-      .findOne({
-        blockHash,
-        contractAddress
-      });
   }
 
   async getMultiNonce ({ blockHash, contractAddress, key0, key1 }: { blockHash: string, contractAddress: string, key0: string, key1: bigint }): Promise<MultiNonce | undefined> {
@@ -109,12 +100,6 @@ export class Database implements IPLDDatabaseInterface {
           blockNumber: LessThanOrEqual(fields.blockNumber)
         }
       });
-  }
-
-  async saveDomainHash ({ blockHash, blockNumber, contractAddress, value, proof }: DeepPartial<DomainHash>): Promise<DomainHash> {
-    const repo = this._conn.getRepository(DomainHash);
-    const entity = repo.create({ blockHash, blockNumber, contractAddress, value, proof });
-    return repo.save(entity);
   }
 
   async saveMultiNonce ({ blockHash, blockNumber, contractAddress, key0, key1, value, proof }: DeepPartial<MultiNonce>): Promise<MultiNonce> {
