@@ -317,7 +317,6 @@ export class Database implements IPLDDatabaseInterface {
   }
 
   _setPropColMaps (): void {
-    this._propColMaps.DomainHash = this._getPropertyColumnMapForEntity('DomainHash');
     this._propColMaps.MultiNonce = this._getPropertyColumnMapForEntity('MultiNonce');
     this._propColMaps._Owner = this._getPropertyColumnMapForEntity('_Owner');
     this._propColMaps.IsRevoked = this._getPropertyColumnMapForEntity('IsRevoked');
