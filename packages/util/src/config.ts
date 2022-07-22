@@ -11,7 +11,7 @@ import { ConnectionOptions } from 'typeorm';
 
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 import { getCustomProvider } from './misc';
 
@@ -35,6 +35,7 @@ export interface ServerConfig {
   subgraphPath: string;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
+  maxEventsBlockRange: number;
 }
 
 export interface UpstreamConfig {

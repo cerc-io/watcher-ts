@@ -17,15 +17,6 @@ export class Client {
     this._client = new GraphQLClient(config);
   }
 
-  async getDomainHash (blockHash: string, contractAddress: string): Promise<any> {
-    const { domainHash } = await this._client.query(
-      gql(queries.domainHash),
-      { blockHash, contractAddress }
-    );
-
-    return domainHash;
-  }
-
   async getMultiNonce (blockHash: string, contractAddress: string, key0: string, key1: bigint): Promise<any> {
     const { multiNonce } = await this._client.query(
       gql(queries.multiNonce),

@@ -36,6 +36,7 @@ import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
 import { getSubgraphConfig } from './utils/subgraph';
+import { exportIndexBlock } from './index-block';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -166,7 +167,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   });
 
   // Register the handlebar helpers to be used in the templates.
-  registerHandlebarHelpers();
+  registerHandlebarHelpers(config);
 
   visitor.visitSubgraph(config.subgraphPath);
 
@@ -300,6 +301,11 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
     : process.stdout;
   exportInspectCID(outStream, config.subgraphPath);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/index-block.ts'))
+    : process.stdout;
+  exportIndexBlock(outStream);
 }
 
 function getConfig (configFile: string): any {

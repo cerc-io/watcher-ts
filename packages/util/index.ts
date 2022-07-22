@@ -17,3 +17,4 @@ export * from './src/graph-decimal';
 export * from './src/ipld-indexer';
 export * from './src/ipld-database';
 export * from './src/ipfs';
+export * from './src/index-block';

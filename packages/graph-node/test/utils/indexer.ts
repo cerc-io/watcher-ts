@@ -161,6 +161,7 @@ class ServerConfig implements ServerConfigInterface {
   subgraphPath: string;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
+  maxEventsBlockRange: number;
 
   constructor () {
     this.host = '';
@@ -173,5 +174,6 @@ class ServerConfig implements ServerConfigInterface {
     this.subgraphPath = '';
     this.wasmRestartBlocksInterval = 0;
     this.filterLogs = false;
+    this.maxEventsBlockRange = 0;
   }
 }

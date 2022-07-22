@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 
-import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
+import { updateStateForElementaryType } from '@vulcanize/util';
 
 import { Indexer, ResultEvent } from './indexer';
 import { TransferCount } from './entity/TransferCount';

@@ -3,7 +3,6 @@
 //
 
 import assert from 'assert';
-import _ from 'lodash';
 
 import { Cache } from '@vulcanize/cache';
 
@@ -116,24 +115,10 @@ export class EthClient {
   async getLogs (vars: Vars): Promise<any> {
     const result = await this._getCachedOrFetch('getLogs', vars);
     const {
-      getLogs: resultLogs,
-      block: {
-        number: blockNumHex,
-        timestamp: timestampHex,
-        parent
-      }
+      getLogs
     } = result;
 
-    const block = {
-      hash: vars.blockHash,
-      number: parseInt(blockNumHex, 16),
-      timestamp: parseInt(timestampHex, 16),
-      parent
-    };
-
-    const logs = resultLogs.map((logEntry: any) => _.merge({}, logEntry, { transaction: { block } }));
-
-    return { logs, block };
+    return { logs: getLogs };
   }
 
   async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {

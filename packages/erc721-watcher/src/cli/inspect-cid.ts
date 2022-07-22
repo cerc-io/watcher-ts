@@ -2,7 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import assert from 'assert';
 import yargs from 'yargs';
 import 'reflect-metadata';
@@ -10,7 +9,6 @@ import debug from 'debug';
 import util from 'util';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
@@ -43,11 +41,6 @@ const main = async (): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -57,10 +50,8 @@ const main = async (): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
   await indexer.init();
-
-  graphWatcher.setIndexer(indexer);
 
   const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
   assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');

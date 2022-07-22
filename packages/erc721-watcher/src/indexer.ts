@@ -29,7 +29,6 @@ import {
   StateKind,
   IpldStatus as IpldStatusInterface
 } from '@vulcanize/util';
-import { GraphWatcher } from '@vulcanize/graph-node';
 
 import ERC721Artifacts from './artifacts/ERC721.json';
 import { Database } from './database';
@@ -94,7 +93,6 @@ export class Indexer implements IPLDIndexerInterface {
   _ethProvider: BaseProvider
   _baseIndexer: BaseIndexer
   _serverConfig: ServerConfig
-  _graphWatcher: GraphWatcher;
 
   _abiMap: Map<string, JsonFragment[]>
   _storageLayoutMap: Map<string, StorageLayout>
@@ -102,10 +100,7 @@ export class Indexer implements IPLDIndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  _entityTypesMap: Map<string, { [key: string]: string }>
-  _relationsMap: Map<any, { [key: string]: any }>
-
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
+  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
@@ -115,7 +110,6 @@ export class Indexer implements IPLDIndexerInterface {
     this._serverConfig = serverConfig;
     this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, this._ipfsClient);
-    this._graphWatcher = graphWatcher;
 
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();
@@ -131,13 +125,9 @@ export class Indexer implements IPLDIndexerInterface {
     assert(ERC721StorageLayout);
     this._storageLayoutMap.set(KIND_ERC721, ERC721StorageLayout);
     this._contractMap.set(KIND_ERC721, new ethers.utils.Interface(ERC721ABI));
-
-    this._entityTypesMap = new Map();
-
-    this._relationsMap = new Map();
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 
@@ -452,9 +442,8 @@ export class Indexer implements IPLDIndexerInterface {
     return res;
   }
 
-  async saveOrUpdateTransferCount (transferCount: TransferCount) {
+  async saveOrUpdateTransferCount (transferCount: TransferCount): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
-    let res;
 
     try {
       await this._db.saveTransferCount(dbTx, transferCount);
@@ -464,8 +453,6 @@ export class Indexer implements IPLDIndexerInterface {
     } finally {
       await dbTx.release();
     }
-
-    return res;
   }
 
   async _name (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {
@@ -784,19 +771,8 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
-    const relations = this._relationsMap.get(entity) || {};
-
-    const data = await this._graphWatcher.getEntity(entity, id, relations, block);
-
-    return data;
-  }
-
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
-
-    // Call subgraph handler for event.
-    await this._graphWatcher.handleEvent(resultEvent);
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
@@ -810,9 +786,6 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
-
-    // Call subgraph handler for block.
-    await this._graphWatcher.handleBlock(blockHash);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -848,7 +821,7 @@ export class Indexer implements IPLDIndexerInterface {
     switch (logDescription.name) {
       case APPROVAL_EVENT: {
         eventName = logDescription.name;
-        const { owner, approved, tokenId } = logDescription.args;
+        const [owner, approved, tokenId] = logDescription.args;
         eventInfo = {
           owner,
           approved,
@@ -859,7 +832,7 @@ export class Indexer implements IPLDIndexerInterface {
       }
       case APPROVALFORALL_EVENT: {
         eventName = logDescription.name;
-        const { owner, operator, approved } = logDescription.args;
+        const [owner, operator, approved] = logDescription.args;
         eventInfo = {
           owner,
           operator,
@@ -870,7 +843,7 @@ export class Indexer implements IPLDIndexerInterface {
       }
       case TRANSFER_EVENT: {
         eventName = logDescription.name;
-        const { from, to, tokenId } = logDescription.args;
+        const [from, to, tokenId] = logDescription.args;
         eventInfo = {
           from,
           to,
@@ -1054,18 +1027,36 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  getEntityTypesMap (): Map<string, { [key: string]: string }> {
-    return this._entityTypesMap;
-  }
-
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-
-    const logsPromise = this._ethClient.getLogs({ blockHash });
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    const blockPromise = this._ethClient.getBlockByHash(blockHash);
+    let logs: any[];
+
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this._baseIndexer.getWatchedContracts();
+
+      // TODO: Query logs by multiple contracts.
+      const contractlogsPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+        blockHash,
+        contract: watchedContract.address
+      }));
+
+      const contractlogs = await Promise.all(contractlogsPromises);
+
+      // Flatten logs by contract and sort by index.
+      logs = contractlogs.map(data => {
+        return data.logs;
+      }).flat()
+        .sort((a, b) => {
+          return a.index - b.index;
+        });
+    } else {
+      ({ logs } = await this._ethClient.getLogs({ blockHash }));
+    }
 
     let [
-      { block, logs },
+      { block },
       {
         allEthHeaderCids: {
           nodes: [
@@ -1077,7 +1068,7 @@ export class Indexer implements IPLDIndexerInterface {
           ]
         }
       }
-    ] = await Promise.all([logsPromise, transactionsPromise]);
+    ] = await Promise.all([blockPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

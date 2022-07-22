@@ -75,7 +75,7 @@ export class Indexer implements IndexerInterface {
     this._contract = new ethers.utils.Interface(this._abi);
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 
@@ -388,7 +388,10 @@ export class Indexer implements IndexerInterface {
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-    let { block, logs } = await this._ethClient.getLogs({ blockHash });
+    let [{ block }, { logs }] = await Promise.all([
+      this._ethClient.getBlockByHash(blockHash),
+      this._ethClient.getLogs({ blockHash })
+    ]);
 
     const dbEvents: Array<DeepPartial<Event>> = [];
 

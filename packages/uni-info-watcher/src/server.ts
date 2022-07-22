@@ -40,7 +40,7 @@ export const main = async (): Promise<any> => {
   const config: Config = await getConfig(argv.f);
   const { ethClient } = await initClients(config);
 
-  const { host, port, mode } = config.server;
+  const { host, port } = config.server;
 
   const db = new Database(config.database);
   await db.init();

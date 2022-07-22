@@ -1,8 +1,0 @@
-query domainHash($blockHash: String!, $contractAddress: String!){
-    domainHash(blockHash: $blockHash, contractAddress: $contractAddress){
-        value
-        proof{
-            data
-        }
-    }
-}

@@ -90,7 +90,6 @@ type ResultIPLDBlock {
 type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
-  domainHash(blockHash: String!, contractAddress: String!): ResultString!
   multiNonce(blockHash: String!, contractAddress: String!, key0: String!, key1: BigInt!): ResultBigInt!
   _owner(blockHash: String!, contractAddress: String!): ResultString!
   isRevoked(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!

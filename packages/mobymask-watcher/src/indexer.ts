@@ -45,7 +45,6 @@ import { IsPhisher } from './entity/IsPhisher';
 import { IsRevoked } from './entity/IsRevoked';
 import { _Owner } from './entity/_Owner';
 import { MultiNonce } from './entity/MultiNonce';
-import { DomainHash } from './entity/DomainHash';
 
 const log = debug('vulcanize:indexer');
 
@@ -55,8 +54,6 @@ const DELEGATIONTRIGGERED_EVENT = 'DelegationTriggered';
 const MEMBERSTATUSUPDATED_EVENT = 'MemberStatusUpdated';
 const OWNERSHIPTRANSFERRED_EVENT = 'OwnershipTransferred';
 const PHISHERSTATUSUPDATED_EVENT = 'PhisherStatusUpdated';
-
-const MAX_EVENTS_BLOCK_RANGE = -1;
 
 export type ResultEvent = {
   block: {
@@ -109,9 +106,6 @@ export class Indexer implements IPLDIndexerInterface {
 
   _ipfsClient: IPFSClient
 
-  _entityTypesMap: Map<string, { [key: string]: string }>
-  _relationsMap: Map<any, { [key: string]: any }>
-
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
@@ -137,13 +131,9 @@ export class Indexer implements IPLDIndexerInterface {
     assert(PhisherRegistryStorageLayout);
     this._storageLayoutMap.set(KIND_PHISHERREGISTRY, PhisherRegistryStorageLayout);
     this._contractMap.set(KIND_PHISHERREGISTRY, new ethers.utils.Interface(PhisherRegistryABI));
-
-    this._entityTypesMap = new Map();
-
-    this._relationsMap = new Map();
   }
 
-  get serverConfig () {
+  get serverConfig (): ServerConfig {
     return this._serverConfig;
   }
 
@@ -204,37 +194,6 @@ export class Indexer implements IPLDIndexerInterface {
       cid: ipldBlock.cid,
       kind: ipldBlock.kind,
       data: JSON.stringify(data)
-    };
-  }
-
-  async domainHash (blockHash: string, contractAddress: string, diff = false): Promise<ValueResult> {
-    let entity = await this._db.getDomainHash({ blockHash, contractAddress });
-
-    if (entity) {
-      log('domainHash: db hit.');
-    } else {
-      log('domainHash: db miss, fetching from upstream server');
-
-      entity = await this._getStorageEntity(
-        blockHash,
-        contractAddress,
-        DomainHash,
-        'domainHash',
-        {},
-        ''
-      );
-
-      await this._db.saveDomainHash(entity);
-
-      if (diff) {
-        const stateUpdate = updateStateForElementaryType({}, 'domainHash', entity.value.toString());
-        await this.createDiffStaged(contractAddress, blockHash, stateUpdate);
-      }
-    }
-
-    return {
-      value: entity.value,
-      proof: JSON.parse(entity.proof)
     };
   }
 
@@ -740,7 +699,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
-    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, MAX_EVENTS_BLOCK_RANGE);
+    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, this._serverConfig.maxEventsBlockRange);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -820,49 +779,48 @@ export class Indexer implements IPLDIndexerInterface {
     return this._contractMap.get(kind);
   }
 
-  getEntityTypesMap (): Map<string, { [key: string]: string }> {
-    return this._entityTypesMap;
-  }
-
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
-    let block: any, logs: any[];
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    const blockPromise = this._ethClient.getBlockByHash(blockHash);
+    let logs: any[];
 
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this._baseIndexer.getWatchedContracts();
 
       // TODO: Query logs by multiple contracts.
-      const contractlogsWithBlockPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+      const contractlogsPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
         blockHash,
         contract: watchedContract.address
       }));
 
-      const contractlogsWithBlock = await Promise.all(contractlogsWithBlockPromises);
+      const contractlogs = await Promise.all(contractlogsPromises);
 
       // Flatten logs by contract and sort by index.
-      logs = contractlogsWithBlock.map(data => {
+      logs = contractlogs.map(data => {
         return data.logs;
       }).flat()
         .sort((a, b) => {
           return a.index - b.index;
         });
-
-      ({ block } = await this._ethClient.getBlockByHash(blockHash));
     } else {
-      ({ block, logs } = await this._ethClient.getLogs({ blockHash }));
+      ({ logs } = await this._ethClient.getLogs({ blockHash }));
     }
 
-    const {
-      allEthHeaderCids: {
-        nodes: [
-          {
-            ethTransactionCidsByHeaderId: {
-              nodes: transactions
+    let [
+      { block },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
             }
-          }
-        ]
+          ]
+        }
       }
-    } = await this._ethClient.getBlockWithTransactions({ blockHash });
+    ] = await Promise.all([blockPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;

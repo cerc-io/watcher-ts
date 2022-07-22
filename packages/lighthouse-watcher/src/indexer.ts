@@ -82,7 +82,11 @@ export class Indexer {
   async fetchEvents (blockHash: string): Promise<Array<ResultEvent>> {
     assert(this._config.watch);
     const contract = this._config.watch.lighthouse;
-    const { logs, block } = await this._ethClient.getLogs({ blockHash, contract });
+
+    const [{ logs }, { block }] = await Promise.all([
+      this._ethClient.getLogs({ blockHash, contract }),
+      this._ethClient.getBlockByHash(blockHash)
+    ]);
 
     const {
       allEthHeaderCids: {

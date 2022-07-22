@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
+import { ValueResult, StateKind } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -58,11 +58,6 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Query: {
-      domainHash: (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<ValueResult> => {
-        log('domainHash', blockHash, contractAddress);
-        return indexer.domainHash(blockHash, contractAddress);
-      },
-
       multiNonce: (_: any, { blockHash, contractAddress, key0, key1 }: { blockHash: string, contractAddress: string, key0: string, key1: bigint }): Promise<ValueResult> => {
         log('multiNonce', blockHash, contractAddress, key0, key1);
         return indexer.multiNonce(blockHash, contractAddress, key0, key1);

@@ -2,14 +2,12 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
 import assert from 'assert';
 
 import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
@@ -46,11 +44,6 @@ const main = async (): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -60,10 +53,8 @@ const main = async (): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
   await indexer.init();
-
-  graphWatcher.setIndexer(indexer);
 
   const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
 

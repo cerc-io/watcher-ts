@@ -12,10 +12,17 @@
   # IPFS API address (can be taken from the output on running the IPFS daemon).
   ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
-  {{#if subgraphPath}}
+  {{#if (subgraphPath)}}
   subgraphPath = "{{subgraphPath}}"
   wasmRestartBlocksInterval = 20
+
   {{/if}}
+  # Boolean to filter logs by contract.
+  filterLogs = false
+
+  # Max block range for which to return events in eventsInRange GQL query.
+  # Use -1 for skipping check on block range.
+  maxEventsBlockRange = 1000
 
 [database]
   type = "postgres"
