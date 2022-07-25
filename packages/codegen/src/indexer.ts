@@ -83,31 +83,6 @@ export class Indexer {
     this._queries.push(queryObject);
   }
 
-  addEvent (name: string, params: Array<utils.ParamType>, contractKind: string): void {
-    // Check if the event is already added.
-    if (this._events.some(event => event.name === name && event.kind === contractKind)) {
-      return;
-    }
-
-    const eventObject = {
-      name,
-      params: params.map((param) => {
-        const tsParamType = getTsForSol(param.type);
-        assert(tsParamType);
-        const isReferenceType = param.type === 'string' || param.type === 'bytes' || param.baseType === 'tuple' || param.baseType === 'array';
-
-        return {
-          ...param,
-          type: tsParamType,
-          isIndexedReferenceType: param.indexed && isReferenceType
-        };
-      }),
-      kind: contractKind
-    };
-
-    this._events.push(eventObject);
-  }
-
   addSubgraphEntities (subgraphSchemaDocument: any): void {
     // Add subgraph entities for creating the relations and entity types maps in the indexer.
     const subgraphTypeDefs = subgraphSchemaDocument.definitions;
@@ -189,9 +164,7 @@ export class Indexer {
       constants: {
         MODE_ETH_CALL,
         MODE_STORAGE
-      },
-      events: this._events,
-      uniqueEvents: new Set(eventNames)
+      }
     };
 
     const indexer = template(obj);

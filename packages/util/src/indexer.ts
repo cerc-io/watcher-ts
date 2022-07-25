@@ -363,4 +363,43 @@ export class Indexer {
       ...mappingKeys
     );
   }
+
+  parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
+    const eventName = logDescription.name;
+
+    const eventInfo = logDescription.eventFragment.inputs.reduce((acc: any, input, index) => {
+      acc[input.name] = this._parseLogArg(input, logDescription.args[index]);
+
+      return acc;
+    }, {});
+
+    return {
+      eventName,
+      eventInfo
+    };
+  }
+
+  _parseLogArg (param: ethers.utils.ParamType, arg: ethers.utils.Result): any {
+    if (ethers.utils.Indexed.isIndexed(arg)) {
+      // Get hash if indexed reference type.
+      return arg.hash;
+    }
+
+    if (ethers.BigNumber.isBigNumber(arg)) {
+      return arg.toBigInt();
+    }
+
+    if (param.baseType === 'array') {
+      return arg.map(el => this._parseLogArg(param.arrayChildren, el));
+    }
+
+    if (param.baseType === 'tuple') {
+      return param.components.reduce((acc: any, component) => {
+        acc[component.name] = this._parseLogArg(component, arg[component.name]);
+        return acc;
+      }, {});
+    }
+
+    return arg;
+  }
 }

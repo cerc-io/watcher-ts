@@ -138,9 +138,6 @@ export class Visitor {
 
     Object.values(contractInterface.events).forEach(event => {
       this._schema.addEventType(event.name, event.inputs);
-
-      assert(this._contract);
-      this._indexer.addEvent(event.name, event.inputs, this._contract.kind);
     });
   }
 

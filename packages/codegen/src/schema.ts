@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print } from 'graphql';
-import { SchemaComposer } from 'graphql-compose';
+import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 
@@ -76,27 +76,7 @@ export class Schema {
       return;
     }
 
-    const typeObject: any = {};
-    typeObject.name = name;
-    typeObject.fields = {};
-
-    if (params.length > 0) {
-      typeObject.fields = params.reduce((acc, curr) => {
-        const tsCurrType = getTsForSol(curr.type);
-        assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
-        acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
-        return acc;
-      }, typeObject.fields);
-    } else {
-      // Types must define one or more fields.
-      typeObject.fields = {
-        dummy: 'String'
-      };
-    }
-
-    // Create a type composer to add the required type in the schema composer.
-    this._composer.createObjectTC(typeObject);
-
+    this._createObjectType(name, params);
     this._events.push(name);
     this._addToEventUnion(name);
 
@@ -458,5 +438,54 @@ export class Schema {
 
     // Add the new fields to the current type.
     eventTC.addFields(newFields);
+  }
+
+  /**
+   * Create GraphQL schmea object type.
+   * @param name
+   * @param params
+   */
+  _createObjectType (name: string, params: Array<utils.ParamType>): ObjectTypeComposer {
+    const typeObject: ObjectTypeComposerDefinition<any, any> = { name };
+
+    if (params.length > 0) {
+      typeObject.fields = params.reduce((acc: ObjectTypeComposerFieldConfigMapDefinition<any, any>, curr) => {
+        acc[curr.name] = this._getObjectTypeField(curr);
+
+        return acc;
+      }, {});
+    } else {
+      // Types must define one or more fields.
+      typeObject.fields = {
+        dummy: 'String'
+      };
+    }
+
+    // Create a type composer to add the required type in the schema composer.
+    return this._composer.createObjectTC(typeObject);
+  }
+
+  /**
+     * Get type of field in GraphQL schema for object types.
+     * @param param
+     */
+  _getObjectTypeField (param: utils.ParamType): ObjectTypeComposer | string | any[] {
+    if (param.indexed && ['string', 'bytes', 'tuple', 'array'].includes(param.baseType)) {
+      // Check for indexed reference type event params.
+      param = utils.ParamType.fromObject({ type: 'bytes32', name: param.name });
+    }
+
+    if (param.baseType === 'tuple') {
+      const typeName = param.name.charAt(0).toUpperCase() + param.name.slice(1);
+      return this._createObjectType(typeName, param.components);
+    }
+
+    if (param.baseType === 'array') {
+      return [this._getObjectTypeField(param.arrayChildren)];
+    }
+
+    const tsCurrType = getTsForSol(param.type);
+    assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
+    return `${getGqlForTs(tsCurrType)}!`;
   }
 }
