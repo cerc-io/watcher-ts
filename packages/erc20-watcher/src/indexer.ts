@@ -264,36 +264,10 @@ export class Indexer implements IndexerInterface {
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
     const { topics, data } = logObj;
     const logDescription = this._contract.parseLog({ data, topics });
 
-    switch (logDescription.name) {
-      case TRANSFER_EVENT: {
-        eventName = logDescription.name;
-        const [from, to, value] = logDescription.args;
-        eventInfo = {
-          from,
-          to,
-          value: value.toString()
-        };
-
-        break;
-      }
-      case APPROVAL_EVENT: {
-        eventName = logDescription.name;
-        const [owner, spender, value] = logDescription.args;
-        eventInfo = {
-          owner,
-          spender,
-          value: value.toString()
-        };
-
-        break;
-      }
-    }
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return { eventName, eventInfo };
   }

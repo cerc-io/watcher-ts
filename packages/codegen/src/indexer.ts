@@ -8,7 +8,6 @@ import assert from 'assert';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
-import { utils } from 'ethers';
 
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -154,8 +153,6 @@ export class Indexer {
    */
   exportIndexer (outStream: Writable, contracts: any[]): void {
     const template = Handlebars.compile(this._templateString);
-
-    const eventNames = this._events.map((event: any) => event.name);
 
     const obj = {
       contracts,

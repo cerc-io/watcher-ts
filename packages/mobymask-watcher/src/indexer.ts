@@ -50,11 +50,6 @@ const log = debug('vulcanize:indexer');
 
 export const KIND_PHISHERREGISTRY = 'PhisherRegistry';
 
-const DELEGATIONTRIGGERED_EVENT = 'DelegationTriggered';
-const MEMBERSTATUSUPDATED_EVENT = 'MemberStatusUpdated';
-const OWNERSHIPTRANSFERRED_EVENT = 'OwnershipTransferred';
-const PHISHERSTATUSUPDATED_EVENT = 'PhisherStatusUpdated';
-
 export type ResultEvent = {
   block: {
     cid: string;
@@ -517,9 +512,6 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
     const { topics, data } = logObj;
 
     const contract = this._contractMap.get(kind);
@@ -527,71 +519,12 @@ export class Indexer implements IPLDIndexerInterface {
 
     const logDescription = contract.parseLog({ data, topics });
 
-    switch (kind) {
-      case KIND_PHISHERREGISTRY: {
-        ({ eventName, eventInfo } = this.parsePhisherRegistryEvent(logDescription));
-
-        break;
-      }
-    }
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return {
       eventName,
       eventInfo,
       eventSignature: logDescription.signature
-    };
-  }
-
-  parsePhisherRegistryEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      case DELEGATIONTRIGGERED_EVENT: {
-        eventName = logDescription.name;
-        const [principal, agent] = logDescription.args;
-        eventInfo = {
-          principal,
-          agent
-        };
-
-        break;
-      }
-      case MEMBERSTATUSUPDATED_EVENT: {
-        eventName = logDescription.name;
-        const [entity, isMember] = logDescription.args;
-        eventInfo = {
-          entity: entity.hash,
-          isMember
-        };
-
-        break;
-      }
-      case OWNERSHIPTRANSFERRED_EVENT: {
-        eventName = logDescription.name;
-        const [previousOwner, newOwner] = logDescription.args;
-        eventInfo = {
-          previousOwner,
-          newOwner
-        };
-
-        break;
-      }
-      case PHISHERSTATUSUPDATED_EVENT: {
-        eventName = logDescription.name;
-        const [entity, isPhisher] = logDescription.args;
-        eventInfo = {
-          entity: entity.hash,
-          isPhisher
-        };
-
-        break;
-      }
-    }
-
-    return {
-      eventName,
-      eventInfo
     };
   }
 
