@@ -1,5 +1,5 @@
-query claim($id: String!, $blockHash: Bytes!){
-    claim(id: $id, block: { hash: $blockHash }){
+query claim($id: String!, $block: Block_height){
+    claim(id: $id, block: $block){
         id
         timestamp
         index

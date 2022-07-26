@@ -1,5 +1,5 @@
-query producerSet($id: String!, $blockHash: Bytes!){
-    producerSet(id: $id, block: { hash: $blockHash }){
+query producerSet($id: String!, $block: Block_height){
+    producerSet(id: $id, block: $block){
         id
         producers{
             id

@@ -1,5 +1,5 @@
-query block($id: String!, $blockHash: Bytes!){
-    block(id: $id, block: { hash: $blockHash }){
+query block($id: String!, $block: Block_height){
+    block(id: $id, block: $block){
         id
         fromActiveProducer
         hash

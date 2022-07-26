@@ -55,3 +55,46 @@
         ```
 
   * The program will exit with code `1` if the query results are not equal.
+
+  * For comparing queries in a range of blocks:
+
+    * Config file should have the names of queries to be fired.
+
+      ```toml
+      [queries]
+        queryDir = "../graph-test-watcher/src/gql/queries"
+        names = [
+          "author",
+          "blog"
+        ]
+      ```
+    
+    * Run the CLI:
+
+      ```bash
+      ./bin/compare-blocks --config-file environments/compare-cli-config.toml --start-block 1 --end-block 10
+      ```
+    
+    * For comparing entities after fetching ids from one of the endpoints and then querying individually by ids:
+
+      * Set the `idsEndpoint` to choose which endpoint the ids should be fetched from.
+
+        ```toml
+        [endpoints]
+          gqlEndpoint1 = "http://localhost:8000/subgraphs/name/example1"
+          gqlEndpoint2 = "http://localhost:3008/graphql"
+
+        [queries]
+          queryDir = "../graph-test-watcher/src/gql/queries"
+          names = [
+            "author",
+            "blog"
+          ]
+          idsEndpoint = "gqlEndpoint1"
+        ```
+      
+      * Run the CLI with `fetch-ids` flag set to true:\
+
+        ```bash
+        ./bin/compare-blocks --config-file environments/compare-cli-config.toml --start-block 1 --end-block 10 --fetch-ids
+        ```

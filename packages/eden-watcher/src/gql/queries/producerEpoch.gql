@@ -1,5 +1,5 @@
-query producerEpoch($id: String!, $blockHash: Bytes!){
-    producerEpoch(id: $id, block: { hash: $blockHash }){
+query producerEpoch($id: String!, $block: Block_height){
+    producerEpoch(id: $id, block: $block){
         id
         address
         epoch{

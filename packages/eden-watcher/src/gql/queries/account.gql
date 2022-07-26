@@ -1,5 +1,5 @@
-query account($id: String!, $blockHash: Bytes!){
-    account(id: $id, block: { hash: $blockHash }){
+query account($id: String!, $block: Block_height){
+    account(id: $id, block: $block){
         id
         totalClaimed
         totalSlashed
