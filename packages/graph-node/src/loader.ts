@@ -104,7 +104,9 @@ export const instantiate = async (
 
         // JSON stringify and parse data for handling unknown types when encoding.
         // For example, decimal.js values are converted to string in the diff data.
-        diffData.state[entityName] = JSONbig.parse(JSONbig.stringify(dbData));
+        diffData.state[entityName] = {
+          [dbData.id]: JSONbig.parse(JSONbig.stringify(dbData))
+        };
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);
