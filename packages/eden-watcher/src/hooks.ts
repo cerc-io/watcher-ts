@@ -2,7 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import { IPLDBlockInterface, StateKind } from '@vulcanize/util';
 import assert from 'assert';
+import * as codec from '@ipld/dag-cbor';
+import _ from 'lodash';
 
 import { Indexer, ResultEvent } from './indexer';
 
@@ -51,9 +54,60 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
   assert(blockHash);
   assert(contractAddress);
 
-  // Use indexer.createStateCheckpoint() method to create a custom checkpoint.
+  // TODO: Pass blockProgress instead of blockHash to hook method.
+  const block = await indexer.getBlockProgress(blockHash);
+  assert(block);
 
-  return false;
+  // Fetch the latest 'checkpoint' | 'init' for the contract to fetch diffs after it.
+  let prevNonDiffBlock: IPLDBlockInterface;
+  let getDiffBlockNumber: number;
+  const checkpointBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, block.blockNumber);
+
+  if (checkpointBlock) {
+    const checkpointBlockNumber = checkpointBlock.block.blockNumber;
+
+    prevNonDiffBlock = checkpointBlock;
+    getDiffBlockNumber = checkpointBlockNumber;
+
+    // Update IPLD status map with the latest checkpoint info.
+    // Essential while importing state as checkpoint at the snapshot block is added by import-state CLI.
+    // (job-runner won't have the updated ipld status)
+    indexer.updateIPLDStatusMap(contractAddress, { checkpoint: checkpointBlockNumber });
+  } else {
+    // There should be an initial state at least.
+    const initBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Init);
+    assert(initBlock, 'No initial state found');
+
+    prevNonDiffBlock = initBlock;
+    // Take block number previous to initial state block to include any diff state at that block.
+    getDiffBlockNumber = initBlock.block.blockNumber - 1;
+  }
+
+  // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
+  const diffBlocks = await indexer.getDiffIPLDBlocksByBlocknumber(contractAddress, getDiffBlockNumber);
+
+  const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
+  const data = {
+    state: prevNonDiffBlockData.state
+  };
+
+  // Merge all diff blocks after previous checkpoint.
+  for (const diffBlock of diffBlocks) {
+    const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
+    data.state = _.merge(data.state, diff.state);
+  }
+
+  // Check if Block entity exists.
+  if (data.state.Block) {
+    // Store only block entity at checkpoint height instead of all entities.
+    data.state.Block = {
+      [blockHash]: data.state.Block[blockHash]
+    };
+  }
+
+  await indexer.createStateCheckpoint(contractAddress, blockHash, data);
+
+  return true;
 }
 
 /**
