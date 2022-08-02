@@ -56,11 +56,17 @@ export interface UpstreamConfig {
   }
 }
 
+export interface MetricsConfig {
+  host: string;
+  port: number;
+}
+
 export interface Config {
   server: ServerConfig;
   database: ConnectionOptions;
   upstream: UpstreamConfig,
-  jobQueue: JobQueueConfig
+  jobQueue: JobQueueConfig,
+  metrics: MetricsConfig,
 }
 
 export const getConfig = async (configFile: string): Promise<Config> => {

@@ -20,6 +20,7 @@ import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, IPLDIndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob, processBatchEvents } from './common';
+import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
 
@@ -28,6 +29,7 @@ export class JobRunner {
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
+  _endBlockProcessTimer?: () => void
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -246,6 +248,16 @@ export class JobRunner {
     await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch);
 
     console.timeEnd('time:job-runner#_processEvents-events');
+
+    // Update metrics
+    lastProcessedBlockNumber.set(block.blockNumber);
+    lastBlockNumEvents.set(block.numEvents);
+
+    if (this._endBlockProcessTimer) {
+      this._endBlockProcessTimer();
+    }
+
+    this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
   }
 
   async _updateWatchedContracts (job: any): Promise<void> {

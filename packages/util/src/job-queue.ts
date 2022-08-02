@@ -6,6 +6,8 @@ import assert from 'assert';
 import debug from 'debug';
 import PgBoss from 'pg-boss';
 
+import { jobCount, lastJobCreatedOn } from './metrics';
+
 interface Config {
   dbConnectionString: string
   maxCompletionLag: number
@@ -39,10 +41,35 @@ export class JobQueue {
 
       retentionDays: 30, // 30 days
 
-      newJobCheckInterval: 100
+      newJobCheckInterval: 100,
+
+      // Time interval for firing monitor-states event.
+      monitorStateIntervalSeconds: 10
     });
 
     this._boss.on('error', error => log(error));
+
+    this._boss.on('monitor-states', monitorStates => {
+      jobCount.set({ state: 'all' }, monitorStates.all);
+      jobCount.set({ state: 'created' }, monitorStates.created);
+      jobCount.set({ state: 'retry' }, monitorStates.retry);
+      jobCount.set({ state: 'active' }, monitorStates.active);
+      jobCount.set({ state: 'completed' }, monitorStates.completed);
+      jobCount.set({ state: 'expired' }, monitorStates.expired);
+      jobCount.set({ state: 'cancelled' }, monitorStates.cancelled);
+      jobCount.set({ state: 'failed' }, monitorStates.failed);
+
+      Object.entries(monitorStates.queues).forEach(([name, counts]) => {
+        jobCount.set({ state: 'all', name }, counts.all);
+        jobCount.set({ state: 'created', name }, counts.created);
+        jobCount.set({ state: 'retry', name }, counts.retry);
+        jobCount.set({ state: 'active', name }, counts.active);
+        jobCount.set({ state: 'completed', name }, counts.completed);
+        jobCount.set({ state: 'expired', name }, counts.expired);
+        jobCount.set({ state: 'cancelled', name }, counts.cancelled);
+        jobCount.set({ state: 'failed', name }, counts.failed);
+      });
+    });
   }
 
   get maxCompletionLag (): number {
@@ -93,6 +120,7 @@ export class JobQueue {
     assert(this._boss);
 
     const jobId = await this._boss.publish(queue, job, options);
+    lastJobCreatedOn.setToCurrentTime({ name: queue });
     log(`Created job in queue ${queue}: ${jobId}`);
   }
 

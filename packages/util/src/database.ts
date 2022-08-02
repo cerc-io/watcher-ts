@@ -21,6 +21,7 @@ import _ from 'lodash';
 
 import { BlockProgressInterface, ContractInterface, EventInterface, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
+import { blockProgressCount } from './metrics';
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_SKIP = 0;
@@ -69,6 +70,7 @@ export type Relation = string | { property: string, alias: string }
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
+  _blockCount = 0
 
   constructor (config: ConnectionOptions) {
     assert(config);
@@ -83,6 +85,8 @@ export class Database {
       namingStrategy: new SnakeNamingStrategy()
     });
 
+    await this._fetchBlockCount();
+
     return this._conn;
   }
 
@@ -95,6 +99,13 @@ export class Database {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     return queryRunner;
+  }
+
+  async _fetchBlockCount (): Promise<void> {
+    this._blockCount = await this._conn.getRepository('block_progress')
+      .count();
+
+    blockProgressCount.set(this._blockCount);
   }
 
   async getSyncStatus (repo: Repository<SyncStatusInterface>): Promise<SyncStatusInterface | undefined> {
@@ -249,6 +260,8 @@ export class Database {
     });
 
     const blockProgress = await blockRepo.save(entity);
+    this._blockCount++;
+    blockProgressCount.set(this._blockCount);
 
     // Bulk insert events.
     events.forEach(event => {
