@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import PgBoss from 'pg-boss';
 
-import { jobCount, lastJobCreatedOn } from './metrics';
+import { jobCount, lastJobCompletedOn } from './metrics';
 
 interface Config {
   dbConnectionString: string
@@ -95,6 +95,7 @@ export class JobQueue {
         try {
           log(`Processing queue ${queue} job ${job.id}...`);
           await callback(job);
+          lastJobCompletedOn.setToCurrentTime({ name: queue });
         } catch (error) {
           log(`Error in queue ${queue} job ${job.id}`);
           log(error);
@@ -120,7 +121,6 @@ export class JobQueue {
     assert(this._boss);
 
     const jobId = await this._boss.publish(queue, job, options);
-    lastJobCreatedOn.setToCurrentTime({ name: queue });
     log(`Created job in queue ${queue}: ${jobId}`);
   }
 

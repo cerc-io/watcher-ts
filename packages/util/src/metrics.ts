@@ -1,7 +1,11 @@
 import * as client from 'prom-client';
 import express, { Application } from 'express';
+import { createConnection } from 'typeorm';
 
-import { MetricsConfig } from './config';
+import { Config } from './config';
+import { IndexerInterface } from './types';
+
+const DB_SIZE_QUERY = 'SELECT pg_database_size(current_database())';
 
 // Create custom metrics
 export const jobCount = new client.Gauge({
@@ -10,9 +14,9 @@ export const jobCount = new client.Gauge({
   labelNames: ['state', 'name'] as const
 });
 
-export const lastJobCreatedOn = new client.Gauge({
-  name: 'pgboss_last_job_created_timestamp_seconds',
-  help: 'Last job created timestamp',
+export const lastJobCompletedOn = new client.Gauge({
+  name: 'pgboss_last_job_completed_timestamp_seconds',
+  help: 'Last job completed timestamp',
   labelNames: ['name'] as const
 });
 
@@ -36,10 +40,34 @@ export const blockProgressCount = new client.Gauge({
   help: 'Total entries in block_progress table'
 });
 
+export const eventCount = new client.Gauge({
+  name: 'event_total',
+  help: 'Total entries in event table'
+});
+
 // Export metrics on a server
 const app: Application = express();
 
-export async function startMetricsServer ({ host, port }: MetricsConfig): Promise<void> {
+export const startMetricsServer = async (config: Config, indexer: IndexerInterface): Promise<void> => {
+  // eslint-disable-next-line no-new
+  new client.Gauge({
+    name: 'sync_status_block_number',
+    help: 'Sync status table info',
+    labelNames: ['kind'] as const,
+    async collect () {
+      const syncStatus = await indexer.getSyncStatus();
+
+      if (syncStatus) {
+        this.set({ kind: 'latest_indexed' }, syncStatus.latestIndexedBlockNumber);
+        this.set({ kind: 'latest_canonical' }, syncStatus.latestCanonicalBlockNumber);
+        this.set({ kind: 'chain_head' }, syncStatus.chainHeadBlockNumber);
+        this.set({ kind: 'intial_indexed' }, syncStatus.initialIndexedBlockNumber);
+      }
+    }
+  });
+
+  await registerDBSizeMetrics(config);
+
   // Collect default metrics
   client.collectDefaultMetrics();
 
@@ -49,7 +77,42 @@ export async function startMetricsServer ({ host, port }: MetricsConfig): Promis
     res.send(metrics);
   });
 
-  app.listen(port, () => {
-    console.log(`Metrics exposed at http://${host}:${port}/metrics`);
+  app.listen(config.metrics.port, () => {
+    console.log(`Metrics exposed at http://${config.metrics.host}:${config.metrics.port}/metrics`);
   });
-}
+};
+
+const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<void> => {
+  const [watcherConn, jobQueueConn] = await Promise.all([
+    createConnection({
+      ...database,
+      name: 'metrics-watcher-connection',
+      synchronize: false
+    }),
+    createConnection({
+      type: 'postgres',
+      url: jobQueue.dbConnectionString,
+      name: 'metrics-job-queue-connection',
+      synchronize: false
+    })
+  ]);
+
+  // eslint-disable-next-line no-new
+  new client.Gauge({
+    name: 'database_size_bytes',
+    help: 'Total entries in event table',
+    labelNames: ['type'] as const,
+    async collect () {
+      const [
+        [{ pg_database_size: watcherDBSize }],
+        [{ pg_database_size: jobQueueDBSize }]
+      ] = await Promise.all([
+        watcherConn.query(DB_SIZE_QUERY),
+        jobQueueConn.query(DB_SIZE_QUERY)
+      ]);
+
+      this.set({ type: 'watcher' }, Number(watcherDBSize));
+      this.set({ type: 'job-queue' }, Number(jobQueueDBSize));
+    }
+  });
+};

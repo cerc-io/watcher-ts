@@ -17,7 +17,8 @@ import {
   QUEUE_EVENT_PROCESSING,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
-  initClients
+  initClients,
+  startMetricsServer
 } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
@@ -87,6 +88,8 @@ export const main = async (): Promise<any> => {
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
+
+  startMetricsServer(config, indexer);
 };
 
 main().then(() => {

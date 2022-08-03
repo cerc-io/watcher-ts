@@ -19,6 +19,10 @@
   # Use -1 for skipping check on block range.
   maxEventsBlockRange = 1000
 
+[metrics]
+  host = "127.0.0.1"
+  port = 9000
+
 [database]
   type = "postgres"
   host = "localhost"

@@ -5,6 +5,10 @@
   # Mode demo whitelists all tokens so that entity values get updated.
   mode = "demo"
 
+[metrics]
+  host = "127.0.0.1"
+  port = 9000
+
 [database]
   type = "postgres"
   host = "localhost"

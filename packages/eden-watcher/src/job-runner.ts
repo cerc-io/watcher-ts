@@ -280,7 +280,7 @@ export const main = async (): Promise<any> => {
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();
 
-  startMetricsServer(config.metrics);
+  startMetricsServer(config, indexer);
 };
 
 main().then(() => {
