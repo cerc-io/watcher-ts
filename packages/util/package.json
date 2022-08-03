@@ -9,11 +9,12 @@
     "decimal.js": "^10.3.1",
     "ethers": "^5.4.4",
     "fs-extra": "^10.0.0",
+    "ipfs-http-client": "^56.0.3",
     "lodash": "^4.17.21",
     "multiformats": "^9.4.8",
     "pg-boss": "^6.1.0",
-    "toml": "^3.0.0",
-    "ipfs-http-client": "^56.0.3"
+    "prom-client": "^14.0.1",
+    "toml": "^3.0.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.11",

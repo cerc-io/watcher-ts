@@ -12,6 +12,7 @@ import {
   FindConditions,
   FindManyOptions,
   In,
+  Not,
   QueryRunner,
   Repository,
   SelectQueryBuilder
@@ -21,6 +22,7 @@ import _ from 'lodash';
 
 import { BlockProgressInterface, ContractInterface, EventInterface, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
+import { blockProgressCount, eventCount } from './metrics';
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_SKIP = 0;
@@ -69,6 +71,8 @@ export type Relation = string | { property: string, alias: string }
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
+  _blockCount = 0
+  _eventCount = 0
 
   constructor (config: ConnectionOptions) {
     assert(config);
@@ -82,6 +86,9 @@ export class Database {
       ...this._config,
       namingStrategy: new SnakeNamingStrategy()
     });
+
+    await this._fetchBlockCount();
+    await this._fetchEventCount();
 
     return this._conn;
   }
@@ -249,10 +256,18 @@ export class Database {
     });
 
     const blockProgress = await blockRepo.save(entity);
+    this._blockCount++;
+    blockProgressCount.set(this._blockCount);
+
+    let blockEventCount = 0;
 
     // Bulk insert events.
     events.forEach(event => {
       event.block = blockProgress;
+
+      if (event.eventName !== UNKNOWN_EVENT_NAME) {
+        blockEventCount++;
+      }
     });
 
     const eventBatches = _.chunk(events, INSERT_EVENTS_BATCH);
@@ -266,6 +281,8 @@ export class Database {
     });
 
     await Promise.all(insertPromises);
+    this._eventCount += blockEventCount;
+    eventCount.set(this._eventCount);
 
     return blockProgress;
   }
@@ -369,7 +386,11 @@ export class Database {
   }
 
   async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
-    return await repo.save(entity);
+    const event = await repo.save(entity);
+    this._eventCount++;
+    eventCount.set(this._eventCount);
+
+    return event;
   }
 
   async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: Relation[] = []): Promise<Entity[]> {
@@ -560,6 +581,24 @@ export class Database {
     }
 
     return repo.save(entity);
+  }
+
+  async _fetchBlockCount (): Promise<void> {
+    this._blockCount = await this._conn.getRepository('block_progress')
+      .count();
+
+    blockProgressCount.set(this._blockCount);
+  }
+
+  async _fetchEventCount (): Promise<void> {
+    this._eventCount = await this._conn.getRepository('event')
+      .count({
+        where: {
+          eventName: Not(UNKNOWN_EVENT_NAME)
+        }
+      });
+
+    eventCount.set(this._eventCount);
   }
 
   _buildQuery<Entity> (repo: Repository<Entity>, selectQueryBuilder: SelectQueryBuilder<Entity>, where: Where = {}, queryOptions: QueryOptions = {}): SelectQueryBuilder<Entity> {

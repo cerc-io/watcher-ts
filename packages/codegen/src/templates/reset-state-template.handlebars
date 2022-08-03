@@ -44,7 +44,7 @@ export const handler = async (argv: any): Promise<void> => {
   await db.init();
   {{#if (subgraphPath)}}
   
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../entity/*'));
   await graphDb.init();
   
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

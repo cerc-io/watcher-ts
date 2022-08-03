@@ -50,7 +50,7 @@ export const main = async (): Promise<any> => {
   await db.init();
   {{#if (subgraphPath)}}
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../entity/*'));
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
