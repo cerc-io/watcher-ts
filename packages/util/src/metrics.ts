@@ -1,11 +1,19 @@
+//
+// Copyright 2022 Vulcanize, Inc.
+//
+
 import * as client from 'prom-client';
 import express, { Application } from 'express';
 import { createConnection } from 'typeorm';
+import debug from 'debug';
+import assert from 'assert';
 
 import { Config } from './config';
 import { IndexerInterface } from './types';
 
 const DB_SIZE_QUERY = 'SELECT pg_database_size(current_database())';
+
+const log = debug('vulcanize:metrics');
 
 // Create custom metrics
 export const jobCount = new client.Gauge({
@@ -49,6 +57,14 @@ export const eventCount = new client.Gauge({
 const app: Application = express();
 
 export const startMetricsServer = async (config: Config, indexer: IndexerInterface): Promise<void> => {
+  if (!config.metrics) {
+    log('Metrics is disabled. To enable add metrics host and port.');
+    return;
+  }
+
+  assert(config.metrics.host, 'Missing config for metrics host');
+  assert(config.metrics.port, 'Missing config for metrics port');
+
   // eslint-disable-next-line no-new
   new client.Gauge({
     name: 'sync_status_block_number',
@@ -77,8 +93,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
     res.send(metrics);
   });
 
-  app.listen(config.metrics.port, () => {
-    console.log(`Metrics exposed at http://${config.metrics.host}:${config.metrics.port}/metrics`);
+  app.listen(config.metrics.port, config.metrics.host, () => {
+    log(`Metrics exposed at http://${config.metrics.host}:${config.metrics.port}/metrics`);
   });
 };
 
