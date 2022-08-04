@@ -126,6 +126,8 @@ export type ResultIPLDBlock = {
   data: string;
 };
 
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
+
 export class Indexer implements IPLDIndexerInterface {
   _db: Database
   _ethClient: EthClient
@@ -202,8 +204,8 @@ export class Indexer implements IPLDIndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx, eventSignature } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -1452,10 +1454,10 @@ export class Indexer implements IPLDIndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {
