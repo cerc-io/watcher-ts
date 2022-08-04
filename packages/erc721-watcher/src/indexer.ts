@@ -45,10 +45,6 @@ const log = debug('vulcanize:indexer');
 
 const KIND_ERC721 = 'ERC721';
 
-const APPROVAL_EVENT = 'Approval';
-const APPROVALFORALL_EVENT = 'ApprovalForAll';
-const TRANSFER_EVENT = 'Transfer';
-
 export type ResultEvent = {
   block: {
     cid: string;
@@ -789,9 +785,6 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
     const { topics, data } = logObj;
 
     const contract = this._contractMap.get(kind);
@@ -799,64 +792,12 @@ export class Indexer implements IPLDIndexerInterface {
 
     const logDescription = contract.parseLog({ data, topics });
 
-    switch (kind) {
-      case KIND_ERC721: {
-        ({ eventName, eventInfo } = this.parseERC721Event(logDescription));
-
-        break;
-      }
-    }
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return {
       eventName,
       eventInfo,
       eventSignature: logDescription.signature
-    };
-  }
-
-  parseERC721Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      case APPROVAL_EVENT: {
-        eventName = logDescription.name;
-        const [owner, approved, tokenId] = logDescription.args;
-        eventInfo = {
-          owner,
-          approved,
-          tokenId: BigInt(tokenId.toString())
-        };
-
-        break;
-      }
-      case APPROVALFORALL_EVENT: {
-        eventName = logDescription.name;
-        const [owner, operator, approved] = logDescription.args;
-        eventInfo = {
-          owner,
-          operator,
-          approved
-        };
-
-        break;
-      }
-      case TRANSFER_EVENT: {
-        eventName = logDescription.name;
-        const [from, to, tokenId] = logDescription.args;
-        eventInfo = {
-          from,
-          to,
-          tokenId: BigInt(tokenId.toString())
-        };
-
-        break;
-      }
-    }
-
-    return {
-      eventName,
-      eventInfo
     };
   }
 

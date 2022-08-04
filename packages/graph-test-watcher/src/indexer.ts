@@ -51,10 +51,6 @@ const KIND_EXAMPLE1 = 'Example1';
 const KIND_FACTORY = 'Factory';
 const KIND_POOL = 'Pool';
 
-const TEST_EVENT = 'Test';
-const POOLCREATED_EVENT = 'PoolCreated';
-const INITIALIZE_EVENT = 'Initialize';
-
 export type ResultEvent = {
   block: {
     cid: string;
@@ -416,9 +412,6 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
     const { topics, data } = logObj;
 
     const contract = this._contractMap.get(kind);
@@ -426,101 +419,12 @@ export class Indexer implements IPLDIndexerInterface {
 
     const logDescription = contract.parseLog({ data, topics });
 
-    switch (kind) {
-      case KIND_EXAMPLE1: {
-        ({ eventName, eventInfo } = this.parseExample1Event(logDescription));
-
-        break;
-      }
-      case KIND_FACTORY: {
-        ({ eventName, eventInfo } = this.parseFactoryEvent(logDescription));
-
-        break;
-      }
-      case KIND_POOL: {
-        ({ eventName, eventInfo } = this.parsePoolEvent(logDescription));
-
-        break;
-      }
-    }
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return {
       eventName,
       eventInfo,
       eventSignature: logDescription.signature
-    };
-  }
-
-  parseExample1Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      case TEST_EVENT: {
-        eventName = logDescription.name;
-        const { param1, param2, param3 } = logDescription.args;
-        eventInfo = {
-          param1,
-          param2,
-          param3: BigInt(param3.toString())
-        };
-
-        break;
-      }
-    }
-
-    return {
-      eventName,
-      eventInfo
-    };
-  }
-
-  parseFactoryEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      case POOLCREATED_EVENT: {
-        eventName = logDescription.name;
-        const { token0, token1, fee, tickSpacing, pool } = logDescription.args;
-        eventInfo = {
-          token0,
-          token1,
-          fee,
-          tickSpacing,
-          pool
-        };
-
-        break;
-      }
-    }
-
-    return {
-      eventName,
-      eventInfo
-    };
-  }
-
-  parsePoolEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      case INITIALIZE_EVENT: {
-        eventName = logDescription.name;
-        const { sqrtPriceX96, tick } = logDescription.args;
-        eventInfo = {
-          sqrtPriceX96: BigInt(sqrtPriceX96.toString()),
-          tick
-        };
-
-        break;
-      }
-    }
-
-    return {
-      eventName,
-      eventInfo
     };
   }
 

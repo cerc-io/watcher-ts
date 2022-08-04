@@ -8,7 +8,6 @@ import assert from 'assert';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
-import { utils } from 'ethers';
 
 import { getTsForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -83,31 +82,6 @@ export class Indexer {
     this._queries.push(queryObject);
   }
 
-  addEvent (name: string, params: Array<utils.ParamType>, contractKind: string): void {
-    // Check if the event is already added.
-    if (this._events.some(event => event.name === name && event.kind === contractKind)) {
-      return;
-    }
-
-    const eventObject = {
-      name,
-      params: params.map((param) => {
-        const tsParamType = getTsForSol(param.type);
-        assert(tsParamType);
-        const isReferenceType = param.type === 'string' || param.type === 'bytes' || param.baseType === 'tuple' || param.baseType === 'array';
-
-        return {
-          ...param,
-          type: tsParamType,
-          isIndexedReferenceType: param.indexed && isReferenceType
-        };
-      }),
-      kind: contractKind
-    };
-
-    this._events.push(eventObject);
-  }
-
   addSubgraphEntities (subgraphSchemaDocument: any): void {
     // Add subgraph entities for creating the relations and entity types maps in the indexer.
     const subgraphTypeDefs = subgraphSchemaDocument.definitions;
@@ -180,8 +154,6 @@ export class Indexer {
   exportIndexer (outStream: Writable, contracts: any[]): void {
     const template = Handlebars.compile(this._templateString);
 
-    const eventNames = this._events.map((event: any) => event.name);
-
     const obj = {
       contracts,
       queries: this._queries,
@@ -189,9 +161,7 @@ export class Indexer {
       constants: {
         MODE_ETH_CALL,
         MODE_STORAGE
-      },
-      events: this._events,
-      uniqueEvents: new Set(eventNames)
+      }
     };
 
     const indexer = template(obj);

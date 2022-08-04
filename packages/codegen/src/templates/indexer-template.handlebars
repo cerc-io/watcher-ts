@@ -421,7 +421,6 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   {{/if}}
-
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
@@ -450,9 +449,6 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
     const { topics, data } = logObj;
 
     const contract = this._contractMap.get(kind);
@@ -460,15 +456,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const logDescription = contract.parseLog({ data, topics });
 
-    switch (kind) {
-      {{#each contracts as | contract |}}
-      case KIND_{{capitalize contract.contractName}}: {
-        ({ eventName, eventInfo } = this.parse{{contract.contractName}}Event(logDescription));
-
-        break;
-      }
-      {{/each}}
-    }
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription)
 
     return {
       eventName,
@@ -477,45 +465,6 @@ export class Indexer implements IPLDIndexerInterface {
     };
   }
 
-  {{#each contracts as | contract |}}
-  parse{{contract.contractName}}Event (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    let eventName = UNKNOWN_EVENT_NAME;
-    let eventInfo = {};
-
-    switch (logDescription.name) {
-      {{#each ../events as | event |}}
-      {{#if (compare contract.contractKind event.kind)}}
-      case {{capitalize event.name}}_EVENT: {
-        eventName = logDescription.name;
-        {{#if event.params}}
-        const [{{#each event.params~}} {{this.name}} {{~#unless @last}}, {{/unless}} {{~/each}}] = logDescription.args;
-        {{/if}}
-        eventInfo = {
-          {{#each event.params}}
-          {{#if (compare this.type 'bigint')}}
-          {{this.name}}: BigInt({{this.name}}.toString())
-          {{~else if this.isIndexedReferenceType}}
-          {{this.name}}: {{this.name}}.hash
-          {{~else}}
-          {{this.name}}
-          {{~/if}}
-          {{~#unless @last}},{{/unless}}
-          {{/each}}
-        };
-
-        break;
-      }
-      {{/if}}
-      {{/each}}
-    }
-
-    return {
-      eventName,
-      eventInfo
-    };
-  }
-
-  {{/each}}
   async getIPLDStatus (): Promise<IpldStatus | undefined> {
     return this._db.getIPLDStatus();
   }
