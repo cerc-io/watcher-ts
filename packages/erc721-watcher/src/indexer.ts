@@ -42,6 +42,7 @@ import { IPLDBlock } from './entity/IPLDBlock';
 import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_ERC721 = 'ERC721';
 
@@ -138,8 +139,8 @@ export class Indexer implements IPLDIndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx, eventSignature } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -215,7 +216,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveSupportsInterface({ blockHash, blockNumber, contractAddress, interfaceId, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveSupportsInterface({ blockHash, blockNumber, contractAddress, interfaceId, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -246,7 +247,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveBalanceOf({ blockHash, blockNumber, contractAddress, owner, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveBalanceOf({ blockHash, blockNumber, contractAddress, owner, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -275,7 +276,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveOwnerOf({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveOwnerOf({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -304,7 +305,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveGetApproved({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveGetApproved({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -333,7 +334,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveIsApprovedForAll({ blockHash, blockNumber, contractAddress, owner, operator, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveIsApprovedForAll({ blockHash, blockNumber, contractAddress, owner, operator, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -362,7 +363,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveName({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveName({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -391,7 +392,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveSymbol({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveSymbol({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -420,7 +421,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveTokenURI({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveTokenURI({ blockHash, blockNumber, contractAddress, tokenId, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -481,7 +482,7 @@ export class Indexer implements IPLDIndexerInterface {
       '_name'
     );
 
-    await this._db._saveName({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveName({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForElementaryType({}, '_name', result.value.toString());
@@ -517,7 +518,7 @@ export class Indexer implements IPLDIndexerInterface {
       '_symbol'
     );
 
-    await this._db._saveSymbol({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveSymbol({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForElementaryType({}, '_symbol', result.value.toString());
@@ -554,7 +555,7 @@ export class Indexer implements IPLDIndexerInterface {
       key0
     );
 
-    await this._db._saveOwners({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveOwners({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForMappingType({}, '_owners', [key0.toString()], result.value.toString());
@@ -591,7 +592,7 @@ export class Indexer implements IPLDIndexerInterface {
       key0
     );
 
-    await this._db._saveBalances({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveBalances({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForMappingType({}, '_balances', [key0.toString()], result.value.toString());
@@ -628,7 +629,7 @@ export class Indexer implements IPLDIndexerInterface {
       key0
     );
 
-    await this._db._saveTokenApprovals({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveTokenApprovals({ blockHash, blockNumber, contractAddress, key0, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForMappingType({}, '_tokenApprovals', [key0.toString()], result.value.toString());
@@ -666,7 +667,7 @@ export class Indexer implements IPLDIndexerInterface {
       key1
     );
 
-    await this._db._saveOperatorApprovals({ blockHash, blockNumber, contractAddress, key0, key1, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveOperatorApprovals({ blockHash, blockNumber, contractAddress, key0, key1, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForMappingType({}, '_operatorApprovals', [key0.toString(), key1.toString()], result.value.toString());
@@ -1116,10 +1117,10 @@ export class Indexer implements IPLDIndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {

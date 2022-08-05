@@ -15,6 +15,7 @@ import lighthouseABI from './abi/Lighthouse.json';
 export const UNKNOWN_EVENT_NAME = '__unknown__';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export type ResultEvent = {
   block: any;
@@ -160,7 +161,7 @@ export class Indexer {
             ...eventInfo
           },
           proof: {
-            data: JSONbig.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {

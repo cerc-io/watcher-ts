@@ -36,6 +36,7 @@ import { Tick } from './entity/Tick';
 const SYNC_DELTA = 5;
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export { OrderDirection, BlockHeight };
 
@@ -69,8 +70,8 @@ export class Indexer implements IndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSON.parse(event.eventInfo);
-    const { tx, eventIndex } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventIndex } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -394,9 +395,9 @@ export class Indexer implements IndexerInterface {
         txHash: tx.hash,
         contract,
         eventName,
-        eventInfo: JSONbig.stringify(eventInfo),
-        extraInfo: JSONbig.stringify(extraInfo),
-        proof: JSONbig.stringify(proof)
+        eventInfo: JSONbigNative.stringify(eventInfo),
+        extraInfo: JSONbigNative.stringify(extraInfo),
+        proof: JSONbigNative.stringify(proof)
       });
     }
 

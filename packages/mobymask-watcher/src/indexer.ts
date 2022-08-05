@@ -47,6 +47,7 @@ import { _Owner } from './entity/_Owner';
 import { MultiNonce } from './entity/MultiNonce';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export const KIND_PHISHERREGISTRY = 'PhisherRegistry';
 
@@ -144,8 +145,8 @@ export class Indexer implements IPLDIndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx, eventSignature } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -400,7 +401,7 @@ export class Indexer implements IPLDIndexerInterface {
       contractAddress,
       ...mappingKeys,
       value: result.value,
-      proof: result.proof ? JSONbig.stringify(result.proof) : null
+      proof: result.proof ? JSONbigNative.stringify(result.proof) : null
     } as any;
   }
 
@@ -868,10 +869,10 @@ export class Indexer implements IPLDIndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {

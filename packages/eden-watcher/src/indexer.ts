@@ -57,6 +57,7 @@ import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_EDENNETWORK = 'EdenNetwork';
 const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
@@ -125,8 +126,6 @@ export type ResultIPLDBlock = {
   kind: string;
   data: string;
 };
-
-const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export class Indexer implements IPLDIndexerInterface {
   _db: Database

@@ -46,6 +46,7 @@ import { Blog } from './entity/Blog';
 import { Category } from './entity/Category';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_EXAMPLE1 = 'Example1';
 const KIND_FACTORY = 'Factory';
@@ -171,8 +172,8 @@ export class Indexer implements IPLDIndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx, eventSignature } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -248,7 +249,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const result: ValueResult = { value };
 
-    await this._db.saveGetMethod({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db.saveGetMethod({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     return result;
   }
@@ -279,7 +280,7 @@ export class Indexer implements IPLDIndexerInterface {
       '_test'
     );
 
-    await this._db._saveTest({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbig.stringify(result.proof) });
+    await this._db._saveTest({ blockHash, blockNumber, contractAddress, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
     if (diff) {
       const stateUpdate = updateStateForElementaryType({}, '_test', result.value.toString());
@@ -845,10 +846,10 @@ export class Indexer implements IPLDIndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {
