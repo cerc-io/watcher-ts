@@ -411,7 +411,9 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
+  }
 
+  async processBlockAfterEvents (blockHash: string): Promise<void> {
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
   }

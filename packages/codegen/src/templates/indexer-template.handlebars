@@ -443,13 +443,15 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
-    {{#if (subgraphPath)}}
-
-    // Call subgraph handler for block.
-    await this._graphWatcher.handleBlock(blockHash);
-    {{/if}}
   }
 
+  {{#if (subgraphPath)}}
+  async processBlockAfterEvents (blockHash: string): Promise<void> {
+    // Call subgraph handler for block.
+    await this._graphWatcher.handleBlock(blockHash);
+  }
+
+  {{/if}}
   parseEventNameAndArgs (kind: string, logObj: any): any {
     let eventName = UNKNOWN_EVENT_NAME;
     let eventInfo = {};

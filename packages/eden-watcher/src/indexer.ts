@@ -401,13 +401,15 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
 
     console.timeEnd('time:indexer#processBlock-init_state');
+  }
 
-    console.time('time:indexer#processBlock-mapping_code');
+  async processBlockAfterEvents (blockHash: string): Promise<void> {
+    console.time('time:indexer#processBlockAfterEvents-mapping_code');
 
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
 
-    console.timeEnd('time:indexer#processBlock-mapping_code');
+    console.timeEnd('time:indexer#processBlockAfterEvents-mapping_code');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
