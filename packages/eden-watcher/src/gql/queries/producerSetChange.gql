@@ -1,5 +1,5 @@
-query producerSetChange($id: String!, $blockHash: Bytes!){
-    producerSetChange(id: $id, block: { hash: $blockHash }){
+query producerSetChange($id: String!, $block: Block_height){
+    producerSetChange(id: $id, block: $block){
         id
         blockNumber
         producer

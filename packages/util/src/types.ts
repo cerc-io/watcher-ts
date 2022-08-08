@@ -107,6 +107,7 @@ export interface IndexerInterface {
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
+  processBlockAfterEvents?: (blockHash: string) => Promise<void>
 }
 
 export interface IPLDIndexerInterface extends IndexerInterface {

@@ -22,6 +22,7 @@ import { abi as nfpmABI, storageLayout as nfpmStorageLayout } from './artifacts/
 import poolABI from './artifacts/pool.json';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 type ResultEvent = {
   block: any;
@@ -68,8 +69,8 @@ export class Indexer implements IndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSON.parse(event.eventInfo);
-    const { tx } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -521,10 +522,10 @@ export class Indexer implements IndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {

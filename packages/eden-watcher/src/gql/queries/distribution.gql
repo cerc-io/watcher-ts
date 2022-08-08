@@ -1,5 +1,5 @@
-query distribution($id: String!, $blockHash: Bytes!){
-    distribution(id: $id, block: { hash: $blockHash }){
+query distribution($id: String!, $block: Block_height){
+    distribution(id: $id, block: $block){
         id
         distributor{
             id

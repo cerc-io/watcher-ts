@@ -1,5 +1,5 @@
-query slash($id: String!, $blockHash: Bytes!){
-    slash(id: $id, block: { hash: $blockHash }){
+query slash($id: String!, $block: Block_height){
+    slash(id: $id, block: $block){
         id
         timestamp
         account{

@@ -1,5 +1,5 @@
-query slot($id: String!, $blockHash: Bytes!){
-    slot(id: $id, block: { hash: $blockHash }){
+query slot($id: String!, $block: Block_height){
+    slot(id: $id, block: $block){
         id
         owner
         delegate

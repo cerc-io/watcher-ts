@@ -54,11 +54,10 @@ export const main = async (): Promise<void> => {
 
   const queryName = argv.queryName;
   const id = argv.entityId;
-  const blockHash = argv.blockHash;
 
   const block = {
     number: argv.blockNumber,
-    hash: blockHash
+    hash: argv.blockHash
   };
 
   const clients = await getClients(config, argv.queryDir);

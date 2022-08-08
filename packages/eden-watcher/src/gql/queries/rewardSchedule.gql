@@ -1,5 +1,5 @@
-query rewardSchedule($id: String!, $blockHash: Bytes!){
-    rewardSchedule(id: $id, block: { hash: $blockHash }){
+query rewardSchedule($id: String!, $block: Block_height){
+    rewardSchedule(id: $id, block: $block){
         id
         rewardScheduleEntries{
             id

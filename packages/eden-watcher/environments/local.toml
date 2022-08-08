@@ -10,13 +10,13 @@
   checkpointInterval = 2000
 
   # IPFS API address (can be taken from the output on running the IPFS daemon).
-  ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
+  # ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
   subgraphPath = "../graph-node/test/subgraph/eden"
   wasmRestartBlocksInterval = 20
 
   # Boolean to filter logs by contract.
-  filterLogs = false
+  filterLogs = true
 
   # Max block range for which to return events in eventsInRange GQL query.
   # Use -1 for skipping check on block range.
@@ -38,8 +38,8 @@
 
 [upstream]
   [upstream.ethServer]
-    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
-    rpcProviderEndpoint = "http://127.0.0.1:8081"
+    gqlApiEndpoint = "http://127.0.0.1:8083/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8082"
     blockDelayInMilliSecs = 2000
 
   [upstream.cache]

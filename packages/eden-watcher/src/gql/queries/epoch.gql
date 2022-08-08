@@ -1,5 +1,5 @@
-query epoch($id: String!, $blockHash: Bytes!){
-    epoch(id: $id, block: { hash: $blockHash }){
+query epoch($id: String!, $block: Block_height){
+    epoch(id: $id, block: $block){
         id
         finalized
         epochNumber

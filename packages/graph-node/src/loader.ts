@@ -29,6 +29,8 @@ import {
 } from './utils';
 import { Database } from './database';
 
+const JSONbigString = JSONbig({ storeAsString: true });
+
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
 // (for eg. bigInt.fromString(negativeI32Value))
@@ -104,7 +106,12 @@ export const instantiate = async (
 
         // JSON stringify and parse data for handling unknown types when encoding.
         // For example, decimal.js values are converted to string in the diff data.
-        diffData.state[entityName] = JSONbig.parse(JSONbig.stringify(dbData));
+        diffData.state[entityName] = {
+          // Using JSONbigString to store bigints as string values to be encoded by IPLD dag-cbor.
+          // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
+          // https://github.com/rvagg/cborg#type-encoders
+          [dbData.id]: JSONbigString.parse(JSONbigString.stringify(dbData))
+        };
 
         // Create an auto-diff.
         assert(indexer.createDiffStaged);

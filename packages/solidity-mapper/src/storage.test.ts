@@ -1073,10 +1073,10 @@ describe('Get value from storage', () => {
 
     before(async () => {
       ({ contract: testNestedArrays, storageLayout } = contracts.TestNestedArrays);
-      const transactions = [];
+      const transactions: Array<ContractTransaction> = [];
 
       const addresses = generateDummyAddresses(7);
-      const transactionPromises = [];
+      const transactionPromises: Promise<ContractTransaction>[] = [];
 
       // Set value for nestedStructArray.
       for (let i = 0; i < 5; i++) {

@@ -17,6 +17,8 @@ import {
 
 import { Block, fromEntityValue, toEntityValue } from './utils';
 
+const DEFAULT_LIMIT = 100;
+
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
@@ -123,7 +125,8 @@ export class Database {
 
             if (isArray) {
               selectQueryBuilder = selectQueryBuilder.distinctOn(['entity.id'])
-                .orderBy('entity.id');
+                .orderBy('entity.id')
+                .limit(DEFAULT_LIMIT);
             } else {
               selectQueryBuilder = selectQueryBuilder.limit(1);
             }
@@ -132,7 +135,8 @@ export class Database {
               // For one to many relational field.
               selectQueryBuilder = selectQueryBuilder.where('entity.id IN (:...ids)', { ids: entityData[field] })
                 .distinctOn(['entity.id'])
-                .orderBy('entity.id');
+                .orderBy('entity.id')
+                .limit(DEFAULT_LIMIT);
 
               // Subquery example if distinctOn is not performant.
               //

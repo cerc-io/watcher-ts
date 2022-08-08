@@ -5,6 +5,7 @@
 [queries]
   queryDir = "../graph-test-watcher/src/gql/queries"
   names = []
+  idsEndpoint = "gqlEndpoint1"
 
 [cache]
   endpoint = "gqlEndpoint1"

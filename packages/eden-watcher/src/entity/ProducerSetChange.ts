@@ -6,8 +6,8 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 import { bigintTransformer } from '@vulcanize/util';
 
 enum ProducerSetChangeType {
-  Added,
-  Removed
+  Added = 'Added',
+  Removed = 'Removed'
 }
 
 @Entity()

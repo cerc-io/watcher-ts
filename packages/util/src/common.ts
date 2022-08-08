@@ -191,4 +191,8 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
     console.timeEnd('time:common#processBacthEvents-processing_events_batch');
   }
+
+  if (indexer.processBlockAfterEvents) {
+    await indexer.processBlockAfterEvents(block.blockHash);
+  }
 };

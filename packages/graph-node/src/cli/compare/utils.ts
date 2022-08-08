@@ -21,13 +21,14 @@ interface EndpointConfig {
 interface QueryConfig {
   queryDir: string;
   names: string[];
+  idsEndpoint: keyof EndpointConfig;
 }
 
 export interface Config {
   endpoints: EndpointConfig;
   queries: QueryConfig;
   cache: {
-    endpoint: string;
+    endpoint: keyof EndpointConfig;
     config: CacheConfig;
   }
 }

@@ -35,6 +35,7 @@ export class Network {
   @Column('numeric', { transformer: bigintTransformer })
   totalStaked!: bigint;
 
-  @Column('numeric', { transformer: bigintArrayTransformer, array: true })
+  // https://github.com/brianc/node-postgres/issues/1943#issuecomment-520500053
+  @Column('varchar', { transformer: bigintArrayTransformer, array: true })
   stakedPercentiles!: bigint[];
 }

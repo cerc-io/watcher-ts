@@ -1,5 +1,5 @@
-query distributor($id: String!, $blockHash: Bytes!){
-    distributor(id: $id, block: { hash: $blockHash }){
+query distributor($id: String!, $block: Block_height){
+    distributor(id: $id, block: $block){
         id
         currentDistribution{
             id

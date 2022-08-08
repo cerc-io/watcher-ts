@@ -1,5 +1,5 @@
-query slotClaim($id: String!, $blockHash: Bytes!){
-    slotClaim(id: $id, block: { hash: $blockHash }){
+query slotClaim($id: String!, $block: Block_height){
+    slotClaim(id: $id, block: $block){
         id
         slot{
             id

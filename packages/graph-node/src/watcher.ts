@@ -123,7 +123,7 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
-    if (!this._context.block) {
+    if (!this._context.block || this._context.block.blockHash !== block.hash) {
       this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash);
     }
 

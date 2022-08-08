@@ -5,8 +5,10 @@
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
+import assert from 'assert';
 
 import { compareQuery, Config, getClients, getConfig } from './utils';
+import { Client } from './client';
 
 const log = debug('vulcanize:compare-blocks');
 
@@ -40,12 +42,17 @@ export const main = async (): Promise<void> => {
       type: 'boolean',
       describe: 'Whether to print out raw diff object',
       default: false
+    },
+    fetchIds: {
+      type: 'boolean',
+      describe: 'Fetch ids and compare multiple entities',
+      default: false
     }
   }).argv;
 
   const config: Config = await getConfig(argv.configFile);
 
-  const { startBlock, endBlock, rawJson, queryDir } = argv;
+  const { startBlock, endBlock, rawJson, queryDir, fetchIds } = argv;
   const queryNames = config.queries.names;
   let diffFound = false;
 
@@ -58,13 +65,27 @@ export const main = async (): Promise<void> => {
     for (const queryName of queryNames) {
       try {
         log(`At block ${blockNumber} for query ${queryName}:`);
-        const resultDiff = await compareQuery(clients, queryName, { block }, rawJson);
 
-        if (resultDiff) {
-          diffFound = true;
-          log('Results mismatch:', resultDiff);
+        if (fetchIds) {
+          const { idsEndpoint } = config.queries;
+          assert(idsEndpoint, 'Specify endpoint for fetching ids when fetchId is true');
+          const client = Object.values(clients).find(client => client.endpoint === config.endpoints[idsEndpoint]);
+          assert(client);
+          const ids = await client.getIds(queryName, blockNumber);
+
+          for (const id of ids) {
+            const isDiff = await compareAndLog(clients, queryName, { block, id }, rawJson);
+
+            if (isDiff) {
+              diffFound = isDiff;
+            }
+          }
         } else {
-          log('Results match.');
+          const isDiff = await compareAndLog(clients, queryName, { block }, rawJson);
+
+          if (isDiff) {
+            diffFound = isDiff;
+          }
         }
       } catch (err: any) {
         log('Error:', err.message);
@@ -77,4 +98,26 @@ export const main = async (): Promise<void> => {
   if (diffFound) {
     process.exit(1);
   }
+};
+
+const compareAndLog = async (
+  clients: { client1: Client, client2: Client },
+  queryName: string,
+  params: { [key: string]: any },
+  rawJson: boolean
+): Promise<boolean> => {
+  const resultDiff = await compareQuery(
+    clients,
+    queryName,
+    params,
+    rawJson
+  );
+
+  if (resultDiff) {
+    log('Results mismatch:', resultDiff);
+    return true;
+  }
+
+  log('Results match.');
+  return false;
 };

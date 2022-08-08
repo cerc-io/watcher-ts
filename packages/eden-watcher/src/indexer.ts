@@ -57,6 +57,7 @@ import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_EDENNETWORK = 'EdenNetwork';
 const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
@@ -176,8 +177,8 @@ export class Indexer implements IPLDIndexerInterface {
 
   getResultEvent (event: Event): ResultEvent {
     const block = event.block;
-    const eventFields = JSONbig.parse(event.eventInfo);
-    const { tx, eventSignature } = JSON.parse(event.extraInfo);
+    const eventFields = JSONbigNative.parse(event.eventInfo);
+    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
 
     return {
       block: {
@@ -287,6 +288,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getIPLDBlockByCid(cid);
   }
 
+  async getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlock[]> {
+    return this._db.getDiffIPLDBlocksByBlocknumber(contractAddress, blockNumber);
+  }
+
   getIPLDData (ipldBlock: IPLDBlock): any {
     return this._baseIndexer.getIPLDData(ipldBlock);
   }
@@ -370,13 +375,15 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
 
     console.timeEnd('time:indexer#processBlock-init_state');
+  }
 
-    console.time('time:indexer#processBlock-mapping_code');
+  async processBlockAfterEvents (blockHash: string): Promise<void> {
+    console.time('time:indexer#processBlockAfterEvents-mapping_code');
 
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
 
-    console.timeEnd('time:indexer#processBlock-mapping_code');
+    console.timeEnd('time:indexer#processBlockAfterEvents-mapping_code');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -1013,10 +1020,10 @@ export class Indexer implements IPLDIndexerInterface {
           txHash,
           contract,
           eventName,
-          eventInfo: JSONbig.stringify(eventInfo),
-          extraInfo: JSONbig.stringify(extraInfo),
-          proof: JSONbig.stringify({
-            data: JSONbig.stringify({
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
               blockHash,
               receiptCID,
               log: {
