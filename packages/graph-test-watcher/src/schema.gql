@@ -86,6 +86,13 @@ type ResultIPLDBlock {
   data: String!
 }
 
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
 type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
@@ -96,6 +103,7 @@ type Query {
   category(id: String!, block: Block_height): Category!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getSyncStatus: SyncStatus
 }
 
 enum BlogKind {

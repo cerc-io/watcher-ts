@@ -72,6 +72,13 @@ type WatchedEvent {
   event: ResultEvent!
 }
 
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
 #
 # Queries
 #
@@ -139,6 +146,8 @@ type Query {
     fromBlockNumber: Int!
     toBlockNumber: Int!
   ): [ResultEvent!]
+
+  getSyncStatus: SyncStatus
 }
 
 #
