@@ -85,6 +85,13 @@ type ResultIPLDBlock {
   data: String!
 }
 
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
 type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
@@ -104,6 +111,7 @@ type Query {
   _operatorApprovals(blockHash: String!, contractAddress: String!, key0: String!, key1: String!): ResultBoolean!
   getStateByCID(cid: String!): ResultIPLDBlock
   getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getSyncStatus: SyncStatus
   transferCount(id: String!, block: Block_height): TransferCount!
 }
 

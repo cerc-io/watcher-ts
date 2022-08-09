@@ -95,6 +95,9 @@ export class Schema {
     // Add a mutation for watching a contract.
     this._addWatchContractMutation();
 
+    // Add type and query for SyncStatus.
+    this._addSyncStatus();
+
     // Add IPLDBlock type and queries.
     this._addIPLDType();
     this._addIPLDQuery();
@@ -327,6 +330,26 @@ export class Schema {
           fromBlockNumber: 'Int!',
           toBlockNumber: 'Int!'
         }
+      }
+    });
+  }
+
+  _addSyncStatus (): void {
+    const typeComposer = this._composer.createObjectTC({
+      name: 'SyncStatus',
+      fields: {
+        latestIndexedBlockHash: 'String!',
+        latestIndexedBlockNumber: 'Int!',
+        latestCanonicalBlockHash: 'String!',
+        latestCanonicalBlockNumber: 'Int!'
+      }
+    });
+
+    this._composer.addSchemaMustHaveType(typeComposer);
+
+    this._composer.Query.addFields({
+      getSyncStatus: {
+        type: this._composer.getOTC('SyncStatus')
       }
     });
   }
