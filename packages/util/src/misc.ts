@@ -209,7 +209,8 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
     gasLimit: header.GasLimit.toString(),
     gasUsed: header.GasUsed.toString(),
     author: header.Beneficiary,
-    size: BigInt(size).toString()
+    size: BigInt(size).toString(),
+    baseFee: header.BaseFee?.toString()
   };
 };
 
@@ -232,6 +233,8 @@ export const getFullTransaction = async (ethClient: EthClient, txHash: string): 
     value: txData.value.toString(),
     gasLimit: txData.gasLimit.toString(),
     gasPrice: txData.gasPrice?.toString(),
-    input: txData.data
+    input: txData.data,
+    maxPriorityFeePerGas: txData.maxPriorityFeePerGas?.toString(),
+    maxFeePerGas: txData.maxFeePerGas?.toString()
   };
 };

@@ -33,8 +33,10 @@ export interface Transaction {
   to: string;
   value: string;
   gasLimit: string;
-  gasPrice: string;
+  gasPrice?: string;
   input: string;
+  maxPriorityFeePerGas?: string,
+  maxFeePerGas?: string,
 }
 
 export interface Block {
@@ -53,6 +55,7 @@ export interface Block {
   gasUsed: string;
   author: string;
   size: string;
+  baseFee?: string;
 }
 
 export interface EventData {
@@ -369,7 +372,18 @@ export const createEvent = async (instanceExports: any, contractAddress: string,
   const gasLimitStringPtr = await __newString(tx.gasLimit);
   const txGasLimitPtr = await BigInt.fromString(gasLimitStringPtr);
 
-  const gasPriceStringPtr = await __newString(tx.gasPrice);
+  let gasPrice = tx.gasPrice;
+
+  if (!gasPrice) {
+    // Compute gasPrice for EIP-1559 transaction
+    // https://ethereum.stackexchange.com/questions/122090/what-does-tx-gasprice-represent-after-eip-1559
+    const feeDifference = BigNumber.from(tx.maxFeePerGas).sub(BigNumber.from(blockData.baseFee));
+    const maxPriorityFeePerGas = BigNumber.from(tx.maxPriorityFeePerGas);
+    const priorityFeePerGas = maxPriorityFeePerGas.lt(feeDifference) ? maxPriorityFeePerGas : feeDifference;
+    gasPrice = BigNumber.from(blockData.baseFee).add(priorityFeePerGas).toString();
+  }
+
+  const gasPriceStringPtr = await __newString(gasPrice);
   const txGasPricePtr = await BigInt.fromString(gasPriceStringPtr);
 
   const inputStringPtr = await __newString(tx.input);
