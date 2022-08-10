@@ -5,10 +5,13 @@
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
-import assert from 'assert';
+import path from 'path';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { getConfig as getWatcherConfig } from '@vulcanize/util';
 
 import { compareQuery, Config, getClients, getConfig } from './utils';
 import { Client } from './client';
+import { Database } from '../../database';
 
 const log = debug('vulcanize:compare-blocks');
 
@@ -50,30 +53,48 @@ export const main = async (): Promise<void> => {
     }
   }).argv;
 
-  const config: Config = await getConfig(argv.configFile);
+  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile } = argv;
+  const config: Config = await getConfig(configFile);
+  const snakeNamingStrategy = new SnakeNamingStrategy();
+  let db: Database;
 
-  const { startBlock, endBlock, rawJson, queryDir, fetchIds } = argv;
+  if (fetchIds) {
+    const watcherConfigPath = path.resolve(path.dirname(configFile), config.watcher.configPath);
+    const entitiesDir = path.resolve(path.dirname(configFile), config.watcher.entitiesDir);
+    const watcherConfig = await getWatcherConfig(watcherConfigPath);
+    db = new Database(watcherConfig.database, entitiesDir);
+    await db.init();
+  }
+
+  const clients = await getClients(config, queryDir);
   const queryNames = config.queries.names;
   let diffFound = false;
 
-  const clients = await getClients(config, queryDir);
-
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
     const block = { number: blockNumber };
+    let updatedEntityIds: string[][] = [];
     console.time(`time:compare-block-${blockNumber}`);
 
-    for (const queryName of queryNames) {
+    if (fetchIds) {
+      // Fetch entity ids updated at block.
+      console.time(`time:fetch-updated-ids-${blockNumber}`);
+      const updatedEntityIdPromises = queryNames.map(
+        queryName => db.getEntityIdsAtBlockNumber(
+          blockNumber,
+          snakeNamingStrategy.tableName(queryName, '')
+        )
+      );
+
+      updatedEntityIds = await Promise.all(updatedEntityIdPromises);
+      console.timeEnd(`time:fetch-updated-ids-${blockNumber}`);
+    }
+
+    for (const [index, queryName] of queryNames.entries()) {
       try {
         log(`At block ${blockNumber} for query ${queryName}:`);
 
         if (fetchIds) {
-          const { idsEndpoint } = config.queries;
-          assert(idsEndpoint, 'Specify endpoint for fetching ids when fetchId is true');
-          const client = Object.values(clients).find(client => client.endpoint === config.endpoints[idsEndpoint]);
-          assert(client);
-          const ids = await client.getIds(queryName, blockNumber);
-
-          for (const id of ids) {
+          for (const id of updatedEntityIds[index]) {
             const isDiff = await compareAndLog(clients, queryName, { block, id }, rawJson);
 
             if (isDiff) {

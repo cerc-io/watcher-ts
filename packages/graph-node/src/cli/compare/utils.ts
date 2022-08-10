@@ -27,6 +27,10 @@ interface QueryConfig {
 export interface Config {
   endpoints: EndpointConfig;
   queries: QueryConfig;
+  watcher: {
+    configPath: string;
+    entitiesDir: string;
+  }
   cache: {
     endpoint: keyof EndpointConfig;
     config: CacheConfig;

@@ -77,6 +77,19 @@ export class Database {
     }
   }
 
+  async getEntityIdsAtBlockNumber (blockNumber: number, tableName: string): Promise<string[]> {
+    const repo = this._conn.getRepository(tableName);
+
+    const entities = await repo.find({
+      select: ['id'],
+      where: {
+        blockNumber
+      }
+    });
+
+    return entities.map((entity: any) => entity.id);
+  }
+
   async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, block: BlockHeight = {}): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
     let { hash: blockHash, number: blockNumber } = block;

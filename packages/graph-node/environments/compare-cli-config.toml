@@ -7,6 +7,10 @@
   names = []
   idsEndpoint = "gqlEndpoint1"
 
+[watcher]
+  configpath = "../../graph-test-watcher/environments/local.toml"
+  entitiesDir = "../../graph-test-watcher/src/entity"
+
 [cache]
   endpoint = "gqlEndpoint1"
 

@@ -75,9 +75,9 @@
       ./bin/compare-blocks --config-file environments/compare-cli-config.toml --start-block 1 --end-block 10
       ```
     
-    * For comparing entities after fetching ids from one of the endpoints and then querying individually by ids:
+    * For comparing entities after fetching updated entity ids from watcher database:
 
-      * Set the `idsEndpoint` to choose which endpoint the ids should be fetched from.
+      * Set the watcher config file path and entities directory.
 
         ```toml
         [endpoints]
@@ -90,7 +90,10 @@
             "author",
             "blog"
           ]
-          idsEndpoint = "gqlEndpoint1"
+        
+        [watcher]
+          configPath = "../../graph-test-watcher/environments/local.toml"
+          entitiesDir = "../../graph-test-watcher/dist/entity/*"
         ```
       
       * Run the CLI with `fetch-ids` flag set to true:\
