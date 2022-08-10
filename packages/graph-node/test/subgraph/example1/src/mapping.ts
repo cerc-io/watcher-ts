@@ -159,6 +159,16 @@ export function testStructEthCall (): void {
   }
 }
 
+export function testGetStorageValue (): void {
+  log.debug('In test get storage call', []);
+
+  // Bind the contract to the address.
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+  const res = contract.getStorageValue('_test', []);
+  log.debug('Storage call result: {}', [res!.toString()]);
+}
+
 export function testBytesToHex (): string {
   log.debug('In test bytesToHex', []);
 

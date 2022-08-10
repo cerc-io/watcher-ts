@@ -3,10 +3,12 @@
 //
 
 import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
 
 import { ServerConfig } from './config';
 import { Where, QueryOptions } from './database';
 import { IpldStatus } from './ipld-indexer';
+import { ValueResult } from './indexer';
 
 export enum StateKind {
   Diff = 'diff',
@@ -80,6 +82,7 @@ export interface IPLDBlockInterface {
 
 export interface IndexerInterface {
   readonly serverConfig: ServerConfig
+  readonly storageLayoutMap: Map<string, StorageLayout>
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEvent (id: string): Promise<EventInterface | undefined>
@@ -108,6 +111,7 @@ export interface IndexerInterface {
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
   processBlockAfterEvents?: (blockHash: string) => Promise<void>
+  getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
 }
 
 export interface IPLDIndexerInterface extends IndexerInterface {
