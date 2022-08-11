@@ -6,12 +6,15 @@ import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
 import path from 'path';
+import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { getConfig as getWatcherConfig } from '@vulcanize/util';
+import _ from 'lodash';
+import { getConfig as getWatcherConfig, wait } from '@vulcanize/util';
+import { GraphQLClient } from '@vulcanize/ipld-eth-client';
 
-import { compareQuery, Config, getClients, getConfig } from './utils';
-import { Client } from './client';
+import { compareObjects, compareQuery, Config, getBlockIPLDState as getIPLDStateByBlock, getClients, getConfig } from './utils';
 import { Database } from '../../database';
+import { getSubgraphConfig } from '../../utils';
 
 const log = debug('vulcanize:compare-blocks');
 
@@ -56,62 +59,104 @@ export const main = async (): Promise<void> => {
   const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile } = argv;
   const config: Config = await getConfig(configFile);
   const snakeNamingStrategy = new SnakeNamingStrategy();
-  let db: Database;
+  const clients = await getClients(config, queryDir);
+  const queryNames = config.queries.names;
+  let diffFound = false;
+  let blockDelay = wait(0);
+  let subgraphContracts: string[] = [];
+  let db: Database | undefined, subgraphGQLClient: GraphQLClient | undefined;
 
-  if (fetchIds) {
+  if (config.watcher) {
     const watcherConfigPath = path.resolve(path.dirname(configFile), config.watcher.configPath);
     const entitiesDir = path.resolve(path.dirname(configFile), config.watcher.entitiesDir);
     const watcherConfig = await getWatcherConfig(watcherConfigPath);
     db = new Database(watcherConfig.database, entitiesDir);
     await db.init();
-  }
 
-  const clients = await getClients(config, queryDir);
-  const queryNames = config.queries.names;
-  let diffFound = false;
+    if (config.watcher.verifyState) {
+      const { dataSources } = await getSubgraphConfig(watcherConfig.server.subgraphPath);
+      subgraphContracts = dataSources.map((dataSource: any) => dataSource.source.address);
+      const watcherEndpoint = config.endpoints[config.watcher.endpoint] as string;
+      subgraphGQLClient = new GraphQLClient({ gqlEndpoint: watcherEndpoint });
+    }
+  }
 
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
     const block = { number: blockNumber };
-    let updatedEntityIds: string[][] = [];
+    let updatedEntityIds: string[][] = []; let ipldStateByBlock = {};
     console.time(`time:compare-block-${blockNumber}`);
 
     if (fetchIds) {
       // Fetch entity ids updated at block.
       console.time(`time:fetch-updated-ids-${blockNumber}`);
+
       const updatedEntityIdPromises = queryNames.map(
-        queryName => db.getEntityIdsAtBlockNumber(
-          blockNumber,
-          snakeNamingStrategy.tableName(queryName, '')
-        )
+        queryName => {
+          assert(db);
+
+          return db.getEntityIdsAtBlockNumber(
+            blockNumber,
+            snakeNamingStrategy.tableName(queryName, '')
+          );
+        }
       );
 
       updatedEntityIds = await Promise.all(updatedEntityIdPromises);
       console.timeEnd(`time:fetch-updated-ids-${blockNumber}`);
     }
 
+    if (config.watcher.verifyState) {
+      assert(db);
+      const [block] = await db?.getBlocksAtHeight(blockNumber, false);
+      assert(subgraphGQLClient);
+      ipldStateByBlock = await getIPLDStateByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
+    }
+
+    await blockDelay;
     for (const [index, queryName] of queryNames.entries()) {
       try {
         log(`At block ${blockNumber} for query ${queryName}:`);
+        let resultDiff = '';
 
         if (fetchIds) {
           for (const id of updatedEntityIds[index]) {
-            const isDiff = await compareAndLog(clients, queryName, { block, id }, rawJson);
+            const { diff, result1: result } = await compareQuery(
+              clients,
+              queryName,
+              { block, id },
+              rawJson
+            );
 
-            if (isDiff) {
-              diffFound = isDiff;
+            if (config.watcher.verifyState) {
+              await checkEntityInIPLDState(ipldStateByBlock, queryName, result, id, rawJson);
+            }
+
+            if (diff) {
+              resultDiff = diff;
             }
           }
         } else {
-          const isDiff = await compareAndLog(clients, queryName, { block }, rawJson);
+          ({ diff: resultDiff } = await compareQuery(
+            clients,
+            queryName,
+            { block },
+            rawJson
+          ));
+        }
 
-          if (isDiff) {
-            diffFound = isDiff;
-          }
+        if (resultDiff) {
+          log('Results mismatch:', resultDiff);
+          diffFound = true;
+        } else {
+          log('Results match.');
         }
       } catch (err: any) {
         log('Error:', err.message);
       }
     }
+
+    // Set delay between requests for a block.
+    blockDelay = wait(config.queries.blockDelayInMs || 0);
 
     console.timeEnd(`time:compare-block-${blockNumber}`);
   }
@@ -121,24 +166,20 @@ export const main = async (): Promise<void> => {
   }
 };
 
-const compareAndLog = async (
-  clients: { client1: Client, client2: Client },
+const checkEntityInIPLDState = async (
+  ipldState: {[key: string]: any},
   queryName: string,
-  params: { [key: string]: any },
+  entityResult: {[key: string]: any},
+  id: string,
   rawJson: boolean
-): Promise<boolean> => {
-  const resultDiff = await compareQuery(
-    clients,
-    queryName,
-    params,
-    rawJson
-  );
+) => {
+  const entityName = _.startCase(queryName);
+  const ipldEntity = ipldState[entityName][id];
+  const { __typename, ...resultEntity } = entityResult[queryName];
 
-  if (resultDiff) {
-    log('Results mismatch:', resultDiff);
-    return true;
+  const diff = compareObjects(ipldEntity, resultEntity, rawJson);
+
+  if (diff) {
+    log('Results mismatch for IPLD state:', diff);
   }
-
-  log('Results match.');
-  return false;
 };

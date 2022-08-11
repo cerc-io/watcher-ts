@@ -4,8 +4,11 @@
 
 import yargs from 'yargs';
 import 'reflect-metadata';
+import debug from 'debug';
 
 import { compareQuery, Config, getClients, getConfig } from './utils';
+
+const log = debug('vulcanize:compare-entity');
 
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -62,10 +65,10 @@ export const main = async (): Promise<void> => {
 
   const clients = await getClients(config, argv.queryDir);
 
-  const resultDiff = await compareQuery(clients, queryName, { id, block }, argv.rawJson);
+  const { diff } = await compareQuery(clients, queryName, { id, block }, argv.rawJson);
 
-  if (resultDiff) {
-    console.log(resultDiff);
+  if (diff) {
+    log(diff);
     process.exit(1);
   }
 };
