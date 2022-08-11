@@ -1,0 +1,14 @@
+query slotClaim($id: String!, $block: Block_height){
+    slotClaim(id: $id, block: $block){
+        id
+        slot{
+            id
+        }
+        owner
+        winningBid
+        oldBid
+        startTime
+        expirationTime
+        taxRatePerDay
+    }
+}

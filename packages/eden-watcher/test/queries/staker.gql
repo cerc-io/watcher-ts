@@ -1,0 +1,7 @@
+query staker($id: String!, $block: Block_height){
+    staker(id: $id, block: $block){
+        id
+        staked
+        rank
+    }
+}

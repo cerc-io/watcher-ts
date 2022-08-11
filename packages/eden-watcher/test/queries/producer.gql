@@ -1,0 +1,10 @@
+query producer($id: String!, $block: Block_height){
+    producer(id: $id, block: $block){
+        id
+        active
+        rewardCollector
+        rewards
+        confirmedBlocks
+        pendingEpochBlocks
+    }
+}

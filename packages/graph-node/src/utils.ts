@@ -798,3 +798,11 @@ const getEthereumType = (storageTypes: StorageLayout['types'], type: string, map
 
   return utils.ParamType.from(label);
 };
+
+export const jsonBigIntStringReplacer = (_: string, value: any) => {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  return value;
+};

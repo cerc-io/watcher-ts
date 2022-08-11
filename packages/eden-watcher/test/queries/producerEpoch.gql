@@ -1,0 +1,12 @@
+query producerEpoch($id: String!, $block: Block_height){
+    producerEpoch(id: $id, block: $block){
+        id
+        address
+        epoch{
+            id
+        }
+        totalRewards
+        blocksProduced
+        blocksProducedRatio
+    }
+}

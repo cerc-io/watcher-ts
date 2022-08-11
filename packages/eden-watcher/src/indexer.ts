@@ -585,6 +585,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._entityTypesMap;
   }
 
+  getRelationsMap (): Map<any, { [key: string]: any }> {
+    return this._relationsMap;
+  }
+
   _populateEntityTypesMap (): void {
     this._entityTypesMap.set(
       'Producer',

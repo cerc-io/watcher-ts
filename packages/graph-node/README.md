@@ -96,6 +96,16 @@
           entitiesDir = "../../graph-test-watcher/dist/entity/*"
         ```
       
+      * To verify diff IPLD state generated at each block, set the watcher endpoint and `verifyState` flag to true
+
+        ```toml
+        [watcher]
+          configPath = "../../graph-test-watcher/environments/local.toml"
+          entitiesDir = "../../graph-test-watcher/dist/entity/*"
+          endpoint = "gqlEndpoint2"
+          verifyState = true
+        ```
+      
       * Run the CLI with `fetch-ids` flag set to true:\
 
         ```bash

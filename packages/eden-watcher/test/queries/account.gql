@@ -1,0 +1,13 @@
+query account($id: String!, $block: Block_height){
+    account(id: $id, block: $block){
+        id
+        totalClaimed
+        totalSlashed
+        claims{
+            id
+        }
+        slashes{
+            id
+        }
+    }
+}

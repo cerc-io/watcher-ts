@@ -58,6 +58,7 @@
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
     "json-diff": "^0.5.4",
+    "omit-deep": "^0.3.0",
     "pluralize": "^8.0.0",
     "reflect-metadata": "^0.1.13",
     "toml": "^3.0.0",

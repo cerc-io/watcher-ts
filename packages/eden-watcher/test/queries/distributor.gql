@@ -1,0 +1,8 @@
+query distributor($id: String!, $block: Block_height){
+    distributor(id: $id, block: $block){
+        id
+        currentDistribution{
+            id
+        }
+    }
+}

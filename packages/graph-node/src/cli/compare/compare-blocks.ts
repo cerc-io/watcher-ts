@@ -9,6 +9,7 @@ import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
+import omitDeep from 'omit-deep';
 import { getConfig as getWatcherConfig, wait } from '@vulcanize/util';
 import { GraphQLClient } from '@vulcanize/ipld-eth-client';
 
@@ -83,7 +84,8 @@ export const main = async (): Promise<void> => {
 
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
     const block = { number: blockNumber };
-    let updatedEntityIds: string[][] = []; let ipldStateByBlock = {};
+    let updatedEntityIds: string[][] = [];
+    let ipldStateByBlock = {};
     console.time(`time:compare-block-${blockNumber}`);
 
     if (fetchIds) {
@@ -175,8 +177,9 @@ const checkEntityInIPLDState = async (
 ) => {
   const entityName = _.startCase(queryName);
   const ipldEntity = ipldState[entityName][id];
-  const { __typename, ...resultEntity } = entityResult[queryName];
 
+  // Filter __typename key in GQL result.
+  const resultEntity = omitDeep(entityResult[queryName], '__typename');
   const diff = compareObjects(ipldEntity, resultEntity, rawJson);
 
   if (diff) {

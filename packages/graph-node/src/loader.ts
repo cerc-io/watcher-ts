@@ -10,7 +10,6 @@ import {
   Contract,
   ContractInterface
 } from 'ethers';
-import JSONbig from 'json-bigint';
 import BN from 'bn.js';
 import debug from 'debug';
 
@@ -26,11 +25,10 @@ import {
   resolveEntityFieldConflicts,
   getEthereumTypes,
   jsonFromBytes,
-  getStorageValueType
+  getStorageValueType,
+  jsonBigIntStringReplacer
 } from './utils';
 import { Database } from './database';
-
-const JSONbigString = JSONbig({ storeAsString: true });
 
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
@@ -104,14 +102,39 @@ export const instantiate = async (
 
         // Prepare the diff data.
         const diffData: any = { state: {} };
+        assert(indexer.getRelationsMap);
+
+        const result = Array.from(indexer.getRelationsMap().entries())
+          .find(([key]) => key.name === entityName);
+
+        if (result) {
+          // Update dbData if relations exist.
+          const [_, relations] = result;
+
+          // Update relation fields for diff data to be similar to GQL query entities.
+          Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
+            if (isDerived || !dbData[relation]) {
+              // Field is not present in dbData for derived relations
+              return;
+            }
+
+            if (isArray) {
+              dbData[relation] = dbData[relation]
+                .map((id: string) => ({ id }))
+                .sort((a: any, b: any) => a.id.localeCompare(b.id));
+            } else {
+              dbData[relation] = { id: dbData[relation] };
+            }
+          });
+        }
 
         // JSON stringify and parse data for handling unknown types when encoding.
         // For example, decimal.js values are converted to string in the diff data.
         diffData.state[entityName] = {
-          // Using JSONbigString to store bigints as string values to be encoded by IPLD dag-cbor.
+          // Using custom replacer to store bigints as string values to be encoded by IPLD dag-cbor.
           // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
           // https://github.com/rvagg/cborg#type-encoders
-          [dbData.id]: JSONbigString.parse(JSONbigString.stringify(dbData))
+          [dbData.id]: JSON.parse(JSON.stringify(dbData, jsonBigIntStringReplacer))
         };
 
         // Create an auto-diff.

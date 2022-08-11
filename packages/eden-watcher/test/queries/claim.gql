@@ -1,0 +1,12 @@
+query claim($id: String!, $block: Block_height){
+    claim(id: $id, block: $block){
+        id
+        timestamp
+        index
+        account{
+            id
+        }
+        totalEarned
+        claimed
+    }
+}
