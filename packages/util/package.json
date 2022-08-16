@@ -20,7 +20,6 @@
     "@types/fs-extra": "^9.0.11",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
-    "@uniswap/v3-periphery": "1.0.0",
     "@vulcanize/cache": "^0.1.0",
     "@vulcanize/ipld-eth-client": "^0.1.0",
     "apollo-server-express": "^2.25.0",
@@ -38,7 +37,6 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "tsc",
-    "build:contracts": "hardhat compile"
+    "build": "tsc"
   }
 }
