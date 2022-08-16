@@ -160,7 +160,7 @@ export function testStructEthCall (): void {
 }
 
 export function testGetStorageValue (): void {
-  log.debug('In test get storage call', []);
+  log.debug('In test get storage value', []);
 
   // Bind the contract to the address.
   const contractAddress = dataSource.address();
@@ -170,7 +170,7 @@ export function testGetStorageValue (): void {
 }
 
 export function testMapStorageValue (): void {
-  log.debug('In test map storage call', []);
+  log.debug('In test map storage value', []);
 
   // Bind the contract to the address.
   const contractAddress = dataSource.address();

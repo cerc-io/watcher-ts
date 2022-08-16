@@ -15,7 +15,7 @@ import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import { EventData } from './utils';
 
-describe('storage-call wasm tests', () => {
+xdescribe('storage-call wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
