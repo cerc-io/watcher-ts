@@ -4,15 +4,15 @@
 
 import { BaseProvider } from '@ethersproject/providers';
 import { getCustomProvider } from '@vulcanize/util';
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { StorageLayout } from '@vulcanize/solidity-mapper';
 
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
 import { Indexer } from './indexer';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout } from '@vulcanize/solidity-mapper';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
-const IPLD_ETH_SERVER_GQL_URL = 'http://127.0.0.1:8082';
+const IPLD_ETH_SERVER_GQL_URL = 'http://127.0.0.1:8082/graphql';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -74,7 +74,7 @@ export const getTestDatabase = (): Database => {
   return new Database({ type: 'postgres' }, '');
 };
 
-export const getTestIndexer = (storageLayout: Map<string, StorageLayout>): Indexer => {
+export const getTestIndexer = (storageLayout?: Map<string, StorageLayout>): Indexer => {
   const ethClient = new EthClient({
     gqlEndpoint: IPLD_ETH_SERVER_GQL_URL,
     cache: undefined

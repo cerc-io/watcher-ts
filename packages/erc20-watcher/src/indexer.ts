@@ -11,7 +11,7 @@ import { ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout } from '@vulcanize/solidity-mapper';
+import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
 import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig } from '@vulcanize/util';
 
 import { Database } from './database';
@@ -78,6 +78,10 @@ export class Indexer implements IndexerInterface {
 
   get serverConfig (): ServerConfig {
     return this._serverConfig;
+  }
+
+  get storageLayoutMap (): Map<string, StorageLayout> {
+    return new Map([['ERC20', this._storageLayout]]);
   }
 
   async init (): Promise<void> {
@@ -232,6 +236,16 @@ export class Indexer implements IndexerInterface {
     }
 
     return result;
+  }
+
+  async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
+    return this._baseIndexer.getStorageValue(
+      storageLayout,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {

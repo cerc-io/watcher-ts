@@ -5,12 +5,19 @@ pragma solidity ^0.8.0;
 contract Example {
     uint256 private _test;
 
+    mapping (address => uint128) public addressUintMap;
+
     struct Bid {
         uint128 bidAmount1;
         uint128 bidAmount2;
     }
 
     event Test(string param1, uint8 param2, uint256 param3);
+
+    constructor() {
+        _test = 1;
+        addressUintMap[address(0)] = 123;
+    }
 
     function getMethod() public view virtual returns (string memory)
     {

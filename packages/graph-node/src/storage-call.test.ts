@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Vulcanize, Inc.
+// Copyright 2022 Vulcanize, Inc.
 //
 
 import assert from 'assert';
@@ -9,12 +9,13 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
+import { storageLayout } from '../test/artifacts/Example1.json';
 import { getTestDatabase, getTestIndexer, getTestProvider, getDummyEventData } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import { EventData } from './utils';
 
-xdescribe('eth-call wasm tests', () => {
+describe('storage-call wasm tests', () => {
   let exports: any;
   let db: Database;
   let indexer: Indexer;
@@ -37,7 +38,7 @@ xdescribe('eth-call wasm tests', () => {
 
   before(async () => {
     db = getTestDatabase();
-    indexer = getTestIndexer();
+    indexer = getTestIndexer(new Map([['Example1', storageLayout]]));
     provider = getTestProvider();
 
     // Create dummy test data.
@@ -65,21 +66,15 @@ xdescribe('eth-call wasm tests', () => {
     _start();
   });
 
-  it('should execute exported getMethod function', async () => {
-    const { testGetEthCall } = exports;
+  it('should execute contract getStorageValue function', async () => {
+    const { testGetStorageValue } = exports;
 
-    await testGetEthCall();
+    await testGetStorageValue();
   });
 
-  it('should execute exported addMethod function', async () => {
-    const { testAddEthCall } = exports;
+  it('should execute getStorageValue function for mapping type variable', async () => {
+    const { testMapStorageValue } = exports;
 
-    await testAddEthCall();
-  });
-
-  it('should execute exported structMethod function', async () => {
-    const { testStructEthCall } = exports;
-
-    await testStructEthCall();
+    await testMapStorageValue();
   });
 });

@@ -14,11 +14,14 @@ import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@vulca
 
 export class Indexer implements IndexerInterface {
   _getStorageAt: GetStorageAt;
-  _storageLayoutMap: Map<string, StorageLayout>
+  _storageLayoutMap: Map<string, StorageLayout> = new Map()
 
-  constructor (ethClient: EthClient, storageLayoutMap: Map<string, StorageLayout>) {
+  constructor (ethClient: EthClient, storageLayoutMap?: Map<string, StorageLayout>) {
     this._getStorageAt = ethClient.getStorageAt.bind(ethClient);
-    this._storageLayoutMap = storageLayoutMap;
+
+    if (storageLayoutMap) {
+      this._storageLayoutMap = storageLayoutMap;
+    }
   }
 
   get serverConfig () {

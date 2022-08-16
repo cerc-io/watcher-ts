@@ -12,7 +12,7 @@ import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout } from '@vulcanize/solidity-mapper';
+import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
   UNKNOWN_EVENT_NAME,
@@ -24,7 +24,8 @@ import {
   IPFSClient,
   StateKind,
   IPLDIndexerInterface,
-  IpldStatus as IpldStatusInterface
+  IpldStatus as IpldStatusInterface,
+  ValueResult
 } from '@vulcanize/util';
 import { GraphWatcher } from '@vulcanize/graph-node';
 
@@ -170,6 +171,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._serverConfig;
   }
 
+  get storageLayoutMap (): Map<string, StorageLayout> {
+    return this._storageLayoutMap;
+  }
+
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchIPLDStatus();
@@ -228,6 +233,16 @@ export class Indexer implements IPLDIndexerInterface {
       kind: ipldBlock.kind,
       data: JSON.stringify(data)
     };
+  }
+
+  async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
+    return this._baseIndexer.getStorageValue(
+      storageLayout,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
   }
 
   async pushToIPFS (data: any): Promise<void> {
