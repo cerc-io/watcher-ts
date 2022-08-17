@@ -3,13 +3,13 @@
 //
 
 import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
 import fs from 'fs-extra';
 import path from 'path';
 import assert from 'assert';
 import toml from 'toml';
 import _ from "lodash";
-import { ethers, providers } from 'ethers';
+
+import { readAbi, performEthCall } from './common'
 
 interface Config {
   localEndpointURL: string,
@@ -20,19 +20,21 @@ interface Config {
 }
 
 const main = async (): Promise<void> => {
-  const argv = await yargs(hideBin(process.argv))
-    .option('config-file', {
+  const argv = await yargs.parserConfiguration({
+    'parse-numbers': false
+  }).options({
+    configFile: {
       alias: 'c',
+      type: 'string',
       demandOption: true,
-      describe: 'Config',
-      type: 'string'
-    })
-    .argv;
+      describe: 'Configuration file path (toml)',
+    }
+  }).argv;
 
-  const config = await getConfig(path.resolve(argv['config-file']));
+  const config = await getConfig(argv.configFile);
 
   // Load contract ABI.
-  const contractAbi = JSON.parse(fs.readFileSync(config.abiPath).toString());
+  const contractAbi = readAbi(config.abiPath)
 
   const localResult = await performEthCall(config.localEndpointURL, config.contractAddress, contractAbi, config.blockTag);
   const remoteResult = await performEthCall(config.remoteEndpointURL, config.contractAddress, contractAbi, config.blockTag);
@@ -46,15 +48,6 @@ const main = async (): Promise<void> => {
   }
 }
 
-const performEthCall = async (endpointURL: string, contractAddress: string, abi: ethers.ContractInterface, blockTag: string): Promise<any> => {
-  const provider = new providers.JsonRpcProvider(endpointURL);
-  const contract = new ethers.Contract(contractAddress, abi, provider);
-
-  const result = contract.feeToSetter({blockTag});
-
-  return result
-}
-
 const getConfig = async (configFile: string): Promise<Config> => {
   const configFilePath = path.resolve(configFile);
   const fileExists = await fs.pathExists(configFilePath);
@@ -64,7 +57,6 @@ const getConfig = async (configFile: string): Promise<Config> => {
 
   const x = await fs.readFile(configFilePath, 'utf8')
   const config = toml.parse(x);
-  // console.log("config", config);
   
   const { endpoints: endpointConfig, contract: contractConfig, blockTag } = config;
   assert(endpointConfig, 'Missing endpoints config');

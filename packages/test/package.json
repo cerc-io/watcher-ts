@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "compare-results": "ts-node src/compare.ts"
+    "eth-call": "ts-node dist/perform-eth-call.js",
+    "compare-results": "ts-node dist/compare.js"
   },
   "dependencies": {
     "ethers": "^5.4.4",
