@@ -1,0 +1,9 @@
+blockTag = "" # block tag to perform eth-call with
+
+[endpoints]
+  local = ""  # local server endpoint
+  remote = "" # remote node endpoint
+
+[contract]
+  address = ""  # contract address
+  abi = ""      # path to contract ABI
