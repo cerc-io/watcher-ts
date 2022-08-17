@@ -38,8 +38,6 @@ import { IpldStatus } from './entity/IpldStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { IPLDBlock } from './entity/IPLDBlock';
 import Example1Artifacts from './artifacts/Example.json';
-import FactoryArtifacts from './artifacts/Factory.json';
-import PoolArtifacts from './artifacts/Pool.json';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Author } from './entity/Author';
 import { Blog } from './entity/Blog';
@@ -49,8 +47,6 @@ const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_EXAMPLE1 = 'Example1';
-const KIND_FACTORY = 'Factory';
-const KIND_POOL = 'Pool';
 
 export type ResultEvent = {
   block: {
@@ -128,27 +124,11 @@ export class Indexer implements IPLDIndexerInterface {
       storageLayout: Example1StorageLayout
     } = Example1Artifacts;
 
-    const {
-      abi: FactoryABI
-    } = FactoryArtifacts;
-
-    const {
-      abi: PoolABI
-    } = PoolArtifacts;
-
     assert(Example1ABI);
     assert(Example1StorageLayout);
     this._abiMap.set(KIND_EXAMPLE1, Example1ABI);
     this._storageLayoutMap.set(KIND_EXAMPLE1, Example1StorageLayout);
     this._contractMap.set(KIND_EXAMPLE1, new ethers.utils.Interface(Example1ABI));
-
-    assert(FactoryABI);
-    this._abiMap.set(KIND_FACTORY, FactoryABI);
-    this._contractMap.set(KIND_FACTORY, new ethers.utils.Interface(FactoryABI));
-
-    assert(PoolABI);
-    this._abiMap.set(KIND_POOL, PoolABI);
-    this._contractMap.set(KIND_POOL, new ethers.utils.Interface(PoolABI));
 
     this._entityTypesMap = new Map();
     this._populateEntityTypesMap();
