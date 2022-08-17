@@ -1,0 +1,19 @@
+query epoch($id: String!, $block: Block_height){
+    epoch(id: $id, block: $block){
+        id
+        finalized
+        epochNumber
+        startBlock{
+            id
+        }
+        endBlock{
+            id
+        }
+        producerBlocks
+        allBlocks
+        producerBlocksRatio
+        producerRewards{
+            id
+        }
+    }
+}

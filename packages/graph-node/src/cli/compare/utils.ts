@@ -8,25 +8,43 @@ import path from 'path';
 import toml from 'toml';
 import fs from 'fs-extra';
 import { diffString, diff } from 'json-diff';
+import _ from 'lodash';
 
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
+import { GraphQLClient } from '@vulcanize/ipld-eth-client';
+import { gql } from '@apollo/client/core';
 
 import { Client } from './client';
+
+const IPLD_STATE_QUERY = `
+query getState($blockHash: String!, $contractAddress: String!, $kind: String){
+  getState(blockHash: $blockHash, contractAddress: $contractAddress, kind: $kind){
+    data
+  }
+}
+`;
 
 interface EndpointConfig {
   gqlEndpoint1: string;
   gqlEndpoint2: string;
+  requestDelayInMs: number;
 }
 
 interface QueryConfig {
   queryDir: string;
   names: string[];
-  idsEndpoint: keyof EndpointConfig;
+  blockDelayInMs: number;
 }
 
 export interface Config {
   endpoints: EndpointConfig;
   queries: QueryConfig;
+  watcher: {
+    configPath: string;
+    entitiesDir: string;
+    verifyState: boolean;
+    endpoint: keyof EndpointConfig;
+  }
   cache: {
     endpoint: keyof EndpointConfig;
     config: CacheConfig;
@@ -52,6 +70,12 @@ export const getConfig = async (configFile: string): Promise<Config> => {
   return config;
 };
 
+interface CompareResult {
+  diff: string,
+  result1: any,
+  result2: any
+}
+
 export const compareQuery = async (
   clients: {
     client1: Client,
@@ -60,27 +84,22 @@ export const compareQuery = async (
   queryName: string,
   params: { [key: string]: any },
   rawJson: boolean
-): Promise<string> => {
+): Promise<CompareResult> => {
   const { client1, client2 } = clients;
 
-  const result2 = await client2.getResult(queryName, params);
-  const result1 = await client1.getResult(queryName, params);
+  const [result1, result2] = await Promise.all([
+    client1.getResult(queryName, params),
+    client2.getResult(queryName, params)
+  ]);
 
   // Getting the diff of two result objects.
-  let resultDiff;
+  const resultDiff = compareObjects(result1, result2, rawJson);
 
-  if (rawJson) {
-    resultDiff = diff(result1, result2);
-
-    if (resultDiff) {
-      // Use util.inspect to extend depth limit in the output.
-      resultDiff = util.inspect(diff(result1, result2), false, null);
-    }
-  } else {
-    resultDiff = diffString(result1, result2);
-  }
-
-  return resultDiff;
+  return {
+    diff: resultDiff,
+    result1,
+    result2
+  };
 };
 
 export const getClients = async (config: Config, queryDir?: string):Promise<{
@@ -120,4 +139,41 @@ export const getClients = async (config: Config, queryDir?: string):Promise<{
     client1,
     client2
   };
+};
+
+export const getBlockIPLDState = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}> => {
+  const contractIPLDStates: {[key: string]: any}[] = await Promise.all(contracts.map(async contract => {
+    const { getState } = await client.query(
+      gql(IPLD_STATE_QUERY),
+      {
+        blockHash,
+        contractAddress: contract,
+        kind: 'diff'
+      }
+    );
+
+    if (getState) {
+      const data = JSON.parse(getState.data);
+      return data.state;
+    }
+
+    return {};
+  }));
+
+  return contractIPLDStates.reduce((acc, state) => _.merge(acc, state));
+};
+
+export const compareObjects = (obj1: any, obj2: any, rawJson: boolean): string => {
+  if (rawJson) {
+    const diffObj = diff(obj1, obj2);
+
+    if (diffObj) {
+      // Use util.inspect to extend depth limit in the output.
+      return util.inspect(diffObj, false, null);
+    }
+
+    return '';
+  } else {
+    return diffString(obj1, obj2);
+  }
 };

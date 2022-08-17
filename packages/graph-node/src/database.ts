@@ -7,11 +7,13 @@ import {
   Connection,
   ConnectionOptions,
   FindOneOptions,
-  LessThanOrEqual
+  LessThanOrEqual,
+  Repository
 } from 'typeorm';
 
 import {
   BlockHeight,
+  BlockProgressInterface,
   Database as BaseDatabase
 } from '@vulcanize/util';
 
@@ -75,6 +77,19 @@ export class Database {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getEntityIdsAtBlockNumber (blockNumber: number, tableName: string): Promise<string[]> {
+    const repo = this._conn.getRepository(tableName);
+
+    const entities = await repo.find({
+      select: ['id'],
+      where: {
+        blockNumber
+      }
+    });
+
+    return entities.map((entity: any) => entity.id);
   }
 
   async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, block: BlockHeight = {}): Promise<Entity | undefined> {
@@ -264,5 +279,11 @@ export class Database {
 
       return acc;
     }, {});
+  }
+
+  async getBlocksAtHeight (height: number, isPruned: boolean) {
+    const repo: Repository<BlockProgressInterface> = this._conn.getRepository('block_progress');
+
+    return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
   }
 }

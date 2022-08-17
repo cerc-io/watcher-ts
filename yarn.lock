@@ -8596,7 +8596,7 @@ is-plain-obj@^2.0.0, is-plain-obj@^2.1.0:
   resolved "https://registry.yarnpkg.com/is-plain-obj/-/is-plain-obj-2.1.0.tgz#45e42e37fccf1f40da8e5f76ee21515840c09287"
   integrity sha512-YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA==
 
-is-plain-object@^2.0.3, is-plain-object@^2.0.4:
+is-plain-object@^2.0.1, is-plain-object@^2.0.3, is-plain-object@^2.0.4:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/is-plain-object/-/is-plain-object-2.0.4.tgz#2c163b3fafb1b606d9d17928f05c2a1c38e07677"
   integrity sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==
@@ -10816,6 +10816,14 @@ oboe@2.1.4:
   integrity sha1-IMiM2wwVNxuwQRklfU/dNLCqSfY=
   dependencies:
     http-https "^1.0.0"
+
+omit-deep@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/omit-deep/-/omit-deep-0.3.0.tgz#21c8af3499bcadd29651a232cbcacbc52445ebec"
+  integrity sha512-Lbl/Ma59sss2b15DpnWnGmECBRL8cRl/PjPbPMVW+Y8zIQzRrwMaI65Oy6HvxyhYeILVKBJb2LWeG81bj5zbMg==
+  dependencies:
+    is-plain-object "^2.0.1"
+    unset-value "^0.1.1"
 
 on-finished@~2.3.0:
   version "2.3.0"
@@ -13983,6 +13991,14 @@ unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/unpipe/-/unpipe-1.0.0.tgz#b2bf4ee8514aae6165b4817829d21b2ef49904ec"
   integrity sha1-sr9O6FFKrmFltIF4KdIbLvSZBOw=
+
+unset-value@^0.1.1:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/unset-value/-/unset-value-0.1.2.tgz#506810b867f27c2a5a6e9b04833631f6de58d310"
+  integrity sha512-yhv5I4TsldLdE3UcVQn0hD2T5sNCPv4+qm/CTUpRKIpwthYRIipsAPdsrNpOI79hPQa0rTTeW22Fq6JWRcTgNg==
+  dependencies:
+    has-value "^0.3.1"
+    isobject "^3.0.0"
 
 unset-value@^1.0.0:
   version "1.0.0"

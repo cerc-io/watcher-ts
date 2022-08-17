@@ -1,0 +1,20 @@
+query network($id: String!, $block: Block_height){
+    network(id: $id, block: $block){
+        id
+        slot0{
+            id
+        }
+        slot1{
+            id
+        }
+        slot2{
+            id
+        }
+        stakers{
+            id
+        }
+        numStakers
+        totalStaked
+        stakedPercentiles
+    }
+}

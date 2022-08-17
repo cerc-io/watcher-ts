@@ -1,0 +1,17 @@
+query rewardSchedule($id: String!, $block: Block_height){
+    rewardSchedule(id: $id, block: $block){
+        id
+        rewardScheduleEntries{
+            id
+        }
+        lastEpoch{
+            id
+        }
+        pendingEpoch{
+            id
+        }
+        activeRewardScheduleEntry{
+            id
+        }
+    }
+}

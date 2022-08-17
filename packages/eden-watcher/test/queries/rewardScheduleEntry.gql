@@ -1,0 +1,8 @@
+query rewardScheduleEntry($id: String!, $block: Block_height){
+    rewardScheduleEntry(id: $id, block: $block){
+        id
+        startTime
+        epochDuration
+        rewardsPerEpoch
+    }
+}

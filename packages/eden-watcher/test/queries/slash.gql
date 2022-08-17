@@ -1,0 +1,10 @@
+query slash($id: String!, $block: Block_height){
+    slash(id: $id, block: $block){
+        id
+        timestamp
+        account{
+            id
+        }
+        slashed
+    }
+}

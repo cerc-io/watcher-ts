@@ -106,6 +106,7 @@ export interface IndexerInterface {
   cacheContract?: (contract: ContractInterface) => void;
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
+  getRelationsMap?: () => Map<any, { [key: string]: any }>
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>

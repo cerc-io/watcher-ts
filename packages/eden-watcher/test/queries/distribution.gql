@@ -1,0 +1,12 @@
+query distribution($id: String!, $block: Block_height){
+    distribution(id: $id, block: $block){
+        id
+        distributor{
+            id
+        }
+        timestamp
+        distributionNumber
+        merkleRoot
+        metadataURI
+    }
+}
