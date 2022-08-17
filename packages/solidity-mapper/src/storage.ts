@@ -23,7 +23,7 @@ interface Types {
   };
 }
 
-type MappingKey = string | boolean | number;
+export type MappingKey = string | boolean | number;
 
 export interface StorageLayout {
   storage: Storage[];

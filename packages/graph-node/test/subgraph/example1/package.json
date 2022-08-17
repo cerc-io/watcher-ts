@@ -10,7 +10,7 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 example1"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.22.1",
+    "@graphprotocol/graph-ts": "npm:@vulcanize/graph-ts@0.22.1",
     "@vulcanize/graph-cli": "0.22.5"
   }
 }

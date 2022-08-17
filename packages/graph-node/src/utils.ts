@@ -4,10 +4,12 @@ import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
+import assert from 'assert';
 
 import { GraphDecimal } from '@vulcanize/util';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
+import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
 
 const log = debug('vulcanize:utils');
 
@@ -766,4 +768,33 @@ export const jsonFromBytes = async (instanceExports: any, bytesPtr: number): Pro
   const jsonValue = await toJSONValue(instanceExports, json);
 
   return jsonValue;
+};
+
+export const getStorageValueType = (storageLayout: StorageLayout, variableString: string, mappingKeys: MappingKey[]): utils.ParamType => {
+  const storage = storageLayout.storage.find(({ label }) => label === variableString);
+  assert(storage);
+
+  return getEthereumType(storageLayout.types, storage.type, mappingKeys);
+};
+
+const getEthereumType = (storageTypes: StorageLayout['types'], type: string, mappingKeys: MappingKey[]): utils.ParamType => {
+  const { label, encoding, members, value } = storageTypes[type];
+
+  if (encoding === 'mapping') {
+    assert(value);
+
+    return getEthereumType(storageTypes, value, mappingKeys.slice(1));
+  }
+
+  // Struct type contains members field.
+  if (members) {
+    const mappingKey = mappingKeys.shift();
+    const member = members.find(({ label }) => label === mappingKey);
+    assert(member);
+    const { type } = member;
+
+    return getEthereumType(storageTypes, type, mappingKeys);
+  }
+
+  return utils.ParamType.from(label);
 };

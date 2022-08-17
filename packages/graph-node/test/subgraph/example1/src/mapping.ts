@@ -159,6 +159,27 @@ export function testStructEthCall (): void {
   }
 }
 
+export function testGetStorageValue (): void {
+  log.debug('In test get storage value', []);
+
+  // Bind the contract to the address.
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+  const res = contract.getStorageValue('_test', []);
+  log.debug('Storage call result: {}', [res!.toBigInt().toString()]);
+}
+
+export function testMapStorageValue (): void {
+  log.debug('In test map storage value', []);
+
+  // Bind the contract to the address.
+  const contractAddress = dataSource.address();
+  const contract = Example1.bind(contractAddress);
+  const addressValue = ethereum.Value.fromAddress(Address.zero());
+  const res = contract.getStorageValue('addressUintMap', [addressValue]);
+  log.debug('Storage call result: {}', [res!.toBigInt().toString()]);
+}
+
 export function testBytesToHex (): string {
   log.debug('In test bytesToHex', []);
 

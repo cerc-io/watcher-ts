@@ -25,7 +25,8 @@ import {
   toEthereumValue,
   resolveEntityFieldConflicts,
   getEthereumTypes,
-  jsonFromBytes
+  jsonFromBytes,
+  getStorageValueType
 } from './utils';
 import { Database } from './database';
 
@@ -236,6 +237,41 @@ export const instantiate = async (
         const [decoded] = utils.defaultAbiCoder.decode([typesString], dataString);
 
         return toEthereumValue(instanceExports, utils.ParamType.from(typesString), decoded);
+      },
+      'ethereum.storageValue': async (contractName: number, contractAddress: number, variable: number, mappingKeys: number) => {
+        const contractNameString = __getString(contractName);
+        const address = await Address.wrap(contractAddress);
+        const addressStringPtr = await address.toHexString();
+        const addressString = __getString(addressStringPtr);
+
+        const variableString = __getString(variable);
+        const mappingKeyPtrs = __getArray(mappingKeys);
+
+        const mappingKeyPromises = mappingKeyPtrs.map(async mappingKeyPtr => {
+          const ethereumValue = await ethereum.Value.wrap(mappingKeyPtr);
+          return fromEthereumValue(instanceExports, ethereumValue);
+        });
+
+        const mappingKeyValues = await Promise.all(mappingKeyPromises);
+        const storageLayout = indexer.storageLayoutMap.get(contractNameString);
+        assert(storageLayout);
+        assert(context.block);
+
+        const result = await indexer.getStorageValue(
+          storageLayout,
+          context.block.blockHash,
+          addressString,
+          variableString,
+          ...mappingKeyValues
+        );
+
+        const storageValueType = getStorageValueType(storageLayout, variableString, mappingKeyValues);
+
+        return toEthereumValue(
+          instanceExports,
+          storageValueType,
+          result.value
+        );
       }
     },
     conversion: {

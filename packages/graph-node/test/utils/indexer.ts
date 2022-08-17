@@ -6,12 +6,41 @@ import {
   BlockProgressInterface,
   EventInterface,
   SyncStatusInterface,
-  ServerConfig as ServerConfigInterface
+  ServerConfig as ServerConfigInterface,
+  ValueResult
 } from '@vulcanize/util';
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
 
 export class Indexer implements IndexerInterface {
+  _getStorageAt: GetStorageAt;
+  _storageLayoutMap: Map<string, StorageLayout> = new Map()
+
+  constructor (ethClient: EthClient, storageLayoutMap?: Map<string, StorageLayout>) {
+    this._getStorageAt = ethClient.getStorageAt.bind(ethClient);
+
+    if (storageLayoutMap) {
+      this._storageLayoutMap = storageLayoutMap;
+    }
+  }
+
   get serverConfig () {
     return new ServerConfig();
+  }
+
+  get storageLayoutMap (): Map<string, StorageLayout> {
+    return this._storageLayoutMap;
+  }
+
+  async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
+    return getStorageValue(
+      storageLayout,
+      this._getStorageAt,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
   }
 
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {

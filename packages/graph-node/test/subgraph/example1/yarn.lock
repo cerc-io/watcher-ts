@@ -23,10 +23,10 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@graphprotocol/graph-ts@^0.22.1":
+"@graphprotocol/graph-ts@npm:@vulcanize/graph-ts@0.22.1":
   version "0.22.1"
-  resolved "https://registry.yarnpkg.com/@graphprotocol/graph-ts/-/graph-ts-0.22.1.tgz#3189b2495b33497280f617316cce68074d48e236"
-  integrity sha512-T5xrHN0tHJwd7ZnSTLhk5hAL3rCIp6rJ40kBCrETnv1mfK9hVyoojJK6VtBQXTbLsYtKe4SYjjD0cdOsAR9QiA==
+  resolved "https://npm.pkg.github.com/download/@vulcanize/graph-ts/0.22.1/7a14baaab8b99d4a88e19620dc7200aa501fbecf#7a14baaab8b99d4a88e19620dc7200aa501fbecf"
+  integrity sha512-0CoKeFezskYjAsLmqfdxmS7q+gWy1V1wFgiNB4tMJSa2EiPTVG62qlPKkqTduApK2gZX9//rmE5Vb2xcF/v2+w==
   dependencies:
     assemblyscript "0.19.10"
 

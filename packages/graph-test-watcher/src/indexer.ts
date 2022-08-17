@@ -12,7 +12,7 @@ import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout } from '@vulcanize/solidity-mapper';
+import { StorageLayout, MappingKey } from '@vulcanize/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
   ValueResult,
@@ -141,6 +141,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._serverConfig;
   }
 
+  get storageLayoutMap (): Map<string, StorageLayout> {
+    return this._storageLayoutMap;
+  }
+
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchIPLDStatus();
@@ -264,6 +268,16 @@ export class Indexer implements IPLDIndexerInterface {
     }
 
     return result;
+  }
+
+  async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
+    return this._baseIndexer.getStorageValue(
+      storageLayout,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
   }
 
   async pushToIPFS (data: any): Promise<void> {
