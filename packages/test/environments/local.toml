@@ -1,9 +1,5 @@
-blockTag = "" # block tag to perform eth-call with (eg. block number in hex)
+blockTag = "" # block tag to perform eth-call and getStorageAt call with (eg. block number in hex)
 
 [endpoints]
-  endpoint1 = "" # endpoint2 URL
-  endpoint2 = ""  # endpoint1 URL
-
-[contract]
-  address = ""  # contract address
-  abi = ""      # path to contract ABI
+  endpoint1 = "" # endpoint1 URL
+  endpoint2 = "" # endpoint2 URL
