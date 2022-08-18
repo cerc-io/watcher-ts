@@ -24,9 +24,8 @@ export const getConfig = async (configFile: string): Promise<Config> => {
   const x = await fs.readFile(configFilePath, 'utf8')
   const config = toml.parse(x);
 
-  const { endpoints: endpointConfig, contract: contractConfig, blockTag } = config;
+  const { endpoints: endpointConfig, blockTag } = config;
   assert(endpointConfig, 'Missing endpoints config');
-  assert(contractConfig, 'Missing contract config');
 
   const {endpoint1: endpoint1URL, endpoint2: endpoint2URL} = endpointConfig;
   assert(endpoint1URL, 'Missing endpoint1 URL');
