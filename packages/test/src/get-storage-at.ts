@@ -14,7 +14,7 @@ const main = async (): Promise<void> => {
     endpoint: {
       alias: 'e',
       demandOption: true,
-      describe: 'Endpoint to perform eth-call against',
+      describe: 'Endpoint to perform getStorageAt against',
       type: 'string'
     },
     contract: {
@@ -23,40 +23,23 @@ const main = async (): Promise<void> => {
       describe: 'Contract address',
       type: 'string'
     },
-    abi: {
-      alias: 'a',
+    slot: {
+      alias: 's',
       demandOption: true,
-      describe: 'Contract ABI path',
+      describe: 'Storge slot',
       type: 'string'
-    },
-    methodName: {
-      alias: 'm',
-      demandOption: true,
-      describe: 'Contract method to call',
-      type: 'string'
-    },
-    methodArgs: {
-      describe: 'Contract method arguments',
-      type: 'array'
     },
     blockTag: {
       alias: 'b',
       describe: 'Block tag to make eth-call with (block number (hex) / block hash)',
       type: 'string'
-    }
+    },
   }).argv;
 
-  const abi = readAbi(argv.abi);
   const provider = new providers.JsonRpcProvider(argv.endpoint);
-  const contract = new ethers.Contract(argv.contract, abi, provider);
 
-  let args: (string | number)[] = []
-  if(argv.methodArgs !== undefined) {
-    args = argv.methodArgs
-  }
-
-  console.log(`Making an eth-call (${argv.methodName}) to endpoint ${argv.endpoint}`);
-  const result = await contract[argv.methodName](...args, {blockTag: argv.blockTag});
+  console.log(`Making a getStorageAt call for slot ${argv.slot} to endpoint ${argv.endpoint}`);
+  const result = await provider.getStorageAt(argv.contract, argv.slot, argv.blockTag);
 
   console.log("Result:");
   console.log(result);
