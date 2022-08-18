@@ -583,30 +583,32 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for allowance', async () => {
-      const result1 = await contract1.allowance({blockTag: config.blockTag})
+      const args = ["0xa5ffc832b23606f82005688d734c099dfabd5313", "0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4"]
+
+      const result1 = await contract1.allowance(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.allowance({blockTag: config.blockTag})
+      const result2 = await contract2.allowance(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for balanceOf', async () => {
-      const result1 = await contract1.balanceOf({blockTag: config.blockTag})
+      const args = ["0x2FAF487A4414Fe77e2327F0bf4AE2a264a776AD2"]
+
+      const result1 = await contract1.balanceOf(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.balanceOf({blockTag: config.blockTag})
+      const result2 = await contract2.balanceOf(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
     // TODO args
-    it('should match results for checkpoints', async () => {
+    xit('should match results for checkpoints', async () => {
       const result1 = await contract1.checkpoints({blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
@@ -626,19 +628,20 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for delegates', async () => {
-      const result1 = await contract1.delegates({blockTag: config.blockTag})
+      const args = ["0xdaaf40dae51ad67f1eeb8c8bded831f7ab150830"]
+
+      const result1 = await contract1.delegates(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.delegates({blockTag: config.blockTag})
+      const result2 = await contract2.delegates(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
     // TODO args
-    it('should match results for getCurrentVotes', async () => {
+    xit('should match results for getCurrentVotes', async () => {
       const result1 = await contract1.getCurrentVotes({blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
@@ -649,7 +652,7 @@ describe('snapshot-test', () => {
     });
 
     // TODO args
-    it('should match results for getPriorVotes', async () => {
+    xit('should match results for getPriorVotes', async () => {
       const result1 = await contract1.getPriorVotes({blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
@@ -670,22 +673,25 @@ describe('snapshot-test', () => {
     });
 
     // TODO args
-    it('should match results for nonces', async () => {
-      const result1 = await contract1.nonces({blockTag: config.blockTag})
+    xit('should match results for nonces', async () => {
+      const args = ["0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4"]
+
+      const result1 = await contract1.nonces(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.nonces({blockTag: config.blockTag})
+      const result2 = await contract2.nonces(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for numCheckpoints', async () => {
-      const result1 = await contract1.numCheckpoints({blockTag: config.blockTag})
+      const args = ["0xc00e94Cb662C3520282E6f5717214004A7f26888"]
+
+      const result1 = await contract1.numCheckpoints(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.numCheckpoints({blockTag: config.blockTag})
+      const result2 = await contract2.numCheckpoints(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -741,23 +747,25 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for allowance', async () => {
-      const result1 = await contract1.allowance({blockTag: config.blockTag})
+      const args = ["0x74ae284dd6044db63dc268f52131571a3b80ad33", "0xa91902085405CE0F648a7Eb82045Aefc1B7BAC01"]
+
+      const result1 = await contract1.allowance(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.allowance({blockTag: config.blockTag})
+      const result2 = await contract2.allowance(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for balanceOf', async () => {
-      const result1 = await contract1.balanceOf({blockTag: config.blockTag})
+      const args = ["0xab78b4c4a28f6e449e0bf2d6eb4f4f0316343d2a"]
+
+      const result1 = await contract1.balanceOf(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.balanceOf({blockTag: config.blockTag})
+      const result2 = await contract2.balanceOf(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -785,10 +793,12 @@ describe('snapshot-test', () => {
 
     // TODO args
     it('should match results for nonces', async () => {
-      const result1 = await contract1.nonces({blockTag: config.blockTag})
+      const args = [""]
+
+      const result1 = await contract1.nonces(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.nonces({blockTag: config.blockTag})
+      const result2 = await contract2.nonces(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -826,10 +836,12 @@ describe('snapshot-test', () => {
 
     // TODO args
     it('should match results for wards', async () => {
-      const result1 = await contract1.wards({blockTag: config.blockTag})
+      const args = ["0xdDb108893104dE4E1C6d0E47c42237dB4E617ACc"]
+
+      const result1 = await contract1.wards(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.wards({blockTag: config.blockTag})
+      const result2 = await contract2.wards(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
