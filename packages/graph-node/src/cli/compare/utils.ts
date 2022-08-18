@@ -9,6 +9,7 @@ import toml from 'toml';
 import fs from 'fs-extra';
 import { diffString, diff } from 'json-diff';
 import _ from 'lodash';
+import omitDeep from 'omit-deep';
 
 import { Config as CacheConfig, getCache } from '@vulcanize/cache';
 import { GraphQLClient } from '@vulcanize/ipld-eth-client';
@@ -36,6 +37,11 @@ interface QueryConfig {
   blockDelayInMs: number;
 }
 
+interface EntityDerivedFields {
+  entity: string;
+  fields: string[];
+}
+
 export interface Config {
   endpoints: EndpointConfig;
   queries: QueryConfig;
@@ -44,6 +50,7 @@ export interface Config {
     entitiesDir: string;
     verifyState: boolean;
     endpoint: keyof EndpointConfig;
+    derivedFields: EntityDerivedFields[]
   }
   cache: {
     endpoint: keyof EndpointConfig;
@@ -163,7 +170,35 @@ export const getBlockIPLDState = async (client: GraphQLClient, contracts: string
   return contractIPLDStates.reduce((acc, state) => _.merge(acc, state));
 };
 
-export const compareObjects = (obj1: any, obj2: any, rawJson: boolean): string => {
+export const checkEntityInIPLDState = async (
+  ipldState: {[key: string]: any},
+  queryName: string,
+  entityResult: {[key: string]: any},
+  id: string,
+  rawJson: boolean,
+  derivedFields: EntityDerivedFields[] = []
+): Promise<string> => {
+  const entityName = _.upperFirst(queryName);
+  const ipldEntity = ipldState[entityName][id];
+
+  // Filter __typename key in GQL result.
+  const resultEntity = omitDeep(entityResult[queryName], '__typename');
+
+  // Filter derived fields in GQL result.
+  derivedFields.forEach(({ entity, fields }) => {
+    if (entityName === entity) {
+      fields.forEach(field => {
+        delete resultEntity[field];
+      });
+    }
+  });
+
+  const diff = compareObjects(ipldEntity, resultEntity, rawJson);
+
+  return diff;
+};
+
+const compareObjects = (obj1: any, obj2: any, rawJson: boolean): string => {
   if (rawJson) {
     const diffObj = diff(obj1, obj2);
 
