@@ -12,8 +12,8 @@ import _ from "lodash";
 import { readAbi, performEthCall } from './common'
 
 interface Config {
-  localEndpointURL: string,
-  remoteEndpointURL: string,
+  endpoint1URL: string,
+  endpoint2URL: string,
   contractAddress: string,
   abiPath: string,
   blockTag: string
@@ -36,15 +36,15 @@ const main = async (): Promise<void> => {
   // Load contract ABI.
   const contractAbi = readAbi(config.abiPath)
 
-  const localResult = await performEthCall(config.localEndpointURL, config.contractAddress, contractAbi, config.blockTag);
-  const remoteResult = await performEthCall(config.remoteEndpointURL, config.contractAddress, contractAbi, config.blockTag);
+  const endpoint1Result = await performEthCall(config.endpoint1URL, config.contractAddress, contractAbi, config.blockTag);
+  const endpoint2Result = await performEthCall(config.endpoint2URL, config.contractAddress, contractAbi, config.blockTag);
 
-  if(_.isEqual(localResult, remoteResult)) {
-    console.log("Results from local and remote endpoints match");
+  if(_.isEqual(endpoint1Result, endpoint2Result)) {
+    console.log("Results from endpoint1 and endpoint2 match");
   } else {
-    console.log("Results from local and remote endpoints do not match");
-    console.log("local:", localResult);
-    console.log("remote:", remoteResult);
+    console.log("Results from endpoint1 and endpoint2 do not match");
+    console.log("endpoint1:", endpoint1Result);
+    console.log("endpoint2:", endpoint2Result);
   }
 }
 
@@ -62,9 +62,9 @@ const getConfig = async (configFile: string): Promise<Config> => {
   assert(endpointConfig, 'Missing endpoints config');
   assert(contractConfig, 'Missing contract config');
 
-  const {local: localEndpointURL, remote: remoteEndpointURL} = endpointConfig;
-  assert(localEndpointURL, 'Missing local endpoing URL');
-  assert(remoteEndpointURL, 'Missing remote endpoing URL');
+  const {endpoint1: endpoint1URL, endpoint2: endpoint2URL} = endpointConfig;
+  assert(endpoint1URL, 'Missing endpoint1 URL');
+  assert(endpoint2URL, 'Missing endpoint2 URL');
 
   const {address: contractAddress, abi: abiPath} = contractConfig;
   assert(contractAddress, 'Missing contract address');
@@ -73,8 +73,8 @@ const getConfig = async (configFile: string): Promise<Config> => {
   assert(blockTag)
 
   return {
-    localEndpointURL,
-    remoteEndpointURL,
+    endpoint1URL,
+    endpoint2URL,
     contractAddress,
     abiPath,
     blockTag

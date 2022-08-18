@@ -1,9 +1,9 @@
-blockTag = "" # block tag to perform eth-call with
+blockTag = "0xB5FFFF" # block tag to perform eth-call with
 
 [endpoints]
-  local = ""  # local server endpoint
-  remote = "" # remote node endpoint
+  endpoint1 = "https://mainnet.infura.io/v3/ef98ca161a4f4d0694f519dda6bbe455" # endpoint2 URL
+  endpoint2 = "http://127.0.0.1:8082"  # endpoint1 URL
 
 [contract]
-  address = ""  # contract address
-  abi = ""      # path to contract ABI
+  address = "0x3139Ffc91B99aa94DA8A2dc13f1fC36F9BDc98eE"  # contract address
+  abi = "abis/UniswapV2Pair.json"      # path to contract ABI

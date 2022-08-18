@@ -6,20 +6,26 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "eth-call": "ts-node dist/perform-eth-call.js",
-    "compare-results": "ts-node dist/compare.js"
+    "eth-call": "ts-node src/eth-call.ts",
+    "compare-results": "ts-node src/compare.ts",
+    "test:snapshot": "mocha src/snapshot.test.ts"
   },
   "dependencies": {
+    "chai": "^4.3.4",
     "ethers": "^5.4.4",
     "fs-extra": "^10.0.0",
     "lodash": "^4.17.21",
+    "mocha": "^8.4.0",
     "toml": "^3.0.0",
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.19",
+    "@types/mocha": "^8.2.2",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint": "^7.27.0",
+    "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
   }
 }
