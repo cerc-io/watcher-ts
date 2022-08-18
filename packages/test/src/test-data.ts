@@ -7,7 +7,7 @@ import { readAbi } from "./common";
 export const uniswapV2FactoryAddress = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
 export const uniswapV2FactoryABI = readAbi("abis/UniswapV2Factory.json");
 
-export const uniswapV2PairAddress = "0x3139Ffc91B99aa94DA8A2dc13f1fC36F9BDc98eE";
+export const uniswapV2PairAddress = "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc";
 export const uniswapV2PairABI = readAbi("abis/UniswapV2Pair.json");
 
 export const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";

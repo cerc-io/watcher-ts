@@ -138,23 +138,25 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for allowance', async () => {
-      const result1 = await contract1.allowance({blockTag: config.blockTag})
+      const args = ["0x9c77233bbd235a3ed219daa051e0a3de5ce03c3e", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"]
+
+      const result1 = await contract1.allowance(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.allowance({blockTag: config.blockTag})
+      const result2 = await contract2.allowance(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for balanceOf', async () => {
-      const result1 = await contract1.balanceOf({blockTag: config.blockTag})
+      const args = ["0x052ba6f57c9184a89c34196ee4f3adacaeb58e8d"]
+
+      const result1 = await contract1.balanceOf(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.balanceOf({blockTag: config.blockTag})
+      const result2 = await contract2.balanceOf(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -210,12 +212,13 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for nonces', async () => {
-      const result1 = await contract1.nonces({blockTag: config.blockTag})
+      const args = ["0xE0e8C1D735698060477e79a8e4C20276Fc2Ec7A7"]
+
+      const result1 = await contract1.nonces(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.nonces({blockTag: config.blockTag})
+      const result2 = await contract2.nonces(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -341,34 +344,38 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for allowance', async () => {
-      const result1 = await contract1.allowance({blockTag: config.blockTag})
+      const args = ["0xa064c5d674b0de5ac8d1d1ade3fba7569525ac44", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"];
+
+      const result1 = await contract1.allowance(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.allowance({blockTag: config.blockTag})
+      const result2 = await contract2.allowance(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
     // TODO args
-    it('should match results for authorizationState', async () => {
-      const result1 = await contract1.authorizationState({blockTag: config.blockTag})
+    xit('should match results for authorizationState', async () => {
+      const args = [""];
+
+      const result1 = await contract1.authorizationState(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.authorizationState({blockTag: config.blockTag})
+      const result2 = await contract2.authorizationState(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
-    // TODO args
     it('should match results for balanceOf', async () => {
-      const result1 = await contract1.balanceOf({blockTag: config.blockTag})
+      const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
+
+      const result1 = await contract1.balanceOf(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.balanceOf({blockTag: config.blockTag})
+      const result2 = await contract2.balanceOf(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -405,22 +412,26 @@ describe('snapshot-test', () => {
     });
 
     // TODO args
-    it('should match results for isBlacklisted', async () => {
-      const result1 = await contract1.isBlacklisted({blockTag: config.blockTag})
+    xit('should match results for isBlacklisted', async () => {
+      const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
+
+      const result1 = await contract1.isBlacklisted(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.isBlacklisted({blockTag: config.blockTag})
+      const result2 = await contract2.isBlacklisted(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
     });
 
     // TODO args
-    it('should match results for isMinter', async () => {
-      const result1 = await contract1.isMinter({blockTag: config.blockTag})
+    xit('should match results for isMinter', async () => {
+      const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
+
+      const result1 = await contract1.isMinter(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.isMinter({blockTag: config.blockTag})
+      const result2 = await contract2.isMinter(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -437,11 +448,13 @@ describe('snapshot-test', () => {
     });
 
     // TODO args
-    it('should match results for minterAllowance', async () => {
-      const result1 = await contract1.minterAllowance({blockTag: config.blockTag})
+    xit('should match results for minterAllowance', async () => {
+      const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
+
+      const result1 = await contract1.minterAllowance(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.minterAllowance({blockTag: config.blockTag})
+      const result2 = await contract2.minterAllowance(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
@@ -458,11 +471,13 @@ describe('snapshot-test', () => {
     });
 
     // TODO args
-    it('should match results for nonces', async () => {
-      const result1 = await contract1.nonces({blockTag: config.blockTag})
+    xit('should match results for nonces', async () => {
+      const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
+
+      const result1 = await contract1.nonces(...args, {blockTag: config.blockTag})
       expect(result1).to.not.be.empty;
 
-      const result2 = await contract2.nonces({blockTag: config.blockTag})
+      const result2 = await contract2.nonces(...args, {blockTag: config.blockTag})
       expect(result2).to.not.be.empty;
 
       expect(result1).to.deep.equal(result2)
