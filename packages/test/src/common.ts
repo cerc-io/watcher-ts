@@ -8,21 +8,6 @@ import assert from 'assert';
 import toml from 'toml';
 import { ethers, providers } from 'ethers';
 
-export const performEthCall = async (endpointURL: string, contractAddress: string, abi: ethers.ContractInterface, blockTag: string | undefined): Promise<any> => {
-  console.log("Making eth-call for endpoint", endpointURL)
-
-  const provider = new providers.JsonRpcProvider(endpointURL);
-  const contract = new ethers.Contract(contractAddress, abi, provider);
-
-  return contract.feeToSetter({blockTag});
-}
-
-export const readAbi = (abiPath: string): any => {
-  const fullAbiPath = path.resolve(abiPath);
-
-  return JSON.parse(fs.readFileSync(fullAbiPath).toString());
-}
-
 export interface Config {
   endpoint1URL: string,
   endpoint2URL: string,
@@ -38,7 +23,7 @@ export const getConfig = async (configFile: string): Promise<Config> => {
 
   const x = await fs.readFile(configFilePath, 'utf8')
   const config = toml.parse(x);
-  
+
   const { endpoints: endpointConfig, contract: contractConfig, blockTag } = config;
   assert(endpointConfig, 'Missing endpoints config');
   assert(contractConfig, 'Missing contract config');
@@ -54,4 +39,19 @@ export const getConfig = async (configFile: string): Promise<Config> => {
     endpoint2URL,
     blockTag
   };
+}
+
+export const readAbi = (abiPath: string): any => {
+  const fullAbiPath = path.resolve(abiPath);
+
+  return JSON.parse(fs.readFileSync(fullAbiPath).toString());
+}
+
+export const performEthCall = async (endpointURL: string, contractAddress: string, abi: ethers.ContractInterface, blockTag: string | undefined): Promise<any> => {
+  console.log("Making eth-call for endpoint", endpointURL)
+
+  const provider = new providers.JsonRpcProvider(endpointURL);
+  const contract = new ethers.Contract(contractAddress, abi, provider);
+
+  return contract.feeToSetter({blockTag});
 }

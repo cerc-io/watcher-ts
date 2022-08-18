@@ -847,4 +847,134 @@ describe('snapshot-test', () => {
       expect(result1).to.deep.equal(result2)
     });
   });
+
+  describe('match results for getStorageAt for UniswapV2 Factory', async () => {
+    it('should match results for slot 0x1', async () => {
+      const slot = '0x1'
+
+      const result1 = await provider1.getStorageAt(uniswapV2FactoryAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(uniswapV2FactoryAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+
+    it('should match results for slot 0x3', async () => {
+      const slot = '0x3'
+
+      const result1 = await provider1.getStorageAt(uniswapV2FactoryAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(uniswapV2FactoryAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+  });
+
+  describe('match results for getStorageAt for UniswapV2 Pair', async () => {
+    it('should match results for slot 0x0', async () => {
+      const slot = '0x0'
+
+      const result1 = await provider1.getStorageAt(uniswapV2PairAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(uniswapV2PairAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+
+    it('should match results for slot 0x5', async () => {
+      const slot = '0x5'
+
+      const result1 = await provider1.getStorageAt(uniswapV2PairAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(uniswapV2PairAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+  });
+
+  describe('match results for getStorageAt for USDC', async () => {
+    it('should match results for slot 0x1', async () => {
+      const slot = '0x1'
+
+      const result1 = await provider1.getStorageAt(usdcAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(usdcAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+
+    it('should match results for slot 0x5', async () => {
+      const slot = '0x5'
+
+      const result1 = await provider1.getStorageAt(usdcAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(usdcAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+  });
+
+  describe('match results for getStorageAt for Compound', async () => {
+    it('should match results for slot 0x1', async () => {
+      const slot = '0x1'
+
+      const result1 = await provider1.getStorageAt(compoundAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(compoundAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+
+    it('should match results for slot 0x5', async () => {
+      const slot = '0x5'
+
+      const result1 = await provider1.getStorageAt(compoundAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(compoundAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+  });
+
+  describe('match results for getStorageAt for Dai', async () => {
+    it('should match results for slot 0x1', async () => {
+      const slot = '0x1'
+
+      const result1 = await provider1.getStorageAt(daiAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(daiAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+
+    it('should match results for slot 0x5', async () => {
+      const slot = '0x1'
+
+      const result1 = await provider1.getStorageAt(daiAddress, slot, config.blockTag)
+      expect(result1).to.not.be.empty;
+
+      const result2 = await provider2.getStorageAt(daiAddress, slot, config.blockTag)
+      expect(result2).to.not.be.empty;
+
+      expect(result1).to.deep.equal(result2)
+    });
+  });
 });
