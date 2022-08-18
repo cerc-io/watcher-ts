@@ -16,6 +16,7 @@ import { GraphQLClient } from '@vulcanize/ipld-eth-client';
 import { gql } from '@apollo/client/core';
 
 import { Client } from './client';
+import { DEFAULT_LIMIT } from '../../database';
 
 const IPLD_STATE_QUERY = `
 query getState($blockHash: String!, $contractAddress: String!, $kind: String){
@@ -161,6 +162,25 @@ export const getBlockIPLDState = async (client: GraphQLClient, contracts: string
 
     if (getState) {
       const data = JSON.parse(getState.data);
+
+      // Apply default limit on array type relation fields.
+      Object.values(data.state)
+        .forEach((idEntityMap: any) => {
+          Object.values(idEntityMap)
+            .forEach((entity: any) => {
+              Object.values(entity)
+                .forEach(fieldValue => {
+                  if (
+                    Array.isArray(fieldValue) &&
+                    fieldValue.length &&
+                    fieldValue[0].id
+                  ) {
+                    fieldValue.splice(DEFAULT_LIMIT);
+                  }
+                });
+            });
+        });
+
       return data.state;
     }
 

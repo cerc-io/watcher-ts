@@ -8,7 +8,7 @@
   blockDelayInMs = 250
 
 [watcher]
-  configpath = "../../graph-test-watcher/environments/local.toml"
+  configPath = "../../graph-test-watcher/environments/local.toml"
   entitiesDir = "../../graph-test-watcher/src/entity"
   endpoint = "gqlEndpoint2"
   verifyState = true
