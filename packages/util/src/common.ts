@@ -111,7 +111,7 @@ export const processBlockByNumber = async (
  */
 export const processBatchEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<void> => {
   // Check if block processing is complete.
-  while (!block.isComplete) {
+  while (block.numProcessedEvents < block.numEvents) {
     console.time('time:common#processBacthEvents-fetching_events_batch');
 
     // Fetch events in batches
@@ -195,4 +195,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
   if (indexer.processBlockAfterEvents) {
     await indexer.processBlockAfterEvents(block.blockHash);
   }
+
+  block.isComplete = true;
+  await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
 };

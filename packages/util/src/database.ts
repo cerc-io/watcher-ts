@@ -179,22 +179,17 @@ export class Database {
 
       block.lastProcessedEventIndex = lastProcessedEventIndex;
       block.numProcessedEvents++;
-      if (block.numProcessedEvents >= block.numEvents) {
-        block.isComplete = true;
-      }
-
-      const { generatedMaps } = await repo.createQueryBuilder()
-        .update()
-        .set(block)
-        .where('id = :id', { id: block.id })
-        .whereEntity(block)
-        .returning('*')
-        .execute();
-
-      block = generatedMaps[0] as BlockProgressInterface;
     }
 
-    return block;
+    const { generatedMaps } = await repo.createQueryBuilder()
+      .update()
+      .set(block)
+      .where('id = :id', { id: block.id })
+      .whereEntity(block)
+      .returning('*')
+      .execute();
+
+    return generatedMaps[0] as BlockProgressInterface;
   }
 
   async markBlocksAsPruned (repo: Repository<BlockProgressInterface>, blocks: BlockProgressInterface[]): Promise<void> {
