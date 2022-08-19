@@ -1,0 +1,4 @@
+timeout: '0' # No timeout since RPC calls may take longer
+bail: true
+exit: true
+require: 'ts-node/register'
