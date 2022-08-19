@@ -4,8 +4,11 @@
 
 import yargs from 'yargs';
 import { ethers, providers } from 'ethers';
+import debug from 'debug';
 
 import { readAbi } from './common';
+
+const log = debug('vulcanize:test');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -55,13 +58,13 @@ const main = async (): Promise<void> => {
     args = argv.methodArgs
   }
 
-  console.log(`Making an eth-call (${argv.methodName}) to endpoint ${argv.endpoint}`);
+  log(`Making an eth-call (${argv.methodName}) to endpoint ${argv.endpoint}`);
   const result = await contract[argv.methodName](...args, {blockTag: argv.blockTag});
 
-  console.log("Result:");
-  console.log(result);
+  log("Result:");
+  log(result);
 }
 
 main().catch(err => {
-  console.log(err);
+  log(err);
 });

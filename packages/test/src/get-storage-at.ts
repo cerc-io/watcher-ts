@@ -4,8 +4,11 @@
 
 import yargs from 'yargs';
 import { ethers, providers } from 'ethers';
+import debug from 'debug';
 
 import { readAbi } from './common';
+
+const log = debug('vulcanize:test');
 
 const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
@@ -38,13 +41,13 @@ const main = async (): Promise<void> => {
 
   const provider = new providers.JsonRpcProvider(argv.endpoint);
 
-  console.log(`Making a getStorageAt call for slot ${argv.slot} to endpoint ${argv.endpoint}`);
+  log(`Making a getStorageAt call for slot ${argv.slot} to endpoint ${argv.endpoint}`);
   const result = await provider.getStorageAt(argv.contract, argv.slot, argv.blockTag);
 
-  console.log("Result:");
-  console.log(result);
+  log("Result:");
+  log(result);
 }
 
 main().catch(err => {
-  console.log(err);
+  log(err);
 });

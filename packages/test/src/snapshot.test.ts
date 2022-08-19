@@ -317,17 +317,6 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO Skip since it throws an error with Infura endpoint
-      xit('should match results for RECEIVE_WITH_AUTHORIZATION_TYPEHASH', async () => {
-        const result1 = await contract1.RECEIVE_WITH_AUTHORIZATION_TYPEHASH({blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.RECEIVE_WITH_AUTHORIZATION_TYPEHASH({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for TRANSFER_WITH_AUTHORIZATION_TYPEHASH', async () => {
         const result1 = await contract1.TRANSFER_WITH_AUTHORIZATION_TYPEHASH({blockTag: config.blockTag});
         expect(result1).to.not.be.empty;
@@ -346,16 +335,6 @@ describe('snapshot-test', () => {
 
         const result2 = await contract2.allowance(...args, {blockTag: config.blockTag});
         expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      xit('should match results for authorizationState', async () => {
-        const args = [""];
-
-        const result1 = await contract1.authorizationState(...args, {blockTag: config.blockTag});
-        const result2 = await contract2.authorizationState(...args, {blockTag: config.blockTag});
 
         expect(result1).to.deep.equal(result2);
       });
@@ -399,26 +378,6 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO args
-      xit('should match results for isBlacklisted', async () => {
-        const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
-
-        const result1 = await contract1.isBlacklisted(...args, {blockTag: config.blockTag});
-        const result2 = await contract2.isBlacklisted(...args, {blockTag: config.blockTag});
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      xit('should match results for isMinter', async () => {
-        const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
-
-        const result1 = await contract1.isMinter(...args, {blockTag: config.blockTag});
-        const result2 = await contract2.isMinter(...args, {blockTag: config.blockTag});
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for masterMinter', async () => {
         const result1 = await contract1.masterMinter({blockTag: config.blockTag});
         expect(result1).to.not.be.empty;
@@ -429,37 +388,11 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO args
-      xit('should match results for minterAllowance', async () => {
-        const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
-
-        const result1 = await contract1.minterAllowance(...args, {blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.minterAllowance(...args, {blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for name', async () => {
         const result1 = await contract1.name({blockTag: config.blockTag});
         expect(result1).to.not.be.empty;
 
         const result2 = await contract2.name({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      xit('should match results for nonces', async () => {
-        const args = ["0x95ba4cf87d6723ad9c0db21737d862be80e93911"]
-
-        const result1 = await contract1.nonces(...args, {blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.nonces(...args, {blockTag: config.blockTag});
         expect(result2).to.not.be.empty;
 
         expect(result1).to.deep.equal(result2);
@@ -521,17 +454,6 @@ describe('snapshot-test', () => {
 
         expect(result1).to.deep.equal(result2);
       });
-
-      // TODO Skip since it throws an error with Infura endpoint
-      xit('should match results for version', async () => {
-        const result1 = await contract1.version({blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.version({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
     });
 
     describe('match results for eth-calls to Compound', async () => {
@@ -584,17 +506,6 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO args
-      xit('should match results for checkpoints', async () => {
-        const result1 = await contract1.checkpoints({blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.checkpoints({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for decimals', async () => {
         const result1 = await contract1.decimals({blockTag: config.blockTag});
         const result2 = await contract2.decimals({blockTag: config.blockTag});
@@ -614,46 +525,11 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO args
-      xit('should match results for getCurrentVotes', async () => {
-        const result1 = await contract1.getCurrentVotes({blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.getCurrentVotes({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      xit('should match results for getPriorVotes', async () => {
-        const result1 = await contract1.getPriorVotes({blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.getPriorVotes({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for name', async () => {
         const result1 = await contract1.name({blockTag: config.blockTag});
         expect(result1).to.not.be.empty;
 
         const result2 = await contract2.name({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      xit('should match results for nonces', async () => {
-        const args = ["0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4"]
-
-        const result1 = await contract1.nonces(...args, {blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.nonces(...args, {blockTag: config.blockTag});
         expect(result2).to.not.be.empty;
 
         expect(result1).to.deep.equal(result2);
@@ -756,19 +632,6 @@ describe('snapshot-test', () => {
         expect(result1).to.deep.equal(result2);
       });
 
-      // TODO args
-      xit('should match results for nonces', async () => {
-        const args = [""]
-
-        const result1 = await contract1.nonces(...args, {blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.nonces(...args, {blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
       it('should match results for symbol', async () => {
         const result1 = await contract1.symbol({blockTag: config.blockTag});
         expect(result1).to.not.be.empty;
@@ -794,19 +657,6 @@ describe('snapshot-test', () => {
         expect(result1).to.not.be.empty;
 
         const result2 = await contract2.version({blockTag: config.blockTag});
-        expect(result2).to.not.be.empty;
-
-        expect(result1).to.deep.equal(result2);
-      });
-
-      // TODO args
-      it('should match results for wards', async () => {
-        const args = ["0xdDb108893104dE4E1C6d0E47c42237dB4E617ACc"]
-
-        const result1 = await contract1.wards(...args, {blockTag: config.blockTag});
-        expect(result1).to.not.be.empty;
-
-        const result2 = await contract2.wards(...args, {blockTag: config.blockTag});
         expect(result2).to.not.be.empty;
 
         expect(result1).to.deep.equal(result2);

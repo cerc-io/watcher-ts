@@ -64,10 +64,10 @@
   yarn get-storage-at -e <endpoint> -c <contract> -s <slot> -b [block-tag]
   ```
 
-  * `endpoint` (`e`): Endpoint to perform eth-call against
+  * `endpoint` (`e`): Endpoint to perform getStorageAt call against
   * `contract` (`c`): Contract address
   * `slot` (`s`): Storge slot
-  * `block-tag` (`b`): Block tag to make eth-call with (block number (hex) / block hash)
+  * `block-tag` (`b`): Block tag to make getStorageAt call with (block number (hex) / block hash)
 
     Eg.
 

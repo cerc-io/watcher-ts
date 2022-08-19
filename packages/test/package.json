@@ -6,9 +6,9 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "eth-call": "ts-node src/eth-call.ts",
-    "get-storage-at": "ts-node src/get-storage-at.ts",
-    "test:snapshot": "mocha src/snapshot.test.ts"
+    "eth-call": "DEBUG=vulcanize:* ts-node src/eth-call.ts",
+    "get-storage-at": "DEBUG=vulcanize:* ts-node src/get-storage-at.ts",
+    "test:snapshot": "DEBUG=vulcanize:* mocha src/snapshot.test.ts"
   },
   "dependencies": {
     "chai": "^4.3.4",
@@ -17,6 +17,7 @@
     "lodash": "^4.17.21",
     "mocha": "^8.4.0",
     "toml": "^3.0.0",
+    "debug": "^4.3.1",
     "yargs": "^17.0.1"
   },
   "devDependencies": {

@@ -20,8 +20,8 @@ export const getConfig = async (configFile: string): Promise<Config> => {
     throw new Error(`Config file not found: ${configFilePath}`);
   }
 
-  const x = await fs.readFile(configFilePath, 'utf8');
-  const config = toml.parse(x);
+  const configString = await fs.readFile(configFilePath, 'utf8');
+  const config = toml.parse(configString);
 
   const { endpoints: endpointConfig, blockTag } = config;
   assert(endpointConfig, 'Missing endpoints config');
