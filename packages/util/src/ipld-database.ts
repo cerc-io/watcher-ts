@@ -28,6 +28,9 @@ export class IPLDDatabase extends Database {
       : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged })
         .addOrderBy('ipld_block.id', 'DESC');
 
+    // Get the first entry.
+    queryBuilder.limit(1);
+
     return queryBuilder.getOne();
   }
 
@@ -101,6 +104,9 @@ export class IPLDDatabase extends Database {
       queryBuilder = kind
         ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
         : queryBuilder.addOrderBy('ipld_block.id', 'DESC');
+
+      // Get the first entry.
+      queryBuilder.limit(1);
 
       result = await queryBuilder.getOne();
     }
