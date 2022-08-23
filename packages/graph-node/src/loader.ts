@@ -41,6 +41,7 @@ export interface GraphData {
   abis?: {[key: string]: ContractInterface};
   dataSource: {
     network: string;
+    name: string;
   };
 }
 
@@ -261,10 +262,9 @@ export const instantiate = async (
 
         return toEthereumValue(instanceExports, utils.ParamType.from(typesString), decoded);
       },
-      'ethereum.storageValue': async (contractName: number, contractAddress: number, variable: number, mappingKeys: number) => {
-        const contractNameString = __getString(contractName);
-        const address = await Address.wrap(contractAddress);
-        const addressStringPtr = await address.toHexString();
+      'ethereum.storageValue': async (variable: number, mappingKeys: number) => {
+        assert(context.contractAddress);
+        const addressStringPtr = await __newString(context.contractAddress);
         const addressString = __getString(addressStringPtr);
 
         const variableString = __getString(variable);
@@ -276,7 +276,7 @@ export const instantiate = async (
         });
 
         const mappingKeyValues = await Promise.all(mappingKeyPromises);
-        const storageLayout = indexer.storageLayoutMap.get(contractNameString);
+        const storageLayout = indexer.storageLayoutMap.get(dataSource.name);
         assert(storageLayout);
         assert(context.block);
 
