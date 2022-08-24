@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { FindConditions, MoreThan, Repository } from 'typeorm';
+import { Between, FindConditions, Repository } from 'typeorm';
 import assert from 'assert';
 
 import { IPLDBlockInterface, IpldStatusInterface, StateKind } from './types';
@@ -118,7 +118,7 @@ export class IPLDDatabase extends Database {
     return repo.find({ where, relations: ['block'] });
   }
 
-  async getDiffIPLDBlocksByBlocknumber (repo: Repository<IPLDBlockInterface>, contractAddress: string, blockNumber: number): Promise<IPLDBlockInterface[]> {
+  async getDiffIPLDBlocksInRange (repo: Repository<IPLDBlockInterface>, contractAddress: string, startblock: number, endBlock: number): Promise<IPLDBlockInterface[]> {
     return repo.find({
       relations: ['block'],
       where: {
@@ -126,7 +126,7 @@ export class IPLDDatabase extends Database {
         kind: StateKind.Diff,
         block: {
           isPruned: false,
-          blockNumber: MoreThan(blockNumber)
+          blockNumber: Between(startblock + 1, endBlock)
         }
       },
       order: {

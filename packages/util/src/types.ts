@@ -152,7 +152,7 @@ export interface DatabaseInterface {
 export interface IPLDDatabaseInterface extends DatabaseInterface {
   getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
   getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
-  getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlockInterface[]>
+  getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlockInterface[]>
   getNewIPLDBlock (): IPLDBlockInterface
   removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
   saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>

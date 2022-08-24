@@ -305,14 +305,14 @@ export class IPLDIndexer extends Indexer {
 
     // Fetch the latest 'checkpoint' | 'init' for the contract to fetch diffs after it.
     let prevNonDiffBlock: IPLDBlockInterface;
-    let getDiffBlockNumber: number;
-    const checkpointBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, currentBlock.blockNumber);
+    let diffStartBlockNumber: number;
+    const checkpointBlock = await this._ipldDb.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, currentBlock.blockNumber - 1);
 
     if (checkpointBlock) {
       const checkpointBlockNumber = checkpointBlock.block.blockNumber;
 
       prevNonDiffBlock = checkpointBlock;
-      getDiffBlockNumber = checkpointBlockNumber;
+      diffStartBlockNumber = checkpointBlockNumber;
 
       // Update IPLD status map with the latest checkpoint info.
       // Essential while importing state as checkpoint at the snapshot block is added by import-state CLI.
@@ -325,11 +325,11 @@ export class IPLDIndexer extends Indexer {
 
       prevNonDiffBlock = initBlock;
       // Take block number previous to initial state block as the checkpoint is to be created in the same block.
-      getDiffBlockNumber = initBlock.block.blockNumber - 1;
+      diffStartBlockNumber = initBlock.block.blockNumber - 1;
     }
 
     // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
-    const diffBlocks = await this._ipldDb.getDiffIPLDBlocksByBlocknumber(contractAddress, getDiffBlockNumber);
+    const diffBlocks = await this._ipldDb.getDiffIPLDBlocksInRange(contractAddress, diffStartBlockNumber, currentBlock.blockNumber);
 
     const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
     const data = {
@@ -358,7 +358,8 @@ export class IPLDIndexer extends Indexer {
     let currentIPLDBlock: IPLDBlockInterface | undefined;
     const prevIPLDBlockNumber = ipldStatus[kind];
 
-    if (prevIPLDBlockNumber && prevIPLDBlockNumber === block.blockNumber) {
+    // Fetch from DB for previous IPLD block or for checkpoint kind.
+    if (kind === 'checkpoint' || (prevIPLDBlockNumber && prevIPLDBlockNumber === block.blockNumber)) {
       const currentIPLDBlocks = await this._ipldDb.getIPLDBlocks({ block, contractAddress, kind });
 
       // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
