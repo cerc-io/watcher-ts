@@ -158,3 +158,7 @@ export interface IPLDDatabaseInterface extends DatabaseInterface {
   saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>
   getIPLDStatus (): Promise<IpldStatusInterface | undefined>
 }
+
+export interface GraphDatabaseInterface {
+  getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined>;
+}

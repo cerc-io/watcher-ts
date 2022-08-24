@@ -238,3 +238,11 @@ export const getFullTransaction = async (ethClient: EthClient, txHash: string): 
     maxFeePerGas: txData.maxFeePerGas?.toString()
   };
 };
+
+export const jsonBigIntStringReplacer = (_: string, value: any) => {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  return value;
+};

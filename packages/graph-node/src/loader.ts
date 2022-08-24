@@ -15,7 +15,7 @@ import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp } from '@vulcanize/util';
+import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, jsonBigIntStringReplacer } from '@vulcanize/util';
 
 import { TypeId, Level } from './types';
 import {
@@ -25,8 +25,7 @@ import {
   resolveEntityFieldConflicts,
   getEthereumTypes,
   jsonFromBytes,
-  getStorageValueType,
-  jsonBigIntStringReplacer
+  getStorageValueType
 } from './utils';
 import { Database } from './database';
 
