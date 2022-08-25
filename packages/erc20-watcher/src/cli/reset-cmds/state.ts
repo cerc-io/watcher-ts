@@ -56,11 +56,9 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const removeEntitiesPromise = [BlockProgress, Allowance, Balance].map(async entityClass => {
-      return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });
-    });
-
-    await Promise.all(removeEntitiesPromise);
+    for (const entity of [BlockProgress, Allowance, Balance]) {
+      await db.removeEntities<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
+    }
 
     if (syncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
       await indexer.updateSyncStatusIndexedBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
