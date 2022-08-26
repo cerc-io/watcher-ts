@@ -357,17 +357,13 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
-    const relations = this._relationsMap.get(entity) || {};
-
-    const data = await this._graphWatcher.getEntity(entity, id, relations, block);
+    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block);
 
     return data;
   }
 
   async getSubgraphEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}): Promise<any[]> {
-    const relations = this._relationsMap.get(entity) || {};
-
-    return this._graphWatcher.getEntities(entity, relations, block, where);
+    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where);
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {

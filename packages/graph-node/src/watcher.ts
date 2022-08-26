@@ -248,15 +248,15 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, relations: { [key: string]: any }, block?: BlockHeight): Promise<any> {
+  async getEntity<Entity> (entity: new () => Entity, id: string, relationsMap: Map<any, { [key: string]: any }>, block?: BlockHeight): Promise<any> {
     // Get entity from the database.
-    const result = await this._database.getEntityWithRelations(entity, id, relations, block);
+    const result = await this._database.getEntityWithRelations(entity, id, relationsMap, block);
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
   }
 
-  async getEntities<Entity> (entity: new () => Entity, relations: { [key: string]: any }, block: BlockHeight, where: { [key: string]: any } = {}): Promise<any> {
+  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: { [key: string]: any } = {}): Promise<any> {
     where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
       const [field, ...suffix] = fieldWithSuffix.split('_');
 
@@ -287,7 +287,7 @@ export class GraphWatcher {
     }, {});
 
     // Get entities from the database.
-    const entities = await this._database.getEntities(entity, relations, block, where);
+    const entities = await this._database.getEntities(entity, relationsMap, block, where);
 
     // Resolve any field name conflicts in the entity result.
     return entities.map(entity => resolveEntityFieldConflicts(entity));
