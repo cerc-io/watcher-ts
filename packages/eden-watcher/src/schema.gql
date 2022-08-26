@@ -222,6 +222,7 @@ type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   producer(id: String!, block: Block_height): Producer!
+  producers(block: Block_height): [Producer!]!
   producerSet(id: String!, block: Block_height): ProducerSet!
   producerSetChange(id: String!, block: Block_height): ProducerSetChange!
   producerRewardCollectorChange(id: String!, block: Block_height): ProducerRewardCollectorChange!
@@ -229,10 +230,13 @@ type Query {
   rewardSchedule(id: String!, block: Block_height): RewardSchedule!
   producerEpoch(id: String!, block: Block_height): ProducerEpoch!
   block(id: String!, block: Block_height): Block!
+  blocks(where: Block_filter, block: Block_height): [Block!]!
   epoch(id: String!, block: Block_height): Epoch!
+  epoches(where: Epoch_filter, block: Block_height): [Epoch!]!
   slotClaim(id: String!, block: Block_height): SlotClaim!
   slot(id: String!, block: Block_height): Slot!
   staker(id: String!, block: Block_height): Staker!
+  stakers(where: Staker_filter, block: Block_height): [Staker!]!
   network(id: String!, block: Block_height): Network!
   distributor(id: String!, block: Block_height): Distributor!
   distribution(id: String!, block: Block_height): Distribution!
@@ -311,6 +315,13 @@ type Block {
   size: BigInt
 }
 
+input Block_filter {
+  fromActiveProducer: Boolean
+  number_gte: BigInt
+  number_lte: BigInt
+  timestamp_lte: BigInt
+}
+
 type Epoch {
   id: ID!
   finalized: Boolean!
@@ -321,6 +332,11 @@ type Epoch {
   allBlocks: BigInt!
   producerBlocksRatio: BigDecimal!
   producerRewards: [ProducerEpoch!]!
+}
+
+input Epoch_filter {
+  epochNumber_gte: BigInt
+  epochNumber_lte: BigInt
 }
 
 type ProducerEpoch {
@@ -359,6 +375,10 @@ type Staker {
   id: ID!
   staked: BigInt!
   rank: BigInt
+}
+
+input Staker_filter {
+  rank_gte: BigInt
 }
 
 type Network {

@@ -83,6 +83,15 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Producer, id, block);
       },
 
+      producers: async (_: any, { block = {} }: { block: BlockHeight }) => {
+        log('producers', block);
+
+        return indexer.getSubgraphEntities(
+          Producer,
+          block
+        );
+      },
+
       producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerSet', id, block);
 
@@ -125,10 +134,30 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Block, id, block);
       },
 
+      blocks: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+        log('blocks', where, block);
+
+        return indexer.getSubgraphEntities(
+          Block,
+          block,
+          where
+        );
+      },
+
       epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('epoch', id, block);
 
         return indexer.getSubgraphEntity(Epoch, id, block);
+      },
+
+      epoches: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+        log('epoches', where, block);
+
+        return indexer.getSubgraphEntities(
+          Epoch,
+          block,
+          where
+        );
       },
 
       slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
@@ -147,6 +176,16 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         log('staker', id, block);
 
         return indexer.getSubgraphEntity(Staker, id, block);
+      },
+
+      stakers: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+        log('stakers', where, block);
+
+        return indexer.getSubgraphEntities(
+          Staker,
+          block,
+          where
+        );
       },
 
       network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {

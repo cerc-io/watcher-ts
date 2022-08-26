@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import {
-  Brackets,
   Connection,
   ConnectionOptions,
   createConnection,
@@ -23,9 +22,6 @@ import _ from 'lodash';
 import { BlockProgressInterface, ContractInterface, EventInterface, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
 import { blockProgressCount, eventCount } from './metrics';
-
-const DEFAULT_LIMIT = 100;
-const DEFAULT_SKIP = 0;
 
 const OPERATOR_MAP = {
   equals: '=',
@@ -207,13 +203,21 @@ export class Database {
       .innerJoinAndSelect('event.block', 'block')
       .where('block.block_hash = :blockHash AND block.is_pruned = false', { blockHash });
 
-    queryBuilder = this._buildQuery(repo, queryBuilder, where, queryOptions);
+    queryBuilder = this.buildQuery(repo, queryBuilder, where);
+
+    if (queryOptions.orderBy) {
+      queryBuilder = this._orderQuery(repo, queryBuilder, queryOptions);
+    }
+
     queryBuilder.addOrderBy('event.id', 'ASC');
 
-    const { limit = DEFAULT_LIMIT, skip = DEFAULT_SKIP } = queryOptions;
+    if (queryOptions.skip) {
+      queryBuilder = queryBuilder.offset(queryOptions.skip);
+    }
 
-    queryBuilder = queryBuilder.offset(skip)
-      .limit(limit);
+    if (queryOptions.limit) {
+      queryBuilder = queryBuilder.limit(queryOptions.limit);
+    }
 
     return queryBuilder.getMany();
   }
@@ -388,56 +392,6 @@ export class Database {
     return event;
   }
 
-  async getModelEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, relations: Relation[] = []): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-    const { tableName } = repo.metadata;
-
-    let subQuery = repo.createQueryBuilder('subTable')
-      .select('MAX(subTable.block_number)')
-      .where(`subTable.id = ${tableName}.id`);
-
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-    }
-
-    let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .where(`${tableName}.block_number IN (${subQuery.getQuery()})`)
-      .setParameters(subQuery.getParameters());
-
-    relations.forEach(relation => {
-      let alias, property;
-
-      if (typeof relation === 'string') {
-        [, alias] = relation.split('.');
-        property = relation;
-      } else {
-        alias = relation.alias;
-        property = relation.property;
-      }
-
-      selectQueryBuilder = selectQueryBuilder.leftJoinAndSelect(property, alias);
-    });
-
-    selectQueryBuilder = this._buildQuery(repo, selectQueryBuilder, where, queryOptions);
-
-    const { limit = DEFAULT_LIMIT, skip = DEFAULT_SKIP } = queryOptions;
-
-    selectQueryBuilder = selectQueryBuilder.skip(skip)
-      .take(limit);
-
-    return selectQueryBuilder.getMany();
-  }
-
   async getFrothyEntity<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, data: { blockHash: string, id: string }): Promise<{ blockHash: string, blockNumber: number, id: string }> {
     // Hierarchical query for getting the entity in the frothy region.
     const heirerchicalQuery = `
@@ -596,16 +550,21 @@ export class Database {
     eventCount.set(this._eventCount);
   }
 
-  _buildQuery<Entity> (repo: Repository<Entity>, selectQueryBuilder: SelectQueryBuilder<Entity>, where: Where = {}, queryOptions: QueryOptions = {}): SelectQueryBuilder<Entity> {
-    const { tableName } = repo.metadata;
-
+  buildQuery<Entity> (repo: Repository<Entity>, selectQueryBuilder: SelectQueryBuilder<Entity>, where: Where = {}): SelectQueryBuilder<Entity> {
     Object.entries(where).forEach(([field, filters]) => {
       filters.forEach((filter, index) => {
         // Form the where clause.
         let { not, operator, value } = filter;
         const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
         assert(columnMetadata);
-        let whereClause = `${tableName}.${columnMetadata.propertyAliasName} `;
+        let whereClause = `"${selectQueryBuilder.alias}"."${columnMetadata.databaseName}" `;
+
+        if (columnMetadata.relationMetadata) {
+          // For relation fields, use the id column.
+          const idColumn = columnMetadata.relationMetadata.joinColumns.find(column => column.referencedColumn?.propertyName === 'id');
+          assert(idColumn);
+          whereClause = `"${selectQueryBuilder.alias}"."${idColumn.databaseName}" `;
+        }
 
         if (not) {
           if (operator === 'equals') {
@@ -617,9 +576,7 @@ export class Database {
 
         whereClause += `${OPERATOR_MAP[operator]} `;
 
-        if (['contains', 'starts'].some(el => el === operator)) {
-          whereClause += '%:';
-        } else if (operator === 'in') {
+        if (operator === 'in') {
           whereClause += '(:...';
         } else {
           // Convert to string type value as bigint type throws error in query.
@@ -631,9 +588,7 @@ export class Database {
         const variableName = `${field}${index}`;
         whereClause += variableName;
 
-        if (['contains', 'ends'].some(el => el === operator)) {
-          whereClause += '%';
-        } else if (operator === 'in') {
+        if (operator === 'in') {
           whereClause += ')';
 
           if (!value.length) {
@@ -641,18 +596,35 @@ export class Database {
           }
         }
 
+        if (['contains', 'starts'].some(el => el === operator)) {
+          value = `%${value}`;
+        }
+
+        if (['contains', 'ends'].some(el => el === operator)) {
+          value += '%';
+        }
+
         selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
       });
     });
 
-    const { orderBy, orderDirection } = queryOptions;
-
-    if (orderBy) {
-      const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
-      assert(columnMetadata);
-      selectQueryBuilder = selectQueryBuilder.orderBy(`${tableName}.${columnMetadata.propertyAliasName}`, orderDirection === 'desc' ? 'DESC' : 'ASC');
-    }
-
     return selectQueryBuilder;
+  }
+
+  _orderQuery<Entity> (
+    repo: Repository<Entity>,
+    selectQueryBuilder: SelectQueryBuilder<Entity>,
+    orderOptions: { orderBy?: string, orderDirection?: string }
+  ): SelectQueryBuilder<Entity> {
+    const { orderBy, orderDirection } = orderOptions;
+    assert(orderBy);
+
+    const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
+    assert(columnMetadata);
+
+    return selectQueryBuilder.addOrderBy(
+      `${selectQueryBuilder.alias}.${columnMetadata.propertyAliasName}`,
+      orderDirection === 'desc' ? 'DESC' : 'ASC'
+    );
   }
 }

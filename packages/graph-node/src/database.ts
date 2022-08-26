@@ -4,6 +4,7 @@
 
 import assert from 'assert';
 import {
+  Brackets,
   Connection,
   ConnectionOptions,
   FindOneOptions,
@@ -14,7 +15,9 @@ import {
 import {
   BlockHeight,
   BlockProgressInterface,
-  Database as BaseDatabase
+  Database as BaseDatabase,
+  QueryOptions,
+  Where
 } from '@vulcanize/util';
 
 import { Block, fromEntityValue, toEntityValue } from './utils';
@@ -199,6 +202,58 @@ export class Database {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getEntities<Entity> (entity: new () => Entity, relations: { [key: string]: any }, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}): Promise<Entity[]> {
+    const queryRunner = this._conn.createQueryRunner();
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+
+    let subQuery = repo.createQueryBuilder('subTable')
+      .select('subTable.id', 'id')
+      .addSelect('MAX(subTable.block_number)', 'block_number')
+      .addFrom('block_progress', 'blockProgress')
+      .where('subTable.block_hash = blockProgress.block_hash')
+      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+      .groupBy('subTable.id');
+
+    subQuery = this._baseDatabase.buildQuery(repo, subQuery, where);
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+    }
+
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .innerJoin(
+        `(${subQuery.getQuery()})`,
+        'latestEntities',
+        `${tableName}.id = "latestEntities"."id" AND ${tableName}.block_number = "latestEntities"."block_number"`
+      )
+      .setParameters(subQuery.getParameters());
+
+    if (!queryOptions.limit) {
+      queryOptions.limit = DEFAULT_LIMIT;
+    }
+
+    selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+
+    const entities = await selectQueryBuilder.getMany();
+
+    if (!entities.length) {
+      return [];
+    }
+
+    return entities;
   }
 
   async saveEntity (entity: string, data: any): Promise<void> {

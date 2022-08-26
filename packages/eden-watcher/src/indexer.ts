@@ -364,6 +364,12 @@ export class Indexer implements IPLDIndexerInterface {
     return data;
   }
 
+  async getSubgraphEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}): Promise<any[]> {
+    const relations = this._relationsMap.get(entity) || {};
+
+    return this._graphWatcher.getEntities(entity, relations, block, where);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 

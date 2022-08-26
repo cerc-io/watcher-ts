@@ -250,10 +250,47 @@ export class GraphWatcher {
 
   async getEntity<Entity> (entity: new () => Entity, id: string, relations: { [key: string]: any }, block?: BlockHeight): Promise<any> {
     // Get entity from the database.
-    const result = await this._database.getEntityWithRelations(entity, id, relations, block) as any;
+    const result = await this._database.getEntityWithRelations(entity, id, relations, block);
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
+  }
+
+  async getEntities<Entity> (entity: new () => Entity, relations: { [key: string]: any }, block: BlockHeight, where: { [key: string]: any } = {}): Promise<any> {
+    where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
+      const [field, ...suffix] = fieldWithSuffix.split('_');
+
+      if (!acc[field]) {
+        acc[field] = [];
+      }
+
+      const filter = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      let operator = suffix.shift();
+
+      if (operator === 'not') {
+        filter.not = true;
+        operator = suffix.shift();
+      }
+
+      if (operator) {
+        filter.operator = operator;
+      }
+
+      acc[field].push(filter);
+
+      return acc;
+    }, {});
+
+    // Get entities from the database.
+    const entities = await this._database.getEntities(entity, relations, block, where);
+
+    // Resolve any field name conflicts in the entity result.
+    return entities.map(entity => resolveEntityFieldConflicts(entity));
   }
 
   /**
