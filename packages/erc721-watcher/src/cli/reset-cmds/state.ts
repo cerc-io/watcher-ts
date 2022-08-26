@@ -70,11 +70,9 @@ export const handler = async (argv: any): Promise<void> => {
   try {
     const entities = [BlockProgress, SupportsInterface, BalanceOf, OwnerOf, GetApproved, IsApprovedForAll, Name, Symbol, TokenURI, _Name, _Symbol, _Owners, _Balances, _TokenApprovals, _OperatorApprovals];
 
-    const removeEntitiesPromise = entities.map(async entityClass => {
-      return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });
-    });
-
-    await Promise.all(removeEntitiesPromise);
+    for (const entity of entities) {
+      await db.removeEntities<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
+    }
 
     const syncStatus = await indexer.getSyncStatus();
     assert(syncStatus, 'Missing syncStatus');

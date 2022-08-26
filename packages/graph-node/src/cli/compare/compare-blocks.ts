@@ -9,11 +9,10 @@ import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
-import omitDeep from 'omit-deep';
 import { getConfig as getWatcherConfig, wait } from '@vulcanize/util';
 import { GraphQLClient } from '@vulcanize/ipld-eth-client';
 
-import { compareObjects, compareQuery, Config, getBlockIPLDState as getIPLDStateByBlock, getClients, getConfig } from './utils';
+import { checkEntityInIPLDState, compareQuery, Config, getBlockIPLDState as getIPLDStateByBlock, getClients, getConfig } from './utils';
 import { Database } from '../../database';
 import { getSubgraphConfig } from '../../utils';
 
@@ -130,7 +129,12 @@ export const main = async (): Promise<void> => {
             );
 
             if (config.watcher.verifyState) {
-              await checkEntityInIPLDState(ipldStateByBlock, queryName, result, id, rawJson);
+              const ipldDiff = await checkEntityInIPLDState(ipldStateByBlock, queryName, result, id, rawJson, config.watcher.derivedFields);
+
+              if (ipldDiff) {
+                log('Results mismatch for IPLD state:', ipldDiff);
+                diffFound = true;
+              }
             }
 
             if (diff) {
@@ -165,24 +169,5 @@ export const main = async (): Promise<void> => {
 
   if (diffFound) {
     process.exit(1);
-  }
-};
-
-const checkEntityInIPLDState = async (
-  ipldState: {[key: string]: any},
-  queryName: string,
-  entityResult: {[key: string]: any},
-  id: string,
-  rawJson: boolean
-) => {
-  const entityName = _.startCase(queryName);
-  const ipldEntity = ipldState[entityName][id];
-
-  // Filter __typename key in GQL result.
-  const resultEntity = omitDeep(entityResult[queryName], '__typename');
-  const diff = compareObjects(ipldEntity, resultEntity, rawJson);
-
-  if (diff) {
-    log('Results mismatch for IPLD state:', diff);
   }
 };

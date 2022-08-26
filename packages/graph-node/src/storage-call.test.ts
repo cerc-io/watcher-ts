@@ -30,7 +30,8 @@ xdescribe('storage-call wasm tests', () => {
     },
     dataSource: {
       address: contractAddress,
-      network: 'mainnet'
+      network: 'mainnet',
+      name: 'Example1'
     }
   };
 

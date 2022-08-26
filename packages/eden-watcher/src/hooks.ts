@@ -60,14 +60,14 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 
   // Fetch the latest 'checkpoint' | 'init' for the contract to fetch diffs after it.
   let prevNonDiffBlock: IPLDBlockInterface;
-  let getDiffBlockNumber: number;
-  const checkpointBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, block.blockNumber);
+  let diffStartBlockNumber: number;
+  const checkpointBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, block.blockNumber - 1);
 
   if (checkpointBlock) {
     const checkpointBlockNumber = checkpointBlock.block.blockNumber;
 
     prevNonDiffBlock = checkpointBlock;
-    getDiffBlockNumber = checkpointBlockNumber;
+    diffStartBlockNumber = checkpointBlockNumber;
 
     // Update IPLD status map with the latest checkpoint info.
     // Essential while importing state as checkpoint at the snapshot block is added by import-state CLI.
@@ -80,11 +80,11 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 
     prevNonDiffBlock = initBlock;
     // Take block number previous to initial state block to include any diff state at that block.
-    getDiffBlockNumber = initBlock.block.blockNumber - 1;
+    diffStartBlockNumber = initBlock.block.blockNumber - 1;
   }
 
   // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
-  const diffBlocks = await indexer.getDiffIPLDBlocksByBlocknumber(contractAddress, getDiffBlockNumber);
+  const diffBlocks = await indexer.getDiffIPLDBlocksInRange(contractAddress, diffStartBlockNumber, block.blockNumber);
 
   const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
   const data = {

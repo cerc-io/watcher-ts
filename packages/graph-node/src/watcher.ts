@@ -52,7 +52,7 @@ export class GraphWatcher {
 
     // Create wasm instance and contract interface for each dataSource and template in subgraph yaml.
     const dataPromises = this._dataSources.map(async (dataSource: any) => {
-      const { source: { abi }, mapping, network } = dataSource;
+      const { source: { abi }, mapping, network, name } = dataSource;
       const { abis, file } = mapping;
 
       const abisMap = abis.reduce((acc: {[key: string]: ContractInterface}, abi: any) => {
@@ -68,7 +68,8 @@ export class GraphWatcher {
       const data = {
         abis: abisMap,
         dataSource: {
-          network
+          network,
+          name
         }
       };
 

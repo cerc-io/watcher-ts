@@ -77,7 +77,8 @@ xdescribe('eden wasm loader tests', async () => {
       },
       dataSource: {
         address: contractAddress,
-        network: 'mainnet'
+        network: 'mainnet',
+        name: 'EdenNetwork'
       }
     };
 
@@ -197,7 +198,8 @@ xdescribe('eden wasm loader tests', async () => {
       },
       dataSource: {
         address: contractAddress,
-        network: 'mainnet'
+        network: 'mainnet',
+        name: 'EdenNetworkDistribution'
       }
     };
 
@@ -313,7 +315,8 @@ xdescribe('eden wasm loader tests', async () => {
       },
       dataSource: {
         address: contractAddress,
-        network: 'mainnet'
+        network: 'mainnet',
+        name: 'EdenNetworkGovernance'
       }
     };
 

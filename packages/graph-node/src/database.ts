@@ -19,7 +19,7 @@ import {
 
 import { Block, fromEntityValue, toEntityValue } from './utils';
 
-const DEFAULT_LIMIT = 100;
+export const DEFAULT_LIMIT = 100;
 
 export class Database {
   _config: ConnectionOptions

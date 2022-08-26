@@ -102,10 +102,10 @@ export class Database implements IPLDDatabaseInterface {
   }
 
   // Fetch all diff IPLDBlocks after the specified block number.
-  async getDiffIPLDBlocksByBlocknumber (contractAddress: string, blockNumber: number): Promise<IPLDBlock[]> {
+  async getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlock[]> {
     const repo = this._conn.getRepository(IPLDBlock);
 
-    return this._baseDatabase.getDiffIPLDBlocksByBlocknumber(repo, contractAddress, blockNumber);
+    return this._baseDatabase.getDiffIPLDBlocksInRange(repo, contractAddress, startBlock, endBlock);
   }
 
   async saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlock): Promise<IPLDBlock> {
