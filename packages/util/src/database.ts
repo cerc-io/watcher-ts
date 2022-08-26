@@ -206,7 +206,7 @@ export class Database {
     queryBuilder = this.buildQuery(repo, queryBuilder, where);
 
     if (queryOptions.orderBy) {
-      queryBuilder = this._orderQuery(repo, queryBuilder, queryOptions);
+      queryBuilder = this.orderQuery(repo, queryBuilder, queryOptions);
     }
 
     queryBuilder.addOrderBy('event.id', 'ASC');
@@ -611,7 +611,7 @@ export class Database {
     return selectQueryBuilder;
   }
 
-  _orderQuery<Entity> (
+  orderQuery<Entity> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     orderOptions: { orderBy?: string, orderDirection?: string }

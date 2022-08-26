@@ -218,11 +218,16 @@ type SyncStatus {
   latestCanonicalBlockNumber: Int!
 }
 
+enum OrderDirection {
+  asc
+  desc
+}
+
 type Query {
   events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
   eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
   producer(id: String!, block: Block_height): Producer!
-  producers(block: Block_height): [Producer!]!
+  producers(block: Block_height, first: Int = 100, skip: Int = 0): [Producer!]!
   producerSet(id: String!, block: Block_height): ProducerSet!
   producerSetChange(id: String!, block: Block_height): ProducerSetChange!
   producerRewardCollectorChange(id: String!, block: Block_height): ProducerRewardCollectorChange!
@@ -230,13 +235,13 @@ type Query {
   rewardSchedule(id: String!, block: Block_height): RewardSchedule!
   producerEpoch(id: String!, block: Block_height): ProducerEpoch!
   block(id: String!, block: Block_height): Block!
-  blocks(where: Block_filter, block: Block_height): [Block!]!
+  blocks(where: Block_filter, block: Block_height, orderBy: Block_orderBy, orderDirection: OrderDirection, first: Int = 100, skip: Int = 0): [Block!]!
   epoch(id: String!, block: Block_height): Epoch!
-  epoches(where: Epoch_filter, block: Block_height): [Epoch!]!
+  epoches(where: Epoch_filter, block: Block_height, first: Int = 100, skip: Int = 0): [Epoch!]!
   slotClaim(id: String!, block: Block_height): SlotClaim!
   slot(id: String!, block: Block_height): Slot!
   staker(id: String!, block: Block_height): Staker!
-  stakers(where: Staker_filter, block: Block_height): [Staker!]!
+  stakers(where: Staker_filter, block: Block_height, orderBy: Staker_orderBy, orderDirection: OrderDirection, first: Int = 100, skip: Int = 0): [Staker!]!
   network(id: String!, block: Block_height): Network!
   distributor(id: String!, block: Block_height): Distributor!
   distribution(id: String!, block: Block_height): Distribution!
@@ -322,6 +327,11 @@ input Block_filter {
   timestamp_lte: BigInt
 }
 
+enum Block_orderBy {
+  number
+  timestamp
+}
+
 type Epoch {
   id: ID!
   finalized: Boolean!
@@ -379,6 +389,10 @@ type Staker {
 
 input Staker_filter {
   rank_gte: BigInt
+}
+
+enum Staker_orderBy {
+  rank
 }
 
 type Network {

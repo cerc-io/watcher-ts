@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { BlockHeight, StateKind } from '@vulcanize/util';
+import { BlockHeight, OrderDirection, StateKind } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -83,12 +83,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Producer, id, block);
       },
 
-      producers: async (_: any, { block = {} }: { block: BlockHeight }) => {
+      producers: async (_: any, { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number }) => {
         log('producers', block);
 
         return indexer.getSubgraphEntities(
           Producer,
-          block
+          block,
+          {},
+          { limit: first, skip }
         );
       },
 
@@ -134,13 +136,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Block, id, block);
       },
 
-      blocks: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+      blocks: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
         log('blocks', where, block);
 
         return indexer.getSubgraphEntities(
           Block,
           block,
-          where
+          where,
+          { limit: first, skip, orderBy, orderDirection }
         );
       },
 
@@ -150,13 +153,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Epoch, id, block);
       },
 
-      epoches: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+      epoches: async (_: any, { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number }) => {
         log('epoches', where, block);
 
         return indexer.getSubgraphEntities(
           Epoch,
           block,
-          where
+          where,
+          { limit: first, skip }
         );
       },
 
@@ -178,13 +182,14 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         return indexer.getSubgraphEntity(Staker, id, block);
       },
 
-      stakers: async (_: any, { block = {}, where }: { block: BlockHeight, where: { [key: string]: any } }) => {
+      stakers: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
         log('stakers', where, block);
 
         return indexer.getSubgraphEntities(
           Staker,
           block,
-          where
+          where,
+          { limit: first, skip, orderBy, orderDirection }
         );
       },
 
