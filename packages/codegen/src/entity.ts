@@ -209,10 +209,14 @@ export class Entity {
 
       entityObject.imports.push(
         {
-          toImport: new Set(['Entity', 'PrimaryColumn', 'Column']),
+          toImport: new Set(['Entity', 'PrimaryColumn', 'Column', 'Index']),
           from: 'typeorm'
         }
       );
+
+      entityObject.indexOn.push({
+        columns: ['blockNumber']
+      });
 
       // Add common columns.
       entityObject.columns.push({

@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 import { bigintTransformer } from '@vulcanize/util';
 
 enum ProducerSetChangeType {
@@ -11,6 +11,7 @@ enum ProducerSetChangeType {
 }
 
 @Entity()
+@Index(['blockNumber'])
 export class ProducerSetChange {
   @PrimaryColumn('varchar')
   id!: string;
