@@ -206,7 +206,9 @@ export const instantiate = async (
           assert(context.block);
 
           // TODO: Check for function overloading.
+          console.time(`time:loader#ethereum.call-${functionName}`);
           let result = await contract[functionName](...functionParams, { blockTag: context.block.blockHash });
+          console.timeEnd(`time:loader#ethereum.call-${functionName}`);
 
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);
@@ -279,6 +281,7 @@ export const instantiate = async (
         assert(storageLayout);
         assert(context.block);
 
+        console.time(`time:loader#ethereum.storageValue-${variableString}`);
         const result = await indexer.getStorageValue(
           storageLayout,
           context.block.blockHash,
@@ -286,6 +289,7 @@ export const instantiate = async (
           variableString,
           ...mappingKeyValues
         );
+        console.timeEnd(`time:loader#ethereum.storageValue-${variableString}`);
 
         const storageValueType = getStorageValueType(storageLayout, variableString, mappingKeyValues);
 
