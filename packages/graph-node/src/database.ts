@@ -186,11 +186,10 @@ export class Database {
         selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
       }
 
-      if (!queryOptions.limit) {
-        queryOptions.limit = DEFAULT_LIMIT;
+      if (queryOptions.limit) {
+        selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
       }
 
-      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
       const entities = await selectQueryBuilder.getMany();
 
       if (!entities.length) {
@@ -243,7 +242,9 @@ export class Database {
             acc[parentEntityId] = [];
           }
 
-          acc[parentEntityId].push(entity);
+          if (acc[parentEntityId].length < DEFAULT_LIMIT) {
+            acc[parentEntityId].push(entity);
+          }
 
           return acc;
         }, {});
@@ -260,8 +261,8 @@ export class Database {
       }
 
       if (isArray) {
-        const relatedIds = entities.reduce((acc, entity: any) => {
-          entity[field].forEach((relatedEntityId: any) => acc.add(relatedEntityId));
+        const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
+          entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
 
           return acc;
         }, new Set());
@@ -283,17 +284,19 @@ export class Database {
           depth + 1
         );
 
-        const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
-          acc[entity.id] = entity;
-
-          return acc;
-        }, {});
-
         entities.forEach((entity: any) => {
-          const relatedField = entity[field] as any[];
+          const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
+            acc.add(id);
 
-          relatedField.forEach((relatedEntityId, index) => {
-            relatedField[index] = relatedEntitiesMap[relatedEntityId];
+            return acc;
+          }, new Set());
+
+          entity[field] = [];
+
+          relatedEntities.forEach((relatedEntity: any) => {
+            if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
+              entity[field].push(relatedEntity);
+            }
           });
         });
 

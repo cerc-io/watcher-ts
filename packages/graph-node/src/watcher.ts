@@ -15,7 +15,7 @@ import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTrans
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
-import { Database } from './database';
+import { Database, DEFAULT_LIMIT } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -285,6 +285,10 @@ export class GraphWatcher {
 
       return acc;
     }, {});
+
+    if (!queryOptions.limit) {
+      queryOptions.limit = DEFAULT_LIMIT;
+    }
 
     // Get entities from the database.
     const entities = await this._database.getEntities(entity, relationsMap, block, where, queryOptions);
