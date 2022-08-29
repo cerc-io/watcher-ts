@@ -19,3 +19,4 @@ export * from './src/ipld-database';
 export * from './src/ipfs';
 export * from './src/index-block';
 export * from './src/metrics';
+export * from './src/gql-metrics';
