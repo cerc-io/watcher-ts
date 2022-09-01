@@ -14,7 +14,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@vulcanize/util';
 import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -91,6 +91,8 @@ export const main = async (): Promise<any> => {
   httpServer.listen(port, host, () => {
     log(`Server is listening on host ${host} port ${port}`);
   });
+
+  startGQLMetricsServer(config);
 
   return { app, server };
 };

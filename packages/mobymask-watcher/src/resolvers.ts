@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, StateKind } from '@vulcanize/util';
+import { ValueResult, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -60,31 +60,48 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     Query: {
       multiNonce: (_: any, { blockHash, contractAddress, key0, key1 }: { blockHash: string, contractAddress: string, key0: string, key1: bigint }): Promise<ValueResult> => {
         log('multiNonce', blockHash, contractAddress, key0, key1);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('multiNonce').inc(1);
+
         return indexer.multiNonce(blockHash, contractAddress, key0, key1);
       },
 
       _owner: (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<ValueResult> => {
         log('_owner', blockHash, contractAddress);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('_owner').inc(1);
+
         return indexer._owner(blockHash, contractAddress);
       },
 
       isRevoked: (_: any, { blockHash, contractAddress, key0 }: { blockHash: string, contractAddress: string, key0: string }): Promise<ValueResult> => {
         log('isRevoked', blockHash, contractAddress, key0);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('isRevoked').inc(1);
+
         return indexer.isRevoked(blockHash, contractAddress, key0);
       },
 
       isPhisher: (_: any, { blockHash, contractAddress, key0 }: { blockHash: string, contractAddress: string, key0: string }): Promise<ValueResult> => {
         log('isPhisher', blockHash, contractAddress, key0);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('isPhisher').inc(1);
+
         return indexer.isPhisher(blockHash, contractAddress, key0);
       },
 
       isMember: (_: any, { blockHash, contractAddress, key0 }: { blockHash: string, contractAddress: string, key0: string }): Promise<ValueResult> => {
         log('isMember', blockHash, contractAddress, key0);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('isMember').inc(1);
+
         return indexer.isMember(blockHash, contractAddress, key0);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
         log('events', blockHash, contractAddress, name);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('events').inc(1);
 
         const block = await indexer.getBlockProgress(blockHash);
         if (!block || !block.isComplete) {
@@ -97,6 +114,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('eventsInRange').inc(1);
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
         return events.map(event => indexer.getResultEvent(event));
@@ -104,6 +123,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getStateByCID: async (_: any, { cid }: { cid: string }) => {
         log('getStateByCID', cid);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getStateByCID').inc(1);
 
         const ipldBlock = await indexer.getIPLDBlockByCid(cid);
 
@@ -112,6 +133,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getState: async (_: any, { blockHash, contractAddress, kind = StateKind.Checkpoint }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getState').inc(1);
 
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
 
@@ -120,12 +143,16 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getSyncStatus: async () => {
         log('getSyncStatus');
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getSyncStatus').inc(1);
 
         return indexer.getSyncStatus();
       },
 
       latestBlock: async () => {
         log('latestBlock');
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('latestBlock').inc(1);
 
         return indexer.getLatestBlock();
       }

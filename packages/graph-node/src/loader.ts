@@ -74,7 +74,9 @@ export const instantiate = async (
         const entityId = __getString(id);
 
         assert(context.block);
+        console.time(`time:loader#index.store.get-db-${entityName}`);
         const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
+        console.timeEnd(`time:loader#index.store.get-db-${entityName}`);
 
         if (!entityData) {
           return null;
@@ -95,7 +97,9 @@ export const instantiate = async (
 
         assert(context.block);
         let dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
+        console.time(`time:loader#index.store.set-db-${entityName}`);
         await database.saveEntity(entityName, dbData);
+        console.timeEnd(`time:loader#index.store.set-db-${entityName}`);
 
         // Resolve any field name conflicts in the dbData for auto-diff.
         dbData = resolveEntityFieldConflicts(dbData);
@@ -206,7 +210,9 @@ export const instantiate = async (
           assert(context.block);
 
           // TODO: Check for function overloading.
+          console.time(`time:loader#ethereum.call-${functionName}`);
           let result = await contract[functionName](...functionParams, { blockTag: context.block.blockHash });
+          console.timeEnd(`time:loader#ethereum.call-${functionName}`);
 
           // Using function signature does not work.
           const { outputs } = contract.interface.getFunction(functionName);
@@ -279,6 +285,7 @@ export const instantiate = async (
         assert(storageLayout);
         assert(context.block);
 
+        console.time(`time:loader#ethereum.storageValue-${variableString}`);
         const result = await indexer.getStorageValue(
           storageLayout,
           context.block.blockHash,
@@ -286,6 +293,7 @@ export const instantiate = async (
           variableString,
           ...mappingKeyValues
         );
+        console.timeEnd(`time:loader#ethereum.storageValue-${variableString}`);
 
         const storageValueType = getStorageValueType(storageLayout, variableString, mappingKeyValues);
 

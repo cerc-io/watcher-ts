@@ -450,8 +450,10 @@ export class Indexer implements IndexerInterface {
         parentHash: block.parent.hash
       };
 
+      console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
       const blockProgress = await this._db.saveEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
+      console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 
       return blockProgress;
     } catch (error) {

@@ -79,6 +79,7 @@ export class JobRunner {
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
+    console.time('time:job-runner#_pruneChain');
     const { pruneBlockHeight } = job.data;
 
     log(`Processing chain pruning at ${pruneBlockHeight}`);
@@ -119,6 +120,8 @@ export class JobRunner {
       // Update the canonical block in the SyncStatus.
       await this._indexer.updateSyncStatusCanonicalBlock(newCanonicalBlockHash, pruneBlockHeight);
     }
+
+    console.timeEnd('time:job-runner#_pruneChain');
   }
 
   async _indexBlock (job: any, syncStatus: SyncStatusInterface): Promise<void> {
@@ -145,6 +148,7 @@ export class JobRunner {
       throw new Error(message);
     }
 
+    console.time('time:job-runner#_indexBlock-get-block-progress-entities');
     let [parentBlock, blockProgress] = await this._indexer.getBlockProgressEntities(
       {
         blockHash: In([parentHash, blockHash])
@@ -155,6 +159,7 @@ export class JobRunner {
         }
       }
     );
+    console.timeEnd('time:job-runner#_indexBlock-get-block-progress-entities');
 
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
     // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
@@ -209,7 +214,9 @@ export class JobRunner {
         throw new Error(message);
       } else {
         // Remove the unknown events of the parent block if it is marked complete.
+        console.time('time:job-runner#_indexBlock-remove-unknown-events');
         await this._indexer.removeUnknownEvents(parentBlock);
+        console.timeEnd('time:job-runner#_indexBlock-remove-unknown-events');
       }
     } else {
       blockProgress = parentBlock;
@@ -220,7 +227,9 @@ export class JobRunner {
 
       // Delay required to process block.
       await wait(jobDelayInMilliSecs);
+      console.time('time:job-runner#_indexBlock-fetch-block-events');
       blockProgress = await this._indexer.fetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+      console.timeEnd('time:job-runner#_indexBlock-fetch-block-events');
     }
 
     if (this._indexer.processBlock) {

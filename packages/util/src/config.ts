@@ -56,9 +56,14 @@ export interface UpstreamConfig {
   }
 }
 
+export interface GQLMetricsConfig {
+  port: number;
+}
+
 export interface MetricsConfig {
   host: string;
   port: number;
+  gql: GQLMetricsConfig;
 }
 
 export interface Config {

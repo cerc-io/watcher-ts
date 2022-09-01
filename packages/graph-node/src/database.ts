@@ -4,6 +4,7 @@
 
 import assert from 'assert';
 import {
+  Brackets,
   Connection,
   ConnectionOptions,
   FindOneOptions,
@@ -14,7 +15,9 @@ import {
 import {
   BlockHeight,
   BlockProgressInterface,
-  Database as BaseDatabase
+  Database as BaseDatabase,
+  QueryOptions,
+  Where
 } from '@vulcanize/util';
 
 import { Block, fromEntityValue, toEntityValue } from './utils';
@@ -92,7 +95,7 @@ export class Database {
     return entities.map((entity: any) => entity.id);
   }
 
-  async getEntityWithRelations<Entity> (entity: (new () => Entity) | string, id: string, relations: { [key: string]: any }, block: BlockHeight = {}): Promise<Entity | undefined> {
+  async getEntityWithRelations<Entity> (entity: (new () => Entity), id: string, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight = {}): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
     let { hash: blockHash, number: blockNumber } = block;
 
@@ -124,81 +127,216 @@ export class Database {
         entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
       }
 
+      // Get relational fields
       if (entityData) {
-        // Populate relational fields.
-        // TODO: Implement query for nested relations.
-        const relationQueryPromises = Object.entries(relations).map(async ([field, data]) => {
-          assert(entityData);
-          const { entity: relatedEntity, isArray, isDerived, field: derivedField } = data;
-
-          const repo = queryRunner.manager.getRepository(relatedEntity);
-          let selectQueryBuilder = repo.createQueryBuilder('entity');
-
-          if (isDerived) {
-            // For derived relational field.
-            selectQueryBuilder = selectQueryBuilder.where(`entity.${derivedField} = :id`, { id: entityData.id });
-
-            if (isArray) {
-              selectQueryBuilder = selectQueryBuilder.distinctOn(['entity.id'])
-                .orderBy('entity.id')
-                .limit(DEFAULT_LIMIT);
-            } else {
-              selectQueryBuilder = selectQueryBuilder.limit(1);
-            }
-          } else {
-            if (isArray) {
-              // For one to many relational field.
-              selectQueryBuilder = selectQueryBuilder.where('entity.id IN (:...ids)', { ids: entityData[field] })
-                .distinctOn(['entity.id'])
-                .orderBy('entity.id')
-                .limit(DEFAULT_LIMIT);
-
-              // Subquery example if distinctOn is not performant.
-              //
-              // SELECT c.*
-              // FROM
-              //   categories c,
-              //   (
-              //     SELECT id, MAX(block_number) as block_number
-              //     FROM categories
-              //     WHERE
-              //       id IN ('nature', 'tech', 'issues')
-              //       AND
-              //       block_number <= 127
-              //     GROUP BY id
-              //   ) a
-              // WHERE
-              //   c.id = a.id AND c.block_number = a.block_number
-            } else {
-              // For one to one relational field.
-              selectQueryBuilder = selectQueryBuilder.where('entity.id = :id', { id: entityData[field] })
-                .limit(1);
-            }
-
-            selectQueryBuilder = selectQueryBuilder.addOrderBy('entity.block_number', 'DESC');
-          }
-
-          if (blockNumber) {
-            selectQueryBuilder = selectQueryBuilder.andWhere(
-              'entity.block_number <= :blockNumber',
-              { blockNumber }
-            );
-          }
-
-          if (isArray) {
-            entityData[field] = await selectQueryBuilder.getMany();
-          } else {
-            entityData[field] = await selectQueryBuilder.getOne();
-          }
-        });
-
-        await Promise.all(relationQueryPromises);
+        [entityData] = await this.loadRelations(block, relationsMap, entity, [entityData], 1);
       }
 
       return entityData;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, depth = 1): Promise<Entity[]> {
+    const queryRunner = this._conn.createQueryRunner();
+    try {
+      const repo = queryRunner.manager.getRepository(entity);
+      const { tableName } = repo.metadata;
+
+      let subQuery = repo.createQueryBuilder('subTable')
+        .select('subTable.id', 'id')
+        .addSelect('MAX(subTable.block_number)', 'block_number')
+        .addFrom('block_progress', 'blockProgress')
+        .where('subTable.block_hash = blockProgress.block_hash')
+        .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+        .groupBy('subTable.id');
+
+      if (block.hash) {
+        const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+        subQuery = subQuery
+          .andWhere(new Brackets(qb => {
+            qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+              .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+          }));
+      }
+
+      if (block.number) {
+        subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+      }
+
+      let selectQueryBuilder = repo.createQueryBuilder(tableName)
+        .innerJoin(
+          `(${subQuery.getQuery()})`,
+          'latestEntities',
+          `${tableName}.id = "latestEntities"."id" AND ${tableName}.block_number = "latestEntities"."block_number"`
+        )
+        .setParameters(subQuery.getParameters());
+
+      selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+
+      if (queryOptions.orderBy) {
+        selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+      }
+
+      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+
+      if (queryOptions.skip) {
+        selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+      }
+
+      if (queryOptions.limit) {
+        selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+      }
+
+      const entities = await selectQueryBuilder.getMany();
+
+      if (!entities.length) {
+        return [];
+      }
+
+      return this.loadRelations(block, relationsMap, entity, entities, depth);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async loadRelations<Entity> (block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entities: Entity[], depth: number): Promise<Entity[]> {
+    // Only support two-level nesting of relations
+    if (depth > 2) {
+      return entities;
+    }
+
+    const relations = relationsMap.get(entity);
+    if (relations === undefined) {
+      return entities;
+    }
+
+    const relationPromises = Object.entries(relations).map(async ([field, data]) => {
+      const { entity: relationEntity, isArray, isDerived, field: foreignKey } = data;
+
+      if (isDerived) {
+        const where: Where = {
+          [foreignKey]: [{
+            value: entities.map((entity: any) => entity.id),
+            not: false,
+            operator: 'in'
+          }]
+        };
+
+        const relatedEntities = await this.getEntities(
+          relationEntity,
+          relationsMap,
+          block,
+          where,
+          {},
+          depth + 1
+        );
+
+        const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
+          // Related entity might be loaded with data.
+          const parentEntityId = entity[foreignKey].id ?? entity[foreignKey];
+
+          if (!acc[parentEntityId]) {
+            acc[parentEntityId] = [];
+          }
+
+          if (acc[parentEntityId].length < DEFAULT_LIMIT) {
+            acc[parentEntityId].push(entity);
+          }
+
+          return acc;
+        }, {});
+
+        entities.forEach((entity: any) => {
+          if (relatedEntitiesMap[entity.id]) {
+            entity[field] = relatedEntitiesMap[entity.id];
+          } else {
+            entity[field] = [];
+          }
+        });
+
+        return;
+      }
+
+      if (isArray) {
+        const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
+          entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
+
+          return acc;
+        }, new Set());
+
+        const where: Where = {
+          id: [{
+            value: Array.from(relatedIds),
+            not: false,
+            operator: 'in'
+          }]
+        };
+
+        const relatedEntities = await this.getEntities(
+          relationEntity,
+          relationsMap,
+          block,
+          where,
+          {},
+          depth + 1
+        );
+
+        entities.forEach((entity: any) => {
+          const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
+            acc.add(id);
+
+            return acc;
+          }, new Set());
+
+          entity[field] = [];
+
+          relatedEntities.forEach((relatedEntity: any) => {
+            if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
+              entity[field].push(relatedEntity);
+            }
+          });
+        });
+
+        return;
+      }
+
+      // field is neither an array nor derivedFrom
+      const where: Where = {
+        id: [{
+          value: entities.map((entity: any) => entity[field]),
+          not: false,
+          operator: 'in'
+        }]
+      };
+
+      const relatedEntities = await this.getEntities(
+        relationEntity,
+        relationsMap,
+        block,
+        where,
+        {},
+        depth + 1
+      );
+
+      const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
+        acc[entity.id] = entity;
+
+        return acc;
+      }, {});
+
+      entities.forEach((entity: any) => {
+        if (relatedEntitiesMap[entity[field]]) {
+          entity[field] = relatedEntitiesMap[entity[field]];
+        }
+      });
+    });
+
+    await Promise.all(relationPromises);
+
+    return entities;
   }
 
   async saveEntity (entity: string, data: any): Promise<void> {

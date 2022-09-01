@@ -2,9 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
 @Entity()
+@Index(['blockNumber'])
 export class ProducerSet {
   @PrimaryColumn('varchar')
   id!: string;

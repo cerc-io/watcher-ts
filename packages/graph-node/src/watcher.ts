@@ -11,11 +11,11 @@ import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction } from '@vulcanize/util';
+import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions } from '@vulcanize/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
-import { Database } from './database';
+import { Database, DEFAULT_LIMIT } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -248,12 +248,53 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, relations: { [key: string]: any }, block?: BlockHeight): Promise<any> {
+  async getEntity<Entity> (entity: new () => Entity, id: string, relationsMap: Map<any, { [key: string]: any }>, block?: BlockHeight): Promise<any> {
     // Get entity from the database.
-    const result = await this._database.getEntityWithRelations(entity, id, relations, block) as any;
+    const result = await this._database.getEntityWithRelations(entity, id, relationsMap, block);
 
     // Resolve any field name conflicts in the entity result.
     return resolveEntityFieldConflicts(result);
+  }
+
+  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
+    where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
+      const [field, ...suffix] = fieldWithSuffix.split('_');
+
+      if (!acc[field]) {
+        acc[field] = [];
+      }
+
+      const filter = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      let operator = suffix.shift();
+
+      if (operator === 'not') {
+        filter.not = true;
+        operator = suffix.shift();
+      }
+
+      if (operator) {
+        filter.operator = operator;
+      }
+
+      acc[field].push(filter);
+
+      return acc;
+    }, {});
+
+    if (!queryOptions.limit) {
+      queryOptions.limit = DEFAULT_LIMIT;
+    }
+
+    // Get entities from the database.
+    const entities = await this._database.getEntities(entity, relationsMap, block, where, queryOptions);
+
+    // Resolve any field name conflicts in the entity result.
+    return entities.map(entity => resolveEntityFieldConflicts(entity));
   }
 
   /**

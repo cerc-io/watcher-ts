@@ -2,12 +2,13 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 import Decimal from 'decimal.js';
 
 import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
 
 @Entity()
+@Index(['blockNumber'])
 export class Slot {
   @PrimaryColumn('varchar')
   id!: string;

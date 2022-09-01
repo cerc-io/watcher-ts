@@ -191,7 +191,9 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
   // TODO: Calculate size from rlp encoded data.
   // Get block info from JSON RPC API provided by ipld-eth-server.
   const provider = ethProvider as providers.JsonRpcProvider;
+  console.time('time:misc#getFullBlock-eth_getBlockByHash');
   const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
+  console.timeEnd('time:misc#getFullBlock-eth_getBlockByHash');
 
   return {
     headerId: fullBlock.id,

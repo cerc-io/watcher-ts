@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { BlockHeight, StateKind } from '@vulcanize/util';
+import { BlockHeight, OrderDirection, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -79,114 +79,204 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     Query: {
       producer: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producer', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producer').inc(1);
 
         return indexer.getSubgraphEntity(Producer, id, block);
       },
 
+      producers: async (_: any, { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number }) => {
+        log('producers', block, first, skip);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producers').inc(1);
+
+        return indexer.getSubgraphEntities(
+          Producer,
+          block,
+          {},
+          { limit: first, skip }
+        );
+      },
+
       producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerSet', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producerSet').inc(1);
 
         return indexer.getSubgraphEntity(ProducerSet, id, block);
       },
 
       producerSetChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerSetChange', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producerSetChange').inc(1);
 
         return indexer.getSubgraphEntity(ProducerSetChange, id, block);
       },
 
       producerRewardCollectorChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerRewardCollectorChange', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producerRewardCollectorChange').inc(1);
 
         return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block);
       },
 
       rewardScheduleEntry: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('rewardScheduleEntry', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('rewardScheduleEntry').inc(1);
 
         return indexer.getSubgraphEntity(RewardScheduleEntry, id, block);
       },
 
       rewardSchedule: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('rewardSchedule', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('rewardSchedule').inc(1);
 
         return indexer.getSubgraphEntity(RewardSchedule, id, block);
       },
 
       producerEpoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('producerEpoch', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('producerEpoch').inc(1);
 
         return indexer.getSubgraphEntity(ProducerEpoch, id, block);
       },
 
       block: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('block', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('block').inc(1);
 
         return indexer.getSubgraphEntity(Block, id, block);
       },
 
+      blocks: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
+        log('blocks', block, where, first, skip, orderBy, orderDirection);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('blocks').inc(1);
+
+        return indexer.getSubgraphEntities(
+          Block,
+          block,
+          where,
+          { limit: first, skip, orderBy, orderDirection }
+        );
+      },
+
       epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('epoch', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('epoch').inc(1);
 
         return indexer.getSubgraphEntity(Epoch, id, block);
       },
 
+      epoches: async (_: any, { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number }) => {
+        log('epoches', block, where, first, skip);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('epoches').inc(1);
+
+        return indexer.getSubgraphEntities(
+          Epoch,
+          block,
+          where,
+          { limit: first, skip }
+        );
+      },
+
       slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slotClaim', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('slotClaim').inc(1);
 
         return indexer.getSubgraphEntity(SlotClaim, id, block);
       },
 
       slot: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slot', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('slot').inc(1);
 
         return indexer.getSubgraphEntity(Slot, id, block);
       },
 
       staker: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('staker', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('staker').inc(1);
 
         return indexer.getSubgraphEntity(Staker, id, block);
       },
 
+      stakers: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
+        log('stakers', block, where, first, skip, orderBy, orderDirection);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('stakers').inc(1);
+
+        return indexer.getSubgraphEntities(
+          Staker,
+          block,
+          where,
+          { limit: first, skip, orderBy, orderDirection }
+        );
+      },
+
       network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('network', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('network').inc(1);
 
         return indexer.getSubgraphEntity(Network, id, block);
       },
 
       distributor: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('distributor', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('distributor').inc(1);
 
         return indexer.getSubgraphEntity(Distributor, id, block);
       },
 
       distribution: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('distribution', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('distribution').inc(1);
 
         return indexer.getSubgraphEntity(Distribution, id, block);
       },
 
       claim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('claim', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('claim').inc(1);
 
         return indexer.getSubgraphEntity(Claim, id, block);
       },
 
       slash: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('slash', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('slash').inc(1);
 
         return indexer.getSubgraphEntity(Slash, id, block);
       },
 
       account: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
         log('account', id, block);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('account').inc(1);
 
         return indexer.getSubgraphEntity(Account, id, block);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
         log('events', blockHash, contractAddress, name);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('events').inc(1);
 
         const block = await indexer.getBlockProgress(blockHash);
         if (!block || !block.isComplete) {
@@ -199,6 +289,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('eventsInRange').inc(1);
 
         const { expected, actual } = await indexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
         if (expected !== actual) {
@@ -211,6 +303,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getStateByCID: async (_: any, { cid }: { cid: string }) => {
         log('getStateByCID', cid);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getStateByCID').inc(1);
 
         const ipldBlock = await indexer.getIPLDBlockByCid(cid);
 
@@ -219,6 +313,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getState: async (_: any, { blockHash, contractAddress, kind = StateKind.Checkpoint }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getState').inc(1);
 
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
 
@@ -227,6 +323,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getSyncStatus: async () => {
         log('getSyncStatus');
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getSyncStatus').inc(1);
 
         return indexer.getSyncStatus();
       }

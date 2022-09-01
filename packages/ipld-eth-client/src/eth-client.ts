@@ -40,7 +40,9 @@ export class EthClient {
   async getStorageAt ({ blockHash, contract, slot }: { blockHash: string, contract: string, slot: string }): Promise<{ value: string, proof: { data: string } }> {
     slot = `0x${padKey(slot)}`;
 
+    console.time(`time:eth-client#getStorageAt-${JSON.stringify({ blockHash, contract, slot })}`);
     const result = await this._getCachedOrFetch('getStorageAt', { blockHash, contract, slot });
+    console.timeEnd(`time:eth-client#getStorageAt-${JSON.stringify({ blockHash, contract, slot })}`);
     const { getStorageAt: { value, cid, ipldBlock } } = result;
 
     return {
@@ -62,46 +64,64 @@ export class EthClient {
   }
 
   async getBlockWithTransactions ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    return this._graphqlClient.query(
+    console.time(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+    const result = await this._graphqlClient.query(
       ethQueries.getBlockWithTransactions,
       {
         blockNumber: blockNumber?.toString(),
         blockHash
       }
     );
+    console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+
+    return result;
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    return this._graphqlClient.query(
+    console.time(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+    const result = await this._graphqlClient.query(
       ethQueries.getBlocks,
       {
         blockNumber: blockNumber?.toString(),
         blockHash
       }
     );
+    console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+
+    return result;
   }
 
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    return this._graphqlClient.query(
+    console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+    const result = await this._graphqlClient.query(
       ethQueries.getFullBlocks,
       {
         blockNumber: blockNumber?.toString(),
         blockHash
       }
     );
+    console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+
+    return result;
   }
 
   async getFullTransaction (txHash: string): Promise<any> {
-    return this._graphqlClient.query(
+    console.time(`time:eth-client#getFullTransaction-${txHash}`);
+    const result = this._graphqlClient.query(
       ethQueries.getFullTransaction,
       {
         txHash
       }
     );
+    console.timeEnd(`time:eth-client#getFullTransaction-${txHash}`);
+
+    return result;
   }
 
   async getBlockByHash (blockHash?: string): Promise<any> {
+    console.time(`time:eth-client#getBlockByHash-${blockHash}`);
     const result = await this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
+    console.timeEnd(`time:eth-client#getBlockByHash-${blockHash}`);
 
     return {
       block: {
@@ -113,7 +133,9 @@ export class EthClient {
   }
 
   async getLogs (vars: Vars): Promise<any> {
+    console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     const result = await this._getCachedOrFetch('getLogs', vars);
+    console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     const {
       getLogs
     } = result;

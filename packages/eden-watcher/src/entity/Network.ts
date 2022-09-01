@@ -2,11 +2,12 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
 import { bigintArrayTransformer, bigintTransformer } from '@vulcanize/util';
 
 @Entity()
+@Index(['blockNumber'])
 export class Network {
   @PrimaryColumn('varchar')
   id!: string;
