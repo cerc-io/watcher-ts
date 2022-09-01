@@ -86,7 +86,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producers: async (_: any, { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number }) => {
-        log('producers', block);
+        log('producers', block, first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producers').inc(1);
 
@@ -155,7 +155,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       blocks: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
-        log('blocks', where, block);
+        log('blocks', block, where, first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('blocks').inc(1);
 
@@ -176,7 +176,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       epoches: async (_: any, { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number }) => {
-        log('epoches', where, block);
+        log('epoches', block, where, first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('epoches').inc(1);
 
@@ -213,7 +213,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       stakers: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
-        log('stakers', where, block);
+        log('stakers', block, where, first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('stakers').inc(1);
 

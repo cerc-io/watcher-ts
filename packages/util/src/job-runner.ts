@@ -79,6 +79,7 @@ export class JobRunner {
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
+    console.time('time:job-runner#_pruneChain');
     const { pruneBlockHeight } = job.data;
 
     log(`Processing chain pruning at ${pruneBlockHeight}`);
@@ -119,6 +120,8 @@ export class JobRunner {
       // Update the canonical block in the SyncStatus.
       await this._indexer.updateSyncStatusCanonicalBlock(newCanonicalBlockHash, pruneBlockHeight);
     }
+
+    console.timeEnd('time:job-runner#_pruneChain');
   }
 
   async _indexBlock (job: any, syncStatus: SyncStatusInterface): Promise<void> {

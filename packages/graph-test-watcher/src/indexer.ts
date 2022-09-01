@@ -661,6 +661,7 @@ export class Indexer implements IPLDIndexerInterface {
     const blockPromise = this._ethClient.getBlockByHash(blockHash);
     let logs: any[];
 
+    console.time('time:indexer#_fetchAndSaveEvents-fetch-logs');
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this._baseIndexer.getWatchedContracts();
 
@@ -682,6 +683,7 @@ export class Indexer implements IPLDIndexerInterface {
     } else {
       ({ logs } = await this._ethClient.getLogs({ blockHash }));
     }
+    console.timeEnd('time:indexer#_fetchAndSaveEvents-fetch-logs');
 
     let [
       { block },
@@ -773,8 +775,10 @@ export class Indexer implements IPLDIndexerInterface {
         parentHash: block.parent.hash
       };
 
+      console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
       const blockProgress = await this._db.saveEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
+      console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 
       return blockProgress;
     } catch (error) {

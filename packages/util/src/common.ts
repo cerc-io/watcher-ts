@@ -67,9 +67,7 @@ export const processBlockByNumber = async (
     });
 
     if (!blocks.length) {
-      console.time('time:common#processBlockByNumber-ipld-eth-server');
       blocks = await indexer.getBlocks({ blockNumber });
-      console.timeEnd('time:common#processBlockByNumber-ipld-eth-server');
     }
 
     if (blocks.length) {
@@ -135,7 +133,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
       log(`Processing events batch from index ${events[0].index} to ${events[0].index + events.length - 1}`);
     }
 
-    console.time('time:common#processBacthEvents-processing_events_batch');
+    console.time('time:common#processBatchEvents-processing_events_batch');
 
     for (let event of events) {
       // Process events in loop
@@ -189,7 +187,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
       block = await indexer.updateBlockProgress(block, event.index);
     }
 
-    console.timeEnd('time:common#processBacthEvents-processing_events_batch');
+    console.timeEnd('time:common#processBatchEvents-processing_events_batch');
   }
 
   if (indexer.processBlockAfterEvents) {
@@ -199,5 +197,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
   }
 
   block.isComplete = true;
+  console.time('time:common#processBatchEvents-updateBlockProgress');
   await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
+  console.timeEnd('time:common#processBatchEvents-updateBlockProgress');
 };
