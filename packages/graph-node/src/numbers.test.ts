@@ -8,6 +8,7 @@ import BN from 'bn.js';
 
 import { GraphDecimal } from '@vulcanize/util';
 import { BaseProvider } from '@ethersproject/providers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { instantiate } from './loader';
 import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
@@ -31,6 +32,7 @@ describe('numbers wasm tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   before(async () => {
     db = getTestDatabase();
@@ -44,6 +46,7 @@ describe('numbers wasm tests', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       filePath,
       dummyGraphData

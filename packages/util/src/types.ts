@@ -112,7 +112,6 @@ export interface IndexerInterface {
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
   processBlockAfterEvents?: (blockHash: string) => Promise<void>
-  getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
 }
 
 export interface IPLDIndexerInterface extends IndexerInterface {

@@ -6,10 +6,11 @@ import assert from 'assert';
 import path from 'path';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
-import { getTestDatabase, getTestIndexer, getTestProvider, getDummyEventData } from '../test/utils';
+import { getTestDatabase, getTestIndexer, getTestProvider, getDummyEventData, getTestEthClient } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import { EventData } from './utils';
@@ -19,6 +20,7 @@ xdescribe('eth-call wasm tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   const contractAddress = process.env.EXAMPLE_CONTRACT_ADDRESS;
   assert(contractAddress);
@@ -40,6 +42,7 @@ xdescribe('eth-call wasm tests', () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
 
     // Create dummy test data.
     dummyEventData = await getDummyEventData();
@@ -51,6 +54,7 @@ xdescribe('eth-call wasm tests', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {
         block: dummyEventData.block,
         contractAddress

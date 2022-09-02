@@ -9,9 +9,10 @@ import { utils } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 const WASM_FILE_PATH = '../build/debug.wasm';
 
@@ -20,6 +21,7 @@ describe('wasm loader tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
   let module: WebAssembly.Module;
   let dummyGraphData: any;
 
@@ -27,6 +29,7 @@ describe('wasm loader tests', () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
     dummyGraphData = getDummyGraphData();
 
     const filePath = path.resolve(__dirname, WASM_FILE_PATH);
@@ -35,6 +38,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       filePath,
       dummyGraphData
@@ -113,6 +117,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       module,
       dummyGraphData

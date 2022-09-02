@@ -6,10 +6,11 @@ import path from 'path';
 import chai, { assert, expect } from 'chai';
 import spies from 'chai-spies';
 import { utils } from 'ethers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { BaseProvider } from '@ethersproject/providers';
 
-import { getDummyEventData, getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyEventData, getDummyGraphData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import abi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 import { instantiate } from './loader';
 import { createEvent, createBlock, Block, EventData } from './utils';
@@ -25,6 +26,7 @@ xdescribe('call handler in mapping code', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   let dummyEventData: EventData;
   let dummyGraphData: any;
@@ -33,6 +35,7 @@ xdescribe('call handler in mapping code', () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
 
     // Create dummy test data.
     dummyEventData = await getDummyEventData();
@@ -71,6 +74,7 @@ xdescribe('call handler in mapping code', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {
         block: dummyEventData.block,
         contractAddress: dummyGraphData.dataSource.address

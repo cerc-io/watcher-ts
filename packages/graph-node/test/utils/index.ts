@@ -75,12 +75,7 @@ export const getTestDatabase = (): Database => {
 };
 
 export const getTestIndexer = (storageLayout?: Map<string, StorageLayout>): Indexer => {
-  const ethClient = new EthClient({
-    gqlEndpoint: IPLD_ETH_SERVER_GQL_URL,
-    cache: undefined
-  });
-
-  return new Indexer(ethClient, storageLayout);
+  return new Indexer(storageLayout);
 };
 
 export const getTestProvider = (): BaseProvider => {
@@ -88,3 +83,8 @@ export const getTestProvider = (): BaseProvider => {
 
   return provider;
 };
+
+export const getTestEthClient = (): EthClient => new EthClient({
+  gqlEndpoint: IPLD_ETH_SERVER_GQL_URL,
+  cache: undefined
+});

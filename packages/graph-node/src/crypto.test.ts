@@ -7,9 +7,10 @@ import { expect } from 'chai';
 import { utils } from 'ethers';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { instantiate } from './loader';
-import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -18,11 +19,13 @@ describe('crypto host api', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
   });
 
   it('should load the subgraph example wasm', async () => {
@@ -33,6 +36,7 @@ describe('crypto host api', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       filePath,
       dummyGraphData

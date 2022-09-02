@@ -6,9 +6,10 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { instantiate } from './loader';
-import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -17,12 +18,14 @@ describe('ethereum ABI encode decode', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
   let encoded: string;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
   });
 
   it('should load the subgraph example wasm', async () => {
@@ -33,6 +36,7 @@ describe('ethereum ABI encode decode', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       filePath,
       dummyGraphData

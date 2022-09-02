@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
 import { utils, BigNumber } from 'ethers';
 
 interface Storage {
@@ -109,6 +110,55 @@ export const getValueByType = (storageValue: string, typeLabel: string): bigint 
 };
 
 /**
+ * Function to get slot for mapping types.
+ * @param mappingSlot
+ * @param key
+ */
+export const getMappingSlot = (types: Types, mappingSlot: string, keyType: string, key: MappingKey): string => {
+  const { encoding, label: typeLabel } = types[keyType];
+
+  // If key is boolean type convert to 1 or 0 which is the way value is stored in memory.
+  if (typeLabel === 'bool') {
+    key = key ? 1 : 0;
+  }
+
+  // If key is string convert to hex string representation.
+  if (typeLabel === 'string' && typeof key === 'string') {
+    key = utils.hexlify(utils.toUtf8Bytes(key));
+  }
+
+  // If key is still boolean type the argument passed as key is invalid.
+  if (typeof key === 'boolean') {
+    throw new Error('Invalid key.');
+  }
+
+  // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
+  const mappingSlotPadded = utils.hexZeroPad(mappingSlot, 32);
+
+  const keyPadded = encoding === 'bytes'
+    ? utils.hexlify(key)
+    : utils.hexZeroPad(utils.hexlify(key), 32);
+
+  // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#mappings-and-dynamic-arrays
+  const fullKey = utils.concat([
+    keyPadded,
+    mappingSlotPadded
+  ]);
+
+  const slot = utils.keccak256(fullKey);
+  return slot;
+};
+
+export const getBytesLength = async (storageLayout: StorageLayout, getStorageAt: GetStorageAt, blockHash: string, address: string, variableName: string): Promise<number> => {
+  const { slot, type, types } = getStorageInfo(storageLayout, variableName);
+  const { encoding } = types[type];
+  assert(encoding === 'bytes');
+  const { value } = await getStorageAt({ blockHash, contract: address, slot });
+
+  return getBytesLengthFromValue(value);
+};
+
+/**
  * Function to get decoded value according to type and encoding.
  * @param getStorageAt
  * @param blockHash
@@ -181,46 +231,6 @@ const getDecodedValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
     value: getValueByType(value, typeLabel),
     proof
   };
-};
-
-/**
- * Function to get slot for mapping types.
- * @param mappingSlot
- * @param key
- */
-export const getMappingSlot = (types: Types, mappingSlot: string, keyType: string, key: MappingKey): string => {
-  const { encoding, label: typeLabel } = types[keyType];
-
-  // If key is boolean type convert to 1 or 0 which is the way value is stored in memory.
-  if (typeLabel === 'bool') {
-    key = key ? 1 : 0;
-  }
-
-  // If key is string convert to hex string representation.
-  if (typeLabel === 'string' && typeof key === 'string') {
-    key = utils.hexlify(utils.toUtf8Bytes(key));
-  }
-
-  // If key is still boolean type the argument passed as key is invalid.
-  if (typeof key === 'boolean') {
-    throw new Error('Invalid key.');
-  }
-
-  // https://github.com/ethers-io/ethers.js/issues/1079#issuecomment-703056242
-  const mappingSlotPadded = utils.hexZeroPad(mappingSlot, 32);
-
-  const keyPadded = encoding === 'bytes'
-    ? utils.hexlify(key)
-    : utils.hexZeroPad(utils.hexlify(key), 32);
-
-  // https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html#mappings-and-dynamic-arrays
-  const fullKey = utils.concat([
-    keyPadded,
-    mappingSlotPadded
-  ]);
-
-  const slot = utils.keccak256(fullKey);
-  return slot;
 };
 
 const getDynamicArrayInfo = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string, offset: number, numberOfBytes: string) => {
@@ -351,20 +361,8 @@ const getInplaceValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
  */
 const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string) => {
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
-  let length = 0;
+  const length = getBytesLengthFromValue(value);
   const proofs = [JSON.parse(proof.data)];
-
-  // Get length of bytes stored.
-  if (BigNumber.from(utils.hexDataSlice(value, 0, 1)).isZero()) {
-    // If first byte is not set, get length directly from the zero padded byte array.
-    const slotValue = BigNumber.from(value);
-    length = slotValue.sub(1).div(2).toNumber();
-  } else {
-    // If first byte is set the length is lesser than 32 bytes.
-    // Length of the value can be computed from the last byte.
-    const lastByteHex = utils.hexDataSlice(value, 31, 32);
-    length = BigNumber.from(lastByteHex).div(2).toNumber();
-  }
 
   // Get value from the byte array directly if length is less than 32.
   if (length < 32) {
@@ -403,4 +401,18 @@ const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, addr
       data: JSON.stringify(proofs)
     }
   };
+};
+
+const getBytesLengthFromValue = (value: string): number => {
+  // Get length of bytes stored.
+  if (BigNumber.from(utils.hexDataSlice(value, 0, 1)).isZero()) {
+    // If first byte is not set, get length directly from the zero padded byte array.
+    const slotValue = BigNumber.from(value);
+    return slotValue.sub(1).div(2).toNumber();
+  } else {
+    // If first byte is set the length is lesser than 32 bytes.
+    // Length of the value can be computed from the last byte.
+    const lastByteHex = utils.hexDataSlice(value, 31, 32);
+    return BigNumber.from(lastByteHex).div(2).toNumber();
+  }
 };

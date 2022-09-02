@@ -16,6 +16,8 @@ import debug from 'debug';
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
 import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, jsonBigIntStringReplacer } from '@vulcanize/util';
+import { EthClient } from '@vulcanize/ipld-eth-client';
+import { getBytesLength, getStorageValue } from '@vulcanize/solidity-mapper';
 
 import { TypeId, Level } from './types';
 import {
@@ -55,6 +57,7 @@ export const instantiate = async (
   database: Database,
   indexer: IndexerInterface,
   provider: BaseProvider,
+  ethClient: EthClient,
   context: Context,
   filePathOrModule: string | WebAssembly.Module,
   data: GraphData
@@ -267,7 +270,7 @@ export const instantiate = async (
 
         return toEthereumValue(instanceExports, utils.ParamType.from(typesString), decoded);
       },
-      'ethereum.storageValue': async (variable: number, mappingKeys: number) => {
+      'ethereum.storageValue': async (variable: number, mappingKeys: number, bytesLength: number) => {
         assert(context.contractAddress);
         const addressStringPtr = await __newString(context.contractAddress);
         const addressString = __getString(addressStringPtr);
@@ -284,23 +287,39 @@ export const instantiate = async (
         const storageLayout = indexer.storageLayoutMap.get(dataSource.name);
         assert(storageLayout);
         assert(context.block);
+        let value: any;
 
         console.time(`time:loader#ethereum.storageValue-${variableString}`);
-        const result = await indexer.getStorageValue(
-          storageLayout,
-          context.block.blockHash,
-          addressString,
-          variableString,
-          ...mappingKeyValues
-        );
+        if (bytesLength) {
+          value = await getBytesLength(
+            storageLayout,
+            ethClient.getStorageAt.bind(ethClient),
+            context.block.blockHash,
+            addressString,
+            variableString
+          );
+        } else {
+          ({ value } = await getStorageValue(
+            storageLayout,
+            ethClient.getStorageAt.bind(ethClient),
+            context.block.blockHash,
+            addressString,
+            variableString,
+            ...mappingKeyValues
+          ));
+        }
         console.timeEnd(`time:loader#ethereum.storageValue-${variableString}`);
 
-        const storageValueType = getStorageValueType(storageLayout, variableString, mappingKeyValues);
+        let storageValueType = getStorageValueType(storageLayout, variableString, mappingKeyValues);
+
+        if (bytesLength) {
+          storageValueType = utils.ParamType.from('uint');
+        }
 
         return toEthereumValue(
           instanceExports,
           storageValueType,
-          result.value
+          value
         );
       }
     },

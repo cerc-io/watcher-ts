@@ -9,13 +9,14 @@ import chai from 'chai';
 import spies from 'chai-spies';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 import { instantiate } from './loader';
 import { createEvent, Block, createBlock, EventData } from './utils';
 import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.json';
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
-import { getDummyEventData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyEventData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
@@ -29,6 +30,7 @@ xdescribe('eden wasm loader tests', async () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   let dummyEventData: EventData;
 
@@ -36,6 +38,7 @@ xdescribe('eden wasm loader tests', async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
 
     // Create dummy test data.
     dummyEventData = await getDummyEventData();
@@ -90,6 +93,7 @@ xdescribe('eden wasm loader tests', async () => {
         db,
         indexer,
         provider,
+        ethClient,
         {
           block: dummyEventData.block,
           contractAddress
@@ -210,6 +214,7 @@ xdescribe('eden wasm loader tests', async () => {
       ({ exports } = await instantiate(db,
         indexer,
         provider,
+        ethClient,
         {
           block: dummyEventData.block,
           contractAddress
@@ -328,6 +333,7 @@ xdescribe('eden wasm loader tests', async () => {
         db,
         indexer,
         provider,
+        ethClient,
         {
           block: dummyEventData.block,
           contractAddress

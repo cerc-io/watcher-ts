@@ -9,9 +9,10 @@ import { utils, BigNumber } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
-import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { getDummyGraphData, getTestDatabase, getTestEthClient, getTestIndexer, getTestProvider } from '../test/utils';
 import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
+import { EthClient } from '@vulcanize/ipld-eth-client';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
@@ -20,11 +21,13 @@ describe('typeConversion wasm tests', () => {
   let db: Database;
   let indexer: Indexer;
   let provider: BaseProvider;
+  let ethClient: EthClient;
 
   before(async () => {
     db = getTestDatabase();
     indexer = getTestIndexer();
     provider = getTestProvider();
+    ethClient = getTestEthClient();
 
     const dummyGraphData = getDummyGraphData();
     const filePath = path.resolve(__dirname, EXAMPLE_WASM_FILE_PATH);
@@ -33,6 +36,7 @@ describe('typeConversion wasm tests', () => {
       db,
       indexer,
       provider,
+      ethClient,
       {},
       filePath,
       dummyGraphData
