@@ -251,7 +251,7 @@ export class Database {
       numEvents,
       numProcessedEvents: 0,
       lastProcessedEventIndex: -1,
-      isComplete: (numEvents === 0)
+      isComplete: false
     });
 
     const blockProgress = await blockRepo.save(entity);

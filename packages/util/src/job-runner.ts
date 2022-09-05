@@ -30,6 +30,7 @@ export class JobRunner {
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
   _endBlockProcessTimer?: () => void
+  _shutDown = false
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -76,6 +77,43 @@ export class JobRunner {
     }
 
     await this._jobQueue.markComplete(job);
+  }
+
+  handleShutdown () {
+    process.on('SIGINT', this._processShutdown.bind(this));
+    process.on('SIGTERM', this._processShutdown.bind(this));
+  }
+
+  async _processShutdown () {
+    try {
+      this._shutDown = true;
+      const syncStatus = await this._indexer.getSyncStatus();
+
+      if (syncStatus) {
+        const { chainHeadBlockHash } = syncStatus;
+        const blockProgress = await this._indexer.getBlockProgress(chainHeadBlockHash);
+
+        if (blockProgress && blockProgress.isComplete) {
+          this._jobQueue.stop();
+          process.exit(0);
+        }
+      } else {
+        this._jobQueue.stop();
+        process.exit(0);
+      }
+    } catch (error) {
+      log(error);
+      process.exit(1);
+    }
+  }
+
+  async _exitOnCompleteBlock (blockHash: string): Promise<void> {
+    const blockProgress = await this._indexer.getBlockProgress(blockHash);
+
+    if (blockProgress && blockProgress.isComplete) {
+      console.log('Exit if block complete');
+      process.exit(0);
+    }
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
@@ -267,6 +305,12 @@ export class JobRunner {
     }
 
     this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
+
+    if (this._shutDown) {
+      log(`Graceful shutdown after processing block ${block.blockNumber}`);
+      this._jobQueue.stop();
+      process.exit(0);
+    }
   }
 
   async _updateWatchedContracts (job: any): Promise<void> {
