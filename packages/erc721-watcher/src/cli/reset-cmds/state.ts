@@ -71,7 +71,7 @@ export const handler = async (argv: any): Promise<void> => {
     const entities = [BlockProgress, SupportsInterface, BalanceOf, OwnerOf, GetApproved, IsApprovedForAll, Name, Symbol, TokenURI, _Name, _Symbol, _Owners, _Balances, _TokenApprovals, _OperatorApprovals];
 
     for (const entity of entities) {
-      await db.removeEntities<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
+      await db.deleteEntitiesByConditions<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
     }
 
     const syncStatus = await indexer.getSyncStatus();

@@ -474,6 +474,10 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
   }
 
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+    await this._baseDatabase.deleteEntitiesByConditions(queryRunner, entity, findConditions);
+  }
+
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseDatabase.getAncestorAtDepth(blockHash, depth);
   }
