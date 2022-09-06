@@ -28,6 +28,12 @@ export const fillBlocks = async (
 ): Promise<any> => {
   let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE } = argv;
   assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
+
+  if (prefetch) {
+    await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
+    return;
+  }
+
   const syncStatus = await indexer.getSyncStatus();
 
   if (syncStatus) {
@@ -36,11 +42,6 @@ export const fillBlocks = async (
     }
 
     startBlock = syncStatus.chainHeadBlockNumber + 1;
-  }
-
-  if (prefetch) {
-    await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
-    return;
   }
 
   await eventWatcher.initBlockProcessingOnCompleteHandler();
@@ -131,6 +132,4 @@ const prefetchBlocks = async (
       process.exit(0);
     }
   }
-
-  console.timeEnd('time:fill#fillBlocks-process_blocks');
 };
