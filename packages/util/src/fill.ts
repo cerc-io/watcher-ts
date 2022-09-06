@@ -32,10 +32,8 @@ export const fillBlocks = async (
   const syncStatus = await indexer.getSyncStatus();
 
   if (prefetch) {
-    if (syncStatus) {
-      if (startBlock <= syncStatus.chainHeadBlockNumber) {
-        throw new Error(`startBlock should be greater than chain head ${syncStatus.chainHeadBlockNumber}`);
-      }
+    if (syncStatus && startBlock <= syncStatus.chainHeadBlockNumber) {
+      throw new Error(`startBlock should be greater than chain head ${syncStatus.chainHeadBlockNumber}`);
     }
 
     await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
