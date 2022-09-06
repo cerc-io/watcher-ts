@@ -26,7 +26,9 @@ const log = debug('vulcanize:server');
 export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
-  }).options({
+  }).env(
+    'FILL'
+  ).options({
     configFile: {
       alias: 'f',
       type: 'string',
@@ -62,10 +64,10 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
   {{#if (subgraphPath)}}
-  
+
   const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
   await graphDb.init();
-  
+
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
   {{/if}}
 

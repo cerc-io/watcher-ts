@@ -22,7 +22,9 @@ const log = debug('vulcanize:server');
 export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
-  }).options({
+  }).env(
+    'FILL'
+  ).options({
     configFile: {
       alias: 'f',
       type: 'string',

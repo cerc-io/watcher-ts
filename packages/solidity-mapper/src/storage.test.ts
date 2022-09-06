@@ -514,6 +514,7 @@ describe('Get value from storage', () => {
       const bytesLength = Math.floor(Math.random() * 64);
       return ethers.utils.hexlify(ethers.utils.randomBytes(bytesLength));
     });
+    console.log('bytesArray', bytesArray);
 
     const addressArray = generateDummyAddresses(4);
 
@@ -647,6 +648,7 @@ describe('Get value from storage', () => {
     });
 
     it('get value for fixed size arrays of dynamic byte array type', async () => {
+      console.log('testFixedArrays.address', testFixedArrays.address);
       const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'bytesArray');
       expect(value).to.eql(bytesArray);
       const proofData = JSON.parse(proof.data);
@@ -750,6 +752,7 @@ describe('Get value from storage', () => {
     });
 
     it('get value of dynamic bytes type array by index', async () => {
+      console.log('testFixedArrays.address', testFixedArrays.address);
       const arrayIndex = 2;
       const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testFixedArrays.address, 'bytesArray', arrayIndex);
       expect(value).to.eql(bytesArray[arrayIndex]);
