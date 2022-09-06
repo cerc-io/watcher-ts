@@ -23,7 +23,7 @@ export const main = async (): Promise<any> => {
   const argv = await yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).env(
-    'PREFETCH'
+    'FILL'
   ).options({
     configFile: {
       alias: 'f',

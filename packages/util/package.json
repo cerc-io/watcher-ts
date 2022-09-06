@@ -37,6 +37,8 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "build": "tsc"
+    "build": "yarn clean && tsc && yarn copy-assets",
+    "clean": "rm -rf ./dist",
+    "copy-assets": "copyfiles -u 1 src/**/*.gql dist/"
   }
 }

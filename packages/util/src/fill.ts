@@ -29,12 +29,18 @@ export const fillBlocks = async (
   let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE } = argv;
   assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
 
+  const syncStatus = await indexer.getSyncStatus();
+
   if (prefetch) {
+    if (syncStatus) {
+      if (startBlock <= syncStatus.chainHeadBlockNumber) {
+        throw new Error(`startBlock should be greater than chain head ${syncStatus.chainHeadBlockNumber}`);
+      }
+    }
+
     await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
     return;
   }
-
-  const syncStatus = await indexer.getSyncStatus();
 
   if (syncStatus) {
     if (startBlock > syncStatus.chainHeadBlockNumber + 1) {
