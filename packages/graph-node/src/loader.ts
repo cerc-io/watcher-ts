@@ -141,10 +141,10 @@ export const instantiate = async (
           [dbData.id]: JSON.parse(JSON.stringify(dbData, jsonBigIntStringReplacer))
         };
 
-        // Create an auto-diff.
-        assert(indexer.createDiffStaged);
+        // Update the in-memory subgraph state.
+        assert(indexer.updateSubgraphState);
         assert(context.contractAddress);
-        await indexer.createDiffStaged(context.contractAddress, context.block.blockHash, diffData);
+        indexer.updateSubgraphState(context.contractAddress, diffData);
       },
 
       'log.log': (level: number, msg: number) => {

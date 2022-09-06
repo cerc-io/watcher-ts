@@ -113,6 +113,7 @@ export interface IndexerInterface {
   processBlock?: (blockHash: string, blockNumber: number) => Promise<void>
   processBlockAfterEvents?: (blockHash: string) => Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
+  updateSubgraphState?: (contractAddress: string, data: any) => void
 }
 
 export interface IPLDIndexerInterface extends IndexerInterface {
