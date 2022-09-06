@@ -89,8 +89,8 @@ export class JobRunner {
     this._shutDown = true;
     this._signalCount++;
 
-    if (this._signalCount >= 3) {
-      // Forceful exit on receiving signal for the 3rd time.
+    if (this._signalCount >= 3 || process.env.CHILD_PROCESS === 'true') {
+      // Forceful exit on receiving signal for the 3rd time or if job-runner is a child process.
       this._jobQueue.stop();
       process.exit(1);
     }
