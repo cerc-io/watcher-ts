@@ -51,6 +51,7 @@ export class JobRunner {
     await this.subscribeBlockCheckpointQueue();
     await this.subscribeHooksQueue();
     await this.subscribeIPFSQueue();
+    this._baseJobRunner.handleShutdown();
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {

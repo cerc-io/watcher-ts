@@ -57,7 +57,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   try {
     for (const entity of [BlockProgress, Allowance, Balance]) {
-      await db.removeEntities<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
+      await db.deleteEntitiesByConditions<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
     }
 
     if (syncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {

@@ -251,7 +251,7 @@ export class Database {
       numEvents,
       numProcessedEvents: 0,
       lastProcessedEventIndex: -1,
-      isComplete: (numEvents === 0)
+      isComplete: false
     });
 
     const blockProgress = await blockRepo.save(entity);
@@ -315,6 +315,12 @@ export class Database {
 
     const entities = await repo.find(findConditions);
     await repo.remove(entities);
+  }
+
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+    const repo = queryRunner.manager.getRepository(entity);
+
+    await repo.delete(findConditions);
   }
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {

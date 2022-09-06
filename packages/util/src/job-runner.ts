@@ -30,6 +30,8 @@ export class JobRunner {
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
   _endBlockProcessTimer?: () => void
+  _shutDown = false
+  _signalCount = 0
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -76,6 +78,22 @@ export class JobRunner {
     }
 
     await this._jobQueue.markComplete(job);
+  }
+
+  handleShutdown () {
+    process.on('SIGINT', this._processShutdown.bind(this));
+    process.on('SIGTERM', this._processShutdown.bind(this));
+  }
+
+  async _processShutdown () {
+    this._shutDown = true;
+    this._signalCount++;
+
+    if (this._signalCount >= 3 || process.env.YARN_CHILD_PROCESS === 'true') {
+      // Forceful exit on receiving signal for the 3rd time or if job-runner is a child process of yarn.
+      this._jobQueue.stop();
+      process.exit(1);
+    }
   }
 
   async _pruneChain (job: any, syncStatus: SyncStatusInterface): Promise<void> {
@@ -267,6 +285,12 @@ export class JobRunner {
     }
 
     this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
+
+    if (this._shutDown) {
+      log(`Graceful shutdown after processing block ${block.blockNumber}`);
+      this._jobQueue.stop();
+      process.exit(0);
+    }
   }
 
   async _updateWatchedContracts (job: any): Promise<void> {

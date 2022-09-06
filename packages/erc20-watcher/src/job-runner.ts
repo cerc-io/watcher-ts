@@ -42,6 +42,7 @@ export class JobRunner {
   async start (): Promise<void> {
     await this.subscribeBlockProcessingQueue();
     await this.subscribeEventProcessingQueue();
+    this._baseJobRunner.handleShutdown();
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
