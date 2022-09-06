@@ -31,6 +31,7 @@ export class JobRunner {
   _blockProcessStartTime?: Date
   _endBlockProcessTimer?: () => void
   _shutDown = false
+  _signalCount = 0
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -85,34 +86,13 @@ export class JobRunner {
   }
 
   async _processShutdown () {
-    try {
-      this._shutDown = true;
-      const syncStatus = await this._indexer.getSyncStatus();
+    this._shutDown = true;
+    this._signalCount++;
 
-      if (syncStatus) {
-        const { chainHeadBlockHash } = syncStatus;
-        const blockProgress = await this._indexer.getBlockProgress(chainHeadBlockHash);
-
-        if (blockProgress && blockProgress.isComplete) {
-          this._jobQueue.stop();
-          process.exit(0);
-        }
-      } else {
-        this._jobQueue.stop();
-        process.exit(0);
-      }
-    } catch (error) {
-      log(error);
+    if (this._signalCount >= 3) {
+      // Forceful exit on receiving signal for the 3rd time.
+      this._jobQueue.stop();
       process.exit(1);
-    }
-  }
-
-  async _exitOnCompleteBlock (blockHash: string): Promise<void> {
-    const blockProgress = await this._indexer.getBlockProgress(blockHash);
-
-    if (blockProgress && blockProgress.isComplete) {
-      console.log('Exit if block complete');
-      process.exit(0);
     }
   }
 

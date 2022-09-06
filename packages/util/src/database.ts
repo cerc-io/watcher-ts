@@ -317,6 +317,12 @@ export class Database {
     await repo.remove(entities);
   }
 
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+    const repo = queryRunner.manager.getRepository(entity);
+
+    await repo.delete(findConditions);
+  }
+
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
