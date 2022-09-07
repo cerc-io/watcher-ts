@@ -8,6 +8,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { utils, providers } from 'ethers';
 import Decimal from 'decimal.js';
+import debug from 'debug';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
@@ -16,6 +17,9 @@ import { Config } from './config';
 import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
+import { getCachedBlockSize } from './block-size-cache';
+
+const log = debug('vulcanize:misc');
 
 /**
  * Method to wait for specified time.
@@ -184,16 +188,14 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
 
   assert(fullBlock.blockByMhKey);
 
-  // Deecode the header data.
+  // Decode the header data.
   const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
   assert(header);
 
   // TODO: Calculate size from rlp encoded data.
   // Get block info from JSON RPC API provided by ipld-eth-server.
   const provider = ethProvider as providers.JsonRpcProvider;
-  console.time('time:misc#getFullBlock-eth_getBlockByHash');
-  const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
-  console.timeEnd('time:misc#getFullBlock-eth_getBlockByHash');
+  const size = await getCachedBlockSize(provider, blockHash, Number(fullBlock.blockNumber));
 
   return {
     headerId: fullBlock.id,

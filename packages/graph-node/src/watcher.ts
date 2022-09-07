@@ -124,6 +124,7 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
+    // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
       this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash);
     }
@@ -185,9 +186,13 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string) {
-    const blockData = await getFullBlock(this._ethClient, this._ethProvider, blockHash);
+    // Check if block data is already fetched in handleEvent method for the same block.
+    if (!this._context.block || this._context.block.blockHash !== blockHash) {
+      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash);
+    }
 
-    this._context.block = blockData;
+    const blockData = this._context.block;
+    assert(blockData);
 
     // Clear transactions map on handling new block.
     this._transactionsMap.clear();
@@ -195,7 +200,7 @@ export class GraphWatcher {
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
       // Reinstantiate WASM after every N blocks.
-      if (blockData.blockNumber % this._wasmRestartBlocksInterval === 0) {
+      if (Number(blockData.blockNumber) % this._wasmRestartBlocksInterval === 0) {
         // The WASM instance allocates memory as required and the limit is 4GB.
         // https://stackoverflow.com/a/40453962
         // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
@@ -227,7 +232,7 @@ export class GraphWatcher {
         assert(this._indexer?.getContractsByKind);
         const watchedContracts = this._indexer.getContractsByKind(dataSource.name);
 
-        contractAddressList = watchedContracts.filter(contract => blockData.blockNumber >= contract.startingBlock)
+        contractAddressList = watchedContracts.filter(contract => Number(blockData.blockNumber) >= contract.startingBlock)
           .map(contract => contract.address);
       }
 

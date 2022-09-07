@@ -74,9 +74,7 @@ export const instantiate = async (
         const entityId = __getString(id);
 
         assert(context.block);
-        console.time(`time:loader#index.store.get-db-${entityName}`);
         const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
-        console.timeEnd(`time:loader#index.store.get-db-${entityName}`);
 
         if (!entityData) {
           return null;
@@ -97,9 +95,7 @@ export const instantiate = async (
 
         assert(context.block);
         let dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
-        console.time(`time:loader#index.store.set-db-${entityName}`);
         await database.saveEntity(entityName, dbData);
-        console.timeEnd(`time:loader#index.store.set-db-${entityName}`);
 
         // Resolve any field name conflicts in the dbData for auto-diff.
         dbData = resolveEntityFieldConflicts(dbData);
