@@ -971,6 +971,19 @@ export class Indexer implements IPLDIndexerInterface {
     });
   }
 
+  async _dumpSubgraphState (blockHash: string): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
+  }
+
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     assert(blockHash);
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
@@ -1103,15 +1116,5 @@ export class Indexer implements IPLDIndexerInterface {
     } finally {
       await dbTx.release();
     }
-  }
-
-  async _dumpSubgraphState (blockHash: string): Promise<void> {
-    // Create a diff for each contract in the subgraph state map.
-    this._subgraphStateMap.forEach(async (value: boolean, key: string) => {
-      await this.createDiffStaged(key, blockHash, value);
-    });
-
-    // Reset the subgraph state map.
-    this._subgraphStateMap = new Map();
   }
 }
