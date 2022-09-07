@@ -7,6 +7,7 @@ import debug from 'debug';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
+import _ from 'lodash';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -119,7 +120,9 @@ export class Indexer implements IPLDIndexerInterface {
   {{#if (subgraphPath)}}
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
-  
+
+  _subgraphStateMap: Map<string, any>
+
   {{/if}}
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue{{#if (subgraphPath)}}, graphWatcher: GraphWatcher{{/if}}) {
     assert(db);
@@ -164,6 +167,8 @@ export class Indexer implements IPLDIndexerInterface {
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
+
+    this._subgraphStateMap = new Map();
     {{/if}}
   }
 
@@ -462,6 +467,9 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlockAfterEvents (blockHash: string): Promise<void> {
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash);
+
+    // Persist subgraph state to the DB.
+    await this._dumpSubgraphState(blockHash);
   }
 
   {{/if}}
@@ -473,7 +481,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     const logDescription = contract.parseLog({ data, topics });
 
-    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription)
+    const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return {
       eventName,
@@ -654,9 +662,17 @@ export class Indexer implements IPLDIndexerInterface {
     return this._entityTypesMap;
   }
 
-  {{/if}}
+  getRelationsMap (): Map<any, { [key: string]: any }> {
+    return this._relationsMap;
+  }
 
-  {{#if (subgraphPath)}}
+  updateSubgraphState (contractAddress: string, data: any): void {
+    // Update the subgraph state for a given contract.
+    const oldData = this._subgraphStateMap.get(contractAddress);
+    const updatedData = _.merge(oldData, data);
+    this._subgraphStateMap.set(contractAddress, updatedData);
+  }
+
   _populateEntityTypesMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     this._entityTypesMap.set('{{subgraphEntity.className}}', {
@@ -671,9 +687,7 @@ export class Indexer implements IPLDIndexerInterface {
     });
   {{/each}}
   }
-  {{/if}}
 
-  {{#if (subgraphPath)}}
   _populateRelationsMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     {{#if subgraphEntity.relations}}
@@ -695,6 +709,19 @@ export class Indexer implements IPLDIndexerInterface {
     });
     {{/if}}
   {{/each}}
+  }
+
+  async _dumpSubgraphState (blockHash: string): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
   }
   {{/if}}
 
@@ -718,8 +745,8 @@ export class Indexer implements IPLDIndexerInterface {
 
       // Flatten logs by contract and sort by index.
       logs = contractlogs.map(data => {
-          return data.logs;
-        }).flat()
+        return data.logs;
+      }).flat()
         .sort((a, b) => {
           return a.index - b.index;
         });
@@ -730,7 +757,7 @@ export class Indexer implements IPLDIndexerInterface {
 
     let [
       { block },
-      { 
+      {
         allEthHeaderCids: {
           nodes: [
             {

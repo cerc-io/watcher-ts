@@ -36,7 +36,7 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
   assert(indexer);
   assert(blockHash);
 
-  // Use indexer.createStateDiff() method to create a custom diff.
+  // Use indexer.createDiff() method to save custom state diff(s).
 }
 
 /**

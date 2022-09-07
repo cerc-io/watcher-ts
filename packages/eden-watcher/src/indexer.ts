@@ -7,6 +7,7 @@ import debug from 'debug';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
+import _ from 'lodash';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -119,6 +120,8 @@ export class Indexer implements IPLDIndexerInterface {
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
+  _subgraphStateMap: Map<string, any>
+
   constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher: GraphWatcher) {
     assert(db);
     assert(ethClient);
@@ -165,6 +168,8 @@ export class Indexer implements IPLDIndexerInterface {
 
     this._relationsMap = new Map();
     this._populateRelationsMap();
+
+    this._subgraphStateMap = new Map();
   }
 
   get serverConfig (): ServerConfig {
@@ -401,6 +406,13 @@ export class Indexer implements IPLDIndexerInterface {
     await this._graphWatcher.handleBlock(blockHash);
 
     console.timeEnd('time:indexer#processBlockAfterEvents-mapping_code');
+
+    console.time('time:indexer#processBlockAfterEvents-dump_subgraph_state');
+
+    // Persist subgraph state to the DB.
+    await this._dumpSubgraphState(blockHash);
+
+    console.timeEnd('time:indexer#processBlockAfterEvents-dump_subgraph_state');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -589,6 +601,13 @@ export class Indexer implements IPLDIndexerInterface {
 
   getRelationsMap (): Map<any, { [key: string]: any }> {
     return this._relationsMap;
+  }
+
+  updateSubgraphState (contractAddress: string, data: any): void {
+    // Update the subgraph state for a given contract.
+    const oldData = this._subgraphStateMap.get(contractAddress);
+    const updatedData = _.merge(oldData, data);
+    this._subgraphStateMap.set(contractAddress, updatedData);
   }
 
   _populateEntityTypesMap (): void {
@@ -950,6 +969,19 @@ export class Indexer implements IPLDIndexerInterface {
         field: 'account'
       }
     });
+  }
+
+  async _dumpSubgraphState (blockHash: string): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
   }
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
