@@ -8,6 +8,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { utils, providers } from 'ethers';
 import Decimal from 'decimal.js';
+import debug from 'debug';
 
 import { EthClient } from '@vulcanize/ipld-eth-client';
 
@@ -16,6 +17,11 @@ import { Config } from './config';
 import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
+
+const log = debug('vulcanize:misc');
+
+const BLOCK_SIZE_CACHE_BUFFER = 10;
+const BLOCK_SIZE_MAP_CLEAR_INTERVAL = 15;
 
 /**
  * Method to wait for specified time.
@@ -191,9 +197,7 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
   // TODO: Calculate size from rlp encoded data.
   // Get block info from JSON RPC API provided by ipld-eth-server.
   const provider = ethProvider as providers.JsonRpcProvider;
-  console.time('time:misc#getFullBlock-eth_getBlockByHash');
-  const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
-  console.timeEnd('time:misc#getFullBlock-eth_getBlockByHash');
+  const size = await getCachedBlockSize(provider, blockHash, Number(fullBlock.blockNumber));
 
   return {
     headerId: fullBlock.id,
@@ -247,4 +251,52 @@ export const jsonBigIntStringReplacer = (_: string, value: any) => {
   }
 
   return value;
+};
+
+const blockSizeMap: Map<string, { size: string, blockNumber: number }> = new Map();
+let blockSizeMapLatestHeight = -1;
+
+const getCachedBlockSize = async (provider: providers.JsonRpcProvider, blockHash: string, blockNumber: number): Promise<string> => {
+  const block = blockSizeMap.get(blockHash);
+  cacheBlockSizesAsync(provider, blockNumber + 1);
+
+  if (!block) {
+    console.time(`time:misc#getCachedBlockSize-eth_getBlockByHash-${blockNumber}`);
+    const { size } = await provider.send('eth_getBlockByHash', [blockHash, false]);
+    console.timeEnd(`time:misc#getCachedBlockSize-eth_getBlockByHash-${blockNumber}`);
+
+    return size;
+  }
+
+  return block.size;
+};
+
+const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNumber: number): Promise<void> => {
+  const endBlockHeight = blockNumber + BLOCK_SIZE_CACHE_BUFFER;
+
+  if (blockSizeMapLatestHeight < 0) {
+    blockSizeMapLatestHeight = blockNumber;
+  }
+
+  if (endBlockHeight > blockSizeMapLatestHeight) {
+    // Start prefetching blocks after latest height in blockSizeMap.
+    for (let i = blockSizeMapLatestHeight + 1; i <= endBlockHeight; i++) {
+      console.time(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
+      const { size, hash } = await provider.send('eth_getBlockByNumber', [utils.hexlify(i), false]);
+      console.timeEnd(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
+      blockSizeMap.set(hash, { size, blockNumber: i });
+      blockSizeMapLatestHeight = i;
+    }
+  }
+
+  // Clear previous blocks from map.
+  if (blockNumber % BLOCK_SIZE_MAP_CLEAR_INTERVAL === 0) {
+    log(`cacheBlockSizesAsync-clear-map-below-${blockNumber}`);
+    blockSizeMap.forEach((value, blockHash, map) => {
+      if (value.blockNumber < blockNumber) {
+        // Clear below height blockNumber from map.
+        map.delete(blockHash);
+      }
+    });
+  }
 };
