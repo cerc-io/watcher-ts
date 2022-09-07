@@ -124,6 +124,7 @@ export class GraphWatcher {
   async handleEvent (eventData: any) {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
+    // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
       this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash);
     }
@@ -185,6 +186,7 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string) {
+    // Check if block data is already fetched in handleEvent method for the same block.
     if (!this._context.block || this._context.block.blockHash !== blockHash) {
       this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash);
     }
