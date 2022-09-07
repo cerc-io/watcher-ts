@@ -21,7 +21,7 @@ import * as EthDecoder from './eth';
 const log = debug('vulcanize:misc');
 
 const BLOCK_SIZE_CACHE_BUFFER = 10;
-const BLOCK_SIZE_MAP_CLEAR_INTERVAL = 15;
+const BLOCK_SIZE_MAP_CLEAR_INTERVAL = 50;
 
 /**
  * Method to wait for specified time.
@@ -258,7 +258,7 @@ let blockSizeMapLatestHeight = -1;
 
 const getCachedBlockSize = async (provider: providers.JsonRpcProvider, blockHash: string, blockNumber: number): Promise<string> => {
   const block = blockSizeMap.get(blockHash);
-  cacheBlockSizesAsync(provider, blockNumber + 1);
+  cacheBlockSizesAsync(provider, blockNumber);
 
   if (!block) {
     console.time(`time:misc#getCachedBlockSize-eth_getBlockByHash-${blockNumber}`);
@@ -279,13 +279,15 @@ const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNu
   }
 
   if (endBlockHeight > blockSizeMapLatestHeight) {
+    const startBlockHeight = blockSizeMapLatestHeight + 1;
+    blockSizeMapLatestHeight = endBlockHeight;
+
     // Start prefetching blocks after latest height in blockSizeMap.
-    for (let i = blockSizeMapLatestHeight + 1; i <= endBlockHeight; i++) {
+    for (let i = startBlockHeight; i <= endBlockHeight; i++) {
       console.time(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
       const { size, hash } = await provider.send('eth_getBlockByNumber', [utils.hexlify(i), false]);
       console.timeEnd(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
       blockSizeMap.set(hash, { size, blockNumber: i });
-      blockSizeMapLatestHeight = i;
     }
   }
 
