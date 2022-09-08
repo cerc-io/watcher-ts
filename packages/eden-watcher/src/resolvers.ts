@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { BlockHeight, OrderDirection, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@vulcanize/util';
+import { BlockHeight, OrderDirection, StateKind, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -78,7 +78,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
     Query: {
       producer: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('producer', id, JSON.stringify(block));
+        log('producer', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producer').inc(1);
 
@@ -86,7 +86,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producers: async (_: any, { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number }) => {
-        log('producers', JSON.stringify(block), first, skip);
+        log('producers', JSON.stringify(block, jsonBigIntStringReplacer), first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producers').inc(1);
 
@@ -99,7 +99,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('producerSet', id, JSON.stringify(block));
+        log('producerSet', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerSet').inc(1);
 
@@ -107,7 +107,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producerSetChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('producerSetChange', id, JSON.stringify(block));
+        log('producerSetChange', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerSetChange').inc(1);
 
@@ -115,7 +115,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producerRewardCollectorChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('producerRewardCollectorChange', id, JSON.stringify(block));
+        log('producerRewardCollectorChange', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerRewardCollectorChange').inc(1);
 
@@ -123,7 +123,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       rewardScheduleEntry: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('rewardScheduleEntry', id, JSON.stringify(block));
+        log('rewardScheduleEntry', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('rewardScheduleEntry').inc(1);
 
@@ -131,7 +131,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       rewardSchedule: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('rewardSchedule', id, JSON.stringify(block));
+        log('rewardSchedule', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('rewardSchedule').inc(1);
 
@@ -139,7 +139,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       producerEpoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('producerEpoch', id, JSON.stringify(block));
+        log('producerEpoch', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerEpoch').inc(1);
 
@@ -147,7 +147,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       block: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('block', id, JSON.stringify(block));
+        log('block', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('block').inc(1);
 
@@ -155,7 +155,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       blocks: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
-        log('blocks', JSON.stringify(block), JSON.stringify(where), first, skip, orderBy, orderDirection);
+        log('blocks', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('blocks').inc(1);
 
@@ -168,7 +168,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('epoch', id, JSON.stringify(block));
+        log('epoch', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('epoch').inc(1);
 
@@ -176,7 +176,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       epoches: async (_: any, { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number }) => {
-        log('epoches', JSON.stringify(block), JSON.stringify(where), first, skip);
+        log('epoches', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('epoches').inc(1);
 
@@ -189,7 +189,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('slotClaim', id, JSON.stringify(block));
+        log('slotClaim', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slotClaim').inc(1);
 
@@ -197,7 +197,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       slot: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('slot', id, JSON.stringify(block));
+        log('slot', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slot').inc(1);
 
@@ -205,7 +205,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       staker: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('staker', id, JSON.stringify(block));
+        log('staker', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('staker').inc(1);
 
@@ -213,7 +213,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       stakers: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
-        log('stakers', JSON.stringify(block), JSON.stringify(where), first, skip, orderBy, orderDirection);
+        log('stakers', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('stakers').inc(1);
 
@@ -226,7 +226,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('network', id, JSON.stringify(block));
+        log('network', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('network').inc(1);
 
@@ -234,7 +234,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       distributor: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('distributor', id, JSON.stringify(block));
+        log('distributor', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('distributor').inc(1);
 
@@ -242,7 +242,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       distribution: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('distribution', id, JSON.stringify(block));
+        log('distribution', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('distribution').inc(1);
 
@@ -250,7 +250,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       claim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('claim', id, JSON.stringify(block));
+        log('claim', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('claim').inc(1);
 
@@ -258,7 +258,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       slash: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('slash', id, JSON.stringify(block));
+        log('slash', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slash').inc(1);
 
@@ -266,7 +266,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       account: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('account', id, JSON.stringify(block));
+        log('account', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('account').inc(1);
 
