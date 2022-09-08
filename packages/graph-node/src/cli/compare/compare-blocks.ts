@@ -120,6 +120,13 @@ export const main = async (): Promise<void> => {
         let resultDiff = '';
 
         if (fetchIds) {
+          const queryLimit = config.queries.queryLimits[queryName];
+
+          if (queryLimit) {
+            // Take only first `queryLimit` entity ids to compare in GQL.
+            updatedEntityIds[index].splice(queryLimit);
+          }
+
           for (const id of updatedEntityIds[index]) {
             const { diff, result1: result } = await compareQuery(
               clients,

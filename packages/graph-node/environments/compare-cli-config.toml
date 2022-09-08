@@ -3,13 +3,14 @@
   gqlEndpoint2 = "http://localhost:3008/graphql"
 
 [queries]
-  queryDir = "../graph-test-watcher/src/gql/queries"
+  queryDir = "../../graph-test-watcher/src/gql/queries"
   names = []
   blockDelayInMs = 250
+  queryLimits = {}
 
 [watcher]
   configPath = "../../graph-test-watcher/environments/local.toml"
-  entitiesDir = "../../graph-test-watcher/src/entity"
+  entitiesDir = "../../graph-test-watcher/dist/entity/*"
   endpoint = "gqlEndpoint2"
   verifyState = true
   derivedFields = []

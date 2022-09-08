@@ -36,6 +36,7 @@ interface QueryConfig {
   queryDir: string;
   names: string[];
   blockDelayInMs: number;
+  queryLimits: { [queryName: string]: number }
 }
 
 interface EntityDerivedFields {

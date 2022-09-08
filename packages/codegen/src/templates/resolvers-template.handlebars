@@ -79,7 +79,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       {{~#each subgraphQueries}}
       {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('{{this.queryName}}', id, block);
+        log('{{this.queryName}}', id, JSON.stringify(block));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('{{this.queryName}}').inc(1);
 
