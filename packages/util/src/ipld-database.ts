@@ -22,16 +22,32 @@ export class IPLDDatabase extends Database {
       queryBuilder.andWhere('block.block_number <= :blockNumber', { blockNumber });
     }
 
-    // Filter using kind if specified else order by id to give preference to checkpoint.
+    // Filter using kind if specified else avoid diff_staged block.
     queryBuilder = kind
       ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged })
-        .addOrderBy('ipld_block.id', 'DESC');
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged });
 
-    // Get the first entry.
-    queryBuilder.limit(1);
+    // Get the first two entries.
+    queryBuilder.limit(2);
 
-    return queryBuilder.getOne();
+    const results = await queryBuilder.getMany();
+
+    switch (results.length) {
+      case 0:
+        return;
+      case 1:
+        return results[0];
+      case 2:
+        // If there are two entries in the result and both are at the same block number, give preference to checkpoint kind.
+        if (
+          results[0].block.blockNumber === results[1].block.blockNumber &&
+          results[1].kind === StateKind.Checkpoint
+        ) {
+          return results[1];
+        } else {
+          return results[0];
+        }
+    }
   }
 
   async getPrevIPLDBlock (repo: Repository<IPLDBlockInterface>, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlockInterface | undefined> {
