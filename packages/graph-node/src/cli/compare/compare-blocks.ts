@@ -123,8 +123,9 @@ export const main = async (): Promise<void> => {
           const queryLimit = config.queries.queryLimits[queryName];
 
           if (queryLimit) {
-            // Take only first `queryLimit` entity ids to compare in GQL.
-            updatedEntityIds[index].splice(queryLimit);
+            // Take only last `queryLimit` entity ids to compare in GQL.
+            const idsLength = updatedEntityIds[index].length;
+            updatedEntityIds[index].splice(0, idsLength - queryLimit);
           }
 
           for (const id of updatedEntityIds[index]) {
