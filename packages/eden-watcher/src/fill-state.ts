@@ -1,10 +1,11 @@
 //
-// Copyright 2021 Vulcanize, Inc.
+// Copyright 2022 Vulcanize, Inc.
 //
 
 import assert from 'assert';
 import 'reflect-metadata';
 import debug from 'debug';
+import { Between } from 'typeorm';
 
 import { Database as GraphDatabase, prepareEntityState } from '@vulcanize/graph-node';
 
@@ -24,20 +25,30 @@ export const fillState = async (
   const { startBlock, endBlock } = argv;
   assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
 
+  // NOTE: Assuming all blocks in the given range are in the pruned region
   log(`Filling state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
+
+  // Check that there are no existing diffs in this range
+  const existingStates = await indexer.getIPLDBlocks({ block: { blockNumber: Between(startBlock, endBlock) } });
+  assert(existingStates.length === 0, 'found existing state(s) in the given range');
 
   // Map: contractAddress -> entities updated
   const contractEntitiesMap: Map<string, string[]> = new Map();
 
   // Populate contractEntitiesMap using data sources from subgraph
   // NOTE: Assuming each entity type is only mapped to a single contract
+  //       This is true for eden subgraph; may not be the case for other subgraphs
   dataSources.forEach((dataSource: any) => {
     const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
     contractEntitiesMap.set(contractAddress, entities as string[]);
   });
 
+  console.time('time:fill-state');
+
   // Fill state for blocks in the given range
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
+    console.time(`time:fill-state-${blockNumber}`);
+
     // Get the canonical block hash at current height
     const blocks = await indexer.getBlocksAtHeight(blockNumber, false);
     assert(blocks.length === 1, `found more than one non-pruned block at height ${blockNumber}`);
@@ -58,11 +69,9 @@ export const fillState = async (
 
           updatedEntities.forEach((updatedEntity) => {
             // Prepare diff data for the entity update
-            assert(indexer.getRelationsMap);
             const diffData = prepareEntityState(updatedEntity, entityName, indexer.getRelationsMap());
 
             // Update the in-memory subgraph state
-            assert(indexer.updateSubgraphState);
             indexer.updateSubgraphState(contractAddress, diffData);
           });
         });
@@ -71,9 +80,12 @@ export const fillState = async (
     await Promise.all(contractStatePromises);
 
     // Persist subgraph state to the DB
-    assert(indexer.dumpSubgraphState);
     await indexer.dumpSubgraphState(blockHash, true);
+
+    console.timeEnd(`time:fill-state-${blockNumber}`);
   }
+
+  console.timeEnd('time:fill-state');
 
   log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
 };

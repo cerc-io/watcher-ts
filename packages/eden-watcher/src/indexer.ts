@@ -308,6 +308,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getIPLDBlockByCid(cid);
   }
 
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    return this._db.getIPLDBlocks(where);
+  }
+
   async getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlock[]> {
     return this._db.getDiffIPLDBlocksInRange(contractAddress, startBlock, endBlock);
   }
