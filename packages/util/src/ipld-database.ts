@@ -34,19 +34,20 @@ export class IPLDDatabase extends Database {
 
     switch (results.length) {
       case 0:
+        // No result found.
         return;
       case 1:
+        // Return the only IPLD block entry found.
         return results[0];
       case 2:
         // If there are two entries in the result and both are at the same block number, give preference to checkpoint kind.
-        if (
-          results[0].block.blockNumber === results[1].block.blockNumber &&
-          results[1].kind === StateKind.Checkpoint
-        ) {
-          return results[1];
+        if (results[0].block.blockNumber === results[1].block.blockNumber) {
+          return (results[1].kind === StateKind.Checkpoint) ? results[1] : results[0];
         } else {
           return results[0];
         }
+      default:
+        throw new Error(`Unexpected results length ${results.length}`);
     }
   }
 
@@ -157,6 +158,22 @@ export class IPLDDatabase extends Database {
 
   async removeIPLDBlocks (repo: Repository<IPLDBlockInterface>, blockNumber: number, kind: string): Promise<void> {
     const entities = await repo.find({ relations: ['block'], where: { block: { blockNumber }, kind } });
+
+    // Delete if entities found.
+    if (entities.length) {
+      await repo.delete(entities.map((entity) => entity.id));
+    }
+  }
+
+  async removeIPLDBlocksInRange (repo: Repository<IPLDBlockInterface>, startBlock: number, endBlock: number): Promise<void> {
+    const entities = await repo.find({
+      select: ['id'],
+      relations: ['block'],
+      where: {
+        block:
+        { blockNumber: Between(startBlock, endBlock) }
+      }
+    });
 
     // Delete if entities found.
     if (entities.length) {

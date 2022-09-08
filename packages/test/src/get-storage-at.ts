@@ -3,10 +3,8 @@
 //
 
 import yargs from 'yargs';
-import { ethers, providers } from 'ethers';
+import { providers } from 'ethers';
 import debug from 'debug';
-
-import { readAbi } from './common';
 
 const log = debug('vulcanize:test');
 
