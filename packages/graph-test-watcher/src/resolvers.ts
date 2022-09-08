@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, StateKind } from '@vulcanize/util';
+import { ValueResult, BlockHeight, StateKind, jsonBigIntStringReplacer } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -73,19 +73,19 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       },
 
       blog: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Blog | undefined> => {
-        log('blog', id, block);
+        log('blog', id, JSON.stringify(block, jsonBigIntStringReplacer));
 
         return indexer.getSubgraphEntity(Blog, id, block);
       },
 
       category: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Category | undefined> => {
-        log('category', id, block);
+        log('category', id, JSON.stringify(block, jsonBigIntStringReplacer));
 
         return indexer.getSubgraphEntity(Category, id, block);
       },
 
       author: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Author | undefined> => {
-        log('author', id, block);
+        log('author', id, JSON.stringify(block, jsonBigIntStringReplacer));
 
         return indexer.getSubgraphEntity(Author, id, block);
       },

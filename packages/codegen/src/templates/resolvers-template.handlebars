@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@vulcanize/util';
+import { ValueResult, BlockHeight, StateKind, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer } from '@vulcanize/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -79,7 +79,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       {{~#each subgraphQueries}}
       {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
-        log('{{this.queryName}}', id, block);
+        log('{{this.queryName}}', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('{{this.queryName}}').inc(1);
 
