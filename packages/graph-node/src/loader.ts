@@ -22,10 +22,10 @@ import {
   Block,
   fromEthereumValue,
   toEthereumValue,
-  resolveEntityFieldConflicts,
   getEthereumTypes,
   jsonFromBytes,
-  getStorageValueType
+  getStorageValueType,
+  prepareEntityState
 } from './utils';
 import { Database } from './database';
 
@@ -94,48 +94,12 @@ export const instantiate = async (
         const entityInstance = await Entity.wrap(data);
 
         assert(context.block);
-        let dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
+        const dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
 
-        // Resolve any field name conflicts in the dbData for auto-diff.
-        dbData = resolveEntityFieldConflicts(dbData);
-
-        // Prepare the diff data.
-        const diffData: any = { state: {} };
+        // Prepare diff data for the entity update
         assert(indexer.getRelationsMap);
-
-        const result = Array.from(indexer.getRelationsMap().entries())
-          .find(([key]) => key.name === entityName);
-
-        if (result) {
-          // Update dbData if relations exist.
-          const [_, relations] = result;
-
-          // Update relation fields for diff data to be similar to GQL query entities.
-          Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
-            if (isDerived || !dbData[relation]) {
-              // Field is not present in dbData for derived relations
-              return;
-            }
-
-            if (isArray) {
-              dbData[relation] = dbData[relation]
-                .map((id: string) => ({ id }))
-                .sort((a: any, b: any) => a.id.localeCompare(b.id));
-            } else {
-              dbData[relation] = { id: dbData[relation] };
-            }
-          });
-        }
-
-        // JSON stringify and parse data for handling unknown types when encoding.
-        // For example, decimal.js values are converted to string in the diff data.
-        diffData.state[entityName] = {
-          // Using custom replacer to store bigints as string values to be encoded by IPLD dag-cbor.
-          // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
-          // https://github.com/rvagg/cborg#type-encoders
-          [dbData.id]: JSON.parse(JSON.stringify(dbData, jsonBigIntStringReplacer))
-        };
+        const diffData = prepareEntityState(dbData, entityName, indexer.getRelationsMap());
 
         // Update the in-memory subgraph state.
         assert(indexer.updateSubgraphState);

@@ -1,3 +1,3 @@
 export * from './watcher';
 export * from './database';
-export { resolveEntityFieldConflicts } from './utils';
+export { prepareEntityState } from './utils';
