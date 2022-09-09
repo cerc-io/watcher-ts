@@ -7,7 +7,7 @@ import yargs from 'yargs';
 import 'reflect-metadata';
 import { ethers } from 'ethers';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig } from '@cerc-io/util';
 
 import { Database } from '../database';
 

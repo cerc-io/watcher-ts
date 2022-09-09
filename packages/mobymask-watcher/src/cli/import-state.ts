@@ -11,7 +11,7 @@ import { PubSub } from 'apollo-server-express';
 import fs from 'fs';
 import path from 'path';
 
-import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@vulcanize/util';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@cerc-io/util';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';

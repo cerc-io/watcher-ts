@@ -9,7 +9,7 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
 
-import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@vulcanize/util';
+import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Indexer } from './indexer';

@@ -3,7 +3,7 @@
 //
 
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
-import { bigintTransformer } from '@vulcanize/util';
+import { bigintTransformer } from '@cerc-io/util';
 
 enum ProducerSetChangeType {
   Added = 'Added',

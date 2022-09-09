@@ -9,8 +9,8 @@ import 'reflect-metadata';
 import debug from 'debug';
 import util from 'util';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';

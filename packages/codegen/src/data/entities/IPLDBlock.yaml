@@ -56,7 +56,7 @@ imports:
     from: typeorm
   - toImport:
       - StateKind
-    from: '@vulcanize/util'
+    from: '@cerc-io/util'
   - toImport:
       - BlockProgress
     from: ./BlockProgress

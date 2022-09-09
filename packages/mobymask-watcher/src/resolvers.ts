@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@vulcanize/util';
+import { ValueResult, StateKind, gqlTotalQueryCount, gqlQueryCount } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';

@@ -5,7 +5,7 @@
 import 'reflect-metadata';
 import debug from 'debug';
 
-import { getResetYargs } from '@vulcanize/util';
+import { getResetYargs } from '@cerc-io/util';
 
 const log = debug('vulcanize:reset');
 

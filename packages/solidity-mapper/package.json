@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/solidity-mapper",
+  "name": "@cerc-io/solidity-mapper",
   "version": "0.1.0",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
@@ -11,7 +11,7 @@
     "@types/mocha": "^8.2.2",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
-    "@vulcanize/ipld-eth-client": "^0.1.0",
+    "@cerc-io/ipld-eth-client": "^0.1.0",
     "chai": "^4.3.4",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",

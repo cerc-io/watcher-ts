@@ -9,7 +9,7 @@ import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind } from '@cerc-io/util';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';

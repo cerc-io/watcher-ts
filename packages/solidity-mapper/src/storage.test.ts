@@ -8,7 +8,7 @@ import '@nomiclabs/hardhat-ethers';
 import { ethers } from 'hardhat';
 import { ContractTransaction, Contract } from 'ethers';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { getStorageInfo, getStorageValue, StorageLayout } from './storage';
 import { getStorageLayout, getStorageAt as rpcGetStorageAt, generateDummyAddresses, getBlockHash, assertProofData, assertProofArray, assertProofStruct } from '../test/utils';

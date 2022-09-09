@@ -5,7 +5,7 @@
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 import Decimal from 'decimal.js';
 
-import { bigintTransformer, decimalTransformer } from '@vulcanize/util';
+import { bigintTransformer, decimalTransformer } from '@cerc-io/util';
 
 @Entity()
 @Index(['blockNumber'])

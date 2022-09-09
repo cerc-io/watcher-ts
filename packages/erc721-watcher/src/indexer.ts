@@ -11,8 +11,8 @@ import { ethers } from 'ethers';
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
   IPLDIndexerInterface,
@@ -28,7 +28,7 @@ import {
   IPFSClient,
   StateKind,
   IpldStatus as IpldStatusInterface
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import ERC721Artifacts from './artifacts/ERC721.json';
 import { Database } from './database';

@@ -10,8 +10,8 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
 
-import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Database } from './database';
 import { Indexer } from './indexer';

@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/address-watcher",
+  "name": "@cerc-io/address-watcher",
   "version": "0.1.0",
   "description": "Address Watcher",
   "private": true,
@@ -16,22 +16,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+    "url": "git+https://github.com/cerc-io/watcher-ts.git"
   },
   "author": "",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/vulcanize/watcher-ts/issues"
+    "url": "https://github.com/cerc-io/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
     "@types/lodash": "^4.14.168",
-    "@vulcanize/cache": "^0.1.0",
-    "@vulcanize/ipld-eth-client": "^0.1.0",
-    "@vulcanize/solidity-mapper": "^0.1.0",
-    "@vulcanize/tracing-client": "^0.1.0",
-    "@vulcanize/util": "^0.1.0",
+    "@cerc-io/cache": "^0.1.0",
+    "@cerc-io/ipld-eth-client": "^0.1.0",
+    "@cerc-io/solidity-mapper": "^0.1.0",
+    "@cerc-io/tracing-client": "^0.1.0",
+    "@cerc-io/util": "^0.1.0",
     "apollo-server-express": "^2.25.0",
     "debug": "^4.3.1",
     "ethers": "^5.4.4",

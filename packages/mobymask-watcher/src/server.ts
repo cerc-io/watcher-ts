@@ -14,7 +14,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@vulcanize/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@cerc-io/util';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';

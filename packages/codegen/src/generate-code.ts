@@ -14,7 +14,7 @@ import os from 'os';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
-import { KIND_ACTIVE, KIND_LAZY } from '@vulcanize/util';
+import { KIND_ACTIVE, KIND_LAZY } from '@cerc-io/util';
 
 import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
 import { Visitor } from './visitor';

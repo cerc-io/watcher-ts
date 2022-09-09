@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/cache",
+  "name": "@cerc-io/cache",
   "version": "0.1.0",
   "description": "Generic object cache",
   "private": true,
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+    "url": "git+https://github.com/cerc-io/watcher-ts.git"
   },
   "author": "",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/vulcanize/watcher-ts/issues"
+    "url": "https://github.com/cerc-io/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "canonical-json": "^0.0.4",
     "debug": "^4.3.1",

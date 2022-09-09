@@ -290,7 +290,7 @@ export class Entity {
 
   _addBigIntTransformerOption (entityObject: any): void {
     let importObject = entityObject.imports.find((element: any) => {
-      return element.from === '@vulcanize/util';
+      return element.from === '@cerc-io/util';
     });
 
     entityObject.columns.forEach((column: any) => {
@@ -308,7 +308,7 @@ export class Entity {
         } else {
           importObject = {
             toImport: new Set(['bigintTransformer']),
-            from: '@vulcanize/util'
+            from: '@cerc-io/util'
           };
 
           entityObject.imports.push(importObject);
@@ -329,7 +329,7 @@ export class Entity {
         } else {
           importObject = {
             toImport: new Set(['bigintArrayTransformer']),
-            from: '@vulcanize/util'
+            from: '@cerc-io/util'
           };
 
           entityObject.imports.push(importObject);
@@ -340,7 +340,7 @@ export class Entity {
 
   _addDecimalTransformerOption (entityObject: any): void {
     let importObject = entityObject.imports.find((element: any) => {
-      return element.from === '@vulcanize/util';
+      return element.from === '@cerc-io/util';
     });
 
     let isDecimalRequired = false;
@@ -362,7 +362,7 @@ export class Entity {
         } else {
           importObject = {
             toImport: new Set(['decimalTransformer']),
-            from: '@vulcanize/util'
+            from: '@cerc-io/util'
           };
 
           entityObject.imports.push(importObject);
@@ -385,7 +385,7 @@ export class Entity {
         } else {
           importObject = {
             toImport: new Set(['decimalArrayTransformer']),
-            from: '@vulcanize/util'
+            from: '@cerc-io/util'
           };
 
           entityObject.imports.push(importObject);

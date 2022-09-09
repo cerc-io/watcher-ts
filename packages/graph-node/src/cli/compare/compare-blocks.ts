@@ -9,8 +9,8 @@ import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
-import { getConfig as getWatcherConfig, wait } from '@vulcanize/util';
-import { GraphQLClient } from '@vulcanize/ipld-eth-client';
+import { getConfig as getWatcherConfig, wait } from '@cerc-io/util';
+import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
 import { checkEntityInIPLDState, compareQuery, Config, getBlockIPLDState as getIPLDStateByBlock, getClients, getConfig } from './utils';
 import { Database } from '../../database';

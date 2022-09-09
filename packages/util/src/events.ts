@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';

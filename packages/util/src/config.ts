@@ -9,8 +9,8 @@ import toml from 'toml';
 import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
 
-import { Config as CacheConfig, getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { Config as CacheConfig, getCache } from '@cerc-io/cache';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
 import { getCustomProvider } from './misc';

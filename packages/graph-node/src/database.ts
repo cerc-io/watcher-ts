@@ -18,7 +18,7 @@ import {
   Database as BaseDatabase,
   QueryOptions,
   Where
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import { Block, fromEntityValue, toEntityValue } from './utils';
 

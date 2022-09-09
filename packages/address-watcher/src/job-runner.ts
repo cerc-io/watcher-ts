@@ -8,10 +8,10 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { TracingClient } from '@vulcanize/tracing-client';
-import { getConfig, JobQueue, DEFAULT_CONFIG_PATH } from '@vulcanize/util';
+import { getCache } from '@cerc-io/cache';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { TracingClient } from '@cerc-io/tracing-client';
+import { getConfig, JobQueue, DEFAULT_CONFIG_PATH } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { Database } from './database';

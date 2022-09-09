@@ -3,7 +3,7 @@
 //
 
 import { gql } from '@apollo/client/core';
-import { GraphQLClient, GraphQLConfig } from '@vulcanize/ipld-eth-client';
+import { GraphQLClient, GraphQLConfig } from '@cerc-io/ipld-eth-client';
 
 import { queryName, queryDecimals, queryTotalSupply, querySymbol } from './queries';
 

@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 
-import { Cache } from '@vulcanize/cache';
+import { Cache } from '@cerc-io/cache';
 
 import ethQueries from './eth-queries';
 import { padKey } from './utils';

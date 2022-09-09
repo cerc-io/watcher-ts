@@ -3,7 +3,7 @@
 //
 
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
-import { bigintTransformer } from '@vulcanize/util';
+import { bigintTransformer } from '@cerc-io/util';
 
 @Entity()
 @Index(['blockHash', 'blockNumber', 'token', 'owner', 'spender'], { unique: true })

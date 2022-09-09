@@ -4,7 +4,7 @@
 
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
-import { bigintArrayTransformer } from '@vulcanize/util';
+import { bigintArrayTransformer } from '@cerc-io/util';
 
 enum BlogType {
   short = 'short',

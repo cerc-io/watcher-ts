@@ -7,7 +7,7 @@ import debug from 'debug';
 import _ from 'lodash';
 import { PubSub } from 'apollo-server-express';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { Indexer, ResultEvent, UNKNOWN_EVENT_NAME } from './indexer';
 const log = debug('vulcanize:events');

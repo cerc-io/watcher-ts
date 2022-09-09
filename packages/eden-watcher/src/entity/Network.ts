@@ -4,7 +4,7 @@
 
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
-import { bigintArrayTransformer, bigintTransformer } from '@vulcanize/util';
+import { bigintArrayTransformer, bigintTransformer } from '@cerc-io/util';
 
 @Entity()
 @Index(['blockNumber'])

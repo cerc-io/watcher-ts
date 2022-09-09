@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/codegen",
+  "name": "@cerc-io/codegen",
   "version": "0.1.0",
   "description": "Code generator",
   "private": true,
@@ -10,19 +10,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+    "url": "git+https://github.com/cerc-io/watcher-ts.git"
   },
   "author": "",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/vulcanize/watcher-ts/issues"
+    "url": "https://github.com/cerc-io/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@graphql-tools/load-files": "^6.5.2",
     "@poanet/solidity-flattener": "https://github.com/vulcanize/solidity-flattener.git",
     "@solidity-parser/parser": "^0.13.2",
-    "@vulcanize/util": "^0.1.0",
+    "@cerc-io/util": "^0.1.0",
     "gql-generator": "https://github.com/vulcanize/gql-generator.git",
     "graphql": "^15.5.0",
     "graphql-compose": "^9.0.3",

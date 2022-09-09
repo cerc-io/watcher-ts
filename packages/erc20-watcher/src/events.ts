@@ -6,7 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'apollo-server-express';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   JobQueue,
   EventWatcher as BaseEventWatcher,
@@ -14,7 +14,7 @@ import {
   QUEUE_EVENT_PROCESSING,
   UNKNOWN_EVENT_NAME,
   UpstreamConfig
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { Event } from './entity/Event';

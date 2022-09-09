@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { IPLDBlockInterface, StateKind } from '@vulcanize/util';
+import { IPLDBlockInterface, StateKind } from '@cerc-io/util';
 import assert from 'assert';
 import * as codec from '@ipld/dag-cbor';
 import _ from 'lodash';

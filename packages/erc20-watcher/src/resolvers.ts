@@ -6,7 +6,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 
-import { ValueResult } from '@vulcanize/util';
+import { ValueResult } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';

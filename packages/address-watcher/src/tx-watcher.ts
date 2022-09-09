@@ -7,8 +7,8 @@ import debug from 'debug';
 import _ from 'lodash';
 import { PubSub } from 'apollo-server-express';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { JobQueue } from '@vulcanize/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { JobQueue } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { BlockProgress } from './entity/BlockProgress';

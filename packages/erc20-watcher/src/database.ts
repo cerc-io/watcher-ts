@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase, QueryOptions, Where } from '@vulcanize/util';
+import { Database as BaseDatabase, QueryOptions, Where } from '@cerc-io/util';
 
 import { Allowance } from './entity/Allowance';
 import { Balance } from './entity/Balance';

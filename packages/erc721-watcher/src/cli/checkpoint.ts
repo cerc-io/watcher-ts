@@ -7,7 +7,7 @@ import 'reflect-metadata';
 import debug from 'debug';
 import assert from 'assert';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@vulcanize/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@cerc-io/util';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
