@@ -10,9 +10,9 @@ import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import { BaseProvider } from '@ethersproject/providers';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig } from '@vulcanize/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';

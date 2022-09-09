@@ -6,7 +6,7 @@ import path from 'path';
 import { expect } from 'chai';
 import BN from 'bn.js';
 
-import { GraphDecimal } from '@vulcanize/util';
+import { GraphDecimal } from '@cerc-io/util';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';

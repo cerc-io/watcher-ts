@@ -10,7 +10,7 @@ import { utils, providers } from 'ethers';
 import Decimal from 'decimal.js';
 import debug from 'debug';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
 import { Config } from './config';

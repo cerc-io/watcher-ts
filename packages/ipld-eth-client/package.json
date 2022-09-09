@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/ipld-eth-client",
+  "name": "@cerc-io/ipld-eth-client",
   "version": "0.1.0",
   "description": "IPLD ETH Client",
   "private": true,
@@ -11,17 +11,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+    "url": "git+https://github.com/cerc-io/watcher-ts.git"
   },
   "author": "",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/vulcanize/watcher-ts/issues"
+    "url": "https://github.com/cerc-io/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@vulcanize/cache": "^0.1.0",
+    "@cerc-io/cache": "^0.1.0",
     "cross-fetch": "^3.1.4",
     "ethers": "^5.4.4",
     "graphql": "^15.5.0",

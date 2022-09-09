@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 import { CID } from 'multiformats/cid';
 import _ from 'lodash';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 import * as codec from '@ipld/dag-cbor';
 
 import {

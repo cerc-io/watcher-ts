@@ -9,7 +9,7 @@ import 'mocha';
 
 import {
   getConfig
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import lighthouseABI from './abi/Lighthouse.json';
 import { Config } from './indexer';

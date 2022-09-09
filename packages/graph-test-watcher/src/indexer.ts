@@ -12,8 +12,8 @@ import _ from 'lodash';
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { StorageLayout, MappingKey } from '@vulcanize/solidity-mapper';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { StorageLayout, MappingKey } from '@cerc-io/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
   ValueResult,
@@ -28,8 +28,8 @@ import {
   StateKind,
   IPLDIndexerInterface,
   IpldStatus as IpldStatusInterface
-} from '@vulcanize/util';
-import { GraphWatcher } from '@vulcanize/graph-node';
+} from '@cerc-io/util';
+import { GraphWatcher } from '@cerc-io/graph-node';
 
 import { Database } from './database';
 import { Contract } from './entity/Contract';

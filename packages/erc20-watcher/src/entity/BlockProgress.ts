@@ -4,7 +4,7 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
-import { BlockProgressInterface } from '@vulcanize/util';
+import { BlockProgressInterface } from '@cerc-io/util';
 
 @Entity()
 @Index(['blockHash'], { unique: true })

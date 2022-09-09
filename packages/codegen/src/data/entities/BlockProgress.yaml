@@ -74,4 +74,4 @@ imports:
     from: typeorm
   - toImport:
       - BlockProgressInterface
-    from: '@vulcanize/util'
+    from: '@cerc-io/util'

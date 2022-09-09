@@ -4,7 +4,7 @@
 
 import debug from 'debug';
 
-import { getConfig, resetJobs } from '@vulcanize/util';
+import { getConfig, resetJobs } from '@cerc-io/util';
 
 const log = debug('vulcanize:reset-job-queue');
 

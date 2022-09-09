@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/lighthouse-watcher",
+  "name": "@cerc-io/lighthouse-watcher",
   "version": "0.1.0",
   "main": "index.js",
   "license": "AGPL-3.0",
@@ -15,9 +15,9 @@
     "lighthouse:store": "hardhat lighthouse-store"
   },
   "dependencies": {
-    "@vulcanize/cache": "^0.1.0",
-    "@vulcanize/ipld-eth-client": "^0.1.0",
-    "@vulcanize/util": "^0.1.0",
+    "@cerc-io/cache": "^0.1.0",
+    "@cerc-io/ipld-eth-client": "^0.1.0",
+    "@cerc-io/util": "^0.1.0",
     "@apollo/client": "^3.3.19",
     "apollo-server-express": "^2.25.0",
     "apollo-type-bigint": "^0.1.3",

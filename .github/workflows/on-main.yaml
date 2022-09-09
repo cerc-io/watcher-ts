@@ -65,6 +65,6 @@ jobs:
       - name: Tag docker image
         run: docker tag ${{steps.vars.outputs.repo}} ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
       - name: Docker Login
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u vulcanize --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u cerc-io --password-stdin
       - name: Docker Push
         run: docker push ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}

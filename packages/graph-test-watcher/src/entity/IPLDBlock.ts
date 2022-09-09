@@ -4,7 +4,7 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
 
-import { StateKind } from '@vulcanize/util';
+import { StateKind } from '@cerc-io/util';
 
 import { BlockProgress } from './BlockProgress';
 

@@ -98,7 +98,7 @@
   yarn job-runner
   ```
 
-* Clone the [MobyMask](https://github.com/vulcanize/MobyMask) repo.
+* Clone the [MobyMask](https://github.com/cerc-io/MobyMask) repo.
 
 * Checkout to the branch with changes for using this watcher:
 

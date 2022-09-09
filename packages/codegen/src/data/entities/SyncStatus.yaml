@@ -57,4 +57,4 @@ imports:
     from: typeorm
   - toImport:
       - SyncStatusInterface
-    from: '@vulcanize/util'
+    from: '@cerc-io/util'

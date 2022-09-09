@@ -11,8 +11,8 @@ import { PubSub } from 'apollo-server-express';
 import fs from 'fs';
 import path from 'path';
 
-import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import { getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, Config, initClients, StateKind } from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';

@@ -10,8 +10,8 @@ import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions } from '@vulcanize/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';

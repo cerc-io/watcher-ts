@@ -15,7 +15,7 @@ import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, jsonBigIntStringReplacer } from '@vulcanize/util';
+import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, jsonBigIntStringReplacer } from '@cerc-io/util';
 
 import { TypeId, Level } from './types';
 import {

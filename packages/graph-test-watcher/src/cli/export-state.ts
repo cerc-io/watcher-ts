@@ -9,8 +9,8 @@ import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind, verifyCheckpointData } from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind, verifyCheckpointData } from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
 import { Database } from '../database';

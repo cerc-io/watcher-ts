@@ -13,7 +13,7 @@ There are packages used from github so we need to follow the following steps to 
 3. Follow the steps in https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token to authenticate to github packages. We can also run the follwing to authenticate by logging in to npm.
 
    ```bash
-   $ npm login --scope=@vulcanize --registry=https://npm.pkg.github.com
+   $ npm login --scope=@cerc-io --registry=https://npm.pkg.github.com
 
    > Username: USERNAME
    > Password: TOKEN

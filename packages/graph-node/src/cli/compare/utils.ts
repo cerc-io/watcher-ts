@@ -11,8 +11,8 @@ import { diffString, diff } from 'json-diff';
 import _ from 'lodash';
 import omitDeep from 'omit-deep';
 
-import { Config as CacheConfig, getCache } from '@vulcanize/cache';
-import { GraphQLClient } from '@vulcanize/ipld-eth-client';
+import { Config as CacheConfig, getCache } from '@cerc-io/cache';
+import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 import { gql } from '@apollo/client/core';
 
 import { Client } from './client';

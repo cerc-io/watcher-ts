@@ -24,8 +24,8 @@ import {
   DEFAULT_CONFIG_PATH,
   initClients,
   startMetricsServer
-} from '@vulcanize/util';
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+} from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Indexer } from './indexer';
 import { Database } from './database';

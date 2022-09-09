@@ -8,9 +8,9 @@ import {
   SyncStatusInterface,
   ServerConfig as ServerConfigInterface,
   ValueResult
-} from '@vulcanize/util';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
+} from '@cerc-io/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 export class Indexer implements IndexerInterface {
   _getStorageAt: GetStorageAt;

@@ -6,7 +6,7 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs, JobQueue } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';

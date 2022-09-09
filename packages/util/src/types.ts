@@ -3,7 +3,7 @@
 //
 
 import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
-import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { ServerConfig } from './config';
 import { Where, QueryOptions } from './database';

@@ -6,9 +6,9 @@ import assert from 'assert';
 import debug from 'debug';
 import { ethers } from 'ethers';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { GetStorageAt } from '@vulcanize/solidity-mapper';
-import { TracingClient } from '@vulcanize/tracing-client';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { GetStorageAt } from '@cerc-io/solidity-mapper';
+import { TracingClient } from '@cerc-io/tracing-client';
 
 import { addressesInTrace } from './util';
 import { Database } from './database';

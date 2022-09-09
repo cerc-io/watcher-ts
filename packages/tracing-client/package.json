@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/tracing-client",
+  "name": "@cerc-io/tracing-client",
   "version": "0.1.0",
   "description": "ETH VM tracing client",
   "private": true,
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vulcanize/watcher-ts.git"
+    "url": "git+https://github.com/cerc-io/watcher-ts.git"
   },
   "author": "",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/vulcanize/watcher-ts/issues"
+    "url": "https://github.com/cerc-io/watcher-ts/issues"
   },
-  "homepage": "https://github.com/vulcanize/watcher-ts#readme",
+  "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "ethers": "^5.4.4",
     "yargs": "^17.0.1"

@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, LessThanOrEqual } from 'typeorm';
 import path from 'path';
 
-import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@vulcanize/util';
+import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';

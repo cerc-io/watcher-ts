@@ -19,7 +19,7 @@ import {
   DEFAULT_CONFIG_PATH,
   initClients,
   startMetricsServer
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { Database } from './database';

@@ -1,5 +1,5 @@
 {
-  "name": "@vulcanize/test",
+  "name": "@cerc-io/test",
   "version": "0.1.0",
   "main": "dist/index.js",
   "license": "AGPL-3.0",

@@ -8,9 +8,9 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@vulcanize/util';
+import { getCache } from '@cerc-io/cache';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { DEFAULT_CONFIG_PATH, getConfig, JobQueue } from '@cerc-io/util';
 
 import { Database } from './database';
 import { QUEUE_TX_TRACING } from './tx-watcher';

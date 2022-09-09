@@ -6,10 +6,10 @@ import yaml from 'js-yaml';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 
-import { GraphDecimal, jsonBigIntStringReplacer } from '@vulcanize/util';
+import { GraphDecimal, jsonBigIntStringReplacer } from '@cerc-io/util';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
-import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 const log = debug('vulcanize:utils');
 

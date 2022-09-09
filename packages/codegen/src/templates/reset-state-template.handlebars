@@ -9,9 +9,9 @@ import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs, JobQueue } from '@vulcanize/util';
+import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
 {{#if (subgraphPath)}}
-import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 {{/if}}
 
 import { Database } from '../../database';

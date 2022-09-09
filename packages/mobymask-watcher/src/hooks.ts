@@ -5,7 +5,7 @@
 import assert from 'assert';
 import { utils } from 'ethers';
 
-// import { updateStateForMappingType, updateStateForElementaryType } from '@vulcanize/util';
+// import { updateStateForMappingType, updateStateForElementaryType } from '@cerc-io/util';
 
 import { Indexer, KIND_PHISHERREGISTRY, ResultEvent } from './indexer';
 

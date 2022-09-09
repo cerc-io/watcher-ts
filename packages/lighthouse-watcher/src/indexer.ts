@@ -7,8 +7,8 @@ import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import assert from 'assert';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { Config as BaseConfig } from '@vulcanize/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { Config as BaseConfig } from '@cerc-io/util';
 
 import lighthouseABI from './abi/Lighthouse.json';
 

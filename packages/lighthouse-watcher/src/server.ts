@@ -11,9 +11,9 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import { createServer } from 'http';
 
-import { getCache } from '@vulcanize/cache';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { DEFAULT_CONFIG_PATH, getConfig } from '@vulcanize/util';
+import { getCache } from '@cerc-io/cache';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { DEFAULT_CONFIG_PATH, getConfig } from '@cerc-io/util';
 
 import typeDefs from './schema';
 

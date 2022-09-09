@@ -3,7 +3,7 @@
 //
 
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { SyncStatusInterface } from '@vulcanize/util';
+import { SyncStatusInterface } from '@cerc-io/util';
 
 @Entity()
 export class SyncStatus implements SyncStatusInterface {

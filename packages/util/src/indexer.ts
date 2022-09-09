@@ -7,8 +7,8 @@ import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import debug from 'debug';
 import { ethers } from 'ethers';
 
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { GetStorageAt, getStorageValue, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { GetStorageAt, getStorageValue, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { BlockProgressInterface, DatabaseInterface, EventInterface, SyncStatusInterface, ContractInterface } from './types';
 import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING } from './constants';

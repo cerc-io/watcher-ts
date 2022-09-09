@@ -8,8 +8,8 @@ import path from 'path';
 import pluralize from 'pluralize';
 
 import { gql } from '@apollo/client/core';
-import { GraphQLClient, Config } from '@vulcanize/ipld-eth-client';
-import { Cache } from '@vulcanize/cache';
+import { GraphQLClient, Config } from '@cerc-io/ipld-eth-client';
+import { Cache } from '@cerc-io/cache';
 
 export class Client {
   _config: Config;

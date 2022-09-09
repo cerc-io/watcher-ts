@@ -11,8 +11,8 @@ import { ethers } from 'ethers';
 import { JsonFragment } from '@ethersproject/abi';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import * as codec from '@ipld/dag-cbor';
-import { EthClient } from '@vulcanize/ipld-eth-client';
-import { MappingKey, StorageLayout } from '@vulcanize/solidity-mapper';
+import { EthClient } from '@cerc-io/ipld-eth-client';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
   IPLDIndexer as BaseIndexer,
   IPLDIndexerInterface,
@@ -29,7 +29,7 @@ import {
   StateKind,
   IpldStatus as IpldStatusInterface,
   getFullTransaction
-} from '@vulcanize/util';
+} from '@cerc-io/util';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
 import { Database } from './database';

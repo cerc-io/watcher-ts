@@ -1,10 +1,10 @@
 {
-  "name": "@vulcanize/util",
+  "name": "@cerc-io/util",
   "version": "0.1.0",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@vulcanize/solidity-mapper": "^0.1.0",
+    "@cerc-io/solidity-mapper": "^0.1.0",
     "debug": "^4.3.1",
     "decimal.js": "^10.3.1",
     "ethers": "^5.4.4",
@@ -20,8 +20,8 @@
     "@types/fs-extra": "^9.0.11",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
-    "@vulcanize/cache": "^0.1.0",
-    "@vulcanize/ipld-eth-client": "^0.1.0",
+    "@cerc-io/cache": "^0.1.0",
+    "@cerc-io/ipld-eth-client": "^0.1.0",
     "apollo-server-express": "^2.25.0",
     "decimal.js": "^10.3.1",
     "eslint": "^7.27.0",
