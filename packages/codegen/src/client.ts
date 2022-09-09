@@ -26,7 +26,6 @@ export class Client {
 
   /**
    * Stores the query to be passed to the template.
-   * @param mode Code generation mode.
    * @param name Name of the query.
    * @param params Parameters to the query.
    * @param returnType Return type for the query.

@@ -35,7 +35,7 @@ export class Indexer {
    * @param name Name of the query.
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
-   * @param stateVariableTypeName Type of the state variable in case of state variable query.
+   * @param stateVariableType Type of the state variable in case of state variable query.
    */
   addQuery (contract: string, mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
     // Check if the query is already added.

@@ -15,6 +15,9 @@
     "job-runner:dev": "DEBUG=vulcanize:* ts-node src/job-runner.ts",
     "watch:contract": "DEBUG=vulcanize:* ts-node src/cli/watch-contract.ts",
     "fill": "DEBUG=vulcanize:* ts-node src/fill.ts",
+    {{#if (subgraphPath)}}
+    "fill:state": "DEBUG=vulcanize:* ts-node src/fill.ts --state",
+    {{/if}}
     "reset": "DEBUG=vulcanize:* ts-node src/cli/reset.ts",
     "checkpoint": "DEBUG=vulcanize:* ts-node src/cli/checkpoint.ts",
     "export-state": "DEBUG=vulcanize:* ts-node src/cli/export-state.ts",

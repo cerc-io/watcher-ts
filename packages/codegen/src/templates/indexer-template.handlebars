@@ -386,6 +386,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getIPLDBlockByCid(cid);
   }
 
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    return this._db.getIPLDBlocks(where);
+  }
+
   getIPLDData (ipldBlock: IPLDBlock): any {
     return this._baseIndexer.getIPLDData(ipldBlock);
   }
@@ -469,7 +473,7 @@ export class Indexer implements IPLDIndexerInterface {
     await this._graphWatcher.handleBlock(blockHash);
 
     // Persist subgraph state to the DB.
-    await this._dumpSubgraphState(blockHash);
+    await this.dumpSubgraphState(blockHash);
   }
 
   {{/if}}
@@ -673,6 +677,23 @@ export class Indexer implements IPLDIndexerInterface {
     this._subgraphStateMap.set(contractAddress, updatedData);
   }
 
+  async dumpSubgraphState (blockHash: string, isStateFinalized = false): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        if (isStateFinalized) {
+          return this.createDiff(contractAddress, blockHash, data);
+        }
+
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
+  }
+
   _populateEntityTypesMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     this._entityTypesMap.set('{{subgraphEntity.className}}', {
@@ -709,19 +730,6 @@ export class Indexer implements IPLDIndexerInterface {
     });
     {{/if}}
   {{/each}}
-  }
-
-  async _dumpSubgraphState (blockHash: string): Promise<void> {
-    // Create a diff for each contract in the subgraph state map.
-    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
-      .map(([contractAddress, data]): Promise<void> => {
-        return this.createDiffStaged(contractAddress, blockHash, data);
-      });
-
-    await Promise.all(createDiffPromises);
-
-    // Reset the subgraph state map.
-    this._subgraphStateMap.clear();
   }
   {{/if}}
 

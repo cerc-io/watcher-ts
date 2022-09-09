@@ -39,7 +39,6 @@ export const handler = async (argv: any): Promise<void> => {
   // Create a DB transaction
   const dbTx = await db.createTransactionRunner();
 
-  console.time('time:reset-ipld-state');
   try {
     // Delete all IPLDBlock entries in the given range
     await db.removeIPLDBlocksInRange(dbTx, startBlock, endBlock);
@@ -51,7 +50,6 @@ export const handler = async (argv: any): Promise<void> => {
   } finally {
     await dbTx.release();
   }
-  console.timeEnd('time:reset-ipld-state');
 
   log(`Reset ipld-state successfully for range [${startBlock}, ${endBlock}]`);
 };

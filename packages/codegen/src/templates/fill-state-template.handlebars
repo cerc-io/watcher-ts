@@ -48,12 +48,8 @@ export const fillState = async (
     contractEntitiesMap.set(contractAddress, entities as string[]);
   });
 
-  console.time('time:fill-state');
-
   // Fill state for blocks in the given range
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
-    console.time(`time:fill-state-${blockNumber}`);
-
     // Get the canonical block hash at current height
     const blocks = await indexer.getBlocksAtHeight(blockNumber, false);
 
@@ -94,11 +90,7 @@ export const fillState = async (
 
     // Persist subgraph state to the DB
     await indexer.dumpSubgraphState(blockHash, true);
-
-    console.timeEnd(`time:fill-state-${blockNumber}`);
   }
-
-  console.timeEnd('time:fill-state');
 
   log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
 };
