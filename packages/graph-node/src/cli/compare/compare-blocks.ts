@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { getConfig as getWatcherConfig, wait } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
-import { checkEntityInIPLDState, compareQuery, Config, getBlockIPLDState as getIPLDStateByBlock, getClients, getConfig } from './utils';
+import { checkEntityInIPLDState, compareQuery, Config, getIPLDsByBlock, checkIPLDMetaData, combineIPLDState, getClients, getConfig } from './utils';
 import { Database } from '../../database';
 import { getSubgraphConfig } from '../../utils';
 
@@ -64,6 +64,8 @@ export const main = async (): Promise<void> => {
   let diffFound = false;
   let blockDelay = wait(0);
   let subgraphContracts: string[] = [];
+  const contractLatestStateCIDMap: Map<string, string> = new Map();
+  const contractCheckpointCIDMap: Map<string, string> = new Map();
   let db: Database | undefined, subgraphGQLClient: GraphQLClient | undefined;
 
   if (config.watcher) {
@@ -79,6 +81,11 @@ export const main = async (): Promise<void> => {
       const watcherEndpoint = config.endpoints[config.watcher.endpoint] as string;
       subgraphGQLClient = new GraphQLClient({ gqlEndpoint: watcherEndpoint });
     }
+
+    subgraphContracts.forEach(subgraphContract => {
+      contractLatestStateCIDMap.set(subgraphContract, '');
+      contractCheckpointCIDMap.set(subgraphContract, '');
+    });
   }
 
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
@@ -110,7 +117,24 @@ export const main = async (): Promise<void> => {
       assert(db);
       const [block] = await db?.getBlocksAtHeight(blockNumber, false);
       assert(subgraphGQLClient);
-      ipldStateByBlock = await getIPLDStateByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
+      const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, blockNumber, block.blockHash, contractCheckpointCIDMap);
+
+      // Check meta data for each IPLD block found
+      contractIPLDsByBlock.forEach(contractIPLD => {
+        const ipldMetaDataDiff = checkIPLDMetaData(contractIPLD, contractLatestStateCIDMap, rawJson);
+        if (ipldMetaDataDiff) {
+          log('Results mismatch for IPLD meta data:', ipldMetaDataDiff);
+          diffFound = true;
+        }
+      });
+
+      // Update the contractLatestStateCIDMap if checkpoints found at current block
+      contractCheckpointCIDMap.forEach((cid: string, contractAddress: string) => {
+        contractLatestStateCIDMap.set(contractAddress, cid);
+        contractCheckpointCIDMap.set(contractAddress, '');
+      });
+
+      ipldStateByBlock = combineIPLDState(contractIPLDsByBlock);
     }
 
     await blockDelay;
@@ -166,6 +190,7 @@ export const main = async (): Promise<void> => {
         }
       } catch (err: any) {
         log('Error:', err.message);
+        log('Error:', err);
       }
     }
 
