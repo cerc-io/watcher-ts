@@ -6,7 +6,7 @@ import 'reflect-metadata';
 import debug from 'debug';
 import { Between } from 'typeorm';
 
-import { Database as GraphDatabase, prepareEntityState } from '@vulcanize/graph-node';
+import { Database as GraphDatabase, prepareEntityState } from '@cerc-io/graph-node';
 
 import { Indexer } from './indexer';
 
