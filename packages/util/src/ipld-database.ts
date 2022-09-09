@@ -166,19 +166,17 @@ export class IPLDDatabase extends Database {
   }
 
   async removeIPLDBlocksInRange (repo: Repository<IPLDBlockInterface>, startBlock: number, endBlock: number): Promise<void> {
-    const entities = await repo.find({
-      select: ['id'],
-      relations: ['block'],
-      where: {
-        block:
-        { blockNumber: Between(startBlock, endBlock) }
-      }
-    });
+    // Use raw SQL as TypeORM curently doesn't support delete via 'join' or 'using'
+    const deleteQuery = `
+      DELETE FROM
+        ipld_block
+      USING block_progress
+      WHERE
+        ipld_block.block_id = block_progress.id
+        AND block_progress.block_number BETWEEN $1 AND $2;
+    `;
 
-    // Delete if entities found.
-    if (entities.length) {
-      await repo.delete(entities.map((entity) => entity.id));
-    }
+    await repo.query(deleteQuery, [startBlock, endBlock]);
   }
 
   async getIPLDStatus (repo: Repository<IpldStatusInterface>): Promise<IpldStatusInterface | undefined> {
