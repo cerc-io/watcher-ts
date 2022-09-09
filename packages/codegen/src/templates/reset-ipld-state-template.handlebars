@@ -4,7 +4,7 @@
 
 import debug from 'debug';
 
-import { getConfig } from '@vulcanize/util';
+import { getConfig } from '@cerc-io/util';
 
 import { Database } from '../../database';
 
