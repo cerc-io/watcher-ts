@@ -101,7 +101,7 @@ export class GraphWatcher {
     }, {});
   }
 
-  getDataSources (): any[] {
+  get dataSources (): any[] {
     return this._dataSources;
   }
 

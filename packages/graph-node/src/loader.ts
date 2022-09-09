@@ -97,14 +97,16 @@ export const instantiate = async (
         const dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
         await database.saveEntity(entityName, dbData);
 
-        // Prepare diff data for the entity update
-        assert(indexer.getRelationsMap);
-        const diffData = prepareEntityState(dbData, entityName, indexer.getRelationsMap());
+        // Update the in-memory subgraph state if not disabled.
+        if (!indexer.serverConfig.disableSubgraphState) {
+          // Prepare diff data for the entity update
+          assert(indexer.getRelationsMap);
+          const diffData = prepareEntityState(dbData, entityName, indexer.getRelationsMap());
 
-        // Update the in-memory subgraph state.
-        assert(indexer.updateSubgraphState);
-        assert(context.contractAddress);
-        indexer.updateSubgraphState(context.contractAddress, diffData);
+          assert(indexer.updateSubgraphState);
+          assert(context.contractAddress);
+          indexer.updateSubgraphState(context.contractAddress, diffData);
+        }
       },
 
       'log.log': (level: number, msg: number) => {

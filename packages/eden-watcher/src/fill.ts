@@ -87,7 +87,7 @@ export const main = async (): Promise<any> => {
   await graphWatcher.init();
 
   if (argv.state) {
-    await fillState(indexer, graphDb, graphWatcher.getDataSources(), argv);
+    await fillState(indexer, graphDb, graphWatcher.dataSources, argv);
     return;
   }
 

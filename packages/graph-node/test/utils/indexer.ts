@@ -188,6 +188,7 @@ class ServerConfig implements ServerConfigInterface {
   checkpointInterval: number;
   ipfsApiAddr: string;
   subgraphPath: string;
+  disableSubgraphState: boolean;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;
@@ -201,6 +202,7 @@ class ServerConfig implements ServerConfigInterface {
     this.checkpointInterval = 0;
     this.ipfsApiAddr = '';
     this.subgraphPath = '';
+    this.disableSubgraphState = false;
     this.wasmRestartBlocksInterval = 0;
     this.filterLogs = false;
     this.maxEventsBlockRange = 0;
