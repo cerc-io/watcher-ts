@@ -82,6 +82,18 @@ export class Database {
     }
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    const repo = this._conn.getRepository(tableName);
+
+    const entities = await repo.find({
+      where: {
+        blockHash
+      }
+    });
+
+    return entities;
+  }
+
   async getEntityIdsAtBlockNumber (blockNumber: number, tableName: string): Promise<string[]> {
     const repo = this._conn.getRepository(tableName);
 

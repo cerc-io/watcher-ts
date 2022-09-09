@@ -308,6 +308,10 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getIPLDBlockByCid(cid);
   }
 
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    return this._db.getIPLDBlocks(where);
+  }
+
   async getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlock[]> {
     return this._db.getDiffIPLDBlocksInRange(contractAddress, startBlock, endBlock);
   }
@@ -410,7 +414,7 @@ export class Indexer implements IPLDIndexerInterface {
     console.time('time:indexer#processBlockAfterEvents-dump_subgraph_state');
 
     // Persist subgraph state to the DB.
-    await this._dumpSubgraphState(blockHash);
+    await this.dumpSubgraphState(blockHash);
 
     console.timeEnd('time:indexer#processBlockAfterEvents-dump_subgraph_state');
   }
@@ -608,6 +612,23 @@ export class Indexer implements IPLDIndexerInterface {
     const oldData = this._subgraphStateMap.get(contractAddress);
     const updatedData = _.merge(oldData, data);
     this._subgraphStateMap.set(contractAddress, updatedData);
+  }
+
+  async dumpSubgraphState (blockHash: string, isStateFinalized = false): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        if (isStateFinalized) {
+          return this.createDiff(contractAddress, blockHash, data);
+        }
+
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
   }
 
   _populateEntityTypesMap (): void {
@@ -969,19 +990,6 @@ export class Indexer implements IPLDIndexerInterface {
         field: 'account'
       }
     });
-  }
-
-  async _dumpSubgraphState (blockHash: string): Promise<void> {
-    // Create a diff for each contract in the subgraph state map.
-    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
-      .map(([contractAddress, data]): Promise<void> => {
-        return this.createDiffStaged(contractAddress, blockHash, data);
-      });
-
-    await Promise.all(createDiffPromises);
-
-    // Reset the subgraph state map.
-    this._subgraphStateMap.clear();
   }
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {

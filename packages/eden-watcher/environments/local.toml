@@ -13,6 +13,12 @@
   # ipfsApiAddr = "/ip4/127.0.0.1/tcp/5001"
 
   subgraphPath = "../graph-node/test/subgraph/eden"
+
+  # Disable creation of state from subgraph entity updates
+  # CAUTION: Disable only if subgraph state is not desired or can be filled subsequently
+  disableSubgraphState = false
+
+  # Interval to restart wasm instance periodically
   wasmRestartBlocksInterval = 20
 
   # Boolean to filter logs by contract.

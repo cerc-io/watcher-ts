@@ -101,6 +101,10 @@ export class GraphWatcher {
     }, {});
   }
 
+  get dataSources (): any[] {
+    return this._dataSources;
+  }
+
   async addContracts () {
     assert(this._indexer);
     assert(this._indexer.watchContract);

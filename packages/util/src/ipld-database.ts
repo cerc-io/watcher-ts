@@ -22,16 +22,33 @@ export class IPLDDatabase extends Database {
       queryBuilder.andWhere('block.block_number <= :blockNumber', { blockNumber });
     }
 
-    // Filter using kind if specified else order by id to give preference to checkpoint.
+    // Filter using kind if specified else avoid diff_staged block.
     queryBuilder = kind
       ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged })
-        .addOrderBy('ipld_block.id', 'DESC');
+      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged });
 
-    // Get the first entry.
-    queryBuilder.limit(1);
+    // Get the first two entries.
+    queryBuilder.limit(2);
 
-    return queryBuilder.getOne();
+    const results = await queryBuilder.getMany();
+
+    switch (results.length) {
+      case 0:
+        // No result found.
+        return;
+      case 1:
+        // Return the only IPLD block entry found.
+        return results[0];
+      case 2:
+        // If there are two entries in the result and both are at the same block number, give preference to checkpoint kind.
+        if (results[0].block.blockNumber === results[1].block.blockNumber) {
+          return (results[1].kind === StateKind.Checkpoint) ? results[1] : results[0];
+        } else {
+          return results[0];
+        }
+      default:
+        throw new Error(`Unexpected results length ${results.length}`);
+    }
   }
 
   async getPrevIPLDBlock (repo: Repository<IPLDBlockInterface>, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlockInterface | undefined> {
@@ -146,6 +163,20 @@ export class IPLDDatabase extends Database {
     if (entities.length) {
       await repo.delete(entities.map((entity) => entity.id));
     }
+  }
+
+  async removeIPLDBlocksInRange (repo: Repository<IPLDBlockInterface>, startBlock: number, endBlock: number): Promise<void> {
+    // Use raw SQL as TypeORM curently doesn't support delete via 'join' or 'using'
+    const deleteQuery = `
+      DELETE FROM
+        ipld_block
+      USING block_progress
+      WHERE
+        ipld_block.block_id = block_progress.id
+        AND block_progress.block_number BETWEEN $1 AND $2;
+    `;
+
+    await repo.query(deleteQuery, [startBlock, endBlock]);
   }
 
   async getIPLDStatus (repo: Repository<IpldStatusInterface>): Promise<IpldStatusInterface | undefined> {

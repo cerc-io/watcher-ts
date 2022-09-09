@@ -20,6 +20,9 @@ import { GraphWatcher, Database as GraphDatabase } from '@vulcanize/graph-node';
 import { Database } from './database';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+{{#if (subgraphPath)}}
+import { fillState } from './fill-state';
+{{/if}}
 
 const log = debug('vulcanize:server');
 
@@ -41,6 +44,13 @@ export const main = async (): Promise<any> => {
       demandOption: true,
       describe: 'Block number to start processing at'
     },
+    {{#if (subgraphPath)}}
+    state: {
+      type: 'boolean',
+      default: false,
+      describe: 'Fill state for subgraph entities'
+    },
+    {{/if}}
     endBlock: {
       type: 'number',
       demandOption: true,
@@ -86,6 +96,11 @@ export const main = async (): Promise<any> => {
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
+
+  if (argv.state) {
+    await fillState(indexer, graphDb, graphWatcher.dataSources, argv);
+    return;
+  }
   {{/if}}
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.

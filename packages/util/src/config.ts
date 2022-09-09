@@ -33,6 +33,7 @@ export interface ServerConfig {
   checkpointInterval: number;
   ipfsApiAddr: string;
   subgraphPath: string;
+  disableSubgraphState: boolean;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;

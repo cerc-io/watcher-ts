@@ -10,25 +10,26 @@ import { Writable } from 'stream';
 const RESET_TEMPLATE_FILE = './templates/reset-template.handlebars';
 const RESET_JQ_TEMPLATE_FILE = './templates/reset-job-queue-template.handlebars';
 const RESET_STATE_TEMPLATE_FILE = './templates/reset-state-template.handlebars';
+const RESET_IPLD_STATE_TEMPLATE_FILE = './templates/reset-ipld-state-template.handlebars';
 
 export class Reset {
   _queries: Array<any>;
   _resetTemplateString: string;
   _resetJQTemplateString: string;
   _resetStateTemplateString: string;
+  _resetIPLDStateTemplateString: string;
 
   constructor () {
     this._queries = [];
     this._resetTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_TEMPLATE_FILE)).toString();
     this._resetJQTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_JQ_TEMPLATE_FILE)).toString();
     this._resetStateTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_STATE_TEMPLATE_FILE)).toString();
+    this._resetIPLDStateTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_IPLD_STATE_TEMPLATE_FILE)).toString();
   }
 
   /**
    * Stores the query to be passed to the template.
    * @param name Name of the query.
-   * @param params Parameters to the query.
-   * @param returnType Return type for the query.
    */
   addQuery (name: string): void {
     // Check if the query is already added.
@@ -74,8 +75,9 @@ export class Reset {
    * @param resetOutStream A writable output stream to write the reset file to.
    * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
    * @param resetStateOutStream A writable output stream to write the reset state file to.
+   * @param resetIPLDStateOutStream A writable output stream to write the reset IPLD state file to.
    */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, resetIPLDStateOutStream: Writable | undefined, subgraphPath: string): void {
     const resetTemplate = Handlebars.compile(this._resetTemplateString);
     const resetString = resetTemplate({});
     resetOutStream.write(resetString);
@@ -91,5 +93,11 @@ export class Reset {
     };
     const resetState = resetStateTemplate(obj);
     resetStateOutStream.write(resetState);
+
+    if (resetIPLDStateOutStream) {
+      const resetIPLDStateTemplate = Handlebars.compile(this._resetIPLDStateTemplateString);
+      const resetIPLDStateString = resetIPLDStateTemplate({});
+      resetIPLDStateOutStream.write(resetIPLDStateString);
+    }
   }
 }

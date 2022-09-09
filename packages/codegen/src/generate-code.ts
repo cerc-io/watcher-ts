@@ -246,10 +246,18 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     : process.stdout;
   exportHooks(outStream);
 
-  outStream = outputDir
+  const fillOutStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
-  exportFill(outStream, config.subgraphPath);
+
+  let fillStateOutStream;
+  if (config.subgraphPath) {
+    fillStateOutStream = outputDir
+      ? fs.createWriteStream(path.join(outputDir, 'src/fill-state.ts'))
+      : process.stdout;
+  }
+
+  exportFill(fillOutStream, fillStateOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))
@@ -273,19 +281,25 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     : process.stdout;
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
 
-  let resetOutStream, resetJQOutStream, resetStateOutStream;
+  let resetOutStream, resetJQOutStream, resetStateOutStream, resetIPLDStateOutStream;
 
   if (outputDir) {
     resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
     resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
     resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
+    if (config.subgraphPath) {
+      resetIPLDStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/ipld-state.ts'));
+    }
   } else {
     resetOutStream = process.stdout;
     resetJQOutStream = process.stdout;
     resetStateOutStream = process.stdout;
+    if (config.subgraphPath) {
+      resetIPLDStateOutStream = process.stdout;
+    }
   }
 
-  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, config.subgraphPath);
+  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, resetIPLDStateOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))
