@@ -45,7 +45,7 @@ const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNu
     // Start prefetching blocks after latest height in blockSizeMap.
     for (let i = startBlockHeight; i <= endBlockHeight; i++) {
       console.time(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
-      const { size, hash } = await provider.send('eth_getBlockByNumber', [utils.hexlify(i), false]);
+      const { size, hash } = await provider.send('eth_getBlockByNumber', [utils.hexStripZeros(utils.hexlify(i)), false]);
       console.timeEnd(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
       blockSizeMap.set(hash, { size, blockNumber: i });
     }
