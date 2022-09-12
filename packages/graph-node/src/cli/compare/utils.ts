@@ -21,6 +21,14 @@ import { DEFAULT_LIMIT } from '../../database';
 const IPLD_STATE_QUERY = `
 query getState($blockHash: String!, $contractAddress: String!, $kind: String){
   getState(blockHash: $blockHash, contractAddress: $contractAddress, kind: $kind){
+    block {
+      cid
+      number
+      hash
+    }
+    contractAddress
+    cid
+    kind
     data
   }
 }
@@ -150,43 +158,131 @@ export const getClients = async (config: Config, queryDir?: string):Promise<{
   };
 };
 
-export const getBlockIPLDState = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}> => {
-  const contractIPLDStates: {[key: string]: any}[] = await Promise.all(contracts.map(async contract => {
+export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}[][]> => {
+  // Fetch IPLD states for all contracts
+  return Promise.all(contracts.map(async contract => {
     const { getState } = await client.query(
       gql(IPLD_STATE_QUERY),
       {
         blockHash,
-        contractAddress: contract,
-        kind: 'diff'
+        contractAddress: contract
       }
     );
 
-    if (getState) {
-      const data = JSON.parse(getState.data);
+    const stateIPLDs = [];
 
-      // Apply default limit on array type relation fields.
-      Object.values(data.state)
-        .forEach((idEntityMap: any) => {
-          Object.values(idEntityMap)
-            .forEach((entity: any) => {
-              Object.values(entity)
-                .forEach(fieldValue => {
-                  if (
-                    Array.isArray(fieldValue) &&
-                    fieldValue.length &&
-                    fieldValue[0].id
-                  ) {
-                    fieldValue.splice(DEFAULT_LIMIT);
-                  }
-                });
-            });
-        });
+    // If 'checkpoint' is found at the same block, fetch 'diff' as well
+    if (getState && getState.kind === 'checkpoint' && getState.block.hash === blockHash) {
+      // Check if 'init' present at the same block
+      const { getState: getInitState } = await client.query(
+        gql(IPLD_STATE_QUERY),
+        {
+          blockHash,
+          contractAddress: contract,
+          kind: 'init'
+        }
+      );
 
-      return data.state;
+      if (getInitState && getInitState.block.hash === blockHash) {
+        // Append the 'init' IPLD block to the result
+        stateIPLDs.push(getInitState);
+      }
+
+      // Check if 'diff' present at the same block
+      const { getState: getDiffState } = await client.query(
+        gql(IPLD_STATE_QUERY),
+        {
+          blockHash,
+          contractAddress: contract,
+          kind: 'diff'
+        }
+      );
+
+      if (getDiffState && getDiffState.block.hash === blockHash) {
+        // Append the 'diff' IPLD block to the result
+        stateIPLDs.push(getDiffState);
+      }
     }
 
-    return {};
+    // Append the IPLD block to the result
+    stateIPLDs.push(getState);
+
+    return stateIPLDs;
   }));
+};
+
+export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLatestStateCIDMap: Map<string, string>, rawJson: boolean) => {
+  // Return if IPLD for a contract not found
+  if (!contractIPLD) {
+    return;
+  }
+
+  const { contractAddress, cid, kind, block } = contractIPLD;
+
+  let parentCID = contractLatestStateCIDMap.get(contractAddress);
+  // If CID is same as the parent CID, skip the check
+  if (cid === parentCID) {
+    return;
+  }
+
+  // Update the parent CID in the map
+  contractLatestStateCIDMap.set(contractAddress, cid);
+
+  // Actual meta data from the GQL result
+  const data = JSON.parse(contractIPLD.data);
+
+  // If parentCID not initialized (is empty at start)
+  // Take the expected parentCID from the actual data itself
+  if (parentCID === '') {
+    parentCID = data.meta.parent['/'];
+  }
+
+  // Expected meta data
+  const expectedMetaData = {
+    id: contractAddress,
+    kind,
+    parent: {
+      '/': parentCID
+    },
+    ethBlock: {
+      cid: {
+        '/': block.cid
+      },
+      num: block.number
+    }
+  };
+
+  return compareObjects(expectedMetaData, data.meta, rawJson);
+};
+
+export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: string]: any} => {
+  const contractIPLDStates: {[key: string]: any}[] = contractIPLDs.map(contractIPLD => {
+    if (!contractIPLD) {
+      return {};
+    }
+
+    const data = JSON.parse(contractIPLD.data);
+
+    // Apply default limit on array type relation fields.
+    Object.values(data.state)
+      .forEach((idEntityMap: any) => {
+        Object.values(idEntityMap)
+          .forEach((entity: any) => {
+            Object.values(entity)
+              .forEach(fieldValue => {
+                if (
+                  Array.isArray(fieldValue) &&
+                  fieldValue.length &&
+                  fieldValue[0].id
+                ) {
+                  fieldValue.splice(DEFAULT_LIMIT);
+                }
+              });
+          });
+      });
+
+    return data.state;
+  });
 
   return contractIPLDStates.reduce((acc, state) => _.merge(acc, state));
 };
@@ -219,6 +315,8 @@ export const checkEntityInIPLDState = async (
   return diff;
 };
 
+// obj1: expected
+// obj2: actual
 const compareObjects = (obj1: any, obj2: any, rawJson: boolean): string => {
   if (rawJson) {
     const diffObj = diff(obj1, obj2);
