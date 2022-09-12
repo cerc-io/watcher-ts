@@ -24,6 +24,7 @@ query getState($blockHash: String!, $contractAddress: String!, $kind: String){
     block {
       cid
       number
+      hash
     }
     contractAddress
     cid
@@ -157,10 +158,10 @@ export const getClients = async (config: Config, queryDir?: string):Promise<{
   };
 };
 
-export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[], blockNumber: number, blockHash: string, contractCheckpointCIDMap: Map<string, string>): Promise<{[key: string]: any}[]> => {
+export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}[][]> => {
   // Fetch IPLD states for all contracts
   return Promise.all(contracts.map(async contract => {
-    let { getState } = await client.query(
+    const { getState } = await client.query(
       gql(IPLD_STATE_QUERY),
       {
         blockHash,
@@ -168,24 +169,45 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
       }
     );
 
-    // If checkpoint is found, update the contractCheckpointCIDMap and fetch diff
-    if (getState && getState.kind === 'checkpoint') {
-      if (getState.block.number < blockNumber) {
-        return null;
+    const stateIPLDs = [];
+
+    // If 'checkpoint' is found at the same block, fetch 'diff' as well
+    if (getState && getState.kind === 'checkpoint' && getState.block.hash === blockHash) {
+      // Check if 'init' present at the same block
+      const { getState: getInitState } = await client.query(
+        gql(IPLD_STATE_QUERY),
+        {
+          blockHash,
+          contractAddress: contract,
+          kind: 'init'
+        }
+      );
+
+      if (getInitState && getInitState.block.hash === blockHash) {
+        // Append the 'init' IPLD block to the result
+        stateIPLDs.push(getInitState);
       }
 
-      contractCheckpointCIDMap.set(contract, getState.cid);
-      ({ getState } = await client.query(
+      const { getState: getDiffState } = await client.query(
         gql(IPLD_STATE_QUERY),
         {
           blockHash,
           contractAddress: contract,
           kind: 'diff'
         }
-      ));
+      );
+
+      // Check if 'diff' present at the same block
+      if (getDiffState && getDiffState.block.hash === blockHash) {
+        // Append the 'diff' IPLD block to the result
+        stateIPLDs.push(getDiffState);
+      }
     }
 
-    return getState;
+    // Append the IPLD block to the result
+    stateIPLDs.push(getState);
+
+    return stateIPLDs;
   }));
 };
 

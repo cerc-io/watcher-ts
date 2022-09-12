@@ -65,7 +65,6 @@ export const main = async (): Promise<void> => {
   let blockDelay = wait(0);
   let subgraphContracts: string[] = [];
   const contractLatestStateCIDMap: Map<string, string> = new Map();
-  const contractCheckpointCIDMap: Map<string, string> = new Map();
   let db: Database | undefined, subgraphGQLClient: GraphQLClient | undefined;
 
   if (config.watcher) {
@@ -84,7 +83,6 @@ export const main = async (): Promise<void> => {
 
     subgraphContracts.forEach(subgraphContract => {
       contractLatestStateCIDMap.set(subgraphContract, '');
-      contractCheckpointCIDMap.set(subgraphContract, '');
     });
   }
 
@@ -117,10 +115,10 @@ export const main = async (): Promise<void> => {
       assert(db);
       const [block] = await db?.getBlocksAtHeight(blockNumber, false);
       assert(subgraphGQLClient);
-      const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, blockNumber, block.blockHash, contractCheckpointCIDMap);
+      const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
 
       // Check meta data for each IPLD block found
-      contractIPLDsByBlock.forEach(contractIPLD => {
+      contractIPLDsByBlock.flat().forEach(contractIPLD => {
         const ipldMetaDataDiff = checkIPLDMetaData(contractIPLD, contractLatestStateCIDMap, rawJson);
         if (ipldMetaDataDiff) {
           log('Results mismatch for IPLD meta data:', ipldMetaDataDiff);
@@ -128,13 +126,7 @@ export const main = async (): Promise<void> => {
         }
       });
 
-      // Update the contractLatestStateCIDMap if checkpoints found at current block
-      contractCheckpointCIDMap.forEach((cid: string, contractAddress: string) => {
-        contractLatestStateCIDMap.set(contractAddress, cid);
-        contractCheckpointCIDMap.set(contractAddress, '');
-      });
-
-      ipldStateByBlock = combineIPLDState(contractIPLDsByBlock);
+      ipldStateByBlock = combineIPLDState(contractIPLDsByBlock.flat());
     }
 
     await blockDelay;
