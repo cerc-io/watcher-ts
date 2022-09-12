@@ -188,6 +188,7 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
         stateIPLDs.push(getInitState);
       }
 
+      // Check if 'diff' present at the same block
       const { getState: getDiffState } = await client.query(
         gql(IPLD_STATE_QUERY),
         {
@@ -197,7 +198,6 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
         }
       );
 
-      // Check if 'diff' present at the same block
       if (getDiffState && getDiffState.block.hash === blockHash) {
         // Append the 'diff' IPLD block to the result
         stateIPLDs.push(getDiffState);
@@ -231,7 +231,7 @@ export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLa
   // Actual meta data from the GQL result
   const data = JSON.parse(contractIPLD.data);
 
-  // If not parentCID not initialized ('') (at start)
+  // If parentCID not initialized (is empty at start)
   // Take the expected parentCID from the actual data itself
   if (parentCID === '') {
     parentCID = data.meta.parent['/'];
