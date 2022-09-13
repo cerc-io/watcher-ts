@@ -9,6 +9,7 @@ import {
   ConnectionOptions,
   FindOneOptions,
   LessThanOrEqual,
+  QueryRunner,
   Repository
 } from 'typeorm';
 
@@ -47,6 +48,10 @@ export class Database {
 
   async close (): Promise<void> {
     return this._baseDatabase.close();
+  }
+
+  async createTransactionRunner (): Promise<QueryRunner> {
+    return this._baseDatabase.createTransactionRunner();
   }
 
   async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined> {
@@ -107,9 +112,9 @@ export class Database {
     return entities.map((entity: any) => entity.id);
   }
 
-  async getEntityWithRelations<Entity> (entity: (new () => Entity), id: string, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight = {}, depth = 1): Promise<Entity | undefined> {
+  async getEntityWithRelations<Entity> (queryRunner: QueryRunner, entity: (new () => Entity), id: string, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight = {}, depth = 1): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
-    const repo = this._conn.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entity);
     const whereOptions: any = { id };
 
     if (blockNumber) {
@@ -118,7 +123,7 @@ export class Database {
 
     if (blockHash) {
       whereOptions.blockHash = blockHash;
-      const block = await this._baseDatabase.getBlockProgress(this._conn.getRepository('block_progress'), blockHash);
+      const block = await this._baseDatabase.getBlockProgress(queryRunner.manager.getRepository('block_progress'), blockHash);
       blockNumber = block?.blockNumber;
     }
 
@@ -132,24 +137,18 @@ export class Database {
     let entityData: any = await repo.findOne(findOptions as FindOneOptions<Entity>);
 
     if (!entityData && findOptions.where.blockHash) {
-      const queryRunner = this._conn.createQueryRunner();
-
-      try {
-        entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
-      } finally {
-        await queryRunner.release();
-      }
+      entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
     }
 
     // Get relational fields
     if (entityData) {
-      entityData = await this.loadEntityRelations(block, relationsMap, entity, entityData, depth);
+      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entity, entityData, depth);
     }
 
     return entityData;
   }
 
-  async loadEntityRelations<Entity> (block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entityData: any, depth: number): Promise<Entity> {
+  async loadEntityRelations<Entity> (queryRunner: QueryRunner, block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entityData: any, depth: number): Promise<Entity> {
     // Only support two-level nesting of relations
     if (depth > 2) {
       return entityData;
@@ -174,6 +173,7 @@ export class Database {
           };
 
           const relatedEntities = await this.getEntities(
+            queryRunner,
             relationEntity,
             relationsMap,
             block,
@@ -197,6 +197,7 @@ export class Database {
           };
 
           const relatedEntities = await this.getEntities(
+            queryRunner,
             relationEntity,
             relationsMap,
             block,
@@ -212,6 +213,7 @@ export class Database {
 
         // field is neither an array nor derivedFrom
         const relatedEntity = await this.getEntityWithRelations(
+          queryRunner,
           relationEntity,
           entityData[field],
           relationsMap,
@@ -227,8 +229,8 @@ export class Database {
     return entityData;
   }
 
-  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, depth = 1): Promise<Entity[]> {
-    const repo = this._conn.getRepository(entity);
+  async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, depth = 1): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
     const { tableName } = repo.metadata;
 
     let subQuery = repo.createQueryBuilder('subTable')
@@ -240,19 +242,13 @@ export class Database {
       .groupBy('subTable.id');
 
     if (block.hash) {
-      const queryRunner = this._conn.createQueryRunner();
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
 
-      try {
-        const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-        subQuery = subQuery
-          .andWhere(new Brackets(qb => {
-            qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-              .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-          }));
-      } finally {
-        await queryRunner.release();
-      }
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
     }
 
     if (block.number) {
@@ -289,10 +285,10 @@ export class Database {
       return [];
     }
 
-    return this.loadEntitiesRelations(block, relationsMap, entity, entities, depth);
+    return this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, depth);
   }
 
-  async loadEntitiesRelations<Entity> (block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entities: Entity[], depth: number): Promise<Entity[]> {
+  async loadEntitiesRelations<Entity> (queryRunner: QueryRunner, block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entities: Entity[], depth: number): Promise<Entity[]> {
     // Only support two-level nesting of relations
     if (depth > 2) {
       return entities;
@@ -316,6 +312,7 @@ export class Database {
         };
 
         const relatedEntities = await this.getEntities(
+          queryRunner,
           relationEntity,
           relationsMap,
           block,
@@ -366,6 +363,7 @@ export class Database {
         };
 
         const relatedEntities = await this.getEntities(
+          queryRunner,
           relationEntity,
           relationsMap,
           block,
@@ -403,6 +401,7 @@ export class Database {
       };
 
       const relatedEntities = await this.getEntities(
+        queryRunner,
         relationEntity,
         relationsMap,
         block,
