@@ -211,7 +211,7 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
   }));
 };
 
-export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLatestStateCIDMap: Map<string, string>, rawJson: boolean) => {
+export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLatestStateCIDMap: Map<string, { diff: string, checkpoint: string }>, rawJson: boolean) => {
   // Return if IPLD for a contract not found
   if (!contractIPLD) {
     return;
@@ -219,22 +219,35 @@ export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLa
 
   const { contractAddress, cid, kind, block } = contractIPLD;
 
-  let parentCID = contractLatestStateCIDMap.get(contractAddress);
+  const parentCIDs = contractLatestStateCIDMap.get(contractAddress);
+  assert(parentCIDs);
+
   // If CID is same as the parent CID, skip the check
-  if (cid === parentCID) {
+  if (cid === parentCIDs.diff || cid === parentCIDs.checkpoint) {
     return;
   }
 
-  // Update the parent CID in the map
-  contractLatestStateCIDMap.set(contractAddress, cid);
+  // Update the parent CIDs in the map
+  // Keep previous 'diff' if kind is 'checkpoint'
+  const nextParentCIDs = (kind === 'checkpoint')
+    ? { diff: parentCIDs.diff, checkpoint: cid as string }
+    : { diff: cid, checkpoint: '' };
+  contractLatestStateCIDMap.set(contractAddress, nextParentCIDs);
 
   // Actual meta data from the GQL result
   const data = JSON.parse(contractIPLD.data);
 
   // If parentCID not initialized (is empty at start)
   // Take the expected parentCID from the actual data itself
-  if (parentCID === '') {
-    parentCID = data.meta.parent['/'];
+  let parentCID: string;
+  const actualParentCID = data.meta.parent['/'];
+  if (parentCIDs.diff === '') {
+    parentCID = actualParentCID;
+  } else {
+    // Check if actual parent CID points to previous 'checkpoint'
+    parentCID = (parentCIDs.checkpoint !== '' && actualParentCID === parentCIDs.checkpoint)
+      ? parentCIDs.checkpoint
+      : parentCIDs.diff;
   }
 
   // Expected meta data
