@@ -258,52 +258,72 @@ export class GraphWatcher {
   }
 
   async getEntity<Entity> (entity: new () => Entity, id: string, relationsMap: Map<any, { [key: string]: any }>, block?: BlockHeight): Promise<any> {
-    // Get entity from the database.
-    const result = await this._database.getEntityWithRelations(entity, id, relationsMap, block);
+    const dbTx = await this._database.createTransactionRunner();
 
-    // Resolve any field name conflicts in the entity result.
-    return resolveEntityFieldConflicts(result);
+    try {
+      // Get entity from the database.
+      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block);
+      await dbTx.commitTransaction();
+
+      // Resolve any field name conflicts in the entity result.
+      return resolveEntityFieldConflicts(result);
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
-    where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
-      const [field, ...suffix] = fieldWithSuffix.split('_');
+    const dbTx = await this._database.createTransactionRunner();
 
-      if (!acc[field]) {
-        acc[field] = [];
+    try {
+      where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
+        const [field, ...suffix] = fieldWithSuffix.split('_');
+
+        if (!acc[field]) {
+          acc[field] = [];
+        }
+
+        const filter = {
+          value,
+          not: false,
+          operator: 'equals'
+        };
+
+        let operator = suffix.shift();
+
+        if (operator === 'not') {
+          filter.not = true;
+          operator = suffix.shift();
+        }
+
+        if (operator) {
+          filter.operator = operator;
+        }
+
+        acc[field].push(filter);
+
+        return acc;
+      }, {});
+
+      if (!queryOptions.limit) {
+        queryOptions.limit = DEFAULT_LIMIT;
       }
 
-      const filter = {
-        value,
-        not: false,
-        operator: 'equals'
-      };
+      // Get entities from the database.
+      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions);
+      await dbTx.commitTransaction();
 
-      let operator = suffix.shift();
-
-      if (operator === 'not') {
-        filter.not = true;
-        operator = suffix.shift();
-      }
-
-      if (operator) {
-        filter.operator = operator;
-      }
-
-      acc[field].push(filter);
-
-      return acc;
-    }, {});
-
-    if (!queryOptions.limit) {
-      queryOptions.limit = DEFAULT_LIMIT;
+      // Resolve any field name conflicts in the entity result.
+      return entities.map(entity => resolveEntityFieldConflicts(entity));
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
     }
-
-    // Get entities from the database.
-    const entities = await this._database.getEntities(entity, relationsMap, block, where, queryOptions);
-
-    // Resolve any field name conflicts in the entity result.
-    return entities.map(entity => resolveEntityFieldConflicts(entity));
   }
 
   /**
