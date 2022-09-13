@@ -45,6 +45,7 @@ export const fillBlocks = async (
       throw new Error(`Missing blocks between startBlock ${startBlock} and chainHeadBlockNumber ${syncStatus.chainHeadBlockNumber}`);
     }
 
+    assert(endBlock > syncStatus.chainHeadBlockNumber, 'endBlock should be greater than chainHeadBlockNumber');
     startBlock = syncStatus.chainHeadBlockNumber + 1;
   }
 
