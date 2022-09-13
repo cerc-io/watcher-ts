@@ -2,7 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import assert from 'assert';
 import debug from 'debug';
 
 import { JobQueue } from './job-queue';
@@ -27,7 +26,10 @@ export const fillBlocks = async (
   }
 ): Promise<any> => {
   let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE } = argv;
-  assert(startBlock <= endBlock, 'endBlock should be greater than or equal to startBlock');
+
+  if (startBlock > endBlock) {
+    throw new Error(`endBlock ${endBlock} should be greater than or equal to startBlock ${startBlock}`);
+  }
 
   const syncStatus = await indexer.getSyncStatus();
 
@@ -45,7 +47,10 @@ export const fillBlocks = async (
       throw new Error(`Missing blocks between startBlock ${startBlock} and chainHeadBlockNumber ${syncStatus.chainHeadBlockNumber}`);
     }
 
-    assert(endBlock > syncStatus.chainHeadBlockNumber, 'endBlock should be greater than chainHeadBlockNumber');
+    if (endBlock <= syncStatus.chainHeadBlockNumber) {
+      throw new Error(`endBlock ${endBlock} should be greater than chainHeadBlockNumber ${syncStatus.chainHeadBlockNumber}`);
+    }
+
     startBlock = syncStatus.chainHeadBlockNumber + 1;
   }
 
