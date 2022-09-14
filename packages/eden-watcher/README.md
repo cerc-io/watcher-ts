@@ -150,7 +150,7 @@ GQL console: http://localhost:3012/graphql
       yarn export-state --export-file [export-file-path]
       ```
 
-      * `export-file`: Path of JSON file to which to export the watcher data.
+      * `export-file`: Path of file to which to export the watcher data.
 
     * In target watcher, run job-runner:
 
@@ -165,14 +165,6 @@ GQL console: http://localhost:3012/graphql
       ```
 
       * `import-file`: Path of JSON file from which to import the watcher data.
-
-    * Run fill:
-
-      ```bash
-      yarn fill --start-block <snapshot-block> --end-block <to-block>
-      ```
-
-      * `snapshot-block`: Block number at which the watcher state was exported.
 
     * Run server:
 

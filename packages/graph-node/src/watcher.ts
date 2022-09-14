@@ -11,7 +11,7 @@ import { ContractInterface, utils, providers } from 'ethers';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { IndexerInterface, getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -27,7 +27,7 @@ interface DataSource {
 
 export class GraphWatcher {
   _database: Database;
-  _indexer?: IndexerInterface;
+  _indexer?: IPLDIndexerInterface;
   _ethClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
@@ -253,7 +253,7 @@ export class GraphWatcher {
     }
   }
 
-  setIndexer (indexer: IndexerInterface): void {
+  setIndexer (indexer: IPLDIndexerInterface): void {
     this._indexer = indexer;
   }
 
@@ -323,6 +323,27 @@ export class GraphWatcher {
       throw error;
     } finally {
       await dbTx.release();
+    }
+  }
+
+  async updateEntitiesFromIPLDState (ipldBlock: IPLDBlockInterface) {
+    assert(this._indexer);
+    const data = this._indexer.getIPLDData(ipldBlock);
+
+    for (const [entityName, entities] of Object.entries(data.state)) {
+      // Get relations for subgraph entity
+      assert(this._indexer.getRelationsMap);
+      const relationsMap = this._indexer.getRelationsMap();
+
+      const result = Array.from(relationsMap.entries())
+        .find(([key]) => key.name === entityName);
+
+      const relations = result ? result[1] : {};
+
+      for (const [id, entityData] of Object.entries(entities as any)) {
+        const dbData = this._database.fromIPLDState(ipldBlock.block, entityName, entityData, relations);
+        this._database.saveEntity(entityName, dbData);
+      }
     }
   }
 

@@ -118,6 +118,7 @@ export interface IndexerInterface {
 
 export interface IPLDIndexerInterface extends IndexerInterface {
   updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void>
+  getIPLDData (ipldBlock: IPLDBlockInterface): any
 }
 
 export interface EventWatcherInterface {
