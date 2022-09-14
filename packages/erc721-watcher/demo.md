@@ -15,7 +15,7 @@
   ./setup-repositories.sh -p ssh
   ```
 
-* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
+* Checkout [v4 release](https://github.com/cerc-io/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
 
   ```bash
   # In go-ethereum repo.

@@ -43,9 +43,9 @@
 
 * The following core services should be setup and running on localhost:
   
-  * `vulcanize/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
+  * `cerc-io/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/cerc-io/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
   
-  * `vulcanize/ipld-eth-server` [v4.0.3-alpha](https://github.com/vulcanize/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
+  * `cerc-io/ipld-eth-server` [v4.0.3-alpha](https://github.com/cerc-io/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
 
 * In the [config file](./environments/local.toml):
 

@@ -4,7 +4,7 @@ This readme can be followed to index required blocks out of order for a contract
 
 * For indexing the required blocks the following core services will be used:
 
-  * [ipld-eth-db](https://github.com/vulcanize/ipld-eth-db)
+  * [ipld-eth-db](https://github.com/cerc-io/ipld-eth-db)
 
     * Run ipld-eth-db database using docker:
 
@@ -16,9 +16,9 @@ This readme can be followed to index required blocks out of order for a contract
 
     It is an RPC wrapper around LevelDB. The endpoint can be used by eth-statediff-service to access LevelDB.
 
-  * [eth-statediff-service](https://github.com/vulcanize/eth-statediff-service)
+  * [eth-statediff-service](https://github.com/cerc-io/eth-statediff-service)
 
-    * The [config file](https://github.com/vulcanize/eth-statediff-service/blob/sharding/environments/config.toml) can be updated with the following for running eth-statediff-service:
+    * The [config file](https://github.com/cerc-io/eth-statediff-service/blob/sharding/environments/config.toml) can be updated with the following for running eth-statediff-service:
 
       ```toml
       [leveldb]
@@ -96,9 +96,9 @@ This readme can be followed to index required blocks out of order for a contract
 
   * Stop the eth-statediff-service after all required blocks are indexed.
 
-* Start the [ipld-eth-server](https://github.com/vulcanize/eth-statediff-service) to query the indexed data from watcher.
+* Start the [ipld-eth-server](https://github.com/cerc-io/eth-statediff-service) to query the indexed data from watcher.
 
-  * Create the following config.toml file for ipld-eth-server in [environments directory](https://github.com/vulcanize/ipld-eth-server/tree/sharding/environments):
+  * Create the following config.toml file for ipld-eth-server in [environments directory](https://github.com/cerc-io/ipld-eth-server/tree/sharding/environments):
 
     ```toml
     [database]
