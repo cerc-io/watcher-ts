@@ -27,27 +27,24 @@ export class IPLDDatabase extends Database {
       ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
       : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged });
 
-    // Get the first two entries.
-    queryBuilder.limit(2);
+    // Get the first three entries.
+    queryBuilder.limit(3);
 
     const results = await queryBuilder.getMany();
 
-    switch (results.length) {
-      case 0:
-        // No result found.
-        return;
-      case 1:
-        // Return the only IPLD block entry found.
-        return results[0];
-      case 2:
-        // If there are two entries in the result and both are at the same block number, give preference to checkpoint kind.
-        if (results[0].block.blockNumber === results[1].block.blockNumber) {
-          return (results[1].kind === StateKind.Checkpoint) ? results[1] : results[0];
+    if (results.length) {
+      // Sort by (block number desc, id desc) to get the latest entry.
+      // At same height, IPLD blocks are expected in order ['init', 'diff', 'checkpoint'],
+      // and are given preference in order ['checkpoint', 'diff', 'init']
+      results.sort((result1, result2) => {
+        if (result1.block.blockNumber === result2.block.blockNumber) {
+          return (result1.id > result2.id) ? -1 : 1;
         } else {
-          return results[0];
+          return (result1.block.blockNumber > result2.block.blockNumber) ? -1 : 1;
         }
-      default:
-        throw new Error(`Unexpected results length ${results.length}`);
+      });
+
+      return results[0];
     }
   }
 

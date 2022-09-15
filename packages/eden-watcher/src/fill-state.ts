@@ -67,6 +67,9 @@ export const fillState = async (
 
     const blockHash = blocks[0].blockHash;
 
+    // Create initial state for contracts
+    await indexer.createInit(blockHash, blockNumber);
+
     // Fill state for each contract in contractEntitiesMap
     const contractStatePromises = Array.from(contractEntitiesMap.entries())
       .map(async ([contractAddress, entities]): Promise<void> => {
@@ -95,10 +98,15 @@ export const fillState = async (
     // Persist subgraph state to the DB
     await indexer.dumpSubgraphState(blockHash, true);
 
+    // Create checkpoints
+    await indexer.processCheckpoint(blockHash);
+
     console.timeEnd(`time:fill-state-${blockNumber}`);
   }
 
   console.timeEnd('time:fill-state');
+
+  // TODO: Push state to IPFS
 
   log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
 };
