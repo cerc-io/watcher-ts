@@ -182,7 +182,7 @@ export const main = async (): Promise<void> => {
         }
       } catch (err: any) {
         log('Error:', err.message);
-        log('Error:', err);
+        log('Error:', JSON.stringify(err, null, 2));
       }
     }
 

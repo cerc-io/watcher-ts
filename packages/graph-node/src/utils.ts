@@ -821,9 +821,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
       }
 
       if (isArray) {
-        updatedEntity[relation] = updatedEntity[relation]
-          .map((id: string) => ({ id }))
-          .sort((a: any, b: any) => a.id.localeCompare(b.id));
+        updatedEntity[relation] = updatedEntity[relation].map((id: string) => ({ id }));
       } else {
         updatedEntity[relation] = { id: updatedEntity[relation] };
       }

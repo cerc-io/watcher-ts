@@ -122,6 +122,8 @@ export const main = async (): Promise<any> => {
   // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
   await indexer.removeIPLDBlocks(block.blockNumber, StateKind.Init);
   await indexer.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
+
+  log(`Import completed for snapshot block at height ${block.blockNumber}`);
 };
 
 main().catch(err => {

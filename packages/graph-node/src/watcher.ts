@@ -342,7 +342,7 @@ export class GraphWatcher {
 
       for (const [id, entityData] of Object.entries(entities as any)) {
         const dbData = this._database.fromIPLDState(ipldBlock.block, entityName, entityData, relations);
-        this._database.saveEntity(entityName, dbData);
+        await this._database.saveEntity(entityName, dbData);
       }
     }
   }

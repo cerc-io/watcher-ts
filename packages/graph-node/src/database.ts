@@ -516,7 +516,7 @@ export class Database {
   }
 
   getStateEntityValues (block: BlockProgressInterface, stateEntity: any, entityFields: any, relations: { [key: string]: any } = {}): { [key: string]: any } {
-    const entityValues = entityFields.map(async (field: any) => {
+    const entityValues = entityFields.map((field: any) => {
       const { propertyName } = field;
 
       // Get blockHash property for db entry from block instance.
