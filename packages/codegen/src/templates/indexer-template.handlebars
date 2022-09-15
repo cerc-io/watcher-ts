@@ -419,12 +419,18 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.createStateCheckpoint(contractAddress, block, data);
   }
 
-  // Method to be used by checkpoint CLI.
+  // Method to be used by export-state CLI.
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
     return this._baseIndexer.createCheckpoint(this, contractAddress, block);
+  }
+
+  // Method to be used by fill-state CLI.
+  async createInit (blockHash: string, blockNumber: number): Promise<void> {
+    // Create initial state for contracts.
+    await this._baseIndexer.createInit(this, blockHash, blockNumber);
   }
 
   async saveOrUpdateIPLDBlock (ipldBlock: IPLDBlock): Promise<IPLDBlock> {
