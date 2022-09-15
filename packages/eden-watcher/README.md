@@ -164,7 +164,7 @@ GQL console: http://localhost:3012/graphql
       yarn import-state --import-file <import-file-path>
       ```
 
-      * `import-file`: Path of JSON file from which to import the watcher data.
+      * `import-file`: Path of file from which to import the watcher data.
 
     * Run server:
 

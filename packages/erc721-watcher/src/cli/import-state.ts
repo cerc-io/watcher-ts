@@ -76,6 +76,7 @@ export const main = async (): Promise<any> => {
     eventWatcher,
     config.upstream.ethServer.blockDelayInMilliSecs,
     {
+      prefetch: true,
       startBlock: importData.snapshotBlock.blockNumber,
       endBlock: importData.snapshotBlock.blockNumber
     }
@@ -102,9 +103,17 @@ export const main = async (): Promise<any> => {
     await indexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
+  // Mark snapshot block as completely processed.
+  block.isComplete = true;
+  await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
+  await indexer.updateSyncStatusChainHead(block.blockHash, block.blockNumber);
+  await indexer.updateSyncStatusIndexedBlock(block.blockHash, block.blockNumber);
+
   // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
   await indexer.removeIPLDBlocks(block.blockNumber, StateKind.Init);
   await indexer.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
+
+  log(`Import completed for snapshot block at height ${block.blockNumber}`);
 };
 
 main().catch(err => {
