@@ -38,15 +38,7 @@ export const fillState = async (
   }
 
   // Map: contractAddress -> entities updated
-  const contractEntitiesMap: Map<string, string[]> = new Map();
-
-  // Populate contractEntitiesMap using data sources from subgraph
-  // NOTE: Assuming each entity type is only mapped to a single contract
-  //       This is true for eden subgraph; may not be the case for other subgraphs
-  dataSources.forEach((dataSource: any) => {
-    const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
-    contractEntitiesMap.set(contractAddress, entities as string[]);
-  });
+  const contractEntitiesMap = getContractEntitiesMap(dataSources);
 
   console.time('time:fill-state');
 
@@ -71,29 +63,7 @@ export const fillState = async (
     await indexer.createInit(blockHash, blockNumber);
 
     // Fill state for each contract in contractEntitiesMap
-    const contractStatePromises = Array.from(contractEntitiesMap.entries())
-      .map(async ([contractAddress, entities]): Promise<void> => {
-        // Get all the updated entities at this block
-        const updatedEntitiesListPromises = entities.map(async (entity): Promise<any[]> => {
-          return graphDb.getEntitiesForBlock(blockHash, entity);
-        });
-        const updatedEntitiesList = await Promise.all(updatedEntitiesListPromises);
-
-        // Populate state with all the updated entities of each entity type
-        updatedEntitiesList.forEach((updatedEntities, index) => {
-          const entityName = entities[index];
-
-          updatedEntities.forEach((updatedEntity) => {
-            // Prepare diff data for the entity update
-            const diffData = prepareEntityState(updatedEntity, entityName, indexer.getRelationsMap());
-
-            // Update the in-memory subgraph state
-            indexer.updateSubgraphState(contractAddress, diffData);
-          });
-        });
-      });
-
-    await Promise.all(contractStatePromises);
+    createStateFromUpdatedEntities(indexer, graphDb, blockHash, contractEntitiesMap);
 
     // Persist subgraph state to the DB
     await indexer.dumpSubgraphState(blockHash, true);
@@ -109,4 +79,51 @@ export const fillState = async (
   // TODO: Push state to IPFS
 
   log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
+};
+
+export const getContractEntitiesMap = (dataSources: any[]): Map<string, string[]> => {
+  // Map: contractAddress -> entities updated
+  const contractEntitiesMap: Map<string, string[]> = new Map();
+
+  // Populate contractEntitiesMap using data sources from subgraph
+  // NOTE: Assuming each entity type is only mapped to a single contract
+  //       This is true for eden subgraph; may not be the case for other subgraphs
+  dataSources.forEach((dataSource: any) => {
+    const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
+    contractEntitiesMap.set(contractAddress, entities as string[]);
+  });
+
+  return contractEntitiesMap;
+};
+
+export const createStateFromUpdatedEntities = async (
+  indexer: Indexer,
+  graphDb: GraphDatabase,
+  blockHash: string,
+  contractEntitiesMap: Map<string, string[]>
+): Promise<any> => {
+  // Create state for each contract in contractEntitiesMap
+  const contractStatePromises = Array.from(contractEntitiesMap.entries())
+    .map(async ([contractAddress, entities]): Promise<void> => {
+      // Get all the updated entities at this block
+      const updatedEntitiesListPromises = entities.map(async (entity): Promise<any[]> => {
+        return graphDb.getEntitiesForBlock(blockHash, entity);
+      });
+      const updatedEntitiesList = await Promise.all(updatedEntitiesListPromises);
+
+      // Populate state with all the updated entities of each entity type
+      updatedEntitiesList.forEach((updatedEntities, index) => {
+        const entityName = entities[index];
+
+        updatedEntities.forEach((updatedEntity) => {
+          // Prepare diff data for the entity update
+          const diffData = prepareEntityState(updatedEntity, entityName, indexer.getRelationsMap());
+
+          // Update the in-memory subgraph state
+          indexer.updateSubgraphState(contractAddress, diffData);
+        });
+      });
+    });
+
+  await Promise.all(contractStatePromises);
 };
