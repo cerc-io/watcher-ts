@@ -64,7 +64,7 @@ export const main = async (): Promise<void> => {
   let diffFound = false;
   let blockDelay = wait(0);
   let subgraphContracts: string[] = [];
-  const contractLatestStateCIDMap: Map<string, string> = new Map();
+  const contractLatestStateCIDMap: Map<string, { diff: string, checkpoint: string }> = new Map();
   let db: Database | undefined, subgraphGQLClient: GraphQLClient | undefined;
 
   if (config.watcher) {
@@ -82,7 +82,7 @@ export const main = async (): Promise<void> => {
     }
 
     subgraphContracts.forEach(subgraphContract => {
-      contractLatestStateCIDMap.set(subgraphContract, '');
+      contractLatestStateCIDMap.set(subgraphContract, { diff: '', checkpoint: '' });
     });
   }
 
