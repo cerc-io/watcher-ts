@@ -9,6 +9,8 @@ import _ from 'lodash';
 
 import { Indexer, ResultEvent } from './indexer';
 
+const IPLD_BATCH_BLOCKS = 10000;
+
 /**
  * Hook function to store an initial state.
  * @param indexer Indexer instance.
@@ -91,22 +93,28 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
     state: prevNonDiffBlockData.state
   };
 
-  // Merge all diff blocks after previous checkpoint.
-  for (const diffBlock of diffBlocks) {
-    const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
-    data.state = _.merge(data.state, diff.state);
+  console.time('time:hooks#createStateCheckpoint');
+
+  for (let i = diffStartBlockNumber; i < block.blockNumber;) {
+    const endBlockHeight = Math.min(i + IPLD_BATCH_BLOCKS, block.blockNumber);
+    console.time(`time:hooks#createStateCheckpoint-batch-merge-diff-${i}-${endBlockHeight}`);
+    const diffBlocks = await indexer.getDiffIPLDBlocksInRange(contractAddress, i, endBlockHeight);
+
+    // Merge all diff blocks after previous checkpoint.
+    for (const diffBlock of diffBlocks) {
+      const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
+      data.state = _.merge(data.state, diff.state);
+    }
+
+    console.timeEnd(`time:hooks#createStateCheckpoint-batch-merge-diff-${i}-${endBlockHeight}`);
+    i = endBlockHeight;
   }
 
-  // Check if Block entity exists.
-  if (data.state.Block) {
-    // Store only block entity at checkpoint height instead of all entities.
-    data.state.Block = {
-      [blockHash]: data.state.Block[blockHash]
-    };
-  }
-
+  console.time('time:hooks#createStateCheckpoint-db-save-checkpoint');
   await indexer.createStateCheckpoint(contractAddress, blockHash, data);
+  console.timeEnd('time:hooks#createStateCheckpoint-db-save-checkpoint');
 
+  console.timeEnd('time:hooks#createStateCheckpoint');
   return true;
 }
 

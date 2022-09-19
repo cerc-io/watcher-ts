@@ -340,10 +340,13 @@ export class GraphWatcher {
 
       const relations = result ? result[1] : {};
 
+      log(`Updating entities from IPLD state for entity ${entityName}`);
+      console.time(`time:watcher#GraphWatcher-updateEntitiesFromIPLDState-IPLD-update-entity-${entityName}`);
       for (const [id, entityData] of Object.entries(entities as any)) {
         const dbData = this._database.fromIPLDState(ipldBlock.block, entityName, entityData, relations);
         await this._database.saveEntity(entityName, dbData);
       }
+      console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromIPLDState-IPLD-update-entity-${entityName}`);
     }
   }
 
