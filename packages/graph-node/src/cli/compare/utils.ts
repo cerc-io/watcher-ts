@@ -42,7 +42,7 @@ interface EndpointConfig {
 
 interface QueryConfig {
   queryDir: string;
-  names: string[];
+  names: { [queryName: string]: string };
   blockDelayInMs: number;
   queryLimits: { [queryName: string]: number }
 }
