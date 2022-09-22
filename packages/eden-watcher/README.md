@@ -155,10 +155,11 @@ GQL console: http://localhost:3012/graphql
     * In source watcher, export watcher state:
 
       ```bash
-      yarn export-state --export-file [export-file-path]
+      yarn export-state --export-file [export-file-path] --block-number [snapshot-block-height]
       ```
 
       * `export-file`: Path of file to which to export the watcher data.
+      * `block-number`: Block height at which to take snapshot for export.
 
     * In target watcher, run job-runner:
 
