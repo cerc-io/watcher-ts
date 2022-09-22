@@ -17,9 +17,11 @@ export class Client {
   _queryDir: string;
   _cache: Cache | undefined;
   _endpoint: string;
+  _timeDiff: boolean;
 
-  constructor (config: Config, queryDir: string) {
+  constructor (config: Config, timeDiff: boolean, queryDir: string) {
     this._config = config;
+    this._timeDiff = timeDiff;
     this._queryDir = path.resolve(process.cwd(), queryDir);
 
     const { gqlEndpoint, cache } = config;
@@ -35,8 +37,12 @@ export class Client {
     return this._endpoint;
   }
 
-  async getResult (queryName: string, params: { [key: string]: any }): Promise<any> {
-    return this._getCachedOrFetch(queryName, params);
+  async getResult (queryName: string, params: { [key: string]: any }): Promise<{ time: number, data: any }> {
+    const startTime = new Date();
+    const data = await this._getCachedOrFetch(queryName, params);
+    const time = (new Date()).getTime() - startTime.getTime();
+
+    return { time, data };
   }
 
   async getIds (queryName: string, blockNumber: number): Promise<string[]> {
@@ -80,8 +86,9 @@ export class Client {
       params
     };
 
-    // Check if request cached in db, if cache is enabled.
-    if (this._cache) {
+    // Check if request cached in db
+    // If cache is enabled and timeDiff is disabled.
+    if (this._cache && !this._timeDiff) {
       const [value, found] = await this._cache.get(keyObj) || [undefined, false];
       if (found) {
         return value;

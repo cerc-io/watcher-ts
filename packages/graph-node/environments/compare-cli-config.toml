@@ -7,7 +7,6 @@
   blockDelayInMs = 250
   queryLimits = {}
   [queries.names]
-    author = "Author"
 
 [watcher]
   configPath = "../../graph-test-watcher/environments/local.toml"

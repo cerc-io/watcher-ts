@@ -21,7 +21,9 @@ const log = debug('vulcanize:compare-blocks');
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
     'parse-numbers': false
-  }).options({
+  }).env(
+    'COMPARE'
+  ).options({
     configFile: {
       alias: 'cf',
       type: 'string',
@@ -53,13 +55,18 @@ export const main = async (): Promise<void> => {
       type: 'boolean',
       describe: 'Fetch ids and compare multiple entities',
       default: false
+    },
+    timeDiff: {
+      type: 'boolean',
+      describe: 'Compare time taken between GQL queries',
+      default: false
     }
   }).argv;
 
-  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile } = argv;
+  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile, timeDiff } = argv;
   const config: Config = await getConfig(configFile);
   const snakeNamingStrategy = new SnakeNamingStrategy();
-  const clients = await getClients(config, queryDir);
+  const clients = await getClients(config, timeDiff, queryDir);
   const queryNames = config.queries.names;
   let diffFound = false;
   let blockDelay = wait(0);
@@ -156,7 +163,8 @@ export const main = async (): Promise<void> => {
               clients,
               queryName,
               { block, id },
-              rawJson
+              rawJson,
+              timeDiff
             );
 
             if (config.watcher.verifyState) {
@@ -178,7 +186,8 @@ export const main = async (): Promise<void> => {
               clients,
               queryName,
               { block },
-              rawJson
+              rawJson,
+              timeDiff
             ));
           }
         }

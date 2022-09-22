@@ -13,7 +13,9 @@ const log = debug('vulcanize:compare-entity');
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
     'parse-numbers': false
-  }).options({
+  }).env(
+    'COMPARE'
+  ).options({
     configFile: {
       alias: 'cf',
       type: 'string',
@@ -50,6 +52,11 @@ export const main = async (): Promise<void> => {
       type: 'boolean',
       describe: 'Whether to print out raw diff object',
       default: false
+    },
+    timeDiff: {
+      type: 'boolean',
+      describe: 'Compare time taken between GQL queries',
+      default: false
     }
   }).argv;
 
@@ -63,9 +70,9 @@ export const main = async (): Promise<void> => {
     hash: argv.blockHash
   };
 
-  const clients = await getClients(config, argv.queryDir);
+  const clients = await getClients(config, argv.timeDiff, argv.queryDir);
 
-  const { diff } = await compareQuery(clients, queryName, { id, block }, argv.rawJson);
+  const { diff } = await compareQuery(clients, queryName, { id, block }, argv.rawJson, argv.timeDiff);
 
   if (diff) {
     log(diff);
