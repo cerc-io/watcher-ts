@@ -120,11 +120,19 @@ GQL console: http://localhost:3012/graphql
   * To create a checkpoint for a contract:
 
     ```bash
-    yarn checkpoint --address <contract-address> --block-hash [block-hash]
+    yarn checkpoint create --address <contract-address> --block-hash [block-hash]
     ```
 
     * `address`: Address or identifier of the contract for which to create a checkpoint.
     * `block-hash`: Hash of a block (in the pruned region) at which to create the checkpoint (default: latest canonical block hash).
+
+  * To verify a checkpoint:
+
+    ```bash
+    yarn checkpoint verify --cid <checkpoint-cid>
+    ```
+
+    `cid`: CID of the checkpoint for which to verify.
 
   * To reset the watcher to a previous block number:
 

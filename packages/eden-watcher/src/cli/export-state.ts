@@ -9,7 +9,7 @@ import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind, verifyCheckpointData } from '@cerc-io/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
@@ -34,12 +34,6 @@ const main = async (): Promise<void> => {
       alias: 'o',
       type: 'string',
       describe: 'Export file path'
-    },
-    verify: {
-      alias: 'v',
-      type: 'boolean',
-      describe: 'Verify checkpoint',
-      default: true
     }
   }).argv;
 
@@ -104,12 +98,6 @@ const main = async (): Promise<void> => {
       assert(ipldBlock);
 
       const data = indexer.getIPLDData(ipldBlock);
-
-      if (argv.verify) {
-        log(`Verifying checkpoint data for contract ${contract.address}`);
-        await verifyCheckpointData(graphDb, ipldBlock.block, data);
-        log('Checkpoint data verified');
-      }
 
       if (indexer.isIPFSConfigured()) {
         await indexer.pushToIPFS(data);
