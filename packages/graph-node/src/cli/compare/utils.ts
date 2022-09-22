@@ -276,7 +276,7 @@ export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: 
 
     const data = JSON.parse(contractIPLD.data);
 
-    // Apply default limit on array type relation fields.
+    // Apply default limit and sort by id on array type relation fields.
     Object.values(data.state)
       .forEach((idEntityMap: any) => {
         Object.values(idEntityMap)
@@ -288,6 +288,7 @@ export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: 
                   fieldValue.length &&
                   fieldValue[0].id
                 ) {
+                  fieldValue.sort((a: any, b: any) => a.id.localeCompare(b.id));
                   fieldValue.splice(DEFAULT_LIMIT);
                 }
               });
@@ -323,7 +324,7 @@ export const checkEntityInIPLDState = async (
     }
   });
 
-  const diff = compareObjects(ipldEntity, resultEntity, rawJson);
+  const diff = compareObjects(resultEntity, ipldEntity, rawJson);
 
   return diff;
 };

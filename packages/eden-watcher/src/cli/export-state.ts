@@ -9,7 +9,7 @@ import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind, verifyCheckpointData } from '@cerc-io/util';
+import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, StateKind } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import * as codec from '@ipld/dag-cbor';
 
@@ -35,17 +35,9 @@ const main = async (): Promise<void> => {
       type: 'string',
       describe: 'Export file path'
     },
-    createCheckpoint: {
-      alias: 'c',
-      type: 'boolean',
-      describe: 'Create new checkpoint',
-      default: false
-    },
-    verify: {
-      alias: 'v',
-      type: 'boolean',
-      describe: 'Verify checkpoint',
-      default: true
+    blockNumber: {
+      type: 'number',
+      describe: 'Block number to create snapshot at'
     }
   }).argv;
 
@@ -82,10 +74,24 @@ const main = async (): Promise<void> => {
   };
 
   const contracts = await db.getContracts();
-
-  // Get latest block with hooks processed.
-  const block = await indexer.getLatestHooksProcessedBlock();
+  let block = await indexer.getLatestHooksProcessedBlock();
   assert(block);
+
+  if (argv.blockNumber) {
+    if (argv.blockNumber > block.blockNumber) {
+      throw new Error(`Export snapshot block height ${argv.blockNumber} should be less than latest hooks processed block height ${block.blockNumber}`);
+    }
+
+    const blocksAtSnapshotHeight = await indexer.getBlocksAtHeight(argv.blockNumber, false);
+
+    if (!blocksAtSnapshotHeight.length) {
+      throw new Error(`No blocks at snapshot height ${argv.blockNumber}`);
+    }
+
+    block = blocksAtSnapshotHeight[0];
+  }
+
+  log(`Creating export snapshot at block height ${block.blockNumber}`);
 
   // Export snapshot block.
   exportData.snapshotBlock = {
@@ -104,21 +110,12 @@ const main = async (): Promise<void> => {
 
     // Create and export checkpoint if checkpointing is on for the contract.
     if (contract.checkpoint) {
-      if (argv.createCheckpoint) {
-        log(`Creating checkpoint at block ${block.blockNumber}`);
-        await indexer.createCheckpoint(contract.address, block.blockHash);
-      }
+      await indexer.createCheckpoint(contract.address, block.blockHash);
 
       const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, StateKind.Checkpoint, block.blockNumber);
       assert(ipldBlock);
 
       const data = indexer.getIPLDData(ipldBlock);
-
-      if (argv.verify) {
-        log(`Verifying checkpoint data for contract ${contract.address}`);
-        await verifyCheckpointData(graphDb, ipldBlock.block, data);
-        log('Checkpoint data verified');
-      }
 
       if (indexer.isIPFSConfigured()) {
         await indexer.pushToIPFS(data);

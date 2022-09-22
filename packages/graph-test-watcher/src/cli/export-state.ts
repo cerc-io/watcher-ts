@@ -35,12 +35,6 @@ const main = async (): Promise<void> => {
       type: 'string',
       describe: 'Export file path'
     },
-    createCheckpoint: {
-      alias: 'c',
-      type: 'boolean',
-      describe: 'Create new checkpoint',
-      default: false
-    },
     verify: {
       alias: 'v',
       type: 'boolean',
@@ -104,10 +98,7 @@ const main = async (): Promise<void> => {
 
     // Create and export checkpoint if checkpointing is on for the contract.
     if (contract.checkpoint) {
-      if (argv.createCheckpoint) {
-        log(`Creating checkpoint at block ${block.blockNumber}`);
-        await indexer.createCheckpoint(contract.address, block.blockHash);
-      }
+      await indexer.createCheckpoint(contract.address, block.blockHash);
 
       const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, StateKind.Checkpoint, block.blockNumber);
       assert(ipldBlock);

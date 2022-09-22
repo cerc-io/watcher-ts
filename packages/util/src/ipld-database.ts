@@ -2,14 +2,30 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Between, FindConditions, Repository } from 'typeorm';
+import { Between, ConnectionOptions, FindConditions, Repository } from 'typeorm';
 import assert from 'assert';
+import { Pool } from 'pg';
 
 import { IPLDBlockInterface, IpldStatusInterface, StateKind } from './types';
 import { Database } from './database';
 import { MAX_REORG_DEPTH } from './constants';
 
 export class IPLDDatabase extends Database {
+  _pgPool: Pool
+
+  constructor (config: ConnectionOptions) {
+    super(config);
+
+    assert(config.type === 'postgres');
+    this._pgPool = new Pool({
+      user: config.username,
+      host: config.host,
+      database: config.database,
+      password: config.password,
+      port: config.port
+    });
+  }
+
   async getLatestIPLDBlock (repo: Repository<IPLDBlockInterface>, contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined> {
     let queryBuilder = repo.createQueryBuilder('ipld_block')
       .leftJoinAndSelect('ipld_block.block', 'block')
@@ -150,7 +166,39 @@ export class IPLDDatabase extends Database {
   }
 
   async saveOrUpdateIPLDBlock (repo: Repository<IPLDBlockInterface>, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface> {
-    return repo.save(ipldBlock);
+    let updatedData: {[key: string]: any};
+
+    console.time('time:ipld-database#saveOrUpdateIPLDBlock-DB-query');
+    if (ipldBlock.id) {
+      // Using pg query as workaround for typeorm memory issue when saving checkpoint with large sized data.
+      const { rows } = await this._pgPool.query(`
+        UPDATE ipld_block
+        SET block_id = $1, contract_address = $2, cid = $3, kind = $4, data = $5
+        WHERE id = $6
+        RETURNING *
+      `, [ipldBlock.block.id, ipldBlock.contractAddress, ipldBlock.cid, ipldBlock.kind, ipldBlock.data, ipldBlock.id]);
+
+      updatedData = rows[0];
+    } else {
+      const { rows } = await this._pgPool.query(`
+        INSERT INTO ipld_block(block_id, contract_address, cid, kind, data) 
+        VALUES($1, $2, $3, $4, $5)
+        RETURNING *
+      `, [ipldBlock.block.id, ipldBlock.contractAddress, ipldBlock.cid, ipldBlock.kind, ipldBlock.data]);
+
+      updatedData = rows[0];
+    }
+    console.timeEnd('time:ipld-database#saveOrUpdateIPLDBlock-DB-query');
+
+    assert(updatedData);
+    return {
+      block: ipldBlock.block,
+      contractAddress: updatedData.contract_address,
+      cid: updatedData.cid,
+      kind: updatedData.kind,
+      data: updatedData.data,
+      id: updatedData.id
+    };
   }
 
   async removeIPLDBlocks (repo: Repository<IPLDBlockInterface>, blockNumber: number, kind: string): Promise<void> {

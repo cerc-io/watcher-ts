@@ -821,9 +821,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
       }
 
       if (isArray) {
-        updatedEntity[relation] = updatedEntity[relation]
-          .map((id: string) => ({ id }))
-          .sort((a: any, b: any) => a.id.localeCompare(b.id));
+        updatedEntity[relation] = updatedEntity[relation].map((id: string) => ({ id }));
       } else {
         updatedEntity[relation] = { id: updatedEntity[relation] };
       }
@@ -840,4 +838,21 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   };
 
   return diffData;
+};
+
+export const fromStateEntityValues = (stateEntity: any, propertyName: string, relations: { [key: string]: any } = {}): any => {
+  // Parse DB data value from state entity data.
+  if (relations) {
+    const relation = relations[propertyName];
+
+    if (relation) {
+      if (relation.isArray) {
+        return stateEntity[propertyName].map((relatedEntity: { id: string }) => relatedEntity.id);
+      } else {
+        return stateEntity[propertyName]?.id;
+      }
+    }
+  }
+
+  return stateEntity[propertyName];
 };

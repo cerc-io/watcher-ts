@@ -21,7 +21,7 @@ import {
   Where
 } from '@cerc-io/util';
 
-import { Block, fromEntityValue, toEntityValue } from './utils';
+import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './utils';
 
 export const DEFAULT_LIMIT = 100;
 
@@ -499,6 +499,43 @@ export class Database {
     }, {});
 
     const entityValues = await Promise.all(entityValuePromises);
+
+    return entityFields.reduce((acc: { [key: string]: any }, field: any, index: number) => {
+      const { propertyName } = field;
+      acc[propertyName] = entityValues[index];
+
+      return acc;
+    }, {});
+  }
+
+  fromIPLDState (block: BlockProgressInterface, entity: string, stateEntity: any, relations: { [key: string]: any } = {}): any {
+    const repo = this._conn.getRepository(entity);
+    const entityFields = repo.metadata.columns;
+
+    return this.getStateEntityValues(block, stateEntity, entityFields, relations);
+  }
+
+  getStateEntityValues (block: BlockProgressInterface, stateEntity: any, entityFields: any, relations: { [key: string]: any } = {}): { [key: string]: any } {
+    const entityValues = entityFields.map((field: any) => {
+      const { propertyName } = field;
+
+      // Get blockHash property for db entry from block instance.
+      if (propertyName === 'blockHash') {
+        return block.blockHash;
+      }
+
+      // Get blockNumber property for db entry from block instance.
+      if (propertyName === 'blockNumber') {
+        return block.blockNumber;
+      }
+
+      // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
+      if (['_blockNumber', '_blockHash'].includes(propertyName)) {
+        return fromStateEntityValues(stateEntity, propertyName.slice(1), relations);
+      }
+
+      return fromStateEntityValues(stateEntity, propertyName, relations);
+    }, {});
 
     return entityFields.reduce((acc: { [key: string]: any }, field: any, index: number) => {
       const { propertyName } = field;

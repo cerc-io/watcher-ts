@@ -348,6 +348,7 @@ export class IPLDIndexer extends Indexer {
   }
 
   async prepareIPLDBlock (block: BlockProgressInterface, contractAddress: string, data: any, kind: StateKind):Promise<any> {
+    console.time('time:ipld-indexer#prepareIPLDBlock');
     let ipldBlock: IPLDBlockInterface;
 
     // Get IPLD status for the contract.
@@ -415,6 +416,7 @@ export class IPLDIndexer extends Indexer {
       data: Buffer.from(bytes)
     });
 
+    console.timeEnd('time:ipld-indexer#prepareIPLDBlock');
     return ipldBlock;
   }
 
