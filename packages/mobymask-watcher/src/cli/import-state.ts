@@ -100,7 +100,7 @@ export const main = async (): Promise<any> => {
 
     ipldBlock.data = Buffer.from(codec.encode(ipldBlock.data));
 
-    await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+    ipldBlock = await indexer.saveOrUpdateIPLDBlock(ipldBlock);
   }
 
   // Mark snapshot block as completely processed.
@@ -108,6 +108,8 @@ export const main = async (): Promise<any> => {
   await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
   await indexer.updateSyncStatusChainHead(block.blockHash, block.blockNumber);
   await indexer.updateSyncStatusIndexedBlock(block.blockHash, block.blockNumber);
+  await indexer.updateIPLDStatusHooksBlock(block.blockNumber);
+  await indexer.updateIPLDStatusCheckpointBlock(block.blockNumber);
 
   // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
   await indexer.removeIPLDBlocks(block.blockNumber, StateKind.Init);

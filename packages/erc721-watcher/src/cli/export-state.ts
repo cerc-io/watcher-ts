@@ -33,6 +33,10 @@ const main = async (): Promise<void> => {
       alias: 'o',
       type: 'string',
       describe: 'Export file path'
+    },
+    blockNumber: {
+      type: 'number',
+      describe: 'Block number to create snapshot at'
     }
   }).argv;
 
@@ -61,10 +65,24 @@ const main = async (): Promise<void> => {
   };
 
   const contracts = await db.getContracts();
-
-  // Get latest block with hooks processed.
-  const block = await indexer.getLatestHooksProcessedBlock();
+  let block = await indexer.getLatestHooksProcessedBlock();
   assert(block);
+
+  if (argv.blockNumber) {
+    if (argv.blockNumber > block.blockNumber) {
+      throw new Error(`Export snapshot block height ${argv.blockNumber} should be less than latest hooks processed block height ${block.blockNumber}`);
+    }
+
+    const blocksAtSnapshotHeight = await indexer.getBlocksAtHeight(argv.blockNumber, false);
+
+    if (!blocksAtSnapshotHeight.length) {
+      throw new Error(`No blocks at snapshot height ${argv.blockNumber}`);
+    }
+
+    block = blocksAtSnapshotHeight[0];
+  }
+
+  log(`Creating export snapshot at block height ${block.blockNumber}`);
 
   // Export snapshot block.
   exportData.snapshotBlock = {

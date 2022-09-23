@@ -373,7 +373,7 @@
 * After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
 
   ```bash
-  yarn checkpoint --address $NFT_ADDRESS
+  yarn checkpoint create --address $NFT_ADDRESS
   ```
 
   * Run the `getState` query again with the output blockHash and kind `checkpoint` at the endpoint.
