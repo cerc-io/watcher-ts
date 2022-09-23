@@ -85,9 +85,6 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
     diffStartBlockNumber = initBlock.block.blockNumber - 1;
   }
 
-  // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
-  const diffBlocks = await indexer.getDiffIPLDBlocksInRange(contractAddress, diffStartBlockNumber, block.blockNumber);
-
   const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
   const data = {
     state: prevNonDiffBlockData.state
@@ -95,6 +92,7 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
 
   console.time('time:hooks#createStateCheckpoint');
 
+  // Fetching and merging all diff blocks after the latest 'checkpoint' | 'init' in batch.
   for (let i = diffStartBlockNumber; i < block.blockNumber;) {
     const endBlockHeight = Math.min(i + IPLD_BATCH_BLOCKS, block.blockNumber);
     console.time(`time:hooks#createStateCheckpoint-batch-merge-diff-${i}-${endBlockHeight}`);

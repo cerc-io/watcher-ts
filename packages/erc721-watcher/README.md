@@ -128,7 +128,7 @@ GQL console: http://localhost:3006/graphql
   * To create a checkpoint for a contract:
 
     ```bash
-    yarn checkpoint --address <contract-address> --block-hash [block-hash]
+    yarn checkpoint create --address <contract-address> --block-hash [block-hash]
     ```
 
     * `address`: Address or identifier of the contract for which to create a checkpoint.
@@ -155,10 +155,11 @@ GQL console: http://localhost:3006/graphql
     * In source watcher, export watcher state:
 
       ```bash
-      yarn export-state --export-file [export-file-path]
+      yarn export-state --export-file [export-file-path] --block-number [snapshot-block-height]
       ```
 
       * `export-file`: Path of file to which to export the watcher data.
+      * `block-number`: Block height at which to take snapshot for export.
 
     * In target watcher, run job-runner:
 

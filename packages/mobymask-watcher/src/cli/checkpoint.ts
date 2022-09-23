@@ -5,66 +5,35 @@
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
-import assert from 'assert';
 
-import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH } from '@cerc-io/util';
 
-import { Database } from '../database';
-import { Indexer } from '../indexer';
+import { hideBin } from 'yargs/helpers';
 
 const log = debug('vulcanize:checkpoint');
 
-const main = async (): Promise<void> => {
-  const argv = await yargs.parserConfiguration({
-    'parse-numbers': false
-  }).options({
-    configFile: {
-      alias: 'f',
-      type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Configuration file path (toml)',
-      default: DEFAULT_CONFIG_PATH
-    },
-    address: {
-      type: 'string',
-      require: true,
-      demandOption: true,
-      describe: 'Contract address to create the checkpoint for.'
-    },
-    blockHash: {
-      type: 'string',
-      describe: 'Blockhash at which to create the checkpoint.'
-    }
-  }).argv;
-
-  const config: Config = await getConfig(argv.configFile);
-  const { ethClient, ethProvider } = await initClients(config);
-
-  const db = new Database(config.database);
-  await db.init();
-
-  const jobQueueConfig = config.jobQueue;
-  assert(jobQueueConfig, 'Missing job queue config');
-
-  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
-  assert(dbConnectionString, 'Missing job queue db connection string');
-
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-  await jobQueue.start();
-
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
-  await indexer.init();
-
-  const blockHash = await indexer.processCLICheckpoint(argv.address, argv.blockHash);
-
-  log(`Created a checkpoint for contract ${argv.address} at block-hash ${blockHash}`);
-
-  await db.close();
+const main = async () => {
+  return yargs(hideBin(process.argv))
+    .parserConfiguration({
+      'parse-numbers': false
+    }).options({
+      configFile: {
+        alias: 'f',
+        type: 'string',
+        require: true,
+        demandOption: true,
+        describe: 'configuration file path (toml)',
+        default: DEFAULT_CONFIG_PATH
+      }
+    })
+    .commandDir('checkpoint-cmds', { extensions: ['ts', 'js'], exclude: /([a-zA-Z0-9\s_\\.\-:])+(.d.ts)$/ })
+    .demandCommand(1)
+    .help()
+    .argv;
 };
 
-main().catch(err => {
+main().then(() => {
+  process.exit();
+}).catch(err => {
   log(err);
-}).finally(() => {
-  process.exit(0);
 });

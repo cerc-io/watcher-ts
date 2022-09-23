@@ -153,6 +153,9 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
 
     const resetCmdsFolder = path.join(outputDir, 'src/cli/reset-cmds');
     if (!fs.existsSync(resetCmdsFolder)) fs.mkdirSync(resetCmdsFolder, { recursive: true });
+
+    const checkpointCmdsFolder = path.join(outputDir, 'src/cli/checkpoint-cmds');
+    if (!fs.existsSync(checkpointCmdsFolder)) fs.mkdirSync(checkpointCmdsFolder, { recursive: true });
   }
 
   let outStream: Writable;
@@ -236,10 +239,23 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     : process.stdout;
   exportWatchContract(outStream, config.subgraphPath);
 
-  outStream = outputDir
-    ? fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint.ts'))
-    : process.stdout;
-  exportCheckpoint(outStream, config.subgraphPath);
+  let checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream;
+
+  if (outputDir) {
+    checkpointOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint.ts'));
+    checkpointCreateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint-cmds/create.ts'));
+    if (config.subgraphPath) {
+      checkpointVerifyOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/checkpoint-cmds/verify.ts'));
+    }
+  } else {
+    checkpointOutStream = process.stdout;
+    checkpointCreateOutStream = process.stdout;
+    if (config.subgraphPath) {
+      checkpointVerifyOutStream = process.stdout;
+    }
+  }
+
+  exportCheckpoint(checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'))
