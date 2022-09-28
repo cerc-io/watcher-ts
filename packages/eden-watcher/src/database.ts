@@ -80,10 +80,10 @@ export class Database implements IPLDDatabaseInterface {
     await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
   }
 
-  async removeIPLDBlocksInRange (dbTx: QueryRunner, startBlock: number, endBlock: number): Promise<void> {
+  async removeIPLDBlocksAfterBlock (dbTx: QueryRunner, blockNumber: number): Promise<void> {
     const repo = dbTx.manager.getRepository(IPLDBlock);
 
-    await this._baseDatabase.removeIPLDBlocksInRange(repo, startBlock, endBlock);
+    await this._baseDatabase.removeIPLDBlocksAfterBlock(repo, blockNumber);
   }
 
   async getIPLDStatus (): Promise<IpldStatus | undefined> {
