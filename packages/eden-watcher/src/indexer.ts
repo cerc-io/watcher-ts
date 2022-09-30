@@ -57,6 +57,7 @@ import { Distribution } from './entity/Distribution';
 import { Claim } from './entity/Claim';
 import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
+import { SelectionNode } from 'graphql';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -371,14 +372,20 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
-    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block);
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block: BlockHeight, selections: ReadonlyArray<SelectionNode> = []): Promise<any> {
+    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block, selections);
 
     return data;
   }
 
-  async getSubgraphEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions = {}): Promise<any[]> {
-    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where, queryOptions);
+  async getSubgraphEntities<Entity> (
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: { [key: string]: any } = {},
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any[]> {
+    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where, queryOptions, selections);
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {

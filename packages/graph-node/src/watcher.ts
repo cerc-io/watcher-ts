@@ -8,6 +8,7 @@ import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
+import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
@@ -257,12 +258,18 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, relationsMap: Map<any, { [key: string]: any }>, block?: BlockHeight): Promise<any> {
+  async getEntity<Entity> (
+    entity: new () => Entity,
+    id: string,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
       // Get entity from the database.
-      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block);
+      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block, selections);
       await dbTx.commitTransaction();
 
       // Resolve any field name conflicts in the entity result.
@@ -275,7 +282,14 @@ export class GraphWatcher {
     }
   }
 
-  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
+  async getEntities<Entity> (
+    entity: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight,
+    where: { [key: string]: any } = {},
+    queryOptions: QueryOptions,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
@@ -313,7 +327,7 @@ export class GraphWatcher {
       }
 
       // Get entities from the database.
-      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions);
+      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions, selections);
       await dbTx.commitTransaction();
 
       // Resolve any field name conflicts in the entity result.
