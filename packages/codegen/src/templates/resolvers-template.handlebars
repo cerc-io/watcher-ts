@@ -6,7 +6,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 import Decimal from 'decimal.js';
-import { GraphQLScalarType } from 'graphql';
+import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
 import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer } from '@cerc-io/util';
 
@@ -78,12 +78,18 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
       {{/each}}
 
       {{~#each subgraphQueries}}
-      {{this.queryName}}: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      {{this.queryName}}: async (
+         _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('{{this.queryName}}', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('{{this.queryName}}').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity({{this.entityName}}, id, block);
+        return indexer.getSubgraphEntity({{this.entityName}}, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
       {{/each}}

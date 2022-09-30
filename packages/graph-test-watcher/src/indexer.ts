@@ -8,6 +8,7 @@ import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
+import { SelectionNode } from 'graphql';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -299,12 +300,14 @@ export class Indexer implements IPLDIndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (blockHash: string): Promise<void> {
+  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
+
+    this._graphWatcher.pruneEntityCacheFrothyBlocks(blockHash, blockNumber);
   }
 
   async processCheckpoint (blockHash: string): Promise<void> {
@@ -333,6 +336,10 @@ export class Indexer implements IPLDIndexerInterface {
 
   async getIPLDBlockByCid (cid: string): Promise<IPLDBlock | undefined> {
     return this._baseIndexer.getIPLDBlockByCid(cid);
+  }
+
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    return this._db.getIPLDBlocks(where);
   }
 
   getIPLDData (ipldBlock: IPLDBlock): any {
@@ -380,8 +387,13 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block: BlockHeight): Promise<Entity | undefined> {
-    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block);
+  async getSubgraphEntity<Entity> (
+    entity: new () => Entity,
+    id: string,
+    block: BlockHeight,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any> {
+    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block, selections);
 
     return data;
   }
@@ -404,6 +416,8 @@ export class Indexer implements IPLDIndexerInterface {
   async processBlock (blockProgress: BlockProgress): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
+
+    this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
   }
 
   async processBlockAfterEvents (blockHash: string): Promise<void> {
@@ -411,7 +425,7 @@ export class Indexer implements IPLDIndexerInterface {
     await this._graphWatcher.handleBlock(blockHash);
 
     // Persist subgraph state to the DB.
-    await this._dumpSubgraphState(blockHash);
+    await this.dumpSubgraphState(blockHash);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -535,7 +549,7 @@ export class Indexer implements IPLDIndexerInterface {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<Event>> {
-    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber);
+    return this._baseIndexer.getEventsInRange(fromBlockNumber, toBlockNumber, this._serverConfig.maxEventsBlockRange);
   }
 
   async getSyncStatus (): Promise<SyncStatus | undefined> {
@@ -613,6 +627,23 @@ export class Indexer implements IPLDIndexerInterface {
     this._subgraphStateMap.set(contractAddress, updatedData);
   }
 
+  async dumpSubgraphState (blockHash: string, isStateFinalized = false): Promise<void> {
+    // Create a diff for each contract in the subgraph state map.
+    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
+      .map(([contractAddress, data]): Promise<void> => {
+        if (isStateFinalized) {
+          return this.createDiff(contractAddress, blockHash, data);
+        }
+
+        return this.createDiffStaged(contractAddress, blockHash, data);
+      });
+
+    await Promise.all(createDiffPromises);
+
+    // Reset the subgraph state map.
+    this._subgraphStateMap.clear();
+  }
+
   _populateEntityTypesMap (): void {
     this._entityTypesMap.set(
       'Author',
@@ -672,19 +703,6 @@ export class Indexer implements IPLDIndexerInterface {
         isArray: true
       }
     });
-  }
-
-  async _dumpSubgraphState (blockHash: string): Promise<void> {
-    // Create a diff for each contract in the subgraph state map.
-    const createDiffPromises = Array.from(this._subgraphStateMap.entries())
-      .map(([contractAddress, data]): Promise<void> => {
-        return this.createDiffStaged(contractAddress, blockHash, data);
-      });
-
-    await Promise.all(createDiffPromises);
-
-    // Reset the subgraph state map.
-    this._subgraphStateMap.clear();
   }
 
   async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {

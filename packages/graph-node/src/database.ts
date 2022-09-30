@@ -203,7 +203,7 @@ export class Database {
 
     return count > 0;
   }
-  
+
   async getEntityWithRelations<Entity> (
     queryRunner: QueryRunner,
     entity: (new () => Entity),

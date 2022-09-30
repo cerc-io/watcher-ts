@@ -8,6 +8,7 @@ import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
+import { SelectionNode } from 'graphql';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -57,7 +58,6 @@ import { Distribution } from './entity/Distribution';
 import { Claim } from './entity/Claim';
 import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
-import { SelectionNode } from 'graphql';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
