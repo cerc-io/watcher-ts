@@ -15,7 +15,7 @@ import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp } from '@cerc-io/util';
+import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, eventProcessingLoadEntityCount } from '@cerc-io/util';
 
 import { TypeId, Level } from './types';
 import {
@@ -74,6 +74,7 @@ export const instantiate = async (
         const entityId = __getString(id);
 
         assert(context.block);
+        eventProcessingLoadEntityCount.inc();
         const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
 
         if (!entityData) {

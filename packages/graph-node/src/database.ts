@@ -20,6 +20,8 @@ import {
   BlockHeight,
   BlockProgressInterface,
   Database as BaseDatabase,
+  eventProcessingLoadEntityCacheHitCount,
+  eventProcessingLoadEntityDBQueryDuration,
   QueryOptions,
   Where
 } from '@cerc-io/util';
@@ -113,6 +115,7 @@ export class Database {
               ?.get(findOptions.where.id);
 
             if (entity) {
+              eventProcessingLoadEntityCacheHitCount.inc();
               return _.cloneDeep(entity) as Entity;
             }
 
@@ -131,24 +134,29 @@ export class Database {
               ?.get(findOptions.where.id);
 
             if (entity) {
+              eventProcessingLoadEntityCacheHitCount.inc();
               return _.cloneDeep(entity) as Entity;
             }
 
             // Get latest pruned entity from DB if not found in cache.
+            const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
             const dbEntity = await this._baseDatabase.getLatestPrunedEntity(repo, findOptions.where.id, canonicalBlockNumber);
+            endTimer();
 
             if (dbEntity) {
               // Update latest pruned entity in cache.
-              this.cacheUpdatedEntity(entityName, dbEntity);
+              this.cacheUpdatedEntity(entityName, dbEntity, true);
             }
 
             return dbEntity;
           }
         }
 
-        const entity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+        const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
+        const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+        endTimer();
 
-        return entity;
+        return dbEntity;
       }
 
       return repo.findOne(findOptions as FindOneOptions<any>);
@@ -669,21 +677,35 @@ export class Database {
     }, {});
   }
 
-  cacheUpdatedEntity<Entity> (entityName: string, entity: any): void {
-    const frothyBlock = this._cachedEntities.frothyBlocks.get(entity.blockHash);
+  cacheUpdatedEntity<Entity> (entityName: string, entity: any, pruned = false): void {
+    const repo = this._conn.getRepository(entityName);
+    const tableName = repo.metadata.tableName;
 
-    // Update frothyBlock only if already present in cache.
-    // Might not be present when event processing starts without block processing on job retry.
-    if (frothyBlock) {
-      const repo = this._conn.getRepository(entityName);
-      let entityIdMap = frothyBlock.entities.get(repo.metadata.tableName);
+    if (pruned) {
+      let entityIdMap = this._cachedEntities.latestPrunedEntities.get(tableName);
 
       if (!entityIdMap) {
         entityIdMap = new Map();
       }
 
       entityIdMap.set(entity.id, _.cloneDeep(entity));
-      frothyBlock.entities.set(repo.metadata.tableName, entityIdMap);
+      this._cachedEntities.latestPrunedEntities.set(tableName, entityIdMap);
+      return;
+    }
+
+    const frothyBlock = this._cachedEntities.frothyBlocks.get(entity.blockHash);
+
+    // Update frothyBlock only if already present in cache.
+    // Might not be present when event processing starts without block processing on job retry.
+    if (frothyBlock) {
+      let entityIdMap = frothyBlock.entities.get(tableName);
+
+      if (!entityIdMap) {
+        entityIdMap = new Map();
+      }
+
+      entityIdMap.set(entity.id, _.cloneDeep(entity));
+      frothyBlock.entities.set(tableName, entityIdMap);
     }
   }
 
