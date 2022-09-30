@@ -102,7 +102,7 @@ export class JobRunner {
       }
 
       // Process the hooks for the given block number.
-      await this._indexer.processCanonicalBlock(blockHash);
+      await this._indexer.processCanonicalBlock(blockHash, blockNumber);
 
       // Update the IPLD status.
       await this._indexer.updateIPLDStatusHooksBlock(blockNumber);

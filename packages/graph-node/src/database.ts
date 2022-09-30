@@ -12,6 +12,9 @@ import {
   QueryRunner,
   Repository
 } from 'typeorm';
+import { SelectionNode } from 'graphql';
+import _ from 'lodash';
+import debug from 'debug';
 
 import {
   BlockHeight,
@@ -22,14 +25,32 @@ import {
 } from '@cerc-io/util';
 
 import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './utils';
-import { SelectionNode } from 'graphql';
 
 export const DEFAULT_LIMIT = 100;
+
+const log = debug('vulcanize:graph-node-database');
+
+interface CachedEntities {
+  frothyBlocks: Map<
+    string,
+    {
+      blockNumber: number;
+      parentHash: string;
+      entities: Map<string, Map<string, { [key: string]: any }>>;
+    }
+  >;
+  latestPrunedEntities: Map<string, Map<string, { [key: string]: any }>>;
+}
 
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase
+
+  _cachedEntities: CachedEntities = {
+    frothyBlocks: new Map(),
+    latestPrunedEntities: new Map()
+  }
 
   constructor (config: ConnectionOptions, entitiesPath: string) {
     assert(config);
@@ -41,6 +62,10 @@ export class Database {
     };
 
     this._baseDatabase = new BaseDatabase(this._config);
+  }
+
+  get cachedEntities () {
+    return this._cachedEntities;
   }
 
   async init (): Promise<void> {
@@ -55,11 +80,11 @@ export class Database {
     return this._baseDatabase.createTransactionRunner();
   }
 
-  async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined> {
+  async getEntity<Entity> (entityName: string, id: string, blockHash?: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
 
     try {
-      const repo = queryRunner.manager.getRepository(entity);
+      const repo: Repository<Entity> = queryRunner.manager.getRepository(entityName);
 
       const whereOptions: { [key: string]: any } = { id };
 
@@ -74,13 +99,59 @@ export class Database {
         }
       };
 
-      let entityData = await repo.findOne(findOptions as FindOneOptions<any>);
+      if (findOptions.where.blockHash) {
+        // Check cache only if latestPrunedEntities is updated.
+        // latestPrunedEntities is updated when frothyBlocks is filled till canonical block height.
+        if (this._cachedEntities.latestPrunedEntities.size > 0) {
+          let frothyBlock = this._cachedEntities.frothyBlocks.get(findOptions.where.blockHash);
+          let canonicalBlockNumber = -1;
 
-      if (!entityData && findOptions.where.blockHash) {
-        entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+          // Loop through frothy region until latest entity is found.
+          while (frothyBlock) {
+            const entity = frothyBlock.entities
+              .get(repo.metadata.tableName)
+              ?.get(findOptions.where.id);
+
+            if (entity) {
+              return _.cloneDeep(entity) as Entity;
+            }
+
+            canonicalBlockNumber = frothyBlock.blockNumber + 1;
+            frothyBlock = this._cachedEntities.frothyBlocks.get(frothyBlock.parentHash);
+          }
+
+          // Canonical block number is not assigned if blockHash does not exist in frothy region.
+          // Get latest pruned entity from cache only if blockHash exists in frothy region.
+          // i.e. Latest entity in cache is the version before frothy region.
+          if (canonicalBlockNumber > -1) {
+            // If entity not found in frothy region get latest entity in the pruned region.
+            // Check if latest entity is cached in pruned region.
+            const entity = this._cachedEntities.latestPrunedEntities
+              .get(repo.metadata.tableName)
+              ?.get(findOptions.where.id);
+
+            if (entity) {
+              return _.cloneDeep(entity) as Entity;
+            }
+
+            // Get latest pruned entity from DB if not found in cache.
+            const dbEntity = await this._baseDatabase.getLatestPrunedEntity(repo, findOptions.where.id, canonicalBlockNumber);
+
+            if (dbEntity) {
+              // Update latest pruned entity in cache.
+              this.cacheUpdatedEntity(entityName, dbEntity);
+            }
+
+            return dbEntity;
+          }
+        }
+
+        const entity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+
+        return entity;
       }
 
-      return entityData;
+      return repo.findOne(findOptions as FindOneOptions<any>);
     } catch (error) {
       console.log(error);
     } finally {
@@ -481,11 +552,11 @@ export class Database {
     return entities;
   }
 
-  async saveEntity (entity: string, data: any): Promise<void> {
+  async saveEntity (entity: string, data: any): Promise<any> {
     const repo = this._conn.getRepository(entity);
 
     const dbEntity: any = repo.create(data);
-    await repo.save(dbEntity);
+    return repo.save(dbEntity);
   }
 
   async toGraphEntity (instanceExports: any, entity: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
@@ -596,6 +667,24 @@ export class Database {
 
       return acc;
     }, {});
+  }
+
+  cacheUpdatedEntity<Entity> (entityName: string, entity: any): void {
+    const frothyBlock = this._cachedEntities.frothyBlocks.get(entity.blockHash);
+
+    // Update frothyBlock only if already present in cache.
+    // Might not be present when event processing starts without block processing on job retry.
+    if (frothyBlock) {
+      const repo = this._conn.getRepository(entityName);
+      let entityIdMap = frothyBlock.entities.get(repo.metadata.tableName);
+
+      if (!entityIdMap) {
+        entityIdMap = new Map();
+      }
+
+      entityIdMap.set(entity.id, _.cloneDeep(entity));
+      frothyBlock.entities.set(repo.metadata.tableName, entityIdMap);
+    }
   }
 
   async getBlocksAtHeight (height: number, isPruned: boolean) {

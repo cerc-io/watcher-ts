@@ -42,7 +42,7 @@ export const indexBlock = async (
     }
 
     assert(indexer.processBlock);
-    await indexer.processBlock(blockProgress.blockHash, blockProgress.blockNumber);
+    await indexer.processBlock(blockProgress);
 
     await processBatchEvents(indexer, blockProgress, eventsInBatch);
   }

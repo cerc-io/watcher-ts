@@ -794,9 +794,9 @@ export class Indexer implements IPLDIndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
-  async processBlock (blockHash: string, blockNumber: number): Promise<void> {
+  async processBlock (blockProgress: BlockProgress): Promise<void> {
     // Call a function to create initial state for contracts.
-    await this._baseIndexer.createInit(this, blockHash, blockNumber);
+    await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {

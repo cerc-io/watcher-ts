@@ -95,7 +95,8 @@ export const instantiate = async (
 
         assert(context.block);
         const dbData = await database.fromGraphEntity(instanceExports, context.block, entityName, entityInstance);
-        await database.saveEntity(entityName, dbData);
+        const dbEntity = await database.saveEntity(entityName, dbData);
+        database.cacheUpdatedEntity(entityName, dbEntity);
 
         // Update the in-memory subgraph state if not disabled.
         if (!indexer.serverConfig.disableSubgraphState) {

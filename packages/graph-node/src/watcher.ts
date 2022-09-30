@@ -12,7 +12,7 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -362,6 +362,49 @@ export class GraphWatcher {
       }
       console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromIPLDState-IPLD-update-entity-${entityName}`);
     }
+  }
+
+  updateEntityCacheFrothyBlocks (blockProgress: BlockProgressInterface): void {
+    // Set latest block in frothy region to cachedEntities.frothyBlocks map.
+    if (!this._database.cachedEntities.frothyBlocks.has(blockProgress.blockHash)) {
+      this._database.cachedEntities.frothyBlocks.set(
+        blockProgress.blockHash,
+        {
+          blockNumber: blockProgress.blockNumber,
+          parentHash: blockProgress.parentHash,
+          entities: new Map()
+        }
+      );
+
+      log(`Size of cachedEntities.frothyBlocks map: ${this._database.cachedEntities.frothyBlocks.size}`);
+    }
+  }
+
+  pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
+    const canonicalBlock = this._database.cachedEntities.frothyBlocks.get(canonicalBlockHash);
+
+    if (canonicalBlock) {
+      // Update latestPrunedEntities map with entities from latest canonical block.
+      canonicalBlock.entities.forEach((entityIdMap, entityTableName) => {
+        entityIdMap.forEach((data, id) => {
+          let entityIdMap = this._database.cachedEntities.latestPrunedEntities.get(entityTableName);
+
+          if (!entityIdMap) {
+            entityIdMap = new Map();
+          }
+
+          entityIdMap.set(id, data);
+          this._database.cachedEntities.latestPrunedEntities.set(entityTableName, entityIdMap);
+        });
+      });
+    }
+
+    // Remove pruned blocks from frothyBlocks.
+    const prunedBlockHashes = Array.from(this._database.cachedEntities.frothyBlocks.entries())
+      .filter(([, value]) => value.blockNumber <= canonicalBlockNumber)
+      .map(([blockHash]) => blockHash);
+
+    prunedBlockHashes.forEach(blockHash => this._database.cachedEntities.frothyBlocks.delete(blockHash));
   }
 
   /**
