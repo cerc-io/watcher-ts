@@ -12,11 +12,16 @@ import {
   QueryRunner,
   Repository
 } from 'typeorm';
+import { SelectionNode } from 'graphql';
+import _ from 'lodash';
+import debug from 'debug';
 
 import {
   BlockHeight,
   BlockProgressInterface,
   Database as BaseDatabase,
+  eventProcessingLoadEntityCacheHitCount,
+  eventProcessingLoadEntityDBQueryDuration,
   QueryOptions,
   Where
 } from '@cerc-io/util';
@@ -25,10 +30,29 @@ import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './
 
 export const DEFAULT_LIMIT = 100;
 
+const log = debug('vulcanize:graph-node-database');
+
+interface CachedEntities {
+  frothyBlocks: Map<
+    string,
+    {
+      blockNumber: number;
+      parentHash: string;
+      entities: Map<string, Map<string, { [key: string]: any }>>;
+    }
+  >;
+  latestPrunedEntities: Map<string, Map<string, { [key: string]: any }>>;
+}
+
 export class Database {
   _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase
+
+  _cachedEntities: CachedEntities = {
+    frothyBlocks: new Map(),
+    latestPrunedEntities: new Map()
+  }
 
   constructor (config: ConnectionOptions, entitiesPath: string) {
     assert(config);
@@ -40,6 +64,10 @@ export class Database {
     };
 
     this._baseDatabase = new BaseDatabase(this._config);
+  }
+
+  get cachedEntities () {
+    return this._cachedEntities;
   }
 
   async init (): Promise<void> {
@@ -54,11 +82,11 @@ export class Database {
     return this._baseDatabase.createTransactionRunner();
   }
 
-  async getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined> {
+  async getEntity<Entity> (entityName: string, id: string, blockHash?: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
 
     try {
-      const repo = queryRunner.manager.getRepository(entity);
+      const repo: Repository<Entity> = queryRunner.manager.getRepository(entityName);
 
       const whereOptions: { [key: string]: any } = { id };
 
@@ -73,13 +101,65 @@ export class Database {
         }
       };
 
-      let entityData = await repo.findOne(findOptions as FindOneOptions<any>);
+      if (findOptions.where.blockHash) {
+        // Check cache only if latestPrunedEntities is updated.
+        // latestPrunedEntities is updated when frothyBlocks is filled till canonical block height.
+        if (this._cachedEntities.latestPrunedEntities.size > 0) {
+          let frothyBlock = this._cachedEntities.frothyBlocks.get(findOptions.where.blockHash);
+          let canonicalBlockNumber = -1;
 
-      if (!entityData && findOptions.where.blockHash) {
-        entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
+          // Loop through frothy region until latest entity is found.
+          while (frothyBlock) {
+            const entity = frothyBlock.entities
+              .get(repo.metadata.tableName)
+              ?.get(findOptions.where.id);
+
+            if (entity) {
+              eventProcessingLoadEntityCacheHitCount.inc();
+              return _.cloneDeep(entity) as Entity;
+            }
+
+            canonicalBlockNumber = frothyBlock.blockNumber + 1;
+            frothyBlock = this._cachedEntities.frothyBlocks.get(frothyBlock.parentHash);
+          }
+
+          // Canonical block number is not assigned if blockHash does not exist in frothy region.
+          // Get latest pruned entity from cache only if blockHash exists in frothy region.
+          // i.e. Latest entity in cache is the version before frothy region.
+          if (canonicalBlockNumber > -1) {
+            // If entity not found in frothy region get latest entity in the pruned region.
+            // Check if latest entity is cached in pruned region.
+            const entity = this._cachedEntities.latestPrunedEntities
+              .get(repo.metadata.tableName)
+              ?.get(findOptions.where.id);
+
+            if (entity) {
+              eventProcessingLoadEntityCacheHitCount.inc();
+              return _.cloneDeep(entity) as Entity;
+            }
+
+            // Get latest pruned entity from DB if not found in cache.
+            const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
+            const dbEntity = await this._baseDatabase.getLatestPrunedEntity(repo, findOptions.where.id, canonicalBlockNumber);
+            endTimer();
+
+            if (dbEntity) {
+              // Update latest pruned entity in cache.
+              this.cacheUpdatedEntity(entityName, dbEntity, true);
+            }
+
+            return dbEntity;
+          }
+        }
+
+        const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
+        const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+        endTimer();
+
+        return dbEntity;
       }
 
-      return entityData;
+      return repo.findOne(findOptions as FindOneOptions<any>);
     } catch (error) {
       console.log(error);
     } finally {
@@ -124,7 +204,14 @@ export class Database {
     return count > 0;
   }
 
-  async getEntityWithRelations<Entity> (queryRunner: QueryRunner, entity: (new () => Entity), id: string, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight = {}, depth = 1): Promise<Entity | undefined> {
+  async getEntityWithRelations<Entity> (
+    queryRunner: QueryRunner,
+    entity: (new () => Entity),
+    id: string,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight = {},
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
     const repo = queryRunner.manager.getRepository(entity);
     const whereOptions: any = { id };
@@ -154,26 +241,33 @@ export class Database {
 
     // Get relational fields
     if (entityData) {
-      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entity, entityData, depth);
+      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entity, entityData, selections);
     }
 
     return entityData;
   }
 
-  async loadEntityRelations<Entity> (queryRunner: QueryRunner, block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entityData: any, depth: number): Promise<Entity> {
-    // Only support two-level nesting of relations
-    if (depth > 2) {
-      return entityData;
-    }
-
+  async loadEntityRelations<Entity> (
+    queryRunner: QueryRunner,
+    block: BlockHeight,
+    relationsMap: Map<any, { [key: string]: any }>,
+    entity: new () => Entity, entityData: any,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<Entity> {
     const relations = relationsMap.get(entity);
     if (relations === undefined) {
       return entityData;
     }
 
-    const relationPromises = Object.entries(relations)
-      .map(async ([field, data]) => {
-        const { entity: relationEntity, isArray, isDerived, field: foreignKey } = data;
+    const relationPromises = selections.filter((selection) => selection.kind === 'Field' && Boolean(relations[selection.name.value]))
+      .map(async (selection) => {
+        assert(selection.kind === 'Field');
+        const field = selection.name.value;
+        const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
+        let childSelections = selection.selectionSet?.selections || [];
+
+        // Filter out __typename field in GQL for loading relations.
+        childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
         if (isDerived) {
           const where: Where = {
@@ -191,7 +285,7 @@ export class Database {
             block,
             where,
             { limit: DEFAULT_LIMIT },
-            depth + 1
+            childSelections
           );
 
           entityData[field] = relatedEntities;
@@ -215,7 +309,7 @@ export class Database {
             block,
             where,
             { limit: DEFAULT_LIMIT },
-            depth + 1
+            childSelections
           );
 
           entityData[field] = relatedEntities;
@@ -230,7 +324,7 @@ export class Database {
           entityData[field],
           relationsMap,
           block,
-          depth + 1
+          childSelections
         );
 
         entityData[field] = relatedEntity;
@@ -241,7 +335,15 @@ export class Database {
     return entityData;
   }
 
-  async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: Where = {}, queryOptions: QueryOptions = {}, depth = 1): Promise<Entity[]> {
+  async getEntities<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository(entity);
     const { tableName } = repo.metadata;
 
@@ -297,27 +399,134 @@ export class Database {
       return [];
     }
 
-    return this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, depth);
+    return this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, selections);
   }
 
-  async loadEntitiesRelations<Entity> (queryRunner: QueryRunner, block: BlockHeight, relationsMap: Map<any, { [key: string]: any }>, entity: new () => Entity, entities: Entity[], depth: number): Promise<Entity[]> {
-    // Only support two-level nesting of relations
-    if (depth > 2) {
-      return entities;
-    }
-
+  async loadEntitiesRelations<Entity> (
+    queryRunner: QueryRunner,
+    block: BlockHeight,
+    relationsMap: Map<any, { [key: string]: any }>,
+    entity: new () => Entity,
+    entities: Entity[],
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<Entity[]> {
     const relations = relationsMap.get(entity);
     if (relations === undefined) {
       return entities;
     }
 
-    const relationPromises = Object.entries(relations).map(async ([field, data]) => {
-      const { entity: relationEntity, isArray, isDerived, field: foreignKey } = data;
+    const relationPromises = selections.filter((selection) => selection.kind === 'Field' && Boolean(relations[selection.name.value]))
+      .map(async selection => {
+        assert(selection.kind === 'Field');
+        const field = selection.name.value;
+        const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
+        let childSelections = selection.selectionSet?.selections || [];
 
-      if (isDerived) {
+        // Filter out __typename field in GQL for loading relations.
+        childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
+
+        if (isDerived) {
+          const where: Where = {
+            [foreignKey]: [{
+              value: entities.map((entity: any) => entity.id),
+              not: false,
+              operator: 'in'
+            }]
+          };
+
+          const relatedEntities = await this.getEntities(
+            queryRunner,
+            relationEntity,
+            relationsMap,
+            block,
+            where,
+            {},
+            childSelections
+          );
+
+          const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
+            // Related entity might be loaded with data.
+            const parentEntityId = entity[foreignKey].id ?? entity[foreignKey];
+
+            if (!acc[parentEntityId]) {
+              acc[parentEntityId] = [];
+            }
+
+            if (acc[parentEntityId].length < DEFAULT_LIMIT) {
+              acc[parentEntityId].push(entity);
+            }
+
+            return acc;
+          }, {});
+
+          entities.forEach((entity: any) => {
+            if (relatedEntitiesMap[entity.id]) {
+              entity[field] = relatedEntitiesMap[entity.id];
+            } else {
+              entity[field] = [];
+            }
+          });
+
+          return;
+        }
+
+        if (isArray) {
+          const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
+            entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
+
+            return acc;
+          }, new Set());
+
+          const where: Where = {
+            id: [{
+              value: Array.from(relatedIds),
+              not: false,
+              operator: 'in'
+            }]
+          };
+
+          const relatedEntities = await this.getEntities(
+            queryRunner,
+            relationEntity,
+            relationsMap,
+            block,
+            where,
+            {},
+            childSelections
+          );
+
+          entities.forEach((entity: any) => {
+            const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
+              acc.add(id);
+
+              return acc;
+            }, new Set());
+
+            entity[field] = [];
+
+            relatedEntities.forEach((relatedEntity: any) => {
+              if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
+                entity[field].push(relatedEntity);
+              }
+            });
+          });
+
+          return;
+        }
+
+        // field is neither an array nor derivedFrom
+        if (childSelections.length === 1 && childSelections[0].kind === 'Field' && childSelections[0].name.value === 'id') {
+          // Avoid loading relation if selections only has id field.
+          entities.forEach((entity: any) => {
+            entity[field] = { id: entity[field] };
+          });
+
+          return;
+        }
+
         const where: Where = {
-          [foreignKey]: [{
-            value: entities.map((entity: any) => entity.id),
+          id: [{
+            value: entities.map((entity: any) => entity[field]),
             not: false,
             operator: 'in'
           }]
@@ -330,121 +539,32 @@ export class Database {
           block,
           where,
           {},
-          depth + 1
+          childSelections
         );
 
-        const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
-          // Related entity might be loaded with data.
-          const parentEntityId = entity[foreignKey].id ?? entity[foreignKey];
-
-          if (!acc[parentEntityId]) {
-            acc[parentEntityId] = [];
-          }
-
-          if (acc[parentEntityId].length < DEFAULT_LIMIT) {
-            acc[parentEntityId].push(entity);
-          }
+        const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
+          acc[entity.id] = entity;
 
           return acc;
         }, {});
 
         entities.forEach((entity: any) => {
-          if (relatedEntitiesMap[entity.id]) {
-            entity[field] = relatedEntitiesMap[entity.id];
-          } else {
-            entity[field] = [];
+          if (relatedEntitiesMap[entity[field]]) {
+            entity[field] = relatedEntitiesMap[entity[field]];
           }
         });
-
-        return;
-      }
-
-      if (isArray) {
-        const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
-          entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
-
-          return acc;
-        }, new Set());
-
-        const where: Where = {
-          id: [{
-            value: Array.from(relatedIds),
-            not: false,
-            operator: 'in'
-          }]
-        };
-
-        const relatedEntities = await this.getEntities(
-          queryRunner,
-          relationEntity,
-          relationsMap,
-          block,
-          where,
-          {},
-          depth + 1
-        );
-
-        entities.forEach((entity: any) => {
-          const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
-            acc.add(id);
-
-            return acc;
-          }, new Set());
-
-          entity[field] = [];
-
-          relatedEntities.forEach((relatedEntity: any) => {
-            if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
-              entity[field].push(relatedEntity);
-            }
-          });
-        });
-
-        return;
-      }
-
-      // field is neither an array nor derivedFrom
-      const where: Where = {
-        id: [{
-          value: entities.map((entity: any) => entity[field]),
-          not: false,
-          operator: 'in'
-        }]
-      };
-
-      const relatedEntities = await this.getEntities(
-        queryRunner,
-        relationEntity,
-        relationsMap,
-        block,
-        where,
-        {},
-        depth + 1
-      );
-
-      const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
-        acc[entity.id] = entity;
-
-        return acc;
-      }, {});
-
-      entities.forEach((entity: any) => {
-        if (relatedEntitiesMap[entity[field]]) {
-          entity[field] = relatedEntitiesMap[entity[field]];
-        }
       });
-    });
 
     await Promise.all(relationPromises);
 
     return entities;
   }
 
-  async saveEntity (entity: string, data: any): Promise<void> {
+  async saveEntity (entity: string, data: any): Promise<any> {
     const repo = this._conn.getRepository(entity);
 
     const dbEntity: any = repo.create(data);
-    await repo.save(dbEntity);
+    return repo.save(dbEntity);
   }
 
   async toGraphEntity (instanceExports: any, entity: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
@@ -555,6 +675,38 @@ export class Database {
 
       return acc;
     }, {});
+  }
+
+  cacheUpdatedEntity<Entity> (entityName: string, entity: any, pruned = false): void {
+    const repo = this._conn.getRepository(entityName);
+    const tableName = repo.metadata.tableName;
+
+    if (pruned) {
+      let entityIdMap = this._cachedEntities.latestPrunedEntities.get(tableName);
+
+      if (!entityIdMap) {
+        entityIdMap = new Map();
+      }
+
+      entityIdMap.set(entity.id, _.cloneDeep(entity));
+      this._cachedEntities.latestPrunedEntities.set(tableName, entityIdMap);
+      return;
+    }
+
+    const frothyBlock = this._cachedEntities.frothyBlocks.get(entity.blockHash);
+
+    // Update frothyBlock only if already present in cache.
+    // Might not be present when event processing starts without block processing on job retry.
+    if (frothyBlock) {
+      let entityIdMap = frothyBlock.entities.get(tableName);
+
+      if (!entityIdMap) {
+        entityIdMap = new Map();
+      }
+
+      entityIdMap.set(entity.id, _.cloneDeep(entity));
+      frothyBlock.entities.set(tableName, entityIdMap);
+    }
   }
 
   async getBlocksAtHeight (height: number, isPruned: boolean) {

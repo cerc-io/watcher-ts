@@ -251,7 +251,7 @@ export class JobRunner {
     }
 
     if (this._indexer.processBlock) {
-      await this._indexer.processBlock(blockHash, blockNumber);
+      await this._indexer.processBlock(blockProgress);
     }
 
     // Push job to event processing queue.

@@ -8,6 +8,7 @@ import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
+import { SelectionNode } from 'graphql';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -264,16 +265,16 @@ export class Indexer implements IPLDIndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (blockHash: string): Promise<void> {
+  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
     console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
-
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
-
     console.timeEnd('time:indexer#processCanonicalBlock-finalize_auto_diffs');
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
+
+    this._graphWatcher.pruneEntityCacheFrothyBlocks(blockHash, blockNumber);
   }
 
   async processCheckpoint (blockHash: string): Promise<void> {
@@ -371,14 +372,20 @@ export class Indexer implements IPLDIndexerInterface {
     await this._baseIndexer.removeIPLDBlocks(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block?: BlockHeight): Promise<any> {
-    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block);
+  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block: BlockHeight, selections: ReadonlyArray<SelectionNode> = []): Promise<any> {
+    const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block, selections);
 
     return data;
   }
 
-  async getSubgraphEntities<Entity> (entity: new () => Entity, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions = {}): Promise<any[]> {
-    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where, queryOptions);
+  async getSubgraphEntities<Entity> (
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: { [key: string]: any } = {},
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any[]> {
+    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where, queryOptions, selections);
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {
@@ -400,13 +407,13 @@ export class Indexer implements IPLDIndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
-  async processBlock (blockHash: string, blockNumber: number): Promise<void> {
+  async processBlock (blockProgress: BlockProgress): Promise<void> {
     console.time('time:indexer#processBlock-init_state');
-
     // Call a function to create initial state for contracts.
-    await this._baseIndexer.createInit(this, blockHash, blockNumber);
-
+    await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
     console.timeEnd('time:indexer#processBlock-init_state');
+
+    this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
   }
 
   async processBlockAfterEvents (blockHash: string): Promise<void> {

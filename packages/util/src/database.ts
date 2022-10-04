@@ -455,24 +455,26 @@ export class Database {
     if (id) {
       // Entity found in frothy region.
       findOptions.where.blockHash = blockHash;
-    } else {
-      // If entity not found in frothy region get latest entity in the pruned region.
-      // Filter out entities from pruned blocks.
-      const canonicalBlockNumber = blockNumber + 1;
 
-      const entityInPrunedRegion:any = await repo.createQueryBuilder('entity')
-        .innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
-        .where('block.is_pruned = false')
-        .andWhere('entity.id = :id', { id: findOptions.where.id })
-        .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
-        .orderBy('entity.block_number', 'DESC')
-        .limit(1)
-        .getOne();
-
-      findOptions.where.blockHash = entityInPrunedRegion?.blockHash;
+      return repo.findOne(findOptions);
     }
 
-    return repo.findOne(findOptions);
+    return this.getLatestPrunedEntity(repo, findOptions.where.id, blockNumber + 1);
+  }
+
+  async getLatestPrunedEntity<Entity> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
+    // Filter out latest entity from pruned blocks.
+
+    const entityInPrunedRegion = await repo.createQueryBuilder('entity')
+      .innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
+      .where('block.is_pruned = false')
+      .andWhere('entity.id = :id', { id })
+      .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
+      .orderBy('entity.block_number', 'DESC')
+      .limit(1)
+      .getOne();
+
+    return entityInPrunedRegion;
   }
 
   async getFrothyRegion (queryRunner: QueryRunner, blockHash: string): Promise<{ canonicalBlockNumber: number, blockHashes: string[] }> {

@@ -6,7 +6,7 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 import Decimal from 'decimal.js';
-import { GraphQLScalarType } from 'graphql';
+import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
 import { BlockHeight, OrderDirection, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer } from '@cerc-io/util';
 
@@ -77,200 +77,336 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     },
 
     Query: {
-      producer: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      producer: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producer', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producer').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Producer, id, block);
+        return indexer.getSubgraphEntity(Producer, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      producers: async (_: any, { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number }) => {
+      producers: async (
+        _: any,
+        { block = {}, first, skip }: { block: BlockHeight, first: number, skip: number },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producers', JSON.stringify(block, jsonBigIntStringReplacer), first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producers').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
         return indexer.getSubgraphEntities(
           Producer,
           block,
           {},
-          { limit: first, skip }
+          { limit: first, skip },
+          info.fieldNodes[0].selectionSet.selections
         );
       },
 
-      producerSet: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      producerSet: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producerSet', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerSet').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(ProducerSet, id, block);
+        return indexer.getSubgraphEntity(ProducerSet, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      producerSetChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      producerSetChange: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producerSetChange', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerSetChange').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(ProducerSetChange, id, block);
+        return indexer.getSubgraphEntity(ProducerSetChange, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      producerRewardCollectorChange: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      producerRewardCollectorChange: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producerRewardCollectorChange', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerRewardCollectorChange').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block);
+        return indexer.getSubgraphEntity(ProducerRewardCollectorChange, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      rewardScheduleEntry: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      rewardScheduleEntry: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('rewardScheduleEntry', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('rewardScheduleEntry').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(RewardScheduleEntry, id, block);
+        return indexer.getSubgraphEntity(RewardScheduleEntry, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      rewardSchedule: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      rewardSchedule: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('rewardSchedule', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('rewardSchedule').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(RewardSchedule, id, block);
+        return indexer.getSubgraphEntity(RewardSchedule, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      producerEpoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      producerEpoch: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('producerEpoch', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('producerEpoch').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(ProducerEpoch, id, block);
+        return indexer.getSubgraphEntity(ProducerEpoch, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      block: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      block: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('block', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('block').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Block, id, block);
+        return indexer.getSubgraphEntity(Block, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      blocks: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
+      blocks: async (
+        _: any,
+        { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('blocks', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('blocks').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
         return indexer.getSubgraphEntities(
           Block,
           block,
           where,
-          { limit: first, skip, orderBy, orderDirection }
+          { limit: first, skip, orderBy, orderDirection },
+          info.fieldNodes[0].selectionSet.selections
         );
       },
 
-      epoch: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      epoch: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('epoch', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('epoch').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Epoch, id, block);
+        return indexer.getSubgraphEntity(Epoch, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      epoches: async (_: any, { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number }) => {
+      epoches: async (
+        _: any,
+        { block = {}, where, first, skip }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('epoches', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('epoches').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
         return indexer.getSubgraphEntities(
           Epoch,
           block,
           where,
-          { limit: first, skip }
+          { limit: first, skip },
+          info.fieldNodes[0].selectionSet.selections
         );
       },
 
-      slotClaim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      slotClaim: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('slotClaim', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slotClaim').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(SlotClaim, id, block);
+        return indexer.getSubgraphEntity(SlotClaim, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      slot: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      slot: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('slot', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slot').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Slot, id, block);
+        return indexer.getSubgraphEntity(Slot, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      staker: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      staker: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('staker', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('staker').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Staker, id, block);
+        return indexer.getSubgraphEntity(Staker, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      stakers: async (_: any, { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection }) => {
+      stakers: async (
+        _: any,
+        { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('stakers', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('stakers').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
         return indexer.getSubgraphEntities(
           Staker,
           block,
           where,
-          { limit: first, skip, orderBy, orderDirection }
+          { limit: first, skip, orderBy, orderDirection },
+          info.fieldNodes[0].selectionSet.selections
         );
       },
 
-      network: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      network: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('network', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('network').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Network, id, block);
+        return indexer.getSubgraphEntity(Network, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      distributor: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      distributor: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('distributor', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('distributor').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Distributor, id, block);
+        return indexer.getSubgraphEntity(Distributor, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      distribution: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      distribution: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('distribution', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('distribution').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Distribution, id, block);
+        return indexer.getSubgraphEntity(Distribution, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      claim: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      claim: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('claim', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('claim').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Claim, id, block);
+        return indexer.getSubgraphEntity(Claim, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      slash: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      slash: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('slash', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('slash').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Slash, id, block);
+        return indexer.getSubgraphEntity(Slash, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      account: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }) => {
+      account: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('account', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('account').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Account, id, block);
+        return indexer.getSubgraphEntity(Account, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {

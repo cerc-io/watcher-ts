@@ -6,9 +6,9 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 import Decimal from 'decimal.js';
-import { GraphQLScalarType } from 'graphql';
+import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, jsonBigIntStringReplacer } from '@cerc-io/util';
+import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -64,34 +64,66 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
     Query: {
       getMethod: (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<ValueResult> => {
         log('getMethod', blockHash, contractAddress);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getMethod').inc(1);
+
         return indexer.getMethod(blockHash, contractAddress);
       },
 
       _test: (_: any, { blockHash, contractAddress }: { blockHash: string, contractAddress: string }): Promise<ValueResult> => {
         log('_test', blockHash, contractAddress);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('_test').inc(1);
+
         return indexer._test(blockHash, contractAddress);
       },
 
-      blog: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Blog | undefined> => {
+      blog: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('blog', id, JSON.stringify(block, jsonBigIntStringReplacer));
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('blog').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Blog, id, block);
+        return indexer.getSubgraphEntity(Blog, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      category: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Category | undefined> => {
+      category: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('category', id, JSON.stringify(block, jsonBigIntStringReplacer));
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('category').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Category, id, block);
+        return indexer.getSubgraphEntity(Category, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
-      author: async (_: any, { id, block = {} }: { id: string, block: BlockHeight }): Promise<Author | undefined> => {
+      author: async (
+        _: any,
+        { id, block = {} }: { id: string, block: BlockHeight },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
         log('author', id, JSON.stringify(block, jsonBigIntStringReplacer));
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('author').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
 
-        return indexer.getSubgraphEntity(Author, id, block);
+        return indexer.getSubgraphEntity(Author, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
         log('events', blockHash, contractAddress, name);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('events').inc(1);
 
         const block = await indexer.getBlockProgress(blockHash);
         if (!block || !block.isComplete) {
@@ -104,6 +136,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('eventsInRange').inc(1);
 
         const { expected, actual } = await indexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
         if (expected !== actual) {
@@ -116,6 +150,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getStateByCID: async (_: any, { cid }: { cid: string }) => {
         log('getStateByCID', cid);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getStateByCID').inc(1);
 
         const ipldBlock = await indexer.getIPLDBlockByCid(cid);
 
@@ -124,6 +160,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getState').inc(1);
 
         const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
 
@@ -132,6 +170,8 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       getSyncStatus: async () => {
         log('getSyncStatus');
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getSyncStatus').inc(1);
 
         return indexer.getSyncStatus();
       }

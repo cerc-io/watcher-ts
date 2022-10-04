@@ -8,10 +8,11 @@ import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
+import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -257,12 +258,18 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (entity: new () => Entity, id: string, relationsMap: Map<any, { [key: string]: any }>, block?: BlockHeight): Promise<any> {
+  async getEntity<Entity> (
+    entity: new () => Entity,
+    id: string,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
       // Get entity from the database.
-      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block);
+      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block, selections);
       await dbTx.commitTransaction();
 
       // Resolve any field name conflicts in the entity result.
@@ -275,7 +282,14 @@ export class GraphWatcher {
     }
   }
 
-  async getEntities<Entity> (entity: new () => Entity, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight, where: { [key: string]: any } = {}, queryOptions: QueryOptions): Promise<any> {
+  async getEntities<Entity> (
+    entity: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: BlockHeight,
+    where: { [key: string]: any } = {},
+    queryOptions: QueryOptions,
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
@@ -313,7 +327,7 @@ export class GraphWatcher {
       }
 
       // Get entities from the database.
-      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions);
+      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions, selections);
       await dbTx.commitTransaction();
 
       // Resolve any field name conflicts in the entity result.
@@ -348,6 +362,49 @@ export class GraphWatcher {
       }
       console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromIPLDState-IPLD-update-entity-${entityName}`);
     }
+  }
+
+  updateEntityCacheFrothyBlocks (blockProgress: BlockProgressInterface): void {
+    // Set latest block in frothy region to cachedEntities.frothyBlocks map.
+    if (!this._database.cachedEntities.frothyBlocks.has(blockProgress.blockHash)) {
+      this._database.cachedEntities.frothyBlocks.set(
+        blockProgress.blockHash,
+        {
+          blockNumber: blockProgress.blockNumber,
+          parentHash: blockProgress.parentHash,
+          entities: new Map()
+        }
+      );
+
+      log(`Size of cachedEntities.frothyBlocks map: ${this._database.cachedEntities.frothyBlocks.size}`);
+    }
+  }
+
+  pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
+    const canonicalBlock = this._database.cachedEntities.frothyBlocks.get(canonicalBlockHash);
+
+    if (canonicalBlock) {
+      // Update latestPrunedEntities map with entities from latest canonical block.
+      canonicalBlock.entities.forEach((entityIdMap, entityTableName) => {
+        entityIdMap.forEach((data, id) => {
+          let entityIdMap = this._database.cachedEntities.latestPrunedEntities.get(entityTableName);
+
+          if (!entityIdMap) {
+            entityIdMap = new Map();
+          }
+
+          entityIdMap.set(id, data);
+          this._database.cachedEntities.latestPrunedEntities.set(entityTableName, entityIdMap);
+        });
+      });
+    }
+
+    // Remove pruned blocks from frothyBlocks.
+    const prunedBlockHashes = Array.from(this._database.cachedEntities.frothyBlocks.entries())
+      .filter(([, value]) => value.blockNumber <= canonicalBlockNumber)
+      .map(([blockHash]) => blockHash);
+
+    prunedBlockHashes.forEach(blockHash => this._database.cachedEntities.frothyBlocks.delete(blockHash));
   }
 
   /**
