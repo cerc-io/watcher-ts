@@ -12,7 +12,7 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface, BlockProgressInterface, eventProcessingLoadEntityCount, eventProcessingLoadEntityCacheHitCount } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -187,8 +187,6 @@ export class GraphWatcher {
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
 
-    eventProcessingLoadEntityCount.set(0);
-    eventProcessingLoadEntityCacheHitCount.set(0);
     await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
   }
 
@@ -251,8 +249,6 @@ export class GraphWatcher {
           await instanceExports[blockHandler.handler](ethereumBlock);
         });
 
-        eventProcessingLoadEntityCount.set(0);
-        eventProcessingLoadEntityCacheHitCount.set(0);
         await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
       }
     }
