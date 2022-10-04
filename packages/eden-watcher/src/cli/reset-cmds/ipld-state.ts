@@ -15,21 +15,13 @@ export const command = 'ipld-state';
 export const desc = 'Reset IPLD state in the given range';
 
 export const builder = {
-  startBlock: {
-    type: 'number'
-  },
-  endBlock: {
+  blockNumber: {
     type: 'number'
   }
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const { startBlock, endBlock } = argv;
-  if (startBlock > endBlock) {
-    log('endBlock should be greater than or equal to startBlock');
-    process.exit(1);
-  }
-
+  const { blockNumber } = argv;
   const config = await getConfig(argv.configFile);
 
   // Initialize database
@@ -42,7 +34,24 @@ export const handler = async (argv: any): Promise<void> => {
   console.time('time:reset-ipld-state');
   try {
     // Delete all IPLDBlock entries in the given range
-    await db.removeIPLDBlocksInRange(dbTx, startBlock, endBlock);
+    await db.removeIPLDBlocksAfterBlock(dbTx, blockNumber);
+
+    // Reset the IPLD status.
+    const ipldStatus = await db.getIPLDStatus();
+
+    if (ipldStatus) {
+      if (ipldStatus.latestHooksBlockNumber > blockNumber) {
+        await db.updateIPLDStatusHooksBlock(dbTx, blockNumber, true);
+      }
+
+      if (ipldStatus.latestCheckpointBlockNumber > blockNumber) {
+        await db.updateIPLDStatusCheckpointBlock(dbTx, blockNumber, true);
+      }
+
+      if (ipldStatus.latestIPFSBlockNumber > blockNumber) {
+        await db.updateIPLDStatusIPFSBlock(dbTx, blockNumber, true);
+      }
+    }
 
     dbTx.commitTransaction();
   } catch (error) {
@@ -53,5 +62,5 @@ export const handler = async (argv: any): Promise<void> => {
   }
   console.timeEnd('time:reset-ipld-state');
 
-  log(`Reset ipld-state successfully for range [${startBlock}, ${endBlock}]`);
+  log(`Reset ipld-state successfully to block ${blockNumber}`);
 };
