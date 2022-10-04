@@ -10,6 +10,7 @@ import fs from 'fs-extra';
 import { diffString, diff } from 'json-diff';
 import _ from 'lodash';
 import omitDeep from 'omit-deep';
+import debug from 'debug';
 
 import { Config as CacheConfig, getCache } from '@cerc-io/cache';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
@@ -17,6 +18,8 @@ import { gql } from '@apollo/client/core';
 
 import { Client } from './client';
 import { DEFAULT_LIMIT } from '../../database';
+
+const log = debug('vulcanize:compare-utils');
 
 const IPLD_STATE_QUERY = `
 query getState($blockHash: String!, $contractAddress: String!, $kind: String){
@@ -42,7 +45,7 @@ interface EndpointConfig {
 
 interface QueryConfig {
   queryDir: string;
-  names: string[];
+  names: { [queryName: string]: string };
   blockDelayInMs: number;
   queryLimits: { [queryName: string]: number }
 }
@@ -100,14 +103,22 @@ export const compareQuery = async (
   },
   queryName: string,
   params: { [key: string]: any },
-  rawJson: boolean
+  rawJson: boolean,
+  timeDiff: boolean
 ): Promise<CompareResult> => {
   const { client1, client2 } = clients;
 
-  const [result1, result2] = await Promise.all([
+  const [
+    { data: result1, time: time1 },
+    { data: result2, time: time2 }
+  ] = await Promise.all([
     client1.getResult(queryName, params),
     client2.getResult(queryName, params)
   ]);
+
+  if (timeDiff) {
+    log(`time:utils#compareQuery-${queryName}-${JSON.stringify(params)}-gql1-[${time1}ms]-gql2-[${time2}ms]-diff-[${time1 - time2}ms]`);
+  }
 
   // Getting the diff of two result objects.
   const resultDiff = compareObjects(result1, result2, rawJson);
@@ -119,7 +130,7 @@ export const compareQuery = async (
   };
 };
 
-export const getClients = async (config: Config, queryDir?: string):Promise<{
+export const getClients = async (config: Config, timeDiff: boolean, queryDir?: string):Promise<{
   client1: Client,
   client2: Client
 }> => {
@@ -145,12 +156,12 @@ export const getClients = async (config: Config, queryDir?: string):Promise<{
   const client1 = new Client({
     gqlEndpoint: gqlEndpoint1,
     cache: endpoint === 'gqlEndpoint1' ? cache : undefined
-  }, queryDir);
+  }, timeDiff, queryDir);
 
   const client2 = new Client({
     gqlEndpoint: gqlEndpoint2,
     cache: endpoint === 'gqlEndpoint2' ? cache : undefined
-  }, queryDir);
+  }, timeDiff, queryDir);
 
   return {
     client1,

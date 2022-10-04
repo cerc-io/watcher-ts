@@ -4,9 +4,9 @@
 
 [queries]
   queryDir = "../../graph-test-watcher/src/gql/queries"
-  names = []
   blockDelayInMs = 250
   queryLimits = {}
+  [queries.names]
 
 [watcher]
   configPath = "../../graph-test-watcher/environments/local.toml"

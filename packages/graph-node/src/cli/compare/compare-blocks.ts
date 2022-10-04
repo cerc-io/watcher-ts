@@ -21,7 +21,9 @@ const log = debug('vulcanize:compare-blocks');
 export const main = async (): Promise<void> => {
   const argv = await yargs.parserConfiguration({
     'parse-numbers': false
-  }).options({
+  }).env(
+    'COMPARE'
+  ).options({
     configFile: {
       alias: 'cf',
       type: 'string',
@@ -53,13 +55,18 @@ export const main = async (): Promise<void> => {
       type: 'boolean',
       describe: 'Fetch ids and compare multiple entities',
       default: false
+    },
+    timeDiff: {
+      type: 'boolean',
+      describe: 'Compare time taken between GQL queries',
+      default: false
     }
   }).argv;
 
-  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile } = argv;
+  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile, timeDiff } = argv;
   const config: Config = await getConfig(configFile);
   const snakeNamingStrategy = new SnakeNamingStrategy();
-  const clients = await getClients(config, queryDir);
+  const clients = await getClients(config, timeDiff, queryDir);
   const queryNames = config.queries.names;
   let diffFound = false;
   let blockDelay = wait(0);
@@ -88,32 +95,39 @@ export const main = async (): Promise<void> => {
 
   for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
     const block = { number: blockNumber };
-    let updatedEntityIds: string[][] = [];
+    const updatedEntityIds: { [entityName: string]: string[] } = {};
+    const updatedEntities: Set<string> = new Set();
     let ipldStateByBlock = {};
+    assert(db);
     console.time(`time:compare-block-${blockNumber}`);
 
     if (fetchIds) {
       // Fetch entity ids updated at block.
       console.time(`time:fetch-updated-ids-${blockNumber}`);
 
-      const updatedEntityIdPromises = queryNames.map(
-        queryName => {
-          assert(db);
-
-          return db.getEntityIdsAtBlockNumber(
-            blockNumber,
-            snakeNamingStrategy.tableName(queryName, '')
-          );
-        }
-      );
-
-      updatedEntityIds = await Promise.all(updatedEntityIdPromises);
+      for (const entityName of Object.values(queryNames)) {
+        updatedEntityIds[entityName] = await db.getEntityIdsAtBlockNumber(
+          blockNumber,
+          snakeNamingStrategy.tableName(entityName, '')
+        );
+      }
       console.timeEnd(`time:fetch-updated-ids-${blockNumber}`);
+    } else {
+      for (const entityName of Object.values(queryNames)) {
+        const isUpdated = await db.isEntityUpdatedAtBlockNumber(
+          blockNumber,
+          snakeNamingStrategy.tableName(entityName, '')
+        );
+
+        if (isUpdated) {
+          updatedEntities.add(entityName);
+        }
+      }
     }
 
     if (config.watcher.verifyState) {
       assert(db);
-      const [block] = await db?.getBlocksAtHeight(blockNumber, false);
+      const [block] = await db.getBlocksAtHeight(blockNumber, false);
       assert(subgraphGQLClient);
       const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
 
@@ -130,7 +144,7 @@ export const main = async (): Promise<void> => {
     }
 
     await blockDelay;
-    for (const [index, queryName] of queryNames.entries()) {
+    for (const [queryName, entityName] of Object.entries(queryNames)) {
       try {
         log(`At block ${blockNumber} for query ${queryName}:`);
         let resultDiff = '';
@@ -140,16 +154,17 @@ export const main = async (): Promise<void> => {
 
           if (queryLimit) {
             // Take only last `queryLimit` entity ids to compare in GQL.
-            const idsLength = updatedEntityIds[index].length;
-            updatedEntityIds[index].splice(0, idsLength - queryLimit);
+            const idsLength = updatedEntityIds[entityName].length;
+            updatedEntityIds[entityName].splice(0, idsLength - queryLimit);
           }
 
-          for (const id of updatedEntityIds[index]) {
+          for (const id of updatedEntityIds[entityName]) {
             const { diff, result1: result } = await compareQuery(
               clients,
               queryName,
               { block, id },
-              rawJson
+              rawJson,
+              timeDiff
             );
 
             if (config.watcher.verifyState) {
@@ -166,12 +181,15 @@ export const main = async (): Promise<void> => {
             }
           }
         } else {
-          ({ diff: resultDiff } = await compareQuery(
-            clients,
-            queryName,
-            { block },
-            rawJson
-          ));
+          if (updatedEntities.has(entityName)) {
+            ({ diff: resultDiff } = await compareQuery(
+              clients,
+              queryName,
+              { block },
+              rawJson,
+              timeDiff
+            ));
+          }
         }
 
         if (resultDiff) {

@@ -112,6 +112,18 @@ export class Database {
     return entities.map((entity: any) => entity.id);
   }
 
+  async isEntityUpdatedAtBlockNumber (blockNumber: number, tableName: string): Promise<boolean> {
+    const repo = this._conn.getRepository(tableName);
+
+    const count = await repo.count({
+      where: {
+        blockNumber
+      }
+    });
+
+    return count > 0;
+  }
+
   async getEntityWithRelations<Entity> (queryRunner: QueryRunner, entity: (new () => Entity), id: string, relationsMap: Map<any, { [key: string]: any }>, block: BlockHeight = {}, depth = 1): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
     const repo = queryRunner.manager.getRepository(entity);

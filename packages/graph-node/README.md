@@ -58,16 +58,17 @@
 
   * For comparing queries in a range of blocks:
 
-    * Config file should have the names of queries to be fired.
+    * Config file should have the names of queries to be fired along with the corresponding entity names.
 
       ```toml
       [queries]
         queryDir = "../graph-test-watcher/src/gql/queries"
-        names = [
-          "author",
-          "blog"
-        ]
+        [queries.names]
+          author = "Author"
+          blog = "Blog"
       ```
+
+      The queries will be fired if the corresponding entities are updated.
     
     * Run the CLI:
 
@@ -86,10 +87,9 @@
 
         [queries]
           queryDir = "../graph-test-watcher/src/gql/queries"
-          names = [
-            "author",
-            "blog"
-          ]
+          [queries.names]
+            author = "Author"
+            blog = "Blog"
         
         [watcher]
           configPath = "../../graph-test-watcher/environments/local.toml"
