@@ -85,7 +85,7 @@ export class Indexer {
     const contract = this._config.watch.lighthouse;
 
     const [{ logs }, { block }] = await Promise.all([
-      this._ethClient.getLogs({ blockHash, contract }),
+      this._ethClient.getLogs({ blockHash, addresses: [contract] }),
       this._ethClient.getBlockByHash(blockHash)
     ]);
 
