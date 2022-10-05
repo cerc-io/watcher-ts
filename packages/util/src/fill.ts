@@ -130,7 +130,7 @@ const prefetchBlocks = async (
       const blockProgress = await indexer.getBlockProgress(blockHash);
 
       if (!blockProgress) {
-        await indexer.fetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+        await indexer.fetchBlockWithEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
       }
     });
 

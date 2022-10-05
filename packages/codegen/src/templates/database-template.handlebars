@@ -183,11 +183,11 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.getBlockEvents(repo, blockHash, where, queryOptions);
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
+  async saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
     const blockRepo = queryRunner.manager.getRepository(BlockProgress);
     const eventRepo = queryRunner.manager.getRepository(Event);
 
-    return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
+    return this._baseDatabase.saveBlockWithEvents(blockRepo, eventRepo, block, events);
   }
 
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {

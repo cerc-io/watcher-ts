@@ -38,12 +38,14 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
 
 /**
  * Hook function to create state diff.
- * @param indexer Indexer instance that contains methods to fetch the contract varaiable values.
+ * @param indexer Indexer instance that contains methods to fetch the contract variable values.
  * @param blockHash Block hash of the concerned block.
  */
 export async function createStateDiff (indexer: Indexer, blockHash: string): Promise<void> {
   assert(indexer);
   assert(blockHash);
+
+  // Check flag to create state in job-runner (in parent call)
 
   // Use indexer.createDiff() method to save custom state diff(s).
 }

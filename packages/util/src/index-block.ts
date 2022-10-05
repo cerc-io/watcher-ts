@@ -36,7 +36,7 @@ export const indexBlock = async (
 
     // Check if blockProgress fetched from database.
     if (!partialblockProgress.id) {
-      blockProgress = await indexer.fetchBlockEvents(partialblockProgress);
+      blockProgress = await indexer.fetchBlockWithEvents(partialblockProgress);
     } else {
       blockProgress = partialblockProgress as BlockProgressInterface;
     }

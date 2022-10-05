@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig } from '@cerc-io/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, IPFSClient, IpldStatus as IpldStatusInterface } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -21,6 +21,7 @@ import { SyncStatus } from './entity/SyncStatus';
 import artifacts from './artifacts/ERC20.json';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract } from './entity/Contract';
+import { IPLDBlock } from './entity/IPLDBlock';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -63,7 +64,8 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._serverMode = serverConfig.mode;
-    this._baseIndexer = new BaseIndexer(this._db, this._ethClient, this._ethProvider, jobQueue);
+    const ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
+    this._baseIndexer = new BaseIndexer(serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, ipfsClient);
 
     const { abi, storageLayout } = artifacts;
 
@@ -248,6 +250,10 @@ export class Indexer implements IndexerInterface {
     );
   }
 
+  getIPLDData (ipldBlock: IPLDBlock): any {
+    return this._baseIndexer.getIPLDData(ipldBlock);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const { eventName, eventInfo, contract: token, block: { blockHash } } = event;
     const eventFields = JSON.parse(eventInfo);
@@ -278,6 +284,11 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event);
   }
 
+  async processBlock (blockProgress: BlockProgress): Promise<void> {
+    // Call a function to create initial state for contracts.
+    await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
+  }
+
   parseEventNameAndArgs (kind: string, logObj: any): any {
     const { topics, data } = logObj;
     const logDescription = this._contract.parseLog({ data, topics });
@@ -291,12 +302,16 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
-  async isWatchedContract (address : string): Promise<Contract | undefined> {
+  isWatchedContract (address : string): Contract | undefined {
     return this._baseIndexer.isWatchedContract(address);
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
+  }
+
+  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatusInterface): Promise<void> {
+    await this._baseIndexer.updateIPLDStatusMap(address, ipldStatus);
   }
 
   cacheContract (contract: Contract): void {
@@ -351,8 +366,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
+  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -451,7 +466,7 @@ export class Indexer implements IndexerInterface {
       };
 
       console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
-      const blockProgress = await this._db.saveEvents(dbTx, block, dbEvents);
+      const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
       console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 

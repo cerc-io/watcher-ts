@@ -12,7 +12,7 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IPLDIndexerInterface, BlockProgressInterface } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -28,7 +28,7 @@ interface DataSource {
 
 export class GraphWatcher {
   _database: Database;
-  _indexer?: IPLDIndexerInterface;
+  _indexer?: IndexerInterface;
   _ethClient: EthClient;
   _ethProvider: providers.BaseProvider;
   _subgraphPath: string;
@@ -254,7 +254,7 @@ export class GraphWatcher {
     }
   }
 
-  setIndexer (indexer: IPLDIndexerInterface): void {
+  setIndexer (indexer: IndexerInterface): void {
     this._indexer = indexer;
   }
 

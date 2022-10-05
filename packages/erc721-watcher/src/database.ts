@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual } from 'typeorm';
 import path from 'path';
 
-import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
+import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -30,7 +30,7 @@ import { _TokenApprovals } from './entity/_TokenApprovals';
 import { _OperatorApprovals } from './entity/_OperatorApprovals';
 import { TransferCount } from './entity/TransferCount';
 
-export class Database implements IPLDDatabaseInterface {
+export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
@@ -398,11 +398,23 @@ export class Database implements IPLDDatabaseInterface {
     return this._baseDatabase.getBlockEvents(repo, blockHash, where, queryOptions);
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
+  async saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
     const blockRepo = queryRunner.manager.getRepository(BlockProgress);
     const eventRepo = queryRunner.manager.getRepository(Event);
 
-    return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
+    return this._baseDatabase.saveBlockWithEvents(blockRepo, eventRepo, block, events);
+  }
+
+  async saveEvents (queryRunner: QueryRunner, events: Event[]): Promise<void> {
+    const eventRepo = queryRunner.manager.getRepository(Event);
+
+    return this._baseDatabase.saveEvents(eventRepo, events);
+  }
+
+  async saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.saveBlockProgress(repo, block);
   }
 
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {

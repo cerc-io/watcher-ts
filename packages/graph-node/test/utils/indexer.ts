@@ -7,7 +7,10 @@ import {
   EventInterface,
   SyncStatusInterface,
   ServerConfig as ServerConfigInterface,
-  ValueResult
+  ValueResult,
+  ContractInterface,
+  IpldStatus as IpldStatusInterface,
+  IPLDBlockInterface
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -85,7 +88,7 @@ export class Indexer implements IndexerInterface {
     return '';
   }
 
-  async fetchBlockEvents (block: BlockProgressInterface): Promise<BlockProgressInterface> {
+  async fetchBlockWithEvents (block: BlockProgressInterface): Promise<BlockProgressInterface> {
     return block;
   }
 
@@ -152,6 +155,22 @@ export class Indexer implements IndexerInterface {
 
   async processEvent (event: EventInterface): Promise<void> {
     assert(event);
+  }
+
+  isWatchedContract (address : string): ContractInterface | undefined {
+    return undefined;
+  }
+
+  async processBlock (blockProgress: BlockProgressInterface): Promise<void> {
+    return undefined;
+  }
+
+  getIPLDData (ipldBlock: IPLDBlockInterface): any {
+    return undefined;
+  }
+
+  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatusInterface): Promise<void> {
+    return undefined;
   }
 }
 
