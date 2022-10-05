@@ -18,6 +18,7 @@ interface Vars {
   blockHash: string;
   contract?: string;
   slot?: string;
+  addresses?: string[];
 }
 
 export class EthClient {

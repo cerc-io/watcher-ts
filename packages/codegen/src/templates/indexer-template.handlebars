@@ -760,22 +760,16 @@ export class Indexer implements IPLDIndexerInterface {
     console.time('time:indexer#_fetchAndSaveEvents-fetch-logs');
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this._baseIndexer.getWatchedContracts();
+      const addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
 
-      // TODO: Query logs by multiple contracts.
-      const contractlogsPromises = watchedContracts.map((watchedContract): Promise<any> => this._ethClient.getLogs({
+      const logsResult = await this._ethClient.getLogs({
         blockHash,
-        contract: watchedContract.address
-      }));
+        addresses
+      });
 
-      const contractlogs = await Promise.all(contractlogsPromises);
-
-      // Flatten logs by contract and sort by index.
-      logs = contractlogs.map(data => {
-        return data.logs;
-      }).flat()
-        .sort((a, b) => {
-          return a.index - b.index;
-        });
+      logs = logsResult.logs;
     } else {
       ({ logs } = await this._ethClient.getLogs({ blockHash }));
     }

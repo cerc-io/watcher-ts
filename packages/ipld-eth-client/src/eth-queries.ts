@@ -15,8 +15,8 @@ query getStorageAt($blockHash: Bytes32!, $contract: Address!, $slot: Bytes32!) {
 `;
 
 export const getLogs = gql`
-query getLogs($blockHash: Bytes32!, $contract: Address) {
-  getLogs(blockHash: $blockHash, contract: $contract) {
+query getLogs($blockHash: Bytes32!, $addresses: [Address!]) {
+  getLogs(blockHash: $blockHash, addresses: $addresses) {
     account {
       address
     }
