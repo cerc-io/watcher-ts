@@ -28,7 +28,8 @@ import {
   IPFSClient,
   StateKind,
   IndexerInterface,
-  IpldStatus as IpldStatusInterface
+  IpldStatus as IpldStatusInterface,
+  ResultIPLDBlock
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
@@ -72,20 +73,6 @@ export type ResultEvent = {
   event: any;
 
   proof: string;
-};
-
-export type ResultIPLDBlock = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  contractAddress: string;
-  cid: string;
-  kind: string;
-  data: string;
 };
 
 export class Indexer implements IndexerInterface {

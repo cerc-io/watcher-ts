@@ -40,6 +40,20 @@ export interface IpldStatus {
   diff_staged?: number;
 }
 
+export type ResultIPLDBlock = {
+  block: {
+    cid: string;
+    hash: string;
+    number: number;
+    timestamp: number;
+    parentHash: string;
+  };
+  contractAddress: string;
+  cid: string;
+  kind: string;
+  data: string;
+};
+
 export class Indexer {
   _serverConfig: ServerConfig;
   _db: DatabaseInterface;

@@ -28,7 +28,8 @@ import {
   IPFSClient,
   StateKind,
   IpldStatus as IpldStatusInterface,
-  getFullTransaction
+  getFullTransaction,
+  ResultIPLDBlock
 } from '@cerc-io/util';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
@@ -73,20 +74,6 @@ export type ResultEvent = {
   event: any;
 
   proof: string;
-};
-
-export type ResultIPLDBlock = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  contractAddress: string;
-  cid: string;
-  kind: string;
-  data: string;
 };
 
 export class Indexer implements IndexerInterface {

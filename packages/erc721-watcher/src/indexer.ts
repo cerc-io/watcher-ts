@@ -27,7 +27,8 @@ import {
   BlockHeight,
   IPFSClient,
   StateKind,
-  IpldStatus as IpldStatusInterface
+  IpldStatus as IpldStatusInterface,
+  ResultIPLDBlock
 } from '@cerc-io/util';
 
 import ERC721Artifacts from './artifacts/ERC721.json';
@@ -68,20 +69,6 @@ export type ResultEvent = {
   event: any;
 
   proof: string;
-};
-
-export type ResultIPLDBlock = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  contractAddress: string;
-  cid: string;
-  kind: string;
-  data: string;
 };
 
 export class Indexer implements IndexerInterface {
