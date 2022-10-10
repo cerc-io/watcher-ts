@@ -68,6 +68,11 @@ export const eventProcessingLoadEntityDBQueryDuration = new client.Histogram({
   help: 'Duration of DB query made in event processing'
 });
 
+export const eventProcessingEthCallDuration = new client.Histogram({
+  name: 'event_processing_eth_call_duration_seconds',
+  help: 'Duration of eth_calls made in event processing'
+});
+
 // Export metrics on a server
 const app: Application = express();
 
@@ -131,7 +136,7 @@ const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<vo
   // eslint-disable-next-line no-new
   new client.Gauge({
     name: 'database_size_bytes',
-    help: 'Total entries in event table',
+    help: 'Watcher database sizes in bytes',
     labelNames: ['type'] as const,
     async collect () {
       const [

@@ -2,7 +2,6 @@
   "name": "@cerc-io/cache",
   "version": "0.1.0",
   "description": "Generic object cache",
-  "private": true,
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",

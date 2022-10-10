@@ -18,6 +18,7 @@
     "build": "lerna run build --stream",
     "build:watch": "lerna run build --stream --parallel -- -w",
     "db:reset": "sudo ./scripts/reset-dbs.sh",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "publish:workspace": "yarn build && lerna publish"
   }
 }
