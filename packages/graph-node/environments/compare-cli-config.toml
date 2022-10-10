@@ -13,7 +13,7 @@
   entitiesDir = "../../graph-test-watcher/dist/entity/*"
   endpoint = "gqlEndpoint2"
   verifyState = true
-  derivedFields = []
+  skipFields = []
 
 [cache]
   endpoint = "gqlEndpoint1"
