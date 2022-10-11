@@ -1,10 +1,10 @@
 {
   "name": "@cerc-io/util",
-  "version": "0.1.0",
+  "version": "0.2.13",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@cerc-io/solidity-mapper": "^0.1.0",
+    "@cerc-io/solidity-mapper": "^0.2.13",
     "debug": "^4.3.1",
     "decimal.js": "^10.3.1",
     "ethers": "^5.4.4",
@@ -18,8 +18,8 @@
     "toml": "^3.0.0"
   },
   "devDependencies": {
-    "@cerc-io/cache": "^0.1.0",
-    "@cerc-io/ipld-eth-client": "^0.1.0",
+    "@cerc-io/cache": "^0.2.13",
+    "@cerc-io/ipld-eth-client": "^0.2.13",
     "@types/fs-extra": "^9.0.11",
     "@types/pg": "^8.6.5",
     "@typescript-eslint/eslint-plugin": "^4.25.0",

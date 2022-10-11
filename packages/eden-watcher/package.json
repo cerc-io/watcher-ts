@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/eden-watcher",
-  "version": "0.1.0",
+  "version": "0.2.13",
   "description": "eden-watcher",
   "private": true,
   "main": "dist/index.js",
@@ -38,10 +38,10 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@cerc-io/graph-node": "^0.1.0",
-    "@cerc-io/ipld-eth-client": "^0.1.0",
-    "@cerc-io/solidity-mapper": "^0.1.0",
-    "@cerc-io/util": "^0.1.0",
+    "@cerc-io/graph-node": "^0.2.13",
+    "@cerc-io/ipld-eth-client": "^0.2.13",
+    "@cerc-io/solidity-mapper": "^0.2.13",
+    "@cerc-io/util": "^0.2.13",
     "@ethersproject/providers": "^5.4.4",
     "@ipld/dag-cbor": "^6.0.12",
     "apollo-server-express": "^2.25.0",
