@@ -16,7 +16,7 @@ import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
-  IPLDIndexer as BaseIndexer,
+  Indexer as BaseIndexer,
   UNKNOWN_EVENT_NAME,
   ServerConfig,
   JobQueue,
@@ -25,9 +25,10 @@ import {
   BlockHeight,
   IPFSClient,
   StateKind,
-  IPLDIndexerInterface,
+  IndexerInterface,
   IpldStatus as IpldStatusInterface,
-  ValueResult
+  ValueResult,
+  ResultIPLDBlock
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
@@ -90,21 +91,7 @@ export type ResultEvent = {
   proof: string;
 };
 
-export type ResultIPLDBlock = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  contractAddress: string;
-  cid: string;
-  kind: string;
-  data: string;
-};
-
-export class Indexer implements IPLDIndexerInterface {
+export class Indexer implements IndexerInterface {
   _db: Database
   _ethClient: EthClient
   _ethProvider: BaseProvider
@@ -540,7 +527,7 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
-  async isWatchedContract (address : string): Promise<Contract | undefined> {
+  isWatchedContract (address : string): Contract | undefined {
     return this._baseIndexer.isWatchedContract(address);
   }
 
@@ -588,8 +575,8 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockEvents(block, this._fetchAndSaveEvents.bind(this));
+  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -1120,7 +1107,7 @@ export class Indexer implements IPLDIndexerInterface {
       };
 
       console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
-      const blockProgress = await this._db.saveEvents(dbTx, block, dbEvents);
+      const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
       console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 

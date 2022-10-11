@@ -100,6 +100,7 @@ export const instantiate = async (
         database.cacheUpdatedEntity(entityName, dbEntity);
 
         // Update the in-memory subgraph state if not disabled.
+        // TODO: enableSubgraphState
         if (!indexer.serverConfig.disableSubgraphState) {
           // Prepare diff data for the entity update
           assert(indexer.getRelationsMap);

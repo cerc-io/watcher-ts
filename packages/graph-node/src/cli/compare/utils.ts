@@ -50,7 +50,7 @@ interface QueryConfig {
   queryLimits: { [queryName: string]: number }
 }
 
-interface EntityDerivedFields {
+interface EntitySkipFields {
   entity: string;
   fields: string[];
 }
@@ -63,7 +63,7 @@ export interface Config {
     entitiesDir: string;
     verifyState: boolean;
     endpoint: keyof EndpointConfig;
-    derivedFields: EntityDerivedFields[]
+    skipFields: EntitySkipFields[]
   }
   cache: {
     endpoint: keyof EndpointConfig;
@@ -312,32 +312,67 @@ export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: 
   return contractIPLDStates.reduce((acc, state) => _.merge(acc, state));
 };
 
-export const checkEntityInIPLDState = async (
+export const checkGQLEntityInIPLDState = async (
   ipldState: {[key: string]: any},
-  queryName: string,
+  entityName: string,
   entityResult: {[key: string]: any},
   id: string,
   rawJson: boolean,
-  derivedFields: EntityDerivedFields[] = []
+  skipFields: EntitySkipFields[] = []
 ): Promise<string> => {
-  const entityName = _.upperFirst(queryName);
   const ipldEntity = ipldState[entityName][id];
 
   // Filter __typename key in GQL result.
-  const resultEntity = omitDeep(entityResult[queryName], '__typename');
+  entityResult = omitDeep(entityResult, '__typename');
 
-  // Filter derived fields in GQL result.
-  derivedFields.forEach(({ entity, fields }) => {
+  // Filter skipped fields in state comaparison.
+  skipFields.forEach(({ entity, fields }) => {
     if (entityName === entity) {
-      fields.forEach(field => {
-        delete resultEntity[field];
-      });
+      omitDeep(entityResult, fields);
+      omitDeep(ipldEntity, fields);
     }
   });
 
-  const diff = compareObjects(resultEntity, ipldEntity, rawJson);
+  const diff = compareObjects(entityResult, ipldEntity, rawJson);
 
   return diff;
+};
+
+export const checkGQLEntitiesInIPLDState = async (
+  ipldState: {[key: string]: any},
+  entityName: string,
+  entitiesResult: any[],
+  rawJson: boolean,
+  skipFields: EntitySkipFields[] = []
+): Promise<string> => {
+  // Form entities from state to compare with GQL result
+  const stateEntities = ipldState[entityName];
+
+  for (const entityResult of entitiesResult) {
+    const stateEntity = stateEntities[entityResult.id];
+
+    // Verify state if entity from GQL result is present in state.
+    if (stateEntity) {
+      // Filter __typename key in GQL result.
+      entitiesResult = omitDeep(entityResult, '__typename');
+
+      // Filter skipped fields in state comaparison.
+      skipFields.forEach(({ entity, fields }) => {
+        if (entityName === entity) {
+          omitDeep(entityResult, fields);
+          omitDeep(stateEntity, fields);
+        }
+      });
+
+      const diff = compareObjects(entityResult, stateEntity, rawJson);
+
+      if (diff) {
+        return diff;
+      }
+    }
+  }
+
+  return '';
 };
 
 // obj1: expected

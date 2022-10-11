@@ -2,7 +2,6 @@
   "name": "@cerc-io/ipld-eth-client",
   "version": "0.1.0",
   "description": "IPLD ETH Client",
-  "private": true,
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",

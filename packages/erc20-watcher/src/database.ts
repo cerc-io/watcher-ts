@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase, QueryOptions, Where } from '@cerc-io/util';
+import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
 
 import { Allowance } from './entity/Allowance';
 import { Balance } from './entity/Balance';
@@ -14,8 +14,10 @@ import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
+import { IPLDBlock } from './entity/IPLDBlock';
+import { IpldStatus } from './entity/IpldStatus';
 
-export class Database {
+export class Database implements DatabaseInterface {
   _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase;
@@ -37,6 +39,47 @@ export class Database {
 
   async close (): Promise<void> {
     return this._baseDatabase.close();
+  }
+
+  getNewIPLDBlock (): IPLDBlock {
+    return new IPLDBlock();
+  }
+
+  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    return this._baseDatabase.getIPLDBlocks(repo, where);
+  }
+
+  async getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    return this._baseDatabase.getLatestIPLDBlock(repo, contractAddress, kind, blockNumber);
+  }
+
+  // Fetch all diff IPLDBlocks after the specified block number.
+  async getDiffIPLDBlocksInRange (contractAddress: string, startblock: number, endBlock: number): Promise<IPLDBlock[]> {
+    const repo = this._conn.getRepository(IPLDBlock);
+
+    return this._baseDatabase.getDiffIPLDBlocksInRange(repo, contractAddress, startblock, endBlock);
+  }
+
+  async saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlock): Promise<IPLDBlock> {
+    const repo = dbTx.manager.getRepository(IPLDBlock);
+
+    return this._baseDatabase.saveOrUpdateIPLDBlock(repo, ipldBlock);
+  }
+
+  async removeIPLDBlocks (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
+    const repo = dbTx.manager.getRepository(IPLDBlock);
+
+    await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
+  }
+
+  async getIPLDStatus (): Promise<IpldStatus | undefined> {
+    const repo = this._conn.getRepository(IpldStatus);
+
+    return this._baseDatabase.getIPLDStatus(repo);
   }
 
   async getBalance ({ blockHash, token, owner }: { blockHash: string, token: string, owner: string }): Promise<Balance | undefined> {
@@ -107,11 +150,17 @@ export class Database {
     return this._baseDatabase.getBlockEvents(repo, blockHash, where, queryOptions);
   }
 
-  async saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
+  async saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>, events: DeepPartial<Event>[]): Promise<BlockProgress> {
     const blockRepo = queryRunner.manager.getRepository(BlockProgress);
     const eventRepo = queryRunner.manager.getRepository(Event);
 
-    return this._baseDatabase.saveEvents(blockRepo, eventRepo, block, events);
+    return this._baseDatabase.saveBlockWithEvents(blockRepo, eventRepo, block, events);
+  }
+
+  async saveEvents (queryRunner: QueryRunner, events: Event[]): Promise<void> {
+    const eventRepo = queryRunner.manager.getRepository(Event);
+
+    return this._baseDatabase.saveEvents(eventRepo, events);
   }
 
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {
@@ -171,6 +220,12 @@ export class Database {
     const repo = this._conn.getRepository(BlockProgress);
 
     return this._baseDatabase.getBlockProgressEntities(repo, where, options);
+  }
+
+  async saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.saveBlockProgress(repo, block);
   }
 
   async updateBlockProgress (queryRunner: QueryRunner, block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {

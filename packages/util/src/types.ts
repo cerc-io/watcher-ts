@@ -7,8 +7,7 @@ import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { ServerConfig } from './config';
 import { Where, QueryOptions } from './database';
-import { IpldStatus } from './ipld-indexer';
-import { ValueResult } from './indexer';
+import { ValueResult, IpldStatus } from './indexer';
 
 export enum StateKind {
   Diff = 'diff',
@@ -91,7 +90,7 @@ export interface IndexerInterface {
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
-  fetchBlockEvents (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>
+  fetchBlockWithEvents (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
@@ -101,7 +100,7 @@ export interface IndexerInterface {
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>;
   processEvent (event: EventInterface): Promise<void>;
   parseEventNameAndArgs?: (kind: string, logObj: any) => any;
-  isWatchedContract?: (address: string) => Promise<ContractInterface | undefined>;
+  isWatchedContract: (address: string) => ContractInterface | undefined;
   getContractsByKind?: (kind: string) => ContractInterface[];
   cacheContract?: (contract: ContractInterface) => void;
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
@@ -110,13 +109,10 @@ export interface IndexerInterface {
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
-  processBlock?: (blockProgres: BlockProgressInterface) => Promise<void>
+  processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
   processBlockAfterEvents?: (blockHash: string) => Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
-}
-
-export interface IPLDIndexerInterface extends IndexerInterface {
   updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void>
   getIPLDData (ipldBlock: IPLDBlockInterface): any
 }
@@ -140,18 +136,17 @@ export interface DatabaseInterface {
   getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }>;
   getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>>;
   markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgressInterface[]): Promise<void>;
+  saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>;
   updateBlockProgress (queryRunner: QueryRunner, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
   updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
-  saveEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
+  saveEvents (queryRunner: QueryRunner, events: DeepPartial<EventInterface>[]): Promise<void>;
+  saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContracts?: () => Promise<ContractInterface[]>
   saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
-}
-
-export interface IPLDDatabaseInterface extends DatabaseInterface {
   getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
   getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
   getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlockInterface[]>

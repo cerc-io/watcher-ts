@@ -1,0 +1,10 @@
+/src/
+hardhat.config.ts
+tsconfig.json
+.eslintrc.json
+.eslintignore
+.env
+.env.example
+cache
+artifacts
+test

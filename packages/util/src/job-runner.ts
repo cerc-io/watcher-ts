@@ -17,7 +17,7 @@ import {
   QUEUE_EVENT_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface, IPLDIndexerInterface, SyncStatusInterface } from './types';
+import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
 import { createPruningJob, processBatchEvents } from './common';
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
@@ -25,7 +25,7 @@ import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber 
 const log = debug('vulcanize:job-runner');
 
 export class JobRunner {
-  _indexer: IndexerInterface | IPLDIndexerInterface
+  _indexer: IndexerInterface
   _jobQueue: JobQueue
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
@@ -246,13 +246,11 @@ export class JobRunner {
       // Delay required to process block.
       await wait(jobDelayInMilliSecs);
       console.time('time:job-runner#_indexBlock-fetch-block-events');
-      blockProgress = await this._indexer.fetchBlockEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+      blockProgress = await this._indexer.fetchBlockWithEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
       console.timeEnd('time:job-runner#_indexBlock-fetch-block-events');
     }
 
-    if (this._indexer.processBlock) {
-      await this._indexer.processBlock(blockProgress);
-    }
+    await this._indexer.processBlock(blockProgress);
 
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
@@ -299,7 +297,7 @@ export class JobRunner {
     assert(this._indexer.cacheContract);
     this._indexer.cacheContract(contract);
 
-    const ipldIndexer = this._indexer as IPLDIndexerInterface;
+    const ipldIndexer = this._indexer;
     if (ipldIndexer.updateIPLDStatusMap) {
       ipldIndexer.updateIPLDStatusMap(contract.address, {});
     }

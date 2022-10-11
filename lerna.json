@@ -4,5 +4,10 @@
   ],
   "version": "0.1.0",
   "npmClient": "yarn",
-  "useWorkspaces": true
+  "useWorkspaces": true,
+  "command": {
+    "publish": {
+      "registry": "https://git.vdb.to/api/packages/cerc-io/npm/"
+    }
+  }
 }

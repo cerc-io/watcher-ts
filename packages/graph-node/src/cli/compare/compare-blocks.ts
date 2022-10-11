@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { getConfig as getWatcherConfig, wait } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
-import { checkEntityInIPLDState, compareQuery, Config, getIPLDsByBlock, checkIPLDMetaData, combineIPLDState, getClients, getConfig } from './utils';
+import { checkGQLEntityInIPLDState, compareQuery, Config, getIPLDsByBlock, checkIPLDMetaData, combineIPLDState, getClients, getConfig, checkGQLEntitiesInIPLDState } from './utils';
 import { Database } from '../../database';
 import { getSubgraphConfig } from '../../utils';
 
@@ -168,7 +168,7 @@ export const main = async (): Promise<void> => {
             );
 
             if (config.watcher.verifyState) {
-              const ipldDiff = await checkEntityInIPLDState(ipldStateByBlock, queryName, result, id, rawJson, config.watcher.derivedFields);
+              const ipldDiff = await checkGQLEntityInIPLDState(ipldStateByBlock, entityName, result[queryName], id, rawJson, config.watcher.skipFields);
 
               if (ipldDiff) {
                 log('Results mismatch for IPLD state:', ipldDiff);
@@ -182,13 +182,24 @@ export const main = async (): Promise<void> => {
           }
         } else {
           if (updatedEntities.has(entityName)) {
-            ({ diff: resultDiff } = await compareQuery(
+            let result;
+
+            ({ diff: resultDiff, result1: result } = await compareQuery(
               clients,
               queryName,
               { block },
               rawJson,
               timeDiff
             ));
+
+            if (config.watcher.verifyState) {
+              const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
+
+              if (ipldDiff) {
+                log('Results mismatch for IPLD state:', ipldDiff);
+                diffFound = true;
+              }
+            }
           }
         }
 

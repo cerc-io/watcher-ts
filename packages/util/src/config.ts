@@ -22,6 +22,8 @@ export interface JobQueueConfig {
   maxCompletionLagInSecs: number;
   jobDelayInMilliSecs?: number;
   eventsInBatch: number;
+  lazyUpdateBlockProgress?: boolean;
+  subgraphEventsOrder: boolean;
 }
 
 export interface ServerConfig {
