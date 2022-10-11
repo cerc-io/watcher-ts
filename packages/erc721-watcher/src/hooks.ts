@@ -45,8 +45,6 @@ export async function createStateDiff (indexer: Indexer, blockHash: string): Pro
   assert(indexer);
   assert(blockHash);
 
-  // Check flag to create state in job-runner (in parent call)
-
   // Use indexer.createDiff() method to save custom state diff(s).
 }
 

@@ -6,7 +6,7 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
 import path from 'path';
 
-import { IPLDDatabase as BaseDatabase, IPLDDatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
+import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -18,7 +18,7 @@ import { IPLDBlock } from './entity/IPLDBlock';
 import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/each}}
 
-export class Database implements IPLDDatabaseInterface {
+export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
@@ -188,6 +188,18 @@ export class Database implements IPLDDatabaseInterface {
     const eventRepo = queryRunner.manager.getRepository(Event);
 
     return this._baseDatabase.saveBlockWithEvents(blockRepo, eventRepo, block, events);
+  }
+
+  async saveEvents (queryRunner: QueryRunner, events: Event[]): Promise<void> {
+    const eventRepo = queryRunner.manager.getRepository(Event);
+
+    return this._baseDatabase.saveEvents(eventRepo, events);
+  }
+
+  async saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+    const repo = queryRunner.manager.getRepository(BlockProgress);
+
+    return this._baseDatabase.saveBlockProgress(repo, block);
   }
 
   async saveContract (queryRunner: QueryRunner, address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<Contract> {

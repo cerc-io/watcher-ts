@@ -16,8 +16,8 @@ import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
-  IPLDIndexer as BaseIndexer,
-  IPLDIndexerInterface,
+  Indexer as BaseIndexer,
+  IndexerInterface,
   ValueResult,
   UNKNOWN_EVENT_NAME,
   ServerConfig,
@@ -89,7 +89,7 @@ export type ResultEvent = {
   proof: string;
 };
 
-export class Indexer implements IPLDIndexerInterface {
+export class Indexer implements IndexerInterface {
   _db: Database
   _ethClient: EthClient
   _ethProvider: BaseProvider
@@ -590,7 +590,7 @@ export class Indexer implements IPLDIndexerInterface {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
-  async isWatchedContract (address : string): Promise<Contract | undefined> {
+  isWatchedContract (address : string): Contract | undefined {
     return this._baseIndexer.isWatchedContract(address);
   }
 
