@@ -325,7 +325,7 @@ export const checkGQLEntityInIPLDState = async (
   // Filter __typename key in GQL result.
   entityResult = omitDeep(entityResult, '__typename');
 
-  // Filter skipped fields in GQL result.
+  // Filter skipped fields in state comaparison.
   skipFields.forEach(({ entity, fields }) => {
     if (entityName === entity) {
       omitDeep(entityResult, fields);
@@ -346,24 +346,33 @@ export const checkGQLEntitiesInIPLDState = async (
   skipFields: EntitySkipFields[] = []
 ): Promise<string> => {
   // Form entities from state to compare with GQL result
-  const stateEntities = entitiesResult.map(resultEntity => {
-    return ipldState[entityName][resultEntity.id];
-  });
+  const stateEntities = ipldState[entityName];
 
-  // Filter __typename key in GQL result.
-  entitiesResult = omitDeep(entitiesResult, '__typename');
+  for (const entityResult of entitiesResult) {
+    const stateEntity = stateEntities[entityResult.id];
 
-  // Filter skipped fields in GQL result.
-  skipFields.forEach(({ entity, fields }) => {
-    if (entityName === entity) {
-      omitDeep(entitiesResult, fields);
-      omitDeep(stateEntities, fields);
+    // Verify state if entity from GQL result is present in state.
+    if (stateEntity) {
+      // Filter __typename key in GQL result.
+      entitiesResult = omitDeep(entityResult, '__typename');
+
+      // Filter skipped fields in state comaparison.
+      skipFields.forEach(({ entity, fields }) => {
+        if (entityName === entity) {
+          omitDeep(entityResult, fields);
+          omitDeep(stateEntity, fields);
+        }
+      });
+
+      const diff = compareObjects(entityResult, stateEntity, rawJson);
+
+      if (diff) {
+        return diff;
+      }
     }
-  });
+  }
 
-  const diff = compareObjects(entitiesResult, stateEntities, rawJson);
-
-  return diff;
+  return '';
 };
 
 // obj1: expected
