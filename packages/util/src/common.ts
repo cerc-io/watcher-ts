@@ -78,7 +78,9 @@ export const fetchBlocks = async (
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
     // Wait for further blocks to be prefetched.
+    console.time('time:common#fetchBlocks-_prefetchBlocks');
     await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
+    console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
 
     log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
 
@@ -142,7 +144,7 @@ export const _prefetchBlocks = async (
   const halfPrefetchBlockCount = jobQueueConfig.prefetchBlockCount / 2;
 
   // Check if prefetched blocks are less than half.
-  if (prefetchedBlocksMap.size < halfPrefetchBlockCount) {
+  if (prefetchedBlocksMap.size <= halfPrefetchBlockCount) {
     let latestPrefetchedBlockNumber = blockNumber;
 
     Array.from(prefetchedBlocksMap.values()).forEach(({ block }) => {
