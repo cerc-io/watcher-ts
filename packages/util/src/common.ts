@@ -77,8 +77,8 @@ export const fetchBlocks = async (
 
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
-    // Don't wait for prefetching blocks.
-    _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
+    // Wait for further blocks to be prefetched.
+    await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
 
     log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
 
