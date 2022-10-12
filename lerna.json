@@ -7,7 +7,9 @@
   "useWorkspaces": true,
   "command": {
     "publish": {
-      "registry": "https://git.vdb.to/api/packages/cerc-io/npm/"
+      "registry": "https://git.vdb.to/api/packages/cerc-io/npm/",
+      "yes": true,
+      "from-package": true
     }
   }
 }
