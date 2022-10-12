@@ -67,7 +67,7 @@ export const fetchBlocks = async (
   indexer: IndexerInterface,
   jobQueue: JobQueue,
   jobQueueConfig: JobQueueConfig,
-  prefetchedBlocksMap: Map< string, PrefetchedBlock>
+  prefetchedBlocksMap: Map<string, PrefetchedBlock>
 ): Promise<void> => {
   let blocks = [];
 
@@ -80,12 +80,12 @@ export const fetchBlocks = async (
     // Don't wait for prefetching blocks.
     _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
 
-    log('size:common#_fetchBlocks-_prefetchBlocksMap-size:', Object.keys(prefetchedBlocksMap).length);
+    log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
 
     // Get blocks prefetched in memory.
-    // blocks = prefetchedBlocksMap.fil
     blocks = Array.from(prefetchedBlocksMap.values())
-      .filter(({ block }) => Number(block.blockNumber) === blockNumber);
+      .filter(({ block }) => Number(block.blockNumber) === blockNumber)
+      .map(prefetchedBlock => prefetchedBlock.block);
   }
 
   if (!blocks.length) {
@@ -112,7 +112,7 @@ export const fetchBlocks = async (
     const { cid, blockHash, blockNumber, parentHash, timestamp } = block;
 
     // Stop blocks already pushed to job queue. They are already retried after fail.
-    if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
+    if (!syncStatus || syncStatus.chainHeadBlockNumber < Number(blockNumber)) {
       await jobQueue.pushJob(
         QUEUE_BLOCK_PROCESSING,
         {
@@ -134,7 +134,7 @@ export const _prefetchBlocks = async (
   blockNumber: number,
   indexer: IndexerInterface,
   jobQueueConfig: JobQueueConfig,
-  prefetchedBlocksMap: Map< string, PrefetchedBlock>
+  prefetchedBlocksMap: Map<string, PrefetchedBlock>
 ): Promise<void> => {
   const halfPrefetchBlockCount = jobQueueConfig.prefetchBlockCount / 2;
 
@@ -144,7 +144,7 @@ export const _prefetchBlocks = async (
 
     Array.from(prefetchedBlocksMap.values()).forEach(({ block }) => {
       if (block.blockNumber > latestPrefetchedBlockNumber) {
-        latestPrefetchedBlockNumber = block.blockNumber;
+        latestPrefetchedBlockNumber = Number(block.blockNumber);
       }
     });
 
