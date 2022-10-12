@@ -1,0 +1,41 @@
+# This is a basic workflow that is manually triggered
+
+name: Manual workflow
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  npm_publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16.x ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
+      - run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+      - name: Run yarn build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+        run: |
+          yarn build
+      - name: Configure git.vdb.to npm registry
+        run: |
+          npm config set @cerc-io:registry https://git.vdb.to/api/packages/cerc-io/npm/
+      - name: Authenticate to git.vdb.to registry
+        run: |
+          npm config set -- '//git.vdb.to/api/packages/cerc-io/npm/:_authToken' "${{ secrets.GITEA_PUBLISH_TOKEN }}"
+      - name: yarn publish
+        run: |
+          yarn publish:workspace  
+
