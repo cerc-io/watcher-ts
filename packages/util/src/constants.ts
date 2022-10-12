@@ -13,7 +13,6 @@ export const QUEUE_IPFS = 'ipfs';
 
 export const JOB_KIND_INDEX = 'index';
 export const JOB_KIND_PRUNE = 'prune';
-export const JOB_KIND_FETCH_BLOCKS = 'fetch-blocks';
 
 export const JOB_KIND_EVENTS = 'events';
 export const JOB_KIND_CONTRACT = 'contract';
