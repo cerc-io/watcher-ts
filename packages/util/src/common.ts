@@ -53,6 +53,8 @@ export const processBlockByNumber = async (
 ): Promise<void> => {
   log(`Process block ${blockNumber}`);
 
+  // TODO Check syncStatus if blockNumber already processed (might cause problems on restart).
+
   await jobQueue.pushJob(
     QUEUE_BLOCK_PROCESSING,
     {
@@ -70,12 +72,6 @@ export const fetchBlocks = async (
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
   const { blockNumber } = job.data;
   let blocks = [];
-
-  const syncStatus = await indexer.getSyncStatus();
-  // Skip blocks already pushed to job queue. They are already retried after fail.
-  if (syncStatus && syncStatus.chainHeadBlockNumber >= Number(blockNumber)) {
-    return [];
-  }
 
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
