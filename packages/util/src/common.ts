@@ -89,6 +89,7 @@ export const fetchBlocks = async (
   }
 
   if (!blocks.length) {
+    log(`common#cache-miss-${blockNumber}`);
     const blockProgressEntities = await indexer.getBlocksAtHeight(blockNumber, false);
 
     blocks = blockProgressEntities.map((block: any) => {
@@ -104,8 +105,10 @@ export const fetchBlocks = async (
     blocks = await indexer.getBlocks({ blockNumber });
     console.timeEnd('time:common#_fetchBlocks-eth-server');
 
-    log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-    await wait(jobQueueConfig.blockDelayInMilliSecs);
+    if (!blocks.length) {
+      log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
+      await wait(jobQueueConfig.blockDelayInMilliSecs);
+    }
   }
 
   for (const block of blocks) {
