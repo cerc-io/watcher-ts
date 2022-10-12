@@ -46,7 +46,7 @@ jobs:
           npm config set @cerc-io:registry https://git.vdb.to/api/packages/cerc-io/npm/
       - name: Authenticate to git.vdb.to registry
           npm config set -- '//git.vdb.to/api/packages/cerc-io/npm/:_authToken' "${{ secrets.GITEA_PUBLISH_TOKEN }}"
-      - name: Run yarn publish
-          run: |
-            yarn publish:workspace  
+      - name: yarn publish
+        run: |
+          yarn publish:workspace  
 
