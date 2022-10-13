@@ -40,5 +40,5 @@ jobs:
           npm config set -- '//git.vdb.to/api/packages/cerc-io/npm/:_authToken' "${{ secrets.GITEA_PUBLISH_TOKEN }}"
       - name: lerna publish
         run: |
-          lerna publish  --no-git-tag-version --from-git --yes
+          lerna publish from-package --no-git-tag-version --yes
 
