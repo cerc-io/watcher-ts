@@ -75,17 +75,24 @@ export const fetchBlocks = async (
 
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
-    // Wait for further blocks to be prefetched.
-    console.time('time:common#fetchBlocks-_prefetchBlocks');
-    await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
-    console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
-
-    log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
-
     // Get blocks prefetched in memory.
     blocks = Array.from(prefetchedBlocksMap.values())
       .filter(({ block }) => Number(block.blockNumber) === blockNumber)
       .map(prefetchedBlock => prefetchedBlock.block);
+
+    // If not found in cache, fetch the next batch.
+    if (!blocks.length) {
+      // Wait for blocks to be prefetched.
+      console.time('time:common#fetchBlocks-_prefetchBlocks');
+      await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
+      console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
+
+      blocks = Array.from(prefetchedBlocksMap.values())
+        .filter(({ block }) => Number(block.blockNumber) === blockNumber)
+        .map(prefetchedBlock => prefetchedBlock.block);
+    }
+
+    log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
   }
 
   if (!blocks.length) {
@@ -135,30 +142,19 @@ export const _prefetchBlocks = async (
   jobQueueConfig: JobQueueConfig,
   prefetchedBlocksMap: Map<string, PrefetchedBlock>
 ): Promise<void> => {
-  const halfPrefetchBlockCount = jobQueueConfig.prefetchBlockCount / 2;
+  // Clear cache of any remaining blocks.
+  prefetchedBlocksMap.clear();
 
-  // Check if prefetched blocks are less than half.
-  if (prefetchedBlocksMap.size <= halfPrefetchBlockCount) {
-    let latestPrefetchedBlockNumber = blockNumber;
+  const blocksWithEvents = await fetchBatchBlocks(
+    indexer,
+    jobQueueConfig,
+    blockNumber,
+    blockNumber + jobQueueConfig.prefetchBlockCount
+  );
 
-    Array.from(prefetchedBlocksMap.values()).forEach(({ block }) => {
-      if (Number(block.blockNumber) > latestPrefetchedBlockNumber) {
-        latestPrefetchedBlockNumber = Number(block.blockNumber);
-      }
-    });
-
-    const blocksWithEvents = await fetchBatchBlocks(
-      indexer,
-      jobQueueConfig,
-      latestPrefetchedBlockNumber + 1,
-      latestPrefetchedBlockNumber + halfPrefetchBlockCount
-    );
-
-    blocksWithEvents.forEach(({ block, events }) => {
-      prefetchedBlocksMap.set(block.blockHash, { block, events });
-      latestPrefetchedBlockNumber = Number(block.blockNumber);
-    });
-  }
+  blocksWithEvents.forEach(({ block, events }) => {
+    prefetchedBlocksMap.set(block.blockHash, { block, events });
+  });
 };
 
 /**
@@ -169,7 +165,7 @@ export const _prefetchBlocks = async (
  * @param endBlock
  */
 export const fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfig: JobQueueConfig, startBlock: number, endBlock: number): Promise<any[]> => {
-  let blockNumbers = [...Array(endBlock - startBlock + 1).keys()].map(n => n + startBlock);
+  let blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
   let blocks = [];
 
   // Fetch blocks again if there are missing blocks.
