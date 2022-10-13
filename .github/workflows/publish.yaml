@@ -20,3 +20,36 @@ jobs:
         run: docker tag ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.sha}} ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.tag}}
       - name: Docker Push to Github Hub
         run: docker push ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.tag}}
+
+  npm_publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16.x ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
+      - run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+      - name: Run yarn build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
+        run: |
+          yarn build
+      - name: Configure git.vdb.to npm registry
+        run: |
+          npm config set @cerc-io:registry https://git.vdb.to/api/packages/cerc-io/npm/
+      - name: Authenticate to git.vdb.to registry
+        run: |
+          npm config set -- '//git.vdb.to/api/packages/cerc-io/npm/:_authToken' "${{ secrets.GITEA_PUBLISH_TOKEN }}"
+      - name: lerna publish
+        run: |
+          lerna publish from-package --no-git-tag-version --yes
