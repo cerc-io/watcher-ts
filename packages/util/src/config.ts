@@ -24,6 +24,9 @@ export interface JobQueueConfig {
   eventsInBatch: number;
   lazyUpdateBlockProgress?: boolean;
   subgraphEventsOrder: boolean;
+  blockDelayInMilliSecs?: number;
+  prefetchBlocksInMem: boolean;
+  prefetchBlockCount: number;
 }
 
 export interface ServerConfig {

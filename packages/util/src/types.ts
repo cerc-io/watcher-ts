@@ -91,6 +91,7 @@ export interface IndexerInterface {
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchBlockWithEvents (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>
+  fetchBlockEvents?: (block: DeepPartial<BlockProgressInterface>) => Promise<DeepPartial<EventInterface>[]>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
