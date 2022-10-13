@@ -149,9 +149,7 @@ export const fetchBlocksAtHeight = async (
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
     // Get blocks prefetched in memory.
-    blocks = Array.from(prefetchedBlocksMap.values())
-      .filter(({ block }) => Number(block.blockNumber) === blockNumber)
-      .map(prefetchedBlock => prefetchedBlock.block);
+    blocks = getPrefetchedBlocksAtHeight(prefetchedBlocksMap, blockNumber);
 
     // If not found in cache, fetch the next batch.
     if (!blocks.length) {
@@ -160,9 +158,7 @@ export const fetchBlocksAtHeight = async (
       await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
       console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
 
-      blocks = Array.from(prefetchedBlocksMap.values())
-        .filter(({ block }) => Number(block.blockNumber) === blockNumber)
-        .map(prefetchedBlock => prefetchedBlock.block);
+      blocks = getPrefetchedBlocksAtHeight(prefetchedBlocksMap, blockNumber);
     }
 
     log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
@@ -246,9 +242,9 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
+    const res = await Promise.all(blockPromises);
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
 
-    const res = await Promise.all(blockPromises);
     const missingIndex = res.findIndex(blocks => blocks.length === 0);
 
     // TODO Continue to process available blocks instead of retrying for whole range.
@@ -384,4 +380,10 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
   console.time('time:common#processBatchEvents-updateBlockProgress');
   await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
   console.timeEnd('time:common#processBatchEvents-updateBlockProgress');
+};
+
+const getPrefetchedBlocksAtHeight = (prefetchedBlocksMap: Map<string, PrefetchedBlock>, blockNumber: number):any[] => {
+  return Array.from(prefetchedBlocksMap.values())
+    .filter(({ block }) => Number(block.blockNumber) === blockNumber)
+    .map(prefetchedBlock => prefetchedBlock.block);
 };
