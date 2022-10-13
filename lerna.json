@@ -9,7 +9,7 @@
     "publish": {
       "registry": "https://git.vdb.to/api/packages/cerc-io/npm/",
       "yes": true,
-      "from-package": true
+      "from-git": true
     }
   }
 }
