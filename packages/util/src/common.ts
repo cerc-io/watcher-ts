@@ -142,7 +142,7 @@ export const _prefetchBlocks = async (
     let latestPrefetchedBlockNumber = blockNumber;
 
     Array.from(prefetchedBlocksMap.values()).forEach(({ block }) => {
-      if (block.blockNumber > latestPrefetchedBlockNumber) {
+      if (Number(block.blockNumber) > latestPrefetchedBlockNumber) {
         latestPrefetchedBlockNumber = Number(block.blockNumber);
       }
     });
