@@ -27,7 +27,10 @@ jobs:
       matrix:
         node-version: [ 16.x ]
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -47,7 +50,6 @@ jobs:
       - name: Authenticate to git.vdb.to registry
         run: |
           npm config set -- '//git.vdb.to/api/packages/cerc-io/npm/:_authToken' "${{ secrets.GITEA_PUBLISH_TOKEN }}"
-      - name: yarn publish
+      - name: lerna publish
         run: |
-          yarn publish:workspace  
-
+          lerna publish from-package --no-git-tag-version --yes
