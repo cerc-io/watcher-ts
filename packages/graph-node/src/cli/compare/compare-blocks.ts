@@ -45,6 +45,16 @@ export const main = async (): Promise<void> => {
       demandOption: true,
       describe: 'End block number'
     },
+    batchSize: {
+      type: 'number',
+      default: 1,
+      describe: 'No. of blocks to be compared in an interval (default 1)'
+    },
+    interval: {
+      type: 'number',
+      default: 1,
+      describe: 'Block interval (default 1)'
+    },
     rawJson: {
       alias: 'j',
       type: 'boolean',
@@ -63,7 +73,7 @@ export const main = async (): Promise<void> => {
     }
   }).argv;
 
-  const { startBlock, endBlock, rawJson, queryDir, fetchIds, configFile, timeDiff } = argv;
+  const { startBlock, endBlock, batchSize, interval, rawJson, queryDir, fetchIds, configFile, timeDiff } = argv;
   const config: Config = await getConfig(configFile);
   const snakeNamingStrategy = new SnakeNamingStrategy();
   const clients = await getClients(config, timeDiff, queryDir);
@@ -93,132 +103,135 @@ export const main = async (): Promise<void> => {
     });
   }
 
-  for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
-    const block = { number: blockNumber };
-    const updatedEntityIds: { [entityName: string]: string[] } = {};
-    const updatedEntities: Set<string> = new Set();
-    let ipldStateByBlock = {};
-    assert(db);
-    console.time(`time:compare-block-${blockNumber}`);
-
-    if (fetchIds) {
-      // Fetch entity ids updated at block.
-      console.time(`time:fetch-updated-ids-${blockNumber}`);
-
-      for (const entityName of Object.values(queryNames)) {
-        updatedEntityIds[entityName] = await db.getEntityIdsAtBlockNumber(
-          blockNumber,
-          snakeNamingStrategy.tableName(entityName, '')
-        );
-      }
-      console.timeEnd(`time:fetch-updated-ids-${blockNumber}`);
-    } else {
-      for (const entityName of Object.values(queryNames)) {
-        const isUpdated = await db.isEntityUpdatedAtBlockNumber(
-          blockNumber,
-          snakeNamingStrategy.tableName(entityName, '')
-        );
-
-        if (isUpdated) {
-          updatedEntities.add(entityName);
-        }
-      }
-    }
-
-    if (config.watcher.verifyState) {
+  for (let bathchStart = startBlock; bathchStart <= endBlock; bathchStart += interval) {
+    const batchEnd = bathchStart + batchSize;
+    for (let blockNumber = bathchStart; blockNumber < batchEnd && blockNumber <= endBlock; blockNumber++) {
+      const block = { number: blockNumber };
+      const updatedEntityIds: { [entityName: string]: string[] } = {};
+      const updatedEntities: Set<string> = new Set();
+      let ipldStateByBlock = {};
       assert(db);
-      const [block] = await db.getBlocksAtHeight(blockNumber, false);
-      assert(subgraphGQLClient);
-      const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
+      console.time(`time:compare-block-${blockNumber}`);
 
-      // Check meta data for each IPLD block found
-      contractIPLDsByBlock.flat().forEach(contractIPLD => {
-        const ipldMetaDataDiff = checkIPLDMetaData(contractIPLD, contractLatestStateCIDMap, rawJson);
-        if (ipldMetaDataDiff) {
-          log('Results mismatch for IPLD meta data:', ipldMetaDataDiff);
-          diffFound = true;
+      if (fetchIds) {
+        // Fetch entity ids updated at block.
+        console.time(`time:fetch-updated-ids-${blockNumber}`);
+
+        for (const entityName of Object.values(queryNames)) {
+          updatedEntityIds[entityName] = await db.getEntityIdsAtBlockNumber(
+            blockNumber,
+            snakeNamingStrategy.tableName(entityName, '')
+          );
         }
-      });
+        console.timeEnd(`time:fetch-updated-ids-${blockNumber}`);
+      } else {
+        for (const entityName of Object.values(queryNames)) {
+          const isUpdated = await db.isEntityUpdatedAtBlockNumber(
+            blockNumber,
+            snakeNamingStrategy.tableName(entityName, '')
+          );
 
-      ipldStateByBlock = combineIPLDState(contractIPLDsByBlock.flat());
-    }
-
-    await blockDelay;
-    for (const [queryName, entityName] of Object.entries(queryNames)) {
-      try {
-        log(`At block ${blockNumber} for query ${queryName}:`);
-        let resultDiff = '';
-
-        if (fetchIds) {
-          const queryLimit = config.queries.queryLimits[queryName];
-
-          if (queryLimit) {
-            // Take only last `queryLimit` entity ids to compare in GQL.
-            const idsLength = updatedEntityIds[entityName].length;
-            updatedEntityIds[entityName].splice(0, idsLength - queryLimit);
-          }
-
-          for (const id of updatedEntityIds[entityName]) {
-            const { diff, result1: result } = await compareQuery(
-              clients,
-              queryName,
-              { block, id },
-              rawJson,
-              timeDiff
-            );
-
-            if (config.watcher.verifyState) {
-              const ipldDiff = await checkGQLEntityInIPLDState(ipldStateByBlock, entityName, result[queryName], id, rawJson, config.watcher.skipFields);
-
-              if (ipldDiff) {
-                log('Results mismatch for IPLD state:', ipldDiff);
-                diffFound = true;
-              }
-            }
-
-            if (diff) {
-              resultDiff = diff;
-            }
-          }
-        } else {
-          if (updatedEntities.has(entityName)) {
-            let result;
-
-            ({ diff: resultDiff, result1: result } = await compareQuery(
-              clients,
-              queryName,
-              { block },
-              rawJson,
-              timeDiff
-            ));
-
-            if (config.watcher.verifyState) {
-              const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
-
-              if (ipldDiff) {
-                log('Results mismatch for IPLD state:', ipldDiff);
-                diffFound = true;
-              }
-            }
+          if (isUpdated) {
+            updatedEntities.add(entityName);
           }
         }
-
-        if (resultDiff) {
-          log('Results mismatch:', resultDiff);
-          diffFound = true;
-        } else {
-          log('Results match.');
-        }
-      } catch (err: any) {
-        log('Error:', err.message);
-        log('Error:', JSON.stringify(err, null, 2));
       }
+
+      if (config.watcher.verifyState) {
+        assert(db);
+        const [block] = await db.getBlocksAtHeight(blockNumber, false);
+        assert(subgraphGQLClient);
+        const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
+
+        // Check meta data for each IPLD block found
+        contractIPLDsByBlock.flat().forEach(contractIPLD => {
+          const ipldMetaDataDiff = checkIPLDMetaData(contractIPLD, contractLatestStateCIDMap, rawJson);
+          if (ipldMetaDataDiff) {
+            log('Results mismatch for IPLD meta data:', ipldMetaDataDiff);
+            diffFound = true;
+          }
+        });
+
+        ipldStateByBlock = combineIPLDState(contractIPLDsByBlock.flat());
+      }
+
+      await blockDelay;
+      for (const [queryName, entityName] of Object.entries(queryNames)) {
+        try {
+          log(`At block ${blockNumber} for query ${queryName}:`);
+          let resultDiff = '';
+
+          if (fetchIds) {
+            const queryLimit = config.queries.queryLimits[queryName];
+
+            if (queryLimit) {
+              // Take only last `queryLimit` entity ids to compare in GQL.
+              const idsLength = updatedEntityIds[entityName].length;
+              updatedEntityIds[entityName].splice(0, idsLength - queryLimit);
+            }
+
+            for (const id of updatedEntityIds[entityName]) {
+              const { diff, result1: result } = await compareQuery(
+                clients,
+                queryName,
+                { block, id },
+                rawJson,
+                timeDiff
+              );
+
+              if (config.watcher.verifyState) {
+                const ipldDiff = await checkGQLEntityInIPLDState(ipldStateByBlock, entityName, result[queryName], id, rawJson, config.watcher.skipFields);
+
+                if (ipldDiff) {
+                  log('Results mismatch for IPLD state:', ipldDiff);
+                  diffFound = true;
+                }
+              }
+
+              if (diff) {
+                resultDiff = diff;
+              }
+            }
+          } else {
+            if (updatedEntities.has(entityName)) {
+              let result;
+
+              ({ diff: resultDiff, result1: result } = await compareQuery(
+                clients,
+                queryName,
+                { block },
+                rawJson,
+                timeDiff
+              ));
+
+              if (config.watcher.verifyState) {
+                const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
+
+                if (ipldDiff) {
+                  log('Results mismatch for IPLD state:', ipldDiff);
+                  diffFound = true;
+                }
+              }
+            }
+          }
+
+          if (resultDiff) {
+            log('Results mismatch:', resultDiff);
+            diffFound = true;
+          } else {
+            log('Results match.');
+          }
+        } catch (err: any) {
+          log('Error:', err.message);
+          log('Error:', JSON.stringify(err, null, 2));
+        }
+      }
+
+      // Set delay between requests for a block.
+      blockDelay = wait(config.queries.blockDelayInMs || 0);
+
+      console.timeEnd(`time:compare-block-${blockNumber}`);
     }
-
-    // Set delay between requests for a block.
-    blockDelay = wait(config.queries.blockDelayInMs || 0);
-
-    console.timeEnd(`time:compare-block-${blockNumber}`);
   }
 
   if (diffFound) {
