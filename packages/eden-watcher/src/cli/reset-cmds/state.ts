@@ -108,10 +108,6 @@ export const handler = async (argv: any): Promise<void> => {
       if (ipldStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
         await indexer.updateIPLDStatusCheckpointBlock(blockProgress.blockNumber, true);
       }
-
-      if (ipldStatus.latestIPFSBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusIPFSBlock(blockProgress.blockNumber, true);
-      }
     }
 
     await indexer.updateSyncStatusChainHead(blockProgress.blockHash, blockProgress.blockNumber, true);

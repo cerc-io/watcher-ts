@@ -47,7 +47,6 @@ export interface IpldStatusInterface {
   id: number;
   latestHooksBlockNumber: number;
   latestCheckpointBlockNumber: number;
-  latestIPFSBlockNumber: number
 }
 
 export interface EventInterface {

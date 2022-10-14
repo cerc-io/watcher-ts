@@ -205,7 +205,6 @@ class ServerConfig implements ServerConfigInterface {
   kind: string;
   checkpointing: boolean;
   checkpointInterval: number;
-  ipfsApiAddr: string;
   subgraphPath: string;
   disableSubgraphState: boolean;
   wasmRestartBlocksInterval: number;
@@ -220,7 +219,6 @@ class ServerConfig implements ServerConfigInterface {
     this.kind = '';
     this.checkpointing = false;
     this.checkpointInterval = 0;
-    this.ipfsApiAddr = '';
     this.subgraphPath = '';
     this.disableSubgraphState = false;
     this.wasmRestartBlocksInterval = 0;

@@ -14,7 +14,6 @@ export * from './src/indexer';
 export * from './src/job-runner';
 export * from './src/ipld-helper';
 export * from './src/graph-decimal';
-export * from './src/ipfs';
 export * from './src/index-block';
 export * from './src/metrics';
 export * from './src/gql-metrics';

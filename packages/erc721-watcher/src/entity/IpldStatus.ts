@@ -14,7 +14,4 @@ export class IpldStatus {
 
   @Column('integer')
   latestCheckpointBlockNumber!: number;
-
-  @Column('integer')
-  latestIPFSBlockNumber!: number;
 }

@@ -103,21 +103,6 @@ export const fillState = async (
     await indexer.processCheckpoint(blockHash);
     await indexer.updateIPLDStatusCheckpointBlock(blockNumber);
 
-    // TODO: Push state to IPFS in separate process.
-    if (indexer.isIPFSConfigured()) {
-      // Get IPLDBlocks for the given blocHash.
-      const ipldBlocks = await indexer.getIPLDBlocksByHash(blockHash);
-
-      // Push all the IPLDBlocks to IPFS.
-      for (const ipldBlock of ipldBlocks) {
-        const data = indexer.getIPLDData(ipldBlock);
-        await indexer.pushToIPFS(data);
-      }
-
-      // Update the IPLD status.
-      await indexer.updateIPLDStatusIPFSBlock(blockNumber);
-    }
-
     console.timeEnd(`time:fill-state-${blockNumber}`);
   }
 

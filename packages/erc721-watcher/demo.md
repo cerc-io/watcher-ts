@@ -26,14 +26,14 @@
 
   ```bash
   docker-compose version
-  
+
   # docker-compose version 1.29.2, build 5becea4c
   ```
 
 * Run the stack-orchestrator
 
   ```bash
-  cd stack-orchestrator/helper-scripts 
+  cd stack-orchestrator/helper-scripts
   ```
 
   ```bash
@@ -45,22 +45,11 @@
     -p ../config.sh
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-
-  # API server listening on /ip4/127.0.0.1/tcp/5001
-  ```
-  The IPFS API address can be seen in the output.
-
-* In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
-
 * Create a postgres12 database for the watcher:
 
   ```bash
   sudo su - postgres
-  
+
   # If database already exists
   # dropdb erc721-watcher
 
@@ -135,7 +124,7 @@
   ```
 
 * Get the signer account address and export to a shell variable:
-  
+
   ```bash
   yarn account
   ```
@@ -362,7 +351,7 @@
 
   * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the previous IPLDBlock.
 
-  * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query and in IPFS webUI mentioned in the later steps.
+  * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query.
 
 * Get the latest blockHash and replace the blockHash in the above `eth_call` query. The result should be different and the token should be transferred to the recipient.
 
@@ -381,10 +370,6 @@
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
   * The IPLDBlock entries can be seen in pg-admin in table ipld_block.
-
-* All the diff and checkpoint IPLDBlocks should pushed to IPFS.
-
-* Open IPFS WebUI http://127.0.0.1:5001/webui and search for IPLDBlocks using their CIDs.
 
 * The state should have auto indexed data and also custom property `transferCount` according to code in [hooks](./src/hooks.ts) file `handleEvent` method.
 

@@ -19,7 +19,6 @@ import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING } from '.
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
 import { ServerConfig } from './config';
-import { IPFSClient } from './ipfs';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -61,7 +60,6 @@ export class Indexer {
   _getStorageAt: GetStorageAt;
   _ethProvider: ethers.providers.BaseProvider;
   _jobQueue: JobQueue;
-  _ipfsClient: IPFSClient;
 
   _watchedContracts: { [key: string]: ContractInterface } = {};
   _ipldStatusMap: { [key: string]: IpldStatus } = {};
@@ -71,15 +69,13 @@ export class Indexer {
     db: DatabaseInterface,
     ethClient: EthClient,
     ethProvider: ethers.providers.BaseProvider,
-    jobQueue: JobQueue,
-    ipfsClient: IPFSClient
+    jobQueue: JobQueue
   ) {
     this._serverConfig = serverConfig;
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._jobQueue = jobQueue;
-    this._ipfsClient = ipfsClient;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
@@ -452,17 +448,6 @@ export class Indexer {
     return codec.decode(Buffer.from(ipldBlock.data));
   }
 
-  async pushToIPFS (data: any): Promise<void> {
-    await this._ipfsClient.push(data);
-  }
-
-  isIPFSConfigured (): boolean {
-    const ipfsAddr = this._serverConfig.ipfsApiAddr;
-
-    // Return false if ipfsAddr is undefined | null | empty string.
-    return (ipfsAddr !== undefined && ipfsAddr !== null && ipfsAddr !== '');
-  }
-
   async getLatestHooksProcessedBlock (): Promise<BlockProgressInterface> {
     // Get current hookStatus.
     const ipldStatus = await this._db.getIPLDStatus();
@@ -519,18 +504,6 @@ export class Indexer {
 
     const checkpointBlockHash = await this.createCheckpoint(indexer, contractAddress, block);
     assert(checkpointBlockHash, 'Checkpoint not created');
-
-    // Push checkpoint to IPFS if configured.
-    if (this.isIPFSConfigured()) {
-      const checkpointIPLDBlocks = await this._db.getIPLDBlocks({ block, contractAddress, kind: StateKind.Checkpoint });
-
-      // There can be at most one IPLDBlock for a (block, contractAddress, kind) combination.
-      assert(checkpointIPLDBlocks.length <= 1);
-      const checkpointIPLDBlock = checkpointIPLDBlocks[0];
-
-      const checkpointData = this.getIPLDData(checkpointIPLDBlock);
-      await this.pushToIPFS(checkpointData);
-    }
 
     return checkpointBlockHash;
   }
@@ -591,12 +564,6 @@ export class Indexer {
 
         const ipldBlock = await this.prepareIPLDBlock(block, contract.address, stateData, StateKind.Init);
         await this.saveOrUpdateIPLDBlock(ipldBlock);
-
-        // Push initial state to IPFS if configured.
-        if (this.isIPFSConfigured()) {
-          const ipldData = this.getIPLDData(ipldBlock);
-          await this.pushToIPFS(ipldData);
-        }
       }
     }
   }

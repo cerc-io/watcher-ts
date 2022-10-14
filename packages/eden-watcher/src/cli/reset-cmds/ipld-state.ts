@@ -47,10 +47,6 @@ export const handler = async (argv: any): Promise<void> => {
       if (ipldStatus.latestCheckpointBlockNumber > blockNumber) {
         await db.updateIPLDStatusCheckpointBlock(dbTx, blockNumber, true);
       }
-
-      if (ipldStatus.latestIPFSBlockNumber > blockNumber) {
-        await db.updateIPLDStatusIPFSBlock(dbTx, blockNumber, true);
-      }
     }
 
     dbTx.commitTransaction();

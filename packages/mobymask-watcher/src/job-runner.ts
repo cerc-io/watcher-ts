@@ -17,7 +17,6 @@ import {
   QUEUE_EVENT_PROCESSING,
   QUEUE_BLOCK_CHECKPOINT,
   QUEUE_HOOKS,
-  QUEUE_IPFS,
   JOB_KIND_PRUNE,
   JobQueueConfig,
   DEFAULT_CONFIG_PATH,
@@ -48,7 +47,6 @@ export class JobRunner {
     await this.subscribeEventProcessingQueue();
     await this.subscribeBlockCheckpointQueue();
     await this.subscribeHooksQueue();
-    await this.subscribeIPFSQueue();
     this._baseJobRunner.handleShutdown();
   }
 
@@ -145,53 +143,6 @@ export class JobRunner {
       // Update the IPLD status.
       await this._indexer.updateIPLDStatusCheckpointBlock(blockNumber);
 
-      // Create an IPFS job after completion of a checkpoint job.
-      if (this._indexer.isIPFSConfigured()) {
-        await this.createIPFSPutJob(blockHash, blockNumber);
-      }
-
-      await this._jobQueue.markComplete(job);
-    });
-  }
-
-  async subscribeIPFSQueue (): Promise<void> {
-    await this._jobQueue.subscribe(QUEUE_IPFS, async (job) => {
-      const { data: { blockHash, blockNumber } } = job;
-
-      const ipldStatus = await this._indexer.getIPLDStatus();
-      assert(ipldStatus);
-
-      if (ipldStatus.latestIPFSBlockNumber >= 0) {
-        if (ipldStatus.latestIPFSBlockNumber < (blockNumber - 1)) {
-          // Create a IPFS job for parent block.
-          const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
-          await this.createIPFSPutJob(parentBlock.blockHash, parentBlock.blockNumber);
-
-          const message = `IPFS for blockNumber ${blockNumber - 1} not processed yet, aborting`;
-          log(message);
-
-          throw new Error(message);
-        }
-
-        if (ipldStatus.latestIPFSBlockNumber > (blockNumber - 1)) {
-          log(`IPFS for blockNumber ${blockNumber} already processed`);
-
-          return;
-        }
-      }
-
-      // Get IPLDBlocks for the given blocHash.
-      const ipldBlocks = await this._indexer.getIPLDBlocksByHash(blockHash);
-
-      // Push all the IPLDBlocks to IPFS.
-      for (const ipldBlock of ipldBlocks) {
-        const data = this._indexer.getIPLDData(ipldBlock);
-        await this._indexer.pushToIPFS(data);
-      }
-
-      // Update the IPLD status.
-      await this._indexer.updateIPLDStatusIPFSBlock(blockNumber);
-
       await this._jobQueue.markComplete(job);
     });
   }
@@ -218,16 +169,6 @@ export class JobRunner {
   async createCheckpointJob (blockHash: string, blockNumber: number): Promise<void> {
     await this._jobQueue.pushJob(
       QUEUE_BLOCK_CHECKPOINT,
-      {
-        blockHash,
-        blockNumber
-      }
-    );
-  }
-
-  async createIPFSPutJob (blockHash: string, blockNumber: number): Promise<void> {
-    await this._jobQueue.pushJob(
-      QUEUE_IPFS,
       {
         blockHash,
         blockNumber

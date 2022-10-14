@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, IPFSClient, IpldStatus as IpldStatusInterface } from '@cerc-io/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, IpldStatus as IpldStatusInterface } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -64,8 +64,7 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._serverMode = serverConfig.mode;
-    const ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
-    this._baseIndexer = new BaseIndexer(serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, ipfsClient);
+    this._baseIndexer = new BaseIndexer(serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
 
     const { abi, storageLayout } = artifacts;
 

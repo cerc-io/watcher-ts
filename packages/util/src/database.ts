@@ -713,7 +713,7 @@ export class Database {
       updatedData = rows[0];
     } else {
       const { rows } = await this._pgPool.query(`
-        INSERT INTO ipld_block(block_id, contract_address, cid, kind, data) 
+        INSERT INTO ipld_block(block_id, contract_address, cid, kind, data)
         VALUES($1, $2, $3, $4, $5)
         RETURNING *
       `, [ipldBlock.block.id, ipldBlock.contractAddress, ipldBlock.cid, ipldBlock.kind, ipldBlock.data]);
@@ -766,8 +766,7 @@ export class Database {
     if (!entity) {
       entity = repo.create({
         latestHooksBlockNumber: blockNumber,
-        latestCheckpointBlockNumber: -1,
-        latestIPFSBlockNumber: -1
+        latestCheckpointBlockNumber: -1
       });
     }
 
@@ -784,17 +783,6 @@ export class Database {
 
     if (force || blockNumber > entity.latestCheckpointBlockNumber) {
       entity.latestCheckpointBlockNumber = blockNumber;
-    }
-
-    return repo.save(entity);
-  }
-
-  async updateIPLDStatusIPFSBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
-    const entity = await repo.findOne();
-    assert(entity);
-
-    if (force || blockNumber > entity.latestIPFSBlockNumber) {
-      entity.latestIPFSBlockNumber = blockNumber;
     }
 
     return repo.save(entity);

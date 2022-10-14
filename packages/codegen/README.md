@@ -82,17 +82,9 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * In the config file (`environments/local.toml`):
 
   * Update the state checkpoint settings.
-
-  * Update the IPFS API address in `environments/local.toml`.
 
 * Create the databases configured in `environments/local.toml`.
 

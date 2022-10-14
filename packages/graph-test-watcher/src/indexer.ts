@@ -25,7 +25,6 @@ import {
   Where,
   QueryOptions,
   BlockHeight,
-  IPFSClient,
   StateKind,
   IndexerInterface,
   IpldStatus as IpldStatusInterface,
@@ -87,8 +86,6 @@ export class Indexer implements IndexerInterface {
   _storageLayoutMap: Map<string, StorageLayout>
   _contractMap: Map<string, ethers.utils.Interface>
 
-  _ipfsClient: IPFSClient
-
   _entityTypesMap: Map<string, { [key: string]: string }>
   _relationsMap: Map<any, { [key: string]: any }>
 
@@ -102,8 +99,7 @@ export class Indexer implements IndexerInterface {
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
-    this._ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
-    this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, this._ipfsClient);
+    this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
     this._graphWatcher = graphWatcher;
 
     this._abiMap = new Map();
@@ -273,10 +269,6 @@ export class Indexer implements IndexerInterface {
     );
   }
 
-  async pushToIPFS (data: any): Promise<void> {
-    await this._baseIndexer.pushToIPFS(data);
-  }
-
   async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
     // Call initial state hook.
     return createInitialState(this, contractAddress, blockHash);
@@ -331,10 +323,6 @@ export class Indexer implements IndexerInterface {
 
   getIPLDData (ipldBlock: IPLDBlock): any {
     return this._baseIndexer.getIPLDData(ipldBlock);
-  }
-
-  isIPFSConfigured (): boolean {
-    return this._baseIndexer.isIPFSConfigured();
   }
 
   // Method used to create auto diffs (diff_staged).
@@ -459,23 +447,6 @@ export class Indexer implements IndexerInterface {
 
     try {
       res = await this._db.updateIPLDStatusCheckpointBlock(dbTx, blockNumber, force);
-      await dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-
-    return res;
-  }
-
-  async updateIPLDStatusIPFSBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
-    const dbTx = await this._db.createTransactionRunner();
-    let res;
-
-    try {
-      res = await this._db.updateIPLDStatusIPFSBlock(dbTx, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();

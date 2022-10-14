@@ -98,7 +98,5 @@ export const fillState = async (
     await indexer.processCheckpoint(blockHash);
   }
 
-  // TODO: Push state to IPFS
-
   log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
 };

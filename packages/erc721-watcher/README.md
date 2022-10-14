@@ -8,12 +8,6 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -42,9 +36,9 @@
   ```
 
 * The following core services should be setup and running on localhost:
-  
+
   * `vulcanize/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
-  
+
   * `vulcanize/ipld-eth-server` [v4.0.3-alpha](https://github.com/vulcanize/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
 
 * In the [config file](./environments/local.toml):
@@ -53,7 +47,7 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-  * Update the `server` config with state checkpoint settings and provide the IPFS API address.
+  * Update the `server` config with state checkpoint settings.
 
 ## Customize
 

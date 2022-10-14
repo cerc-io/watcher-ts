@@ -138,10 +138,6 @@ const main = async (): Promise<void> => {
 
       const data = indexer.getIPLDData(ipldBlock);
 
-      if (indexer.isIPFSConfigured()) {
-        await indexer.pushToIPFS(data);
-      }
-
       exportData.ipldCheckpoints.push({
         contractAddress: ipldBlock.contractAddress,
         cid: ipldBlock.cid,

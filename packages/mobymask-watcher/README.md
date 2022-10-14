@@ -8,12 +8,6 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -47,7 +41,7 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-  * Update the `server` config with state checkpoint settings and provide the IPFS API address.
+  * Update the `server` config with state checkpoint settings.
 
 ## Customize
 
