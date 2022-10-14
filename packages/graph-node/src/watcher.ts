@@ -186,8 +186,12 @@ export class GraphWatcher {
 
     // Create ethereum event to be passed to the wasm event handler.
     const ethereumEvent = await createEvent(instanceExports, contract, data);
-
-    await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
+    try {
+      await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
+    } catch (error) {
+      this._clearCachedEntities();
+      throw error;
+    }
   }
 
   async handleBlock (blockHash: string) {
@@ -249,7 +253,12 @@ export class GraphWatcher {
           await instanceExports[blockHandler.handler](ethereumBlock);
         });
 
-        await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
+        try {
+          await this._handleMemoryError(Promise.all(blockHandlerPromises), dataSource.name);
+        } catch (error) {
+          this._clearCachedEntities();
+          throw error;
+        }
       }
     }
   }
@@ -405,6 +414,11 @@ export class GraphWatcher {
       .map(([blockHash]) => blockHash);
 
     prunedBlockHashes.forEach(blockHash => this._database.cachedEntities.frothyBlocks.delete(blockHash));
+  }
+
+  _clearCachedEntities () {
+    this._database.cachedEntities.frothyBlocks.clear();
+    this._database.cachedEntities.latestPrunedEntities.clear();
   }
 
   /**
