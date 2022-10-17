@@ -84,9 +84,11 @@ export interface IndexerInterface {
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEvent (id: string): Promise<EventInterface | undefined>
-  getSyncStatus (): Promise<SyncStatusInterface | undefined>;
+  getSyncStatus (): Promise<SyncStatusInterface | undefined>
+  getIPLDStatus (): Promise<IpldStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
-  getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
+  getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
+  getLatestCanonicalBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchBlockWithEvents (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>
@@ -96,12 +98,14 @@ export interface IndexerInterface {
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
-  markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>;
-  saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>;
-  processEvent (event: EventInterface): Promise<void>;
-  parseEventNameAndArgs?: (kind: string, logObj: any) => any;
+  updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface>
+  updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface>
+  markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
+  saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
+  processEvent (event: EventInterface): Promise<void>
+  parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;
-  getContractsByKind?: (kind: string) => ContractInterface[];
+  getContractsByKind?: (kind: string) => ContractInterface[]
   cacheContract?: (contract: ContractInterface) => void;
   watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
@@ -111,6 +115,8 @@ export interface IndexerInterface {
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
   processBlockAfterEvents?: (blockHash: string) => Promise<void>
+  processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
+  processCheckpoint (blockHash: string): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
   updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void>

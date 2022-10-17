@@ -18,6 +18,7 @@ import { Database } from './database';
 import { Event } from './entity/Event';
 import { fetchTokenDecimals, fetchTokenName, fetchTokenSymbol, fetchTokenTotalSupply } from './utils';
 import { SyncStatus } from './entity/SyncStatus';
+import { IpldStatus } from './entity/IpldStatus';
 import artifacts from './artifacts/ERC20.json';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract } from './entity/Contract';
@@ -249,6 +250,14 @@ export class Indexer implements IndexerInterface {
     );
   }
 
+  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
+    // TODO Implement
+  }
+
+  async processCheckpoint (blockHash: string): Promise<void> {
+    // TODO Implement
+  }
+
   getIPLDData (ipldBlock: IPLDBlock): any {
     return this._baseIndexer.getIPLDData(ipldBlock);
   }
@@ -295,6 +304,30 @@ export class Indexer implements IndexerInterface {
     const { eventName, eventInfo } = this._baseIndexer.parseEvent(logDescription);
 
     return { eventName, eventInfo };
+  }
+
+  async getIPLDStatus (): Promise<IpldStatus | undefined> {
+    return this._db.getIPLDStatus();
+  }
+
+  async updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    // TODO Implement
+    return {} as IpldStatus;
+  }
+
+  async updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatus> {
+    // TODO Implement
+    return {} as IpldStatus;
+  }
+
+  async getLatestCanonicalBlock (): Promise<BlockProgress> {
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+
+    const latestCanonicalBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    assert(latestCanonicalBlock);
+
+    return latestCanonicalBlock;
   }
 
   async getEventsByFilter (blockHash: string, contract: string, name?: string): Promise<Array<Event>> {

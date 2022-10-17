@@ -19,7 +19,12 @@ import {
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface, SyncStatusInterface } from './types';
 import { wait } from './misc';
-import { createPruningJob, processBatchEvents } from './common';
+import {
+  createPruningJob,
+  createHooksJob,
+  createCheckpointJob,
+  processBatchEvents
+} from './common';
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
@@ -50,14 +55,21 @@ export class JobRunner {
         await this._indexBlock(job, syncStatus);
         break;
 
-      case JOB_KIND_PRUNE:
+      case JOB_KIND_PRUNE: {
         await this._pruneChain(job, syncStatus);
+
+        // Create a hooks job for parent block of latestCanonicalBlock pruning for first block is skipped as it is assumed to be a canonical block.
+        const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
+        await createHooksJob(this._jobQueue, latestCanonicalBlock.parentHash, latestCanonicalBlock.blockNumber - 1);
         break;
+      }
 
       default:
         log(`Invalid Job kind ${kind} in QUEUE_BLOCK_PROCESSING.`);
         break;
     }
+
+    await this._jobQueue.markComplete(job);
   }
 
   async processEvent (job: any): Promise<EventInterface | void> {
@@ -80,12 +92,84 @@ export class JobRunner {
     await this._jobQueue.markComplete(job);
   }
 
-  handleShutdown () {
+  async processHooks (job: any): Promise<void> {
+    const { data: { blockHash, blockNumber } } = job;
+
+    // Get the current IPLD Status.
+    const ipldStatus = await this._indexer.getIPLDStatus();
+
+    if (ipldStatus) {
+      if (ipldStatus.latestHooksBlockNumber < (blockNumber - 1)) {
+        // Create hooks job for parent block.
+        const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
+        await createHooksJob(this._jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
+
+        const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
+        log(message);
+
+        throw new Error(message);
+      }
+
+      if (ipldStatus.latestHooksBlockNumber > (blockNumber - 1)) {
+        log(`Hooks for blockNumber ${blockNumber} already processed`);
+
+        return;
+      }
+    }
+
+    // Process the hooks for the given block number.
+    await this._indexer.processCanonicalBlock(blockHash, blockNumber);
+
+    // Update the IPLD status.
+    await this._indexer.updateIPLDStatusHooksBlock(blockNumber);
+
+    // Create a checkpoint job after completion of a hook job.
+    await createCheckpointJob(this._jobQueue, blockHash, blockNumber);
+
+    await this._jobQueue.markComplete(job);
+  }
+
+  async processCheckpoint (job: any): Promise<void> {
+    const { data: { blockHash, blockNumber } } = job;
+
+    // Get the current IPLD Status.
+    const ipldStatus = await this._indexer.getIPLDStatus();
+    assert(ipldStatus);
+
+    if (ipldStatus.latestCheckpointBlockNumber >= 0) {
+      if (ipldStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
+        // Create a checkpoint job for parent block.
+        const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
+        await createCheckpointJob(this._jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
+
+        const message = `Checkpoints for blockNumber ${blockNumber - 1} not processed yet, aborting`;
+        log(message);
+
+        throw new Error(message);
+      }
+
+      if (ipldStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
+        log(`Checkpoints for blockNumber ${blockNumber} already processed`);
+
+        return;
+      }
+    }
+
+    // Process checkpoints for the given block.
+    await this._indexer.processCheckpoint(blockHash);
+
+    // Update the IPLD status.
+    await this._indexer.updateIPLDStatusCheckpointBlock(blockNumber);
+
+    await this._jobQueue.markComplete(job);
+  }
+
+  handleShutdown (): void {
     process.on('SIGINT', this._processShutdown.bind(this));
     process.on('SIGTERM', this._processShutdown.bind(this));
   }
 
-  async _processShutdown () {
+  async _processShutdown (): Promise<void> {
     this._shutDown = true;
     this._signalCount++;
 
