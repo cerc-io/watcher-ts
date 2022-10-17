@@ -1,4 +1,0 @@
-timeout: '10000'
-bail: true
-exit: true # TODO: Find out why the program doesn't exit on its own.
-require: 'ts-node/register'
