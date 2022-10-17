@@ -25,9 +25,13 @@
     "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts",
     "index-block": "DEBUG=vulcanize:* ts-node src/cli/index-block.ts",
     "nft:deploy": "hardhat --network localhost nft-deploy",
+    "nft:deploy:docker": "hardhat --network docker nft-deploy",
     "nft:mint": "hardhat --network localhost nft-mint",
+    "nft:mint:docker": "hardhat --network docker nft-mint",
     "nft:transfer": "hardhat --network localhost nft-transfer",
+    "nft:transfer:docker": "hardhat --network docker nft-transfer",
     "block:latest": "hardhat --network localhost block-latest",
+    "block:latest:docker": "hardhat --network docker block-latest",
     "account": "hardhat --network localhost account"
   },
   "repository": {
