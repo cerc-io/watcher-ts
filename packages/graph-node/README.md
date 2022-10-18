@@ -69,13 +69,13 @@
       ```
 
       The queries will be fired if the corresponding entities are updated.
-    
+
     * Run the CLI:
 
       ```bash
       ./bin/compare-blocks --config-file environments/compare-cli-config.toml --start-block 1 --end-block 10
       ```
-    
+
     * For comparing entities after fetching updated entity ids from watcher database:
 
       * Set the watcher config file path and entities directory.
@@ -90,13 +90,13 @@
           [queries.names]
             author = "Author"
             blog = "Blog"
-        
+
         [watcher]
           configPath = "../../graph-test-watcher/environments/local.toml"
           entitiesDir = "../../graph-test-watcher/dist/entity/*"
         ```
-      
-      * To verify diff IPLD state generated at each block, set the watcher endpoint and `verifyState` flag to true
+
+      * To verify `diff` State state generated at each block, set the watcher endpoint and `verifyState` flag to true
 
         ```toml
         [watcher]
@@ -105,7 +105,7 @@
           endpoint = "gqlEndpoint2"
           verifyState = true
         ```
-      
+
       * Run the CLI with `fetch-ids` flag set to true:\
 
         ```bash

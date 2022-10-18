@@ -9,9 +9,9 @@ import {
   ServerConfig as ServerConfigInterface,
   ValueResult,
   ContractInterface,
-  IpldStatus,
-  IpldStatusInterface,
-  IPLDBlockInterface
+  StateStatus,
+  StateSyncStatusInterface,
+  StateInterface
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -158,16 +158,16 @@ export class Indexer implements IndexerInterface {
     assert(event);
   }
 
-  async getIPLDStatus (): Promise<IpldStatusInterface | undefined> {
+  async getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined> {
     return undefined;
   }
 
-  async updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
-    return {} as IpldStatusInterface;
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
+    return {} as StateSyncStatusInterface;
   }
 
-  async updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
-    return {} as IpldStatusInterface;
+  async updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
+    return {} as StateSyncStatusInterface;
   }
 
   async getLatestCanonicalBlock (): Promise<BlockProgressInterface> {
@@ -190,11 +190,11 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  getIPLDData (ipldBlock: IPLDBlockInterface): any {
+  getStateData (state: StateInterface): any {
     return undefined;
   }
 
-  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void> {
+  async updateStateStatusMap (address: string, stateStatus: StateStatus): Promise<void> {
     return undefined;
   }
 }
