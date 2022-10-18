@@ -8,7 +8,9 @@ import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
+{{#if (subgraphPath)}}
 import { SelectionNode } from 'graphql';
+{{/if}}
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
@@ -378,6 +380,11 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getStateData(state);
   }
 
+  // Method used to create auto diffs (diff_staged).
+  async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+  }
+
   // Method to be used by createStateDiff hook.
   async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
     const block = await this.getBlockProgress(blockHash);
@@ -449,8 +456,8 @@ export class Indexer implements IndexerInterface {
   async processBlock (blockProgress: BlockProgress): Promise<void> {
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
-
     {{#if (subgraphPath)}}
+
     this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
     {{/if}}
   }

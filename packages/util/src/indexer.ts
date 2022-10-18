@@ -705,7 +705,7 @@ export class Indexer {
       state: prevNonDiffStateData.state
     };
 
-    console.time('time:hooks#createStateCheckpoint');
+    console.time(`time:indexer#createCheckpoint-${contractAddress}`);
 
     // Fetching and merging all diff blocks after the latest 'checkpoint' | 'init'.
     data = await this._mergeDiffsInRange(data, contractAddress, diffStartBlockNumber, currentBlock.blockNumber);
@@ -713,7 +713,7 @@ export class Indexer {
     const state = await this.prepareStateEntry(currentBlock, contractAddress, data, StateKind.Checkpoint);
     await this.saveOrUpdateState(state);
 
-    console.time('time:hooks#createStateCheckpoint');
+    console.timeEnd(`time:indexer#createCheckpoint-${contractAddress}`);
     return currentBlock.blockHash;
   }
 
@@ -915,7 +915,7 @@ export class Indexer {
     for (let i = startBlock; i < endBlock;) {
       const endBlockHeight = Math.min(i + DIFF_MERGE_BATCH_SIZE, endBlock);
 
-      console.time(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}`);
+      console.time(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}-${contractAddress}`);
       const diffBlocks = await this._db.getDiffStatesInRange(contractAddress, i, endBlockHeight);
 
       // Merge all diff blocks in the current batch.
@@ -925,7 +925,7 @@ export class Indexer {
       }
 
       i = endBlockHeight;
-      console.timeEnd(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}`);
+      console.timeEnd(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}-${contractAddress}`);
     }
 
     return data;
