@@ -24,7 +24,7 @@ import {
   StateInterface,
   StateKind
 } from './types';
-import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING } from './constants';
+import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
 import { ServerConfig } from './config';
@@ -700,22 +700,20 @@ export class Indexer {
       diffStartBlockNumber = initBlock.block.blockNumber - 1;
     }
 
-    // Fetching all diff blocks after the latest 'checkpoint' | 'init'.
-    const diffStates = await this._db.getDiffStatesInRange(contractAddress, diffStartBlockNumber, currentBlock.blockNumber);
-
     const prevNonDiffStateData = codec.decode(Buffer.from(prevNonDiffState.data)) as any;
-    const data = {
+    let data = {
       state: prevNonDiffStateData.state
     };
 
-    for (const diffState of diffStates) {
-      const diff = codec.decode(Buffer.from(diffState.data)) as any;
-      data.state = _.merge(data.state, diff.state);
-    }
+    console.time('time:hooks#createStateCheckpoint');
+
+    // Fetching and merging all diff blocks after the latest 'checkpoint' | 'init'.
+    data = await this._mergeDiffsInRange(data, contractAddress, diffStartBlockNumber, currentBlock.blockNumber);
 
     const state = await this.prepareStateEntry(currentBlock, contractAddress, data, StateKind.Checkpoint);
     await this.saveOrUpdateState(state);
 
+    console.time('time:hooks#createStateCheckpoint');
     return currentBlock.blockHash;
   }
 
@@ -910,5 +908,26 @@ export class Indexer {
     }
 
     return arg;
+  }
+
+  async _mergeDiffsInRange (data: { state: any }, contractAddress: string, startBlock: number, endBlock: number): Promise<{ state: any }> {
+    // Merge all diff blocks in the given range in batches.
+    for (let i = startBlock; i < endBlock;) {
+      const endBlockHeight = Math.min(i + DIFF_MERGE_BATCH_SIZE, endBlock);
+
+      console.time(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}`);
+      const diffBlocks = await this._db.getDiffStatesInRange(contractAddress, i, endBlockHeight);
+
+      // Merge all diff blocks in the current batch.
+      for (const diffBlock of diffBlocks) {
+        const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
+        data.state = _.merge(data.state, diff.state);
+      }
+
+      i = endBlockHeight;
+      console.timeEnd(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}`);
+    }
+
+    return data;
   }
 }
