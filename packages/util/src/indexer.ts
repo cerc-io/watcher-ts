@@ -404,6 +404,7 @@ export class Indexer {
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     assert(this._db.saveContract);
+    this.updateIPLDStatusMap(address, {});
     const dbTx = await this._db.createTransactionRunner();
 
     // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
@@ -838,14 +839,14 @@ export class Indexer {
     try {
       res = await this._db.saveOrUpdateIPLDBlock(dbTx, ipldBlock);
 
-      await dbTx.commitTransaction();
-
       // Get IPLD status for the contract.
       const ipldStatus = this._ipldStatusMap[res.contractAddress];
       assert(ipldStatus, `IPLD status for contract ${res.contractAddress} not found`);
 
       // Update the IPLD status for the kind.
       ipldStatus[res.kind] = res.block.blockNumber;
+
+      await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;
@@ -888,7 +889,7 @@ export class Indexer {
     }
   }
 
-  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void> {
+  updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): void {
     // Get and update IPLD status for the contract.
     const ipldStatusOld = this._ipldStatusMap[address];
     this._ipldStatusMap[address] = _.merge(ipldStatusOld, ipldStatus);
