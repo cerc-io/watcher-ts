@@ -7,7 +7,7 @@ import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { ServerConfig } from './config';
 import { Where, QueryOptions } from './database';
-import { ValueResult, IpldStatus } from './indexer';
+import { ValueResult, StateStatus } from './indexer';
 
 export enum StateKind {
   Diff = 'diff',
@@ -43,9 +43,9 @@ export interface SyncStatusInterface {
   initialIndexedBlockNumber: number;
 }
 
-export interface IpldStatusInterface {
+export interface StateSyncStatusInterface {
   id: number;
-  latestHooksBlockNumber: number;
+  latestIndexedBlockNumber: number;
   latestCheckpointBlockNumber: number;
 }
 
@@ -69,7 +69,7 @@ export interface ContractInterface {
   checkpoint: boolean;
 }
 
-export interface IPLDBlockInterface {
+export interface StateInterface {
   id: number;
   block: BlockProgressInterface;
   contractAddress: string;
@@ -85,7 +85,7 @@ export interface IndexerInterface {
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
-  getIPLDStatus (): Promise<IpldStatusInterface | undefined>
+  getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface>
@@ -98,8 +98,8 @@ export interface IndexerInterface {
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
-  updateIPLDStatusHooksBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface>
-  updateIPLDStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<IpldStatusInterface>
+  updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
+  updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
   processEvent (event: EventInterface): Promise<void>
@@ -119,8 +119,8 @@ export interface IndexerInterface {
   processCheckpoint (blockHash: string): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
-  updateIPLDStatusMap (address: string, ipldStatus: IpldStatus): Promise<void>
-  getIPLDData (ipldBlock: IPLDBlockInterface): any
+  updateStateStatusMap (address: string, stateStatus: StateStatus): Promise<void>
+  getStateData (state: StateInterface): any
 }
 
 export interface EventWatcherInterface {
@@ -153,13 +153,13 @@ export interface DatabaseInterface {
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   getContracts?: () => Promise<ContractInterface[]>
   saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
-  getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined>
-  getIPLDBlocks (where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]>
-  getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlockInterface[]>
-  getNewIPLDBlock (): IPLDBlockInterface
-  removeIPLDBlocks(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
-  saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface>
-  getIPLDStatus (): Promise<IpldStatusInterface | undefined>
+  getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
+  getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]>
+  getDiffStatesInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<StateInterface[]>
+  getNewState (): StateInterface
+  removeStates(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
+  saveOrUpdateState (dbTx: QueryRunner, state: StateInterface): Promise<StateInterface>
+  getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
 }
 
 export interface GraphDatabaseInterface {

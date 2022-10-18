@@ -63,12 +63,12 @@ const main = async (): Promise<void> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
-  assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');
+  const state = await indexer.getStateByCID(argv.cid);
+  assert(state, 'State for the provided CID doesn\'t exist.');
 
-  const ipldData = await indexer.getIPLDData(ipldBlock);
+  const stateData = await indexer.getStateData(state);
 
-  log(util.inspect(ipldData, false, null));
+  log(util.inspect(stateData, false, null));
 };
 
 main().catch(err => {

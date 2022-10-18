@@ -65,7 +65,7 @@ type TestEvent {
   param3: BigInt!
 }
 
-type ResultIPLDBlock {
+type ResultState {
   block: Block!
   contractAddress: String!
   cid: String!
@@ -88,8 +88,8 @@ type Query {
   blog(id: String!, block: Block_height): Blog!
   author(id: String!, block: Block_height): Author!
   category(id: String!, block: Block_height): Category!
-  getStateByCID(cid: String!): ResultIPLDBlock
-  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
   getSyncStatus: SyncStatus
 }
 

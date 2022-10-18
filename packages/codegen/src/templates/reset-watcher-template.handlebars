@@ -2,27 +2,31 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+{{#if (subgraphPath)}}
+import path from 'path';
+{{/if}}
 import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
 import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
+{{#if (subgraphPath)}}
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
+{{/if}}
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
 import { BlockProgress } from '../../entity/BlockProgress';
 
-import { MultiNonce } from '../../entity/MultiNonce';
-import { _Owner } from '../../entity/_Owner';
-import { IsRevoked } from '../../entity/IsRevoked';
-import { IsPhisher } from '../../entity/IsPhisher';
-import { IsMember } from '../../entity/IsMember';
+{{#each queries as | query |}}
+import { {{query.entityName}} } from '../../entity/{{query.entityName}}';
+{{/each}}
 
-const log = debug('vulcanize:reset-state');
+const log = debug('vulcanize:reset-watcher');
 
-export const command = 'state';
+export const command = 'watcher';
 
-export const desc = 'Reset state to block number';
+export const desc = 'Reset watcher to a block number';
 
 export const builder = {
   blockNumber: {
@@ -38,6 +42,13 @@ export const handler = async (argv: any): Promise<void> => {
   // Initialize database.
   const db = new Database(config.database);
   await db.init();
+  {{#if (subgraphPath)}}
+
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../../entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
+  {{/if}}
 
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
@@ -48,8 +59,13 @@ export const handler = async (argv: any): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await indexer.init();
+  {{#if (subgraphPath)}}
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
+  {{/if}}
 
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
@@ -59,11 +75,17 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const entities = [BlockProgress, MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
+    const entities = [BlockProgress
+    {{~#each queries as | query |~}}
+    , {{query.entityName}}
+    {{~/each~}}
+    ];
 
-    for (const entity of entities) {
-      await db.deleteEntitiesByConditions<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
-    }
+    const removeEntitiesPromise = entities.map(async entityClass => {
+      return db.removeEntities<any>(dbTx, entityClass, { blockNumber: MoreThan(argv.blockNumber) });
+    });
+
+    await Promise.all(removeEntitiesPromise);
 
     const syncStatus = await indexer.getSyncStatus();
     assert(syncStatus, 'Missing syncStatus');
@@ -76,15 +98,15 @@ export const handler = async (argv: any): Promise<void> => {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
 
-    const ipldStatus = await indexer.getIPLDStatus();
+    const stateSyncStatus = await indexer.getStateSyncStatus();
 
-    if (ipldStatus) {
-      if (ipldStatus.latestHooksBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusHooksBlock(blockProgress.blockNumber, true);
+    if (stateSyncStatus) {
+      if (stateSyncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateStateSyncStatusIndexedBlock(blockProgress.blockNumber, true);
       }
 
-      if (ipldStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusCheckpointBlock(blockProgress.blockNumber, true);
+      if (stateSyncStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateStateSyncStatusCheckpointBlock(blockProgress.blockNumber, true);
       }
     }
 
@@ -98,5 +120,5 @@ export const handler = async (argv: any): Promise<void> => {
     await dbTx.release();
   }
 
-  log('Reset state successfully');
+  log('Reset watcher successfully');
 };

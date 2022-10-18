@@ -210,13 +210,14 @@ export class Visitor {
   }
 
   /**
-   * Writes the reset.ts, job-queue.ts, state.ts files generated from templates to respective streams.
+   * Writes the reset.ts, job-queue.ts, watcher.ts, state.ts files generated from templates to respective streams.
    * @param resetOutStream A writable output stream to write the reset file to.
    * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
+   * @param resetWatcherOutStream A writable output stream to write the reset watcher file to.
    * @param resetStateOutStream A writable output stream to write the reset state file to.
    */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, resetIPLDStateOutStream: Writable | undefined, subgraphPath: string): void {
-    this._reset.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, resetIPLDStateOutStream, subgraphPath);
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetWatcherOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
+    this._reset.exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream, subgraphPath);
   }
 
   /**

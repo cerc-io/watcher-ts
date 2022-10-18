@@ -297,25 +297,12 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     : process.stdout;
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
 
-  let resetOutStream, resetJQOutStream, resetStateOutStream, resetIPLDStateOutStream;
+  const resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
+  const resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
+  const resetWatcherOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/watcher.ts'));
+  const resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
 
-  if (outputDir) {
-    resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
-    resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
-    resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
-    if (config.subgraphPath) {
-      resetIPLDStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/ipld-state.ts'));
-    }
-  } else {
-    resetOutStream = process.stdout;
-    resetJQOutStream = process.stdout;
-    resetStateOutStream = process.stdout;
-    if (config.subgraphPath) {
-      resetIPLDStateOutStream = process.stdout;
-    }
-  }
-
-  visitor.exportReset(resetOutStream, resetJQOutStream, resetStateOutStream, resetIPLDStateOutStream, config.subgraphPath);
+  visitor.exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))

@@ -14,11 +14,11 @@ import { BlockProgress } from '../../entity/BlockProgress';
 import { Allowance } from '../../entity/Allowance';
 import { Balance } from '../../entity/Balance';
 
-const log = debug('vulcanize:reset-state');
+const log = debug('vulcanize:reset-watcher');
 
-export const command = 'state';
+export const command = 'watcher';
 
-export const desc = 'Reset state to block number';
+export const desc = 'Reset watcher to a block number';
 
 export const builder = {
   blockNumber: {
@@ -78,5 +78,5 @@ export const handler = async (argv: any): Promise<void> => {
     await dbTx.release();
   }
 
-  log('Reset state successfully');
+  log('Reset watcher successfully');
 };

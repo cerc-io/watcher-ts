@@ -21,7 +21,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
 import { Pool } from 'pg';
 
-import { BlockProgressInterface, ContractInterface, EventInterface, IPLDBlockInterface, IpldStatusInterface, StateKind, SyncStatusInterface } from './types';
+import { BlockProgressInterface, ContractInterface, EventInterface, StateInterface, StateSyncStatusInterface, StateKind, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
 import { blockProgressCount, eventCount } from './metrics';
 
@@ -558,11 +558,11 @@ export class Database {
     return repo.save(entity);
   }
 
-  async getLatestIPLDBlock (repo: Repository<IPLDBlockInterface>, contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlockInterface | undefined> {
-    let queryBuilder = repo.createQueryBuilder('ipld_block')
-      .leftJoinAndSelect('ipld_block.block', 'block')
+  async getLatestState (repo: Repository<StateInterface>, contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined> {
+    let queryBuilder = repo.createQueryBuilder('state')
+      .leftJoinAndSelect('state.block', 'block')
       .where('block.is_pruned = false')
-      .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
+      .andWhere('state.contract_address = :contractAddress', { contractAddress })
       .orderBy('block.block_number', 'DESC');
 
     // Filter out blocks after the provided block number.
@@ -572,8 +572,8 @@ export class Database {
 
     // Filter using kind if specified else avoid diff_staged block.
     queryBuilder = kind
-      ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-      : queryBuilder.andWhere('ipld_block.kind != :kind', { kind: StateKind.DiffStaged });
+      ? queryBuilder.andWhere('state.kind = :kind', { kind })
+      : queryBuilder.andWhere('state.kind != :kind', { kind: StateKind.DiffStaged });
 
     // Get the first three entries.
     queryBuilder.limit(3);
@@ -582,7 +582,7 @@ export class Database {
 
     if (results.length) {
       // Sort by (block number desc, id desc) to get the latest entry.
-      // At same height, IPLD blocks are expected in order ['init', 'diff', 'checkpoint'],
+      // At same height, State entries are expected in order ['init', 'diff', 'checkpoint'],
       // and are given preference in order ['checkpoint', 'diff', 'init']
       results.sort((result1, result2) => {
         if (result1.block.blockNumber === result2.block.blockNumber) {
@@ -596,7 +596,7 @@ export class Database {
     }
   }
 
-  async getPrevIPLDBlock (repo: Repository<IPLDBlockInterface>, blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlockInterface | undefined> {
+  async getPrevState (repo: Repository<StateInterface>, blockHash: string, contractAddress: string, kind?: string): Promise<StateInterface | undefined> {
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
       (
@@ -605,13 +605,13 @@ export class Database {
           b.block_number,
           b.parent_hash,
           1 as depth,
-          i.id,
-          i.kind
+          s.id,
+          s.kind
         FROM
           block_progress b
           LEFT JOIN
-            ipld_block i ON i.block_id = b.id
-            AND i.contract_address = $2
+            state s ON s.block_id = b.id
+            AND s.contract_address = $2
         WHERE
           b.block_hash = $1
         UNION ALL
@@ -620,14 +620,14 @@ export class Database {
             b.block_number,
             b.parent_hash,
             c.depth + 1,
-            i.id,
-            i.kind
+            s.id,
+            s.kind
           FROM
             block_progress b
             LEFT JOIN
-              ipld_block i
-              ON i.block_id = b.id
-              AND i.contract_address = $2
+              state s
+              ON s.block_id = b.id
+              AND s.contract_address = $2
             INNER JOIN
               cte_query c ON c.parent_hash = b.block_hash
             WHERE
@@ -646,26 +646,26 @@ export class Database {
       ? queryResult.find((obj: any) => obj.kind === kind)
       : queryResult.find((obj: any) => obj.id);
 
-    let result: IPLDBlockInterface | undefined;
+    let result: StateInterface | undefined;
 
     if (latestRequiredResult) {
       result = await repo.findOne(latestRequiredResult.id, { relations: ['block'] });
     } else {
-      // If IPLDBlock not found in frothy region get latest IPLDBlock in the pruned region.
-      // Filter out IPLDBlocks from pruned blocks.
+      // If State not found in frothy region get latest State in the pruned region.
+      // Filter out State entries from pruned blocks.
       const canonicalBlockNumber = queryResult.pop().block_number + 1;
 
-      let queryBuilder = repo.createQueryBuilder('ipld_block')
-        .leftJoinAndSelect('ipld_block.block', 'block')
+      let queryBuilder = repo.createQueryBuilder('state')
+        .leftJoinAndSelect('state.block', 'block')
         .where('block.is_pruned = false')
-        .andWhere('ipld_block.contract_address = :contractAddress', { contractAddress })
+        .andWhere('state.contract_address = :contractAddress', { contractAddress })
         .andWhere('block.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
         .orderBy('block.block_number', 'DESC');
 
       // Filter using kind if specified else order by id to give preference to checkpoint.
       queryBuilder = kind
-        ? queryBuilder.andWhere('ipld_block.kind = :kind', { kind })
-        : queryBuilder.addOrderBy('ipld_block.id', 'DESC');
+        ? queryBuilder.andWhere('state.kind = :kind', { kind })
+        : queryBuilder.addOrderBy('state.id', 'DESC');
 
       // Get the first entry.
       queryBuilder.limit(1);
@@ -676,11 +676,11 @@ export class Database {
     return result;
   }
 
-  async getIPLDBlocks (repo: Repository<IPLDBlockInterface>, where: FindConditions<IPLDBlockInterface>): Promise<IPLDBlockInterface[]> {
+  async getStates (repo: Repository<StateInterface>, where: FindConditions<StateInterface>): Promise<StateInterface[]> {
     return repo.find({ where, relations: ['block'] });
   }
 
-  async getDiffIPLDBlocksInRange (repo: Repository<IPLDBlockInterface>, contractAddress: string, startblock: number, endBlock: number): Promise<IPLDBlockInterface[]> {
+  async getDiffStatesInRange (repo: Repository<StateInterface>, contractAddress: string, startblock: number, endBlock: number): Promise<StateInterface[]> {
     return repo.find({
       relations: ['block'],
       where: {
@@ -697,34 +697,34 @@ export class Database {
     });
   }
 
-  async saveOrUpdateIPLDBlock (repo: Repository<IPLDBlockInterface>, ipldBlock: IPLDBlockInterface): Promise<IPLDBlockInterface> {
+  async saveOrUpdateState (repo: Repository<StateInterface>, state: StateInterface): Promise<StateInterface> {
     let updatedData: {[key: string]: any};
 
-    console.time('time:ipld-database#saveOrUpdateIPLDBlock-DB-query');
-    if (ipldBlock.id) {
+    console.time('time:database#saveOrUpdateState-DB-query');
+    if (state.id) {
       // Using pg query as workaround for typeorm memory issue when saving checkpoint with large sized data.
       const { rows } = await this._pgPool.query(`
-        UPDATE ipld_block
+        UPDATE state
         SET block_id = $1, contract_address = $2, cid = $3, kind = $4, data = $5
         WHERE id = $6
         RETURNING *
-      `, [ipldBlock.block.id, ipldBlock.contractAddress, ipldBlock.cid, ipldBlock.kind, ipldBlock.data, ipldBlock.id]);
+      `, [state.block.id, state.contractAddress, state.cid, state.kind, state.data, state.id]);
 
       updatedData = rows[0];
     } else {
       const { rows } = await this._pgPool.query(`
-        INSERT INTO ipld_block(block_id, contract_address, cid, kind, data)
+        INSERT INTO state(block_id, contract_address, cid, kind, data)
         VALUES($1, $2, $3, $4, $5)
         RETURNING *
-      `, [ipldBlock.block.id, ipldBlock.contractAddress, ipldBlock.cid, ipldBlock.kind, ipldBlock.data]);
+      `, [state.block.id, state.contractAddress, state.cid, state.kind, state.data]);
 
       updatedData = rows[0];
     }
-    console.timeEnd('time:ipld-database#saveOrUpdateIPLDBlock-DB-query');
+    console.timeEnd('time:database#saveOrUpdateState-DB-query');
 
     assert(updatedData);
     return {
-      block: ipldBlock.block,
+      block: state.block,
       contractAddress: updatedData.contract_address,
       cid: updatedData.cid,
       kind: updatedData.kind,
@@ -733,7 +733,7 @@ export class Database {
     };
   }
 
-  async removeIPLDBlocks (repo: Repository<IPLDBlockInterface>, blockNumber: number, kind: string): Promise<void> {
+  async removeStates (repo: Repository<StateInterface>, blockNumber: number, kind: string): Promise<void> {
     const entities = await repo.find({ relations: ['block'], where: { block: { blockNumber }, kind } });
 
     // Delete if entities found.
@@ -742,42 +742,42 @@ export class Database {
     }
   }
 
-  async removeIPLDBlocksAfterBlock (repo: Repository<IPLDBlockInterface>, blockNumber: number): Promise<void> {
+  async removeStatesAfterBlock (repo: Repository<StateInterface>, blockNumber: number): Promise<void> {
     // Use raw SQL as TypeORM curently doesn't support delete via 'join' or 'using'
     const deleteQuery = `
       DELETE FROM
-        ipld_block
+        state
       USING block_progress
       WHERE
-        ipld_block.block_id = block_progress.id
+      state.block_id = block_progress.id
         AND block_progress.block_number > $1;
     `;
 
     await repo.query(deleteQuery, [blockNumber]);
   }
 
-  async getIPLDStatus (repo: Repository<IpldStatusInterface>): Promise<IpldStatusInterface | undefined> {
+  async getStateSyncStatus (repo: Repository<StateSyncStatusInterface>): Promise<StateSyncStatusInterface | undefined> {
     return repo.findOne();
   }
 
-  async updateIPLDStatusHooksBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
+  async updateStateSyncStatusIndexedBlock (repo: Repository<StateSyncStatusInterface>, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
     let entity = await repo.findOne();
 
     if (!entity) {
       entity = repo.create({
-        latestHooksBlockNumber: blockNumber,
+        latestIndexedBlockNumber: blockNumber,
         latestCheckpointBlockNumber: -1
       });
     }
 
-    if (force || blockNumber > entity.latestHooksBlockNumber) {
-      entity.latestHooksBlockNumber = blockNumber;
+    if (force || blockNumber > entity.latestIndexedBlockNumber) {
+      entity.latestIndexedBlockNumber = blockNumber;
     }
 
     return repo.save(entity);
   }
 
-  async updateIPLDStatusCheckpointBlock (repo: Repository<IpldStatusInterface>, blockNumber: number, force?: boolean): Promise<IpldStatusInterface> {
+  async updateStateSyncStatusCheckpointBlock (repo: Repository<StateSyncStatusInterface>, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
     const entity = await repo.findOne();
     assert(entity);
 

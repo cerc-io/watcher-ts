@@ -442,9 +442,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('getStateByCID').inc(1);
 
-        const ipldBlock = await indexer.getIPLDBlockByCid(cid);
+        const state = await indexer.getStateByCID(cid);
 
-        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
+        return state && state.block.isComplete ? indexer.getResultState(state) : undefined;
       },
 
       getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
@@ -452,9 +452,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('getState').inc(1);
 
-        const ipldBlock = await indexer.getPrevIPLDBlock(blockHash, contractAddress, kind);
+        const state = await indexer.getPrevState(blockHash, contractAddress, kind);
 
-        return ipldBlock && ipldBlock.block.isComplete ? indexer.getResultIPLDBlock(ipldBlock) : undefined;
+        return state && state.block.isComplete ? indexer.getResultState(state) : undefined;
       },
 
       getSyncStatus: async () => {

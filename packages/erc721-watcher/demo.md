@@ -251,11 +251,11 @@
 
   * A Transfer event to SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
-  * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the initial checkpoint IPLDBlock.
+  * An auto-generated `diff_staged` `State` should be added with parent CID pointing to the initial `checkpoint` `State`.
 
   * Custom property `transferCount` should be 1 initially.
 
-* Run the `getState` query at the endpoint to get the latest IPLDBlock for NFT_ADDRESS:
+* Run the `getState` query at the endpoint to get the latest `State` for NFT_ADDRESS:
 
   ```graphql
   query {
@@ -280,7 +280,7 @@
   }
   ```
 
-  * `diff` IPLDBlocks get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
+  * `diff` States get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
 
   * `data` contains the default state and also the custom state property `transferCount` that is indexed in [hooks.ts](./src/hooks.ts) file.
 
@@ -349,7 +349,7 @@
 
   * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
-  * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the previous IPLDBlock.
+  * An auto-generated `diff_staged` State should be added with parent CID pointing to the previous State.
 
   * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query.
 
@@ -369,7 +369,7 @@
 
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
-  * The IPLDBlock entries can be seen in pg-admin in table ipld_block.
+  * The `State` entries can be seen in pg-admin in table `state`.
 
 * The state should have auto indexed data and also custom property `transferCount` according to code in [hooks](./src/hooks.ts) file `handleEvent` method.
 

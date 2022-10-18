@@ -54,12 +54,12 @@ export const handler = async (argv: any): Promise<void> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const ipldBlock = await indexer.getIPLDBlockByCid(argv.cid);
-  assert(ipldBlock, 'IPLDBlock for the provided CID doesn\'t exist.');
-  const data = indexer.getIPLDData(ipldBlock);
+  const state = await indexer.getStateByCID(argv.cid);
+  assert(state, 'State for the provided CID doesn\'t exist.');
+  const data = indexer.getStateData(state);
 
-  log(`Verifying checkpoint data for contract ${ipldBlock.contractAddress}`);
-  await verifyCheckpointData(graphDb, ipldBlock.block, data);
+  log(`Verifying checkpoint data for contract ${state.contractAddress}`);
+  await verifyCheckpointData(graphDb, state.block, data);
   log('Checkpoint data verified');
 
   await db.close();

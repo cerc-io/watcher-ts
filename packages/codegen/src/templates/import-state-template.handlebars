@@ -20,7 +20,7 @@ import * as codec from '@ipld/dag-cbor';
 import { Database } from '../database';
 import { Indexer } from '../indexer';
 import { EventWatcher } from '../events';
-import { IPLDBlock } from '../entity/IPLDBlock';
+import { State } from '../entity/State';
 
 const log = debug('vulcanize:import-state');
 
@@ -106,18 +106,18 @@ export const main = async (): Promise<any> => {
   const block = await indexer.getBlockProgress(importData.snapshotBlock.blockHash);
   assert(block);
 
-  // Fill the IPLDBlocks.
-  for (const checkpoint of importData.ipldCheckpoints) {
-    let ipldBlock = new IPLDBlock();
+  // Fill the States.
+  for (const checkpoint of importData.stateCheckpoints) {
+    let state = new State();
 
-    ipldBlock = Object.assign(ipldBlock, checkpoint);
-    ipldBlock.block = block;
+    state = Object.assign(state, checkpoint);
+    state.block = block;
 
-    ipldBlock.data = Buffer.from(codec.encode(ipldBlock.data));
+    state.data = Buffer.from(codec.encode(state.data));
 
-    ipldBlock = await indexer.saveOrUpdateIPLDBlock(ipldBlock);
+    state = await indexer.saveOrUpdateState(state);
     {{#if (subgraphPath)}}
-    await graphWatcher.updateEntitiesFromIPLDState(ipldBlock);
+    await graphWatcher.updateEntitiesFromState(state);
     {{/if}}
   }
 
@@ -126,12 +126,12 @@ export const main = async (): Promise<any> => {
   await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
   await indexer.updateSyncStatusChainHead(block.blockHash, block.blockNumber);
   await indexer.updateSyncStatusIndexedBlock(block.blockHash, block.blockNumber);
-  await indexer.updateIPLDStatusHooksBlock(block.blockNumber);
-  await indexer.updateIPLDStatusCheckpointBlock(block.blockNumber);
+  await indexer.updateStateSyncStatusIndexedBlock(block.blockNumber);
+  await indexer.updateStateSyncStatusCheckpointBlock(block.blockNumber);
 
-  // The 'diff_staged' and 'init' IPLD blocks are unnecessary as checkpoints have been already created for the snapshot block.
-  await indexer.removeIPLDBlocks(block.blockNumber, StateKind.Init);
-  await indexer.removeIPLDBlocks(block.blockNumber, StateKind.DiffStaged);
+  // The 'diff_staged' and 'init' State entries are unnecessary as checkpoints have been already created for the snapshot block.
+  await indexer.removeStates(block.blockNumber, StateKind.Init);
+  await indexer.removeStates(block.blockNumber, StateKind.DiffStaged);
 
   log(`Import completed for snapshot block at height ${block.blockNumber}`);
 };

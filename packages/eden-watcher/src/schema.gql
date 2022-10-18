@@ -203,7 +203,7 @@ type RoleRevokedEvent {
   sender: String!
 }
 
-type ResultIPLDBlock {
+type ResultState {
   block: _Block_!
   contractAddress: String!
   cid: String!
@@ -248,8 +248,8 @@ type Query {
   claim(id: String!, block: Block_height): Claim!
   slash(id: String!, block: Block_height): Slash!
   account(id: String!, block: Block_height): Account!
-  getStateByCID(cid: String!): ResultIPLDBlock
-  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
   getSyncStatus: SyncStatus
 }
 

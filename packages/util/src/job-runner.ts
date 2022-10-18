@@ -95,23 +95,23 @@ export class JobRunner {
   async processHooks (job: any): Promise<void> {
     const { data: { blockHash, blockNumber } } = job;
 
-    // Get the current IPLD Status.
-    const ipldStatus = await this._indexer.getIPLDStatus();
+    // Get the current stateSyncStatus.
+    const stateSyncStatus = await this._indexer.getStateSyncStatus();
 
-    if (ipldStatus) {
-      if (ipldStatus.latestHooksBlockNumber < (blockNumber - 1)) {
+    if (stateSyncStatus) {
+      if (stateSyncStatus.latestIndexedBlockNumber < (blockNumber - 1)) {
         // Create hooks job for parent block.
         const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
         await createHooksJob(this._jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
 
-        const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
+        const message = `State for blockNumber ${blockNumber - 1} not indexed yet, aborting`;
         log(message);
 
         throw new Error(message);
       }
 
-      if (ipldStatus.latestHooksBlockNumber > (blockNumber - 1)) {
-        log(`Hooks for blockNumber ${blockNumber} already processed`);
+      if (stateSyncStatus.latestIndexedBlockNumber > (blockNumber - 1)) {
+        log(`State for blockNumber ${blockNumber} already indexed`);
 
         return;
       }
@@ -120,10 +120,10 @@ export class JobRunner {
     // Process the hooks for the given block number.
     await this._indexer.processCanonicalBlock(blockHash, blockNumber);
 
-    // Update the IPLD status.
-    await this._indexer.updateIPLDStatusHooksBlock(blockNumber);
+    // Update the stateSyncStatus.
+    await this._indexer.updateStateSyncStatusIndexedBlock(blockNumber);
 
-    // Create a checkpoint job after completion of a hook job.
+    // Create a checkpoint job after completion of a hooks job.
     await createCheckpointJob(this._jobQueue, blockHash, blockNumber);
 
     await this._jobQueue.markComplete(job);
@@ -132,12 +132,12 @@ export class JobRunner {
   async processCheckpoint (job: any): Promise<void> {
     const { data: { blockHash, blockNumber } } = job;
 
-    // Get the current IPLD Status.
-    const ipldStatus = await this._indexer.getIPLDStatus();
-    assert(ipldStatus);
+    // Get the current stateSyncStatus.
+    const stateSyncStatus = await this._indexer.getStateSyncStatus();
+    assert(stateSyncStatus);
 
-    if (ipldStatus.latestCheckpointBlockNumber >= 0) {
-      if (ipldStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
+    if (stateSyncStatus.latestCheckpointBlockNumber >= 0) {
+      if (stateSyncStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
         // Create a checkpoint job for parent block.
         const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
         await createCheckpointJob(this._jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
@@ -148,7 +148,7 @@ export class JobRunner {
         throw new Error(message);
       }
 
-      if (ipldStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
+      if (stateSyncStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
         log(`Checkpoints for blockNumber ${blockNumber} already processed`);
 
         return;
@@ -158,8 +158,8 @@ export class JobRunner {
     // Process checkpoints for the given block.
     await this._indexer.processCheckpoint(blockHash);
 
-    // Update the IPLD status.
-    await this._indexer.updateIPLDStatusCheckpointBlock(blockNumber);
+    // Update the stateSyncStatus.
+    await this._indexer.updateStateSyncStatusCheckpointBlock(blockNumber);
 
     await this._jobQueue.markComplete(job);
   }
@@ -381,9 +381,6 @@ export class JobRunner {
     assert(this._indexer.cacheContract);
     this._indexer.cacheContract(contract);
 
-    const ipldIndexer = this._indexer;
-    if (ipldIndexer.updateIPLDStatusMap) {
-      ipldIndexer.updateIPLDStatusMap(contract.address, {});
-    }
+    this._indexer.updateStateStatusMap(contract.address, {});
   }
 }

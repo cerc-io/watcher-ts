@@ -1,4 +1,4 @@
-className: IPLDBlock
+className: State
 indexOn:
   - columns:
       - cid

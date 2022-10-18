@@ -58,15 +58,6 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this._baseJobRunner.processBlock(job);
-
-      const { data: { kind } } = job;
-
-      // If it's a pruning job: Create a hooks job.
-      if (kind === JOB_KIND_PRUNE) {
-        await this.createHooksJob();
-      }
-
-      await this._jobQueue.markComplete(job);
     });
   }
 
@@ -78,107 +69,14 @@ export class JobRunner {
 
   async subscribeHooksQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
-      const { data: { blockHash, blockNumber } } = job;
-
-      // Get the current IPLD Status.
-      const ipldStatus = await this._indexer.getIPLDStatus();
-
-      if (ipldStatus) {
-        if (ipldStatus.latestHooksBlockNumber < (blockNumber - 1)) {
-          // Create hooks job for parent block.
-          const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
-          await this.createHooksJob(parentBlock.blockHash, parentBlock.blockNumber);
-
-          const message = `Hooks for blockNumber ${blockNumber - 1} not processed yet, aborting`;
-          log(message);
-
-          throw new Error(message);
-        }
-
-        if (ipldStatus.latestHooksBlockNumber > (blockNumber - 1)) {
-          log(`Hooks for blockNumber ${blockNumber} already processed`);
-
-          return;
-        }
-      }
-
-      // Process the hooks for the given block number.
-      await this._indexer.processCanonicalBlock(blockHash, blockNumber);
-
-      // Update the IPLD status.
-      await this._indexer.updateIPLDStatusHooksBlock(blockNumber);
-
-      // Create a checkpoint job after completion of a hook job.
-      await this.createCheckpointJob(blockHash, blockNumber);
-
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processHooks(job);
     });
   }
 
   async subscribeBlockCheckpointQueue (): Promise<void> {
     await this._jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
-      const { data: { blockHash, blockNumber } } = job;
-
-      // Get the current IPLD Status.
-      const ipldStatus = await this._indexer.getIPLDStatus();
-      assert(ipldStatus);
-
-      if (ipldStatus.latestCheckpointBlockNumber >= 0) {
-        if (ipldStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
-          // Create a checkpoint job for parent block.
-          const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
-          await this.createCheckpointJob(parentBlock.blockHash, parentBlock.blockNumber);
-
-          const message = `Checkpoints for blockNumber ${blockNumber - 1} not processed yet, aborting`;
-          log(message);
-
-          throw new Error(message);
-        }
-
-        if (ipldStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
-          log(`Checkpoints for blockNumber ${blockNumber} already processed`);
-
-          return;
-        }
-      }
-
-      // Process checkpoints for the given block.
-      await this._indexer.processCheckpoint(blockHash);
-
-      // Update the IPLD status.
-      await this._indexer.updateIPLDStatusCheckpointBlock(blockNumber);
-
-      await this._jobQueue.markComplete(job);
+      await this._baseJobRunner.processCheckpoint(job);
     });
-  }
-
-  async createHooksJob (blockHash?: string, blockNumber?: number): Promise<void> {
-    if (!blockNumber || !blockHash) {
-      // Get the latest canonical block
-      const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
-
-      // Create a hooks job for parent block of latestCanonicalBlock because pruning for first block is skipped as it is assumed to be a canonical block.
-      blockHash = latestCanonicalBlock.parentHash;
-      blockNumber = latestCanonicalBlock.blockNumber - 1;
-    }
-
-    await this._jobQueue.pushJob(
-      QUEUE_HOOKS,
-      {
-        blockHash,
-        blockNumber
-      }
-    );
-  }
-
-  async createCheckpointJob (blockHash: string, blockNumber: number): Promise<void> {
-    await this._jobQueue.pushJob(
-      QUEUE_BLOCK_CHECKPOINT,
-      {
-        blockHash,
-        blockNumber
-      }
-    );
   }
 }
 

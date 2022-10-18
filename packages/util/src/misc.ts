@@ -19,8 +19,6 @@ import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
 import { getCachedBlockSize } from './block-size-cache';
 
-const log = debug('vulcanize:misc');
-
 /**
  * Method to wait for specified time.
  * @param time Time to wait in milliseconds
@@ -243,7 +241,7 @@ export const getFullTransaction = async (ethClient: EthClient, txHash: string): 
   };
 };
 
-export const jsonBigIntStringReplacer = (_: string, value: any) => {
+export const jsonBigIntStringReplacer = (_: string, value: any): any => {
   if (typeof value === 'bigint') {
     return value.toString();
   }
