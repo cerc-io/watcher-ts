@@ -12,7 +12,7 @@ const log = debug('vulcanize:reset-state');
 
 export const command = 'state';
 
-export const desc = 'Reset State to given block number';
+export const desc = 'Reset State to a given block number';
 
 export const builder = {
   blockNumber: {
@@ -33,7 +33,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   console.time('time:reset-state');
   try {
-    // Delete all State entries in the given range
+    // Delete all State entries after the given block
     await db.removeStatesAfterBlock(dbTx, blockNumber);
 
     // Reset the stateSyncStatus.

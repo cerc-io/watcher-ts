@@ -127,8 +127,14 @@ export const main = async (): Promise<void> => {
     await db.init();
 
     if (config.watcher.verifyState) {
-      const { dataSources } = await getSubgraphConfig(watcherConfig.server.subgraphPath);
-      subgraphContracts = dataSources.map((dataSource: any) => dataSource.source.address);
+      // Use provided contracts if available; else read from subraph config.
+      if (config.watcher.contracts) {
+        subgraphContracts = config.watcher.contracts;
+      } else {
+        const { dataSources } = await getSubgraphConfig(watcherConfig.server.subgraphPath);
+        subgraphContracts = dataSources.map((dataSource: any) => dataSource.source.address);
+      }
+
       const watcherEndpoint = config.endpoints[config.watcher.endpoint] as string;
       subgraphGQLClient = new GraphQLClient({ gqlEndpoint: watcherEndpoint });
     }

@@ -63,7 +63,8 @@ export interface Config {
     entitiesDir: string;
     verifyState: boolean;
     endpoint: keyof EndpointConfig;
-    skipFields: EntitySkipFields[]
+    skipFields: EntitySkipFields[];
+    contracts: string[];
   }
   cache: {
     endpoint: keyof EndpointConfig;

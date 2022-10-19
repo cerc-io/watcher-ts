@@ -850,6 +850,7 @@ export class Indexer {
   async fetchStateStatus (): Promise<void> {
     const contracts = Object.values(this._watchedContracts);
 
+    // TODO: Fire a single query for all contracts.
     for (const contract of contracts) {
       const initState = await this._db.getLatestState(contract.address, StateKind.Init);
       const diffState = await this._db.getLatestState(contract.address, StateKind.Diff);
