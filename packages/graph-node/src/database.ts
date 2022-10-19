@@ -12,6 +12,7 @@ import {
   QueryRunner,
   Repository
 } from 'typeorm';
+import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
@@ -647,9 +648,9 @@ export class Database {
     return this.getStateEntityValues(block, stateEntity, entityFields, relations);
   }
 
-  getStateEntityValues (block: BlockProgressInterface, stateEntity: any, entityFields: any, relations: { [key: string]: any } = {}): { [key: string]: any } {
-    const entityValues = entityFields.map((field: any) => {
-      const { propertyName } = field;
+  getStateEntityValues (block: BlockProgressInterface, stateEntity: any, entityFields: ColumnMetadata[], relations: { [key: string]: any } = {}): { [key: string]: any } {
+    const entityValues = entityFields.map((field) => {
+      const { propertyName, transformer } = field;
 
       // Get blockHash property for db entry from block instance.
       if (propertyName === 'blockHash') {
@@ -663,10 +664,10 @@ export class Database {
 
       // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
-        return fromStateEntityValues(stateEntity, propertyName.slice(1), relations);
+        return fromStateEntityValues(stateEntity, propertyName.slice(1), relations, transformer);
       }
 
-      return fromStateEntityValues(stateEntity, propertyName, relations);
+      return fromStateEntityValues(stateEntity, propertyName, relations, transformer);
     }, {});
 
     return entityFields.reduce((acc: { [key: string]: any }, field: any, index: number) => {

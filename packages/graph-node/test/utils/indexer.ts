@@ -211,6 +211,7 @@ class ServerConfig implements ServerConfigInterface {
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;
+  clearEntitiesCacheInterval: number;
 
   constructor () {
     this.host = '';
@@ -225,5 +226,6 @@ class ServerConfig implements ServerConfigInterface {
     this.wasmRestartBlocksInterval = 0;
     this.filterLogs = false;
     this.maxEventsBlockRange = 0;
+    this.clearEntitiesCacheInterval = 0;
   }
 }

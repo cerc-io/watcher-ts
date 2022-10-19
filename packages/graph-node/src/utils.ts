@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
+import { ValueTransformer } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 
@@ -840,7 +841,12 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   return diffData;
 };
 
-export const fromStateEntityValues = (stateEntity: any, propertyName: string, relations: { [key: string]: any } = {}): any => {
+export const fromStateEntityValues = (
+  stateEntity: any,
+  propertyName: string,
+  relations: { [key: string]: any } = {},
+  transformer?: ValueTransformer | ValueTransformer[]
+): any => {
   // Parse DB data value from state entity data.
   if (relations) {
     const relation = relations[propertyName];
@@ -852,6 +858,17 @@ export const fromStateEntityValues = (stateEntity: any, propertyName: string, re
         return stateEntity[propertyName]?.id;
       }
     }
+  }
+
+  if (transformer) {
+    if (Array.isArray(transformer)) {
+      // Apply transformer in reverse order similar to when reading from DB.
+      return transformer.reduceRight((acc, elTransformer) => {
+        return elTransformer.from(acc);
+      }, stateEntity[propertyName]);
+    }
+
+    return transformer.from(stateEntity[propertyName]);
   }
 
   return stateEntity[propertyName];

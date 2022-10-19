@@ -16,6 +16,8 @@ import { checkGQLEntityInIPLDState, compareQuery, Config, getIPLDsByBlock, check
 import { Database } from '../../database';
 import { getSubgraphConfig } from '../../utils';
 
+const DEFAULT_ENTITIES_LIMIT = 100;
+
 const log = debug('vulcanize:compare-blocks');
 
 export const main = async (): Promise<void> => {
@@ -70,10 +72,33 @@ export const main = async (): Promise<void> => {
       type: 'boolean',
       describe: 'Compare time taken between GQL queries',
       default: false
+    },
+    queryEntitiesLimit: {
+      type: 'number',
+      default: DEFAULT_ENTITIES_LIMIT,
+      describe: 'Limit for entities returned in query'
+    },
+    paginate: {
+      type: 'boolean',
+      describe: 'Paginate in multiple entities query and compare',
+      default: false
     }
   }).argv;
 
-  const { startBlock, endBlock, batchSize, interval, rawJson, queryDir, fetchIds, configFile, timeDiff } = argv;
+  const {
+    startBlock,
+    endBlock,
+    batchSize,
+    interval,
+    rawJson,
+    queryDir,
+    fetchIds,
+    configFile,
+    timeDiff,
+    queryEntitiesLimit,
+    paginate
+  } = argv;
+
   const config: Config = await getConfig(configFile);
   const snakeNamingStrategy = new SnakeNamingStrategy();
   const clients = await getClients(config, timeDiff, queryDir);
@@ -195,23 +220,41 @@ export const main = async (): Promise<void> => {
           } else {
             if (updatedEntities.has(entityName)) {
               let result;
+              let skip = 0;
 
-              ({ diff: resultDiff, result1: result } = await compareQuery(
-                clients,
-                queryName,
-                { block },
-                rawJson,
-                timeDiff
-              ));
+              do {
+                ({ diff: resultDiff, result1: result } = await compareQuery(
+                  clients,
+                  queryName,
+                  {
+                    block,
+                    skip,
+                    first: queryEntitiesLimit
+                  },
+                  rawJson,
+                  timeDiff
+                ));
 
-              if (config.watcher.verifyState) {
-                const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
+                if (config.watcher.verifyState) {
+                  const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
 
-                if (ipldDiff) {
-                  log('Results mismatch for IPLD state:', ipldDiff);
-                  diffFound = true;
+                  if (ipldDiff) {
+                    log('Results mismatch for IPLD state:', ipldDiff);
+                    diffFound = true;
+                  }
                 }
-              }
+
+                skip += queryEntitiesLimit;
+              } while (
+                // Check if needed to query more entities.
+                result[queryName].length === queryEntitiesLimit &&
+                // Check if diff found.
+                !diffFound &&
+                !resultDiff &&
+                // Check paginate flag
+                // eslint-disable-next-line no-unmodified-loop-condition
+                paginate
+              );
             }
           }
 

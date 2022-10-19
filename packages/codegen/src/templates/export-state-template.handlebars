@@ -118,6 +118,10 @@ const main = async (): Promise<void> => {
 
   // Export contracts and checkpoints.
   for (const contract of contracts) {
+    if (contract.startingBlock > block.blockNumber) {
+      continue;
+    }
+
     exportData.contracts.push({
       address: contract.address,
       kind: contract.kind,

@@ -42,6 +42,7 @@ export interface ServerConfig {
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;
+  clearEntitiesCacheInterval: number;
 }
 
 export interface UpstreamConfig {

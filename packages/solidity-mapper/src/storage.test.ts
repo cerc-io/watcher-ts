@@ -806,6 +806,7 @@ describe('Get value from storage', () => {
       const bytesLength = Math.floor(Math.random() * 64);
       return ethers.utils.hexlify(ethers.utils.randomBytes(bytesLength));
     });
+    console.log('bytesArray', bytesArray);
 
     before(async () => {
       ({ contract: testDynamicArrays, storageLayout } = contracts.TestDynamicArrays);
@@ -952,6 +953,7 @@ describe('Get value from storage', () => {
     });
 
     it('get value for dynamic sized array of bytes', async () => {
+      console.log('testFixedArrays.address', testDynamicArrays.address);
       let { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testDynamicArrays.address, 'bytesArray');
       expect(value).to.eql(bytesArray);
       const proofData = JSON.parse(proof.data);

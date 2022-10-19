@@ -600,8 +600,6 @@ export class Indexer implements IndexerInterface {
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
-    await this.updateIPLDStatusMap(address, {});
-
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 
