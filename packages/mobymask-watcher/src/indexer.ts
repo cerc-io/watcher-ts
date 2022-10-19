@@ -10,7 +10,6 @@ import { ethers } from 'ethers';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
@@ -27,8 +26,7 @@ import {
   BlockHeight,
   StateKind,
   StateStatus,
-  getFullTransaction,
-  ResultState
+  getFullTransaction
 } from '@cerc-io/util';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
@@ -157,26 +155,6 @@ export class Indexer implements IndexerInterface {
 
       // TODO: Return proof only if requested.
       proof: JSON.parse(event.proof)
-    };
-  }
-
-  getResultState (state: State): ResultState {
-    const block = state.block;
-
-    const data = codec.decode(Buffer.from(state.data)) as any;
-
-    return {
-      block: {
-        cid: block.cid,
-        hash: block.blockHash,
-        number: block.blockNumber,
-        timestamp: block.blockTimestamp,
-        parentHash: block.parentHash
-      },
-      contractAddress: state.contractAddress,
-      cid: state.cid,
-      kind: state.kind,
-      data: JSON.stringify(data)
     };
   }
 

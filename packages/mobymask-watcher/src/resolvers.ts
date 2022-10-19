@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, gqlTotalQueryCount, gqlQueryCount } from '@cerc-io/util';
+import { ValueResult, gqlTotalQueryCount, gqlQueryCount, getResultState } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -128,7 +128,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const state = await indexer.getStateByCID(cid);
 
-        return state && state.block.isComplete ? indexer.getResultState(state) : undefined;
+        return state && state.block.isComplete ? getResultState(state) : undefined;
       },
 
       getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
@@ -138,7 +138,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
         const state = await indexer.getPrevState(blockHash, contractAddress, kind);
 
-        return state && state.block.isComplete ? indexer.getResultState(state) : undefined;
+        return state && state.block.isComplete ? getResultState(state) : undefined;
       },
 
       getSyncStatus: async () => {

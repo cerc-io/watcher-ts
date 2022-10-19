@@ -1,8 +1,10 @@
 import _ from 'lodash';
 import debug from 'debug';
+import * as codec from '@ipld/dag-cbor';
 
-import { BlockProgressInterface, GraphDatabaseInterface } from './types';
+import { BlockProgressInterface, GraphDatabaseInterface, StateInterface } from './types';
 import { jsonBigIntStringReplacer } from './misc';
+import { ResultState } from './indexer';
 
 const log = debug('vulcanize:state-helper');
 
@@ -67,4 +69,24 @@ export const verifyCheckpointData = async (database: GraphDatabaseInterface, blo
       }
     }
   }
+};
+
+export const getResultState = (state: StateInterface): ResultState => {
+  const block = state.block;
+
+  const data = codec.decode(Buffer.from(state.data)) as any;
+
+  return {
+    block: {
+      cid: block.cid,
+      hash: block.blockHash,
+      number: block.blockNumber,
+      timestamp: block.blockTimestamp,
+      parentHash: block.parentHash
+    },
+    contractAddress: state.contractAddress,
+    cid: state.cid,
+    kind: state.kind,
+    data: JSON.stringify(data)
+  };
 };
