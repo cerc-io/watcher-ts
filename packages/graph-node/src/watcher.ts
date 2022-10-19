@@ -12,7 +12,7 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IPLDBlockInterface, IndexerInterface, BlockProgressInterface, cachePrunedEntitiesCount } from '@cerc-io/util';
 
 import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
@@ -384,8 +384,18 @@ export class GraphWatcher {
           entities: new Map()
         }
       );
+    }
 
-      log(`Size of cachedEntities.frothyBlocks map: ${this._database.cachedEntities.frothyBlocks.size}`);
+    log(`Size of cachedEntities.frothyBlocks map: ${this._database.cachedEntities.frothyBlocks.size}`);
+    this._measureCachedPrunedEntities();
+
+    assert(this._indexer);
+    // Check if it is time to clear entities cache.
+    if (blockProgress.blockNumber % this._indexer.serverConfig.clearEntitiesCacheInterval === 0) {
+      log(`Clearing cachedEntities.latestPrunedEntities at block ${blockProgress.blockNumber}`);
+      // Clearing only pruned region as frothy region cache gets updated in pruning queue.
+      this._database.cachedEntities.latestPrunedEntities.clear();
+      log(`Cleared cachedEntities.latestPrunedEntities. Map size: ${this._database.cachedEntities.latestPrunedEntities.size}`);
     }
   }
 
@@ -419,6 +429,14 @@ export class GraphWatcher {
   _clearCachedEntities () {
     this._database.cachedEntities.frothyBlocks.clear();
     this._database.cachedEntities.latestPrunedEntities.clear();
+  }
+
+  _measureCachedPrunedEntities () {
+    const totalEntities = Array.from(this._database.cachedEntities.latestPrunedEntities.values())
+      .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
+
+    log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
+    cachePrunedEntitiesCount.set(totalEntities);
   }
 
   /**
