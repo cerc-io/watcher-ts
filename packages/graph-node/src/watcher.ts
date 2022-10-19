@@ -12,9 +12,9 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, StateInterface, IndexerInterface, BlockProgressInterface, cachePrunedEntitiesCount } from '@cerc-io/util';
+import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, StateInterface, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
-import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction, updateEntitiesFromState } from './utils';
 import { Context, GraphData, instantiate } from './loader';
 import { Database, DEFAULT_LIMIT } from './database';
 
@@ -351,92 +351,21 @@ export class GraphWatcher {
 
   async updateEntitiesFromState (state: StateInterface) {
     assert(this._indexer);
-    const data = this._indexer.getStateData(state);
-
-    for (const [entityName, entities] of Object.entries(data.state)) {
-      // Get relations for subgraph entity
-      assert(this._indexer.getRelationsMap);
-      const relationsMap = this._indexer.getRelationsMap();
-
-      const result = Array.from(relationsMap.entries())
-        .find(([key]) => key.name === entityName);
-
-      const relations = result ? result[1] : {};
-
-      log(`Updating entities from State for entity ${entityName}`);
-      console.time(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-      for (const [id, entityData] of Object.entries(entities as any)) {
-        const dbData = this._database.fromState(state.block, entityName, entityData, relations);
-        await this._database.saveEntity(entityName, dbData);
-      }
-      console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-    }
+    await updateEntitiesFromState(this._database, this._indexer, state);
   }
 
   updateEntityCacheFrothyBlocks (blockProgress: BlockProgressInterface): void {
-    // Set latest block in frothy region to cachedEntities.frothyBlocks map.
-    if (!this._database.cachedEntities.frothyBlocks.has(blockProgress.blockHash)) {
-      this._database.cachedEntities.frothyBlocks.set(
-        blockProgress.blockHash,
-        {
-          blockNumber: blockProgress.blockNumber,
-          parentHash: blockProgress.parentHash,
-          entities: new Map()
-        }
-      );
-    }
-
-    log(`Size of cachedEntities.frothyBlocks map: ${this._database.cachedEntities.frothyBlocks.size}`);
-    this._measureCachedPrunedEntities();
-
     assert(this._indexer);
-    // Check if it is time to clear entities cache.
-    if (blockProgress.blockNumber % this._indexer.serverConfig.clearEntitiesCacheInterval === 0) {
-      log(`Clearing cachedEntities.latestPrunedEntities at block ${blockProgress.blockNumber}`);
-      // Clearing only pruned region as frothy region cache gets updated in pruning queue.
-      this._database.cachedEntities.latestPrunedEntities.clear();
-      log(`Cleared cachedEntities.latestPrunedEntities. Map size: ${this._database.cachedEntities.latestPrunedEntities.size}`);
-    }
+    this._database.updateEntityCacheFrothyBlocks(blockProgress, this._indexer.serverConfig.clearEntitiesCacheInterval);
   }
 
   pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
-    const canonicalBlock = this._database.cachedEntities.frothyBlocks.get(canonicalBlockHash);
-
-    if (canonicalBlock) {
-      // Update latestPrunedEntities map with entities from latest canonical block.
-      canonicalBlock.entities.forEach((entityIdMap, entityTableName) => {
-        entityIdMap.forEach((data, id) => {
-          let entityIdMap = this._database.cachedEntities.latestPrunedEntities.get(entityTableName);
-
-          if (!entityIdMap) {
-            entityIdMap = new Map();
-          }
-
-          entityIdMap.set(id, data);
-          this._database.cachedEntities.latestPrunedEntities.set(entityTableName, entityIdMap);
-        });
-      });
-    }
-
-    // Remove pruned blocks from frothyBlocks.
-    const prunedBlockHashes = Array.from(this._database.cachedEntities.frothyBlocks.entries())
-      .filter(([, value]) => value.blockNumber <= canonicalBlockNumber)
-      .map(([blockHash]) => blockHash);
-
-    prunedBlockHashes.forEach(blockHash => this._database.cachedEntities.frothyBlocks.delete(blockHash));
+    this._database.pruneEntityCacheFrothyBlocks(canonicalBlockHash, canonicalBlockNumber);
   }
 
   _clearCachedEntities () {
     this._database.cachedEntities.frothyBlocks.clear();
     this._database.cachedEntities.latestPrunedEntities.clear();
-  }
-
-  _measureCachedPrunedEntities () {
-    const totalEntities = Array.from(this._database.cachedEntities.latestPrunedEntities.values())
-      .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
-
-    log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
-    cachePrunedEntitiesCount.set(totalEntities);
   }
 
   /**

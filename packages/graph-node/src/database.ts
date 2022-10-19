@@ -20,8 +20,10 @@ import debug from 'debug';
 import {
   BlockHeight,
   BlockProgressInterface,
+  cachePrunedEntitiesCount,
   Database as BaseDatabase,
   eventProcessingLoadEntityCacheHitCount,
+  eventProcessingLoadEntityCount,
   eventProcessingLoadEntityDBQueryDuration,
   QueryOptions,
   Where
@@ -29,7 +31,10 @@ import {
 
 import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './utils';
 
+const log = debug('vulcanize:graph-database');
+
 export const DEFAULT_LIMIT = 100;
+const DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL = 1000;
 
 interface CachedEntities {
   frothyBlocks: Map<
@@ -81,6 +86,77 @@ export class Database {
     return this._baseDatabase.createTransactionRunner();
   }
 
+  async getModelEntity<Entity> (repo: Repository<Entity>, whereOptions: any): Promise<Entity | undefined> {
+    eventProcessingLoadEntityCount.inc();
+
+    const findOptions = {
+      where: whereOptions,
+      order: {
+        blockNumber: 'DESC'
+      }
+    };
+
+    if (findOptions.where.blockHash) {
+      // Check cache only if latestPrunedEntities is updated.
+      // latestPrunedEntities is updated when frothyBlocks is filled till canonical block height.
+      if (this._cachedEntities.latestPrunedEntities.size > 0) {
+        let frothyBlock = this._cachedEntities.frothyBlocks.get(findOptions.where.blockHash);
+        let canonicalBlockNumber = -1;
+
+        // Loop through frothy region until latest entity is found.
+        while (frothyBlock) {
+          const entity = frothyBlock.entities
+            .get(repo.metadata.tableName)
+            ?.get(findOptions.where.id);
+
+          if (entity) {
+            eventProcessingLoadEntityCacheHitCount.inc();
+            return _.cloneDeep(entity) as Entity;
+          }
+
+          canonicalBlockNumber = frothyBlock.blockNumber + 1;
+          frothyBlock = this._cachedEntities.frothyBlocks.get(frothyBlock.parentHash);
+        }
+
+        // Canonical block number is not assigned if blockHash does not exist in frothy region.
+        // Get latest pruned entity from cache only if blockHash exists in frothy region.
+        // i.e. Latest entity in cache is the version before frothy region.
+        if (canonicalBlockNumber > -1) {
+          // If entity not found in frothy region get latest entity in the pruned region.
+          // Check if latest entity is cached in pruned region.
+          const entity = this._cachedEntities.latestPrunedEntities
+            .get(repo.metadata.tableName)
+            ?.get(findOptions.where.id);
+
+          if (entity) {
+            eventProcessingLoadEntityCacheHitCount.inc();
+            return _.cloneDeep(entity) as Entity;
+          }
+
+          // Get latest pruned entity from DB if not found in cache.
+          const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
+          const dbEntity = await this._baseDatabase.getLatestPrunedEntity(repo, findOptions.where.id, canonicalBlockNumber);
+          endTimer();
+
+          if (dbEntity) {
+            // Update latest pruned entity in cache.
+            this.cacheUpdatedEntity(repo, dbEntity, true);
+          }
+
+          return dbEntity;
+        }
+      }
+
+      const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
+      const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+      endTimer();
+
+      return dbEntity;
+    }
+
+    return repo.findOne(findOptions);
+  }
+
   async getEntity<Entity> (entityName: string, id: string, blockHash?: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
 
@@ -93,72 +169,7 @@ export class Database {
         whereOptions.blockHash = blockHash;
       }
 
-      const findOptions = {
-        where: whereOptions,
-        order: {
-          blockNumber: 'DESC'
-        }
-      };
-
-      if (findOptions.where.blockHash) {
-        // Check cache only if latestPrunedEntities is updated.
-        // latestPrunedEntities is updated when frothyBlocks is filled till canonical block height.
-        if (this._cachedEntities.latestPrunedEntities.size > 0) {
-          let frothyBlock = this._cachedEntities.frothyBlocks.get(findOptions.where.blockHash);
-          let canonicalBlockNumber = -1;
-
-          // Loop through frothy region until latest entity is found.
-          while (frothyBlock) {
-            const entity = frothyBlock.entities
-              .get(repo.metadata.tableName)
-              ?.get(findOptions.where.id);
-
-            if (entity) {
-              eventProcessingLoadEntityCacheHitCount.inc();
-              return _.cloneDeep(entity) as Entity;
-            }
-
-            canonicalBlockNumber = frothyBlock.blockNumber + 1;
-            frothyBlock = this._cachedEntities.frothyBlocks.get(frothyBlock.parentHash);
-          }
-
-          // Canonical block number is not assigned if blockHash does not exist in frothy region.
-          // Get latest pruned entity from cache only if blockHash exists in frothy region.
-          // i.e. Latest entity in cache is the version before frothy region.
-          if (canonicalBlockNumber > -1) {
-            // If entity not found in frothy region get latest entity in the pruned region.
-            // Check if latest entity is cached in pruned region.
-            const entity = this._cachedEntities.latestPrunedEntities
-              .get(repo.metadata.tableName)
-              ?.get(findOptions.where.id);
-
-            if (entity) {
-              eventProcessingLoadEntityCacheHitCount.inc();
-              return _.cloneDeep(entity) as Entity;
-            }
-
-            // Get latest pruned entity from DB if not found in cache.
-            const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
-            const dbEntity = await this._baseDatabase.getLatestPrunedEntity(repo, findOptions.where.id, canonicalBlockNumber);
-            endTimer();
-
-            if (dbEntity) {
-              // Update latest pruned entity in cache.
-              this.cacheUpdatedEntity(entityName, dbEntity, true);
-            }
-
-            return dbEntity;
-          }
-        }
-
-        const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
-        const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
-        endTimer();
-
-        return dbEntity;
-      }
-
-      return repo.findOne(findOptions as FindOneOptions<any>);
+      return this.getModelEntity(repo, whereOptions);
     } catch (error) {
       console.log(error);
     } finally {
@@ -676,8 +687,12 @@ export class Database {
     }, {});
   }
 
-  cacheUpdatedEntity (entityName: string, entity: any, pruned = false): void {
+  cacheUpdatedEntityByName (entityName: string, entity: any, pruned = false): void {
     const repo = this._conn.getRepository(entityName);
+    this.cacheUpdatedEntity(repo, entity, pruned);
+  }
+
+  cacheUpdatedEntity<Entity> (repo: Repository<Entity>, entity: any, pruned = false): void {
     const tableName = repo.metadata.tableName;
 
     if (pruned) {
@@ -712,5 +727,65 @@ export class Database {
     const repo: Repository<BlockProgressInterface> = this._conn.getRepository('block_progress');
 
     return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
+  }
+
+  updateEntityCacheFrothyBlocks (blockProgress: BlockProgressInterface, clearEntitiesCacheInterval = DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL): void {
+    // Set latest block in frothy region to cachedEntities.frothyBlocks map.
+    if (!this.cachedEntities.frothyBlocks.has(blockProgress.blockHash)) {
+      this.cachedEntities.frothyBlocks.set(
+        blockProgress.blockHash,
+        {
+          blockNumber: blockProgress.blockNumber,
+          parentHash: blockProgress.parentHash,
+          entities: new Map()
+        }
+      );
+    }
+
+    log(`Size of cachedEntities.frothyBlocks map: ${this.cachedEntities.frothyBlocks.size}`);
+    this._measureCachedPrunedEntities();
+
+    // Check if it is time to clear entities cache.
+    if (blockProgress.blockNumber % clearEntitiesCacheInterval === 0) {
+      log(`Clearing cachedEntities.latestPrunedEntities at block ${blockProgress.blockNumber}`);
+      // Clearing only pruned region as frothy region cache gets updated in pruning queue.
+      this.cachedEntities.latestPrunedEntities.clear();
+      log(`Cleared cachedEntities.latestPrunedEntities. Map size: ${this.cachedEntities.latestPrunedEntities.size}`);
+    }
+  }
+
+  pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
+    const canonicalBlock = this.cachedEntities.frothyBlocks.get(canonicalBlockHash);
+
+    if (canonicalBlock) {
+      // Update latestPrunedEntities map with entities from latest canonical block.
+      canonicalBlock.entities.forEach((entityIdMap, entityTableName) => {
+        entityIdMap.forEach((data, id) => {
+          let entityIdMap = this.cachedEntities.latestPrunedEntities.get(entityTableName);
+
+          if (!entityIdMap) {
+            entityIdMap = new Map();
+          }
+
+          entityIdMap.set(id, data);
+          this.cachedEntities.latestPrunedEntities.set(entityTableName, entityIdMap);
+        });
+      });
+    }
+
+    // Remove pruned blocks from frothyBlocks.
+    const prunedBlockHashes = Array.from(this.cachedEntities.frothyBlocks.entries())
+      .filter(([, value]) => value.blockNumber <= canonicalBlockNumber)
+      .map(([blockHash]) => blockHash);
+
+    prunedBlockHashes.forEach(blockHash => this.cachedEntities.frothyBlocks.delete(blockHash));
+  }
+
+  _measureCachedPrunedEntities () {
+    const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
+      .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
+
+    log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
+    cachePrunedEntitiesCount.set(totalEntities);
   }
 }

@@ -7,10 +7,11 @@ import { ValueTransformer } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 
-import { GraphDecimal, jsonBigIntStringReplacer } from '@cerc-io/util';
+import { GraphDecimal, IndexerInterface, jsonBigIntStringReplacer, StateInterface } from '@cerc-io/util';
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { TypeId, EthereumValueKind, ValueKind } from './types';
-import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
+import { Database } from './database';
 
 const log = debug('vulcanize:utils');
 
@@ -872,4 +873,27 @@ export const fromStateEntityValues = (
   }
 
   return stateEntity[propertyName];
+};
+
+export const updateEntitiesFromState = async (database: Database, indexer: IndexerInterface, state: StateInterface) => {
+  const data = indexer.getStateData(state);
+
+  // Get relations for subgraph entity
+  assert(indexer.getRelationsMap);
+  const relationsMap = indexer.getRelationsMap();
+
+  for (const [entityName, entities] of Object.entries(data.state)) {
+    const result = Array.from(relationsMap.entries())
+      .find(([key]) => key.name === entityName);
+
+    const relations = result ? result[1] : {};
+
+    log(`Updating entities from State for entity ${entityName}`);
+    console.time(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
+    for (const [id, entityData] of Object.entries(entities as any)) {
+      const dbData = database.fromState(state.block, entityName, entityData, relations);
+      await database.saveEntity(entityName, dbData);
+    }
+    console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
+  }
 };
