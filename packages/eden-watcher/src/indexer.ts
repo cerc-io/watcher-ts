@@ -522,8 +522,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
+  async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
+    return this._baseIndexer.saveBlockAndFetchEvents(block, this._saveBlockAndFetchEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -939,32 +939,35 @@ export class Indexer implements IndexerInterface {
     });
   }
 
-  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+  async _saveBlockAndFetchEvents ({
+    cid: blockCid,
+    blockHash,
+    blockNumber,
+    blockTimestamp,
+    parentHash
+  }: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
     assert(blockHash);
-    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
-    const blockPromise = this._ethClient.getBlockByHash(blockHash);
-    let logs: any[];
 
-    console.time('time:indexer#_fetchAndSaveEvents-fetch-logs');
+    let logsPromise: Promise<any>;
+
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this._baseIndexer.getWatchedContracts();
       const addresses = watchedContracts.map((watchedContract): string => {
         return watchedContract.address;
       });
 
-      const logsResult = await this._ethClient.getLogs({
+      logsPromise = this._ethClient.getLogs({
         blockHash,
         addresses
       });
-
-      logs = logsResult.logs;
     } else {
-      ({ logs } = await this._ethClient.getLogs({ blockHash }));
+      logsPromise = this._ethClient.getLogs({ blockHash });
     }
-    console.timeEnd('time:indexer#_fetchAndSaveEvents-fetch-logs');
 
-    let [
-      { block },
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+
+    const [
+      { logs },
       {
         allEthHeaderCids: {
           nodes: [
@@ -976,7 +979,7 @@ export class Indexer implements IndexerInterface {
           ]
         }
       }
-    ] = await Promise.all([blockPromise, transactionsPromise]);
+    ] = await Promise.all([logsPromise, transactionsPromise]);
 
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
@@ -1010,7 +1013,7 @@ export class Indexer implements IndexerInterface {
         const extraInfo: { [key: string]: any } = { topics, data, tx };
 
         const contract = ethers.utils.getAddress(address);
-        const watchedContract = await this.isWatchedContract(contract);
+        const watchedContract = this.isWatchedContract(contract);
 
         if (watchedContract) {
           const eventDetails = this.parseEventNameAndArgs(watchedContract.kind, logObj);
@@ -1045,20 +1048,20 @@ export class Indexer implements IndexerInterface {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      block = {
+      const block = {
         cid: blockCid,
         blockHash,
-        blockNumber: block.number,
-        blockTimestamp: block.timestamp,
-        parentHash: block.parent.hash
+        blockNumber,
+        blockTimestamp,
+        parentHash
       };
 
-      console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
+      console.time(`time:indexer#_saveBlockAndFetchEvents-db-save-${blockNumber}`);
       const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, dbEvents);
       await dbTx.commitTransaction();
-      console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
+      console.timeEnd(`time:indexer#_saveBlockAndFetchEvents-db-save-${blockNumber}`);
 
-      return blockProgress;
+      return [blockProgress, []];
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;

@@ -330,7 +330,7 @@ export class JobRunner {
       // Delay required to process block.
       await wait(jobDelayInMilliSecs);
       console.time('time:job-runner#_indexBlock-fetch-block-events');
-      blockProgress = await this._indexer.fetchBlockWithEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
+      [blockProgress] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp: timestamp });
       console.timeEnd('time:job-runner#_indexBlock-fetch-block-events');
     }
 

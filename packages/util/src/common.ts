@@ -21,7 +21,7 @@ const DEFAULT_EVENTS_IN_BATCH = 50;
 const log = debug('vulcanize:common');
 
 export interface PrefetchedBlock {
-  block: any;
+  block: BlockProgressInterface;
   events: DeepPartial<EventInterface>[];
 }
 
@@ -254,11 +254,9 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
   // TODO Catch errors and continue to process available events instead of retrying for whole range because of an error.
   const blockAndEventPromises = blocks.map(async block => {
     block.blockTimestamp = block.timestamp;
+    const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
 
-    assert(indexer.fetchBlockEvents);
-    const events = await indexer.fetchBlockEvents(block);
-
-    return { block, events };
+    return { blockProgress, events };
   });
 
   return Promise.all(blockAndEventPromises);

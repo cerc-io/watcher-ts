@@ -237,14 +237,14 @@ export class Indexer {
     return this._db.getEvent(id);
   }
 
-  async fetchBlockWithEvents (block: DeepPartial<BlockProgressInterface>, fetchAndSaveEvents: (block: DeepPartial<BlockProgressInterface>) => Promise<BlockProgressInterface>): Promise<BlockProgressInterface> {
+  async saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>, saveBlockAndFetchEvents: (block: DeepPartial<BlockProgressInterface>) => Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
     assert(block.blockHash);
 
     log(`getBlockEvents: fetching from upstream server ${block.blockHash}`);
-    const blockProgress = await fetchAndSaveEvents(block);
+    const [blockProgress, events] = await saveBlockAndFetchEvents(block);
     log(`getBlockEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
 
-    return blockProgress;
+    return [blockProgress, events];
   }
 
   async fetchBlockEvents (block: DeepPartial<BlockProgressInterface>, fetchEvents: (block: DeepPartial<BlockProgressInterface>) => Promise<DeepPartial<EventInterface>[]>): Promise<DeepPartial<EventInterface>[]> {

@@ -398,8 +398,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
+  async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
+    return this._baseIndexer.saveBlockAndFetchEvents(block, this._saveBlockAndFetchEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -422,12 +422,15 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+  async _saveBlockAndFetchEvents ({
+    cid: blockCid,
+    blockHash,
+    blockNumber,
+    blockTimestamp,
+    parentHash
+  }: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
     assert(blockHash);
-    let [{ block }, { logs }] = await Promise.all([
-      this._ethClient.getBlockByHash(blockHash),
-      this._ethClient.getLogs({ blockHash })
-    ]);
+    const { logs } = await this._ethClient.getLogs({ blockHash });
 
     const dbEvents: Array<DeepPartial<Event>> = [];
 
@@ -489,12 +492,12 @@ export class Indexer implements IndexerInterface {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      block = {
+      const block = {
         cid: blockCid,
         blockHash,
-        blockNumber: block.number,
-        blockTimestamp: block.timestamp,
-        parentHash: block.parent.hash
+        blockNumber,
+        blockTimestamp,
+        parentHash
       };
 
       console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
@@ -502,7 +505,7 @@ export class Indexer implements IndexerInterface {
       await dbTx.commitTransaction();
       console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 
-      return blockProgress;
+      return [blockProgress, []];
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;
