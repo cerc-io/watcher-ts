@@ -119,7 +119,7 @@ export interface IndexerInterface {
   processCheckpoint (blockHash: string): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
-  updateStateStatusMap (address: string, stateStatus: StateStatus): Promise<void>
+  updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
 }
 

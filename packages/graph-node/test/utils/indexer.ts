@@ -194,7 +194,7 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  async updateStateStatusMap (address: string, stateStatus: StateStatus): Promise<void> {
+  updateStateStatusMap (address: string, stateStatus: StateStatus): void {
     return undefined;
   }
 }
