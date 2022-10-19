@@ -8,12 +8,6 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -42,9 +36,9 @@
   ```
 
 * The following core services should be setup and running on localhost:
-  
+
   * `vulcanize/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
-  
+
   * `vulcanize/ipld-eth-server` [v4.0.3-alpha](https://github.com/vulcanize/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
 
 * In the [config file](./environments/local.toml):
@@ -53,7 +47,7 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-  * Update the `server` config with state checkpoint settings and provide the IPFS API address.
+  * Update the `server` config with state checkpoint settings.
 
 ## Customize
 
@@ -65,11 +59,11 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial state `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial `State` using the `Indexer` object.
 
-  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
 
-  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `State` using the `Indexer` object.
 
 ## Run
 
@@ -136,10 +130,10 @@ GQL console: http://localhost:3006/graphql
 
   * To reset the watcher to a previous block number:
 
-    * Reset state:
+    * Reset watcher:
 
       ```bash
-      yarn reset state --block-number <previous-block-number>
+      yarn reset watcher --block-number <previous-block-number>
       ```
 
     * Reset job-queue:

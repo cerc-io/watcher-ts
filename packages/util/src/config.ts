@@ -36,7 +36,6 @@ export interface ServerConfig {
   kind: string;
   checkpointing: boolean;
   checkpointInterval: number;
-  ipfsApiAddr: string;
   subgraphPath: string;
   disableSubgraphState: boolean;
   wasmRestartBlocksInterval: number;

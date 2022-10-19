@@ -9,8 +9,9 @@ import {
   ServerConfig as ServerConfigInterface,
   ValueResult,
   ContractInterface,
-  IpldStatus as IpldStatusInterface,
-  IPLDBlockInterface
+  StateStatus,
+  StateSyncStatusInterface,
+  StateInterface
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -107,7 +108,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(blockNumber);
 
-    return new SyncStatus();
+    return {} as SyncStatusInterface;
   }
 
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface> {
@@ -115,7 +116,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(force);
 
-    return new SyncStatus();
+    return {} as SyncStatusInterface;
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface> {
@@ -123,7 +124,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(force);
 
-    return new SyncStatus();
+    return {} as SyncStatusInterface;
   }
 
   async markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void> {
@@ -157,6 +158,22 @@ export class Indexer implements IndexerInterface {
     assert(event);
   }
 
+  async getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined> {
+    return undefined;
+  }
+
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
+    return {} as StateSyncStatusInterface;
+  }
+
+  async updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
+    return {} as StateSyncStatusInterface;
+  }
+
+  async getLatestCanonicalBlock (): Promise<BlockProgressInterface> {
+    return {} as BlockProgressInterface;
+  }
+
   isWatchedContract (address : string): ContractInterface | undefined {
     return undefined;
   }
@@ -165,36 +182,20 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  getIPLDData (ipldBlock: IPLDBlockInterface): any {
+  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
     return undefined;
   }
 
-  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatusInterface): Promise<void> {
+  async processCheckpoint (blockHash: string): Promise<void> {
     return undefined;
   }
-}
 
-class SyncStatus implements SyncStatusInterface {
-  id: number;
-  chainHeadBlockHash: string;
-  chainHeadBlockNumber: number;
-  latestIndexedBlockHash: string;
-  latestIndexedBlockNumber: number;
-  latestCanonicalBlockHash: string;
-  latestCanonicalBlockNumber: number;
-  initialIndexedBlockHash: string;
-  initialIndexedBlockNumber: number;
+  getStateData (state: StateInterface): any {
+    return undefined;
+  }
 
-  constructor () {
-    this.id = 0;
-    this.chainHeadBlockHash = '0';
-    this.chainHeadBlockNumber = 0;
-    this.latestIndexedBlockHash = '0';
-    this.latestIndexedBlockNumber = 0;
-    this.latestCanonicalBlockHash = '0';
-    this.latestCanonicalBlockNumber = 0;
-    this.initialIndexedBlockHash = '0';
-    this.initialIndexedBlockNumber = 0;
+  updateStateStatusMap (address: string, stateStatus: StateStatus): void {
+    return undefined;
   }
 }
 
@@ -205,7 +206,6 @@ class ServerConfig implements ServerConfigInterface {
   kind: string;
   checkpointing: boolean;
   checkpointInterval: number;
-  ipfsApiAddr: string;
   subgraphPath: string;
   disableSubgraphState: boolean;
   wasmRestartBlocksInterval: number;
@@ -220,7 +220,6 @@ class ServerConfig implements ServerConfigInterface {
     this.kind = '';
     this.checkpointing = false;
     this.checkpointInterval = 0;
-    this.ipfsApiAddr = '';
     this.subgraphPath = '';
     this.disableSubgraphState = false;
     this.wasmRestartBlocksInterval = 0;

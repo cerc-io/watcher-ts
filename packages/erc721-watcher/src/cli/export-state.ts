@@ -61,16 +61,16 @@ const main = async (): Promise<void> => {
   const exportData: any = {
     snapshotBlock: {},
     contracts: [],
-    ipldCheckpoints: []
+    stateCheckpoints: []
   };
 
   const contracts = await db.getContracts();
-  let block = await indexer.getLatestHooksProcessedBlock();
+  let block = await indexer.getLatestStateIndexedBlock();
   assert(block);
 
   if (argv.blockNumber) {
     if (argv.blockNumber > block.blockNumber) {
-      throw new Error(`Export snapshot block height ${argv.blockNumber} should be less than latest hooks processed block height ${block.blockNumber}`);
+      throw new Error(`Export snapshot block height ${argv.blockNumber} should be less than latest state indexed block height ${block.blockNumber}`);
     }
 
     const blocksAtSnapshotHeight = await indexer.getBlocksAtHeight(argv.blockNumber, false);
@@ -107,19 +107,15 @@ const main = async (): Promise<void> => {
     if (contract.checkpoint) {
       await indexer.createCheckpoint(contract.address, block.blockHash);
 
-      const ipldBlock = await indexer.getLatestIPLDBlock(contract.address, StateKind.Checkpoint, block.blockNumber);
-      assert(ipldBlock);
+      const state = await indexer.getLatestState(contract.address, StateKind.Checkpoint, block.blockNumber);
+      assert(state);
 
-      const data = indexer.getIPLDData(ipldBlock);
+      const data = indexer.getStateData(state);
 
-      if (indexer.isIPFSConfigured()) {
-        await indexer.pushToIPFS(data);
-      }
-
-      exportData.ipldCheckpoints.push({
-        contractAddress: ipldBlock.contractAddress,
-        cid: ipldBlock.cid,
-        kind: ipldBlock.kind,
+      exportData.stateCheckpoints.push({
+        contractAddress: state.contractAddress,
+        cid: state.cid,
+        kind: state.kind,
         data
       });
     }

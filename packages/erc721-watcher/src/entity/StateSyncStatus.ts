@@ -5,16 +5,13 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity()
-export class IpldStatus {
+export class StateSyncStatus {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column('integer')
-  latestHooksBlockNumber!: number;
+  latestIndexedBlockNumber!: number;
 
   @Column('integer', { nullable: true })
   latestCheckpointBlockNumber!: number;
-
-  @Column('integer', { nullable: true })
-  latestIPFSBlockNumber!: number;
 }

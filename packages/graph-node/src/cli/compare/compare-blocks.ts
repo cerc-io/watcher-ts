@@ -12,7 +12,17 @@ import _ from 'lodash';
 import { getConfig as getWatcherConfig, wait } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
-import { checkGQLEntityInIPLDState, compareQuery, Config, getIPLDsByBlock, checkIPLDMetaData, combineIPLDState, getClients, getConfig, checkGQLEntitiesInIPLDState } from './utils';
+import {
+  checkGQLEntityInState,
+  compareQuery,
+  Config,
+  getStatesByBlock,
+  checkStateMetaData,
+  combineState,
+  getClients,
+  getConfig,
+  checkGQLEntitiesInState
+} from './utils';
 import { Database } from '../../database';
 import { getSubgraphConfig } from '../../utils';
 
@@ -117,8 +127,14 @@ export const main = async (): Promise<void> => {
     await db.init();
 
     if (config.watcher.verifyState) {
-      const { dataSources } = await getSubgraphConfig(watcherConfig.server.subgraphPath);
-      subgraphContracts = dataSources.map((dataSource: any) => dataSource.source.address);
+      // Use provided contracts if available; else read from subraph config.
+      if (config.watcher.contracts) {
+        subgraphContracts = config.watcher.contracts;
+      } else {
+        const { dataSources } = await getSubgraphConfig(watcherConfig.server.subgraphPath);
+        subgraphContracts = dataSources.map((dataSource: any) => dataSource.source.address);
+      }
+
       const watcherEndpoint = config.endpoints[config.watcher.endpoint] as string;
       subgraphGQLClient = new GraphQLClient({ gqlEndpoint: watcherEndpoint });
     }
@@ -134,7 +150,7 @@ export const main = async (): Promise<void> => {
       const block = { number: blockNumber };
       const updatedEntityIds: { [entityName: string]: string[] } = {};
       const updatedEntities: Set<string> = new Set();
-      let ipldStateByBlock = {};
+      let stateByBlock = {};
       assert(db);
       console.time(`time:compare-block-${blockNumber}`);
 
@@ -166,18 +182,18 @@ export const main = async (): Promise<void> => {
         assert(db);
         const [block] = await db.getBlocksAtHeight(blockNumber, false);
         assert(subgraphGQLClient);
-        const contractIPLDsByBlock = await getIPLDsByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
+        const contractStatesByBlock = await getStatesByBlock(subgraphGQLClient, subgraphContracts, block.blockHash);
 
-        // Check meta data for each IPLD block found
-        contractIPLDsByBlock.flat().forEach(contractIPLD => {
-          const ipldMetaDataDiff = checkIPLDMetaData(contractIPLD, contractLatestStateCIDMap, rawJson);
-          if (ipldMetaDataDiff) {
-            log('Results mismatch for IPLD meta data:', ipldMetaDataDiff);
+        // Check meta data for each State entry found
+        contractStatesByBlock.flat().forEach(contractStateEntry => {
+          const stateMetaDataDiff = checkStateMetaData(contractStateEntry, contractLatestStateCIDMap, rawJson);
+          if (stateMetaDataDiff) {
+            log('Results mismatch for State meta data:', stateMetaDataDiff);
             diffFound = true;
           }
         });
 
-        ipldStateByBlock = combineIPLDState(contractIPLDsByBlock.flat());
+        stateByBlock = combineState(contractStatesByBlock.flat());
       }
 
       await blockDelay;
@@ -205,10 +221,10 @@ export const main = async (): Promise<void> => {
               );
 
               if (config.watcher.verifyState) {
-                const ipldDiff = await checkGQLEntityInIPLDState(ipldStateByBlock, entityName, result[queryName], id, rawJson, config.watcher.skipFields);
+                const stateDiff = await checkGQLEntityInState(stateByBlock, entityName, result[queryName], id, rawJson, config.watcher.skipFields);
 
-                if (ipldDiff) {
-                  log('Results mismatch for IPLD state:', ipldDiff);
+                if (stateDiff) {
+                  log('Results mismatch for State:', stateDiff);
                   diffFound = true;
                 }
               }
@@ -236,10 +252,10 @@ export const main = async (): Promise<void> => {
                 ));
 
                 if (config.watcher.verifyState) {
-                  const ipldDiff = await checkGQLEntitiesInIPLDState(ipldStateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
+                  const stateDiff = await checkGQLEntitiesInState(stateByBlock, entityName, result[queryName], rawJson, config.watcher.skipFields);
 
-                  if (ipldDiff) {
-                    log('Results mismatch for IPLD state:', ipldDiff);
+                  if (stateDiff) {
+                    log('Results mismatch for State:', stateDiff);
                     diffFound = true;
                   }
                 }

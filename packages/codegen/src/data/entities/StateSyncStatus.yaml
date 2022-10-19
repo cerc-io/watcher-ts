@@ -1,18 +1,14 @@
-className: IpldStatus
+className: StateSyncStatus
 indexOn: []
 columns:
   - name: id
     tsType: number
     columnType: PrimaryGeneratedColumn
-  - name: latestHooksBlockNumber
+  - name: latestIndexedBlockNumber
     pgType: integer
     tsType: number
     columnType: Column
   - name: latestCheckpointBlockNumber
-    pgType: integer
-    tsType: number
-    columnType: Column
-  - name: latestIPFSBlockNumber
     pgType: integer
     tsType: number
     columnType: Column

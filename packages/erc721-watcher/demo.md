@@ -26,14 +26,14 @@
 
   ```bash
   docker-compose version
-  
+
   # docker-compose version 1.29.2, build 5becea4c
   ```
 
 * Run the stack-orchestrator
 
   ```bash
-  cd stack-orchestrator/helper-scripts 
+  cd stack-orchestrator/helper-scripts
   ```
 
   ```bash
@@ -45,22 +45,11 @@
     -p ../config.sh
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-
-  # API server listening on /ip4/127.0.0.1/tcp/5001
-  ```
-  The IPFS API address can be seen in the output.
-
-* In the [config file](./environments/local.toml) update the `server.ipfsApiAddr` config with the IPFS API address.
-
 * Create a postgres12 database for the watcher:
 
   ```bash
   sudo su - postgres
-  
+
   # If database already exists
   # dropdb erc721-watcher
 
@@ -135,7 +124,7 @@
   ```
 
 * Get the signer account address and export to a shell variable:
-  
+
   ```bash
   yarn account
   ```
@@ -262,11 +251,11 @@
 
   * A Transfer event to SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
-  * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the initial checkpoint IPLDBlock.
+  * An auto-generated `diff_staged` `State` should be added with parent CID pointing to the initial `checkpoint` `State`.
 
   * Custom property `transferCount` should be 1 initially.
 
-* Run the `getState` query at the endpoint to get the latest IPLDBlock for NFT_ADDRESS:
+* Run the `getState` query at the endpoint to get the latest `State` for NFT_ADDRESS:
 
   ```graphql
   query {
@@ -291,7 +280,7 @@
   }
   ```
 
-  * `diff` IPLDBlocks get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
+  * `diff` States get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
 
   * `data` contains the default state and also the custom state property `transferCount` that is indexed in [hooks.ts](./src/hooks.ts) file.
 
@@ -360,9 +349,9 @@
 
   * A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
-  * An auto-generated `diff_staged` IPLDBlock should be added with parent CID pointing to the previous IPLDBlock.
+  * An auto-generated `diff_staged` State should be added with parent CID pointing to the previous State.
 
-  * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query and in IPFS webUI mentioned in the later steps.
+  * Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query.
 
 * Get the latest blockHash and replace the blockHash in the above `eth_call` query. The result should be different and the token should be transferred to the recipient.
 
@@ -380,11 +369,7 @@
 
   * The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
 
-  * The IPLDBlock entries can be seen in pg-admin in table ipld_block.
-
-* All the diff and checkpoint IPLDBlocks should pushed to IPFS.
-
-* Open IPFS WebUI http://127.0.0.1:5001/webui and search for IPLDBlocks using their CIDs.
+  * The `State` entries can be seen in pg-admin in table `state`.
 
 * The state should have auto indexed data and also custom property `transferCount` according to code in [hooks](./src/hooks.ts) file `handleEvent` method.
 

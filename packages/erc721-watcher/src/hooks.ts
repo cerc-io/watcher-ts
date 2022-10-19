@@ -21,19 +21,19 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
   assert(blockHash);
   assert(contractAddress);
 
-  // Store the desired initial state in an IPLDBlock.
-  const ipldBlockData: any = {
+  // Store an empty State.
+  const stateData: any = {
     state: {}
   };
 
   // Use updateStateForElementaryType to update initial state with an elementary property.
-  // Eg. const ipldBlockData = updateStateForElementaryType(ipldBlockData, '_totalBalance', result.value.toString());
+  // Eg. const stateData = updateStateForElementaryType(stateData, '_totalBalance', result.value.toString());
 
   // Use updateStateForMappingType to update initial state with a nested property.
-  // Eg. const ipldBlockData = updateStateForMappingType(ipldBlockData, '_allowances', [owner, spender], allowance.value.toString());
+  // Eg. const stateData = updateStateForMappingType(stateData, '_allowances', [owner, spender], allowance.value.toString());
 
   // Return initial state data to be saved.
-  return ipldBlockData;
+  return stateData;
 }
 
 /**

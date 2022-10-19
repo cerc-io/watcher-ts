@@ -79,7 +79,7 @@ type PhisherStatusUpdatedEvent {
   isPhisher: Boolean!
 }
 
-type ResultIPLDBlock {
+type ResultState {
   block: _Block_!
   contractAddress: String!
   cid: String!
@@ -102,8 +102,8 @@ type Query {
   isRevoked(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
   isPhisher(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
   isMember(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
-  getStateByCID(cid: String!): ResultIPLDBlock
-  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
   getSyncStatus: SyncStatus
   latestBlock: Block_height
 }

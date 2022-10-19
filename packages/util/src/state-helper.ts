@@ -1,10 +1,12 @@
 import _ from 'lodash';
 import debug from 'debug';
+import * as codec from '@ipld/dag-cbor';
 
-import { BlockProgressInterface, GraphDatabaseInterface } from './types';
+import { BlockProgressInterface, GraphDatabaseInterface, StateInterface } from './types';
 import { jsonBigIntStringReplacer } from './misc';
+import { ResultState } from './indexer';
 
-const log = debug('vulcanize:ipld-helper');
+const log = debug('vulcanize:state-helper');
 
 export const updateStateForElementaryType = (initialObject: any, stateVariable: string, value: any): any => {
   const object = _.cloneDeep(initialObject);
@@ -21,17 +23,17 @@ export const updateStateForMappingType = (initialObject: any, stateVariable: str
   return _.setWith(object, keys, value, Object);
 };
 
-export const verifyCheckpointData = async (database: GraphDatabaseInterface, block: BlockProgressInterface, data: any) => {
+export const verifyCheckpointData = async (database: GraphDatabaseInterface, block: BlockProgressInterface, data: any): Promise<void> => {
   const { state } = data;
 
   for (const [entityName, idEntityMap] of Object.entries(state)) {
-    for (const [id, ipldEntity] of Object.entries(idEntityMap as {[key: string]: any})) {
+    for (const [id, stateEntity] of Object.entries(idEntityMap as {[key: string]: any})) {
       const entityData = await database.getEntity(entityName, id, block.blockHash) as any;
 
       // Compare entities.
-      const diffFound = Object.keys(ipldEntity)
+      const diffFound = Object.keys(stateEntity)
         .some(key => {
-          let ipldValue = ipldEntity[key];
+          let stateValue = stateEntity[key];
 
           if (key === 'blockNumber') {
             entityData.blockNumber = entityData._blockNumber;
@@ -41,23 +43,23 @@ export const verifyCheckpointData = async (database: GraphDatabaseInterface, blo
             entityData.blockHash = entityData._blockHash;
           }
 
-          if (typeof ipldEntity[key] === 'object' && ipldEntity[key]?.id) {
-            ipldValue = ipldEntity[key].id;
+          if (typeof stateEntity[key] === 'object' && stateEntity[key]?.id) {
+            stateValue = stateEntity[key].id;
           }
 
           if (
-            Array.isArray(ipldEntity[key]) &&
-            ipldEntity[key].length &&
-            ipldEntity[key][0].id
+            Array.isArray(stateEntity[key]) &&
+            stateEntity[key].length &&
+            stateEntity[key][0].id
           ) {
-            // Map IPLD entity 1 to N relation field array to match DB entity.
-            ipldValue = ipldEntity[key].map(({ id }: { id: string }) => id);
+            // Map State entity 1 to N relation field array to match DB entity.
+            stateValue = stateEntity[key].map(({ id }: { id: string }) => id);
 
             // Sort DB entity 1 to N relation field array.
             entityData[key] = entityData[key].sort((a: string, b: string) => a.localeCompare(b));
           }
 
-          return JSON.stringify(ipldValue) !== JSON.stringify(entityData[key], jsonBigIntStringReplacer);
+          return JSON.stringify(stateValue) !== JSON.stringify(entityData[key], jsonBigIntStringReplacer);
         });
 
       if (diffFound) {
@@ -67,4 +69,24 @@ export const verifyCheckpointData = async (database: GraphDatabaseInterface, blo
       }
     }
   }
+};
+
+export const getResultState = (state: StateInterface): ResultState => {
+  const block = state.block;
+
+  const data = codec.decode(Buffer.from(state.data)) as any;
+
+  return {
+    block: {
+      cid: block.cid,
+      hash: block.blockHash,
+      number: block.blockNumber,
+      timestamp: block.blockTimestamp,
+      parentHash: block.parentHash
+    },
+    contractAddress: state.contractAddress,
+    cid: state.cid,
+    kind: state.kind,
+    data: JSON.stringify(data)
+  };
 };

@@ -21,7 +21,7 @@ import { DEFAULT_LIMIT } from '../../database';
 
 const log = debug('vulcanize:compare-utils');
 
-const IPLD_STATE_QUERY = `
+const STATE_QUERY = `
 query getState($blockHash: String!, $contractAddress: String!, $kind: String){
   getState(blockHash: $blockHash, contractAddress: $contractAddress, kind: $kind){
     block {
@@ -63,7 +63,8 @@ export interface Config {
     entitiesDir: string;
     verifyState: boolean;
     endpoint: keyof EndpointConfig;
-    skipFields: EntitySkipFields[]
+    skipFields: EntitySkipFields[];
+    contracts: string[];
   }
   cache: {
     endpoint: keyof EndpointConfig;
@@ -169,24 +170,24 @@ export const getClients = async (config: Config, timeDiff: boolean, queryDir?: s
   };
 };
 
-export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}[][]> => {
-  // Fetch IPLD states for all contracts
+export const getStatesByBlock = async (client: GraphQLClient, contracts: string[], blockHash: string): Promise<{[key: string]: any}[][]> => {
+  // Fetch States for all contracts
   return Promise.all(contracts.map(async contract => {
     const { getState } = await client.query(
-      gql(IPLD_STATE_QUERY),
+      gql(STATE_QUERY),
       {
         blockHash,
         contractAddress: contract
       }
     );
 
-    const stateIPLDs = [];
+    const states = [];
 
     // If 'checkpoint' is found at the same block, fetch 'diff' as well
     if (getState && getState.kind === 'checkpoint' && getState.block.hash === blockHash) {
       // Check if 'init' present at the same block
       const { getState: getInitState } = await client.query(
-        gql(IPLD_STATE_QUERY),
+        gql(STATE_QUERY),
         {
           blockHash,
           contractAddress: contract,
@@ -195,13 +196,13 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
       );
 
       if (getInitState && getInitState.block.hash === blockHash) {
-        // Append the 'init' IPLD block to the result
-        stateIPLDs.push(getInitState);
+        // Append the 'init' state to the result
+        states.push(getInitState);
       }
 
-      // Check if 'diff' present at the same block
+      // Check if 'diff' state present at the same block
       const { getState: getDiffState } = await client.query(
-        gql(IPLD_STATE_QUERY),
+        gql(STATE_QUERY),
         {
           blockHash,
           contractAddress: contract,
@@ -210,25 +211,25 @@ export const getIPLDsByBlock = async (client: GraphQLClient, contracts: string[]
       );
 
       if (getDiffState && getDiffState.block.hash === blockHash) {
-        // Append the 'diff' IPLD block to the result
-        stateIPLDs.push(getDiffState);
+        // Append the 'diff' state to the result
+        states.push(getDiffState);
       }
     }
 
-    // Append the IPLD block to the result
-    stateIPLDs.push(getState);
+    // Append the state to the result
+    states.push(getState);
 
-    return stateIPLDs;
+    return states;
   }));
 };
 
-export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLatestStateCIDMap: Map<string, { diff: string, checkpoint: string }>, rawJson: boolean) => {
-  // Return if IPLD for a contract not found
-  if (!contractIPLD) {
+export const checkStateMetaData = (contractState: {[key: string]: any}, contractLatestStateCIDMap: Map<string, { diff: string, checkpoint: string }>, rawJson: boolean) => {
+  // Return if State for a contract not found
+  if (!contractState) {
     return;
   }
 
-  const { contractAddress, cid, kind, block } = contractIPLD;
+  const { contractAddress, cid, kind, block } = contractState;
 
   const parentCIDs = contractLatestStateCIDMap.get(contractAddress);
   assert(parentCIDs);
@@ -246,7 +247,7 @@ export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLa
   contractLatestStateCIDMap.set(contractAddress, nextParentCIDs);
 
   // Actual meta data from the GQL result
-  const data = JSON.parse(contractIPLD.data);
+  const data = JSON.parse(contractState.data);
 
   // If parentCID not initialized (is empty at start)
   // Take the expected parentCID from the actual data itself
@@ -279,13 +280,13 @@ export const checkIPLDMetaData = (contractIPLD: {[key: string]: any}, contractLa
   return compareObjects(expectedMetaData, data.meta, rawJson);
 };
 
-export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: string]: any} => {
-  const contractIPLDStates: {[key: string]: any}[] = contractIPLDs.map(contractIPLD => {
-    if (!contractIPLD) {
+export const combineState = (contractStateEntries: {[key: string]: any}[]): {[key: string]: any} => {
+  const contractStates: {[key: string]: any}[] = contractStateEntries.map(contractStateEntry => {
+    if (!contractStateEntry) {
       return {};
     }
 
-    const data = JSON.parse(contractIPLD.data);
+    const data = JSON.parse(contractStateEntry.data);
 
     // Apply default limit and sort by id on array type relation fields.
     Object.values(data.state)
@@ -309,18 +310,18 @@ export const combineIPLDState = (contractIPLDs: {[key: string]: any}[]): {[key: 
     return data.state;
   });
 
-  return contractIPLDStates.reduce((acc, state) => _.merge(acc, state));
+  return contractStates.reduce((acc, state) => _.merge(acc, state));
 };
 
-export const checkGQLEntityInIPLDState = async (
-  ipldState: {[key: string]: any},
+export const checkGQLEntityInState = async (
+  state: {[key: string]: any},
   entityName: string,
   entityResult: {[key: string]: any},
   id: string,
   rawJson: boolean,
   skipFields: EntitySkipFields[] = []
 ): Promise<string> => {
-  const ipldEntity = ipldState[entityName][id];
+  const stateEntity = state[entityName][id];
 
   // Filter __typename key in GQL result.
   entityResult = omitDeep(entityResult, '__typename');
@@ -329,24 +330,24 @@ export const checkGQLEntityInIPLDState = async (
   skipFields.forEach(({ entity, fields }) => {
     if (entityName === entity) {
       omitDeep(entityResult, fields);
-      omitDeep(ipldEntity, fields);
+      omitDeep(stateEntity, fields);
     }
   });
 
-  const diff = compareObjects(entityResult, ipldEntity, rawJson);
+  const diff = compareObjects(entityResult, stateEntity, rawJson);
 
   return diff;
 };
 
-export const checkGQLEntitiesInIPLDState = async (
-  ipldState: {[key: string]: any},
+export const checkGQLEntitiesInState = async (
+  state: {[key: string]: any},
   entityName: string,
   entitiesResult: any[],
   rawJson: boolean,
   skipFields: EntitySkipFields[] = []
 ): Promise<string> => {
   // Form entities from state to compare with GQL result
-  const stateEntities = ipldState[entityName];
+  const stateEntities = state[entityName];
 
   for (const entityResult of entitiesResult) {
     const stateEntity = stateEntities[entityResult.id];

@@ -18,13 +18,13 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
   assert(blockHash);
   assert(contractAddress);
 
-  // Store an empty state in an IPLDBlock.
-  const ipldBlockData: any = {
+  // Store an empty State.
+  const stateData: any = {
     state: {}
   };
 
   // Return initial state data to be saved.
-  return ipldBlockData;
+  return stateData;
 }
 
 /**

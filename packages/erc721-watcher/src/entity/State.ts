@@ -3,14 +3,16 @@
 //
 
 import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
+
 import { StateKind } from '@cerc-io/util';
+
 import { BlockProgress } from './BlockProgress';
 
 @Entity()
 @Index(['cid'], { unique: true })
 @Index(['block', 'contractAddress'])
 @Index(['block', 'contractAddress', 'kind'], { unique: true })
-export class IPLDBlock {
+export class State {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -23,7 +25,10 @@ export class IPLDBlock {
   @Column('varchar')
   cid!: string;
 
-  @Column({ type: 'enum', enum: StateKind })
+  @Column({
+    type: 'enum',
+    enum: StateKind
+  })
   kind!: StateKind;
 
   @Column('bytea')

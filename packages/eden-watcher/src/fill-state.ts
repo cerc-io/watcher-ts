@@ -31,7 +31,7 @@ export const fillState = async (
   log(`Filling state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
 
   // Check that there are no existing diffs in this range
-  const existingStates = await indexer.getIPLDBlocks({ block: { blockNumber: Between(startBlock, endBlock) } });
+  const existingStates = await indexer.getStates({ block: { blockNumber: Between(startBlock, endBlock) } });
   if (existingStates.length > 0) {
     log('found existing state(s) in the given range');
     process.exit(1);
@@ -97,26 +97,11 @@ export const fillState = async (
 
     // Persist subgraph state to the DB
     await indexer.dumpSubgraphState(blockHash, true);
-    await indexer.updateIPLDStatusHooksBlock(blockNumber);
+    await indexer.updateStateSyncStatusIndexedBlock(blockNumber);
 
     // Create checkpoints
     await indexer.processCheckpoint(blockHash);
-    await indexer.updateIPLDStatusCheckpointBlock(blockNumber);
-
-    // TODO: Push state to IPFS in separate process.
-    if (indexer.isIPFSConfigured()) {
-      // Get IPLDBlocks for the given blocHash.
-      const ipldBlocks = await indexer.getIPLDBlocksByHash(blockHash);
-
-      // Push all the IPLDBlocks to IPFS.
-      for (const ipldBlock of ipldBlocks) {
-        const data = indexer.getIPLDData(ipldBlock);
-        await indexer.pushToIPFS(data);
-      }
-
-      // Update the IPLD status.
-      await indexer.updateIPLDStatusIPFSBlock(blockNumber);
-    }
+    await indexer.updateStateSyncStatusCheckpointBlock(blockNumber);
 
     console.timeEnd(`time:fill-state-${blockNumber}`);
   }

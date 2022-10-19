@@ -11,9 +11,9 @@ import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, W
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
-import { IpldStatus } from './entity/IpldStatus';
+import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
-import { IPLDBlock } from './entity/IPLDBlock';
+import { State } from './entity/State';
 import { SupportsInterface } from './entity/SupportsInterface';
 import { BalanceOf } from './entity/BalanceOf';
 import { OwnerOf } from './entity/OwnerOf';
@@ -300,69 +300,69 @@ export class Database implements DatabaseInterface {
     return repo.save(entity);
   }
 
-  getNewIPLDBlock (): IPLDBlock {
-    return new IPLDBlock();
+  getNewState (): State {
+    return new State();
   }
 
-  async getIPLDBlocks (where: FindConditions<IPLDBlock>): Promise<IPLDBlock[]> {
-    const repo = this._conn.getRepository(IPLDBlock);
+  async getStates (where: FindConditions<State>): Promise<State[]> {
+    const repo = this._conn.getRepository(State);
 
-    return this._baseDatabase.getIPLDBlocks(repo, where);
+    return this._baseDatabase.getStates(repo, where);
   }
 
-  async getLatestIPLDBlock (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<IPLDBlock | undefined> {
-    const repo = this._conn.getRepository(IPLDBlock);
+  async getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<State | undefined> {
+    const repo = this._conn.getRepository(State);
 
-    return this._baseDatabase.getLatestIPLDBlock(repo, contractAddress, kind, blockNumber);
+    return this._baseDatabase.getLatestState(repo, contractAddress, kind, blockNumber);
   }
 
-  async getPrevIPLDBlock (blockHash: string, contractAddress: string, kind?: string): Promise<IPLDBlock | undefined> {
-    const repo = this._conn.getRepository(IPLDBlock);
+  async getPrevState (blockHash: string, contractAddress: string, kind?: string): Promise<State | undefined> {
+    const repo = this._conn.getRepository(State);
 
-    return this._baseDatabase.getPrevIPLDBlock(repo, blockHash, contractAddress, kind);
+    return this._baseDatabase.getPrevState(repo, blockHash, contractAddress, kind);
   }
 
-  // Fetch all diff IPLDBlocks after the specified block number.
-  async getDiffIPLDBlocksInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<IPLDBlock[]> {
-    const repo = this._conn.getRepository(IPLDBlock);
+  // Fetch all diff States after the specified block number.
+  async getDiffStatesInRange (contractAddress: string, startblock: number, endBlock: number): Promise<State[]> {
+    const repo = this._conn.getRepository(State);
 
-    return this._baseDatabase.getDiffIPLDBlocksInRange(repo, contractAddress, startBlock, endBlock);
+    return this._baseDatabase.getDiffStatesInRange(repo, contractAddress, startblock, endBlock);
   }
 
-  async saveOrUpdateIPLDBlock (dbTx: QueryRunner, ipldBlock: IPLDBlock): Promise<IPLDBlock> {
-    const repo = dbTx.manager.getRepository(IPLDBlock);
+  async saveOrUpdateState (dbTx: QueryRunner, state: State): Promise<State> {
+    const repo = dbTx.manager.getRepository(State);
 
-    return this._baseDatabase.saveOrUpdateIPLDBlock(repo, ipldBlock);
+    return this._baseDatabase.saveOrUpdateState(repo, state);
   }
 
-  async removeIPLDBlocks (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
-    const repo = dbTx.manager.getRepository(IPLDBlock);
+  async removeStates (dbTx: QueryRunner, blockNumber: number, kind: string): Promise<void> {
+    const repo = dbTx.manager.getRepository(State);
 
-    await this._baseDatabase.removeIPLDBlocks(repo, blockNumber, kind);
+    await this._baseDatabase.removeStates(repo, blockNumber, kind);
   }
 
-  async getIPLDStatus (): Promise<IpldStatus | undefined> {
-    const repo = this._conn.getRepository(IpldStatus);
+  async removeStatesAfterBlock (dbTx: QueryRunner, blockNumber: number): Promise<void> {
+    const repo = dbTx.manager.getRepository(State);
 
-    return this._baseDatabase.getIPLDStatus(repo);
+    await this._baseDatabase.removeStatesAfterBlock(repo, blockNumber);
   }
 
-  async updateIPLDStatusHooksBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
-    const repo = queryRunner.manager.getRepository(IpldStatus);
+  async getStateSyncStatus (): Promise<StateSyncStatus | undefined> {
+    const repo = this._conn.getRepository(StateSyncStatus);
 
-    return this._baseDatabase.updateIPLDStatusHooksBlock(repo, blockNumber, force);
+    return this._baseDatabase.getStateSyncStatus(repo);
   }
 
-  async updateIPLDStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
-    const repo = queryRunner.manager.getRepository(IpldStatus);
+  async updateStateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+    const repo = queryRunner.manager.getRepository(StateSyncStatus);
 
-    return this._baseDatabase.updateIPLDStatusCheckpointBlock(repo, blockNumber, force);
+    return this._baseDatabase.updateStateSyncStatusIndexedBlock(repo, blockNumber, force);
   }
 
-  async updateIPLDStatusIPFSBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<IpldStatus> {
-    const repo = queryRunner.manager.getRepository(IpldStatus);
+  async updateStateSyncStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+    const repo = queryRunner.manager.getRepository(StateSyncStatus);
 
-    return this._baseDatabase.updateIPLDStatusIPFSBlock(repo, blockNumber, force);
+    return this._baseDatabase.updateStateSyncStatusCheckpointBlock(repo, blockNumber, force);
   }
 
   async getContracts (): Promise<Contract[]> {

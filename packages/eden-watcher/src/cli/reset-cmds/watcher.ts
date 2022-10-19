@@ -2,27 +2,41 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import path from 'path';
 import debug from 'debug';
 import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
 import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
 import { BlockProgress } from '../../entity/BlockProgress';
+import { Producer } from '../../entity/Producer';
+import { ProducerSet } from '../../entity/ProducerSet';
+import { ProducerSetChange } from '../../entity/ProducerSetChange';
+import { ProducerRewardCollectorChange } from '../../entity/ProducerRewardCollectorChange';
+import { RewardScheduleEntry } from '../../entity/RewardScheduleEntry';
+import { RewardSchedule } from '../../entity/RewardSchedule';
+import { ProducerEpoch } from '../../entity/ProducerEpoch';
+import { Block } from '../../entity/Block';
+import { Epoch } from '../../entity/Epoch';
+import { SlotClaim } from '../../entity/SlotClaim';
+import { Slot } from '../../entity/Slot';
+import { Staker } from '../../entity/Staker';
+import { Network } from '../../entity/Network';
+import { Distributor } from '../../entity/Distributor';
+import { Distribution } from '../../entity/Distribution';
+import { Claim } from '../../entity/Claim';
+import { Slash } from '../../entity/Slash';
+import { Account } from '../../entity/Account';
 
-import { MultiNonce } from '../../entity/MultiNonce';
-import { _Owner } from '../../entity/_Owner';
-import { IsRevoked } from '../../entity/IsRevoked';
-import { IsPhisher } from '../../entity/IsPhisher';
-import { IsMember } from '../../entity/IsMember';
+const log = debug('vulcanize:reset-watcher');
 
-const log = debug('vulcanize:reset-state');
+export const command = 'watcher';
 
-export const command = 'state';
-
-export const desc = 'Reset state to block number';
+export const desc = 'Reset watcher to a block number';
 
 export const builder = {
   blockNumber: {
@@ -39,6 +53,11 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
+  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../../entity/*'));
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
+
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 
@@ -48,8 +67,11 @@ export const handler = async (argv: any): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
+  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
+
+  graphWatcher.setIndexer(indexer);
+  await graphWatcher.init();
 
   const blockProgresses = await indexer.getBlocksAtHeight(argv.blockNumber, false);
   assert(blockProgresses.length, `No blocks at specified block number ${argv.blockNumber}`);
@@ -59,7 +81,7 @@ export const handler = async (argv: any): Promise<void> => {
   const dbTx = await db.createTransactionRunner();
 
   try {
-    const entities = [BlockProgress, MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
+    const entities = [BlockProgress, Producer, ProducerSet, ProducerSetChange, ProducerRewardCollectorChange, RewardScheduleEntry, RewardSchedule, ProducerEpoch, Block, Epoch, SlotClaim, Slot, Staker, Network, Distributor, Distribution, Claim, Slash, Account];
 
     for (const entity of entities) {
       await db.deleteEntitiesByConditions<any>(dbTx, entity, { blockNumber: MoreThan(argv.blockNumber) });
@@ -76,19 +98,15 @@ export const handler = async (argv: any): Promise<void> => {
       await indexer.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
     }
 
-    const ipldStatus = await indexer.getIPLDStatus();
+    const stateSyncStatus = await indexer.getStateSyncStatus();
 
-    if (ipldStatus) {
-      if (ipldStatus.latestHooksBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusHooksBlock(blockProgress.blockNumber, true);
+    if (stateSyncStatus) {
+      if (stateSyncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateStateSyncStatusIndexedBlock(blockProgress.blockNumber, true);
       }
 
-      if (ipldStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusCheckpointBlock(blockProgress.blockNumber, true);
-      }
-
-      if (ipldStatus.latestIPFSBlockNumber > blockProgress.blockNumber) {
-        await indexer.updateIPLDStatusIPFSBlock(blockProgress.blockNumber, true);
+      if (stateSyncStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
+        await indexer.updateStateSyncStatusCheckpointBlock(blockProgress.blockNumber, true);
       }
     }
 
@@ -102,5 +120,5 @@ export const handler = async (argv: any): Promise<void> => {
     await dbTx.release();
   }
 
-  log('Reset state successfully');
+  log('Reset watcher successfully');
 };

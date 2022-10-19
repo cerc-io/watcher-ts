@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Vulcanize, Inc.
+// Copyright 2021 Vulcanize, Inc.
 //
 
 import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne } from 'typeorm';
@@ -12,7 +12,7 @@ import { BlockProgress } from './BlockProgress';
 @Index(['cid'], { unique: true })
 @Index(['block', 'contractAddress'])
 @Index(['block', 'contractAddress', 'kind'], { unique: true })
-export class IPLDBlock {
+export class State {
   @PrimaryGeneratedColumn()
   id!: number;
 

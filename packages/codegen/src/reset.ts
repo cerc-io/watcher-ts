@@ -9,22 +9,22 @@ import { Writable } from 'stream';
 
 const RESET_TEMPLATE_FILE = './templates/reset-template.handlebars';
 const RESET_JQ_TEMPLATE_FILE = './templates/reset-job-queue-template.handlebars';
+const RESET_WATCHER_TEMPLATE_FILE = './templates/reset-watcher-template.handlebars';
 const RESET_STATE_TEMPLATE_FILE = './templates/reset-state-template.handlebars';
-const RESET_IPLD_STATE_TEMPLATE_FILE = './templates/reset-ipld-state-template.handlebars';
 
 export class Reset {
   _queries: Array<any>;
   _resetTemplateString: string;
   _resetJQTemplateString: string;
+  _resetWatcherTemplateString: string;
   _resetStateTemplateString: string;
-  _resetIPLDStateTemplateString: string;
 
   constructor () {
     this._queries = [];
     this._resetTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_TEMPLATE_FILE)).toString();
     this._resetJQTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_JQ_TEMPLATE_FILE)).toString();
+    this._resetWatcherTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_WATCHER_TEMPLATE_FILE)).toString();
     this._resetStateTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_STATE_TEMPLATE_FILE)).toString();
-    this._resetIPLDStateTemplateString = fs.readFileSync(path.resolve(__dirname, RESET_IPLD_STATE_TEMPLATE_FILE)).toString();
   }
 
   /**
@@ -71,13 +71,13 @@ export class Reset {
    */
 
   /**
-   * Writes the reset.ts, job-queue.ts, state.ts files generated from templates to respective streams.
+   * Writes the reset.ts, job-queue.ts, watcher.ts, state.ts files generated from templates to respective streams.
    * @param resetOutStream A writable output stream to write the reset file to.
    * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
+   * @param resetWatcherOutStream A writable output stream to write the reset watcher file to.
    * @param resetStateOutStream A writable output stream to write the reset state file to.
-   * @param resetIPLDStateOutStream A writable output stream to write the reset IPLD state file to.
    */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetStateOutStream: Writable, resetIPLDStateOutStream: Writable | undefined, subgraphPath: string): void {
+  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetWatcherOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
     const resetTemplate = Handlebars.compile(this._resetTemplateString);
     const resetString = resetTemplate({});
     resetOutStream.write(resetString);
@@ -86,18 +86,16 @@ export class Reset {
     const resetJQString = resetJQTemplate({});
     resetJQOutStream.write(resetJQString);
 
-    const resetStateTemplate = Handlebars.compile(this._resetStateTemplateString);
+    const resetWatcherTemplate = Handlebars.compile(this._resetWatcherTemplateString);
     const obj = {
       queries: this._queries,
       subgraphPath
     };
-    const resetState = resetStateTemplate(obj);
-    resetStateOutStream.write(resetState);
+    const resetWatcher = resetWatcherTemplate(obj);
+    resetWatcherOutStream.write(resetWatcher);
 
-    if (resetIPLDStateOutStream) {
-      const resetIPLDStateTemplate = Handlebars.compile(this._resetIPLDStateTemplateString);
-      const resetIPLDStateString = resetIPLDStateTemplate({});
-      resetIPLDStateOutStream.write(resetIPLDStateString);
-    }
+    const resetStateTemplate = Handlebars.compile(this._resetStateTemplateString);
+    const resetState = resetStateTemplate({});
+    resetStateOutStream.write(resetState);
   }
 }

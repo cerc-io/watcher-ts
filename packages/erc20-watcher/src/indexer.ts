@@ -12,16 +12,17 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, IPFSClient, IpldStatus as IpldStatusInterface } from '@cerc-io/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, StateStatus } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
 import { fetchTokenDecimals, fetchTokenName, fetchTokenSymbol, fetchTokenTotalSupply } from './utils';
 import { SyncStatus } from './entity/SyncStatus';
+import { StateSyncStatus } from './entity/StateSyncStatus';
 import artifacts from './artifacts/ERC20.json';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract } from './entity/Contract';
-import { IPLDBlock } from './entity/IPLDBlock';
+import { State } from './entity/State';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -64,8 +65,7 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._serverMode = serverConfig.mode;
-    const ipfsClient = new IPFSClient(this._serverConfig.ipfsApiAddr);
-    this._baseIndexer = new BaseIndexer(serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue, ipfsClient);
+    this._baseIndexer = new BaseIndexer(serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
 
     const { abi, storageLayout } = artifacts;
 
@@ -250,8 +250,16 @@ export class Indexer implements IndexerInterface {
     );
   }
 
-  getIPLDData (ipldBlock: IPLDBlock): any {
-    return this._baseIndexer.getIPLDData(ipldBlock);
+  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
+    // TODO Implement
+  }
+
+  async processCheckpoint (blockHash: string): Promise<void> {
+    // TODO Implement
+  }
+
+  getStateData (state: State): any {
+    return this._baseIndexer.getStateData(state);
   }
 
   async triggerIndexingOnEvent (event: Event): Promise<void> {
@@ -298,6 +306,30 @@ export class Indexer implements IndexerInterface {
     return { eventName, eventInfo };
   }
 
+  async getStateSyncStatus (): Promise<StateSyncStatus | undefined> {
+    return this._db.getStateSyncStatus();
+  }
+
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+    // TODO Implement
+    return {} as StateSyncStatus;
+  }
+
+  async updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+    // TODO Implement
+    return {} as StateSyncStatus;
+  }
+
+  async getLatestCanonicalBlock (): Promise<BlockProgress> {
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+
+    const latestCanonicalBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
+    assert(latestCanonicalBlock);
+
+    return latestCanonicalBlock;
+  }
+
   async getEventsByFilter (blockHash: string, contract: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
@@ -310,8 +342,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
 
-  async updateIPLDStatusMap (address: string, ipldStatus: IpldStatusInterface): Promise<void> {
-    await this._baseIndexer.updateIPLDStatusMap(address, ipldStatus);
+  updateStateStatusMap (address: string, stateStatus: StateStatus): void {
+    this._baseIndexer.updateStateStatusMap(address, stateStatus);
   }
 
   cacheContract (contract: Contract): void {

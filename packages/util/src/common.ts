@@ -2,7 +2,14 @@ import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
 
-import { QUEUE_BLOCK_PROCESSING, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME } from './constants';
+import {
+  QUEUE_BLOCK_PROCESSING,
+  QUEUE_HOOKS,
+  QUEUE_BLOCK_CHECKPOINT,
+  JOB_KIND_PRUNE,
+  JOB_KIND_INDEX,
+  UNKNOWN_EVENT_NAME
+} from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, IndexerInterface, EventInterface } from './types';
 import { wait } from './misc';
@@ -17,30 +24,6 @@ export interface PrefetchedBlock {
   block: any;
   events: DeepPartial<EventInterface>[];
 }
-
-/**
- * Create pruning job in QUEUE_BLOCK_PROCESSING.
- * @param jobQueue
- * @param latestCanonicalBlockNumber
- * @param priority
- */
-export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockNumber: number, priority = 0): Promise<void> => {
-  const pruneBlockHeight = latestCanonicalBlockNumber + 1;
-  const newPriority = priority + 1;
-
-  // Create a job to prune at block height (latestCanonicalBlockNumber + 1).
-  return jobQueue.pushJob(
-    QUEUE_BLOCK_PROCESSING,
-    {
-      kind: JOB_KIND_PRUNE,
-      pruneBlockHeight,
-      priority: newPriority
-    },
-    {
-      priority: newPriority
-    }
-  );
-};
 
 /**
  * Method to fetch block by number and push to job queue.
@@ -380,6 +363,62 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
   console.time('time:common#processBatchEvents-updateBlockProgress');
   await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
   console.timeEnd('time:common#processBatchEvents-updateBlockProgress');
+};
+
+/**
+ * Create pruning job in QUEUE_BLOCK_PROCESSING.
+ * @param jobQueue
+ * @param latestCanonicalBlockNumber
+ * @param priority
+ */
+export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockNumber: number, priority = 0): Promise<void> => {
+  const pruneBlockHeight = latestCanonicalBlockNumber + 1;
+  const newPriority = priority + 1;
+
+  // Create a job to prune at block height (latestCanonicalBlockNumber + 1).
+  return jobQueue.pushJob(
+    QUEUE_BLOCK_PROCESSING,
+    {
+      kind: JOB_KIND_PRUNE,
+      pruneBlockHeight,
+      priority: newPriority
+    },
+    {
+      priority: newPriority
+    }
+  );
+};
+
+/**
+ * Create a job in QUEUE_HOOKS.
+ * @param jobQueue
+ * @param blockHash
+ * @param blockNumber
+ */
+export const createHooksJob = async (jobQueue: JobQueue, blockHash: string, blockNumber: number): Promise<void> => {
+  await jobQueue.pushJob(
+    QUEUE_HOOKS,
+    {
+      blockHash,
+      blockNumber
+    }
+  );
+};
+
+/**
+ * Create a job in QUEUE_BLOCK_CHECKPOINT.
+ * @param jobQueue
+ * @param blockHash
+ * @param blockNumber
+ */
+export const createCheckpointJob = async (jobQueue: JobQueue, blockHash: string, blockNumber: number): Promise<void> => {
+  await jobQueue.pushJob(
+    QUEUE_BLOCK_CHECKPOINT,
+    {
+      blockHash,
+      blockNumber
+    }
+  );
 };
 
 const getPrefetchedBlocksAtHeight = (prefetchedBlocksMap: Map<string, PrefetchedBlock>, blockNumber: number):any[] => {

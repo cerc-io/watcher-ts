@@ -31,8 +31,6 @@ import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './
 
 export const DEFAULT_LIMIT = 100;
 
-const log = debug('vulcanize:graph-node-database');
-
 interface CachedEntities {
   frothyBlocks: Map<
     string,
@@ -641,7 +639,7 @@ export class Database {
     }, {});
   }
 
-  fromIPLDState (block: BlockProgressInterface, entity: string, stateEntity: any, relations: { [key: string]: any } = {}): any {
+  fromState (block: BlockProgressInterface, entity: string, stateEntity: any, relations: { [key: string]: any } = {}): any {
     const repo = this._conn.getRepository(entity);
     const entityFields = repo.metadata.columns;
 
@@ -678,7 +676,7 @@ export class Database {
     }, {});
   }
 
-  cacheUpdatedEntity<Entity> (entityName: string, entity: any, pruned = false): void {
+  cacheUpdatedEntity (entityName: string, entity: any, pruned = false): void {
     const repo = this._conn.getRepository(entityName);
     const tableName = repo.metadata.tableName;
 

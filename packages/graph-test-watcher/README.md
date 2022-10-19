@@ -8,12 +8,6 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * Create a postgres12 database for the watcher:
 
   ```bash
@@ -47,7 +41,7 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-  * Update the `server` config with state checkpoint settings and provide the IPFS API address.
+  * Update the `server` config with state checkpoint settings.
 
 ## Customize
 
@@ -59,11 +53,11 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `State` using the `Indexer` object.
 
-  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
 
-  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `State` using the `Indexer` object.
 
 * The existing example hooks in [hooks.ts](./src/hooks.ts) are for an `ERC20` contract.
 
@@ -138,10 +132,10 @@ GQL console: http://localhost:3008/graphql
 
   * To reset the watcher to a previous block number:
 
-    * Reset state:
+    * Reset watcher:
 
       ```bash
-      yarn reset state --block-number <previous-block-number>
+      yarn reset watcher --block-number <previous-block-number>
       ```
 
     * Reset job-queue:

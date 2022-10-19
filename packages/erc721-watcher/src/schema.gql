@@ -77,7 +77,7 @@ type TransferEvent {
   tokenId: BigInt!
 }
 
-type ResultIPLDBlock {
+type ResultState {
   block: _Block_!
   contractAddress: String!
   cid: String!
@@ -109,8 +109,8 @@ type Query {
   _balances(blockHash: String!, contractAddress: String!, key0: String!): ResultBigInt!
   _tokenApprovals(blockHash: String!, contractAddress: String!, key0: BigInt!): ResultString!
   _operatorApprovals(blockHash: String!, contractAddress: String!, key0: String!, key1: String!): ResultBoolean!
-  getStateByCID(cid: String!): ResultIPLDBlock
-  getState(blockHash: String!, contractAddress: String!, kind: String): ResultIPLDBlock
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
   getSyncStatus: SyncStatus
   transferCount(id: String!, block: Block_height): TransferCount!
 }

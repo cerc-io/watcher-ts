@@ -82,17 +82,9 @@
   yarn
   ```
 
-* Run the IPFS (go-ipfs version 0.12.2) daemon:
-
-  ```bash
-  ipfs daemon
-  ```
-
 * In the config file (`environments/local.toml`):
 
   * Update the state checkpoint settings.
-
-  * Update the IPFS API address in `environments/local.toml`.
 
 * Create the databases configured in `environments/local.toml`.
 
@@ -106,11 +98,11 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in `src/hooks.ts` to save an initial state `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in `src/hooks.ts` to save an initial `State` using the `Indexer` object.
 
-  * Edit the custom hook function `createStateDiff` (triggered on a block) in `src/hooks.ts` to save the state in a `diff` `IPLDBlock` using the `Indexer` object. The default state (if exists) is updated.
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in `src/hooks.ts` to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
 
-  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in `src/hooks.ts` to save the state in a `checkpoint` `IPLDBlock` using the `Indexer` object.
+  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in `src/hooks.ts` to save the state in a `checkpoint` `State` using the `Indexer` object.
 
 ### Run
 

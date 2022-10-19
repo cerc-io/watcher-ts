@@ -98,9 +98,9 @@ export class Schema {
     // Add type and query for SyncStatus.
     this._addSyncStatus();
 
-    // Add IPLDBlock type and queries.
-    this._addIPLDType();
-    this._addIPLDQuery();
+    // Add State type and queries.
+    this._addStateType();
+    this._addStateQuery();
 
     // Build the schema.
     return this._composer.buildSchema();
@@ -354,9 +354,9 @@ export class Schema {
     });
   }
 
-  _addIPLDType (): void {
+  _addStateType (): void {
     const typeComposer = this._composer.createObjectTC({
-      name: 'ResultIPLDBlock',
+      name: 'ResultState',
       fields: {
         block: () => this._composer.getOTC('_Block_').NonNull,
         contractAddress: 'String!',
@@ -368,10 +368,10 @@ export class Schema {
     this._composer.addSchemaMustHaveType(typeComposer);
   }
 
-  _addIPLDQuery (): void {
+  _addStateQuery (): void {
     this._composer.Query.addFields({
       getStateByCID: {
-        type: this._composer.getOTC('ResultIPLDBlock'),
+        type: this._composer.getOTC('ResultState'),
         args: {
           cid: 'String!'
         }
@@ -380,7 +380,7 @@ export class Schema {
 
     this._composer.Query.addFields({
       getState: {
-        type: this._composer.getOTC('ResultIPLDBlock'),
+        type: this._composer.getOTC('ResultState'),
         args: {
           blockHash: 'String!',
           contractAddress: 'String!',

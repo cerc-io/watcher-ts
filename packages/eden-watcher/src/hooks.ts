@@ -2,14 +2,9 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { IPLDBlockInterface, StateKind } from '@cerc-io/util';
 import assert from 'assert';
-import * as codec from '@ipld/dag-cbor';
-import _ from 'lodash';
 
 import { Indexer, ResultEvent } from './indexer';
-
-const IPLD_BATCH_BLOCKS = 10000;
 
 /**
  * Hook function to store an initial state.
@@ -23,13 +18,13 @@ export async function createInitialState (indexer: Indexer, contractAddress: str
   assert(blockHash);
   assert(contractAddress);
 
-  // Store an empty state in an IPLDBlock.
-  const ipldBlockData: any = {
+  // Store an empty State.
+  const stateData: any = {
     state: {}
   };
 
   // Return initial state data to be saved.
-  return ipldBlockData;
+  return stateData;
 }
 
 /**
@@ -56,64 +51,11 @@ export async function createStateCheckpoint (indexer: Indexer, contractAddress: 
   assert(blockHash);
   assert(contractAddress);
 
-  // TODO: Pass blockProgress instead of blockHash to hook method.
-  const block = await indexer.getBlockProgress(blockHash);
-  assert(block);
+  // Use indexer.createStateCheckpoint() method to create a custom checkpoint.
 
-  // Fetch the latest 'checkpoint' | 'init' for the contract to fetch diffs after it.
-  let prevNonDiffBlock: IPLDBlockInterface;
-  let diffStartBlockNumber: number;
-  const checkpointBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Checkpoint, block.blockNumber - 1);
-
-  if (checkpointBlock) {
-    const checkpointBlockNumber = checkpointBlock.block.blockNumber;
-
-    prevNonDiffBlock = checkpointBlock;
-    diffStartBlockNumber = checkpointBlockNumber;
-
-    // Update IPLD status map with the latest checkpoint info.
-    // Essential while importing state as checkpoint at the snapshot block is added by import-state CLI.
-    // (job-runner won't have the updated ipld status)
-    indexer.updateIPLDStatusMap(contractAddress, { checkpoint: checkpointBlockNumber });
-  } else {
-    // There should be an initial state at least.
-    const initBlock = await indexer.getLatestIPLDBlock(contractAddress, StateKind.Init);
-    assert(initBlock, 'No initial state found');
-
-    prevNonDiffBlock = initBlock;
-    // Take block number previous to initial state block to include any diff state at that block.
-    diffStartBlockNumber = initBlock.block.blockNumber - 1;
-  }
-
-  const prevNonDiffBlockData = codec.decode(Buffer.from(prevNonDiffBlock.data)) as any;
-  const data = {
-    state: prevNonDiffBlockData.state
-  };
-
-  console.time('time:hooks#createStateCheckpoint');
-
-  // Fetching and merging all diff blocks after the latest 'checkpoint' | 'init' in batch.
-  for (let i = diffStartBlockNumber; i < block.blockNumber;) {
-    const endBlockHeight = Math.min(i + IPLD_BATCH_BLOCKS, block.blockNumber);
-    console.time(`time:hooks#createStateCheckpoint-batch-merge-diff-${i}-${endBlockHeight}`);
-    const diffBlocks = await indexer.getDiffIPLDBlocksInRange(contractAddress, i, endBlockHeight);
-
-    // Merge all diff blocks after previous checkpoint.
-    for (const diffBlock of diffBlocks) {
-      const diff = codec.decode(Buffer.from(diffBlock.data)) as any;
-      data.state = _.merge(data.state, diff.state);
-    }
-
-    console.timeEnd(`time:hooks#createStateCheckpoint-batch-merge-diff-${i}-${endBlockHeight}`);
-    i = endBlockHeight;
-  }
-
-  console.time('time:hooks#createStateCheckpoint-db-save-checkpoint');
-  await indexer.createStateCheckpoint(contractAddress, blockHash, data);
-  console.timeEnd('time:hooks#createStateCheckpoint-db-save-checkpoint');
-
-  console.timeEnd('time:hooks#createStateCheckpoint');
-  return true;
+  // Return false to update the state created by this hook by auto-generated checkpoint state.
+  // Return true to disable update of the state created by this hook by auto-generated checkpoint state.
+  return false;
 }
 
 /**
