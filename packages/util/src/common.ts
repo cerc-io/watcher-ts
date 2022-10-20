@@ -138,8 +138,8 @@ export const _prefetchBlocks = async (
     blockNumber + jobQueueConfig.prefetchBlockCount
   );
 
-  blocksWithEvents.forEach(({ block, events }) => {
-    prefetchedBlocksMap.set(block.blockHash, { block, events });
+  blocksWithEvents.forEach(({ blockProgress, events }) => {
+    prefetchedBlocksMap.set(blockProgress.blockHash, { block: blockProgress, events });
   });
 };
 
@@ -151,7 +151,7 @@ export const _prefetchBlocks = async (
  * @param endBlock
  */
 export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfig: JobQueueConfig, startBlock: number, endBlock: number): Promise<any[]> => {
-  let blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
+  const blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
   let blocks = [];
 
   // Fetch blocks again if there are missing blocks.
@@ -163,17 +163,15 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
 
     const missingIndex = res.findIndex(blocks => blocks.length === 0);
 
-    // TODO Continue to process available blocks instead of retrying for whole range.
-    if (missingIndex < 0) {
-      blocks = blocks.concat(res);
+    if (missingIndex === -1) {
+      blocks = res;
+      break;
+    } else if (missingIndex > 0) {
+      blocks = res.slice(0, missingIndex);
       break;
     }
 
-    log('missing block number:', blockNumbers[missingIndex]);
-
-    blocks.push(res.slice(0, missingIndex));
-    blockNumbers = blockNumbers.slice(missingIndex);
-
+    log(`No blocks fetched for block number ${blockNumbers[0]}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
     await wait(jobQueueConfig.blockDelayInMilliSecs);
   }
 
