@@ -161,13 +161,13 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
     const res = await Promise.all(blockPromises);
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
 
-    const missingIndex = res.findIndex(blocks => blocks.length === 0);
+    const firstMissingBlockIndex = res.findIndex(blocks => blocks.length === 0);
 
-    if (missingIndex === -1) {
+    if (firstMissingBlockIndex === -1) {
       blocks = res;
       break;
-    } else if (missingIndex > 0) {
-      blocks = res.slice(0, missingIndex);
+    } else if (firstMissingBlockIndex > 0) {
+      blocks = res.slice(0, firstMissingBlockIndex);
       break;
     }
 
@@ -254,7 +254,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
         // uni-info-watcher indexer doesn't have watched contracts implementation.
         watchedContract = true;
       } else {
-        watchedContract = await indexer.isWatchedContract(event.contract);
+        watchedContract = indexer.isWatchedContract(event.contract);
       }
 
       if (watchedContract) {

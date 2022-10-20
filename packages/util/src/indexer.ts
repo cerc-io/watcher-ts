@@ -5,6 +5,7 @@
 import assert from 'assert';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 import debug from 'debug';
+import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -32,6 +33,7 @@ import { ServerConfig } from './config';
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
 const log = debug('vulcanize:indexer');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export interface ValueResult {
   value: any;
@@ -247,16 +249,105 @@ export class Indexer {
     return [blockProgress, events];
   }
 
-  async fetchBlockEvents (block: DeepPartial<BlockProgressInterface>, fetchEvents: (block: DeepPartial<BlockProgressInterface>) => Promise<DeepPartial<EventInterface>[]>): Promise<DeepPartial<EventInterface>[]> {
-    assert(block.blockHash);
+  async fetchEvents (blockHash: string, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+    let logsPromise: Promise<any>;
 
-    log(`getBlockEvents: fetching from upstream server ${block.blockHash}`);
-    console.time(`time:indexer#fetchBlockEvents-fetchAndSaveEvents-${block.blockHash}`);
-    const events = await fetchEvents(block);
-    console.timeEnd(`time:indexer#fetchBlockEvents-fetchAndSaveEvents-${block.blockHash}`);
-    log(`getBlockEvents: fetched for block: ${block.blockHash} num events: ${events.length}`);
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this.getWatchedContracts();
+      const addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
 
-    return events;
+      logsPromise = this._ethClient.getLogs({
+        blockHash,
+        addresses
+      });
+    } else {
+      logsPromise = this._ethClient.getLogs({ blockHash });
+    }
+
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+
+    const [
+      { logs },
+      {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
+            }
+          ]
+        }
+      }
+    ] = await Promise.all([logsPromise, transactionsPromise]);
+
+    const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
+      acc[transaction.txHash] = transaction;
+      return acc;
+    }, {});
+
+    const dbEvents: Array<DeepPartial<EventInterface>> = [];
+
+    for (let li = 0; li < logs.length; li++) {
+      const logObj = logs[li];
+      const {
+        topics,
+        data,
+        index: logIndex,
+        cid,
+        ipldBlock,
+        account: {
+          address
+        },
+        transaction: {
+          hash: txHash
+        },
+        receiptCID,
+        status
+      } = logObj;
+
+      if (status) {
+        let eventName = UNKNOWN_EVENT_NAME;
+        let eventInfo = {};
+        const tx = transactionMap[txHash];
+        const extraInfo: { [key: string]: any } = { topics, data, tx };
+
+        const contract = ethers.utils.getAddress(address);
+        const watchedContract = this.isWatchedContract(contract);
+
+        if (watchedContract) {
+          const eventDetails = parseEventNameAndArgs(watchedContract.kind, logObj);
+          eventName = eventDetails.eventName;
+          eventInfo = eventDetails.eventInfo;
+          extraInfo.eventSignature = eventDetails.eventSignature;
+        }
+
+        dbEvents.push({
+          index: logIndex,
+          txHash,
+          contract,
+          eventName,
+          eventInfo: JSONbigNative.stringify(eventInfo),
+          extraInfo: JSONbigNative.stringify(extraInfo),
+          proof: JSONbigNative.stringify({
+            data: JSONbigNative.stringify({
+              blockHash,
+              receiptCID,
+              log: {
+                cid,
+                ipldBlock
+              }
+            })
+          })
+        });
+      } else {
+        log(`Skipping event for receipt ${receiptCID} due to failed transaction.`);
+      }
+    }
+
+    return dbEvents;
   }
 
   async saveBlockProgress (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {
@@ -872,9 +963,7 @@ export class Indexer {
     this._stateStatusMap[address] = _.merge(oldStateStatus, stateStatus);
   }
 
-  parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any } {
-    const eventName = logDescription.name;
-
+  parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any, eventSignature: string } {
     const eventInfo = logDescription.eventFragment.inputs.reduce((acc: any, input, index) => {
       acc[input.name] = this._parseLogArg(input, logDescription.args[index]);
 
@@ -882,8 +971,9 @@ export class Indexer {
     }, {});
 
     return {
-      eventName,
-      eventInfo
+      eventName: logDescription.name,
+      eventInfo,
+      eventSignature: logDescription.signature
     };
   }
 
