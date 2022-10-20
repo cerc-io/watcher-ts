@@ -26,72 +26,6 @@ export interface PrefetchedBlock {
 }
 
 /**
- * Method to fetch block by number and push to job queue.
- * @param jobQueue
- * @param indexer
- * @param blockDelayInMilliSecs
- * @param blockNumber
- */
-export const processBlockByNumber = async (
-  jobQueue: JobQueue,
-  indexer: IndexerInterface,
-  blockDelayInMilliSecs: number,
-  blockNumber: number
-): Promise<void> => {
-  log(`Process block ${blockNumber}`);
-
-  console.time('time:common#processBlockByNumber-get-blockProgress-syncStatus');
-
-  const [blockProgressEntities, syncStatus] = await Promise.all([
-    indexer.getBlocksAtHeight(blockNumber, false),
-    indexer.getSyncStatus()
-  ]);
-
-  console.timeEnd('time:common#processBlockByNumber-get-blockProgress-syncStatus');
-
-  while (true) {
-    let blocks = blockProgressEntities.map((block: any) => {
-      block.timestamp = block.blockTimestamp;
-
-      return block;
-    });
-
-    if (!blocks.length) {
-      blocks = await indexer.getBlocks({ blockNumber });
-    }
-
-    if (blocks.length) {
-      for (let bi = 0; bi < blocks.length; bi++) {
-        const { cid, blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
-
-        // Stop blocks already pushed to job queue. They are already retried after fail.
-        if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
-          await jobQueue.pushJob(
-            QUEUE_BLOCK_PROCESSING,
-            {
-              kind: JOB_KIND_INDEX,
-              blockNumber: Number(blockNumber),
-              cid,
-              blockHash,
-              parentHash,
-              timestamp
-            }
-          );
-        }
-      }
-
-      await indexer.updateSyncStatusChainHead(blocks[0].blockHash, Number(blocks[0].blockNumber));
-
-      return;
-    }
-
-    log(`No blocks fetched for block number ${blockNumber}, retrying after ${blockDelayInMilliSecs} ms delay.`);
-
-    await wait(blockDelayInMilliSecs);
-  }
-};
-
-/**
  * Create a processing job in QUEUE_BLOCK_PROCESSING.
  * @param jobQueue
  * @param blockNumber
@@ -166,7 +100,6 @@ export const fetchBlocksAtHeight = async (
 
     if (!blocks.length) {
       log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-      assert(jobQueueConfig.blockDelayInMilliSecs);
       await wait(jobQueueConfig.blockDelayInMilliSecs);
     }
   }
@@ -241,7 +174,6 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
     blocks.push(res.slice(0, missingIndex));
     blockNumbers = blockNumbers.slice(missingIndex);
 
-    assert(jobQueueConfig.blockDelayInMilliSecs);
     await wait(jobQueueConfig.blockDelayInMilliSecs);
   }
 
