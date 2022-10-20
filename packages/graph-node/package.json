@@ -3,7 +3,6 @@
   "version": "0.2.13",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
-  "private": true,
   "devDependencies": {
     "@graphprotocol/graph-ts": "^0.22.0",
     "@nomiclabs/hardhat-ethers": "^2.0.2",

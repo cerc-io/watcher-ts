@@ -925,8 +925,8 @@ export class Indexer {
         data.state = _.merge(data.state, diff.state);
       }
 
-      i = endBlockHeight;
       console.timeEnd(`time:indexer#_mergeDiffsInRange-${i}-${endBlockHeight}-${contractAddress}`);
+      i = endBlockHeight;
     }
 
     return data;
