@@ -3,9 +3,7 @@
 //
 
 import assert from 'assert';
-import debug from 'debug';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
-import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
 import { SelectionNode } from 'graphql';
@@ -16,7 +14,6 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
   Indexer as BaseIndexer,
-  UNKNOWN_EVENT_NAME,
   ServerConfig,
   JobQueue,
   Where,
@@ -25,7 +22,9 @@ import {
   StateKind,
   IndexerInterface,
   StateStatus,
-  ValueResult
+  ValueResult,
+  ResultEvent,
+  getResultEvent
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
@@ -57,36 +56,9 @@ import { Claim } from './entity/Claim';
 import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
 
-const log = debug('vulcanize:indexer');
-const JSONbigNative = JSONbig({ useNativeBigInt: true });
-
 const KIND_EDENNETWORK = 'EdenNetwork';
 const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
 const KIND_DISTRIBUTORGOVERNANCE = 'EdenNetworkGovernance';
-
-export type ResultEvent = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  tx: {
-    hash: string;
-    from: string;
-    to: string;
-    index: number;
-  };
-
-  contract: string;
-
-  eventIndex: number;
-  eventSignature: string;
-  event: any;
-
-  proof: string;
-};
 
 export class Indexer implements IndexerInterface {
   _db: Database
@@ -168,38 +140,7 @@ export class Indexer implements IndexerInterface {
   }
 
   getResultEvent (event: Event): ResultEvent {
-    const block = event.block;
-    const eventFields = JSONbigNative.parse(event.eventInfo);
-    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
-
-    return {
-      block: {
-        cid: block.cid,
-        hash: block.blockHash,
-        number: block.blockNumber,
-        timestamp: block.blockTimestamp,
-        parentHash: block.parentHash
-      },
-
-      tx: {
-        hash: event.txHash,
-        from: tx.src,
-        to: tx.dst,
-        index: tx.index
-      },
-
-      contract: event.contract,
-
-      eventIndex: event.index,
-      eventSignature,
-      event: {
-        __typename: `${event.eventName}Event`,
-        ...eventFields
-      },
-
-      // TODO: Return proof only if requested.
-      proof: JSON.parse(event.proof)
-    };
+    return getResultEvent(event);
   }
 
   async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {

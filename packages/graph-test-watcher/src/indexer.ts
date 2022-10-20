@@ -17,7 +17,6 @@ import { StorageLayout, MappingKey } from '@cerc-io/solidity-mapper';
 import {
   Indexer as BaseIndexer,
   ValueResult,
-  UNKNOWN_EVENT_NAME,
   ServerConfig,
   updateStateForElementaryType,
   JobQueue,
@@ -26,7 +25,9 @@ import {
   BlockHeight,
   StateKind,
   IndexerInterface,
-  StateStatus
+  StateStatus,
+  ResultEvent,
+  getResultEvent
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
@@ -47,30 +48,6 @@ const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 const KIND_EXAMPLE1 = 'Example1';
-
-export type ResultEvent = {
-  block: {
-    cid: string;
-    hash: string;
-    number: number;
-    timestamp: number;
-    parentHash: string;
-  };
-  tx: {
-    hash: string;
-    from: string;
-    to: string;
-    index: number;
-  };
-
-  contract: string;
-
-  eventIndex: number;
-  eventSignature: string;
-  event: any;
-
-  proof: string;
-};
 
 export class Indexer implements IndexerInterface {
   _db: Database
@@ -138,38 +115,7 @@ export class Indexer implements IndexerInterface {
   }
 
   getResultEvent (event: Event): ResultEvent {
-    const block = event.block;
-    const eventFields = JSONbigNative.parse(event.eventInfo);
-    const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
-
-    return {
-      block: {
-        cid: block.cid,
-        hash: block.blockHash,
-        number: block.blockNumber,
-        timestamp: block.blockTimestamp,
-        parentHash: block.parentHash
-      },
-
-      tx: {
-        hash: event.txHash,
-        from: tx.src,
-        to: tx.dst,
-        index: tx.index
-      },
-
-      contract: event.contract,
-
-      eventIndex: event.index,
-      eventSignature,
-      event: {
-        __typename: `${event.eventName}Event`,
-        ...eventFields
-      },
-
-      // TODO: Return proof only if requested.
-      proof: JSON.parse(event.proof)
-    };
+    return getResultEvent(event);
   }
 
   async getMethod (blockHash: string, contractAddress: string): Promise<ValueResult> {

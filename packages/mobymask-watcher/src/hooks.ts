@@ -5,9 +5,9 @@
 import assert from 'assert';
 import { utils } from 'ethers';
 
-// import { updateStateForMappingType, updateStateForElementaryType } from '@cerc-io/util';
+import { ResultEvent } from '@cerc-io/util';
 
-import { Indexer, KIND_PHISHERREGISTRY, ResultEvent } from './indexer';
+import { Indexer, KIND_PHISHERREGISTRY } from './indexer';
 
 const INVOKE_SIGNATURE = 'invoke(((((address,uint256,bytes),((address,bytes32,(address,bytes)[]),bytes)[])[],(uint256,uint256)),bytes)[])';
 const CLAIM_IF_MEMBER_SIGNATURE = 'claimIfMember(string,bool)';

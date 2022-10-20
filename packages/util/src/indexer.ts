@@ -64,6 +64,30 @@ export type ResultState = {
   data: string;
 };
 
+export type ResultEvent = {
+  block: {
+    cid: string;
+    hash: string;
+    number: number;
+    timestamp: number;
+    parentHash: string;
+  };
+  tx: {
+    hash: string;
+    from: string;
+    to: string;
+    index: number;
+  };
+
+  contract: string;
+
+  eventIndex: number;
+  eventSignature: string;
+  event: any;
+
+  proof: string;
+};
+
 export class Indexer {
   _serverConfig: ServerConfig;
   _db: DatabaseInterface;

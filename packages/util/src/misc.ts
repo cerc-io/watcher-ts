@@ -7,8 +7,8 @@ import { ValueTransformer } from 'typeorm';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { utils, providers } from 'ethers';
+import JSONbig from 'json-bigint';
 import Decimal from 'decimal.js';
-import debug from 'debug';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 
@@ -18,6 +18,10 @@ import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
 import { getCachedBlockSize } from './block-size-cache';
+import { ResultEvent } from './indexer';
+import { EventInterface } from './types';
+
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 /**
  * Method to wait for specified time.
@@ -247,4 +251,39 @@ export const jsonBigIntStringReplacer = (_: string, value: any): any => {
   }
 
   return value;
+};
+
+export const getResultEvent = (event: EventInterface): ResultEvent => {
+  const block = event.block;
+  const eventFields = JSONbigNative.parse(event.eventInfo);
+  const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
+
+  return {
+    block: {
+      cid: block.cid,
+      hash: block.blockHash,
+      number: block.blockNumber,
+      timestamp: block.blockTimestamp,
+      parentHash: block.parentHash
+    },
+
+    tx: {
+      hash: event.txHash,
+      from: tx.src,
+      to: tx.dst,
+      index: tx.index
+    },
+
+    contract: event.contract,
+
+    eventIndex: event.index,
+    eventSignature,
+    event: {
+      __typename: `${event.eventName}Event`,
+      ...eventFields
+    },
+
+    // TODO: Return proof only if requested.
+    proof: JSON.parse(event.proof)
+  };
 };
