@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { FindConditions, FindManyOptions } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
 
 import {
   IndexerInterface,
@@ -89,8 +89,8 @@ export class Indexer implements IndexerInterface {
     return '';
   }
 
-  async fetchBlockWithEvents (block: BlockProgressInterface): Promise<BlockProgressInterface> {
-    return block;
+  async saveBlockAndFetchEvents (block: BlockProgressInterface): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
+    return [block, []];
   }
 
   async removeUnknownEvents (block: BlockProgressInterface): Promise<void> {
