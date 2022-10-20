@@ -83,7 +83,7 @@ export const main = async (): Promise<any> => {
     jobQueue,
     indexer,
     eventWatcher,
-    config.upstream.ethServer.blockDelayInMilliSecs,
+    jobQueueConfig.blockDelayInMilliSecs,
     {
       prefetch: true,
       startBlock: importData.snapshotBlock.blockNumber,

@@ -76,7 +76,7 @@ export const main = async (): Promise<any> => {
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
-  await fillBlocks(jobQueue, indexer, eventWatcher, config.upstream.ethServer.blockDelayInMilliSecs, argv);
+  await fillBlocks(jobQueue, indexer, eventWatcher, jobQueueConfig.blockDelayInMilliSecs, argv);
 };
 
 main().catch(err => {

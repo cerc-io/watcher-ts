@@ -4,7 +4,9 @@
 
 import assert from 'assert';
 
-import { Indexer, ResultEvent } from './indexer';
+import { ResultEvent } from '@cerc-io/util';
+
+import { Indexer } from './indexer';
 
 /**
  * Hook function to store an initial state.

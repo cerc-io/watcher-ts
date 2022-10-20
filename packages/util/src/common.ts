@@ -21,75 +21,9 @@ const DEFAULT_EVENTS_IN_BATCH = 50;
 const log = debug('vulcanize:common');
 
 export interface PrefetchedBlock {
-  block: any;
+  block: BlockProgressInterface;
   events: DeepPartial<EventInterface>[];
 }
-
-/**
- * Method to fetch block by number and push to job queue.
- * @param jobQueue
- * @param indexer
- * @param blockDelayInMilliSecs
- * @param blockNumber
- */
-export const processBlockByNumber = async (
-  jobQueue: JobQueue,
-  indexer: IndexerInterface,
-  blockDelayInMilliSecs: number,
-  blockNumber: number
-): Promise<void> => {
-  log(`Process block ${blockNumber}`);
-
-  console.time('time:common#processBlockByNumber-get-blockProgress-syncStatus');
-
-  const [blockProgressEntities, syncStatus] = await Promise.all([
-    indexer.getBlocksAtHeight(blockNumber, false),
-    indexer.getSyncStatus()
-  ]);
-
-  console.timeEnd('time:common#processBlockByNumber-get-blockProgress-syncStatus');
-
-  while (true) {
-    let blocks = blockProgressEntities.map((block: any) => {
-      block.timestamp = block.blockTimestamp;
-
-      return block;
-    });
-
-    if (!blocks.length) {
-      blocks = await indexer.getBlocks({ blockNumber });
-    }
-
-    if (blocks.length) {
-      for (let bi = 0; bi < blocks.length; bi++) {
-        const { cid, blockHash, blockNumber, parentHash, timestamp } = blocks[bi];
-
-        // Stop blocks already pushed to job queue. They are already retried after fail.
-        if (!syncStatus || syncStatus.chainHeadBlockNumber < blockNumber) {
-          await jobQueue.pushJob(
-            QUEUE_BLOCK_PROCESSING,
-            {
-              kind: JOB_KIND_INDEX,
-              blockNumber: Number(blockNumber),
-              cid,
-              blockHash,
-              parentHash,
-              timestamp
-            }
-          );
-        }
-      }
-
-      await indexer.updateSyncStatusChainHead(blocks[0].blockHash, Number(blocks[0].blockNumber));
-
-      return;
-    }
-
-    log(`No blocks fetched for block number ${blockNumber}, retrying after ${blockDelayInMilliSecs} ms delay.`);
-
-    await wait(blockDelayInMilliSecs);
-  }
-};
 
 /**
  * Create a processing job in QUEUE_BLOCK_PROCESSING.
@@ -166,7 +100,6 @@ export const fetchBlocksAtHeight = async (
 
     if (!blocks.length) {
       log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-      assert(jobQueueConfig.blockDelayInMilliSecs);
       await wait(jobQueueConfig.blockDelayInMilliSecs);
     }
   }
@@ -205,8 +138,8 @@ export const _prefetchBlocks = async (
     blockNumber + jobQueueConfig.prefetchBlockCount
   );
 
-  blocksWithEvents.forEach(({ block, events }) => {
-    prefetchedBlocksMap.set(block.blockHash, { block, events });
+  blocksWithEvents.forEach(({ blockProgress, events }) => {
+    prefetchedBlocksMap.set(blockProgress.blockHash, { block: blockProgress, events });
   });
 };
 
@@ -218,7 +151,7 @@ export const _prefetchBlocks = async (
  * @param endBlock
  */
 export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfig: JobQueueConfig, startBlock: number, endBlock: number): Promise<any[]> => {
-  let blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
+  const blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
   let blocks = [];
 
   // Fetch blocks again if there are missing blocks.
@@ -228,20 +161,17 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
     const res = await Promise.all(blockPromises);
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
 
-    const missingIndex = res.findIndex(blocks => blocks.length === 0);
+    const firstMissingBlockIndex = res.findIndex(blocks => blocks.length === 0);
 
-    // TODO Continue to process available blocks instead of retrying for whole range.
-    if (missingIndex < 0) {
-      blocks = blocks.concat(res);
+    if (firstMissingBlockIndex === -1) {
+      blocks = res;
+      break;
+    } else if (firstMissingBlockIndex > 0) {
+      blocks = res.slice(0, firstMissingBlockIndex);
       break;
     }
 
-    log('missing block number:', blockNumbers[missingIndex]);
-
-    blocks.push(res.slice(0, missingIndex));
-    blockNumbers = blockNumbers.slice(missingIndex);
-
-    assert(jobQueueConfig.blockDelayInMilliSecs);
+    log(`No blocks fetched for block number ${blockNumbers[0]}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
     await wait(jobQueueConfig.blockDelayInMilliSecs);
   }
 
@@ -254,11 +184,9 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
   // TODO Catch errors and continue to process available events instead of retrying for whole range because of an error.
   const blockAndEventPromises = blocks.map(async block => {
     block.blockTimestamp = block.timestamp;
+    const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
 
-    assert(indexer.fetchBlockEvents);
-    const events = await indexer.fetchBlockEvents(block);
-
-    return { block, events };
+    return { blockProgress, events };
   });
 
   return Promise.all(blockAndEventPromises);
@@ -326,7 +254,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
         // uni-info-watcher indexer doesn't have watched contracts implementation.
         watchedContract = true;
       } else {
-        watchedContract = await indexer.isWatchedContract(event.contract);
+        watchedContract = indexer.isWatchedContract(event.contract);
       }
 
       if (watchedContract) {

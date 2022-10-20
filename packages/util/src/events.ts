@@ -11,7 +11,7 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME } from './constants';
-import { createPruningJob, processBlockByNumber } from './common';
+import { createPruningJob, processBlockByNumberWithCache } from './common';
 import { UpstreamConfig } from './config';
 import { OrderDirection } from './database';
 
@@ -58,10 +58,8 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
-    const { ethServer: { blockDelayInMilliSecs } } = this._upstreamConfig;
-
     // Wait for block processing as blockProgress event might process the same block.
-    await processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, startBlockNumber);
+    await processBlockByNumberWithCache(this._jobQueue, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -76,7 +74,7 @@ export class EventWatcher {
       const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
       if (isComplete) {
-        await processBlockByNumber(this._jobQueue, this._indexer, blockDelayInMilliSecs, blockNumber + 1);
+        await processBlockByNumberWithCache(this._jobQueue, blockNumber + 1);
       }
     }
   }
@@ -139,23 +137,22 @@ export class EventWatcher {
   }
 
   async _handleIndexingComplete (jobData: any): Promise<void> {
-    const { blockHash, blockNumber, priority } = jobData;
+    const { blockNumber, priority } = jobData;
 
-    const [blockProgress, syncStatus] = await Promise.all([
-      this._indexer.getBlockProgress(blockHash),
-      // Update sync progress.
-      this._indexer.updateSyncStatusIndexedBlock(blockHash, blockNumber)
-    ]);
+    const blockProgressEntities = await this._indexer.getBlocksAtHeight(Number(blockNumber), false);
 
-    if (blockProgress) {
-      log(`Job onComplete indexing block ${blockHash} ${blockNumber}`);
+    // Log a warning and return if block entries not found.
+    if (blockProgressEntities.length === 0) {
+      log(`block not indexed at height ${blockNumber}`);
+      return;
+    }
 
-      // Create pruning job if required.
-      if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
-        await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
-      }
-    } else {
-      log(`block not indexed for ${blockHash} ${blockNumber}`);
+    const syncStatus = await this._indexer.updateSyncStatusIndexedBlock(blockProgressEntities[0].blockHash, Number(blockNumber));
+    log(`Job onComplete indexing block ${blockProgressEntities[0].blockHash} ${blockNumber}`);
+
+    // Create pruning job if required.
+    if (syncStatus && syncStatus.latestIndexedBlockNumber > (syncStatus.latestCanonicalBlockNumber + MAX_REORG_DEPTH)) {
+      await createPruningJob(this._jobQueue, syncStatus.latestCanonicalBlockNumber, priority);
     }
   }
 

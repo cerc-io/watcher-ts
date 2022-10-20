@@ -4,9 +4,9 @@
 
 import assert from 'assert';
 
-import { updateStateForElementaryType } from '@cerc-io/util';
+import { updateStateForElementaryType, ResultEvent } from '@cerc-io/util';
 
-import { Indexer, ResultEvent } from './indexer';
+import { Indexer } from './indexer';
 import { TransferCount } from './entity/TransferCount';
 
 /**

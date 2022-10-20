@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, UNKNOWN_EVENT_NAME, JobQueue, Where, QueryOptions, ServerConfig, StateStatus } from '@cerc-io/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig, StateStatus } from '@cerc-io/util';
 
 import { Database } from './database';
 import { Event } from './entity/Event';
@@ -398,8 +398,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
+  async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
+    return this._baseIndexer.saveBlockAndFetchEvents(block, this._saveBlockAndFetchEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -422,79 +422,25 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  async _fetchAndSaveEvents ({ cid: blockCid, blockHash }: DeepPartial<BlockProgress>): Promise<BlockProgress> {
+  async _saveBlockAndFetchEvents ({
+    cid: blockCid,
+    blockHash,
+    blockNumber,
+    blockTimestamp,
+    parentHash
+  }: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
     assert(blockHash);
-    let [{ block }, { logs }] = await Promise.all([
-      this._ethClient.getBlockByHash(blockHash),
-      this._ethClient.getLogs({ blockHash })
-    ]);
 
-    const dbEvents: Array<DeepPartial<Event>> = [];
-
-    for (let li = 0; li < logs.length; li++) {
-      const logObj = logs[li];
-      const {
-        topics,
-        data,
-        index: logIndex,
-        cid,
-        ipldBlock,
-        account: {
-          address
-        },
-        transaction: {
-          hash: txHash
-        },
-        receiptCID,
-        status
-      } = logObj;
-
-      if (status) {
-        let eventName = UNKNOWN_EVENT_NAME;
-        let eventInfo = {};
-        const extraInfo = { topics, data };
-
-        const contract = ethers.utils.getAddress(address);
-        const watchedContract = await this.isWatchedContract(contract);
-
-        if (watchedContract) {
-          const eventDetails = this.parseEventNameAndArgs(watchedContract.kind, logObj);
-          eventName = eventDetails.eventName;
-          eventInfo = eventDetails.eventInfo;
-        }
-
-        dbEvents.push({
-          index: logIndex,
-          txHash,
-          contract,
-          eventName,
-          eventInfo: JSONbigNative.stringify(eventInfo),
-          extraInfo: JSONbigNative.stringify(extraInfo),
-          proof: JSONbigNative.stringify({
-            data: JSONbigNative.stringify({
-              blockHash,
-              receiptCID,
-              log: {
-                cid,
-                ipldBlock
-              }
-            })
-          })
-        });
-      } else {
-        log(`Skipping event for receipt ${receiptCID} due to failed transaction.`);
-      }
-    }
+    const dbEvents = await this._baseIndexer.fetchEvents(blockHash, this.parseEventNameAndArgs.bind(this));
 
     const dbTx = await this._db.createTransactionRunner();
-
     try {
-      block = {
+      const block = {
         cid: blockCid,
         blockHash,
-        blockNumber: block.number,
-        blockTimestamp: block.timestamp,
-        parentHash: block.parent.hash
+        blockNumber,
+        blockTimestamp,
+        parentHash
       };
 
       console.time('time:indexer#_fetchAndSaveEvents-save-block-events');
@@ -502,7 +448,7 @@ export class Indexer implements IndexerInterface {
       await dbTx.commitTransaction();
       console.timeEnd('time:indexer#_fetchAndSaveEvents-save-block-events');
 
-      return blockProgress;
+      return [blockProgress, []];
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;
