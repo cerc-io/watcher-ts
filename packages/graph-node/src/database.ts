@@ -10,9 +10,11 @@ import {
   FindOneOptions,
   LessThanOrEqual,
   QueryRunner,
-  Repository
+  Repository,
+  SelectQueryBuilder
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
+import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
 import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
@@ -29,12 +31,18 @@ import {
   Where
 } from '@cerc-io/util';
 
-import { Block, fromEntityValue, fromStateEntityValues, toEntityValue } from './utils';
+import { Block, fromEntityValue, fromStateEntityValues, resolveEntityFieldConflicts, toEntityValue } from './utils';
 
 const log = debug('vulcanize:graph-database');
 
 export const DEFAULT_LIMIT = 100;
 const DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL = 1000;
+
+export enum ENTITY_QUERY_TYPE {
+  SINGULAR,
+  DISTINCT_ON,
+  GROUP_BY
+}
 
 interface CachedEntities {
   frothyBlocks: Map<
@@ -52,13 +60,14 @@ export class Database {
   _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase
+  _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>
 
   _cachedEntities: CachedEntities = {
     frothyBlocks: new Map(),
     latestPrunedEntities: new Map()
   }
 
-  constructor (config: ConnectionOptions, entitiesPath: string) {
+  constructor (config: ConnectionOptions, entitiesPath: string, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
     assert(config);
 
     this._config = {
@@ -68,6 +77,7 @@ export class Database {
     };
 
     this._baseDatabase = new BaseDatabase(this._config);
+    this._entityQueryTypeMap = entityQueryTypeMap;
   }
 
   get cachedEntities () {
@@ -169,9 +179,11 @@ export class Database {
         whereOptions.blockHash = blockHash;
       }
 
-      return this.getModelEntity(repo, whereOptions);
+      const entity = await this.getModelEntity(repo, whereOptions);
+      return entity;
     } catch (error) {
-      console.log(error);
+      log(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -354,6 +366,42 @@ export class Database {
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
+    let entities: Entity[];
+
+    // Use different suitable query patterns based on entities.
+    switch (this._entityQueryTypeMap.get(entity)) {
+      case ENTITY_QUERY_TYPE.SINGULAR:
+        entities = await this.getEntitiesSingular(queryRunner, entity, block, where);
+        break;
+
+      case ENTITY_QUERY_TYPE.DISTINCT_ON:
+        entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
+        break;
+
+      default:
+        // Use group by query if entity query type is not specified in map.
+        entities = await this.getEntitiesGroupBy(queryRunner, entity, block, where, queryOptions);
+        break;
+    }
+
+    if (!entities.length) {
+      return [];
+    }
+
+    entities = await this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, selections);
+    // Resolve any field name conflicts in the entity result.
+    entities = entities.map(entity => resolveEntityFieldConflicts(entity));
+
+    return entities;
+  }
+
+  async getEntitiesGroupBy<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository(entity);
     const { tableName } = repo.metadata;
 
@@ -405,11 +453,105 @@ export class Database {
 
     const entities = await selectQueryBuilder.getMany();
 
-    if (!entities.length) {
-      return [];
+    return entities;
+  }
+
+  async getEntitiesDistinctOn<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+
+    let subQuery = repo.createQueryBuilder('subTable')
+      .distinctOn(['subTable.id'])
+      .addFrom('block_progress', 'blockProgress')
+      .where('subTable.block_hash = blockProgress.block_hash')
+      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+      .addOrderBy('subTable.id', 'ASC')
+      .addOrderBy('subTable.block_number', 'DESC');
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
     }
 
-    return this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, selections);
+    if (block.number) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+    }
+
+    subQuery = this._baseDatabase.buildQuery(repo, subQuery, where);
+
+    let selectQueryBuilder = queryRunner.manager.createQueryBuilder()
+      .from(
+        `(${subQuery.getQuery()})`,
+        'latestEntities'
+      )
+      .setParameters(subQuery.getParameters());
+
+    if (queryOptions.orderBy) {
+      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
+      if (queryOptions.orderBy !== 'id') {
+        selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, 'subTable_');
+      }
+    }
+
+    if (queryOptions.skip) {
+      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+    }
+
+    if (queryOptions.limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+    }
+
+    let entities = await selectQueryBuilder.getRawMany();
+    entities = await this._transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
+
+    return entities as Entity[];
+  }
+
+  async getEntitiesSingular<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: Where = {}
+  ): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .addFrom('block_progress', 'blockProgress')
+      .where(`${tableName}.block_hash = blockProgress.block_hash`)
+      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+      .addOrderBy(`${tableName}.block_number`, 'DESC')
+      .limit(1);
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
+            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+
+    const entities = await selectQueryBuilder.getMany();
+
+    return entities as Entity[];
   }
 
   async loadEntitiesRelations<Entity> (
@@ -787,5 +929,17 @@ export class Database {
 
     log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
     cachePrunedEntitiesCount.set(totalEntities);
+  }
+
+  async _transformResults<Entity> (queryRunner: QueryRunner, qb: SelectQueryBuilder<Entity>, rawResults: any[]): Promise<any[]> {
+    const transformer = new RawSqlResultsToEntityTransformer(
+      qb.expressionMap,
+      queryRunner.manager.connection.driver,
+      [],
+      [],
+      queryRunner
+    );
+    assert(qb.expressionMap.mainAlias);
+    return transformer.transform(rawResults, qb.expressionMap.mainAlias);
   }
 }
