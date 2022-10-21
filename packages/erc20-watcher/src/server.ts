@@ -62,6 +62,8 @@ export const main = async (): Promise<any> => {
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();
+    // Delete jobs to prevent creating jobs after completion of processing previous block.
+    await jobQueue.deleteAllJobs();
     await eventWatcher.start();
   }
 

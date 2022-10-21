@@ -42,6 +42,8 @@ export class JobRunner {
   }
 
   async start (): Promise<void> {
+    await this._jobQueue.deleteAllJobs();
+    await this._baseJobRunner.resetToPrevIndexedBlock();
     await this.subscribeBlockProcessingQueue();
     await this.subscribeEventProcessingQueue();
     await this.subscribeBlockCheckpointQueue();
