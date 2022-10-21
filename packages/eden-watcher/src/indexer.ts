@@ -519,6 +519,11 @@ export class Indexer implements IndexerInterface {
     this._subgraphStateMap.clear();
   }
 
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [ProducerSet, Producer, RewardSchedule, RewardScheduleEntry, Network, Staker, ProducerEpoch, Epoch, Block, SlotClaim, Slot, Distributor, Distribution, Claim, Account, Slash];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
+  }
+
   _populateEntityTypesMap (): void {
     this._entityTypesMap.set(
       'Producer',

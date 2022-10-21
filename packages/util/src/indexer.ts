@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
+import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
@@ -978,6 +978,54 @@ export class Indexer {
         diff_staged: diffStagedState?.block.blockNumber,
         checkpoint: checkpointState?.block.blockNumber
       };
+    }
+  }
+
+  async resetWatcherToBlock (blockNumber: number, entities: EntityTarget<{ blockNumber: number }>[]): Promise<void> {
+    const blockProgresses = await this.getBlocksAtHeight(blockNumber, false);
+    assert(blockProgresses.length, `No blocks at specified block number ${blockNumber}`);
+    assert(!blockProgresses.some(block => !block.isComplete), `Incomplete block at block number ${blockNumber} with unprocessed events`);
+    const [blockProgress] = blockProgresses;
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      for (const entity of entities) {
+        await this._db.deleteEntitiesByConditions(dbTx, entity, { blockNumber: MoreThan(blockNumber) });
+      }
+
+      await this._db.deleteEntitiesByConditions(dbTx, 'block_progress', { blockNumber: MoreThan(blockNumber) });
+
+      const syncStatus = await this.getSyncStatus();
+      assert(syncStatus, 'Missing syncStatus');
+
+      if (syncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
+        await this.updateSyncStatusIndexedBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
+      }
+
+      if (syncStatus.latestCanonicalBlockNumber > blockProgress.blockNumber) {
+        await this.updateSyncStatusCanonicalBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
+      }
+
+      const stateSyncStatus = await this._db.getStateSyncStatus();
+
+      if (stateSyncStatus) {
+        if (stateSyncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
+          await this._db.updateStateSyncStatusIndexedBlock(dbTx, blockNumber, true);
+        }
+
+        if (stateSyncStatus.latestCheckpointBlockNumber > blockProgress.blockNumber) {
+          await this._db.updateStateSyncStatusCheckpointBlock(dbTx, blockNumber, true);
+        }
+      }
+
+      await this.updateSyncStatusChainHead(blockProgress.blockHash, blockProgress.blockNumber, true);
+
+      dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
     }
   }
 

@@ -524,6 +524,11 @@ export class Indexer implements IndexerInterface {
     this._subgraphStateMap.clear();
   }
 
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [Author, Blog, Category];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
+  }
+
   _populateEntityTypesMap (): void {
     this._entityTypesMap.set(
       'Author',

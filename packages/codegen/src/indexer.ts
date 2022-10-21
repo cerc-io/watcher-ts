@@ -45,6 +45,7 @@ export class Indexer {
 
     const queryObject = {
       name,
+      entityName: '',
       getQueryName: '',
       saveQueryName: '',
       params: _.cloneDeep(params),
@@ -56,10 +57,12 @@ export class Indexer {
 
     if (name.charAt(0) === '_') {
       const capitalizedName = `${name.charAt(1).toUpperCase()}${name.slice(2)}`;
+      queryObject.entityName = `_${capitalizedName}`;
       queryObject.getQueryName = `_get${capitalizedName}`;
       queryObject.saveQueryName = `_save${capitalizedName}`;
     } else {
       const capitalizedName = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+      queryObject.entityName = capitalizedName;
       queryObject.getQueryName = `get${capitalizedName}`;
       queryObject.saveQueryName = `save${capitalizedName}`;
     }

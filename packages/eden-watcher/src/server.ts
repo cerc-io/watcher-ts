@@ -14,7 +14,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, resetJobs } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -70,6 +70,8 @@ export const main = async (): Promise<any> => {
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();
+    // Delete jobs to prevent creating jobs after completion of processing previous block.
+    await jobQueue.deleteAllJobs();
     await eventWatcher.start();
   }
 

@@ -38,6 +38,20 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
+import { SupportsInterface } from './entity/SupportsInterface';
+import { BalanceOf } from './entity/BalanceOf';
+import { OwnerOf } from './entity/OwnerOf';
+import { GetApproved } from './entity/GetApproved';
+import { IsApprovedForAll } from './entity/IsApprovedForAll';
+import { Name } from './entity/Name';
+import { Symbol } from './entity/Symbol';
+import { TokenURI } from './entity/TokenURI';
+import { _Name } from './entity/_Name';
+import { _Symbol } from './entity/_Symbol';
+import { _Owners } from './entity/_Owners';
+import { _Balances } from './entity/_Balances';
+import { _TokenApprovals } from './entity/_TokenApprovals';
+import { _OperatorApprovals } from './entity/_OperatorApprovals';
 import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:indexer');
@@ -861,6 +875,11 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [SupportsInterface, BalanceOf, OwnerOf, GetApproved, IsApprovedForAll, Name, Symbol, TokenURI, _Name, _Symbol, _Owners, _Balances, _TokenApprovals, _OperatorApprovals, TransferCount];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
   async _saveBlockAndFetchEvents ({

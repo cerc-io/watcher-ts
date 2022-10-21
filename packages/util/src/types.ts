@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Connection, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { ServerConfig } from './config';
@@ -120,6 +120,7 @@ export interface IndexerInterface {
   updateSubgraphState?: (contractAddress: string, data: any) => void
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
+  resetWatcherToBlock (blockNumber: number): Promise<void>
 }
 
 export interface EventWatcherInterface {
@@ -130,7 +131,8 @@ export interface EventWatcherInterface {
 
 export interface DatabaseInterface {
   _conn: Connection;
-  createTransactionRunner(): Promise<QueryRunner>;
+  close (): Promise<void>;
+  createTransactionRunner (): Promise<QueryRunner>;
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>;
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
@@ -150,6 +152,7 @@ export interface DatabaseInterface {
   saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
+  deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void>
   getContracts?: () => Promise<ContractInterface[]>
   saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
   getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
@@ -159,6 +162,8 @@ export interface DatabaseInterface {
   removeStates(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
   saveOrUpdateState (dbTx: QueryRunner, state: StateInterface): Promise<StateInterface>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
+  updateStateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
+  updateStateSyncStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
 }
 
 export interface GraphDatabaseInterface {

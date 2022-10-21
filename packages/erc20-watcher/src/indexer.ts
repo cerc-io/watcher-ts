@@ -23,6 +23,8 @@ import artifacts from './artifacts/ERC20.json';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract } from './entity/Contract';
 import { State } from './entity/State';
+import { Allowance } from './entity/Allowance';
+import { Balance } from './entity/Balance';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -420,6 +422,11 @@ export class Indexer implements IndexerInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
+  }
+
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [Allowance, Balance];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
   async _saveBlockAndFetchEvents ({
