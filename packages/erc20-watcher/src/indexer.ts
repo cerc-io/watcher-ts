@@ -256,6 +256,11 @@ export class Indexer implements IndexerInterface {
     // TODO Implement
   }
 
+  async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
+    // TODO: Call initial state hook.
+    return {};
+  }
+
   async processCheckpoint (blockHash: string): Promise<void> {
     // TODO Implement
   }

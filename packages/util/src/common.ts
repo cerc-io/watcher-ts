@@ -150,7 +150,15 @@ export const _prefetchBlocks = async (
  * @param startBlock
  * @param endBlock
  */
-export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfig: JobQueueConfig, startBlock: number, endBlock: number): Promise<any[]> => {
+export const _fetchBatchBlocks = async (
+  indexer: IndexerInterface,
+  jobQueueConfig: JobQueueConfig,
+  startBlock: number,
+  endBlock: number
+): Promise<{
+  blockProgress: BlockProgressInterface,
+  events: DeepPartial<EventInterface>[]
+}[]> => {
   const blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
   let blocks = [];
 
@@ -181,15 +189,26 @@ export const _fetchBatchBlocks = async (indexer: IndexerInterface, jobQueueConfi
     await wait(jobQueueConfig.jobDelayInMilliSecs);
   }
 
-  // TODO Catch errors and continue to process available events instead of retrying for whole range because of an error.
-  const blockAndEventPromises = blocks.map(async block => {
+  console.time('time:common#fetchBatchBlocks-saveBlockAndFetchEvents');
+  const blockAndEventsPromises = blocks.map(async block => {
     block.blockTimestamp = block.timestamp;
-    const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
 
-    return { blockProgress, events };
+    try {
+      const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
+      return { blockProgress, events };
+    } catch (error) {
+      log(error);
+      return null;
+    }
   });
 
-  return Promise.all(blockAndEventPromises);
+  const blockAndEventsList = await Promise.all(blockAndEventsPromises);
+  console.timeEnd('time:common#fetchBatchBlocks-saveBlockAndFetchEvents');
+
+  return blockAndEventsList.filter(blockAndEvent => blockAndEvent !== null) as {
+    blockProgress: BlockProgressInterface,
+    events: DeepPartial<EventInterface>[]
+  }[];
 };
 
 /**

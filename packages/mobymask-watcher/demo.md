@@ -86,16 +86,16 @@
   yarn && yarn build
   ```
 
-* Change directory to `packages/mobymask-watcher/` and run the watcher:
-
-  ```bash
-  yarn server
-  ```
-
 * Run the job-runner:
 
   ```bash
   yarn job-runner
+  ```
+
+* Change directory to `packages/mobymask-watcher/` and run the watcher:
+
+  ```bash
+  yarn server
   ```
 
 * Clone the [MobyMask](https://github.com/cerc-io/MobyMask) repo.
