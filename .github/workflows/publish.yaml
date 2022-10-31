@@ -4,22 +4,28 @@ on:
     types: [published]
 jobs:
   docker_publish:
-    name: Push Docker image to Github Hub
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get the version
-        id: vars
-        run: |
-          echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
-          echo ::set-output name=tag::$(echo ${GITHUB_REF#refs/tags/})
-      - name: Docker Login to Registry
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u cerc-io --password-stdin
-      - name: Docker Pull
-        run: docker pull ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.sha}}
-      - name: Tag docker image
-        run: docker tag ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.sha}} ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.tag}}
-      - name: Docker Push to Github Hub
-        run: docker push ghcr.io/cerc-io/watcher-ts:${{steps.vars.outputs.tag}}
+    name: Run docker build and publish
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Run docker build
+          run: docker build -t cerc-io/watcher-ts -f Dockerfile .
+        - name: Get the version
+          id: vars
+          run: |
+            echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
+            echo ::set-output name=tag::$(echo ${GITHUB_REF#refs/tags/})
+        - name: Tag docker image
+          run: docker tag cerc-io/watcher-ts git.vdb.to/cerc-io/watcher-ts/watcher-ts:${{steps.vars.outputs.sha}}
+        - name: Tag docker image
+          run: docker tag git.vdb.to/cerc-io/watcher-ts/watcher-ts:${{steps.vars.outputs.sha}} git.vdb.to/cerc-io/watcher-ts/watcher-ts:${{steps.vars.outputs.tag}}
+        - name: Docker Login
+          run: echo ${{ secrets.GITEA_TOKEN }} | docker login https://git.vdb.to -u cerccicd --password-stdin
+        - name: Docker Push
+          run: docker push git.vdb.to/cerc-io/watcher-ts/watcher-ts:${{steps.vars.outputs.sha}}
+        - name: Docker Push TAGGED
+          run: docker push git.vdb.to/cerc-io/watcher-ts/watcher-ts:${{steps.vars.outputs.tag}}
+
 
   npm_publish:
     runs-on: ubuntu-latest
