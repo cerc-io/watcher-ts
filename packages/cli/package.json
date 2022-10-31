@@ -1,0 +1,18 @@
+{
+  "name": "@cerc-io/cli",
+  "version": "0.2.13",
+  "main": "dist/index.js",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "lint": "eslint .",
+    "build": "yarn clean && tsc && yarn copy-assets",
+    "clean": "rm -rf ./dist",
+    "copy-assets": "copyfiles -u 1 src/**/*.gql dist/"
+  },
+  "dependencies": {
+    "@cerc-io/graph-node": "^0.2.13",
+    "@cerc-io/ipld-eth-client": "^0.2.13",
+    "@cerc-io/util": "^0.2.13",
+    "typeorm": "^0.2.32"
+  }
+}
