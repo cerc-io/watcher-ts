@@ -165,8 +165,9 @@ export interface DatabaseInterface {
   getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]>
   getDiffStatesInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<StateInterface[]>
   getNewState (): StateInterface
-  removeStates(dbTx: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
-  saveOrUpdateState (dbTx: QueryRunner, state: StateInterface): Promise<StateInterface>
+  removeStates(queryRunner: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
+  removeStatesAfterBlock?: (queryRunner: QueryRunner, blockNumber: number) => Promise<void>
+  saveOrUpdateState (queryRunner: QueryRunner, state: StateInterface): Promise<StateInterface>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   updateStateSyncStatusCheckpointBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>

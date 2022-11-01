@@ -8,23 +8,20 @@ import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
-import { EthClient } from '@cerc-io/ipld-eth-client';
+import { GraphWatcher } from '@cerc-io/graph-node';
 import {
   DEFAULT_CONFIG_PATH,
-  Config,
   getConfig,
-  initClients,
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
   ServerConfig,
-  Database as BaseDatabase,
   Clients
 } from '@cerc-io/util';
 
+import { BaseCmd } from './base';
+
 interface Arguments {
-  [x: string]: unknown;
   configFile: string;
   address: string;
   kind: string;
@@ -32,14 +29,8 @@ interface Arguments {
   startingBlock: number;
 }
 
-export class WatchContractCmd {
-  _argv?: Arguments
-  _config?: Config;
-  _clients?: Clients;
-  _ethClient?: EthClient;
-  _ethProvider?: JsonRpcProvider
-  _database?: DatabaseInterface
-  _indexer?: IndexerInterface
+export class WatchContractCmd extends BaseCmd {
+  _argv?: Arguments;
 
   async initConfig<ConfigType> (): Promise<ConfigType> {
     this._argv = this._getArgv();
@@ -69,37 +60,8 @@ export class WatchContractCmd {
     if (!this._config) {
       await this.initConfig();
     }
-    assert(this._config);
 
-    this._database = new Database(this._config.database, this._config.server);
-    await this._database.init();
-
-    const jobQueueConfig = this._config.jobQueue;
-    assert(jobQueueConfig, 'Missing job queue config');
-
-    const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
-    assert(dbConnectionString, 'Missing job queue db connection string');
-
-    const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-    await jobQueue.start();
-
-    const { ethClient, ethProvider } = await initClients(this._config);
-    this._ethClient = ethClient;
-    this._ethProvider = ethProvider;
-    this._clients = { ethClient, ...clients };
-
-    // Check if subgraph watcher.
-    if (this._config.server.subgraphPath) {
-      const graphWatcher = await this._getGraphWatcher(this._database.baseDatabase);
-      this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, jobQueue, graphWatcher);
-      await this._indexer.init();
-
-      graphWatcher.setIndexer(this._indexer);
-      await graphWatcher.init();
-    } else {
-      this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, jobQueue);
-      await this._indexer.init();
-    }
+    super.initBase(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {
@@ -110,17 +72,6 @@ export class WatchContractCmd {
 
     await this._indexer.watchContract(this._argv.address, this._argv.kind, this._argv.checkpoint, this._argv.startingBlock);
     await this._database.close();
-  }
-
-  async _getGraphWatcher (baseDatabase: BaseDatabase): Promise<GraphWatcher> {
-    assert(this._config);
-    assert(this._ethClient);
-    assert(this._ethProvider);
-
-    const graphDb = new GraphDatabase(this._config.server, baseDatabase);
-    await graphDb.init();
-
-    return new GraphWatcher(graphDb, this._ethClient, this._ethProvider, this._config.server);
   }
 
   _getArgv (): any {
