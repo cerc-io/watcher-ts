@@ -51,7 +51,7 @@ export const handler = async (argv: any): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue, graphWatcher);
+  const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue, graphWatcher);
   await indexer.init();
 
   graphWatcher.setIndexer(indexer);

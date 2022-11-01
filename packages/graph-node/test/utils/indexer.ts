@@ -38,6 +38,10 @@ export class Indexer implements IndexerInterface {
     return this._storageLayoutMap;
   }
 
+  async init (): Promise<void> {
+    return undefined;
+  }
+
   getResultEvent (event: EventInterface): ResultEvent {
     return getResultEvent(event);
   }

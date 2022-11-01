@@ -50,7 +50,7 @@ const main = async (): Promise<void> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
+  const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
   await indexer.init();
 
   const state = await indexer.getStateByCID(argv.cid);

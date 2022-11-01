@@ -3,7 +3,7 @@ import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
-import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
+import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
@@ -65,7 +65,8 @@ export const createAndStartServer = async (
         }
       },
       // GQL response cache plugin
-      responseCachePlugin()
+      responseCachePlugin(),
+      ApolloServerPluginLandingPageLocalDefault({ embed: true })
     ]
   });
   await server.start();

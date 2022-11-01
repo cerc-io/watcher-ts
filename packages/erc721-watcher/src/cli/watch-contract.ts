@@ -5,7 +5,7 @@
 import 'reflect-metadata';
 import debug from 'debug';
 
-import { WatchContract } from '@cerc-io/cli';
+import { WatchContractCmd } from '@cerc-io/cli';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
@@ -13,10 +13,10 @@ import { Indexer } from '../indexer';
 const log = debug('vulcanize:watch-contract');
 
 const main = async (): Promise<void> => {
-  const watchContract = new WatchContract();
-  await watchContract.init(Database, Indexer);
+  const watchContractCmd = new WatchContractCmd();
+  await watchContractCmd.init(Database, Indexer);
 
-  await watchContract.exec();
+  await watchContractCmd.exec();
 };
 
 main().catch(err => {
