@@ -41,7 +41,8 @@ const DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL = 1000;
 export enum ENTITY_QUERY_TYPE {
   SINGULAR,
   DISTINCT_ON,
-  GROUP_BY
+  GROUP_BY,
+  UNIQUE
 }
 
 interface CachedEntities {
@@ -378,6 +379,10 @@ export class Database {
         entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
         break;
 
+      case ENTITY_QUERY_TYPE.UNIQUE:
+        entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
+        break;
+
       default:
         // Use group by query if entity query type is not specified in map.
         entities = await this.getEntitiesGroupBy(queryRunner, entity, block, where, queryOptions);
@@ -412,6 +417,11 @@ export class Database {
       .where('subTable.block_hash = blockProgress.block_hash')
       .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
       .groupBy('subTable.id');
+
+    if (where.id) {
+      subQuery = this._baseDatabase.buildQuery(repo, subQuery, { id: where.id });
+      delete where.id;
+    }
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
@@ -472,6 +482,11 @@ export class Database {
       .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
       .addOrderBy('subTable.id', 'ASC')
       .addOrderBy('subTable.block_number', 'DESC');
+
+    if (where.id) {
+      subQuery = this._baseDatabase.buildQuery(repo, subQuery, { id: where.id });
+      delete where.id;
+    }
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
@@ -548,6 +563,56 @@ export class Database {
     }
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+
+    const entities = await selectQueryBuilder.getMany();
+
+    return entities as Entity[];
+  }
+
+  async getEntitiesUnique<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .addFrom('block_progress', 'blockProgress')
+      .where(`${tableName}.block_hash = blockProgress.block_hash`)
+      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false });
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
+            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+
+    if (queryOptions.orderBy) {
+      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+    }
+
+    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+
+    if (queryOptions.skip) {
+      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+    }
+
+    if (queryOptions.limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+    }
 
     const entities = await selectQueryBuilder.getMany();
 
