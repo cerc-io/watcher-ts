@@ -273,7 +273,7 @@ export class Indexer {
     return [blockProgress, events];
   }
 
-  async fetchEvents (blockHash: string, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+  async fetchEvents (blockHash: string, blockNumber: number, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     let logsPromise: Promise<any>;
 
     if (this._serverConfig.filterLogs) {
@@ -284,13 +284,14 @@ export class Indexer {
 
       logsPromise = this._ethClient.getLogs({
         blockHash,
+        blockNumber: blockNumber.toString(),
         addresses
       });
     } else {
-      logsPromise = this._ethClient.getLogs({ blockHash });
+      logsPromise = this._ethClient.getLogs({ blockHash, blockNumber: blockNumber.toString() });
     }
 
-    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash });
+    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash, blockNumber });
 
     const [
       { logs },

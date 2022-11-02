@@ -16,6 +16,7 @@ export interface Config extends GraphQLConfig {
 
 interface Vars {
   blockHash: string;
+  blockNumber?: string;
   contract?: string;
   slot?: string;
   addresses?: string[];
