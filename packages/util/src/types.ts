@@ -119,6 +119,7 @@ export interface IndexerInterface {
   processBlockAfterEvents?: (blockHash: string, blockNumber: number) => Promise<void>
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
+  processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
