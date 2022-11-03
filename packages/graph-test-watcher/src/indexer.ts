@@ -319,9 +319,9 @@ export class Indexer implements IndexerInterface {
     this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
   }
 
-  async processBlockAfterEvents (blockHash: string): Promise<void> {
+  async processBlockAfterEvents (blockHash: string, blockNumber: number): Promise<void> {
     // Call subgraph handler for block.
-    await this._graphWatcher.handleBlock(blockHash);
+    await this._graphWatcher.handleBlock(blockHash, blockNumber);
 
     // Persist subgraph state to the DB.
     await this.dumpSubgraphState(blockHash);

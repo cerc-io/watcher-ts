@@ -42,6 +42,9 @@ export interface ServerConfig {
   filterLogs: boolean;
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
+
+  // Boolean to skip updating entity fields required in state creation and not required in the frontend.
+  skipStateFieldsUpdate: boolean;
 }
 
 export interface UpstreamConfig {
