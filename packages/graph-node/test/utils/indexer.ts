@@ -216,6 +216,7 @@ class ServerConfig implements ServerConfigInterface {
   filterLogs: boolean;
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
+  skipStateFieldsUpdate: boolean;
 
   constructor () {
     this.host = '';
@@ -230,5 +231,6 @@ class ServerConfig implements ServerConfigInterface {
     this.filterLogs = false;
     this.maxEventsBlockRange = 0;
     this.clearEntitiesCacheInterval = 0;
+    this.skipStateFieldsUpdate = false;
   }
 }
