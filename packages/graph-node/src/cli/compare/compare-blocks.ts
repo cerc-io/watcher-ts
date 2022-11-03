@@ -200,7 +200,6 @@ export const main = async (): Promise<void> => {
       for (const [queryName, entityName] of Object.entries(queryNames)) {
         try {
           log(`At block ${blockNumber} for query ${queryName}:`);
-          let resultDiff = '';
 
           if (fetchIds) {
             const queryLimit = config.queries.queryLimits[queryName];
@@ -230,11 +229,15 @@ export const main = async (): Promise<void> => {
               }
 
               if (diff) {
-                resultDiff = diff;
+                log('Results mismatch:', diff);
+                diffFound = true;
+              } else {
+                log('Results match.');
               }
             }
           } else {
             if (updatedEntities.has(entityName)) {
+              let resultDiff;
               let result;
               let skip = 0;
 
@@ -271,14 +274,14 @@ export const main = async (): Promise<void> => {
                 // eslint-disable-next-line no-unmodified-loop-condition
                 paginate
               );
-            }
-          }
 
-          if (resultDiff) {
-            log('Results mismatch:', resultDiff);
-            diffFound = true;
-          } else {
-            log('Results match.');
+              if (resultDiff) {
+                log('Results mismatch:', resultDiff);
+                diffFound = true;
+              } else {
+                log('Results match.');
+              }
+            }
           }
         } catch (err: any) {
           log('Error:', err.message);

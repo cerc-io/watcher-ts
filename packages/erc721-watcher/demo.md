@@ -86,16 +86,16 @@
   yarn && yarn build
   ```
 
-* Run the watcher:
-
-  ```bash
-  yarn server
-  ```
-
 * Run the job-runner:
 
   ```bash
   yarn job-runner
+  ```
+
+* Run the watcher:
+
+  ```bash
+  yarn server
   ```
 
 * Deploy an ERC721 token:

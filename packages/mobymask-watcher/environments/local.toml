@@ -47,6 +47,6 @@
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
   eventsInBatch = 50
-  blockDelayInMilliSecs = 60000
+  blockDelayInMilliSecs = 2000
   prefetchBlocksInMem = true
   prefetchBlockCount = 10

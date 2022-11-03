@@ -50,6 +50,9 @@ import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
 
+{{#each queries as | query |}}
+import { {{query.entityName}} } from './entity/{{query.entityName}}';
+{{/each}}
 {{#each subgraphEntities as | subgraphEntity |}}
 import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
 {{/each}}
@@ -537,8 +540,8 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async fetchBlockWithEvents (block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
-    return this._baseIndexer.fetchBlockWithEvents(block, this._fetchAndSaveEvents.bind(this));
+  async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
+    return this._baseIndexer.saveBlockAndFetchEvents(block, this._saveBlockAndFetchEvents.bind(this));
   }
 
   async getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<Event>> {
@@ -592,6 +595,18 @@ export class Indexer implements IndexerInterface {
 
     // Reset the subgraph state map.
     this._subgraphStateMap.clear();
+  }
+
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [
+      {{#each queries as | query |}}
+      {{query.entityName}},
+      {{/each}}
+      {{#each subgraphEntities as | subgraphEntity |}}
+      {{subgraphEntity.className}},
+      {{/each}}
+    ];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
   _populateEntityTypesMap (): void {

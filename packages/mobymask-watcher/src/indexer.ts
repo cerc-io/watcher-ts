@@ -607,6 +607,11 @@ export class Indexer implements IndexerInterface {
     return this._contractMap.get(kind);
   }
 
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
+  }
+
   async _saveBlockAndFetchEvents ({
     cid: blockCid,
     blockHash,

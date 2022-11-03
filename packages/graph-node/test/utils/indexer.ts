@@ -197,6 +197,10 @@ export class Indexer implements IndexerInterface {
   updateStateStatusMap (address: string, stateStatus: StateStatus): void {
     return undefined;
   }
+
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    return undefined;
+  }
 }
 
 class ServerConfig implements ServerConfigInterface {

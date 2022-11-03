@@ -172,6 +172,17 @@ export class JobRunner {
     await this._jobQueue.markComplete(job);
   }
 
+  async resetToPrevIndexedBlock (): Promise<void> {
+    const syncStatus = await this._indexer.getSyncStatus();
+
+    if (syncStatus) {
+      // Resetting to block before latest indexed as all events might not be processed in latest indexed block.
+      // Reprocessing of events in subgraph watchers is not possible as DB transaction is not implemented.
+      // TODO: Check updating latestIndexedBlock after blockProgress.isComplete is set to true.
+      await this._indexer.resetWatcherToBlock(syncStatus.latestIndexedBlockNumber - 1);
+    }
+  }
+
   handleShutdown (): void {
     process.on('SIGINT', this._processShutdown.bind(this));
     process.on('SIGTERM', this._processShutdown.bind(this));
