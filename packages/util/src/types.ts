@@ -113,7 +113,7 @@ export interface IndexerInterface {
   processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
-  processBlockAfterEvents?: (blockHash: string) => Promise<void>
+  processBlockAfterEvents?: (blockHash: string, blockNumber: number) => Promise<void>
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>

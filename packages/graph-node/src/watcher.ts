@@ -131,7 +131,7 @@ export class GraphWatcher {
 
     // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
-      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash);
+      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash, block.number);
     }
 
     const blockData = this._context.block;
@@ -194,10 +194,10 @@ export class GraphWatcher {
     }
   }
 
-  async handleBlock (blockHash: string) {
+  async handleBlock (blockHash: string, blockNumber: number) {
     // Check if block data is already fetched in handleEvent method for the same block.
     if (!this._context.block || this._context.block.blockHash !== blockHash) {
-      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash);
+      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
     }
 
     const blockData = this._context.block;

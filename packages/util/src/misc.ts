@@ -179,14 +179,14 @@ class CustomFormatter extends providers.Formatter {
   }
 }
 
-export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.BaseProvider, blockHash: string): Promise<any> => {
+export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.BaseProvider, blockHash: string, blockNumber: number): Promise<any> => {
   const {
     allEthHeaderCids: {
       nodes: [
         fullBlock
       ]
     }
-  } = await ethClient.getFullBlocks({ blockHash });
+  } = await ethClient.getFullBlocks({ blockHash, blockNumber });
 
   assert(fullBlock.blockByMhKey);
 
