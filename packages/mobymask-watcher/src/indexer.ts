@@ -598,8 +598,8 @@ export class Indexer implements IndexerInterface {
   }
 
   // Get full transaction data.
-  async getFullTransaction (txHash: string): Promise<any> {
-    return getFullTransaction(this._ethClient, txHash);
+  async getFullTransaction (txHash: string, blockNumber: number): Promise<any> {
+    return getFullTransaction(this._ethClient, txHash, blockNumber);
   }
 
   // Get contract interface for specified contract kind.
@@ -620,8 +620,9 @@ export class Indexer implements IndexerInterface {
     parentHash
   }: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
     assert(blockHash);
+    assert(blockNumber);
 
-    const dbEvents = await this._baseIndexer.fetchEvents(blockHash, this.parseEventNameAndArgs.bind(this));
+    const dbEvents = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this.parseEventNameAndArgs.bind(this));
 
     const dbTx = await this._db.createTransactionRunner();
     try {

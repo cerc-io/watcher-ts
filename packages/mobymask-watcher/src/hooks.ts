@@ -82,7 +82,7 @@ export async function handleEvent (indexer: Indexer, eventData: ResultEvent): Pr
 
   // Perform indexing for PhisherStatusUpdated and MemberStatusUpdated.
   if (['PhisherStatusUpdatedEvent', 'MemberStatusUpdatedEvent'].includes(eventData.event.__typename)) {
-    const txData = await indexer.getFullTransaction(eventData.tx.hash);
+    const txData = await indexer.getFullTransaction(eventData.tx.hash, eventData.block.number);
     const txDescription = getTxDescription(indexer, KIND_PHISHERREGISTRY, txData.input);
     let txDescriptions = [txDescription];
 

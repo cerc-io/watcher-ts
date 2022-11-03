@@ -15,8 +15,8 @@ query getStorageAt($blockHash: Bytes32!, $contract: Address!, $slot: Bytes32!) {
 `;
 
 export const getLogs = gql`
-query getLogs($blockHash: Bytes32!, $addresses: [Address!]) {
-  getLogs(blockHash: $blockHash, addresses: $addresses) {
+query getLogs($blockHash: Bytes32!, $blockNumber: BigInt, $addresses: [Address!]) {
+  getLogs(blockHash: $blockHash, blockNumber: $blockNumber, addresses: $addresses) {
     account {
       address
     }
@@ -100,8 +100,8 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 `;
 
 export const getFullTransaction = gql`
-query ethTransactionCidByTxHash($txHash: String!) {
-  ethTransactionCidByTxHash(txHash: $txHash) {
+query ethTransactionCidByTxHash($txHash: String!, $blockNumber: BigInt) {
+  ethTransactionCidByTxHash(txHash: $txHash, blockNumber: $blockNumber) {
     cid
     txHash
     index
