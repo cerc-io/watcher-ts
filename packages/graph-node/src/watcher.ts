@@ -138,7 +138,7 @@ export class GraphWatcher {
     assert(blockData);
 
     assert(this._indexer && this._indexer.isWatchedContract);
-    const watchedContract = await this._indexer.isWatchedContract(contract);
+    const watchedContract = this._indexer.isWatchedContract(contract);
     assert(watchedContract);
 
     // Get dataSource in subgraph yaml based on contract address.
@@ -174,7 +174,7 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const tx = await this._getTransactionData(txHash);
+    const tx = await this._getTransactionData(txHash, Number(blockData.blockNumber));
 
     const data = {
       block: blockData,
@@ -409,14 +409,14 @@ export class GraphWatcher {
     }
   }
 
-  async _getTransactionData (txHash: string): Promise<Transaction> {
+  async _getTransactionData (txHash: string, blockNumber: number): Promise<Transaction> {
     let transaction = this._transactionsMap.get(txHash);
 
     if (transaction) {
       return transaction;
     }
 
-    transaction = await getFullTransaction(this._ethClient, txHash);
+    transaction = await getFullTransaction(this._ethClient, txHash, blockNumber);
     assert(transaction);
     this._transactionsMap.set(txHash, transaction);
 

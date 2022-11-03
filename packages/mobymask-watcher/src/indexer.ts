@@ -598,8 +598,8 @@ export class Indexer implements IndexerInterface {
   }
 
   // Get full transaction data.
-  async getFullTransaction (txHash: string): Promise<any> {
-    return getFullTransaction(this._ethClient, txHash);
+  async getFullTransaction (txHash: string, blockNumber: number): Promise<any> {
+    return getFullTransaction(this._ethClient, txHash, blockNumber);
   }
 
   // Get contract interface for specified contract kind.

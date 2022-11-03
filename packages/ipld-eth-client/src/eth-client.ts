@@ -107,15 +107,16 @@ export class EthClient {
     return result;
   }
 
-  async getFullTransaction (txHash: string): Promise<any> {
-    console.time(`time:eth-client#getFullTransaction-${txHash}`);
+  async getFullTransaction (txHash: string, blockNumber?: number): Promise<any> {
+    console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
     const result = this._graphqlClient.query(
       ethQueries.getFullTransaction,
       {
-        txHash
+        txHash,
+        blockNumber: blockNumber?.toString()
       }
     );
-    console.timeEnd(`time:eth-client#getFullTransaction-${txHash}`);
+    console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
 
     return result;
   }

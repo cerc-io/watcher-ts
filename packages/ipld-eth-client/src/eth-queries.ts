@@ -100,8 +100,8 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 `;
 
 export const getFullTransaction = gql`
-query ethTransactionCidByTxHash($txHash: String!) {
-  ethTransactionCidByTxHash(txHash: $txHash) {
+query ethTransactionCidByTxHash($txHash: String!, $blockNumber: BigInt) {
+  ethTransactionCidByTxHash(txHash: $txHash, blockNumber: $blockNumber) {
     cid
     txHash
     index
