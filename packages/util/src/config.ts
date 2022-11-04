@@ -45,6 +45,12 @@ export interface ServerConfig {
 
   // Boolean to skip updating entity fields required in state creation and not required in the frontend.
   skipStateFieldsUpdate: boolean;
+
+  // Max GQL API requests to process simultaneously (defaults to 1).
+  maxSimultaneousRequests?: number;
+
+  // Max GQL API requests in queue until reject (defaults to -1, means do not reject).
+  maxRequestQueueLimit?: number;
 }
 
 export interface UpstreamConfig {
