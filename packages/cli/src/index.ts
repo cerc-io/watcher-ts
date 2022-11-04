@@ -8,3 +8,4 @@ export * from './reset/state';
 export * from './checkpoint/create';
 export * from './inspect-cid';
 export * from './import-state';
+export * from './export-state';

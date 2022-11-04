@@ -280,7 +280,18 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<State | undefined> {
+    // TODO Implement
+    return undefined;
+  }
+
   async getStateByCID (cid: string): Promise<State | undefined> {
+    // TODO Implement
+    return undefined;
+  }
+
+  // Method to be used by export-state CLI.
+  async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     // TODO Implement
     return undefined;
   }
@@ -355,6 +366,11 @@ export class Indexer implements IndexerInterface {
   async updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
     // TODO Implement
     return {} as StateSyncStatus;
+  }
+
+  async getLatestStateIndexedBlock (): Promise<BlockProgress> {
+    // TODO Implement
+    return {} as BlockProgress;
   }
 
   async getLatestCanonicalBlock (): Promise<BlockProgress> {
