@@ -26,7 +26,7 @@ import { BlockProgressInterface, ContractInterface, EventInterface, StateInterfa
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
 import { blockProgressCount, eventCount } from './metrics';
 
-const OPERATOR_MAP = {
+export const OPERATOR_MAP = {
   equals: '=',
   gt: '>',
   lt: '<',
