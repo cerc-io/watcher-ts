@@ -71,8 +71,6 @@ export class Database {
   _config: ConnectionOptions
   _conn!: Connection
   _pgPool: Pool
-  _blockCount = 0
-  _eventCount = 0
 
   constructor (config: ConnectionOptions) {
     assert(config);
@@ -181,8 +179,7 @@ export class Database {
   }
 
   async saveBlockProgress (repo: Repository<BlockProgressInterface>, block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {
-    this._blockCount++;
-    blockProgressCount.set(this._blockCount);
+    blockProgressCount.inc(1);
 
     return await repo.save(block);
   }
@@ -275,8 +272,7 @@ export class Database {
     });
 
     const blockProgress = await blockRepo.save(entity);
-    this._blockCount++;
-    blockProgressCount.set(this._blockCount);
+    blockProgressCount.inc(1);
 
     // Bulk insert events.
     events.forEach(event => {
@@ -301,8 +297,8 @@ export class Database {
     });
 
     await Promise.all(insertPromises);
-    this._eventCount += events.filter(event => event.eventName !== UNKNOWN_EVENT_NAME).length;
-    eventCount.set(this._eventCount);
+    const knownEvents = events.filter(event => event.eventName !== UNKNOWN_EVENT_NAME).length;
+    eventCount.inc(knownEvents);
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity>): Promise<Entity[]> {
@@ -411,8 +407,7 @@ export class Database {
 
   async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
     const event = await repo.save(entity);
-    this._eventCount++;
-    eventCount.set(this._eventCount);
+    eventCount.inc(1);
 
     return event;
   }
@@ -869,20 +864,16 @@ export class Database {
   }
 
   async _fetchBlockCount (): Promise<void> {
-    this._blockCount = await this._conn.getRepository('block_progress')
+    const res = await this._conn.getRepository('block_progress')
       .count();
 
-    blockProgressCount.set(this._blockCount);
+    blockProgressCount.set(res);
   }
 
   async _fetchEventCount (): Promise<void> {
-    this._eventCount = await this._conn.getRepository('event')
-      .count({
-        where: {
-          eventName: Not(UNKNOWN_EVENT_NAME)
-        }
-      });
+    const res = await this._conn.getRepository('event')
+      .count();
 
-    eventCount.set(this._eventCount);
+    eventCount.set(res);
   }
 }
