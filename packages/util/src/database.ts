@@ -305,7 +305,7 @@ export class Database {
     eventCount.set(this._eventCount);
   }
 
-  async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindConditions<Entity>): Promise<Entity[]> {
+  async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity>): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository(entity);
 
     const entities = await repo.find(findConditions);
