@@ -45,6 +45,7 @@ export enum ENTITY_QUERY_TYPE {
   GROUP_BY,
   GROUP_BY_WITHOUT_PRUNED,
   UNIQUE,
+  UNIQUE_WITHOUT_PRUNED
 }
 
 interface CachedEntities {
@@ -379,6 +380,10 @@ export class Database {
 
       case ENTITY_QUERY_TYPE.UNIQUE:
         entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
+        break;
+
+      case ENTITY_QUERY_TYPE.UNIQUE_WITHOUT_PRUNED:
+        entities = await this.getEntitiesUniqueWithoutPruned(queryRunner, entity, block, where, queryOptions);
         break;
 
       case ENTITY_QUERY_TYPE.DISTINCT_ON:
@@ -721,6 +726,52 @@ export class Database {
       .addFrom('block_progress', 'blockProgress')
       .where(`${tableName}.block_hash = blockProgress.block_hash`)
       .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false });
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      selectQueryBuilder = selectQueryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
+            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+
+    if (queryOptions.orderBy) {
+      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+    }
+
+    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+
+    if (queryOptions.skip) {
+      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+    }
+
+    if (queryOptions.limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+    }
+
+    const entities = await selectQueryBuilder.getMany();
+
+    return entities as Entity[];
+  }
+
+  async getEntitiesUniqueWithoutPruned<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+    let selectQueryBuilder = repo.createQueryBuilder(tableName);
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
