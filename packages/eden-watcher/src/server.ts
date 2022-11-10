@@ -14,7 +14,7 @@ import debug from 'debug';
 import 'graphql-import-node';
 import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, resetJobs } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -43,7 +43,7 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, 'entity/*'));
+  const graphDb = new GraphDatabase(db._baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

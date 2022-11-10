@@ -2,7 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import yargs from 'yargs';
 import 'reflect-metadata';
 import debug from 'debug';
@@ -59,7 +58,7 @@ const main = async (): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../entity/*'));
+  const graphDb = new GraphDatabase(db._baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

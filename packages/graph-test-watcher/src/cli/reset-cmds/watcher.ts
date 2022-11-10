@@ -2,9 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import path from 'path';
 import debug from 'debug';
-import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
 import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
@@ -12,13 +10,6 @@ import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
-import { BlockProgress } from '../../entity/BlockProgress';
-
-import { GetMethod } from '../../entity/GetMethod';
-import { _Test } from '../../entity/_Test';
-import { Author } from '../../entity/Author';
-import { Blog } from '../../entity/Blog';
-import { Category } from '../../entity/Category';
 
 const log = debug('vulcanize:reset-watcher');
 
@@ -41,7 +32,7 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../../entity/*'));
+  const graphDb = new GraphDatabase(db._baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

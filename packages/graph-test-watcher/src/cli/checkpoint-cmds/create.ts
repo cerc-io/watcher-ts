@@ -2,7 +2,6 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import path from 'path';
 import debug from 'debug';
 import assert from 'assert';
 
@@ -38,7 +37,7 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../../entity/*'));
+  const graphDb = new GraphDatabase(db._baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

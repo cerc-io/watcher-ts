@@ -2,9 +2,6 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-{{#if (subgraphPath)}}
-import path from 'path';
-{{/if}}
 import debug from 'debug';
 import assert from 'assert';
 
@@ -44,7 +41,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   {{#if (subgraphPath)}}
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../../entity/*'));
+  const graphDb = new GraphDatabase(db._baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
