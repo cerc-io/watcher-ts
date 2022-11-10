@@ -9,6 +9,9 @@
   # Checkpoint interval in number of blocks.
   checkpointInterval = 2000
 
+  # Enable state creation
+  enableState = true
+
   # Boolean to filter logs by contract.
   filterLogs = false
 
