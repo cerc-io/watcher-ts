@@ -544,7 +544,7 @@ export class Database {
     }
 
     let entities = await selectQueryBuilder.getRawMany();
-    entities = await this._transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
+    entities = await this.transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
 
     return entities as Entity[];
   }
@@ -670,7 +670,7 @@ export class Database {
     }
 
     let entities = await selectQueryBuilder.getRawMany();
-    entities = await this._transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
+    entities = await this.transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
 
     return entities as Entity[];
   }
@@ -1185,7 +1185,7 @@ export class Database {
     cachePrunedEntitiesCount.set(totalEntities);
   }
 
-  async _transformResults<Entity> (queryRunner: QueryRunner, qb: SelectQueryBuilder<Entity>, rawResults: any[]): Promise<any[]> {
+  async transformResults<Entity> (queryRunner: QueryRunner, qb: SelectQueryBuilder<Entity>, rawResults: any[]): Promise<any[]> {
     const transformer = new RawSqlResultsToEntityTransformer(
       qb.expressionMap,
       queryRunner.manager.connection.driver,
