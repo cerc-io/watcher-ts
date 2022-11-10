@@ -3,7 +3,7 @@
 //
 
 import { BaseProvider } from '@ethersproject/providers';
-import { getCustomProvider } from '@cerc-io/util';
+import { getCustomProvider, Database as BaseDatabase } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -71,7 +71,8 @@ export const getDummyGraphData = (): any => {
 };
 
 export const getTestDatabase = (): Database => {
-  return new Database({ type: 'postgres' }, '');
+  const baseDatabase = new BaseDatabase({ type: 'postgres' });
+  return new Database(baseDatabase);
 };
 
 export const getTestIndexer = (storageLayout?: Map<string, StorageLayout>): Indexer => {
