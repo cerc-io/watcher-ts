@@ -211,7 +211,7 @@ class ServerConfig implements ServerConfigInterface {
   checkpointing: boolean;
   checkpointInterval: number;
   subgraphPath: string;
-  disableSubgraphState: boolean;
+  enableState: boolean;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;
@@ -226,7 +226,7 @@ class ServerConfig implements ServerConfigInterface {
     this.checkpointing = false;
     this.checkpointInterval = 0;
     this.subgraphPath = '';
-    this.disableSubgraphState = false;
+    this.enableState = false;
     this.wasmRestartBlocksInterval = 0;
     this.filterLogs = false;
     this.maxEventsBlockRange = 0;
