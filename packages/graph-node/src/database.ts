@@ -61,7 +61,6 @@ interface CachedEntities {
 }
 
 export class Database {
-  _config: ConnectionOptions
   _conn!: Connection
   _baseDatabase: BaseDatabase
   _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>
@@ -71,16 +70,8 @@ export class Database {
     latestPrunedEntities: new Map()
   }
 
-  constructor (config: ConnectionOptions, entitiesPath: string, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
-    assert(config);
-
-    this._config = {
-      name: 'subgraph',
-      ...config,
-      entities: [entitiesPath]
-    };
-
-    this._baseDatabase = new BaseDatabase(this._config);
+  constructor (baseDatabase: BaseDatabase, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
+    this._baseDatabase = baseDatabase;
     this._entityQueryTypeMap = entityQueryTypeMap;
   }
 
@@ -89,7 +80,8 @@ export class Database {
   }
 
   async init (): Promise<void> {
-    this._conn = await this._baseDatabase.init();
+    this._conn = this._baseDatabase.conn;
+    assert(this._conn);
   }
 
   async close (): Promise<void> {

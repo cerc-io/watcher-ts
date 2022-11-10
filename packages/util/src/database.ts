@@ -86,6 +86,10 @@ export class Database {
     });
   }
 
+  get conn (): Connection {
+    return this._conn;
+  }
+
   async init (): Promise<Connection> {
     assert(!this._conn);
 

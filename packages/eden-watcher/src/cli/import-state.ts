@@ -47,7 +47,7 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.database, path.resolve(__dirname, '../entity/*'));
+  const graphDb = new GraphDatabase(db.baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
