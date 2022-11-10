@@ -37,7 +37,7 @@ export interface ServerConfig {
   checkpointing: boolean;
   checkpointInterval: number;
   subgraphPath: string;
-  disableSubgraphState: boolean;
+  enableState: boolean;
   wasmRestartBlocksInterval: number;
   filterLogs: boolean;
   maxEventsBlockRange: number;

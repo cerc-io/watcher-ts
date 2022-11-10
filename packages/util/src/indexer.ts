@@ -588,6 +588,10 @@ export class Indexer {
   }
 
   async processCheckpoint (indexer: IndexerInterface, blockHash: string, checkpointInterval: number): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Get all the contracts.
     const contracts = Object.values(this._watchedContracts);
 
@@ -615,6 +619,10 @@ export class Indexer {
   }
 
   async processCLICheckpoint (indexer: IndexerInterface, contractAddress: string, blockHash?: string): Promise<string | undefined> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Getting the block for checkpoint.
     let block;
 
@@ -634,6 +642,10 @@ export class Indexer {
   }
 
   async createStateCheckpoint (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Get the contract.
     const contract = this._watchedContracts[contractAddress];
     assert(contract, `Contract ${contractAddress} not watched`);
@@ -652,6 +664,10 @@ export class Indexer {
     blockHash: string,
     blockNumber: number
   ): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Get all the contracts.
     const contracts = Object.values(this._watchedContracts);
 
@@ -694,6 +710,10 @@ export class Indexer {
   }
 
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
@@ -729,6 +749,10 @@ export class Indexer {
   }
 
   async createDiff (contractAddress: string, block: BlockProgressInterface, data: any): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Get the contract.
     const contract = this._watchedContracts[contractAddress];
     assert(contract, `Contract ${contractAddress} not watched`);
@@ -763,6 +787,10 @@ export class Indexer {
   }
 
   async createCheckpoint (indexer: IndexerInterface, contractAddress: string, currentBlock: BlockProgressInterface): Promise<string | undefined> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     // Get the contract.
     const contract = this._watchedContracts[contractAddress];
     assert(contract, `Contract ${contractAddress} not watched`);
@@ -964,6 +992,10 @@ export class Indexer {
   }
 
   async fetchStateStatus (): Promise<void> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+
     const contracts = Object.values(this._watchedContracts);
 
     // TODO: Fire a single query for all contracts.

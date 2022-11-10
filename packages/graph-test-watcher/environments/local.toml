@@ -9,6 +9,9 @@
   # Checkpoint interval in number of blocks.
   checkpointInterval = 2000
 
+  # Enable state creation
+  enableState = true
+
   subgraphPath = "../graph-node/test/subgraph/example1/build"
   wasmRestartBlocksInterval = 20
 

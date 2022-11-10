@@ -9,12 +9,12 @@
   # Checkpoint interval in number of blocks.
   checkpointInterval = 2000
 
+  # Enable state creation
+  # CAUTION: Disable only if state creation is not desired or can be filled subsequently
+  enableState = true
+
   {{#if (subgraphPath)}}
   subgraphPath = "{{subgraphPath}}"
-
-  # Disable creation of state from subgraph entity updates
-  # CAUTION: Disable only if subgraph state is not desired or can be filled subsequently
-  disableSubgraphState = false
 
   # Interval to restart wasm instance periodically
   wasmRestartBlocksInterval = 20
