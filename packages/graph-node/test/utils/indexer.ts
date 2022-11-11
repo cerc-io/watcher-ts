@@ -203,7 +203,7 @@ export class Indexer implements IndexerInterface {
   }
 }
 
-class ServerConfig implements ServerConfigInterface {
+export class ServerConfig implements ServerConfigInterface {
   host: string;
   port: number;
   mode: string;

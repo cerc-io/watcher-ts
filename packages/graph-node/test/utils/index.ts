@@ -9,7 +9,7 @@ import { StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { EventData } from '../../src/utils';
 import { Database } from '../../src/database';
-import { Indexer } from './indexer';
+import { Indexer, ServerConfig } from './indexer';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
 const IPLD_ETH_SERVER_GQL_URL = 'http://127.0.0.1:8082/graphql';
@@ -72,7 +72,8 @@ export const getDummyGraphData = (): any => {
 
 export const getTestDatabase = (): Database => {
   const baseDatabase = new BaseDatabase({ type: 'postgres' });
-  return new Database(baseDatabase);
+  const serverConfig = new ServerConfig();
+  return new Database(serverConfig, baseDatabase);
 };
 
 export const getTestIndexer = (storageLayout?: Map<string, StorageLayout>): Indexer => {
