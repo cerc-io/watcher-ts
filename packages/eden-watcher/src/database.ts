@@ -32,7 +32,7 @@ export class Database implements DatabaseInterface {
   }
 
   get baseDatabase (): BaseDatabase {
-    return this.baseDatabase;
+    return this._baseDatabase;
   }
 
   async init (): Promise<void> {
