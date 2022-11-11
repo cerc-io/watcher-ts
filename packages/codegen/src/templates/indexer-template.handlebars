@@ -564,6 +564,18 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
+  async resetWatcherToBlock (blockNumber: number): Promise<void> {
+    const entities = [
+      {{#each queries as | query |}}
+      {{query.entityName}},
+      {{/each}}
+      {{#each subgraphEntities as | subgraphEntity |}}
+      {{subgraphEntity.className}},
+      {{/each}}
+    ];
+    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
+  }
+
   {{#if (subgraphPath)}}
   getEntityTypesMap (): Map<string, { [key: string]: string }> {
     return this._entityTypesMap;
@@ -595,18 +607,6 @@ export class Indexer implements IndexerInterface {
 
     // Reset the subgraph state map.
     this._subgraphStateMap.clear();
-  }
-
-  async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [
-      {{#each queries as | query |}}
-      {{query.entityName}},
-      {{/each}}
-      {{#each subgraphEntities as | subgraphEntity |}}
-      {{subgraphEntity.className}},
-      {{/each}}
-    ];
-    await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
   _populateEntityTypesMap (): void {
