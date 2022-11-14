@@ -93,7 +93,6 @@ export class Indexer implements IndexerInterface {
     assert(BoredApeYachtClubStorageLayout);
     this._storageLayoutMap.set(KIND_BOREDAPEYACHTCLUB, BoredApeYachtClubStorageLayout);
     this._contractMap.set(KIND_BOREDAPEYACHTCLUB, new ethers.utils.Interface(BoredApeYachtClubABI));
-
   }
 
   get serverConfig (): ServerConfig {
@@ -801,11 +800,10 @@ export class Indexer implements IndexerInterface {
       TokenOfOwnerByIndex,
       TokenByIndex,
       BaseURI,
-      Owner,
+      Owner
     ];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
-
 
   async _saveBlockAndFetchEvents ({
     cid: blockCid,
