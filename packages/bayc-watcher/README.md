@@ -1,4 +1,4 @@
-# output
+# bayc-watcher
 
 ## Setup
 
@@ -12,7 +12,7 @@
 
   ```bash
   sudo su - postgres
-  createdb output
+  createdb bayc-watcher
   ```
 
 * If the watcher is an `active` watcher:
@@ -20,19 +20,19 @@
   Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
   ```
-  createdb output-job-queue
+  createdb bayc-watcher-job-queue
   ```
 
   ```
-  postgres@tesla:~$ psql -U postgres -h localhost output-job-queue
+  postgres@tesla:~$ psql -U postgres -h localhost bayc-watcher-job-queue
   Password for user postgres:
   psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
   SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
   Type "help" for help.
 
-  output-job-queue=# CREATE EXTENSION pgcrypto;
+  bayc-watcher-job-queue=# CREATE EXTENSION pgcrypto;
   CREATE EXTENSION
-  output-job-queue=# exit
+  bayc-watcher-job-queue=# exit
   ```
 
 * In the [config file](./environments/local.toml):

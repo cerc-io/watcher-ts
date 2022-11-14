@@ -13,7 +13,6 @@ import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigInt
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
 
-
 const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
