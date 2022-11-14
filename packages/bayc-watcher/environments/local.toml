@@ -30,7 +30,7 @@
   type = "postgres"
   host = "localhost"
   port = 5432
-  database = "output"
+  database = "bayc-watcher"
   username = "postgres"
   password = "postgres"
   synchronize = true
@@ -47,7 +47,7 @@
     deleteOnStart = false
 
 [jobQueue]
-  dbConnectionString = "postgres://postgres:postgres@localhost/output-job-queue"
+  dbConnectionString = "postgres://postgres:postgres@localhost/bayc-watcher-job-queue"
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
   eventsInBatch = 50

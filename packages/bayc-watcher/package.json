@@ -1,7 +1,7 @@
 {
-  "name": "@cerc-io/output",
+  "name": "@cerc-io/bayc-watcher",
   "version": "0.1.0",
-  "description": "output",
+  "description": "bayc-watcher",
   "private": true,
   "main": "dist/index.js",
   "scripts": {

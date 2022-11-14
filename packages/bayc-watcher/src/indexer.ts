@@ -56,7 +56,7 @@ import { Owner } from './entity/Owner';
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
-const KIND_BOREDAPEYACHTCLUB = 'Empty';
+const KIND_BOREDAPEYACHTCLUB = 'BAYC';
 
 export class Indexer implements IndexerInterface {
   _db: Database
