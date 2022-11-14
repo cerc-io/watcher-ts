@@ -51,6 +51,9 @@ export interface ServerConfig {
 
   // Max GQL API requests in queue until reject (defaults to -1, means do not reject).
   maxRequestQueueLimit?: number;
+
+  // Boolean to load GQL query nested entity relations sequentially.
+  loadRelationsSequential: boolean;
 }
 
 export interface UpstreamConfig {

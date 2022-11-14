@@ -45,7 +45,7 @@ const main = async (): Promise<void> => {
   await db.init();
   {{#if (subgraphPath)}}
 
-  const graphDb = new GraphDatabase(db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

@@ -203,7 +203,7 @@ export class Indexer implements IndexerInterface {
   }
 }
 
-class ServerConfig implements ServerConfigInterface {
+export class ServerConfig implements ServerConfigInterface {
   host: string;
   port: number;
   mode: string;
@@ -217,6 +217,7 @@ class ServerConfig implements ServerConfigInterface {
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
   skipStateFieldsUpdate: boolean;
+  loadRelationsSequential: boolean;
 
   constructor () {
     this.host = '';
@@ -232,5 +233,6 @@ class ServerConfig implements ServerConfigInterface {
     this.maxEventsBlockRange = 0;
     this.clearEntitiesCacheInterval = 0;
     this.skipStateFieldsUpdate = false;
+    this.loadRelationsSequential = false;
   }
 }

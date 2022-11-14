@@ -28,6 +28,7 @@ import {
   eventProcessingLoadEntityCount,
   eventProcessingLoadEntityDBQueryDuration,
   QueryOptions,
+  ServerConfig,
   Where
 } from '@cerc-io/util';
 
@@ -61,6 +62,7 @@ interface CachedEntities {
 }
 
 export class Database {
+  _serverConfig: ServerConfig
   _conn!: Connection
   _baseDatabase: BaseDatabase
   _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>
@@ -70,7 +72,8 @@ export class Database {
     latestPrunedEntities: new Map()
   }
 
-  constructor (baseDatabase: BaseDatabase, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
+  constructor (serverConfig: ServerConfig, baseDatabase: BaseDatabase, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
+    this._serverConfig = serverConfig;
     this._baseDatabase = baseDatabase;
     this._entityQueryTypeMap = entityQueryTypeMap;
   }
@@ -815,118 +818,41 @@ export class Database {
 
     const relationSelections = selections.filter((selection) => selection.kind === 'Field' && Boolean(relations[selection.name.value]));
 
-    for (const selection of relationSelections) {
-      assert(selection.kind === 'Field');
-      const field = selection.name.value;
-      const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
-      let childSelections = selection.selectionSet?.selections || [];
-
-      // Filter out __typename field in GQL for loading relations.
-      childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
-
-      if (isDerived) {
-        const where: Where = {
-          [foreignKey]: [{
-            value: entities.map((entity: any) => entity.id),
-            not: false,
-            operator: 'in'
-          }]
-        };
-
-        const relatedEntities = await this.getEntities(
-          queryRunner,
-          relationEntity,
-          relationsMap,
-          block,
-          where,
-          {},
-          childSelections
-        );
-
-        const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
-          // Related entity might be loaded with data.
-          const parentEntityId = entity[foreignKey].id ?? entity[foreignKey];
-
-          if (!acc[parentEntityId]) {
-            acc[parentEntityId] = [];
-          }
-
-          if (acc[parentEntityId].length < DEFAULT_LIMIT) {
-            acc[parentEntityId].push(entity);
-          }
-
-          return acc;
-        }, {});
-
-        entities.forEach((entity: any) => {
-          if (relatedEntitiesMap[entity.id]) {
-            entity[field] = relatedEntitiesMap[entity.id];
-          } else {
-            entity[field] = [];
-          }
-        });
-
-        continue;
+    if (this._serverConfig.loadRelationsSequential) {
+      for (const selection of relationSelections) {
+        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection);
       }
+    } else {
+      const loadRelationPromises = relationSelections.map(async selection => {
+        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection);
+      });
 
-      if (isArray) {
-        const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
-          entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
+      await Promise.all(loadRelationPromises);
+    }
 
-          return acc;
-        }, new Set());
+    return entities;
+  }
 
-        const where: Where = {
-          id: [{
-            value: Array.from(relatedIds),
-            not: false,
-            operator: 'in'
-          }]
-        };
+  async loadRelation<Entity> (
+    queryRunner: QueryRunner,
+    block: BlockHeight,
+    relationsMap: Map<any, { [key: string]: any }>,
+    relations: { [key: string]: any },
+    entities: Entity[],
+    selection: SelectionNode
+  ): Promise<void> {
+    assert(selection.kind === 'Field');
+    const field = selection.name.value;
+    const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
+    let childSelections = selection.selectionSet?.selections || [];
 
-        const relatedEntities = await this.getEntities(
-          queryRunner,
-          relationEntity,
-          relationsMap,
-          block,
-          where,
-          {},
-          childSelections
-        );
+    // Filter out __typename field in GQL for loading relations.
+    childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
-        entities.forEach((entity: any) => {
-          const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
-            acc.add(id);
-
-            return acc;
-          }, new Set());
-
-          entity[field] = [];
-
-          relatedEntities.forEach((relatedEntity: any) => {
-            if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
-              entity[field].push(relatedEntity);
-            }
-          });
-        });
-
-        continue;
-      }
-
-      // field is neither an array nor derivedFrom
-
-      // Avoid loading relation if selections only has id field.
-      if (childSelections.length === 1 && childSelections[0].kind === 'Field' && childSelections[0].name.value === 'id') {
-        entities.forEach((entity: any) => {
-          entity[field] = { id: entity[field] };
-        });
-
-        continue;
-      }
-
+    if (isDerived) {
       const where: Where = {
-        id: [{
-          value: entities.map((entity: any) => entity[field]),
+        [foreignKey]: [{
+          value: entities.map((entity: any) => entity.id),
           not: false,
           operator: 'in'
         }]
@@ -942,20 +868,116 @@ export class Database {
         childSelections
       );
 
-      const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
-        acc[entity.id] = entity;
+      const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
+        // Related entity might be loaded with data.
+        const parentEntityId = entity[foreignKey].id ?? entity[foreignKey];
+
+        if (!acc[parentEntityId]) {
+          acc[parentEntityId] = [];
+        }
+
+        if (acc[parentEntityId].length < DEFAULT_LIMIT) {
+          acc[parentEntityId].push(entity);
+        }
 
         return acc;
       }, {});
 
       entities.forEach((entity: any) => {
-        if (relatedEntitiesMap[entity[field]]) {
-          entity[field] = relatedEntitiesMap[entity[field]];
+        if (relatedEntitiesMap[entity.id]) {
+          entity[field] = relatedEntitiesMap[entity.id];
+        } else {
+          entity[field] = [];
         }
       });
+
+      return;
     }
 
-    return entities;
+    if (isArray) {
+      const relatedIds = entities.reduce((acc: Set<string>, entity: any) => {
+        entity[field].forEach((relatedEntityId: string) => acc.add(relatedEntityId));
+
+        return acc;
+      }, new Set());
+
+      const where: Where = {
+        id: [{
+          value: Array.from(relatedIds),
+          not: false,
+          operator: 'in'
+        }]
+      };
+
+      const relatedEntities = await this.getEntities(
+        queryRunner,
+        relationEntity,
+        relationsMap,
+        block,
+        where,
+        {},
+        childSelections
+      );
+
+      entities.forEach((entity: any) => {
+        const relatedEntityIds: Set<string> = entity[field].reduce((acc: Set<string>, id: string) => {
+          acc.add(id);
+
+          return acc;
+        }, new Set());
+
+        entity[field] = [];
+
+        relatedEntities.forEach((relatedEntity: any) => {
+          if (relatedEntityIds.has(relatedEntity.id) && entity[field].length < DEFAULT_LIMIT) {
+            entity[field].push(relatedEntity);
+          }
+        });
+      });
+
+      return;
+    }
+
+    // field is neither an array nor derivedFrom
+
+    // Avoid loading relation if selections only has id field.
+    if (childSelections.length === 1 && childSelections[0].kind === 'Field' && childSelections[0].name.value === 'id') {
+      entities.forEach((entity: any) => {
+        entity[field] = { id: entity[field] };
+      });
+
+      return;
+    }
+
+    const where: Where = {
+      id: [{
+        value: entities.map((entity: any) => entity[field]),
+        not: false,
+        operator: 'in'
+      }]
+    };
+
+    const relatedEntities = await this.getEntities(
+      queryRunner,
+      relationEntity,
+      relationsMap,
+      block,
+      where,
+      {},
+      childSelections
+    );
+
+    const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
+      acc[entity.id] = entity;
+
+      return acc;
+    }, {});
+
+    entities.forEach((entity: any) => {
+      if (relatedEntitiesMap[entity[field]]) {
+        entity[field] = relatedEntitiesMap[entity[field]];
+      }
+    });
   }
 
   async saveEntity (entity: string, data: any): Promise<any> {

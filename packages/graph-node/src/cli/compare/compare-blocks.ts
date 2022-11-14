@@ -127,7 +127,7 @@ export const main = async (): Promise<void> => {
     const baseDatabase = new BaseDatabase({ ...watcherConfig.database, entities: [entitiesDir] });
     await baseDatabase.init();
 
-    db = new Database(baseDatabase);
+    db = new Database(watcherConfig.server, baseDatabase);
     await db.init();
 
     if (config.watcher.verifyState) {
