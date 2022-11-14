@@ -1,0 +1,8 @@
+query ownerOf($blockHash: String!, $contractAddress: String!, $tokenId: BigInt!){
+    ownerOf(blockHash: $blockHash, contractAddress: $contractAddress, tokenId: $tokenId){
+        value
+        proof{
+            data
+        }
+    }
+}

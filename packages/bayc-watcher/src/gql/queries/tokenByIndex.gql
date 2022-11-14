@@ -1,0 +1,8 @@
+query tokenByIndex($blockHash: String!, $contractAddress: String!, $index: BigInt!){
+    tokenByIndex(blockHash: $blockHash, contractAddress: $contractAddress, index: $index){
+        value
+        proof{
+            data
+        }
+    }
+}

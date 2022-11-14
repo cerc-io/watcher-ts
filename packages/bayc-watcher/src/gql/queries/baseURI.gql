@@ -1,0 +1,8 @@
+query baseURI($blockHash: String!, $contractAddress: String!){
+    baseURI(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}

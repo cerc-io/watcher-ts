@@ -1,0 +1,8 @@
+query tokenOfOwnerByIndex($blockHash: String!, $contractAddress: String!, $owner: String!, $index: BigInt!){
+    tokenOfOwnerByIndex(blockHash: $blockHash, contractAddress: $contractAddress, owner: $owner, index: $index){
+        value
+        proof{
+            data
+        }
+    }
+}

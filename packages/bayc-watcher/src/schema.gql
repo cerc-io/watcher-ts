@@ -1,0 +1,122 @@
+scalar BigInt
+
+scalar BigDecimal
+
+scalar Bytes
+
+type Proof {
+  data: String!
+}
+
+type ResultBoolean {
+  value: Boolean!
+  proof: Proof
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultInt {
+  value: Int!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
+  proof: Proof
+}
+
+type _Block_ {
+  cid: String!
+  hash: String!
+  number: Int!
+  timestamp: Int!
+  parentHash: String!
+}
+
+type _Transaction_ {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+type ResultEvent {
+  block: _Block_!
+  tx: _Transaction_!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
+union Event = ApprovalEvent | ApprovalForAllEvent | OwnershipTransferredEvent | TransferEvent
+
+type ApprovalEvent {
+  owner: String!
+  approved: String!
+  tokenId: BigInt!
+}
+
+type ApprovalForAllEvent {
+  owner: String!
+  operator: String!
+  approved: Boolean!
+}
+
+type OwnershipTransferredEvent {
+  previousOwner: String!
+  newOwner: String!
+}
+
+type TransferEvent {
+  from: String!
+  to: String!
+  tokenId: BigInt!
+}
+
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
+type ResultState {
+  block: _Block_!
+  contractAddress: String!
+  cid: String!
+  kind: String!
+  data: String!
+}
+
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  supportsInterface(blockHash: String!, contractAddress: String!, interfaceId: String!): ResultBoolean!
+  balanceOf(blockHash: String!, contractAddress: String!, owner: String!): ResultBigInt!
+  ownerOf(blockHash: String!, contractAddress: String!, tokenId: BigInt!): ResultString!
+  getApproved(blockHash: String!, contractAddress: String!, tokenId: BigInt!): ResultString!
+  isApprovedForAll(blockHash: String!, contractAddress: String!, owner: String!, operator: String!): ResultBoolean!
+  name(blockHash: String!, contractAddress: String!): ResultString!
+  symbol(blockHash: String!, contractAddress: String!): ResultString!
+  tokenURI(blockHash: String!, contractAddress: String!, tokenId: BigInt!): ResultString!
+  totalSupply(blockHash: String!, contractAddress: String!): ResultBigInt!
+  tokenOfOwnerByIndex(blockHash: String!, contractAddress: String!, owner: String!, index: BigInt!): ResultBigInt!
+  tokenByIndex(blockHash: String!, contractAddress: String!, index: BigInt!): ResultBigInt!
+  baseURI(blockHash: String!, contractAddress: String!): ResultString!
+  owner(blockHash: String!, contractAddress: String!): ResultString!
+  getSyncStatus: SyncStatus
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
+}
+
+type Mutation {
+  watchContract(address: String!, kind: String!, checkpoint: Boolean!, startingBlock: Int): Boolean!
+}
+
+type Subscription {
+  onEvent: ResultEvent!
+}

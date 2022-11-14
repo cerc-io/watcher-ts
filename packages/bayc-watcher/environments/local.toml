@@ -1,0 +1,56 @@
+[server]
+  host = "127.0.0.1"
+  port = 3008
+  kind = "active"
+
+  # Checkpointing state.
+  checkpointing = true
+
+  # Checkpoint interval in number of blocks.
+  checkpointInterval = 2000
+
+  # Enable state creation
+  # CAUTION: Disable only if state creation is not desired or can be filled subsequently
+  enableState = true
+
+  # Boolean to filter logs by contract.
+  filterLogs = false
+
+  # Max block range for which to return events in eventsInRange GQL query.
+  # Use -1 for skipping check on block range.
+  maxEventsBlockRange = 1000
+
+[metrics]
+  host = "127.0.0.1"
+  port = 9000
+  [metrics.gql]
+    port = 9001
+
+[database]
+  type = "postgres"
+  host = "localhost"
+  port = 5432
+  database = "output"
+  username = "postgres"
+  password = "postgres"
+  synchronize = true
+  logging = false
+
+[upstream]
+  [upstream.ethServer]
+    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
+    rpcProviderEndpoint = "http://127.0.0.1:8081"
+
+  [upstream.cache]
+    name = "requests"
+    enabled = false
+    deleteOnStart = false
+
+[jobQueue]
+  dbConnectionString = "postgres://postgres:postgres@localhost/output-job-queue"
+  maxCompletionLagInSecs = 300
+  jobDelayInMilliSecs = 100
+  eventsInBatch = 50
+  blockDelayInMilliSecs = 2000
+  prefetchBlocksInMem = true
+  prefetchBlockCount = 10
