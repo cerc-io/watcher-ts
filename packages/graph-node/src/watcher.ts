@@ -338,6 +338,8 @@ export class GraphWatcher {
       // Get entities from the database.
       const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions, selections);
       await dbTx.commitTransaction();
+
+      return entities;
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;
