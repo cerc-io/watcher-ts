@@ -6,7 +6,7 @@ import {
   BlockProgressInterface,
   EventInterface,
   SyncStatusInterface,
-  ServerConfig as ServerConfigInterface,
+  ServerConfig,
   ValueResult,
   ContractInterface,
   StateStatus,
@@ -29,7 +29,7 @@ export class Indexer implements IndexerInterface {
   }
 
   get serverConfig () {
-    return new ServerConfig();
+    return {} as ServerConfig;
   }
 
   get storageLayoutMap (): Map<string, StorageLayout> {
@@ -200,39 +200,5 @@ export class Indexer implements IndexerInterface {
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
     return undefined;
-  }
-}
-
-export class ServerConfig implements ServerConfigInterface {
-  host: string;
-  port: number;
-  mode: string;
-  kind: string;
-  checkpointing: boolean;
-  checkpointInterval: number;
-  subgraphPath: string;
-  enableState: boolean;
-  wasmRestartBlocksInterval: number;
-  filterLogs: boolean;
-  maxEventsBlockRange: number;
-  clearEntitiesCacheInterval: number;
-  skipStateFieldsUpdate: boolean;
-  loadRelationsSequential: boolean;
-
-  constructor () {
-    this.host = '';
-    this.port = 0;
-    this.mode = '';
-    this.kind = '';
-    this.checkpointing = false;
-    this.checkpointInterval = 0;
-    this.subgraphPath = '';
-    this.enableState = false;
-    this.wasmRestartBlocksInterval = 0;
-    this.filterLogs = false;
-    this.maxEventsBlockRange = 0;
-    this.clearEntitiesCacheInterval = 0;
-    this.skipStateFieldsUpdate = false;
-    this.loadRelationsSequential = false;
   }
 }
