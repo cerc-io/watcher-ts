@@ -5,7 +5,12 @@
 import assert from 'assert';
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
+import { ApolloServer } from 'apollo-server-express';
+import { WebSocketServer } from 'ws';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { useServer } from 'graphql-ws/lib/use/ws';
+import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
+import { PubSub } from 'graphql-subscriptions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
@@ -69,20 +74,43 @@ export const main = async (): Promise<any> => {
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
 
+  // Create an Express app and HTTP server
   const app: Application = express();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
+  const httpServer = createServer(app);
 
+  // Create the schema
+  const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+  // Create our WebSocket server using the HTTP server we just set up.
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql'
+  });
+  const serverCleanup = useServer({ schema }, wsServer);
+
+  const server = new ApolloServer({
+    schema,
+    csrfPrevention: true,
+    plugins: [
+      // Proper shutdown for the HTTP server
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      // Proper shutdown for the WebSocket server
+      {
+        async serverWillStart () {
+          return {
+            async drainServer () {
+              await serverCleanup.dispose();
+            }
+          };
+        }
+      }
+    ]
+  });
   await server.start();
   server.applyMiddleware({ app });
 
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
   httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
+    log(`Server is listening on ${host}:${port}${server.graphqlPath}`);
   });
 
   return { app, server };

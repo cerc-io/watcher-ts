@@ -5,10 +5,12 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@cerc-io/solidity-mapper": "^0.2.13",
+    "apollo-cache-control": "^0.14.0",
     "debug": "^4.3.1",
     "decimal.js": "^10.3.1",
     "ethers": "^5.4.4",
     "fs-extra": "^10.0.0",
+    "graphql": "^15.5.0",
     "ipfs-http-client": "^56.0.3",
     "lodash": "^4.17.21",
     "multiformats": "^9.4.8",

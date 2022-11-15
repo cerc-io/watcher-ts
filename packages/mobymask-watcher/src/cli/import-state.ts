@@ -7,7 +7,7 @@ import 'reflect-metadata';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { PubSub } from 'apollo-server-express';
+import { PubSub } from 'graphql-subscriptions';
 import fs from 'fs';
 import path from 'path';
 

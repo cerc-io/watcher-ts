@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { PubSub } from 'apollo-server-express';
+import { PubSub } from 'graphql-subscriptions';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
