@@ -9,17 +9,20 @@ import { hideBin } from 'yargs/helpers';
 import { utils, providers } from 'ethers';
 import JSONbig from 'json-bigint';
 import Decimal from 'decimal.js';
+import { GraphQLResolveInfo } from 'graphql';
+import _ from 'lodash';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
-import { Config } from './config';
+import { CacheControlConfig, Config } from './config';
 import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
 import { getCachedBlockSize } from './block-size-cache';
 import { ResultEvent } from './indexer';
 import { EventInterface } from './types';
+import { BlockHeight } from './database';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
@@ -286,4 +289,16 @@ export const getResultEvent = (event: EventInterface): ResultEvent => {
     // TODO: Return proof only if requested.
     proof: JSON.parse(event.proof)
   };
+};
+
+export const setGQLCacheHints = (info: GraphQLResolveInfo, block: BlockHeight, gqlCache: CacheControlConfig): void => {
+  if (!gqlCache) {
+    return;
+  }
+
+  assert(gqlCache.maxAge, 'Missing server gqlCache.maxAge');
+  assert(gqlCache.timeTravelMaxAge, 'Missing server gqlCache.timeTravelMaxAge');
+
+  const maxAge = _.isEmpty(block) ? gqlCache.maxAge : gqlCache.timeTravelMaxAge;
+  info.cacheControl.setCacheHint({ maxAge });
 };
