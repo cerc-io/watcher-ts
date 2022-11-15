@@ -48,7 +48,7 @@
     "@cerc-io/util": "^0.2.13",
     "@ethersproject/providers": "^5.4.4",
     "@types/lodash": "^4.14.168",
-    "apollo-server-express": "^2.25.0",
+    "apollo-server-express": "^3.11.1",
     "apollo-type-bigint": "^0.1.3",
     "debug": "^4.3.1",
     "ethers": "^5.4.4",
