@@ -29,6 +29,13 @@ export interface JobQueueConfig {
   prefetchBlockCount: number;
 }
 
+export interface GQLCacheConfig {
+  enabled: boolean;
+  maxCacheSize?: number;
+  maxAge: number;
+  timeTravelMaxAge: number;
+}
+
 export interface ServerConfig {
   host: string;
   port: number;
@@ -54,6 +61,9 @@ export interface ServerConfig {
 
   // Boolean to load GQL query nested entity relations sequentially.
   loadRelationsSequential: boolean;
+
+  // GQL cache-control max-age settings (in seconds)
+  gqlCache: GQLCacheConfig
 }
 
 export interface UpstreamConfig {
