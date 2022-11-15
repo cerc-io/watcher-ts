@@ -29,7 +29,9 @@ export interface JobQueueConfig {
   prefetchBlockCount: number;
 }
 
-export interface CacheControlConfig {
+export interface GQLCacheConfig {
+  enabled: boolean;
+  maxCacheSize?: number;
   maxAge: number;
   timeTravelMaxAge: number;
 }
@@ -61,7 +63,7 @@ export interface ServerConfig {
   loadRelationsSequential: boolean;
 
   // GQL cache-control max-age settings (in seconds)
-  gqlCache: CacheControlConfig
+  gqlCache: GQLCacheConfig
 }
 
 export interface UpstreamConfig {

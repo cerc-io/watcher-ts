@@ -15,7 +15,7 @@ import _ from 'lodash';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
-import { CacheControlConfig, Config } from './config';
+import { GQLCacheConfig, Config } from './config';
 import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph-decimal';
 import * as EthDecoder from './eth';
@@ -291,8 +291,8 @@ export const getResultEvent = (event: EventInterface): ResultEvent => {
   };
 };
 
-export const setGQLCacheHints = (info: GraphQLResolveInfo, block: BlockHeight, gqlCache: CacheControlConfig): void => {
-  if (!gqlCache) {
+export const setGQLCacheHints = (info: GraphQLResolveInfo, block: BlockHeight, gqlCache: GQLCacheConfig): void => {
+  if (!gqlCache || !gqlCache.enabled) {
     return;
   }
 
