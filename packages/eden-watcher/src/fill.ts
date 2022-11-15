@@ -56,6 +56,11 @@ export const main = async (): Promise<any> => {
       type: 'boolean',
       default: false,
       describe: 'Fill state for subgraph entities'
+    },
+    backFill: {
+      type: 'boolean',
+      default: false,
+      describe: 'Fill blocks before latest indexed block'
     }
   }).argv;
 
@@ -98,7 +103,7 @@ export const main = async (): Promise<any> => {
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
-  await fillBlocks(jobQueue, indexer, eventWatcher, jobQueueConfig.blockDelayInMilliSecs, argv);
+  await fillBlocks(jobQueueConfig, jobQueue, indexer, eventWatcher, argv);
 };
 
 main().catch(err => {

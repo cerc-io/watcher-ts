@@ -52,6 +52,11 @@ export const main = async (): Promise<any> => {
       type: 'number',
       default: 10,
       describe: 'Number of blocks prefetched in batch'
+    },
+    backFill: {
+      type: 'boolean',
+      default: false,
+      describe: 'Fill blocks before latest indexed block'
     }
   }).argv;
 
@@ -78,7 +83,7 @@ export const main = async (): Promise<any> => {
 
   const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
 
-  await fillBlocks(jobQueue, indexer, eventWatcher, jobQueueConfig.blockDelayInMilliSecs, argv);
+  await fillBlocks(jobQueueConfig, jobQueue, indexer, eventWatcher, argv);
 };
 
 main().catch(err => {

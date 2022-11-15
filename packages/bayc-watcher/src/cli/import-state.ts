@@ -71,10 +71,10 @@ export const main = async (): Promise<any> => {
 
   // Fill the snapshot block.
   await fillBlocks(
+    jobQueueConfig,
     jobQueue,
     indexer,
     eventWatcher,
-    jobQueueConfig.blockDelayInMilliSecs,
     {
       prefetch: true,
       startBlock: importData.snapshotBlock.blockNumber,

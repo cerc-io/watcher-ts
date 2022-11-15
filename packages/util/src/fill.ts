@@ -8,24 +8,27 @@ import { JobQueue } from './job-queue';
 import { EventWatcherInterface, IndexerInterface } from './types';
 import { wait } from './misc';
 import { processBlockByNumberWithCache } from './common';
+import { indexBlock } from './index-block';
+import { JobQueueConfig } from './config';
 
 const log = debug('vulcanize:fill');
 
 const DEFAULT_PREFETCH_BATCH_SIZE = 10;
 
 export const fillBlocks = async (
+  jobQueConfig: JobQueueConfig,
   jobQueue: JobQueue,
   indexer: IndexerInterface,
   eventWatcher: EventWatcherInterface,
-  blockDelayInMilliSecs: number,
   argv: {
     startBlock: number,
     endBlock: number,
     prefetch?: boolean,
     batchBlocks?: number,
+    backFill?: boolean
   }
 ): Promise<any> => {
-  let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE } = argv;
+  let { startBlock, endBlock, prefetch = false, batchBlocks = DEFAULT_PREFETCH_BATCH_SIZE, backFill = false } = argv;
 
   if (startBlock > endBlock) {
     throw new Error(`endBlock ${endBlock} should be greater than or equal to startBlock ${startBlock}`);
@@ -38,7 +41,12 @@ export const fillBlocks = async (
       throw new Error(`startBlock should be greater than chain head ${syncStatus.chainHeadBlockNumber}`);
     }
 
-    await prefetchBlocks(indexer, blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
+    await prefetchBlocks(indexer, jobQueConfig.blockDelayInMilliSecs, { startBlock, endBlock, batchBlocks });
+    return;
+  }
+
+  if (backFill) {
+    await backFillBlocks(indexer, jobQueConfig.eventsInBatch, { startBlock, endBlock });
     return;
   }
 
@@ -141,5 +149,18 @@ const prefetchBlocks = async (
       log('Exiting as upstream block not available for prefetch');
       process.exit(0);
     }
+  }
+};
+
+const backFillBlocks = async (
+  indexer: IndexerInterface,
+  eventsInBatch: number,
+  { startBlock, endBlock }: {
+    startBlock: number,
+    endBlock: number
+  }
+) => {
+  for (let i = startBlock; i <= endBlock; i++) {
+    await indexBlock(indexer, eventsInBatch, { block: i });
   }
 };
