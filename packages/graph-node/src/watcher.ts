@@ -358,11 +358,11 @@ export class GraphWatcher {
     this._database.updateEntityCacheFrothyBlocks(blockProgress, this._indexer.serverConfig.clearEntitiesCacheInterval);
   }
 
-  async pruneEntities (prunedBlocks: BlockProgressInterface[], entityTypes: Set<new () => any>) {
+  async pruneEntities (frothyEntityType: new () => any, prunedBlocks: BlockProgressInterface[], entityTypes: Set<new () => any>) {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
-      await this._database.pruneEntities(dbTx, prunedBlocks, entityTypes);
+      await this._database.pruneEntities(frothyEntityType, dbTx, prunedBlocks, entityTypes);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();

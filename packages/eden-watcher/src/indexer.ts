@@ -482,7 +482,7 @@ export class Indexer implements IndexerInterface {
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
     await this._baseIndexer.markBlocksAsPruned(blocks);
 
-    await this._graphWatcher.pruneEntities(blocks, ENTITIES);
+    await this._graphWatcher.pruneEntities(FrothyEntity, blocks, ENTITIES);
   }
 
   async pruneFrothyEntities (blockNumber: number): Promise<void> {

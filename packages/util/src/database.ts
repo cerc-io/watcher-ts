@@ -495,6 +495,20 @@ export class Database {
     return entityInPrunedRegion;
   }
 
+  async getLatestPrunedEntityWithoutJoin<Entity> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
+    // Filter out latest entity from pruned blocks.
+
+    const entityInPrunedRegion = await repo.createQueryBuilder('entity')
+      .where('entity.id = :id', { id })
+      .andWhere('entity.is_pruned = false')
+      .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
+      .orderBy('entity.block_number', 'DESC')
+      .limit(1)
+      .getOne();
+
+    return entityInPrunedRegion;
+  }
+
   async getFrothyRegion (queryRunner: QueryRunner, blockHash: string): Promise<{ canonicalBlockNumber: number, blockHashes: string[] }> {
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
