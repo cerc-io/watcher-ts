@@ -1,5 +1,5 @@
 import { TypeSource } from '@graphql-tools/utils';
-import express, { Application } from 'express';
+import { Application } from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
@@ -12,12 +12,12 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 const log = debug('vulcanize:server');
 
 export const createAndStartServer = async (
+  app: Application,
   typeDefs: TypeSource,
   resolvers: any,
   endPoint: { host: string, port: number }
-): Promise<void> => {
-  // Create an Express app and HTTP server
-  const app: Application = express();
+): Promise<ApolloServer> => {
+  // Create HTTP server
   const httpServer = createServer(app);
 
   // Create the schema
@@ -54,4 +54,6 @@ export const createAndStartServer = async (
   httpServer.listen(endPoint.port, endPoint.host, () => {
     log(`Server is listening on ${endPoint.host}:${endPoint.port}${server.graphqlPath}`);
   });
+
+  return server;
 };

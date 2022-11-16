@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
+import express, { Application } from 'express';
 import { PubSub } from 'graphql-subscriptions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -67,7 +68,11 @@ export const main = async (): Promise<any> => {
   const resolvers = await createResolvers(indexer, eventWatcher);
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
 
-  createAndStartServer(typeDefs, resolvers, { host, port });
+  // Create an Express app
+  const app: Application = express();
+  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
+
+  return { app, server };
 };
 
 main().then(() => {
