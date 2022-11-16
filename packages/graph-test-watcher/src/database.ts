@@ -17,6 +17,11 @@ import { State } from './entity/State';
 
 import { GetMethod } from './entity/GetMethod';
 import { _Test } from './entity/_Test';
+import { Author } from './entity/Author';
+import { Blog } from './entity/Blog';
+import { Category } from './entity/Category';
+
+export const ENTITIES = new Set([_Test, Author, Blog, Category, GetMethod]);
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;

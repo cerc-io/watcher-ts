@@ -30,6 +30,8 @@ import { _TokenApprovals } from './entity/_TokenApprovals';
 import { _OperatorApprovals } from './entity/_OperatorApprovals';
 import { TransferCount } from './entity/TransferCount';
 
+export const ENTITIES = new Set([_Balances, _Name, _OperatorApprovals, _Owners, _Symbol, _TokenApprovals, BalanceOf, GetApproved, IsApprovedForAll, Name, OwnerOf, SupportsInterface, Symbol, TokenURI, TransferCount]);
+
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;

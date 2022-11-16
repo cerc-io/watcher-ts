@@ -155,6 +155,7 @@ export class Visitor {
     this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
     this._reset.addSubgraphEntities(subgraphSchemaDocument);
     this._indexer.addSubgraphEntities(subgraphSchemaDocument);
+    this._database.addSubgraphEntities(subgraphSchemaDocument);
   }
 
   /**
@@ -187,8 +188,8 @@ export class Visitor {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string): void {
-    this._entity.exportEntities(entityDir);
+  exportEntities (entityDir: string, subgraphPath: string): void {
+    this._entity.exportEntities(entityDir, subgraphPath);
   }
 
   /**

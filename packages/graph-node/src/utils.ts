@@ -3,9 +3,10 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import { ValueTransformer } from 'typeorm';
+import { EntityTarget, InsertEvent, UpdateEvent, ValueTransformer } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
+import _ from 'lodash';
 
 import { GraphDecimal, IndexerInterface, jsonBigIntStringReplacer, StateInterface } from '@cerc-io/util';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -896,4 +897,30 @@ export const updateEntitiesFromState = async (database: Database, indexer: Index
     }
     console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
   }
+};
+
+export const afterEntityInsertOrUpdate = async<Entity> (frothyEntityType: EntityTarget<Entity>, entities: Set<any>, event: InsertEvent<any> | UpdateEvent<any>): Promise<void> => {
+  const entity = event.entity;
+
+  // TODO: Check and return if entity is being pruned (is_pruned flag update)
+
+  // Insert the entity details in FrothyEntity table
+  if (entities.has(entity.constructor)) {
+    const frothyEntity = event.manager.create(
+      frothyEntityType,
+      {
+        ..._.pick(entity, ['id', 'blockHash', 'blockNumber']),
+        ...{ name: entity.constructor.name }
+      }
+    );
+
+    await event.manager.createQueryBuilder()
+      .insert()
+      .into(frothyEntityType)
+      .values(frothyEntity as any)
+      .orIgnore()
+      .execute();
+  }
+
+  // TOOD: Update latest entity tables
 };

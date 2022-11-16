@@ -3,5 +3,6 @@ export * from './database';
 export {
   prepareEntityState,
   updateEntitiesFromState,
-  resolveEntityFieldConflicts
+  resolveEntityFieldConflicts,
+  afterEntityInsertOrUpdate
 } from './utils';
