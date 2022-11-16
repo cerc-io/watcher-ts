@@ -1,3 +1,14 @@
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+  inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
 scalar BigInt
 
 scalar Bytes
@@ -264,14 +275,14 @@ type Producer {
 
 type ProducerSet {
   id: ID!
-  producers: [Producer!]!
+  producers: [Producer!]! @cacheControl(inheritMaxAge: true)
 }
 
 type ProducerSetChange {
   id: ID!
   blockNumber: BigInt!
   producer: Bytes!
-  changeType: ProducerSetChangeType!
+  changeType: ProducerSetChangeType! @cacheControl(inheritMaxAge: true)
 }
 
 enum ProducerSetChangeType {
@@ -295,10 +306,10 @@ type RewardScheduleEntry {
 
 type RewardSchedule {
   id: ID!
-  rewardScheduleEntries: [RewardScheduleEntry!]!
-  lastEpoch: Epoch
-  pendingEpoch: Epoch
-  activeRewardScheduleEntry: RewardScheduleEntry
+  rewardScheduleEntries: [RewardScheduleEntry!]! @cacheControl(inheritMaxAge: true)
+  lastEpoch: Epoch @cacheControl(inheritMaxAge: true)
+  pendingEpoch: Epoch @cacheControl(inheritMaxAge: true)
+  activeRewardScheduleEntry: RewardScheduleEntry @cacheControl(inheritMaxAge: true)
 }
 
 type Block {
@@ -336,12 +347,12 @@ type Epoch {
   id: ID!
   finalized: Boolean!
   epochNumber: BigInt!
-  startBlock: Block
-  endBlock: Block
+  startBlock: Block @cacheControl(inheritMaxAge: true)
+  endBlock: Block @cacheControl(inheritMaxAge: true)
   producerBlocks: BigInt!
   allBlocks: BigInt!
   producerBlocksRatio: BigDecimal!
-  producerRewards: [ProducerEpoch!]!
+  producerRewards: [ProducerEpoch!]! @cacheControl(inheritMaxAge: true)
 }
 
 input Epoch_filter {
@@ -352,7 +363,7 @@ input Epoch_filter {
 type ProducerEpoch {
   id: ID!
   address: Bytes!
-  epoch: Epoch!
+  epoch: Epoch! @cacheControl(inheritMaxAge: true)
   totalRewards: BigInt!
   blocksProduced: BigInt!
   blocksProducedRatio: BigDecimal!
@@ -360,7 +371,7 @@ type ProducerEpoch {
 
 type SlotClaim {
   id: ID!
-  slot: Slot!
+  slot: Slot! @cacheControl(inheritMaxAge: true)
   owner: Bytes!
   winningBid: BigInt!
   oldBid: BigInt!
@@ -378,7 +389,7 @@ type Slot {
   startTime: BigInt!
   expirationTime: BigInt!
   taxRatePerDay: BigDecimal!
-  claims: [SlotClaim!]!
+  claims: [SlotClaim!]! @cacheControl(inheritMaxAge: true)
 }
 
 type Staker {
@@ -397,10 +408,10 @@ enum Staker_orderBy {
 
 type Network {
   id: ID!
-  slot0: Slot
-  slot1: Slot
-  slot2: Slot
-  stakers: [Staker!]!
+  slot0: Slot @cacheControl(inheritMaxAge: true)
+  slot1: Slot @cacheControl(inheritMaxAge: true)
+  slot2: Slot @cacheControl(inheritMaxAge: true)
+  stakers: [Staker!]! @cacheControl(inheritMaxAge: true)
   numStakers: BigInt
   totalStaked: BigInt!
   stakedPercentiles: [BigInt!]!
@@ -408,12 +419,12 @@ type Network {
 
 type Distributor {
   id: ID!
-  currentDistribution: Distribution
+  currentDistribution: Distribution @cacheControl(inheritMaxAge: true)
 }
 
 type Distribution {
   id: ID!
-  distributor: Distributor!
+  distributor: Distributor! @cacheControl(inheritMaxAge: true)
   timestamp: BigInt!
   distributionNumber: BigInt!
   merkleRoot: Bytes!
@@ -424,7 +435,7 @@ type Claim {
   id: ID!
   timestamp: BigInt!
   index: BigInt!
-  account: Account!
+  account: Account! @cacheControl(inheritMaxAge: true)
   totalEarned: BigInt!
   claimed: BigInt!
 }
@@ -433,14 +444,14 @@ type Account {
   id: ID!
   totalClaimed: BigInt!
   totalSlashed: BigInt!
-  claims: [Claim!]!
-  slashes: [Slash!]!
+  claims: [Claim!]! @cacheControl(inheritMaxAge: true)
+  slashes: [Slash!]! @cacheControl(inheritMaxAge: true)
 }
 
 type Slash {
   id: ID!
   timestamp: BigInt!
-  account: Account!
+  account: Account! @cacheControl(inheritMaxAge: true)
   slashed: BigInt!
 }
 

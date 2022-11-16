@@ -4,11 +4,13 @@
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@apollo/utils.keyvaluecache": "^1.0.1",
     "@cerc-io/solidity-mapper": "^0.2.13",
     "@graphql-tools/schema": "^9.0.10",
     "@graphql-tools/utils": "^9.1.1",
     "apollo-server-core": "^3.11.1",
     "apollo-server-express": "^3.11.1",
+    "apollo-server-plugin-response-cache": "^3.8.1",
     "debug": "^4.3.1",
     "decimal.js": "^10.3.1",
     "ethers": "^5.4.4",

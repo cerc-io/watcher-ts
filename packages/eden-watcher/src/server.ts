@@ -13,7 +13,7 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServer } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServerWithCache } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -37,7 +37,7 @@ export const main = async (): Promise<any> => {
   const config: Config = await getConfig(argv.f);
   const { ethClient, ethProvider } = await initClients(config);
 
-  const { host, port, kind: watcherKind } = config.server;
+  const { kind: watcherKind } = config.server;
 
   const db = new Database(config.database);
   await db.init();
@@ -79,7 +79,7 @@ export const main = async (): Promise<any> => {
 
   // Create an Express app
   const app: Application = express();
-  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
+  const server = createAndStartServerWithCache(app, typeDefs, resolvers, config.server);
 
   startGQLMetricsServer(config);
 
