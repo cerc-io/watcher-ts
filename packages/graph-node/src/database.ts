@@ -378,14 +378,25 @@ export class Database {
     const latestEntity = this._entityToLatestEntityMap.get(entity);
 
     if (latestEntity) {
-      if (!Object.keys(block).length) {
+      if (Object.keys(block).length) {
+        // Use lateral query for entities with latest entity table.
+        entities = await this.getEntitiesLateral(
+          queryRunner,
+          entity,
+          latestEntity,
+          block,
+          where,
+          queryOptions
+        );
+      } else {
         // Use latest entity tables if block height not passed.
         entities = await this.getEntitiesLatest(
           queryRunner,
           entity,
           latestEntity,
           where,
-          queryOptions
+          queryOptions,
+          selections
         );
       }
     } else {
@@ -831,17 +842,35 @@ export class Database {
     entity: new () => Entity,
     latestEntity: new () => any,
     where: Where = {},
-    queryOptions: QueryOptions = {}
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-    const { tableName } = repo.metadata;
+    const entityRepo = queryRunner.manager.getRepository(entity);
+    const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
+    const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
 
-    let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .innerJoin(
-        latestEntity,
-        'latest',
-        `latest.id = ${tableName}.id AND latest.blockHash = ${tableName}.blockHash`
-      );
+    const selectionNotInLatestEntity = selections.filter(selection => selection.kind === 'Field' && selection.name.value !== '__typename')
+      .some(selection => {
+        assert(selection.kind === 'Field');
+
+        return !latestEntityFields.includes(selection.name.value);
+      });
+
+    // Use latest entity table for faster query.
+    let repo = latestEntityRepo;
+    let selectQueryBuilder = repo.createQueryBuilder('latest');
+
+    if (selectionNotInLatestEntity) {
+      // Join with latest entity table if selection field doesn't exist in latest entity.
+      repo = entityRepo;
+
+      selectQueryBuilder = repo.createQueryBuilder(repo.metadata.tableName)
+        .innerJoin(
+          latestEntity,
+          'latest',
+          `latest.id = ${repo.metadata.tableName}.id AND latest.blockHash = ${repo.metadata.tableName}.blockHash`
+        );
+    }
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, 'latest');
 
@@ -860,6 +889,70 @@ export class Database {
     }
 
     return selectQueryBuilder.getMany();
+  }
+
+  async getEntitiesLateral<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    latestEntity: new () => any,
+    block: BlockHeight,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
+    const entityRepo = queryRunner.manager.getRepository(entity);
+    const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
+
+    let subQuery = entityRepo.createQueryBuilder('subTable')
+      .where('latest.id = subTable.id')
+      .orderBy('subTable.block_number', 'DESC')
+      .limit(1);
+
+    if (block.hash) {
+      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+      subQuery = subQuery
+        .andWhere(new Brackets(qb => {
+          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
+            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
+        }));
+    }
+
+    if (block.number) {
+      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+    }
+
+    let selectQueryBuilder = latestEntityRepo.createQueryBuilder('latest')
+      .select('*')
+      .from(
+        qb => {
+          // https://stackoverflow.com/a/72026555/10026807
+          qb.getQuery = () => `LATERAL (${subQuery.getQuery()})`;
+          qb.setParameters(subQuery.getParameters());
+          return qb;
+        },
+        'result'
+      );
+
+    selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, 'latest');
+
+    if (queryOptions.orderBy) {
+      selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, '', 'latest');
+    }
+
+    selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+
+    if (queryOptions.skip) {
+      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+    }
+
+    if (queryOptions.limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+    }
+
+    let entities = await selectQueryBuilder.getRawMany();
+    entities = await this.transformResults(queryRunner, entityRepo.createQueryBuilder('subTable'), entities);
+
+    return entities as Entity[];
   }
 
   async loadEntitiesRelations<Entity> (
