@@ -25,4 +25,7 @@ export class ProducerRewardCollectorChange {
 
   @Column('varchar')
   rewardCollector!: string;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

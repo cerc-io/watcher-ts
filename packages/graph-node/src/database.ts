@@ -8,10 +8,12 @@ import {
   Connection,
   ConnectionOptions,
   FindOneOptions,
+  In,
   LessThanOrEqual,
   QueryRunner,
   Repository,
-  SelectQueryBuilder
+  SelectQueryBuilder,
+  UpdateResult
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
@@ -1032,6 +1034,10 @@ export class Database {
     const entityValuePromises = entityFields.map(async (field: any) => {
       const { propertyName } = field;
 
+      if (propertyName === 'isPruned') {
+        return undefined;
+      }
+
       // Get blockHash property for db entry from block instance.
       if (propertyName === 'blockHash') {
         return block.blockHash;
@@ -1191,14 +1197,6 @@ export class Database {
     prunedBlockHashes.forEach(blockHash => this.cachedEntities.frothyBlocks.delete(blockHash));
   }
 
-  _measureCachedPrunedEntities () {
-    const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
-      .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
-
-    log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
-    cachePrunedEntitiesCount.set(totalEntities);
-  }
-
   async transformResults<Entity> (queryRunner: QueryRunner, qb: SelectQueryBuilder<Entity>, rawResults: any[]): Promise<any[]> {
     const transformer = new RawSqlResultsToEntityTransformer(
       qb.expressionMap,
@@ -1209,5 +1207,60 @@ export class Database {
     );
     assert(qb.expressionMap.mainAlias);
     return transformer.transform(rawResults, qb.expressionMap.mainAlias);
+  }
+
+  async updateEntity<Entity> (queryRunner: QueryRunner, entity: new () => Entity, criteria: any, update: any): Promise<UpdateResult> {
+    const repo = queryRunner.manager.getRepository(entity);
+    return repo.createQueryBuilder()
+      .update()
+      .set(update)
+      .where(criteria)
+      .execute();
+  }
+
+  async pruneEntities (queryRunner: QueryRunner, blocks: BlockProgressInterface[], entityTypes: Set<new () => any>) {
+    // Assumption: all blocks are at same height
+    assert(blocks.length);
+    const blockNumber = blocks[0].blockNumber;
+    const blockHashes = blocks.map(block => block.blockHash);
+
+    // Get all entities at the block height
+    const entitiesAtBlock = await Promise.all(
+      [...entityTypes].map(entityType => {
+        return this._baseDatabase.getEntities(
+          queryRunner,
+          entityType as any,
+          {
+            select: ['id'] as any,
+            where: { blockNumber }
+          }
+        );
+      })
+    );
+
+    // Extract entity ids from result
+    const entityIds = entitiesAtBlock.map(entities => {
+      return entities.map((entity: any) => entity.id);
+    });
+
+    // Update isPruned flag using fetched entity ids and hashes of blocks to be pruned
+    const updatePromises = [...entityTypes].map((entity, index: number) => {
+      return this.updateEntity(
+        queryRunner,
+        entity as any,
+        { id: In(entityIds[index]), blockHash: In(blockHashes) },
+        { isPruned: true }
+      );
+    });
+
+    await Promise.all(updatePromises);
+  }
+
+  _measureCachedPrunedEntities () {
+    const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
+      .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
+
+    log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
+    cachePrunedEntitiesCount.set(totalEntities);
   }
 }

@@ -18,4 +18,7 @@ export class Distributor {
 
   @Column('varchar', { nullable: true })
   currentDistribution!: string;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

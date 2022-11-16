@@ -39,4 +39,7 @@ export class Epoch {
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
   producerBlocksRatio!: Decimal;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

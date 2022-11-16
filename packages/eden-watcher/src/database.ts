@@ -14,6 +14,25 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
+import { Account } from './entity/Account';
+import { Claim } from './entity/Claim';
+import { Distribution } from './entity/Distribution';
+import { Distributor } from './entity/Distributor';
+import { Epoch } from './entity/Epoch';
+import { Network } from './entity/Network';
+import { Producer } from './entity/Producer';
+import { ProducerEpoch } from './entity/ProducerEpoch';
+import { ProducerRewardCollectorChange } from './entity/ProducerRewardCollectorChange';
+import { ProducerSet } from './entity/ProducerSet';
+import { ProducerSetChange } from './entity/ProducerSetChange';
+import { RewardSchedule } from './entity/RewardSchedule';
+import { RewardScheduleEntry } from './entity/RewardScheduleEntry';
+import { Slash } from './entity/Slash';
+import { Slot } from './entity/Slot';
+import { SlotClaim } from './entity/SlotClaim';
+import { Staker } from './entity/Staker';
+
+export const ENTITIES = new Set([Account, Claim, Distribution, Distributor, Epoch, Network, Producer, ProducerEpoch, ProducerRewardCollectorChange, ProducerSet, ProducerSetChange, RewardSchedule, RewardScheduleEntry, Slash, Slot, SlotClaim, Staker]);
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;

@@ -23,4 +23,7 @@ export class Account {
 
   @Column('numeric', { transformer: bigintTransformer })
   totalSlashed!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

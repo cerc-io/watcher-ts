@@ -27,4 +27,7 @@ export class RewardSchedule {
 
   @Column('varchar', { nullable: true })
   activeRewardScheduleEntry!: string;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

@@ -32,4 +32,7 @@ export class Claim {
 
   @Column('numeric', { transformer: bigintTransformer })
   claimed!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

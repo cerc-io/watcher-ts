@@ -22,4 +22,7 @@ export class Staker {
 
   @Column('numeric', { nullable: true, transformer: bigintTransformer })
   rank!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

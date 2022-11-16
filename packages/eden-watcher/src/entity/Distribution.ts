@@ -32,4 +32,7 @@ export class Distribution {
 
   @Column('varchar')
   metadataURI!: string;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }
