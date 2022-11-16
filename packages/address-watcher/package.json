@@ -32,10 +32,8 @@
     "@cerc-io/tracing-client": "^0.2.13",
     "@cerc-io/util": "^0.2.13",
     "@types/lodash": "^4.14.168",
-    "apollo-server-express": "^3.11.1",
     "debug": "^4.3.1",
     "ethers": "^5.4.4",
-    "express": "^4.17.1",
     "graphql": "^15.5.0",
     "lodash": "^4.17.21",
     "reflect-metadata": "^0.1.13",
@@ -46,7 +44,6 @@
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
     "@types/chai": "^4.2.19",
-    "@types/express": "^4.17.11",
     "@types/mocha": "^8.2.2",
     "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
