@@ -10,7 +10,6 @@ import { utils, providers } from 'ethers';
 import JSONbig from 'json-bigint';
 import Decimal from 'decimal.js';
 import { GraphQLResolveInfo } from 'graphql';
-import 'apollo-cache-control';
 import _ from 'lodash';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';

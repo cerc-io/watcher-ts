@@ -1,4 +1,3 @@
-import { TypeSource } from '@graphql-tools/utils';
 import { Application } from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
@@ -7,6 +6,7 @@ import { useServer } from 'graphql-ws/lib/use/ws';
 import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
 import debug from 'debug';
 
+import { TypeSource } from '@graphql-tools/utils';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 
 const log = debug('vulcanize:server');

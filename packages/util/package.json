@@ -7,7 +7,6 @@
     "@cerc-io/solidity-mapper": "^0.2.13",
     "@graphql-tools/schema": "^9.0.10",
     "@graphql-tools/utils": "^9.1.1",
-    "apollo-cache-control": "^0.14.0",
     "apollo-server-core": "^3.11.1",
     "apollo-server-express": "^3.11.1",
     "debug": "^4.3.1",
