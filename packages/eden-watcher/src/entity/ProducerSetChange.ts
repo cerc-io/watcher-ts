@@ -33,4 +33,7 @@ export class ProducerSetChange {
     enum: ProducerSetChangeType
   })
   changeType!: ProducerSetChangeType;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

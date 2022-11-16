@@ -31,4 +31,7 @@ export class Producer {
 
   @Column('numeric', { transformer: bigintTransformer })
   pendingEpochBlocks!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

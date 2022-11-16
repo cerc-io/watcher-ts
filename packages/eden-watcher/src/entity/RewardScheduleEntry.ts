@@ -25,4 +25,7 @@ export class RewardScheduleEntry {
 
   @Column('numeric', { transformer: bigintTransformer })
   rewardsPerEpoch!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

@@ -39,4 +39,7 @@ export class Network {
   // https://github.com/brianc/node-postgres/issues/1943#issuecomment-520500053
   @Column('varchar', { transformer: bigintArrayTransformer, array: true })
   stakedPercentiles!: bigint[];
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

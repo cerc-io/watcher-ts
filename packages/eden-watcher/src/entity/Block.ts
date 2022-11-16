@@ -61,4 +61,7 @@ export class Block {
 
   @Column('numeric', { nullable: true, transformer: bigintTransformer })
   size!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

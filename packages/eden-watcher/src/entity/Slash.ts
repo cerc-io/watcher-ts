@@ -26,4 +26,7 @@ export class Slash {
 
   @Column('numeric', { transformer: bigintTransformer })
   slashed!: bigint;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

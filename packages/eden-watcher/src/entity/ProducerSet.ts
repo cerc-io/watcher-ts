@@ -18,4 +18,7 @@ export class ProducerSet {
 
   @Column('varchar', { array: true })
   producers!: string[];
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }
