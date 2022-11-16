@@ -17,6 +17,15 @@ import { State } from './entity/State';
 {{#each queries as | query |}}
 import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/each}}
+{{#each subgraphEntities as | subgraphEntity |}}
+import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
+{{/each}}
+
+export const ENTITIES = [
+  {{~#each queries as | query |}}{{query.entityName}}, {{/each}}
+  {{~#each subgraphEntities as | subgraphEntity |}}{{subgraphEntity.className}}
+  {{~#unless @last}}, {{/unless}}
+  {{~/each}}];
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;

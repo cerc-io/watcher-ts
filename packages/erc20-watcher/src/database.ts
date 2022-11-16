@@ -17,6 +17,8 @@ import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 
+export const ENTITIES = new Set([Allowance, Balance]);
+
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions
   _conn!: Connection

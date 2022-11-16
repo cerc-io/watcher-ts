@@ -14,7 +14,7 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig, StateStatus } from '@cerc-io/util';
 
-import { Database } from './database';
+import { Database, ENTITIES } from './database';
 import { Event } from './entity/Event';
 import { fetchTokenDecimals, fetchTokenName, fetchTokenSymbol, fetchTokenTotalSupply } from './utils';
 import { SyncStatus } from './entity/SyncStatus';
@@ -23,8 +23,6 @@ import artifacts from './artifacts/ERC20.json';
 import { BlockProgress } from './entity/BlockProgress';
 import { Contract } from './entity/Contract';
 import { State } from './entity/State';
-import { Allowance } from './entity/Allowance';
-import { Balance } from './entity/Balance';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -430,7 +428,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [Allowance, Balance];
+    const entities = [...ENTITIES];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 

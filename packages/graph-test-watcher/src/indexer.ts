@@ -31,7 +31,7 @@ import {
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
-import { Database } from './database';
+import { Database, ENTITIES } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
@@ -43,6 +43,7 @@ import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint
 import { Author } from './entity/Author';
 import { Blog } from './entity/Blog';
 import { Category } from './entity/Category';
+import { FrothyEntity } from './entity/FrothyEntity';
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -449,7 +450,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    const syncStatus = this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    await this.pruneFrothyEntities(blockNumber);
+
+    return syncStatus;
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
@@ -482,6 +486,10 @@ export class Indexer implements IndexerInterface {
 
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
     return this._baseIndexer.markBlocksAsPruned(blocks);
+  }
+
+  async pruneFrothyEntities (blockNumber: number): Promise<void> {
+    await this._graphWatcher.pruneFrothyEntities(FrothyEntity, blockNumber);
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
@@ -525,7 +533,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [Author, Blog, Category];
+    const entities = [...ENTITIES, FrothyEntity];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 

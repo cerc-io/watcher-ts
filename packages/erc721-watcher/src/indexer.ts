@@ -30,7 +30,7 @@ import {
 } from '@cerc-io/util';
 
 import ERC721Artifacts from './artifacts/ERC721.json';
-import { Database } from './database';
+import { Database, ENTITIES } from './database';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -38,20 +38,6 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
-import { SupportsInterface } from './entity/SupportsInterface';
-import { BalanceOf } from './entity/BalanceOf';
-import { OwnerOf } from './entity/OwnerOf';
-import { GetApproved } from './entity/GetApproved';
-import { IsApprovedForAll } from './entity/IsApprovedForAll';
-import { Name } from './entity/Name';
-import { Symbol } from './entity/Symbol';
-import { TokenURI } from './entity/TokenURI';
-import { _Name } from './entity/_Name';
-import { _Symbol } from './entity/_Symbol';
-import { _Owners } from './entity/_Owners';
-import { _Balances } from './entity/_Balances';
-import { _TokenApprovals } from './entity/_TokenApprovals';
-import { _OperatorApprovals } from './entity/_OperatorApprovals';
 import { TransferCount } from './entity/TransferCount';
 
 const log = debug('vulcanize:indexer');
@@ -878,7 +864,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [SupportsInterface, BalanceOf, OwnerOf, GetApproved, IsApprovedForAll, Name, Symbol, TokenURI, _Name, _Symbol, _Owners, _Balances, _TokenApprovals, _OperatorApprovals, TransferCount];
+    const entities = [...ENTITIES];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 

@@ -37,6 +37,7 @@ import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
 import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
+import { exportSubscriber } from './subscriber';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -217,7 +218,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   const entityDir = outputDir
     ? path.join(outputDir, 'src/entity')
     : '';
-  visitor.exportEntities(entityDir);
+  visitor.exportEntities(entityDir, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
@@ -323,6 +324,13 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/index-block.ts'))
     : process.stdout;
   exportIndexBlock(outStream);
+
+  if (config.subgraphPath) {
+    outStream = outputDir
+      ? fs.createWriteStream(path.join(outputDir, 'src/entity/Subscriber.ts'))
+      : process.stdout;
+    exportSubscriber(outStream);
+  }
 }
 
 function getConfig (configFile: string): any {

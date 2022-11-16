@@ -20,6 +20,8 @@ import { IsRevoked } from './entity/IsRevoked';
 import { IsPhisher } from './entity/IsPhisher';
 import { IsMember } from './entity/IsMember';
 
+export const ENTITIES = new Set([_Owner, IsMember, IsPhisher, IsRevoked, MultiNonce]);
+
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;

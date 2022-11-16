@@ -16,10 +16,12 @@ const TEMPLATE_FILE = './templates/database-template.handlebars';
 
 export class Database {
   _queries: Array<any>;
+  _subgraphEntities: Array<any>;
   _templateString: string;
 
   constructor () {
     this._queries = [];
+    this._subgraphEntities = [];
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   }
 
@@ -72,6 +74,23 @@ export class Database {
     this._queries.push(queryObject);
   }
 
+  addSubgraphEntities (subgraphSchemaDocument: any): void {
+    // Add subgraph entities for adding them to the entities list.
+    const subgraphTypeDefs = subgraphSchemaDocument.definitions;
+
+    subgraphTypeDefs.forEach((def: any) => {
+      if (def.kind !== 'ObjectTypeDefinition') {
+        return;
+      }
+
+      const entityObject: any = {
+        className: def.name.value
+      };
+
+      this._subgraphEntities.push(entityObject);
+    });
+  }
+
   /**
    * Writes the database file generated from a template to a stream.
    * @param outStream A writable output stream to write the database file to.
@@ -79,7 +98,8 @@ export class Database {
   exportDatabase (outStream: Writable): void {
     const template = Handlebars.compile(this._templateString);
     const obj = {
-      queries: this._queries
+      queries: this._queries,
+      subgraphEntities: this._subgraphEntities
     };
     const database = template(obj);
     outStream.write(database);

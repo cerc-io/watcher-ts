@@ -41,7 +41,7 @@ import { GraphWatcher } from '@cerc-io/graph-node';
 {{#each contracts as | contract |}}
 import {{contract.contractName}}Artifacts from './artifacts/{{contract.contractName}}.json';
 {{/each}}
-import { Database } from './database';
+import { Database, ENTITIES } from './database';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -49,13 +49,12 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
-
-{{#each queries as | query |}}
-import { {{query.entityName}} } from './entity/{{query.entityName}}';
-{{/each}}
 {{#each subgraphEntities as | subgraphEntity |}}
 import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
 {{/each}}
+{{#if (subgraphPath)}}
+import { FrothyEntity } from './entity/FrothyEntity';
+{{/if}}
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
@@ -521,7 +520,12 @@ export class Indexer implements IndexerInterface {
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    const syncStatus = this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    {{#if (subgraphPath)}}
+    await this.pruneFrothyEntities(blockNumber);
+    {{/if}}
+
+    return syncStatus;
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
@@ -556,6 +560,12 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.markBlocksAsPruned(blocks);
   }
 
+  {{#if (subgraphPath)}}
+  async pruneFrothyEntities (blockNumber: number): Promise<void> {
+    await this._graphWatcher.pruneFrothyEntities(FrothyEntity, blockNumber);
+  }
+  {{/if}}
+
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }
@@ -565,14 +575,11 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [
-      {{#each queries as | query |}}
-      {{query.entityName}},
-      {{/each}}
-      {{#each subgraphEntities as | subgraphEntity |}}
-      {{subgraphEntity.className}},
-      {{/each}}
-    ];
+    {{#if (subgraphPath)}}
+    const entities = [...ENTITIES, FrothyEntity];
+    {{else}}
+    const entities = [...ENTITIES];
+    {{/if}}
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 

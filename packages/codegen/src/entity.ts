@@ -173,13 +173,18 @@ export class Entity {
    * Writes the generated entity files in the given directory.
    * @param entityDir Directory to write the entities to.
    */
-  exportEntities (entityDir: string): void {
+  exportEntities (entityDir: string, subgraphPath: string): void {
     this._addEventEntity();
     this._addSyncStatusEntity();
     this._addContractEntity();
     this._addBlockProgressEntity();
     this._addStateEntity();
     this._addStateSyncStatusEntity();
+
+    // Add FrothyEntity table only for subgraph watchers
+    if (subgraphPath) {
+      this._addFrothyEntity();
+    }
 
     const template = Handlebars.compile(this._templateString);
     this._entities.forEach(entityObj => {
@@ -285,6 +290,11 @@ export class Entity {
 
   _addStateSyncStatusEntity (): void {
     const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'StateSyncStatus.yaml'), 'utf8'));
+    this._entities.push(entity);
+  }
+
+  _addFrothyEntity (): void {
+    const entity = yaml.load(fs.readFileSync(path.resolve(__dirname, TABLES_DIR, 'FrothyEntity.yaml'), 'utf8'));
     this._entities.push(entity);
   }
 

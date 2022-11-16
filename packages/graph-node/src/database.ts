@@ -1256,6 +1256,11 @@ export class Database {
     await Promise.all(updatePromises);
   }
 
+  async pruneFrothyEntities<Entity> (queryRunner: QueryRunner, frothyEntityType: new () => Entity, blockNumber: number): Promise<void> {
+    // Remove frothy entity entries at | below the prune block height
+    return this._baseDatabase.removeEntities(queryRunner, frothyEntityType, { where: { blockNumber: LessThanOrEqual(blockNumber) } });
+  }
+
   _measureCachedPrunedEntities () {
     const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
       .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);

@@ -1,0 +1,31 @@
+className: FrothyEntity
+indexOn:
+  - columns:
+      - blockNumber
+columns:
+  - name: id
+    pgType: varchar
+    tsType: string
+    columnType: PrimaryColumn
+  - name: name
+    pgType: varchar
+    tsType: string
+    columnType: PrimaryColumn
+  - name: blockHash
+    pgType: varchar
+    tsType: string
+    columnType: PrimaryColumn
+    columnOptions:
+      - option: length
+        value: 66
+  - name: blockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
+imports:
+  - toImport:
+      - Entity
+      - PrimaryColumn
+      - Column
+      - Index
+    from: typeorm

@@ -243,21 +243,6 @@ export class Indexer {
     }
   }
 
-  async pruneFrothyEntities<Entity> (frothyEntityType: new () => Entity, blockNumber: number): Promise<void> {
-    const dbTx = await this._db.createTransactionRunner();
-    try {
-      // Remove frothy entity entries at | below the prune block height
-      await this._db.removeEntities(dbTx, frothyEntityType, { where: { blockNumber: LessThanOrEqual(blockNumber) } });
-
-      dbTx.commitTransaction();
-    } catch (error) {
-      await dbTx.rollbackTransaction();
-      throw error;
-    } finally {
-      await dbTx.release();
-    }
-  }
-
   async updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface> {
     const dbTx = await this._db.createTransactionRunner();
 

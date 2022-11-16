@@ -486,7 +486,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async pruneFrothyEntities (blockNumber: number): Promise<void> {
-    await this._baseIndexer.pruneFrothyEntities(FrothyEntity, blockNumber);
+    await this._graphWatcher.pruneFrothyEntities(FrothyEntity, blockNumber);
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {

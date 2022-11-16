@@ -31,7 +31,7 @@ import {
 } from '@cerc-io/util';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
-import { Database } from './database';
+import { Database, ENTITIES } from './database';
 import { createInitialState, handleEvent, createStateDiff, createStateCheckpoint } from './hooks';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -608,7 +608,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [MultiNonce, _Owner, IsRevoked, IsPhisher, IsMember];
+    const entities = [...ENTITIES];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
