@@ -385,7 +385,8 @@ export class Database {
           entity,
           latestEntity,
           where,
-          queryOptions
+          queryOptions,
+          selections
         );
       }
     } else {
@@ -831,17 +832,35 @@ export class Database {
     entity: new () => Entity,
     latestEntity: new () => any,
     where: Where = {},
-    queryOptions: QueryOptions = {}
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-    const { tableName } = repo.metadata;
+    const entityRepo = queryRunner.manager.getRepository(entity);
+    const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
+    const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
 
-    let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .innerJoin(
-        latestEntity,
-        'latest',
-        `latest.id = ${tableName}.id AND latest.blockHash = ${tableName}.blockHash`
-      );
+    const selectionNotInLatestEntity = selections.filter(selection => selection.kind === 'Field' && selection.name.value !== '__typename')
+      .some(selection => {
+        assert(selection.kind === 'Field');
+
+        return !latestEntityFields.includes(selection.name.value);
+      });
+
+    // Use latest entity table for faster query.
+    let repo = latestEntityRepo;
+    let selectQueryBuilder = repo.createQueryBuilder('latest');
+
+    if (selectionNotInLatestEntity) {
+      // Join with latest entity table if selection field doesn't exist in latest entity.
+      repo = entityRepo;
+
+      selectQueryBuilder = repo.createQueryBuilder(repo.metadata.tableName)
+        .innerJoin(
+          latestEntity,
+          'latest',
+          `latest.id = ${repo.metadata.tableName}.id AND latest.blockHash = ${repo.metadata.tableName}.blockHash`
+        );
+    }
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, 'latest');
 
