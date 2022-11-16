@@ -5,14 +5,13 @@
 import assert from 'assert';
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
+import { PubSub } from 'graphql-subscriptions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
-import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, createAndStartServer } from '@cerc-io/util';
 
 import typeDefs from './schema';
 
@@ -69,21 +68,9 @@ export const main = async (): Promise<any> => {
 
   const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
 
+  // Create an Express app
   const app: Application = express();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
-
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
+  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
 
   return { app, server };
 };

@@ -5,16 +5,15 @@
 import assert from 'assert';
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
+import { PubSub } from 'graphql-subscriptions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
-import { createServer } from 'http';
 
 import { getCache } from '@cerc-io/cache';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { TracingClient } from '@cerc-io/tracing-client';
-import { getConfig, JobQueue, DEFAULT_CONFIG_PATH } from '@cerc-io/util';
+import { getConfig, JobQueue, DEFAULT_CONFIG_PATH, createAndStartServer } from '@cerc-io/util';
 
 import typeDefs from './schema';
 
@@ -81,21 +80,9 @@ export const main = async (): Promise<any> => {
 
   const resolvers = await createResolvers(indexer, txWatcher);
 
+  // Create an Express app
   const app: Application = express();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
-
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
+  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
 
   return { app, server };
 };

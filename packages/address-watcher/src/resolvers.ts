@@ -3,7 +3,7 @@
 //
 
 import debug from 'debug';
-import { withFilter } from 'apollo-server-express';
+import { withFilter } from 'graphql-subscriptions';
 import { ethers } from 'ethers';
 
 import { Indexer } from './indexer';

@@ -7,14 +7,13 @@ import path from 'path';
 import assert from 'assert';
 import 'reflect-metadata';
 import express, { Application } from 'express';
-import { ApolloServer, PubSub } from 'apollo-server-express';
+import { PubSub } from 'graphql-subscriptions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
-import { createServer } from 'http';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServer } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
@@ -76,23 +75,11 @@ export const main = async (): Promise<any> => {
   }
 
   const resolvers = await createResolvers(indexer, eventWatcher);
-
-  const app: Application = express();
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
 
-  await server.start();
-  server.applyMiddleware({ app });
-
-  const httpServer = createServer(app);
-  server.installSubscriptionHandlers(httpServer);
-
-  httpServer.listen(port, host, () => {
-    log(`Server is listening on host ${host} port ${port}`);
-  });
+  // Create an Express app
+  const app: Application = express();
+  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
 
   startGQLMetricsServer(config);
 

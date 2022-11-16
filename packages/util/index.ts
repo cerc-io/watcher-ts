@@ -18,3 +18,4 @@ export * from './src/index-block';
 export * from './src/metrics';
 export * from './src/gql-metrics';
 export * from './src/common';
+export * from './src/server';
