@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
+import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, LessThanOrEqual, MoreThan } from 'typeorm';
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
@@ -235,6 +235,21 @@ export class Indexer {
     try {
       await this._db.markBlocksAsPruned(dbTx, blocks);
       await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
+  async pruneFrothyEntities<Entity> (frothyEntityType: new () => Entity, blockNumber: number): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+    try {
+      // Remove frothy entity entries at | below the prune block height
+      await this._db.removeEntities(dbTx, frothyEntityType, { where: { blockNumber: LessThanOrEqual(blockNumber) } });
+
+      dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
       throw error;

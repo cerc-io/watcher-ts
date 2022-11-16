@@ -55,6 +55,7 @@ import { Distribution } from './entity/Distribution';
 import { Claim } from './entity/Claim';
 import { Account } from './entity/Account';
 import { Slash } from './entity/Slash';
+import { FrothyEntity } from './entity/FrothyEntity';
 
 const KIND_EDENNETWORK = 'EdenNetwork';
 const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
@@ -444,7 +445,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
-    return this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    const syncStatus = this._baseIndexer.updateSyncStatusCanonicalBlock(blockHash, blockNumber, force);
+    await this.pruneFrothyEntities(blockNumber);
+
+    return syncStatus;
   }
 
   async getEvent (id: string): Promise<Event | undefined> {
@@ -479,6 +483,10 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.markBlocksAsPruned(blocks);
 
     await this._graphWatcher.pruneEntities(blocks, ENTITIES);
+  }
+
+  async pruneFrothyEntities (blockNumber: number): Promise<void> {
+    await this._baseIndexer.pruneFrothyEntities(FrothyEntity, blockNumber);
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
@@ -522,7 +530,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
-    const entities = [ProducerSet, Producer, RewardSchedule, RewardScheduleEntry, Network, Staker, ProducerEpoch, Epoch, Block, SlotClaim, Slot, Distributor, Distribution, Claim, Account, Slash];
+    const entities = [...ENTITIES, FrothyEntity];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
   }
 
