@@ -899,10 +899,18 @@ export const updateEntitiesFromState = async (database: Database, indexer: Index
   }
 };
 
-export const afterEntityInsertOrUpdate = async<Entity> (frothyEntityType: EntityTarget<Entity>, entities: Set<any>, event: InsertEvent<any> | UpdateEvent<any>): Promise<void> => {
+export const afterEntityInsertOrUpdate = async<Entity> (
+  frothyEntityType: EntityTarget<Entity>,
+  entities: Set<any>,
+  event: InsertEvent<any> | UpdateEvent<any>,
+  entityToLatestEntityMap: Map<new () => any, new () => any> = new Map()
+): Promise<void> => {
   const entity = event.entity;
 
-  // TODO: Check and return if entity is being pruned (is_pruned flag update)
+  // Return if the entity is being pruned
+  if (entity.isPruned) {
+    return;
+  }
 
   // Insert the entity details in FrothyEntity table
   if (entities.has(entity.constructor)) {
@@ -922,5 +930,26 @@ export const afterEntityInsertOrUpdate = async<Entity> (frothyEntityType: Entity
       .execute();
   }
 
-  // TOOD: Update latest entity tables
+  // Get latest entity's type
+  const entityTarget = entityToLatestEntityMap.get(entity.constructor);
+
+  if (!entityTarget) {
+    return;
+  }
+
+  // Get latest entity's fields to be updated
+  const latestEntityRepo = event.manager.getRepository(entityTarget);
+  const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
+  const fieldsToUpdate = latestEntityRepo.metadata.columns.map(column => column.databaseName).filter(val => val !== 'id');
+
+  // Create a latest entity instance and upsert in the db
+  const latestEntity = event.manager.create(entityTarget, _.pick(entity, latestEntityFields));
+  await event.manager.createQueryBuilder()
+    .insert()
+    .into(entityTarget)
+    .values(latestEntity)
+    .orUpdate(
+      { conflict_target: ['id'], overwrite: fieldsToUpdate }
+    )
+    .execute();
 };

@@ -4,9 +4,10 @@
 
 import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent } from 'typeorm';
 
+import { afterEntityInsertOrUpdate } from '@cerc-io/graph-node';
+
 import { FrothyEntity } from './FrothyEntity';
 import { ENTITIES } from '../database';
-import { afterEntityInsertOrUpdate } from '@cerc-io/graph-node';
 
 @EventSubscriber()
 export class EntitySubscriber implements EntitySubscriberInterface {

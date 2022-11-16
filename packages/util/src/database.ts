@@ -788,20 +788,29 @@ export class Database {
     return repo.save(entity);
   }
 
-  buildQuery<Entity> (repo: Repository<Entity>, selectQueryBuilder: SelectQueryBuilder<Entity>, where: Where = {}): SelectQueryBuilder<Entity> {
+  buildQuery<Entity> (
+    repo: Repository<Entity>,
+    selectQueryBuilder: SelectQueryBuilder<Entity>,
+    where: Where = {},
+    alias?: string
+  ): SelectQueryBuilder<Entity> {
+    if (!alias) {
+      alias = selectQueryBuilder.alias;
+    }
+
     Object.entries(where).forEach(([field, filters]) => {
       filters.forEach((filter, index) => {
         // Form the where clause.
         let { not, operator, value } = filter;
         const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
         assert(columnMetadata);
-        let whereClause = `"${selectQueryBuilder.alias}"."${columnMetadata.databaseName}" `;
+        let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
 
         if (columnMetadata.relationMetadata) {
           // For relation fields, use the id column.
           const idColumn = columnMetadata.relationMetadata.joinColumns.find(column => column.referencedColumn?.propertyName === 'id');
           assert(idColumn);
-          whereClause = `"${selectQueryBuilder.alias}"."${idColumn.databaseName}" `;
+          whereClause = `"${alias}"."${idColumn.databaseName}" `;
         }
 
         if (not) {
@@ -853,8 +862,13 @@ export class Database {
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     orderOptions: { orderBy?: string, orderDirection?: string },
-    columnPrefix = ''
+    columnPrefix = '',
+    alias?: string
   ): SelectQueryBuilder<Entity> {
+    if (!alias) {
+      alias = selectQueryBuilder.alias;
+    }
+
     const { orderBy, orderDirection } = orderOptions;
     assert(orderBy);
 
@@ -862,7 +876,7 @@ export class Database {
     assert(columnMetadata);
 
     return selectQueryBuilder.addOrderBy(
-      `"${selectQueryBuilder.alias}"."${columnPrefix}${columnMetadata.databaseName}"`,
+      `"${alias}"."${columnPrefix}${columnMetadata.databaseName}"`,
       orderDirection === 'desc' ? 'DESC' : 'ASC'
     );
   }

@@ -44,7 +44,8 @@ export class Database implements DatabaseInterface {
 
     this._config = {
       ...config,
-      entities: [path.join(__dirname, 'entity/*')]
+      entities: [path.join(__dirname, 'entity/*')],
+      subscribers: [path.join(__dirname, 'entity/Subscriber.*')]
     };
 
     this._baseDatabase = new BaseDatabase(this._config);

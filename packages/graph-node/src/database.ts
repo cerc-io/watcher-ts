@@ -68,16 +68,23 @@ export class Database {
   _conn!: Connection
   _baseDatabase: BaseDatabase
   _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>
+  _entityToLatestEntityMap: Map<new () => any, new () => any> = new Map()
 
   _cachedEntities: CachedEntities = {
     frothyBlocks: new Map(),
     latestPrunedEntities: new Map()
   }
 
-  constructor (serverConfig: ServerConfig, baseDatabase: BaseDatabase, entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE> = new Map()) {
+  constructor (
+    serverConfig: ServerConfig,
+    baseDatabase: BaseDatabase,
+    entityQueryTypeMap: Map<new () => any, ENTITY_QUERY_TYPE> = new Map(),
+    entityToLatestEntityMap: Map<new () => any, new () => any> = new Map()
+  ) {
     this._serverConfig = serverConfig;
     this._baseDatabase = baseDatabase;
     this._entityQueryTypeMap = entityQueryTypeMap;
+    this._entityToLatestEntityMap = entityToLatestEntityMap;
   }
 
   get cachedEntities () {
@@ -367,40 +374,54 @@ export class Database {
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
-    let entities: Entity[];
+    let entities: Entity[] = [];
+    const latestEntity = this._entityToLatestEntityMap.get(entity);
 
-    // Use different suitable query patterns based on entities.
-    switch (this._entityQueryTypeMap.get(entity)) {
-      case ENTITY_QUERY_TYPE.SINGULAR:
-        entities = await this.getEntitiesSingular(queryRunner, entity, block, where);
-        break;
+    if (latestEntity) {
+      if (!Object.keys(block).length) {
+        // Use latest entity tables if block height not passed.
+        entities = await this.getEntitiesLatest(
+          queryRunner,
+          entity,
+          latestEntity,
+          where,
+          queryOptions
+        );
+      }
+    } else {
+      // Use different suitable query patterns based on entities.
+      switch (this._entityQueryTypeMap.get(entity)) {
+        case ENTITY_QUERY_TYPE.SINGULAR:
+          entities = await this.getEntitiesSingular(queryRunner, entity, block, where);
+          break;
 
-      case ENTITY_QUERY_TYPE.UNIQUE:
-        entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.UNIQUE:
+          entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
+          break;
 
-      case ENTITY_QUERY_TYPE.UNIQUE_WITHOUT_PRUNED:
-        entities = await this.getEntitiesUniqueWithoutPruned(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.UNIQUE_WITHOUT_PRUNED:
+          entities = await this.getEntitiesUniqueWithoutPruned(queryRunner, entity, block, where, queryOptions);
+          break;
 
-      case ENTITY_QUERY_TYPE.DISTINCT_ON:
-        entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.DISTINCT_ON:
+          entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
+          break;
 
-      case ENTITY_QUERY_TYPE.DISTINCT_ON_WITHOUT_PRUNED:
-        entities = await this.getEntitiesDistinctOnWithoutPruned(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.DISTINCT_ON_WITHOUT_PRUNED:
+          entities = await this.getEntitiesDistinctOnWithoutPruned(queryRunner, entity, block, where, queryOptions);
+          break;
 
-      case ENTITY_QUERY_TYPE.GROUP_BY_WITHOUT_PRUNED:
-        // Use group by query if entity query type is not specified in map.
-        entities = await this.getEntitiesGroupByWithoutPruned(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.GROUP_BY_WITHOUT_PRUNED:
+          // Use group by query if entity query type is not specified in map.
+          entities = await this.getEntitiesGroupByWithoutPruned(queryRunner, entity, block, where, queryOptions);
+          break;
 
-      case ENTITY_QUERY_TYPE.GROUP_BY:
-      default:
-        // Use group by query if entity query type is not specified in map.
-        entities = await this.getEntitiesGroupBy(queryRunner, entity, block, where, queryOptions);
-        break;
+        case ENTITY_QUERY_TYPE.GROUP_BY:
+        default:
+          // Use group by query if entity query type is not specified in map.
+          entities = await this.getEntitiesGroupBy(queryRunner, entity, block, where, queryOptions);
+          break;
+      }
     }
 
     if (!entities.length) {
@@ -803,6 +824,42 @@ export class Database {
     const entities = await selectQueryBuilder.getMany();
 
     return entities as Entity[];
+  }
+
+  async getEntitiesLatest<Entity> (
+    queryRunner: QueryRunner,
+    entity: new () => Entity,
+    latestEntity: new () => any,
+    where: Where = {},
+    queryOptions: QueryOptions = {}
+  ): Promise<Entity[]> {
+    const repo = queryRunner.manager.getRepository(entity);
+    const { tableName } = repo.metadata;
+
+    let selectQueryBuilder = repo.createQueryBuilder(tableName)
+      .innerJoin(
+        latestEntity,
+        'latest',
+        `latest.id = ${tableName}.id AND latest.blockHash = ${tableName}.blockHash`
+      );
+
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, 'latest');
+
+    if (queryOptions.orderBy) {
+      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
+    }
+
+    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+
+    if (queryOptions.skip) {
+      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
+    }
+
+    if (queryOptions.limit) {
+      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
+    }
+
+    return selectQueryBuilder.getMany();
   }
 
   async loadEntitiesRelations<Entity> (
