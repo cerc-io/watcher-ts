@@ -7,6 +7,7 @@ import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
 import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
+import queue from 'express-queue';
 
 import { TypeSource } from '@graphql-tools/utils';
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -22,9 +23,9 @@ export const createAndStartServer = async (
   resolvers: any,
   serverConfig: ServerConfig
 ): Promise<ApolloServer> => {
-  const host = serverConfig.host;
-  const port = serverConfig.port;
-  const gqlCacheConfig = serverConfig.gqlCache;
+  const { host, port, gqlCache: gqlCacheConfig, maxSimultaneousRequests, maxRequestQueueLimit } = serverConfig;
+
+  app.use(queue({ activeLimit: maxSimultaneousRequests || 1, queuedLimit: maxRequestQueueLimit || -1 }));
 
   // Create HTTP server
   const httpServer = createServer(app);
