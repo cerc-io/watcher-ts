@@ -44,11 +44,8 @@ const DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL = 1000;
 export enum ENTITY_QUERY_TYPE {
   SINGULAR,
   DISTINCT_ON,
-  DISTINCT_ON_WITHOUT_PRUNED,
   GROUP_BY,
-  GROUP_BY_WITHOUT_PRUNED,
   UNIQUE,
-  UNIQUE_WITHOUT_PRUNED
 }
 
 interface CachedEntities {
@@ -369,7 +366,7 @@ export class Database {
     queryRunner: QueryRunner,
     entity: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight,
+    block: BlockHeight = {},
     where: Where = {},
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
@@ -410,21 +407,8 @@ export class Database {
           entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
           break;
 
-        case ENTITY_QUERY_TYPE.UNIQUE_WITHOUT_PRUNED:
-          entities = await this.getEntitiesUniqueWithoutPruned(queryRunner, entity, block, where, queryOptions);
-          break;
-
         case ENTITY_QUERY_TYPE.DISTINCT_ON:
           entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
-          break;
-
-        case ENTITY_QUERY_TYPE.DISTINCT_ON_WITHOUT_PRUNED:
-          entities = await this.getEntitiesDistinctOnWithoutPruned(queryRunner, entity, block, where, queryOptions);
-          break;
-
-        case ENTITY_QUERY_TYPE.GROUP_BY_WITHOUT_PRUNED:
-          // Use group by query if entity query type is not specified in map.
-          entities = await this.getEntitiesGroupByWithoutPruned(queryRunner, entity, block, where, queryOptions);
           break;
 
         case ENTITY_QUERY_TYPE.GROUP_BY:
@@ -459,9 +443,7 @@ export class Database {
     let subQuery = repo.createQueryBuilder('subTable')
       .select('subTable.id', 'id')
       .addSelect('MAX(subTable.block_number)', 'block_number')
-      .addFrom('block_progress', 'blockProgress')
-      .where('subTable.block_hash = blockProgress.block_hash')
-      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+      .where('subTable.is_pruned = :isPruned', { isPruned: false })
       .groupBy('subTable.id');
 
     if (where.id) {
@@ -523,135 +505,7 @@ export class Database {
 
     let subQuery = repo.createQueryBuilder('subTable')
       .distinctOn(['subTable.id'])
-      .addFrom('block_progress', 'blockProgress')
-      .where('subTable.block_hash = blockProgress.block_hash')
-      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
-      .addOrderBy('subTable.id', 'ASC')
-      .addOrderBy('subTable.block_number', 'DESC');
-
-    if (where.id) {
-      subQuery = this._baseDatabase.buildQuery(repo, subQuery, { id: where.id });
-      delete where.id;
-    }
-
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-    }
-
-    subQuery = this._baseDatabase.buildQuery(repo, subQuery, where);
-
-    let selectQueryBuilder = queryRunner.manager.createQueryBuilder()
-      .from(
-        `(${subQuery.getQuery()})`,
-        'latestEntities'
-      )
-      .setParameters(subQuery.getParameters());
-
-    if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
-      if (queryOptions.orderBy !== 'id') {
-        selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, 'subTable_');
-      }
-    }
-
-    if (queryOptions.skip) {
-      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
-    }
-
-    if (queryOptions.limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
-    }
-
-    let entities = await selectQueryBuilder.getRawMany();
-    entities = await this.transformResults(queryRunner, repo.createQueryBuilder('subTable'), entities);
-
-    return entities as Entity[];
-  }
-
-  async getEntitiesGroupByWithoutPruned<Entity> (
-    queryRunner: QueryRunner,
-    entity: new () => Entity,
-    block: BlockHeight,
-    where: Where = {},
-    queryOptions: QueryOptions = {}
-  ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-    const { tableName } = repo.metadata;
-
-    let subQuery = repo.createQueryBuilder('subTable')
-      .select('subTable.id', 'id')
-      .addSelect('MAX(subTable.block_number)', 'block_number')
-      .groupBy('subTable.id');
-
-    if (where.id) {
-      subQuery = this._baseDatabase.buildQuery(repo, subQuery, { id: where.id });
-      delete where.id;
-    }
-
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-    }
-
-    let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .innerJoin(
-        `(${subQuery.getQuery()})`,
-        'latestEntities',
-        `${tableName}.id = "latestEntities"."id" AND ${tableName}.block_number = "latestEntities"."block_number"`
-      )
-      .setParameters(subQuery.getParameters());
-
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
-
-    if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
-    }
-
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
-
-    if (queryOptions.skip) {
-      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
-    }
-
-    if (queryOptions.limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
-    }
-
-    const entities = await selectQueryBuilder.getMany();
-
-    return entities;
-  }
-
-  async getEntitiesDistinctOnWithoutPruned<Entity> (
-    queryRunner: QueryRunner,
-    entity: new () => Entity,
-    block: BlockHeight,
-    where: Where = {},
-    queryOptions: QueryOptions = {}
-  ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-
-    let subQuery = repo.createQueryBuilder('subTable')
-      .distinctOn(['subTable.id'])
+      .where('subTable.is_pruned = :isPruned', { isPruned: false })
       .addOrderBy('subTable.id', 'ASC')
       .addOrderBy('subTable.block_number', 'DESC');
 
@@ -714,9 +568,7 @@ export class Database {
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .addFrom('block_progress', 'blockProgress')
-      .where(`${tableName}.block_hash = blockProgress.block_hash`)
-      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false })
+      .where('is_pruned = :isPruned', { isPruned: false })
       .addOrderBy(`${tableName}.block_number`, 'DESC')
       .limit(1);
 
@@ -752,55 +604,7 @@ export class Database {
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
-      .addFrom('block_progress', 'blockProgress')
-      .where(`${tableName}.block_hash = blockProgress.block_hash`)
-      .andWhere('blockProgress.is_pruned = :isPruned', { isPruned: false });
-
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .andWhere(new Brackets(qb => {
-          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
-            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
-    }
-
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
-
-    if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
-    }
-
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
-
-    if (queryOptions.skip) {
-      selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
-    }
-
-    if (queryOptions.limit) {
-      selectQueryBuilder = selectQueryBuilder.limit(queryOptions.limit);
-    }
-
-    const entities = await selectQueryBuilder.getMany();
-
-    return entities as Entity[];
-  }
-
-  async getEntitiesUniqueWithoutPruned<Entity> (
-    queryRunner: QueryRunner,
-    entity: new () => Entity,
-    block: BlockHeight,
-    where: Where = {},
-    queryOptions: QueryOptions = {}
-  ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
-    const { tableName } = repo.metadata;
-    let selectQueryBuilder = repo.createQueryBuilder(tableName);
+      .where('is_pruned = :isPruned', { isPruned: false });
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
@@ -904,6 +708,7 @@ export class Database {
 
     let subQuery = entityRepo.createQueryBuilder('subTable')
       .where('latest.id = subTable.id')
+      .andWhere('subTable.is_pruned = :isPruned', { isPruned: false })
       .orderBy('subTable.block_number', 'DESC')
       .limit(1);
 
