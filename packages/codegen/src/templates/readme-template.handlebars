@@ -59,6 +59,18 @@
 
   * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `State` using the `Indexer` object.
 
+### GQL Caching
+
+To enable GQL requests caching:
+
+* Update the `server.gqlCache` config with required settings.
+
+* In the GQL [schema file](./src/schema.gql), use the `cacheControl` directive to apply cache hints at schema level.
+
+  * Eg. Set `inheritMaxAge` to true for non-scalar fields of a type.
+
+* In the GQL [resolvers file](./src/resolvers.ts), uncomment the `setGQLCacheHints()` calls in resolvers for required queries.
+
 ## Run
 
 * Run the watcher:

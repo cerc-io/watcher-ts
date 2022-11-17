@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState } from '@cerc-io/util';
+import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState, setGQLCacheHints } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -21,6 +21,8 @@ const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
   assert(indexer);
+
+  const gqlCacheConfig = indexer.serverConfig.gqlCache;
 
   return {
     BigInt: new BigInt('bigInt'),
@@ -63,13 +65,21 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
     Query: {
       {{#each queries}}
-      {{this.name}}: (_: any, { blockHash, contractAddress
-      {{~#each this.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
-      {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} }): Promise<ValueResult> => {
+      {{this.name}}: (
+        _: any,
+        { blockHash, contractAddress
+        {{~#each this.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
+        {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} },
+        __: any,
+        info: GraphQLResolveInfo
+      ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('{{this.name}}').inc(1);
+
+        // Set cache-control hints
+        // setGQLCacheHints(info, {}, gqlCacheConfig);
 
         return indexer.{{this.name}}(blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
@@ -79,7 +89,7 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
 
       {{~#each subgraphQueries}}
       {{this.queryName}}: async (
-         _: any,
+        _: any,
         { id, block = {} }: { id: string, block: BlockHeight },
         __: any,
         info: GraphQLResolveInfo
@@ -88,6 +98,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('{{this.queryName}}').inc(1);
         assert(info.fieldNodes[0].selectionSet);
+
+        // Set cache-control hints
+        // setGQLCacheHints(info, block, gqlCacheConfig);
 
         return indexer.getSubgraphEntity({{this.entityName}}, id, block, info.fieldNodes[0].selectionSet.selections);
       },

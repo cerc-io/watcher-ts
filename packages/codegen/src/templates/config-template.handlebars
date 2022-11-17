@@ -30,6 +30,19 @@
   # Use -1 for skipping check on block range.
   maxEventsBlockRange = 1000
 
+  # GQL cache settings
+  [server.gqlCache]
+    enabled = true
+
+    # Max in-memory cache size (in bytes) (default 8 MB)
+    # maxCacheSize
+
+    # GQL cache-control max-age settings (in seconds)
+    maxAge = 15
+    {{#if (subgraphPath)}}
+    timeTravelMaxAge = 86400 # 1 day
+    {{/if}}
+
 [metrics]
   host = "127.0.0.1"
   port = 9000
