@@ -7,6 +7,7 @@ import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core';
 import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
+import queue from 'express-queue';
 
 import { TypeSource } from '@graphql-tools/utils';
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -16,15 +17,15 @@ import { ServerConfig } from './config';
 
 const log = debug('vulcanize:server');
 
-export const createAndStartServerWithCache = async (
+export const createAndStartServer = async (
   app: Application,
   typeDefs: TypeSource,
   resolvers: any,
   serverConfig: ServerConfig
 ): Promise<ApolloServer> => {
-  const host = serverConfig.host;
-  const port = serverConfig.port;
-  const gqlCacheConfig = serverConfig.gqlCache;
+  const { host, port, gqlCache: gqlCacheConfig, maxSimultaneousRequests, maxRequestQueueLimit } = serverConfig;
+
+  app.use(queue({ activeLimit: maxSimultaneousRequests || 1, queuedLimit: maxRequestQueueLimit || -1 }));
 
   // Create HTTP server
   const httpServer = createServer(app);
@@ -72,53 +73,6 @@ export const createAndStartServerWithCache = async (
 
   httpServer.listen(port, host, () => {
     log(`Server is listening on ${host}:${port}${server.graphqlPath}`);
-  });
-
-  return server;
-};
-
-export const createAndStartServer = async (
-  app: Application,
-  typeDefs: TypeSource,
-  resolvers: any,
-  endPoint: { host: string, port: number }
-): Promise<ApolloServer> => {
-  // Create HTTP server
-  const httpServer = createServer(app);
-
-  // Create the schema
-  const schema = makeExecutableSchema({ typeDefs, resolvers });
-
-  // Create our WebSocket server using the HTTP server we just set up.
-  const wsServer = new WebSocketServer({
-    server: httpServer,
-    path: '/graphql'
-  });
-  const serverCleanup = useServer({ schema }, wsServer);
-
-  const server = new ApolloServer({
-    schema,
-    csrfPrevention: true,
-    plugins: [
-      // Proper shutdown for the HTTP server
-      ApolloServerPluginDrainHttpServer({ httpServer }),
-      // Proper shutdown for the WebSocket server
-      {
-        async serverWillStart () {
-          return {
-            async drainServer () {
-              await serverCleanup.dispose();
-            }
-          };
-        }
-      }
-    ]
-  });
-  await server.start();
-  server.applyMiddleware({ app });
-
-  httpServer.listen(endPoint.port, endPoint.host, () => {
-    log(`Server is listening on ${endPoint.host}:${endPoint.port}${server.graphqlPath}`);
   });
 
   return server;

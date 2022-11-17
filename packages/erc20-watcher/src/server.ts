@@ -37,7 +37,7 @@ export const main = async (): Promise<any> => {
   const config: Config = await getConfig(argv.f);
   const { ethClient, ethProvider } = await initClients(config);
 
-  const { host, port, kind: watcherKind } = config.server;
+  const { kind: watcherKind } = config.server;
 
   const db = new Database(config.database);
   await db.init();
@@ -70,7 +70,7 @@ export const main = async (): Promise<any> => {
 
   // Create an Express app
   const app: Application = express();
-  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
+  const server = createAndStartServer(app, typeDefs, resolvers, config.server);
 
   return { app, server };
 };

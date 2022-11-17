@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { GraphQLSchema, parse, printSchema, print } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean } from 'graphql';
 import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
@@ -19,6 +19,7 @@ export class Schema {
     this._composer = new SchemaComposer();
     this._events = [];
 
+    this._addGQLCacheTypes();
     this._addBasicTypes();
   }
 
@@ -269,6 +270,28 @@ export class Schema {
       }
     });
     this._composer.addSchemaMustHaveType(typeComposer);
+  }
+
+  _addGQLCacheTypes (): void {
+    // Create a enum type composer to add enum CacheControlScope in the schema composer.
+    const enumTypeComposer = this._composer.createEnumTC(`
+      enum CacheControlScope {
+        PUBLIC
+        PRIVATE
+      }
+    `);
+    this._composer.addSchemaMustHaveType(enumTypeComposer);
+
+    // Add the directive cacheControl in the schema composer.
+    this._composer.addDirective(new GraphQLDirective({
+      name: 'cacheControl',
+      locations: ['FIELD_DEFINITION', 'OBJECT', 'INTERFACE', 'UNION'],
+      args: {
+        maxAge: { type: GraphQLInt },
+        inheritMaxAge: { type: GraphQLBoolean },
+        scope: { type: enumTypeComposer.getType() }
+      }
+    }));
   }
 
   /**

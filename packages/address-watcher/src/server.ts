@@ -39,8 +39,6 @@ export const main = async (): Promise<any> => {
 
   assert(config.server, 'Missing server config');
 
-  const { host, port } = config.server;
-
   const { upstream, database: dbConfig, jobQueue: jobQueueConfig } = config;
 
   assert(dbConfig, 'Missing database config');
@@ -82,7 +80,7 @@ export const main = async (): Promise<any> => {
 
   // Create an Express app
   const app: Application = express();
-  const server = createAndStartServer(app, typeDefs, resolvers, { host, port });
+  const server = createAndStartServer(app, typeDefs, resolvers, config.server);
 
   return { app, server };
 };

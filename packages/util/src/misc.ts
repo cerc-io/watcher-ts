@@ -296,9 +296,14 @@ export const setGQLCacheHints = (info: GraphQLResolveInfo, block: BlockHeight, g
     return;
   }
 
-  assert(gqlCache.maxAge, 'Missing server gqlCache.maxAge');
-  assert(gqlCache.timeTravelMaxAge, 'Missing server gqlCache.timeTravelMaxAge');
+  let maxAge: number;
+  if (_.isEmpty(block)) {
+    assert(gqlCache.maxAge, 'Missing server gqlCache.maxAge');
+    maxAge = gqlCache.maxAge;
+  } else {
+    assert(gqlCache.timeTravelMaxAge, 'Missing server gqlCache.timeTravelMaxAge');
+    maxAge = gqlCache.timeTravelMaxAge;
+  }
 
-  const maxAge = _.isEmpty(block) ? gqlCache.maxAge : gqlCache.timeTravelMaxAge;
   info.cacheControl.setCacheHint({ maxAge });
 };
