@@ -5,8 +5,9 @@
 import assert from 'assert';
 import debug from 'debug';
 import fetch from 'cross-fetch';
-import { SubscriptionClient } from 'subscriptions-transport-ws';
+import { createClient } from 'graphql-ws';
 import ws from 'ws';
+import { Subscription } from 'zen-observable-ts';
 
 import {
   ApolloClient,
@@ -20,7 +21,7 @@ import {
   DefaultOptions
 } from '@apollo/client/core';
 import { getMainDefinition } from '@apollo/client/utilities';
-import { WebSocketLink } from '@apollo/client/link/ws';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 
 const log = debug('vulcanize:client');
 
@@ -49,22 +50,21 @@ export class GraphQLClient {
 
     if (gqlSubscriptionEndpoint) {
       // https://www.apollographql.com/docs/react/data/subscriptions/
-      const subscriptionClient = new SubscriptionClient(gqlSubscriptionEndpoint, {
-        reconnect: true,
-        connectionCallback: (error: Error[]) => {
-          if (error) {
-            log('Subscription client connection error', error[0].message);
-          } else {
-            log('Subscription client connected successfully');
-          }
-        }
-      }, ws);
+      const subscriptionClient = createClient({
+        url: gqlSubscriptionEndpoint,
+        shouldRetry: () => true,
+        webSocketImpl: ws
+      });
 
-      subscriptionClient.onError(error => {
+      subscriptionClient.on('connected', () => {
+        log('Subscription client connected successfully');
+      });
+
+      subscriptionClient.on('error', (error: any) => {
         log('Subscription client error', error.message);
       });
 
-      const wsLink = new WebSocketLink(subscriptionClient);
+      const wsLink = new GraphQLWsLink(subscriptionClient);
 
       const splitLink = split(
         ({ query }) => {
@@ -97,8 +97,8 @@ export class GraphQLClient {
     });
   }
 
-  async subscribe (query: DocumentNode, onNext: (value: any) => void): Promise<ZenObservable.Subscription> {
-    const observable = await this._client.subscribe({ query });
+  async subscribe (query: DocumentNode, onNext: (value: any) => void): Promise<Subscription> {
+    const observable = this._client.subscribe({ query });
 
     return observable.subscribe({
       next (data) {
