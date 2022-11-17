@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import { EntityTarget, InsertEvent, UpdateEvent, ValueTransformer } from 'typeorm';
+import { DeepPartial, EntityTarget, InsertEvent, Repository, UpdateEvent, ValueTransformer } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
@@ -939,11 +939,10 @@ export const afterEntityInsertOrUpdate = async<Entity> (
 
   // Get latest entity's fields to be updated
   const latestEntityRepo = event.manager.getRepository(entityTarget);
-  const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
   const fieldsToUpdate = latestEntityRepo.metadata.columns.map(column => column.databaseName).filter(val => val !== 'id');
 
   // Create a latest entity instance and upsert in the db
-  const latestEntity = event.manager.create(entityTarget, _.pick(entity, latestEntityFields));
+  const latestEntity = getLatestEntityFromEntity(latestEntityRepo, entity);
   await event.manager.createQueryBuilder()
     .insert()
     .into(entityTarget)
@@ -953,3 +952,8 @@ export const afterEntityInsertOrUpdate = async<Entity> (
     )
     .execute();
 };
+
+export function getLatestEntityFromEntity<Entity> (latestEntityRepo: Repository<Entity>, entity: any): Entity {
+  const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
+  return latestEntityRepo.create(_.pick(entity, latestEntityFields) as DeepPartial<Entity>);
+}

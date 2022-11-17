@@ -489,6 +489,10 @@ export class Indexer implements IndexerInterface {
     await this._graphWatcher.pruneFrothyEntities(FrothyEntity, blockNumber);
   }
 
+  async resetLatestEntities (blockNumber: number): Promise<void> {
+    await this._graphWatcher.resetLatestEntities(blockNumber);
+  }
+
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
     return this._baseIndexer.updateBlockProgress(block, lastProcessedEventIndex);
   }

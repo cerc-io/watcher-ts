@@ -386,6 +386,20 @@ export class GraphWatcher {
     }
   }
 
+  async resetLatestEntities (blockNumber: number): Promise<void> {
+    const dbTx = await this._database.createTransactionRunner();
+    try {
+      await this._database.resetLatestEntities(dbTx, blockNumber);
+
+      dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
   pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
     this._database.pruneEntityCacheFrothyBlocks(canonicalBlockHash, canonicalBlockNumber);
   }

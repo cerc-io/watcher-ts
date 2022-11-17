@@ -8,7 +8,7 @@ import assert from 'assert';
 import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
-import { Database } from '../../database';
+import { Database, ENTITY_TO_LATEST_ENTITY_MAP } from '../../database';
 import { Indexer } from '../../indexer';
 
 const log = debug('vulcanize:reset-watcher');
@@ -32,7 +32,7 @@ export const handler = async (argv: any): Promise<void> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase, ENTITY_TO_LATEST_ENTITY_MAP);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
@@ -53,5 +53,6 @@ export const handler = async (argv: any): Promise<void> => {
   await graphWatcher.init();
 
   await indexer.resetWatcherToBlock(argv.blockNumber);
+  await indexer.resetLatestEntities(argv.blockNumber);
   log('Reset watcher successfully');
 };
