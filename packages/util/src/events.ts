@@ -10,7 +10,7 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME } from './constants';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS } from './constants';
 import { createPruningJob, processBlockByNumberWithCache } from './common';
 import { UpstreamConfig } from './config';
 import { OrderDirection } from './database';
@@ -98,7 +98,12 @@ export class EventWatcher {
   }
 
   async eventProcessingCompleteHandler (job: any): Promise<EventInterface[]> {
-    const { data: { request: { data: { blockHash } } } } = job;
+    const { data: { request: { data: { kind, blockHash } } } } = job;
+
+    // Ignore jobs other than JOB_KIND_EVENTS
+    if (kind !== JOB_KIND_EVENTS) {
+      return [];
+    }
     assert(blockHash);
 
     const blockProgress = await this._indexer.getBlockProgress(blockHash);

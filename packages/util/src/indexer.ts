@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, LessThanOrEqual, MoreThan } from 'typeorm';
+import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
