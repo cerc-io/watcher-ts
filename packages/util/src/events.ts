@@ -10,10 +10,13 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS } from './constants';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumberWithCache } from './common';
 import { UpstreamConfig } from './config';
 import { OrderDirection } from './database';
+import { getResultEvent } from './misc';
+
+const EVENT = 'event';
 
 const log = debug('vulcanize:events');
 
@@ -33,6 +36,10 @@ export class EventWatcher {
     this._indexer = indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
+  }
+
+  getEventIterator (): AsyncIterator<any> {
+    return this._pubsub.asyncIterator([EVENT]);
   }
 
   getBlockProgressEventIterator (): AsyncIterator<any> {
@@ -80,8 +87,13 @@ export class EventWatcher {
   }
 
   async blockProcessingCompleteHandler (job: any): Promise<void> {
-    const { data: { request: { data } } } = job;
+    const { id, data: { failed, request: { data } } } = job;
     const { kind } = data;
+
+    if (failed) {
+      log(`Job ${id} for queue ${QUEUE_BLOCK_PROCESSING} failed`);
+      return;
+    }
 
     switch (kind) {
       case JOB_KIND_INDEX:
@@ -97,13 +109,21 @@ export class EventWatcher {
     }
   }
 
-  async eventProcessingCompleteHandler (job: any): Promise<EventInterface[]> {
-    const { data: { request: { data: { kind, blockHash } } } } = job;
+  async eventProcessingCompleteHandler (job: any): Promise<void> {
+    const { id, data: { request, failed, state, createdOn } } = job;
+
+    if (failed) {
+      log(`Job ${id} for queue ${QUEUE_EVENT_PROCESSING} failed`);
+      return;
+    }
+
+    const { data: { kind, blockHash } } = request;
 
     // Ignore jobs other than JOB_KIND_EVENTS
     if (kind !== JOB_KIND_EVENTS) {
-      return [];
+      return;
     }
+
     assert(blockHash);
 
     const blockProgress = await this._indexer.getBlockProgress(blockHash);
@@ -111,7 +131,7 @@ export class EventWatcher {
 
     await this.publishBlockProgressToSubscribers(blockProgress);
 
-    return this._indexer.getBlockEvents(
+    const dbEvents = await this._indexer.getBlockEvents(
       blockProgress.blockHash,
       {
         eventName: [
@@ -123,6 +143,24 @@ export class EventWatcher {
         orderDirection: OrderDirection.asc
       }
     );
+
+    const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
+
+    // Cannot publish individual event as they are processed together in a single job.
+    // TODO: Use a different pubsub to publish event from job-runner.
+    // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+    for (const dbEvent of dbEvents) {
+      log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
+
+      if (!failed && state === 'completed' && request.data.publish) {
+        // Check for max acceptable lag time between request and sending results to live subscribers.
+        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+        } else {
+          log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+        }
+      }
+    }
   }
 
   async publishBlockProgressToSubscribers (blockProgress: BlockProgressInterface): Promise<void> {
@@ -139,6 +177,19 @@ export class EventWatcher {
         isComplete
       }
     });
+  }
+
+  async publishEventToSubscribers (dbEvent: EventInterface, timeElapsedInSeconds: number): Promise<void> {
+    if (dbEvent && dbEvent.eventName !== UNKNOWN_EVENT_NAME) {
+      const resultEvent = getResultEvent(dbEvent);
+
+      log(`pushing event to GQL subscribers (${timeElapsedInSeconds}s elapsed): ${resultEvent.event.__typename}`);
+
+      // Publishing the event here will result in pushing the payload to GQL subscribers for `onEvent`.
+      await this._pubsub.publish(EVENT, {
+        onEvent: resultEvent
+      });
+    }
   }
 
   async _handleIndexingComplete (jobData: any): Promise<void> {
