@@ -38,6 +38,7 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
+    "@cerc-io/cli": "^0.2.13",
     "@cerc-io/graph-node": "^0.2.13",
     "@cerc-io/ipld-eth-client": "^0.2.13",
     "@cerc-io/solidity-mapper": "^0.2.13",

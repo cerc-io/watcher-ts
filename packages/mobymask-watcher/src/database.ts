@@ -40,6 +40,10 @@ export class Database implements DatabaseInterface {
     this._propColMaps = {};
   }
 
+  get baseDatabase (): BaseDatabase {
+    return this._baseDatabase;
+  }
+
   async init (): Promise<void> {
     this._conn = await this._baseDatabase.init();
     this._setPropColMaps();

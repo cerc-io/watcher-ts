@@ -26,7 +26,8 @@ import {
   StateKind,
   StateStatus,
   ResultEvent,
-  getResultEvent
+  getResultEvent,
+  DatabaseInterface
 } from '@cerc-io/util';
 
 import ERC721Artifacts from './artifacts/ERC721.json';
@@ -56,11 +57,11 @@ export class Indexer implements IndexerInterface {
   _storageLayoutMap: Map<string, StorageLayout>
   _contractMap: Map<string, ethers.utils.Interface>
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, db: DatabaseInterface, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
-    this._db = db;
+    this._db = db as Database;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
