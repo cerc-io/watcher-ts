@@ -29,6 +29,11 @@ export class GraphDecimal {
     return this.value.toString();
   }
 
+  toJSON (): string {
+    // Using fixed-point notation in preparing entity state.
+    return this.toFixed();
+  }
+
   toFixed (): string {
     this._checkOutOfRange(this);
 
@@ -91,6 +96,13 @@ export class GraphDecimal {
     return new GraphDecimal(this.value.div(param));
   }
 
+  pow (n: Decimal.Value | GraphDecimal): GraphDecimal {
+    this._checkOutOfRange(this);
+    const param = this._checkOutOfRange(n);
+
+    return new GraphDecimal(this.value.pow(param));
+  }
+
   isZero (): boolean {
     this._checkOutOfRange(this);
 
@@ -115,14 +127,14 @@ export class GraphDecimal {
     this._checkOutOfRange(this);
     const param = this._checkOutOfRange(n);
 
-    return this.value.lessThan(param);
+    return this.value.greaterThan(param);
   }
 
   gt (n: Decimal.Value | GraphDecimal): boolean {
     this._checkOutOfRange(this);
     const param = this._checkOutOfRange(n);
 
-    return this.value.lessThan(param);
+    return this.value.gt(param);
   }
 
   comparedTo (n: Decimal.Value | GraphDecimal): number {
