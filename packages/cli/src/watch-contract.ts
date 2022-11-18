@@ -5,7 +5,7 @@
 import yargs from 'yargs';
 import 'reflect-metadata';
 import assert from 'assert';
-import { providers } from 'ethers';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import { ConnectionOptions } from 'typeorm';
 
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
@@ -35,7 +35,7 @@ export class WatchContract {
   _argv?: Arguments
   _config?: Config;
   _ethClient?: EthClient;
-  _ethProvider?: providers.BaseProvider
+  _ethProvider?: JsonRpcProvider
   _database?: DatabaseInterface
   _indexer?: IndexerInterface
 
@@ -45,7 +45,7 @@ export class WatchContract {
       serverConfig: ServerConfig,
       db: DatabaseInterface,
       ethClient: EthClient,
-      ethProvider: providers.BaseProvider,
+      ethProvider: JsonRpcProvider,
       jobQueue: JobQueue,
       graphWatcher?: GraphWatcher
     ) => IndexerInterface

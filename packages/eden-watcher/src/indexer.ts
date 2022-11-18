@@ -88,6 +88,7 @@ export class Indexer implements IndexerInterface {
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
+
     assert(graphWatcher);
     this._graphWatcher = graphWatcher;
 

@@ -46,6 +46,7 @@
     "@cerc-io/ipld-eth-client": "^0.2.13",
     "@cerc-io/solidity-mapper": "^0.2.13",
     "@cerc-io/util": "^0.2.13",
+    "@cerc-io/cli": "^0.2.13",
     "@ethersproject/providers": "^5.4.4",
     "@types/lodash": "^4.14.168",
     "apollo-type-bigint": "^0.1.3",

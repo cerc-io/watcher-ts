@@ -12,7 +12,7 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig, StateStatus } from '@cerc-io/util';
+import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig, StateStatus, DatabaseInterface } from '@cerc-io/util';
 
 import { Database, ENTITIES } from './database';
 import { Event } from './entity/Event';
@@ -56,11 +56,11 @@ export class Indexer implements IndexerInterface {
   _contract: ethers.utils.Interface
   _serverMode: string
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, db: DatabaseInterface, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
     assert(ethClient);
 
-    this._db = db;
+    this._db = db as Database;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
