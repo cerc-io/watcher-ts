@@ -26,7 +26,7 @@ export class JobQueue {
   constructor (config: Config) {
     this._config = config;
     this._boss = new PgBoss({
-      // https://github.com/timgit/pg-boss/blob/master/docs/configuration.md
+      // https://github.com/timgit/pg-boss/blob/6.1.0/docs/configuration.md
 
       connectionString: this._config.dbConnectionString,
       onComplete: true,
@@ -37,9 +37,11 @@ export class JobQueue {
       retryBackoff: true,
 
       // Time before active job fails by expiration.
-      expireInHours: 24 * 7, // 7 days
+      expireInHours: 24 * 1, // 1 day
 
-      retentionDays: 30, // 30 days
+      retentionDays: 1, // 1 day
+
+      deleteAfterHours: 1, // 1 hour
 
       newJobCheckInterval: 100,
 
@@ -106,11 +108,24 @@ export class JobQueue {
   }
 
   async onComplete (queue: string, callback: JobCallback): Promise<string> {
-    return await this._boss.onComplete(queue, { teamSize: JOBS_PER_INTERVAL, teamConcurrency: 1 }, async (job: any) => {
-      const { id, data: { failed, createdOn } } = job;
-      log(`Job onComplete for queue ${queue} job ${id} created ${createdOn} success ${!failed}`);
-      await callback(job);
-    });
+    return await this._boss.onComplete(
+      queue,
+      {
+        teamSize: JOBS_PER_INTERVAL,
+        teamConcurrency: 1
+      },
+      async (job: any) => {
+        try {
+          const { id, data: { failed, createdOn } } = job;
+          log(`Job onComplete for queue ${queue} job ${id} created ${createdOn} success ${!failed}`);
+          await callback(job);
+        } catch (error) {
+          log(`Error in onComplete handler for ${queue} job ${job.id}`);
+          log(error);
+          throw error;
+        }
+      }
+    );
   }
 
   async markComplete (job: any): Promise<void> {
