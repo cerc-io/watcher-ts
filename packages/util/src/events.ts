@@ -11,10 +11,9 @@ import { EthClient } from '@cerc-io/ipld-eth-client';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
-import { createPruningJob, processBlockByNumberWithCache } from './common';
+import { createPruningJob, processBlockByNumber } from './common';
 import { UpstreamConfig } from './config';
 import { OrderDirection } from './database';
-import { getResultEvent } from './misc';
 
 const EVENT = 'event';
 
@@ -65,8 +64,7 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
-    // Wait for block processing as blockProgress event might process the same block.
-    await processBlockByNumberWithCache(this._jobQueue, startBlockNumber);
+    await processBlockByNumber(this._jobQueue, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
@@ -81,7 +79,7 @@ export class EventWatcher {
       const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
       if (isComplete) {
-        await processBlockByNumberWithCache(this._jobQueue, blockNumber + 1);
+        await processBlockByNumber(this._jobQueue, blockNumber + 1);
       }
     }
   }
@@ -181,7 +179,7 @@ export class EventWatcher {
 
   async publishEventToSubscribers (dbEvent: EventInterface, timeElapsedInSeconds: number): Promise<void> {
     if (dbEvent && dbEvent.eventName !== UNKNOWN_EVENT_NAME) {
-      const resultEvent = getResultEvent(dbEvent);
+      const resultEvent = this._indexer.getResultEvent(dbEvent);
 
       log(`pushing event to GQL subscribers (${timeElapsedInSeconds}s elapsed): ${resultEvent.event.__typename}`);
 

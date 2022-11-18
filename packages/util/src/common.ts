@@ -30,7 +30,7 @@ export interface PrefetchedBlock {
  * @param jobQueue
  * @param blockNumber
  */
-export const processBlockByNumberWithCache = async (
+export const processBlockByNumber = async (
   jobQueue: JobQueue,
   blockNumber: number
 ): Promise<void> => {
@@ -247,11 +247,9 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
     console.time('time:common#processBatchEvents-processing_events_batch');
 
+    // Process events in loop
     for (let event of events) {
-      // Process events in loop
-
       const eventIndex = event.index;
-      // log(`Processing event ${event.id} index ${eventIndex}`);
 
       // Check that events are processed in order.
       if (eventIndex <= block.lastProcessedEventIndex) {
@@ -269,14 +267,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
         }
       }
 
-      let watchedContract;
-
-      if (!indexer.isWatchedContract) {
-        // uni-info-watcher indexer doesn't have watched contracts implementation.
-        watchedContract = true;
-      } else {
-        watchedContract = indexer.isWatchedContract(event.contract);
-      }
+      const watchedContract = indexer.isWatchedContract(event.contract);
 
       if (watchedContract) {
         // We might not have parsed this event yet. This can happen if the contract was added
