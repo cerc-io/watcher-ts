@@ -362,7 +362,9 @@ export class JobRunner {
         await wait(jobDelayInMilliSecs);
 
         console.time('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
+        log(`_indexBlock#saveBlockAndFetchEvents: fetching from upstream server ${blockHash}`);
         [blockProgress] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
+        log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
         console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
 
         this._blockAndEventsMap.set(blockHash, { block: blockProgress, events: [] });
