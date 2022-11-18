@@ -233,14 +233,14 @@ export class Database {
 
   async getEntityWithRelations<Entity> (
     queryRunner: QueryRunner,
-    entity: (new () => Entity),
+    entityType: (new () => Entity),
     id: string,
     relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entityType);
     const whereOptions: any = { id };
 
     if (blockNumber) {
@@ -268,7 +268,7 @@ export class Database {
 
     // Get relational fields
     if (entityData) {
-      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entity, entityData, selections);
+      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entityType, entityData, selections);
     }
 
     return entityData;
@@ -278,10 +278,10 @@ export class Database {
     queryRunner: QueryRunner,
     block: BlockHeight,
     relationsMap: Map<any, { [key: string]: any }>,
-    entity: new () => Entity, entityData: any,
+    entityType: new () => Entity, entityData: any,
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity> {
-    const relations = relationsMap.get(entity);
+    const relations = relationsMap.get(entityType);
     if (relations === undefined) {
       return entityData;
     }
@@ -364,7 +364,7 @@ export class Database {
 
   async getEntities<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight = {},
     where: Where = {},
@@ -372,15 +372,15 @@ export class Database {
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
     let entities: Entity[] = [];
-    const latestEntity = this._entityToLatestEntityMap.get(entity);
+    const latestEntityType = this._entityToLatestEntityMap.get(entityType);
 
-    if (latestEntity) {
+    if (latestEntityType) {
       if (Object.keys(block).length) {
         // Use lateral query for entities with latest entity table.
         entities = await this.getEntitiesLateral(
           queryRunner,
-          entity,
-          latestEntity,
+          entityType,
+          latestEntityType,
           block,
           where,
           queryOptions
@@ -389,8 +389,8 @@ export class Database {
         // Use latest entity tables if block height not passed.
         entities = await this.getEntitiesLatest(
           queryRunner,
-          entity,
-          latestEntity,
+          entityType,
+          latestEntityType,
           where,
           queryOptions,
           selections
@@ -398,23 +398,23 @@ export class Database {
       }
     } else {
       // Use different suitable query patterns based on entities.
-      switch (this._entityQueryTypeMap.get(entity)) {
+      switch (this._entityQueryTypeMap.get(entityType)) {
         case ENTITY_QUERY_TYPE.SINGULAR:
-          entities = await this.getEntitiesSingular(queryRunner, entity, block, where);
+          entities = await this.getEntitiesSingular(queryRunner, entityType, block, where);
           break;
 
         case ENTITY_QUERY_TYPE.UNIQUE:
-          entities = await this.getEntitiesUnique(queryRunner, entity, block, where, queryOptions);
+          entities = await this.getEntitiesUnique(queryRunner, entityType, block, where, queryOptions);
           break;
 
         case ENTITY_QUERY_TYPE.DISTINCT_ON:
-          entities = await this.getEntitiesDistinctOn(queryRunner, entity, block, where, queryOptions);
+          entities = await this.getEntitiesDistinctOn(queryRunner, entityType, block, where, queryOptions);
           break;
 
         case ENTITY_QUERY_TYPE.GROUP_BY:
         default:
           // Use group by query if entity query type is not specified in map.
-          entities = await this.getEntitiesGroupBy(queryRunner, entity, block, where, queryOptions);
+          entities = await this.getEntitiesGroupBy(queryRunner, entityType, block, where, queryOptions);
           break;
       }
     }
@@ -423,7 +423,7 @@ export class Database {
       return [];
     }
 
-    entities = await this.loadEntitiesRelations(queryRunner, block, relationsMap, entity, entities, selections);
+    entities = await this.loadEntitiesRelations(queryRunner, block, relationsMap, entityType, entities, selections);
     // Resolve any field name conflicts in the entity result.
     entities = entities.map(entity => resolveEntityFieldConflicts(entity));
 
@@ -432,12 +432,12 @@ export class Database {
 
   async getEntitiesGroupBy<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entityType);
     const { tableName } = repo.metadata;
 
     let subQuery = repo.createQueryBuilder('subTable')
@@ -496,12 +496,12 @@ export class Database {
 
   async getEntitiesDistinctOn<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entityType);
 
     let subQuery = repo.createQueryBuilder('subTable')
       .distinctOn(['subTable.id'])
@@ -560,11 +560,11 @@ export class Database {
 
   async getEntitiesSingular<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     block: BlockHeight,
     where: Where = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entityType);
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -595,12 +595,12 @@ export class Database {
 
   async getEntitiesUnique<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository(entityType);
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -643,13 +643,13 @@ export class Database {
 
   async getEntitiesLatest<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     latestEntity: new () => any,
     where: Where = {},
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
-    const entityRepo = queryRunner.manager.getRepository(entity);
+    const entityRepo = queryRunner.manager.getRepository(entityType);
     const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
     const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
 
@@ -697,13 +697,13 @@ export class Database {
 
   async getEntitiesLateral<Entity> (
     queryRunner: QueryRunner,
-    entity: new () => Entity,
+    entityType: new () => Entity,
     latestEntity: new () => any,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const entityRepo = queryRunner.manager.getRepository(entity);
+    const entityRepo = queryRunner.manager.getRepository(entityType);
     const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
 
     let subQuery = entityRepo.createQueryBuilder('subTable')
@@ -937,16 +937,16 @@ export class Database {
     });
   }
 
-  async saveEntity (entity: string, data: any): Promise<any> {
-    const repo = this._conn.getRepository(entity);
+  async saveEntity (entityType: string, data: any): Promise<any> {
+    const repo = this._conn.getRepository(entityType);
 
     const dbEntity: any = repo.create(data);
     return repo.save(dbEntity);
   }
 
-  async toGraphEntity (instanceExports: any, entity: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
+  async toGraphEntity (instanceExports: any, entityName: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
     // TODO: Cache schema/columns.
-    const repo = this._conn.getRepository(entity);
+    const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;
 
     const { Entity } = instanceExports;
@@ -977,9 +977,9 @@ export class Database {
     return entityInstance;
   }
 
-  async fromGraphEntity (instanceExports: any, block: Block, entity: string, entityInstance: any): Promise<{ [key: string]: any } > {
+  async fromGraphEntity (instanceExports: any, block: Block, entityName: string, entityInstance: any): Promise<{ [key: string]: any } > {
     // TODO: Cache schema/columns.
-    const repo = this._conn.getRepository(entity);
+    const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;
 
     return this.getEntityValues(instanceExports, block, entityInstance, entityFields);
@@ -1021,8 +1021,8 @@ export class Database {
     }, {});
   }
 
-  fromState (block: BlockProgressInterface, entity: string, stateEntity: any, relations: { [key: string]: any } = {}): any {
-    const repo = this._conn.getRepository(entity);
+  fromState (block: BlockProgressInterface, entityName: string, stateEntity: any, relations: { [key: string]: any } = {}): any {
+    const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;
 
     return this.getStateEntityValues(block, stateEntity, entityFields, relations);
@@ -1164,8 +1164,8 @@ export class Database {
     return transformer.transform(rawResults, qb.expressionMap.mainAlias);
   }
 
-  async updateEntity<Entity> (queryRunner: QueryRunner, entity: new () => Entity, criteria: any, update: any): Promise<UpdateResult> {
-    const repo = queryRunner.manager.getRepository(entity);
+  async updateEntity<Entity> (queryRunner: QueryRunner, entityType: new () => Entity, criteria: any, update: any): Promise<UpdateResult> {
+    const repo = queryRunner.manager.getRepository(entityType);
     return repo.createQueryBuilder()
       .update()
       .set(update)
