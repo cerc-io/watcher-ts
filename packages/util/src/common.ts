@@ -52,13 +52,13 @@ export const processBlockByNumberWithCache = async (
  * @param job
  * @param indexer
  * @param jobQueueConfig
- * @param prefetchedBlocksMap
+ * @param blockAndEventsMap
  */
 export const fetchBlocksAtHeight = async (
   job: any,
   indexer: IndexerInterface,
   jobQueueConfig: JobQueueConfig,
-  prefetchedBlocksMap: Map<string, PrefetchedBlock>
+  blockAndEventsMap: Map<string, PrefetchedBlock>
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
   const { blockNumber } = job.data;
   let blocks = [];
@@ -66,8 +66,8 @@ export const fetchBlocksAtHeight = async (
   // Check for blocks in cache if prefetchBlocksInMem flag set.
   if (jobQueueConfig.prefetchBlocksInMem) {
     // Get blocks prefetched in memory.
-    blocks = getPrefetchedBlocksAtHeight(prefetchedBlocksMap, blockNumber);
-    log('size:common#_fetchBlocks-_prefetchedBlocksMap-size:', prefetchedBlocksMap.size);
+    blocks = getPrefetchedBlocksAtHeight(blockAndEventsMap, blockNumber);
+    log('size:common#fetchBlocksAtHeight-prefetch-_blockAndEventsMap-size:', blockAndEventsMap.size);
   }
 
   if (!blocks.length) {
@@ -80,18 +80,16 @@ export const fetchBlocksAtHeight = async (
     });
   }
 
-  if (jobQueueConfig.prefetchBlocksInMem) {
+  if (jobQueueConfig.prefetchBlocksInMem && !blocks.length) {
     // If blocks not found in the db and cache, fetch next batch.
-    if (!blocks.length) {
-      log(`common#cache-miss-${blockNumber}`);
+    log(`common#cache-miss-${blockNumber}`);
 
-      // Wait for blocks to be prefetched.
-      console.time('time:common#fetchBlocks-_prefetchBlocks');
-      await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, prefetchedBlocksMap);
-      console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
+    // Wait for blocks to be prefetched.
+    console.time('time:common#fetchBlocks-_prefetchBlocks');
+    await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, blockAndEventsMap);
+    console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
 
-      blocks = getPrefetchedBlocksAtHeight(prefetchedBlocksMap, blockNumber);
-    }
+    blocks = getPrefetchedBlocksAtHeight(blockAndEventsMap, blockNumber);
   }
 
   // Try fetching blocks from eth-server until found.
@@ -130,10 +128,10 @@ export const _prefetchBlocks = async (
   blockNumber: number,
   indexer: IndexerInterface,
   jobQueueConfig: JobQueueConfig,
-  prefetchedBlocksMap: Map<string, PrefetchedBlock>
+  blockAndEventsMap: Map<string, PrefetchedBlock>
 ): Promise<void> => {
   // Clear cache of any remaining blocks.
-  prefetchedBlocksMap.clear();
+  blockAndEventsMap.clear();
 
   const blocksWithEvents = await _fetchBatchBlocks(
     indexer,
@@ -143,7 +141,7 @@ export const _prefetchBlocks = async (
   );
 
   blocksWithEvents.forEach(({ blockProgress, events }) => {
-    prefetchedBlocksMap.set(blockProgress.blockHash, { block: blockProgress, events });
+    blockAndEventsMap.set(blockProgress.blockHash, { block: blockProgress, events });
   });
 };
 
@@ -372,8 +370,8 @@ export const createCheckpointJob = async (jobQueue: JobQueue, blockHash: string,
   );
 };
 
-const getPrefetchedBlocksAtHeight = (prefetchedBlocksMap: Map<string, PrefetchedBlock>, blockNumber: number):any[] => {
-  return Array.from(prefetchedBlocksMap.values())
+const getPrefetchedBlocksAtHeight = (blockAndEventsMap: Map<string, PrefetchedBlock>, blockNumber: number):any[] => {
+  return Array.from(blockAndEventsMap.values())
     .filter(({ block }) => Number(block.blockNumber) === blockNumber)
     .map(prefetchedBlock => prefetchedBlock.block);
 };
