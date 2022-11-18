@@ -8,10 +8,9 @@ import { JobQueue } from './job-queue';
 import { EventWatcherInterface, IndexerInterface } from './types';
 import { wait } from './misc';
 import { processBlockByNumberWithCache } from './common';
+import { DEFAULT_PREFETCH_BATCH_SIZE } from './constants';
 
 const log = debug('vulcanize:fill');
-
-const DEFAULT_PREFETCH_BATCH_SIZE = 10;
 
 export const fillBlocks = async (
   jobQueue: JobQueue,
