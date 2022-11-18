@@ -73,14 +73,6 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
   }
   traceProviderEndpoint: string;
-  uniWatcher: {
-    gqlEndpoint: string;
-    gqlSubscriptionEndpoint: string;
-  };
-  tokenWatcher: {
-    gqlEndpoint: string;
-    gqlSubscriptionEndpoint: string;
-  }
 }
 
 export interface GQLMetricsConfig {
@@ -101,7 +93,7 @@ export interface Config {
   metrics: MetricsConfig,
 }
 
-export const getConfig = async (configFile: string): Promise<Config> => {
+export const getConfig = async<ConfigType> (configFile: string): Promise<ConfigType> => {
   const configFilePath = path.resolve(configFile);
   const fileExists = await fs.pathExists(configFilePath);
   if (!fileExists) {

@@ -5,7 +5,7 @@
 import debug from 'debug';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
+import { getConfig, initClients, resetJobs, JobQueue, Config } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { Database, ENTITY_TO_LATEST_ENTITY_MAP } from '../../database';
@@ -24,7 +24,7 @@ export const builder = {
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const config = await getConfig(argv.configFile);
+  const config: Config = await getConfig(argv.configFile);
   await resetJobs(config);
   const { ethClient, ethProvider } = await initClients(config);
 

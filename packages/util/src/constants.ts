@@ -24,4 +24,6 @@ export const UNKNOWN_EVENT_NAME = '__unknown__';
 export const KIND_ACTIVE = 'active';
 export const KIND_LAZY = 'lazy';
 
+export const DEFAULT_PREFETCH_BATCH_SIZE = 10;
+
 export const DEFAULT_MAX_GQL_CACHE_SIZE = Math.pow(2, 20) * 8; // 8 MB

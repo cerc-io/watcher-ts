@@ -3,20 +3,12 @@
 //
 
 import debug from 'debug';
-import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
+import { getConfig, initClients, resetJobs, JobQueue, Config } from '@cerc-io/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
-import { BlockProgress } from '../../entity/BlockProgress';
-
-import { MultiNonce } from '../../entity/MultiNonce';
-import { _Owner } from '../../entity/_Owner';
-import { IsRevoked } from '../../entity/IsRevoked';
-import { IsPhisher } from '../../entity/IsPhisher';
-import { IsMember } from '../../entity/IsMember';
 
 const log = debug('vulcanize:reset-watcher');
 
@@ -31,7 +23,7 @@ export const builder = {
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const config = await getConfig(argv.configFile);
+  const config: Config = await getConfig(argv.configFile);
   await resetJobs(config);
   const { ethClient, ethProvider } = await initClients(config);
 

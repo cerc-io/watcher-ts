@@ -3,29 +3,12 @@
 //
 
 import debug from 'debug';
-import { MoreThan } from 'typeorm';
 import assert from 'assert';
 
-import { getConfig, initClients, resetJobs, JobQueue } from '@cerc-io/util';
+import { getConfig, initClients, resetJobs, JobQueue, Config } from '@cerc-io/util';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
-import { BlockProgress } from '../../entity/BlockProgress';
-
-import { SupportsInterface } from '../../entity/SupportsInterface';
-import { BalanceOf } from '../../entity/BalanceOf';
-import { OwnerOf } from '../../entity/OwnerOf';
-import { GetApproved } from '../../entity/GetApproved';
-import { IsApprovedForAll } from '../../entity/IsApprovedForAll';
-import { Name } from '../../entity/Name';
-import { Symbol } from '../../entity/Symbol';
-import { TokenURI } from '../../entity/TokenURI';
-import { _Name } from '../../entity/_Name';
-import { _Symbol } from '../../entity/_Symbol';
-import { _Owners } from '../../entity/_Owners';
-import { _Balances } from '../../entity/_Balances';
-import { _TokenApprovals } from '../../entity/_TokenApprovals';
-import { _OperatorApprovals } from '../../entity/_OperatorApprovals';
 
 const log = debug('vulcanize:reset-watcher');
 
@@ -40,7 +23,7 @@ export const builder = {
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const config = await getConfig(argv.configFile);
+  const config: Config = await getConfig(argv.configFile);
   await resetJobs(config);
   const { ethClient, ethProvider } = await initClients(config);
 

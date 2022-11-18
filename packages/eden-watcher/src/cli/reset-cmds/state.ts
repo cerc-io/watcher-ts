@@ -4,7 +4,7 @@
 
 import debug from 'debug';
 
-import { getConfig } from '@cerc-io/util';
+import { getConfig, Config } from '@cerc-io/util';
 
 import { Database } from '../../database';
 
@@ -22,7 +22,7 @@ export const builder = {
 
 export const handler = async (argv: any): Promise<void> => {
   const { blockNumber } = argv;
-  const config = await getConfig(argv.configFile);
+  const config: Config = await getConfig(argv.configFile);
 
   // Initialize database
   const db = new Database(config.database);
