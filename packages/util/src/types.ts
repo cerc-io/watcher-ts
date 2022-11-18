@@ -121,6 +121,7 @@ export interface IndexerInterface {
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
   resetWatcherToBlock (blockNumber: number): Promise<void>
+  getResultEvent (event: EventInterface): any
 }
 
 export interface EventWatcherInterface {

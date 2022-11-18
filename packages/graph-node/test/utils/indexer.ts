@@ -11,7 +11,9 @@ import {
   ContractInterface,
   StateStatus,
   StateSyncStatusInterface,
-  StateInterface
+  StateInterface,
+  getResultEvent,
+  ResultEvent
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -34,6 +36,10 @@ export class Indexer implements IndexerInterface {
 
   get storageLayoutMap (): Map<string, StorageLayout> {
     return this._storageLayoutMap;
+  }
+
+  getResultEvent (event: EventInterface): ResultEvent {
+    return getResultEvent(event);
   }
 
   async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
