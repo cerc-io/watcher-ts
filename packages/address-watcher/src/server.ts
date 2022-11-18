@@ -13,7 +13,7 @@ import debug from 'debug';
 import { getCache } from '@cerc-io/cache';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { TracingClient } from '@cerc-io/tracing-client';
-import { getConfig, JobQueue, DEFAULT_CONFIG_PATH, createAndStartServer } from '@cerc-io/util';
+import { getConfig, JobQueue, DEFAULT_CONFIG_PATH, createAndStartServer, Config } from '@cerc-io/util';
 
 import typeDefs from './schema';
 
@@ -35,7 +35,7 @@ export const main = async (): Promise<any> => {
     })
     .argv;
 
-  const config = await getConfig(argv.f);
+  const config: Config = await getConfig(argv.f);
 
   assert(config.server, 'Missing server config');
 

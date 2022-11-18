@@ -8,8 +8,7 @@ import debug from 'debug';
 import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import _ from 'lodash';
-import { getConfig as getWatcherConfig, wait, Database as BaseDatabase } from '@cerc-io/util';
+import { getConfig as getWatcherConfig, wait, Database as BaseDatabase, Config as WatcherConfig } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
 import {
@@ -122,7 +121,7 @@ export const main = async (): Promise<void> => {
   if (config.watcher) {
     const watcherConfigPath = path.resolve(path.dirname(configFile), config.watcher.configPath);
     const entitiesDir = path.resolve(path.dirname(configFile), config.watcher.entitiesDir);
-    const watcherConfig = await getWatcherConfig(watcherConfigPath);
+    const watcherConfig: WatcherConfig = await getWatcherConfig(watcherConfigPath);
 
     const baseDatabase = new BaseDatabase({ ...watcherConfig.database, entities: [entitiesDir] });
     await baseDatabase.init();
