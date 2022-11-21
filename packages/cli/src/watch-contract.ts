@@ -11,7 +11,6 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { GraphWatcher } from '@cerc-io/graph-node';
 import {
   DEFAULT_CONFIG_PATH,
-  getConfig,
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
@@ -29,17 +28,21 @@ interface Arguments {
   startingBlock: number;
 }
 
-export class WatchContractCmd extends BaseCmd {
+export class WatchContractCmd {
   _argv?: Arguments;
+  _baseCmd: BaseCmd;
+  _database?: DatabaseInterface;
+  _indexer?: IndexerInterface;
+
+  constructor () {
+    this._baseCmd = new BaseCmd();
+  }
 
   async initConfig<ConfigType> (): Promise<ConfigType> {
     this._argv = this._getArgv();
     assert(this._argv);
 
-    this._config = await getConfig(this._argv.configFile);
-    assert(this._config);
-
-    return this._config as any;
+    return this._baseCmd.initConfig(this._argv.configFile);
   }
 
   async init (
@@ -57,11 +60,9 @@ export class WatchContractCmd extends BaseCmd {
     ) => IndexerInterface,
     clients: { [key: string]: any } = {}
   ): Promise<void> {
-    if (!this._config) {
-      await this.initConfig();
-    }
+    await this.initConfig();
 
-    await this.initBase(Database, Indexer, clients);
+    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
   }
 
   async exec (): Promise<void> {

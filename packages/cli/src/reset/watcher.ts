@@ -10,7 +10,6 @@ import { ConnectionOptions } from 'typeorm';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { GraphWatcher } from '@cerc-io/graph-node';
 import {
-  getConfig,
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
@@ -27,14 +26,18 @@ interface Arguments {
   blockNumber: number;
 }
 
-export class ResetWatcherCmd extends BaseCmd {
+export class ResetWatcherCmd {
   _argv?: Arguments
+  _baseCmd: BaseCmd;
+  _database?: DatabaseInterface;
+  _indexer?: IndexerInterface;
+
+  constructor () {
+    this._baseCmd = new BaseCmd();
+  }
 
   async initConfig<ConfigType> (configFile: string): Promise<ConfigType> {
-    this._config = await getConfig(configFile);
-    assert(this._config);
-
-    return this._config as any;
+    return this._baseCmd.initConfig(configFile);
   }
 
   async init (
@@ -54,11 +57,9 @@ export class ResetWatcherCmd extends BaseCmd {
     clients: { [key: string]: any } = {}
   ): Promise<void> {
     this._argv = argv;
-    if (!this._config) {
-      await this.initConfig(argv.configFile);
-    }
+    await this.initConfig(argv.configFile);
 
-    await this.initBase(Database, Indexer, clients);
+    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
   }
 
   async exec (): Promise<void> {

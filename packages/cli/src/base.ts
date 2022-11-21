@@ -10,6 +10,7 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import {
   Config,
+  getConfig,
   initClients,
   JobQueue,
   DatabaseInterface,
@@ -26,7 +27,15 @@ export class BaseCmd {
   _database?: DatabaseInterface;
   _indexer?: IndexerInterface;
 
-  async initBase (
+  async initConfig<ConfigType> (configFile: string): Promise<ConfigType> {
+    if (!this._config) {
+      this._config = await getConfig(configFile);
+    }
+
+    return this._config as any;
+  }
+
+  async init (
     Database: new (
       config: ConnectionOptions,
       serverConfig?: ServerConfig
@@ -40,7 +49,10 @@ export class BaseCmd {
       graphWatcher?: GraphWatcher
     ) => IndexerInterface,
     clients: { [key: string]: any } = {}
-  ): Promise<void> {
+  ): Promise<{
+    database: DatabaseInterface,
+    indexer: IndexerInterface
+  }> {
     assert(this._config);
 
     this._database = new Database(this._config.database, this._config.server);
@@ -71,6 +83,8 @@ export class BaseCmd {
       this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, jobQueue);
       await this._indexer.init();
     }
+
+    return { database: this._database, indexer: this._indexer };
   }
 
   async _getGraphWatcher (baseDatabase: BaseDatabase): Promise<GraphWatcher> {
