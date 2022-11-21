@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@cerc-io/graph-node": "^0.2.13",
-    "@cerc-io/ipld-eth-client": "^0.2.13",
     "@cerc-io/util": "^0.2.13",
     "@ethersproject/providers": "^5.4.4",
     "reflect-metadata": "^0.1.13",
