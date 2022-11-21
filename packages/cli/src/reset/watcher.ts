@@ -58,7 +58,7 @@ export class ResetWatcherCmd extends BaseCmd {
       await this.initConfig(argv.configFile);
     }
 
-    super.initBase(Database, Indexer, clients);
+    await this.initBase(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {

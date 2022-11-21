@@ -61,7 +61,7 @@ export class WatchContractCmd extends BaseCmd {
       await this.initConfig();
     }
 
-    super.initBase(Database, Indexer, clients);
+    await this.initBase(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {

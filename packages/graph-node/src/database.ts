@@ -1223,16 +1223,17 @@ export class Database {
   }
 
   async canonicalizeLatestEntity (queryRunner: QueryRunner, entityType: any, latestEntityType: any, entities: any[], blockNumber: number): Promise<void> {
+    const repo = queryRunner.manager.getRepository(entityType);
+    const latestEntityRepo = queryRunner.manager.getRepository(latestEntityType);
+
     await Promise.all(entities.map(async (entity: any) => {
       // Get latest pruned (canonical) version for the given entity
-      const repo = queryRunner.manager.getRepository(entity);
       const prunedVersion = await this._baseDatabase.getLatestPrunedEntity(repo, entity.id, blockNumber);
 
       // If found, update the latestEntity entry for the id
       // Else, delete the latestEntity entry for the id
       if (prunedVersion) {
         // Create a latest entity instance and insert in the db
-        const latestEntityRepo = queryRunner.manager.getRepository(latestEntityType);
         const latestEntity = getLatestEntityFromEntity(latestEntityRepo, prunedVersion);
 
         await this.updateEntity(
