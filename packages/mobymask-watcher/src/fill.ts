@@ -67,7 +67,7 @@ export const main = async (): Promise<any> => {
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
+  const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
   await indexer.init();
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.

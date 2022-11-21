@@ -3,10 +3,12 @@
 //
 
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { ServerConfig } from './config';
-import { Where, QueryOptions } from './database';
+import { Where, QueryOptions, Database } from './database';
 import { ValueResult, StateStatus } from './indexer';
 
 export enum StateKind {
@@ -81,6 +83,7 @@ export interface StateInterface {
 export interface IndexerInterface {
   readonly serverConfig: ServerConfig
   readonly storageLayoutMap: Map<string, StorageLayout>
+  init (): Promise<void>
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEvent (id: string): Promise<EventInterface | undefined>
@@ -132,6 +135,8 @@ export interface EventWatcherInterface {
 
 export interface DatabaseInterface {
   _conn: Connection;
+  readonly baseDatabase: Database
+  init (): Promise<void>;
   close (): Promise<void>;
   createTransactionRunner (): Promise<QueryRunner>;
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>;
@@ -169,4 +174,9 @@ export interface DatabaseInterface {
 
 export interface GraphDatabaseInterface {
   getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined>;
+}
+
+export type Clients = {
+  ethClient: EthClient;
+  [key: string]: any;
 }

@@ -27,7 +27,9 @@ import {
   StateStatus,
   getFullTransaction,
   ResultEvent,
-  getResultEvent
+  getResultEvent,
+  DatabaseInterface,
+  Clients
 } from '@cerc-io/util';
 
 import PhisherRegistryArtifacts from './artifacts/PhisherRegistry.json';
@@ -61,12 +63,12 @@ export class Indexer implements IndexerInterface {
   _storageLayoutMap: Map<string, StorageLayout>
   _contractMap: Map<string, ethers.utils.Interface>
 
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
     assert(db);
-    assert(ethClient);
+    assert(clients.ethClient);
 
-    this._db = db;
-    this._ethClient = ethClient;
+    this._db = db as Database;
+    this._ethClient = clients.ethClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);

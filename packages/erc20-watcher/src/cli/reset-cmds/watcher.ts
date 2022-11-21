@@ -39,7 +39,7 @@ export const handler = async (argv: any): Promise<void> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
 
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue);
+  const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
 
   const syncStatus = await indexer.getSyncStatus();
   assert(syncStatus, 'Missing syncStatus');
