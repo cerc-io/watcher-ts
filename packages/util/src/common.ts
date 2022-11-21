@@ -196,7 +196,9 @@ export const _fetchBatchBlocks = async (
     block.blockTimestamp = block.timestamp;
 
     try {
+      log(`_fetchBatchBlocks#saveBlockAndFetchEvents: fetching from upstream server ${block.blockHash}`);
       const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
+      log(`_fetchBatchBlocks#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
       return { blockProgress, events };
     } catch (error) {
       log(error);
