@@ -200,6 +200,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
+    return undefined;
+  }
+
   getStateData (state: StateInterface): any {
     return undefined;
   }
