@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual, EntityTarget } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
@@ -30,7 +30,7 @@ import { _TokenApprovals } from './entity/_TokenApprovals';
 import { _OperatorApprovals } from './entity/_OperatorApprovals';
 import { TransferCount } from './entity/TransferCount';
 
-export const ENTITIES = new Set([_Balances, _Name, _OperatorApprovals, _Owners, _Symbol, _TokenApprovals, BalanceOf, GetApproved, IsApprovedForAll, Name, OwnerOf, SupportsInterface, Symbol, TokenURI, TransferCount]);
+export const ENTITIES = [_Balances, _Name, _OperatorApprovals, _Owners, _Symbol, _TokenApprovals, BalanceOf, GetApproved, IsApprovedForAll, Name, OwnerOf, SupportsInterface, Symbol, TokenURI, TransferCount];
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
@@ -492,7 +492,7 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
   }
 
-  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void> {
     await this._baseDatabase.deleteEntitiesByConditions(queryRunner, entity, findConditions);
   }
 
