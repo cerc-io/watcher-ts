@@ -76,7 +76,7 @@ export const main = async (): Promise<any> => {
 
   const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
 
   await fillBlocks(jobQueue, indexer, eventWatcher, jobQueueConfig.blockDelayInMilliSecs, argv);
 };

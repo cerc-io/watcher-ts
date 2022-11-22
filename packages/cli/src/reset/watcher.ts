@@ -29,8 +29,6 @@ interface Arguments {
 export class ResetWatcherCmd {
   _argv?: Arguments
   _baseCmd: BaseCmd;
-  _database?: DatabaseInterface;
-  _indexer?: IndexerInterface;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -59,17 +57,21 @@ export class ResetWatcherCmd {
     this._argv = argv;
     await this.initConfig(argv.configFile);
 
-    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
+    await this._baseCmd.init(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {
     assert(this._argv);
-    assert(this._database);
-    assert(this._indexer);
 
-    await this._indexer.resetWatcherToBlock(this._argv.blockNumber);
+    const database = this._baseCmd.database;
+    const indexer = this._baseCmd.indexer;
 
-    await this._database.close();
+    assert(database);
+    assert(indexer);
+
+    await indexer.resetWatcherToBlock(this._argv.blockNumber);
+
+    await database.close();
     log('Reset watcher successfully');
   }
 }

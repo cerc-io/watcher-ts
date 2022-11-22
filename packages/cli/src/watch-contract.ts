@@ -31,8 +31,6 @@ interface Arguments {
 export class WatchContractCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
-  _database?: DatabaseInterface;
-  _indexer?: IndexerInterface;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -62,17 +60,20 @@ export class WatchContractCmd {
   ): Promise<void> {
     await this.initConfig();
 
-    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
+    await this._baseCmd.init(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {
     assert(this._argv);
-    assert(this._database);
-    assert(this._indexer);
-    assert(this._indexer.watchContract);
 
-    await this._indexer.watchContract(this._argv.address, this._argv.kind, this._argv.checkpoint, this._argv.startingBlock);
-    await this._database.close();
+    const database = this._baseCmd.database;
+    const indexer = this._baseCmd.indexer;
+
+    assert(database);
+    assert(indexer);
+
+    await indexer.watchContract(this._argv.address, this._argv.kind, this._argv.checkpoint, this._argv.startingBlock);
+    await database.close();
   }
 
   _getArgv (): any {

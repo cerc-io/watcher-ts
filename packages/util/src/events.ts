@@ -12,7 +12,6 @@ import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
-import { UpstreamConfig } from './config';
 import { OrderDirection } from './database';
 
 const EVENT = 'event';
@@ -27,10 +26,8 @@ export class EventWatcher {
   _subscription?: ZenObservable.Subscription
   _pubsub: PubSub
   _jobQueue: JobQueue
-  _upstreamConfig: UpstreamConfig
 
-  constructor (upstreamConfig: UpstreamConfig, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
-    this._upstreamConfig = upstreamConfig;
+  constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;

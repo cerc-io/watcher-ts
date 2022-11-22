@@ -60,17 +60,21 @@ export class CreateCheckpointCmd {
     this._argv = argv;
     await this.initConfig(argv.configFile);
 
-    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
+    await this._baseCmd.init(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {
     assert(this._argv);
-    assert(this._database);
-    assert(this._indexer);
 
-    const blockHash = await this._indexer.processCLICheckpoint(this._argv.address, this._argv.blockHash);
+    const database = this._baseCmd.database;
+    const indexer = this._baseCmd.indexer;
 
-    await this._database.close();
+    assert(database);
+    assert(indexer);
+
+    const blockHash = await indexer.processCLICheckpoint(this._argv.address, this._argv.blockHash);
+
+    await database.close();
     log(`Created a checkpoint for contract ${this._argv.address} at block-hash ${blockHash}`);
   }
 }
