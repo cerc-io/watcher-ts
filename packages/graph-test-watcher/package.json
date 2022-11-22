@@ -38,7 +38,6 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@cerc-io/cache": "^0.2.13",
     "@cerc-io/graph-node": "^0.2.13",
     "@cerc-io/ipld-eth-client": "^0.2.13",
     "@cerc-io/solidity-mapper": "^0.2.13",
@@ -56,13 +55,13 @@
     "graphql-subscriptions": "^2.0.0",
     "json-bigint": "^1.0.0",
     "lodash": "^4.17.21",
-    "multiformats": "^9.4.8",
     "reflect-metadata": "^0.1.13",
     "typeorm": "^0.2.32",
     "yargs": "^17.0.1"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.3.0",
+    "@types/express": "^4.17.14",
     "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",

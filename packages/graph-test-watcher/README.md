@@ -53,7 +53,7 @@
 
 * Generating state:
 
-  * Edit the custom hook function `createInitialCheckpoint` (triggered on watch-contract, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial checkpoint `State` using the `Indexer` object.
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial `State` using the `Indexer` object.
 
   * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
 
@@ -142,6 +142,12 @@ GQL console: http://localhost:3008/graphql
 
       ```bash
       yarn reset job-queue --block-number <previous-block-number>
+      ```
+
+    * Reset state:
+
+      ```bash
+      yarn reset state --block-number <previous-block-number>
       ```
 
     * `block-number`: Block number to which to reset the watcher.

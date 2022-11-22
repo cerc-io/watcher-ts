@@ -23,4 +23,7 @@ export class Category {
 
   @Column('varchar')
   name!: string;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean;
 }

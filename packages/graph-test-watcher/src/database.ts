@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, EntityTarget } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
@@ -21,7 +21,9 @@ import { Author } from './entity/Author';
 import { Blog } from './entity/Blog';
 import { Category } from './entity/Category';
 
-export const ENTITIES = new Set([_Test, Author, Blog, Category, GetMethod]);
+export const SUBGRAPH_ENTITIES = new Set([Author, Blog, Category]);
+export const ENTITIES = [_Test, GetMethod, ...SUBGRAPH_ENTITIES];
+export const ENTITY_TO_LATEST_ENTITY_MAP: Map<any, any> = new Map();
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
@@ -34,7 +36,8 @@ export class Database implements DatabaseInterface {
 
     this._config = {
       ...config,
-      entities: [path.join(__dirname, 'entity/*')]
+      entities: [path.join(__dirname, 'entity/*')],
+      subscribers: [path.join(__dirname, 'entity/Subscriber.*')]
     };
 
     this._baseDatabase = new BaseDatabase(this._config);
@@ -121,6 +124,12 @@ export class Database implements DatabaseInterface {
     const repo = dbTx.manager.getRepository(State);
 
     await this._baseDatabase.removeStates(repo, blockNumber, kind);
+  }
+
+  async removeStatesAfterBlock (dbTx: QueryRunner, blockNumber: number): Promise<void> {
+    const repo = dbTx.manager.getRepository(State);
+
+    await this._baseDatabase.removeStatesAfterBlock(repo, blockNumber);
   }
 
   async getStateSyncStatus (): Promise<StateSyncStatus | undefined> {
@@ -262,7 +271,7 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
   }
 
-  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void> {
     await this._baseDatabase.deleteEntitiesByConditions(queryRunner, entity, findConditions);
   }
 

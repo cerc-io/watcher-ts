@@ -12,9 +12,10 @@ import { PubSub } from 'graphql-subscriptions';
 import { Config, getConfig, fillBlocks, JobQueue, DEFAULT_CONFIG_PATH, initClients } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
-import { Database } from './database';
+import { Database, ENTITY_TO_LATEST_ENTITY_MAP } from './database';
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+import { fillState } from './fill-state';
 
 const log = debug('vulcanize:server');
 
@@ -50,6 +51,11 @@ export const main = async (): Promise<any> => {
       type: 'number',
       default: 10,
       describe: 'Number of blocks prefetched in batch'
+    },
+    state: {
+      type: 'boolean',
+      default: false,
+      describe: 'Fill state for subgraph entities'
     }
   }).argv;
 
@@ -59,7 +65,7 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase, ENTITY_TO_LATEST_ENTITY_MAP);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
@@ -78,6 +84,13 @@ export const main = async (): Promise<any> => {
 
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
+
+  if (argv.state) {
+    assert(config.server.enableState, 'State creation disabled');
+    await fillState(indexer, graphDb, graphWatcher.dataSources, argv);
+
+    return;
+  }
 
   // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
   // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries

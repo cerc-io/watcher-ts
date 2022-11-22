@@ -33,7 +33,7 @@ import {
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
-import { Database, ENTITIES } from './database';
+import { Database, ENTITIES, SUBGRAPH_ENTITIES } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
@@ -209,8 +209,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
+    console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
+    console.timeEnd('time:indexer#processCanonicalBlock-finalize_auto_diffs');
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
@@ -223,7 +225,9 @@ export class Indexer implements IndexerInterface {
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
+    console.time('time:indexer#processCheckpoint-checkpoint');
     await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
+    console.timeEnd('time:indexer#processCheckpoint-checkpoint');
   }
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
@@ -256,7 +260,9 @@ export class Indexer implements IndexerInterface {
 
   // Method used to create auto diffs (diff_staged).
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    console.time('time:indexer#createDiffStaged-auto_diff');
     await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+    console.timeEnd('time:indexer#createDiffStaged-auto_diff');
   }
 
   // Method to be used by createStateDiff hook.
@@ -275,12 +281,18 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.createStateCheckpoint(contractAddress, block, data);
   }
 
-  // Method to be used by checkpoint CLI.
+  // Method to be used by export-state CLI.
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
 
     return this._baseIndexer.createCheckpoint(this, contractAddress, block);
+  }
+
+  // Method to be used by fill-state CLI.
+  async createInit (blockHash: string, blockNumber: number): Promise<void> {
+    // Create initial state for contracts.
+    await this._baseIndexer.createInit(this, blockHash, blockNumber);
   }
 
   async saveOrUpdateState (state: State): Promise<State> {
@@ -302,11 +314,23 @@ export class Indexer implements IndexerInterface {
     return data;
   }
 
+  async getSubgraphEntities<Entity> (
+    entity: new () => Entity,
+    block: BlockHeight,
+    where: { [key: string]: any } = {},
+    queryOptions: QueryOptions = {},
+    selections: ReadonlyArray<SelectionNode> = []
+  ): Promise<any[]> {
+    return this._graphWatcher.getEntities(entity, this._relationsMap, block, where, queryOptions, selections);
+  }
+
   async triggerIndexingOnEvent (event: Event): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
+    console.time('time:indexer#processEvent-mapping_code');
     // Call subgraph handler for event.
     await this._graphWatcher.handleEvent(resultEvent);
+    console.timeEnd('time:indexer#processEvent-mapping_code');
 
     // Call custom hook function for indexing on event.
     await handleEvent(this, resultEvent);
@@ -318,18 +342,24 @@ export class Indexer implements IndexerInterface {
   }
 
   async processBlock (blockProgress: BlockProgress): Promise<void> {
+    console.time('time:indexer#processBlock-init_state');
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
+    console.timeEnd('time:indexer#processBlock-init_state');
 
     this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
   }
 
   async processBlockAfterEvents (blockHash: string, blockNumber: number): Promise<void> {
+    console.time('time:indexer#processBlockAfterEvents-mapping_code');
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash, blockNumber);
+    console.timeEnd('time:indexer#processBlockAfterEvents-mapping_code');
 
+    console.time('time:indexer#processBlockAfterEvents-dump_subgraph_state');
     // Persist subgraph state to the DB.
     await this.dumpSubgraphState(blockHash);
+    console.timeEnd('time:indexer#processBlockAfterEvents-dump_subgraph_state');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
@@ -489,11 +519,17 @@ export class Indexer implements IndexerInterface {
   }
 
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
-    return this._baseIndexer.markBlocksAsPruned(blocks);
+    await this._baseIndexer.markBlocksAsPruned(blocks);
+
+    await this._graphWatcher.pruneEntities(FrothyEntity, blocks, SUBGRAPH_ENTITIES);
   }
 
   async pruneFrothyEntities (blockNumber: number): Promise<void> {
     await this._graphWatcher.pruneFrothyEntities(FrothyEntity, blockNumber);
+  }
+
+  async resetLatestEntities (blockNumber: number): Promise<void> {
+    await this._graphWatcher.resetLatestEntities(blockNumber);
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
