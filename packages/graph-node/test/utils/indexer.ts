@@ -204,6 +204,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async getStateByCID (cid: string): Promise<StateInterface | undefined> {
+    return undefined;
+  }
+
   getStateData (state: StateInterface): any {
     return undefined;
   }
