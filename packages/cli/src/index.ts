@@ -5,3 +5,4 @@
 export * from './watch-contract';
 export * from './reset/watcher';
 export * from './reset/state';
+export * from './checkpoint/create';

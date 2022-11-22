@@ -19,18 +19,19 @@ import {
 
 import { BaseCmd } from '../base';
 
-const log = debug('vulcanize:reset-watcher');
+const log = debug('vulcanize:checkpoint-create');
 
 interface Arguments {
   configFile: string;
-  blockNumber: number;
+  address: string;
+  blockHash: string;
 }
 
-export class ResetWatcherCmd {
+export class CreateCheckpointCmd {
   _argv?: Arguments
-  _baseCmd: BaseCmd;
-  _database?: DatabaseInterface;
-  _indexer?: IndexerInterface;
+  _baseCmd: BaseCmd
+  _database?: DatabaseInterface
+  _indexer?: IndexerInterface
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -67,9 +68,9 @@ export class ResetWatcherCmd {
     assert(this._database);
     assert(this._indexer);
 
-    await this._indexer.resetWatcherToBlock(this._argv.blockNumber);
+    const blockHash = await this._indexer.processCLICheckpoint(this._argv.address, this._argv.blockHash);
 
     await this._database.close();
-    log('Reset watcher successfully');
+    log(`Created a checkpoint for contract ${this._argv.address} at block-hash ${blockHash}`);
   }
 }

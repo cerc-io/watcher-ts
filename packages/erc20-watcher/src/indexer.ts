@@ -263,6 +263,11 @@ export class Indexer implements IndexerInterface {
     // TODO Implement
   }
 
+  async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
+    // TODO Implement
+    return '';
+  }
+
   getStateData (state: State): any {
     return this._baseIndexer.getStateData(state);
   }
