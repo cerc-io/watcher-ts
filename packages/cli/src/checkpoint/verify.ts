@@ -8,26 +8,26 @@ import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher } from '@cerc-io/graph-node';
+import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import {
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
   ServerConfig,
-  Clients
+  Clients,
+  verifyCheckpointData
 } from '@cerc-io/util';
 
 import { BaseCmd } from '../base';
 
-const log = debug('vulcanize:checkpoint-create');
+const log = debug('vulcanize:checkpoint-verify');
 
 interface Arguments {
   configFile: string;
-  address: string;
-  blockHash: string;
+  cid: string;
 }
 
-export class CreateCheckpointCmd {
+export class VerifyCheckpointCmd {
   _argv?: Arguments
   _baseCmd: BaseCmd
 
@@ -70,9 +70,17 @@ export class CreateCheckpointCmd {
     assert(database);
     assert(indexer);
 
-    const blockHash = await indexer.processCLICheckpoint(this._argv.address, this._argv.blockHash);
+    const graphDb: GraphDatabase | undefined = this._baseCmd.graphDb || database.graphDatabase;
+    assert(graphDb);
+
+    const state = await indexer.getStateByCID(this._argv.cid);
+    assert(state, 'State for the provided CID doesn\'t exist.');
+    const data = indexer.getStateData(state);
+
+    log(`Verifying checkpoint data for contract ${state.contractAddress}`);
+    await verifyCheckpointData(graphDb, state.block, data);
+    log('Checkpoint data verified');
 
     await database.close();
-    log(`Created a checkpoint for contract ${this._argv.address} at block-hash ${blockHash}`);
   }
 }

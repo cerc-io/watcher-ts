@@ -209,8 +209,20 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined> {
+    return undefined;
+  }
+
   async getStateByCID (cid: string): Promise<StateInterface | undefined> {
     return undefined;
+  }
+
+  async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
+    return undefined;
+  }
+
+  async getLatestStateIndexedBlock (): Promise<BlockProgressInterface> {
+    return {} as BlockProgressInterface;
   }
 
   async saveOrUpdateState (state: StateInterface): Promise<StateInterface> {

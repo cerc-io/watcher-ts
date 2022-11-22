@@ -92,6 +92,7 @@ export interface IndexerInterface {
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface>
+  getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
@@ -120,11 +121,13 @@ export interface IndexerInterface {
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
+  createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
   getStateByCID (cid: string): Promise<StateInterface | undefined>
+  getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
   saveOrUpdateState (state: StateInterface): Promise<StateInterface>
   removeStates (blockNumber: number, kind: StateKind): Promise<void>
   resetWatcherToBlock (blockNumber: number): Promise<void>
@@ -164,8 +167,8 @@ export interface DatabaseInterface {
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void>
-  getContracts?: () => Promise<ContractInterface[]>
-  saveContract?: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
+  getContracts: () => Promise<ContractInterface[]>
+  saveContract: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
   getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
   getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]>
   getDiffStatesInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<StateInterface[]>
