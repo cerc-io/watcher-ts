@@ -109,7 +109,7 @@ export interface IndexerInterface {
   isWatchedContract: (address: string) => ContractInterface | undefined;
   getContractsByKind?: (kind: string) => ContractInterface[]
   cacheContract?: (contract: ContractInterface) => void;
-  watchContract?: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
+  watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   getRelationsMap?: () => Map<any, { [key: string]: any }>
   createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
@@ -125,6 +125,8 @@ export interface IndexerInterface {
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
   getStateByCID (cid: string): Promise<StateInterface | undefined>
+  saveOrUpdateState (state: StateInterface): Promise<StateInterface>
+  removeStates (blockNumber: number, kind: StateKind): Promise<void>
   resetWatcherToBlock (blockNumber: number): Promise<void>
   getResultEvent (event: EventInterface): any
 }
@@ -138,6 +140,7 @@ export interface EventWatcherInterface {
 export interface DatabaseInterface {
   _conn: Connection;
   readonly baseDatabase: Database
+  readonly graphDatabase?: any
   init (): Promise<void>;
   close (): Promise<void>;
   createTransactionRunner (): Promise<QueryRunner>;

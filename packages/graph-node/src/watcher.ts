@@ -348,6 +348,7 @@ export class GraphWatcher {
     }
   }
 
+  // TODO Remove after updating codegen CLIs
   async updateEntitiesFromState (state: StateInterface) {
     assert(this._indexer);
     await updateEntitiesFromState(this._database, this._indexer, state);

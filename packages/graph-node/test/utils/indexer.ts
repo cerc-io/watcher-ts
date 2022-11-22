@@ -13,7 +13,8 @@ import {
   StateSyncStatusInterface,
   StateInterface,
   getResultEvent,
-  ResultEvent
+  ResultEvent,
+  StateKind
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
@@ -188,6 +189,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+    return undefined;
+  }
+
   async processBlock (blockProgress: BlockProgressInterface): Promise<void> {
     return undefined;
   }
@@ -206,6 +211,14 @@ export class Indexer implements IndexerInterface {
 
   async getStateByCID (cid: string): Promise<StateInterface | undefined> {
     return undefined;
+  }
+
+  async saveOrUpdateState (state: StateInterface): Promise<StateInterface> {
+    return {} as StateInterface;
+  }
+
+  async removeStates (blockNumber: number, kind: StateKind): Promise<void> {
+    // TODO Implement
   }
 
   getStateData (state: StateInterface): any {

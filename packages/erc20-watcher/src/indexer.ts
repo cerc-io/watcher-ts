@@ -12,7 +12,19 @@ import { BaseProvider } from '@ethersproject/providers';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { IndexerInterface, Indexer as BaseIndexer, ValueResult, JobQueue, Where, QueryOptions, ServerConfig, StateStatus, DatabaseInterface, Clients } from '@cerc-io/util';
+import {
+  IndexerInterface,
+  Indexer as BaseIndexer,
+  ValueResult,
+  JobQueue,
+  Where,
+  QueryOptions,
+  ServerConfig,
+  StateStatus,
+  DatabaseInterface,
+  Clients,
+  StateKind
+} from '@cerc-io/util';
 
 import { Database, ENTITIES } from './database';
 import { Event } from './entity/Event';
@@ -271,6 +283,14 @@ export class Indexer implements IndexerInterface {
   async getStateByCID (cid: string): Promise<State | undefined> {
     // TODO Implement
     return undefined;
+  }
+
+  async saveOrUpdateState (state: State): Promise<State> {
+    return {} as State;
+  }
+
+  async removeStates (blockNumber: number, kind: StateKind): Promise<void> {
+    // TODO Implement
   }
 
   getStateData (state: State): any {

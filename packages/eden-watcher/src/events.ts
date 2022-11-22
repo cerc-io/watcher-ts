@@ -30,7 +30,7 @@ export class EventWatcher implements EventWatcherInterface {
     assert(indexer);
 
     this._ethClient = ethClient;
-    this._indexer = indexer;
+    this._indexer = indexer as Indexer;
     this._pubsub = pubsub;
     this._jobQueue = jobQueue;
     this._baseEventWatcher = new BaseEventWatcher(this._ethClient, this._indexer, this._pubsub, this._jobQueue);

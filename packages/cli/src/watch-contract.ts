@@ -72,7 +72,6 @@ export class WatchContractCmd {
     assert(database);
     assert(indexer);
 
-    assert(indexer.watchContract);
     await indexer.watchContract(this._argv.address, this._argv.kind, this._argv.checkpoint, this._argv.startingBlock);
     await database.close();
   }
