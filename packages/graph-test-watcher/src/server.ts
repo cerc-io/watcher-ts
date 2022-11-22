@@ -65,7 +65,7 @@ export const main = async (): Promise<any> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
 
   if (watcherKind === KIND_ACTIVE) {
     await jobQueue.start();

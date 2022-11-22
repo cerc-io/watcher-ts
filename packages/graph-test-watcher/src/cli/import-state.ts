@@ -71,7 +71,7 @@ export const main = async (): Promise<any> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
 
   // Import data.
   const importFilePath = path.resolve(argv.importFile);

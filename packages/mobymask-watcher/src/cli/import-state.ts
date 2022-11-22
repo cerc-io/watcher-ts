@@ -62,7 +62,7 @@ export const main = async (): Promise<any> => {
   const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
   await indexer.init();
 
-  const eventWatcher = new EventWatcher(config.upstream, ethClient, indexer, pubsub, jobQueue);
+  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
 
   // Import data.
   const importFilePath = path.resolve(argv.importFile);
