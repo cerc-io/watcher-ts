@@ -10,3 +10,4 @@ export * from './checkpoint/verify';
 export * from './inspect-cid';
 export * from './import-state';
 export * from './export-state';
+export * from './server';

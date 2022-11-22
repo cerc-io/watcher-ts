@@ -78,7 +78,9 @@ export class BaseCmd {
       jobQueue: JobQueue,
       graphWatcher?: GraphWatcher
     ) => IndexerInterface,
-    clients: { [key: string]: any } = {}
+    clients: { [key: string]: any } = {},
+    entityQueryTypeMap?: Map<any, any>,
+    entityToLatestEntityMap?: Map<any, any>
   ): Promise<void> {
     assert(this._config);
 
@@ -100,7 +102,7 @@ export class BaseCmd {
 
     // Check if subgraph watcher.
     if (this._config.server.subgraphPath) {
-      const graphWatcher = await this._getGraphWatcher(this._database.baseDatabase);
+      const graphWatcher = await this._getGraphWatcher(this._database.baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
       this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, this._jobQueue, graphWatcher);
       await this._indexer.init();
 
@@ -130,12 +132,16 @@ export class BaseCmd {
     this._eventWatcher = new EventWatcher(this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
   }
 
-  async _getGraphWatcher (baseDatabase: BaseDatabase): Promise<GraphWatcher> {
+  async _getGraphWatcher (
+    baseDatabase: BaseDatabase,
+    entityQueryTypeMap?: Map<any, any>,
+    entityToLatestEntityMap?: Map<any, any>
+  ): Promise<GraphWatcher> {
     assert(this._config);
     assert(this._clients?.ethClient);
     assert(this._ethProvider);
 
-    this._graphDb = new GraphDatabase(this._config.server, baseDatabase);
+    this._graphDb = new GraphDatabase(this._config.server, baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
     await this._graphDb.init();
 
     return new GraphWatcher(this._graphDb, this._clients.ethClient, this._ethProvider, this._config.server);

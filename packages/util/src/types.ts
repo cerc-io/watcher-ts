@@ -135,6 +135,7 @@ export interface IndexerInterface {
 }
 
 export interface EventWatcherInterface {
+  start (): Promise<void>
   getBlockProgressEventIterator (): AsyncIterator<any>
   initBlockProcessingOnCompleteHandler (): Promise<void>
   initEventProcessingOnCompleteHandler (): Promise<void>
