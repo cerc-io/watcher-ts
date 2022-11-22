@@ -8,7 +8,7 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState } from '@cerc-io/util';
+import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState, setGQLCacheHints } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -21,6 +21,8 @@ const log = debug('vulcanize:resolver');
 
 export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
   assert(indexer);
+
+  const gqlCacheConfig = indexer.serverConfig.gqlCache;
 
   return {
     BigInt: new BigInt('bigInt'),
@@ -89,6 +91,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlQueryCount.labels('blog').inc(1);
         assert(info.fieldNodes[0].selectionSet);
 
+        // Set cache-control hints
+        setGQLCacheHints(info, block, gqlCacheConfig);
+
         return indexer.getSubgraphEntity(Blog, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
@@ -103,6 +108,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlQueryCount.labels('category').inc(1);
         assert(info.fieldNodes[0].selectionSet);
 
+        // Set cache-control hints
+        setGQLCacheHints(info, block, gqlCacheConfig);
+
         return indexer.getSubgraphEntity(Category, id, block, info.fieldNodes[0].selectionSet.selections);
       },
 
@@ -116,6 +124,9 @@ export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatch
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('author').inc(1);
         assert(info.fieldNodes[0].selectionSet);
+
+        // Set cache-control hints
+        setGQLCacheHints(info, block, gqlCacheConfig);
 
         return indexer.getSubgraphEntity(Author, id, block, info.fieldNodes[0].selectionSet.selections);
       },

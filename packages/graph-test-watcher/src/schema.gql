@@ -1,3 +1,14 @@
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+  inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
 scalar BigInt
 
 scalar Bytes
@@ -103,8 +114,8 @@ type Blog {
   kind: BlogKind!
   isActive: Boolean!
   reviews: [BigInt!]!
-  author: Author!
-  categories: [Category!]!
+  author: Author! @cacheControl(inheritMaxAge: true)
+  categories: [Category!]! @cacheControl(inheritMaxAge: true)
 }
 
 type Category {
@@ -121,7 +132,7 @@ type Author {
   paramInt: Int!
   paramBigInt: BigInt!
   paramBytes: Bytes!
-  blogs: [Blog!]!
+  blogs: [Blog!]! @cacheControl(inheritMaxAge: true)
 }
 
 type Mutation {

@@ -40,5 +40,8 @@ export class Blog {
   author!: string;
 
   @Column('varchar', { array: true })
-  categories!: string[]
+  categories!: string[];
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean;
 }

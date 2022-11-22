@@ -25,9 +25,22 @@
   # Interval in number of blocks at which to clear entities cache.
   clearEntitiesCacheInterval = 1000
 
+  # GQL cache settings
+  [server.gqlCache]
+    enabled = true
+
+    # Max in-memory cache size (in bytes) (default 8 MB)
+    # maxCacheSize
+
+    # GQL cache-control max-age settings (in seconds)
+    maxAge = 15
+    timeTravelMaxAge = 86400 # 1 day
+
 [metrics]
   host = "127.0.0.1"
   port = 9000
+  [metrics.gql]
+    port = 9001
 
 [database]
   type = "postgres"

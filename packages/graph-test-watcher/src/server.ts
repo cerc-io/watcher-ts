@@ -13,12 +13,12 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, createAndStartServer } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServer } from '@cerc-io/util';
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
-import { Database } from './database';
+import { Database, ENTITY_TO_LATEST_ENTITY_MAP } from './database';
 import { EventWatcher } from './events';
 
 const log = debug('vulcanize:server');
@@ -42,7 +42,7 @@ export const main = async (): Promise<any> => {
   const db = new Database(config.database);
   await db.init();
 
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase, ENTITY_TO_LATEST_ENTITY_MAP);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
@@ -80,6 +80,8 @@ export const main = async (): Promise<any> => {
   // Create an Express app
   const app: Application = express();
   const server = createAndStartServer(app, typeDefs, resolvers, config.server);
+
+  startGQLMetricsServer(config);
 
   return { app, server };
 };

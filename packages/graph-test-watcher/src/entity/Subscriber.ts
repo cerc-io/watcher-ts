@@ -4,17 +4,18 @@
 
 import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent } from 'typeorm';
 
-import { FrothyEntity } from './FrothyEntity';
-import { ENTITIES } from '../database';
 import { afterEntityInsertOrUpdate } from '@cerc-io/graph-node';
+
+import { FrothyEntity } from './FrothyEntity';
+import { ENTITY_TO_LATEST_ENTITY_MAP, SUBGRAPH_ENTITIES } from '../database';
 
 @EventSubscriber()
 export class EntitySubscriber implements EntitySubscriberInterface {
   async afterInsert (event: InsertEvent<any>): Promise<void> {
-    await afterEntityInsertOrUpdate(FrothyEntity, ENTITIES, event);
+    await afterEntityInsertOrUpdate(FrothyEntity, SUBGRAPH_ENTITIES, event, ENTITY_TO_LATEST_ENTITY_MAP);
   }
 
   async afterUpdate (event: UpdateEvent<any>): Promise<void> {
-    await afterEntityInsertOrUpdate(FrothyEntity, ENTITIES, event);
+    await afterEntityInsertOrUpdate(FrothyEntity, SUBGRAPH_ENTITIES, event, ENTITY_TO_LATEST_ENTITY_MAP);
   }
 }
