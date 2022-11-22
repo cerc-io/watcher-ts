@@ -32,8 +32,6 @@ interface Arguments {
 export class InspectCIDCmd {
   _argv?: Arguments
   _baseCmd: BaseCmd;
-  _database?: DatabaseInterface;
-  _indexer?: IndexerInterface;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -63,21 +61,25 @@ export class InspectCIDCmd {
   ): Promise<void> {
     await this.initConfig();
 
-    ({ database: this._database, indexer: this._indexer } = await this._baseCmd.init(Database, Indexer, clients));
+    await this._baseCmd.init(Database, Indexer, clients);
   }
 
   async exec (): Promise<void> {
     assert(this._argv);
-    assert(this._database);
-    assert(this._indexer);
 
-    const state = await this._indexer.getStateByCID(this._argv.cid);
+    const database = this._baseCmd.database;
+    const indexer = this._baseCmd.indexer;
+
+    assert(database);
+    assert(indexer);
+
+    const state = await indexer.getStateByCID(this._argv.cid);
     assert(state, 'State for the provided CID doesn\'t exist.');
 
-    const stateData = await this._indexer.getStateData(state);
+    const stateData = await indexer.getStateData(state);
     log(util.inspect(stateData, false, null));
 
-    await this._database.close();
+    await database.close();
   }
 
   _getArgv (): any {
