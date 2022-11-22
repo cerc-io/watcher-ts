@@ -124,6 +124,7 @@ export interface IndexerInterface {
   updateSubgraphState?: (contractAddress: string, data: any) => void
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
+  getStateByCID (cid: string): Promise<StateInterface | undefined>
   resetWatcherToBlock (blockNumber: number): Promise<void>
   getResultEvent (event: EventInterface): any
 }

@@ -256,7 +256,7 @@ export class Indexer implements IndexerInterface {
 
   async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
     // TODO: Call initial state hook.
-    return {};
+    return undefined;
   }
 
   async processCheckpoint (blockHash: string): Promise<void> {
@@ -265,7 +265,12 @@ export class Indexer implements IndexerInterface {
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
     // TODO Implement
-    return '';
+    return undefined;
+  }
+
+  async getStateByCID (cid: string): Promise<State | undefined> {
+    // TODO Implement
+    return undefined;
   }
 
   getStateData (state: State): any {
