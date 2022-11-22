@@ -30,7 +30,7 @@ import {
 } from '@cerc-io/util';
 import { GraphWatcher } from '@cerc-io/graph-node';
 
-import { Database, ENTITIES } from './database';
+import { Database, ENTITIES, SUBGRAPH_ENTITIES } from './database';
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
 import { SyncStatus } from './entity/SyncStatus';
@@ -486,7 +486,7 @@ export class Indexer implements IndexerInterface {
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
     await this._baseIndexer.markBlocksAsPruned(blocks);
 
-    await this._graphWatcher.pruneEntities(FrothyEntity, blocks, ENTITIES);
+    await this._graphWatcher.pruneEntities(FrothyEntity, blocks, SUBGRAPH_ENTITIES);
   }
 
   async pruneFrothyEntities (blockNumber: number): Promise<void> {
