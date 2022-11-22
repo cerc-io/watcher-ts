@@ -607,8 +607,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async processCanonicalBlock (blockHash: string): Promise<void> {
+    console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);
+    console.timeEnd('time:indexer#processCanonicalBlock-finalize_auto_diffs');
 
     // Call custom stateDiff hook.
     await createStateDiff(this, blockHash);
@@ -619,7 +621,9 @@ export class Indexer implements IndexerInterface {
     const checkpointInterval = this._serverConfig.checkpointInterval;
     if (checkpointInterval <= 0) return;
 
+    console.time('time:indexer#processCheckpoint-checkpoint');
     await this._baseIndexer.processCheckpoint(this, blockHash, checkpointInterval);
+    console.timeEnd('time:indexer#processCheckpoint-checkpoint');
   }
 
   async processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined> {
@@ -648,7 +652,9 @@ export class Indexer implements IndexerInterface {
 
   // Method used to create auto diffs (diff_staged).
   async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    console.time('time:indexer#createDiffStaged-auto_diff');
     await this._baseIndexer.createDiffStaged(contractAddress, blockHash, data);
+    console.timeEnd('time:indexer#createDiffStaged-auto_diff');
   }
 
   // Method to be used by createStateDiff hook.
@@ -667,7 +673,7 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.createStateCheckpoint(contractAddress, block, data);
   }
 
-  // Method to be used by checkpoint CLI.
+  // Method to be used by export-state CLI.
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     const block = await this.getBlockProgress(blockHash);
     assert(block);
@@ -696,8 +702,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async processBlock (blockProgress: BlockProgress): Promise<void> {
+    console.time('time:indexer#processBlock-init_state');
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
+    console.timeEnd('time:indexer#processBlock-init_state');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {

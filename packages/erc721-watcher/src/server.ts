@@ -13,7 +13,7 @@ import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, createAndStartServer } from '@cerc-io/util';
+import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServer } from '@cerc-io/util';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -71,6 +71,8 @@ export const main = async (): Promise<any> => {
   // Create an Express app
   const app: Application = express();
   const server = createAndStartServer(app, typeDefs, resolvers, config.server);
+
+  startGQLMetricsServer(config);
 
   return { app, server };
 };

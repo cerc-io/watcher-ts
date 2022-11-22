@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, EntityTarget, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
@@ -17,7 +17,7 @@ import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 
-export const ENTITIES = new Set([Allowance, Balance]);
+export const ENTITIES = [Allowance, Balance];
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions
@@ -268,7 +268,7 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.removeEntities(queryRunner, entity, findConditions);
   }
 
-  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions: FindConditions<Entity>): Promise<void> {
+  async deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void> {
     await this._baseDatabase.deleteEntitiesByConditions(queryRunner, entity, findConditions);
   }
 

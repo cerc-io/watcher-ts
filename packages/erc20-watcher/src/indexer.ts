@@ -328,8 +328,10 @@ export class Indexer implements IndexerInterface {
   }
 
   async processBlock (blockProgress: BlockProgress): Promise<void> {
+    console.time('time:indexer#processBlock-init_state');
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
+    console.time('time:indexer#processBlock-init_state');
   }
 
   parseEventNameAndArgs (kind: string, logObj: any): any {
