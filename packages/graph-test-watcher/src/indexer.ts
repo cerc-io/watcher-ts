@@ -575,6 +575,8 @@ export class Indexer implements IndexerInterface {
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
     const entities = [...ENTITIES, FrothyEntity];
     await this._baseIndexer.resetWatcherToBlock(blockNumber, entities);
+
+    await this.resetLatestEntities(blockNumber);
   }
 
   _populateEntityTypesMap (): void {

@@ -495,6 +495,8 @@ export class Indexer implements IndexerInterface {
 
   async resetLatestEntities (blockNumber: number): Promise<void> {
     await this._graphWatcher.resetLatestEntities(blockNumber);
+
+    await this.resetLatestEntities(blockNumber);
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
