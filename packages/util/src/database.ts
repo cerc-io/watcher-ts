@@ -482,22 +482,6 @@ export class Database {
 
   async getLatestPrunedEntity<Entity> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
     // Filter out latest entity from pruned blocks.
-
-    const entityInPrunedRegion = await repo.createQueryBuilder('entity')
-      .innerJoinAndSelect('block_progress', 'block', 'block.block_hash = entity.block_hash')
-      .where('block.is_pruned = false')
-      .andWhere('entity.id = :id', { id })
-      .andWhere('entity.block_number <= :canonicalBlockNumber', { canonicalBlockNumber })
-      .orderBy('entity.block_number', 'DESC')
-      .limit(1)
-      .getOne();
-
-    return entityInPrunedRegion;
-  }
-
-  async getLatestPrunedEntityWithoutJoin<Entity> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
-    // Filter out latest entity from pruned blocks.
-
     const entityInPrunedRegion = await repo.createQueryBuilder('entity')
       .where('entity.id = :id', { id })
       .andWhere('entity.is_pruned = false')

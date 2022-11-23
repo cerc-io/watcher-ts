@@ -136,6 +136,12 @@ GQL console: http://localhost:3010/graphql
       yarn reset job-queue --block-number <previous-block-number>
       ```
 
+    * Reset state:
+
+      ```bash
+      yarn reset state --block-number <previous-block-number>
+      ```
+
     * `block-number`: Block number to which to reset the watcher.
 
   * To export and import the watcher state:

@@ -18,6 +18,14 @@
 
 ## Run
 
+Follow the steps below or follow the demos:
+
+* [Subgraph watcher](./subgraph-demo.md)
+
+* [Non subgraph watcher](./non-subgraph-demo.md)
+
+Steps:
+
 * Create a `.yaml` config file in the following format for generating a watcher:
 
   ```yaml

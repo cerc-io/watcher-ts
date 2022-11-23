@@ -61,7 +61,6 @@ export class ResetStateCmd {
     const { blockNumber } = this._argv;
     try {
       // Delete all State entries after the given block
-      assert(this._database.removeStatesAfterBlock);
       await this._database.removeStatesAfterBlock(dbTx, blockNumber);
 
       // Reset the stateSyncStatus.

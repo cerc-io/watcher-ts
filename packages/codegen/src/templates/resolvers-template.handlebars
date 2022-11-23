@@ -12,10 +12,12 @@ import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigInt
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
+{{#if (subgraphPath)}}
 
 {{#each subgraphQueries as | query |}}
 import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/each}}
+{{/if}}
 
 const log = debug('vulcanize:resolver');
 

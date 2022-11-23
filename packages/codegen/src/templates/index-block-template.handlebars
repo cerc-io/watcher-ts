@@ -12,7 +12,7 @@ import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients, JobQueue, indexBlo
 import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 {{/if}}
 
-import { Database } from '../database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../database';
 import { Indexer } from '../indexer';
 
 const log = debug('vulcanize:index-block');
@@ -44,7 +44,7 @@ const main = async (): Promise<void> => {
   await db.init();
   {{#if (subgraphPath)}}
 
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

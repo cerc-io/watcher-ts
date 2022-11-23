@@ -253,6 +253,20 @@ export class Entity {
       // Add subgraph entity specific columns.
       entityObject = this._addSubgraphColumns(subgraphTypeDefs, entityObject, def);
 
+      // Add is_pruned column.
+      entityObject.columns.push({
+        name: 'isPruned',
+        pgType: 'boolean',
+        tsType: 'boolean',
+        columnType: 'Column',
+        columnOptions: [
+          {
+            option: 'default',
+            value: false
+          }
+        ]
+      });
+
       // Add decimalTransformer column option if required.
       this._addDecimalTransformerOption(entityObject);
 

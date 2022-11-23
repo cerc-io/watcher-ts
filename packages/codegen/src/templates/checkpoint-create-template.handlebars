@@ -40,13 +40,12 @@ export const handler = async (argv: any): Promise<void> => {
   await db.init();
 
   {{#if (subgraphPath)}}
-
   const graphDb = new GraphDatabase(config.server, db.baseDatabase);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-  {{/if}}
 
+  {{/if}}
   const jobQueueConfig = config.jobQueue;
   assert(jobQueueConfig, 'Missing job queue config');
 

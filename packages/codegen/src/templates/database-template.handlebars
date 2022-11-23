@@ -7,6 +7,9 @@ import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner
 import path from 'path';
 
 import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
+{{#if (subgraphPath)}}
+import { ENTITY_QUERY_TYPE } from '@cerc-io/graph-node';
+{{/if}}
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';
@@ -21,11 +24,23 @@ import { {{query.entityName}} } from './entity/{{query.entityName}}';
 import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
 {{/each}}
 
-export const ENTITIES = [
-  {{~#each queries as | query |}}{{query.entityName}}, {{/each}}
+{{#if (subgraphPath)}}
+export const SUBGRAPH_ENTITIES = new Set([
   {{~#each subgraphEntities as | subgraphEntity |}}{{subgraphEntity.className}}
   {{~#unless @last}}, {{/unless}}
+  {{~/each}}]);
+{{/if}}
+export const ENTITIES = [
+  {{~#if (subgraphPath)}}...SUBGRAPH_ENTITIES, {{/if}}
+  {{~#each queries as | query |}}{{query.entityName}}
+  {{~#unless @last}}, {{/unless}}
   {{~/each}}];
+{{#if (subgraphPath)}}
+// Map: Entity to suitable query type.
+export const ENTITY_QUERY_TYPE_MAP = new Map<new() => any, ENTITY_QUERY_TYPE>([]);
+
+export const ENTITY_TO_LATEST_ENTITY_MAP: Map<any, any> = new Map();
+{{/if}}
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
@@ -38,6 +53,9 @@ export class Database implements DatabaseInterface {
 
     this._config = {
       ...config,
+      {{#if (subgraphPath)}}
+      subscribers: [path.join(__dirname, 'entity/Subscriber.*')],
+      {{/if}}
       entities: [path.join(__dirname, 'entity/*')]
     };
 

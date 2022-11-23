@@ -244,4 +244,16 @@ export class Indexer implements IndexerInterface {
   async resetWatcherToBlock (blockNumber: number): Promise<void> {
     return undefined;
   }
+
+  cacheContract (contract: ContractInterface): void {
+    return undefined;
+  }
+
+  async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
+    return undefined;
+  }
+
+  async processStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
+    return false;
+  }
 }
