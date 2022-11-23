@@ -8,7 +8,17 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState, setGQLCacheHints } from '@cerc-io/util';
+import {
+  ValueResult,
+  BlockHeight,
+  gqlTotalQueryCount,
+  gqlQueryCount,
+  jsonBigIntStringReplacer,
+  getResultState,
+  setGQLCacheHints,
+  IndexerInterface,
+  EventWatcherInterface
+} from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
@@ -19,8 +29,9 @@ import { Category } from './entity/Category';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
-  assert(indexer);
+export const createResolvers = async (indexerArg: IndexerInterface, eventWatcherArg: EventWatcherInterface): Promise<any> => {
+  const indexer = indexerArg as Indexer;
+  const eventWatcher = eventWatcherArg as EventWatcher;
 
   const gqlCacheConfig = indexer.serverConfig.gqlCache;
 

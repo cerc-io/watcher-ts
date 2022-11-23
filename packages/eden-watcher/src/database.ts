@@ -34,7 +34,8 @@ import { Staker } from './entity/Staker';
 
 export const SUBGRAPH_ENTITIES = new Set([Account, Claim, Distribution, Distributor, Epoch, Network, Producer, ProducerEpoch, ProducerRewardCollectorChange, ProducerSet, ProducerSetChange, RewardSchedule, RewardScheduleEntry, Slash, Slot, SlotClaim, Staker]);
 export const ENTITIES = [...SUBGRAPH_ENTITIES];
-export const ENTITY_TO_LATEST_ENTITY_MAP: Map<any, any> = new Map();
+export const ENTITY_TO_LATEST_ENTITY_MAP = new Map();
+export const ENTITY_QUERY_TYPE_MAP = new Map();
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;

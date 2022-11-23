@@ -24,6 +24,7 @@ import { Category } from './entity/Category';
 export const SUBGRAPH_ENTITIES = new Set([Author, Blog, Category]);
 export const ENTITIES = [_Test, GetMethod, ...SUBGRAPH_ENTITIES];
 export const ENTITY_TO_LATEST_ENTITY_MAP: Map<any, any> = new Map();
+export const ENTITY_QUERY_TYPE_MAP = new Map();
 
 export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
