@@ -90,7 +90,12 @@ export class JobRunnerCmd {
     }
 
     const jobRunner = new JobRunner(config.jobQueue, indexer, jobQueue);
+
+    await jobRunner.jobQueue.deleteAllJobs();
+    await jobRunner.baseJobRunner.resetToPrevIndexedBlock();
+
     await startJobRunner(jobRunner);
+    jobRunner.baseJobRunner.handleShutdown();
 
     await startMetricsServer(config, indexer);
   }

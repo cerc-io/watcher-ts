@@ -16,15 +16,10 @@ export const main = async (): Promise<any> => {
   await jobRunnerCmd.init(Database, Indexer, {}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
 
   await jobRunnerCmd.exec(async (jobRunner: JobRunner): Promise<void> => {
-    await jobRunner.jobQueue.deleteAllJobs();
-    await jobRunner.baseJobRunner.resetToPrevIndexedBlock();
-
     await jobRunner.subscribeBlockProcessingQueue();
     await jobRunner.subscribeEventProcessingQueue();
     await jobRunner.subscribeBlockCheckpointQueue();
     await jobRunner.subscribeHooksQueue();
-
-    jobRunner.baseJobRunner.handleShutdown();
   });
 };
 
