@@ -687,7 +687,6 @@ export class Indexer {
         }
 
         // Call initial state hook.
-        assert(indexer.processInitialState);
         const stateData = await indexer.processInitialState(contract.address, blockHash);
 
         const block = await this.getBlockProgress(blockHash);
@@ -800,7 +799,6 @@ export class Indexer {
     assert(currentBlock.blockNumber <= stateSyncStatus.latestIndexedBlockNumber, 'State should be indexed for checkpoint at a block');
 
     // Call state checkpoint hook and check if default checkpoint is disabled.
-    assert(indexer.processStateCheckpoint);
     const disableDefaultCheckpoint = await indexer.processStateCheckpoint(contractAddress, currentBlock.blockHash);
 
     if (disableDefaultCheckpoint) {

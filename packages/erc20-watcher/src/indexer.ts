@@ -271,6 +271,11 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async processStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
+    // TODO: Call checkpoint hook.
+    return false;
+  }
+
   async processCheckpoint (blockHash: string): Promise<void> {
     // TODO Implement
   }

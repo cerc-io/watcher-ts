@@ -109,13 +109,12 @@ export interface IndexerInterface {
   parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;
   getContractsByKind?: (kind: string) => ContractInterface[]
-  cacheContract?: (contract: ContractInterface) => void;
+  cacheContract: (contract: ContractInterface) => void;
   watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   getRelationsMap?: () => Map<any, { [key: string]: any }>
-  createDiffStaged?: (contractAddress: string, blockHash: string, data: any) => Promise<void>
-  processInitialState?: (contractAddress: string, blockHash: string) => Promise<any>
-  processStateCheckpoint?: (contractAddress: string, blockHash: string) => Promise<boolean>
+  processInitialState: (contractAddress: string, blockHash: string) => Promise<any>
+  processStateCheckpoint: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
   processBlockAfterEvents?: (blockHash: string, blockNumber: number) => Promise<void>
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
@@ -175,7 +174,7 @@ export interface DatabaseInterface {
   getDiffStatesInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<StateInterface[]>
   getNewState (): StateInterface
   removeStates(queryRunner: QueryRunner, blockNumber: number, kind: StateKind): Promise<void>
-  removeStatesAfterBlock?: (queryRunner: QueryRunner, blockNumber: number) => Promise<void>
+  removeStatesAfterBlock: (queryRunner: QueryRunner, blockNumber: number) => Promise<void>
   saveOrUpdateState (queryRunner: QueryRunner, state: StateInterface): Promise<StateInterface>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>

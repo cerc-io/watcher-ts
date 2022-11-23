@@ -423,10 +423,7 @@ export class JobRunner {
 
   _updateWatchedContracts (job: any): void {
     const { data: { contract } } = job;
-
-    assert(this._indexer.cacheContract);
     this._indexer.cacheContract(contract);
-
     this._indexer.updateStateStatusMap(contract.address, {});
   }
 }
