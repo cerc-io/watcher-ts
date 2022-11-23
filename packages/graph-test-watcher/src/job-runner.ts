@@ -114,8 +114,7 @@ export const main = async (): Promise<any> => {
   graphWatcher.setIndexer(indexer);
   await graphWatcher.init();
 
-  // Watching all the contracts in the subgraph.
-  await graphWatcher.addContracts();
+  await indexer.addContracts();
 
   const jobRunner = new JobRunner(jobQueueConfig, indexer, jobQueue);
   await jobRunner.start();

@@ -30,8 +30,8 @@ export class BaseCmd {
   _jobQueue?: JobQueue
   _database?: DatabaseInterface;
   _indexer?: IndexerInterface;
-  _graphDb?: GraphDatabase
-  _eventWatcher?: EventWatcherInterface
+  _graphDb?: GraphDatabase;
+  _eventWatcher?: EventWatcherInterface;
 
   get config (): Config | undefined {
     return this._config;

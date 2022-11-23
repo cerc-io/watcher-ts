@@ -400,6 +400,11 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getLatestStateIndexedBlock();
   }
 
+  async addContracts (): Promise<void> {
+    // Watching all the contracts in the subgraph.
+    await this._graphWatcher.addContracts();
+  }
+
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     return this._baseIndexer.watchContract(address, kind, checkpoint, startingBlock);
   }
