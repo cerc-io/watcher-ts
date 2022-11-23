@@ -19,7 +19,7 @@ const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
   const serverCmd = new ServerCmd();
-  await serverCmd.init(Database, Indexer, EventWatcher, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
+  await serverCmd.init(Database, Indexer, EventWatcher, {}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
 
