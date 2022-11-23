@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/graph-node",
-  "version": "0.2.13",
+  "version": "0.2.15",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
@@ -48,8 +48,8 @@
   },
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@cerc-io/ipld-eth-client": "^0.2.13",
-    "@cerc-io/util": "^0.2.13",
+    "@cerc-io/ipld-eth-client": "^0.2.15",
+    "@cerc-io/util": "^0.2.15",
     "@types/json-diff": "^0.5.2",
     "@vulcanize/assemblyscript": "0.0.1",
     "bn.js": "^4.11.9",
