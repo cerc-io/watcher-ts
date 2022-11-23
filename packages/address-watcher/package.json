@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/address-watcher",
-  "version": "0.2.13",
+  "version": "0.2.15",
   "description": "Address Watcher",
   "private": true,
   "scripts": {
@@ -26,11 +26,11 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@cerc-io/cache": "^0.2.13",
-    "@cerc-io/ipld-eth-client": "^0.2.13",
-    "@cerc-io/solidity-mapper": "^0.2.13",
-    "@cerc-io/tracing-client": "^0.2.13",
-    "@cerc-io/util": "^0.2.13",
+    "@cerc-io/cache": "^0.2.15",
+    "@cerc-io/ipld-eth-client": "^0.2.15",
+    "@cerc-io/solidity-mapper": "^0.2.15",
+    "@cerc-io/tracing-client": "^0.2.15",
+    "@cerc-io/util": "^0.2.15",
     "@types/lodash": "^4.14.168",
     "debug": "^4.3.1",
     "ethers": "^5.4.4",

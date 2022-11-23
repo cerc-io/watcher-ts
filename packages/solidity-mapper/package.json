@@ -1,10 +1,10 @@
 {
   "name": "@cerc-io/solidity-mapper",
-  "version": "0.2.13",
+  "version": "0.2.15",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@cerc-io/ipld-eth-client": "^0.2.13",
+    "@cerc-io/ipld-eth-client": "^0.2.15",
     "@ethersproject/abi": "^5.3.0",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
