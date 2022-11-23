@@ -2,19 +2,12 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import assert from 'assert';
-import 'reflect-metadata';
-import express, { Application } from 'express';
-import { PubSub } from 'graphql-subscriptions';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
 import debug from 'debug';
 import 'graphql-import-node';
 
-import { DEFAULT_CONFIG_PATH, getConfig, Config, JobQueue, KIND_ACTIVE, initClients, startGQLMetricsServer, createAndStartServer } from '@cerc-io/util';
+import { ServerCmd } from '@cerc-io/cli';
 
 import typeDefs from './schema';
-
 import { createResolvers as createMockResolvers } from './mock/resolvers';
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
@@ -24,57 +17,10 @@ import { EventWatcher } from './events';
 const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
-  const argv = await yargs(hideBin(process.argv))
-    .option('f', {
-      alias: 'config-file',
-      demandOption: true,
-      describe: 'configuration file path (toml)',
-      type: 'string',
-      default: DEFAULT_CONFIG_PATH
-    })
-    .argv;
+  const serverCmd = new ServerCmd();
+  await serverCmd.init(Database, Indexer, EventWatcher);
 
-  const config: Config = await getConfig(argv.f);
-  const { ethClient, ethProvider } = await initClients(config);
-
-  const { kind: watcherKind } = config.server;
-
-  const db = new Database(config.database);
-  await db.init();
-
-  // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
-  // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-  const pubsub = new PubSub();
-
-  const jobQueueConfig = config.jobQueue;
-  assert(jobQueueConfig, 'Missing job queue config');
-
-  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
-  assert(dbConnectionString, 'Missing job queue db connection string');
-
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-
-  const indexer = new Indexer(config.server, db, { ethClient }, ethProvider, jobQueue);
-  await indexer.init();
-
-  const eventWatcher = new EventWatcher(ethClient, indexer, pubsub, jobQueue);
-
-  if (watcherKind === KIND_ACTIVE) {
-    await jobQueue.start();
-    // Delete jobs to prevent creating jobs after completion of processing previous block.
-    await jobQueue.deleteAllJobs();
-    await eventWatcher.start();
-  }
-
-  const resolvers = process.env.MOCK ? await createMockResolvers() : await createResolvers(indexer, eventWatcher);
-
-  // Create an Express app
-  const app: Application = express();
-  const server = createAndStartServer(app, typeDefs, resolvers, config.server);
-
-  startGQLMetricsServer(config);
-
-  return { app, server };
+  return process.env.MOCK ? serverCmd.exec(createMockResolvers, typeDefs) : serverCmd.exec(createResolvers, typeDefs);
 };
 
 main().then(() => {

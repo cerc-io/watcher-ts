@@ -22,6 +22,7 @@ export const main = async (): Promise<any> => {
   await serverCmd.init(Database, Indexer, EventWatcher, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
+
   return serverCmd.exec(createResolvers, typeDefs);
 };
 
