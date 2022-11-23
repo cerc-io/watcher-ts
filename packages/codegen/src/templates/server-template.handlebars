@@ -20,7 +20,7 @@ import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
-import { Database } from './database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from './database';
 import { EventWatcher } from './events';
 
 const log = debug('vulcanize:server');
@@ -45,7 +45,7 @@ export const main = async (): Promise<any> => {
   await db.init();
   {{#if (subgraphPath)}}
 
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
+  const graphDb = new GraphDatabase(config.server, db.baseDatabase, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP);
   await graphDb.init();
 
   const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);

@@ -1,8 +1,8 @@
 //
 // Copyright 2021 Vulcanize, Inc.
 //
-
 {{#each types as | type |}}
+
 export enum {{type.name}} {
   {{#each type.values as | value |}}
   {{value}} = '{{value}}',
