@@ -11,3 +11,4 @@ export * from './inspect-cid';
 export * from './import-state';
 export * from './export-state';
 export * from './server';
+export * from './job-runner';

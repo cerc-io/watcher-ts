@@ -109,6 +109,7 @@ export interface IndexerInterface {
   parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;
   getContractsByKind?: (kind: string) => ContractInterface[]
+  addContracts?: () => Promise<void>
   cacheContract: (contract: ContractInterface) => void;
   watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>

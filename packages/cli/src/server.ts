@@ -5,8 +5,6 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
-import fs from 'fs';
-import path from 'path';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
@@ -34,7 +32,6 @@ import { BaseCmd } from './base';
 
 interface Arguments {
   configFile: string;
-  importFile: string;
 }
 
 export class ServerCmd {
