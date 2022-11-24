@@ -225,6 +225,10 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
+  async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    return undefined;
+  }
+
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     return undefined;
   }
@@ -238,7 +242,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async removeStates (blockNumber: number, kind: StateKind): Promise<void> {
-    // TODO Implement
+    return undefined;
   }
 
   getStateData (state: StateInterface): any {
