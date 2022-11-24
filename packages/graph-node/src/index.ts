@@ -1,9 +1,7 @@
 export * from './watcher';
 export * from './database';
 export {
-  updateEntitiesFromState,
   resolveEntityFieldConflicts,
-  afterEntityInsertOrUpdate,
-  getContractEntitiesMap,
-  fillState
+  afterEntityInsertOrUpdate
 } from './utils';
+export * from './state-utils';
