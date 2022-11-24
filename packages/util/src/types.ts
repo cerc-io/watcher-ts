@@ -122,6 +122,8 @@ export interface IndexerInterface {
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
+  createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void>
+  createDiff (contractAddress: string, blockHash: string, data: any): Promise<void>
   createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined>
   createInit? (blockHash: string, blockNumber: number): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>

@@ -304,7 +304,14 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  // Method to be used by export-state CLI.
+  async createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    // TODO Implement
+  }
+
+  async createDiff (contractAddress: string, blockHash: string, data: any): Promise<void> {
+    // TODO Implement
+  }
+
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {
     // TODO Implement
     return undefined;
