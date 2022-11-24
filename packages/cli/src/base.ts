@@ -8,7 +8,7 @@ import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
+import { GraphWatcher, GraphDatabase } from '@cerc-io/graph-node';
 import {
   Config,
   getConfig,

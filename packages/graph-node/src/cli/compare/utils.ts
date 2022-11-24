@@ -15,9 +15,9 @@ import debug from 'debug';
 import { Config as CacheConfig, getCache } from '@cerc-io/cache';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 import { gql } from '@apollo/client/core';
+import { DEFAULT_LIMIT } from '@cerc-io/util';
 
 import { Client } from './client';
-import { DEFAULT_LIMIT } from '../../database';
 
 const log = debug('vulcanize:compare-utils');
 

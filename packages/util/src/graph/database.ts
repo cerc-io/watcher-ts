@@ -32,8 +32,7 @@ import {
   QueryOptions,
   ServerConfig,
   Where
-} from '@cerc-io/util';
-
+} from '../index';
 import { Block, fromEntityValue, fromStateEntityValues, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
 
 const log = debug('vulcanize:graph-database');
@@ -60,7 +59,7 @@ interface CachedEntities {
   latestPrunedEntities: Map<string, Map<string, { [key: string]: any }>>;
 }
 
-export class Database {
+export class GraphDatabase {
   _serverConfig: ServerConfig
   _conn!: Connection
   _baseDatabase: BaseDatabase

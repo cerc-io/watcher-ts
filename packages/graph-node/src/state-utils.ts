@@ -7,76 +7,9 @@ import debug from 'debug';
 import _ from 'lodash';
 
 import { Between } from 'typeorm';
-import { IndexerInterface, jsonBigIntStringReplacer, StateInterface } from '@cerc-io/util';
-
-import { Database } from './database';
-import { resolveEntityFieldConflicts } from './utils';
+import { IndexerInterface, prepareEntityState } from '@cerc-io/util';
 
 const log = debug('vulcanize:state-utils');
-
-export const prepareEntityState = (updatedEntity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
-  // Resolve any field name conflicts in the dbData for auto-diff.
-  updatedEntity = resolveEntityFieldConflicts(updatedEntity);
-
-  // Prepare the diff data.
-  const diffData: any = { state: {} };
-
-  const result = Array.from(relationsMap.entries())
-    .find(([key]) => key.name === entityName);
-
-  if (result) {
-    // Update entity data if relations exist.
-    const [_, relations] = result;
-
-    // Update relation fields for diff data to be similar to GQL query entities.
-    Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
-      if (isDerived || !updatedEntity[relation]) {
-        // Field is not present in dbData for derived relations
-        return;
-      }
-
-      if (isArray) {
-        updatedEntity[relation] = updatedEntity[relation].map((id: string) => ({ id }));
-      } else {
-        updatedEntity[relation] = { id: updatedEntity[relation] };
-      }
-    });
-  }
-
-  // JSON stringify and parse data for handling unknown types when encoding.
-  // For example, decimal.js values are converted to string in the diff data.
-  diffData.state[entityName] = {
-    // Using custom replacer to store bigints as string values to be encoded by IPLD dag-cbor.
-    // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
-    // https://github.com/rvagg/cborg#type-encoders
-    [updatedEntity.id]: JSON.parse(JSON.stringify(updatedEntity, jsonBigIntStringReplacer))
-  };
-
-  return diffData;
-};
-
-export const updateEntitiesFromState = async (database: Database, indexer: IndexerInterface, state: StateInterface) => {
-  const data = indexer.getStateData(state);
-
-  // Get relations for subgraph entity
-  assert(indexer.getRelationsMap);
-  const relationsMap = indexer.getRelationsMap();
-
-  for (const [entityName, entities] of Object.entries(data.state)) {
-    const result = Array.from(relationsMap.entries())
-      .find(([key]) => key.name === entityName);
-
-    const relations = result ? result[1] : {};
-
-    log(`Updating entities from State for entity ${entityName}`);
-    console.time(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-    for (const [id, entityData] of Object.entries(entities as any)) {
-      const dbData = database.fromState(state.block, entityName, entityData, relations);
-      await database.saveEntity(entityName, dbData);
-    }
-    console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-  }
-};
 
 export const updateSubgraphState = (subgraphStateMap: Map<string, any>, contractAddress: string, data: any): void => {
   // Update the subgraph state for a given contract.

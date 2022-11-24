@@ -8,7 +8,7 @@ import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
+import { GraphWatcher, GraphDatabase } from '@cerc-io/graph-node';
 import {
   JobQueue,
   DatabaseInterface,

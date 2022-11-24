@@ -12,11 +12,21 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
+import {
+  getFullBlock,
+  BlockHeight,
+  ServerConfig,
+  getFullTransaction,
+  QueryOptions,
+  IndexerInterface,
+  BlockProgressInterface,
+  GraphDatabase,
+  resolveEntityFieldConflicts,
+  DEFAULT_LIMIT
+} from '@cerc-io/util';
 
-import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
-import { Database, DEFAULT_LIMIT } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -27,7 +37,7 @@ interface DataSource {
 }
 
 export class GraphWatcher {
-  _database: Database;
+  _database: GraphDatabase;
   _indexer?: IndexerInterface;
   _ethClient: EthClient;
   _ethProvider: providers.BaseProvider;
@@ -39,7 +49,7 @@ export class GraphWatcher {
 
   _context: Context = {};
 
-  constructor (database: Database, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
+  constructor (database: GraphDatabase, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;

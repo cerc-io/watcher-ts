@@ -15,9 +15,9 @@ import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp } from '@cerc-io/util';
+import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, prepareEntityState, TypeId, GraphDatabase } from '@cerc-io/util';
 
-import { TypeId, Level } from './types';
+import { Level } from './types';
 import {
   Block,
   fromEthereumValue,
@@ -26,8 +26,6 @@ import {
   jsonFromBytes,
   getStorageValueType
 } from './utils';
-import { prepareEntityState } from './state-utils';
-import { Database } from './database';
 
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.
@@ -52,7 +50,7 @@ export interface Context {
 const log = debug('vulcanize:graph-node');
 
 export const instantiate = async (
-  database: Database,
+  database: GraphDatabase,
   indexer: IndexerInterface,
   provider: BaseProvider,
   context: Context,

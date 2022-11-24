@@ -1,7 +1,11 @@
-export * from './watcher';
-export * from './database';
 export {
+  ENTITY_QUERY_TYPE,
+  GraphDatabase,
+  prepareEntityState,
+  updateEntitiesFromState,
   resolveEntityFieldConflicts,
   afterEntityInsertOrUpdate
-} from './utils';
+} from '@cerc-io/util';
+
 export * from './state-utils';
+export * from './watcher';
