@@ -4,13 +4,14 @@
 
 import assert from 'assert';
 import 'reflect-metadata';
+import debug from 'debug';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher } from '@cerc-io/graph-node';
+import { GraphWatcher, fillState } from '@cerc-io/graph-node';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   DEFAULT_CONFIG_PATH,
@@ -24,6 +25,8 @@ import {
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
+
+const log = debug('vulcanize:fill');
 
 interface Arguments {
   configFile: string;
@@ -40,6 +43,10 @@ export class FillCmd {
 
   constructor () {
     this._baseCmd = new BaseCmd();
+  }
+
+  get indexer (): IndexerInterface | undefined {
+    return this._baseCmd.indexer;
   }
 
   async initConfig<ConfigType> (): Promise<ConfigType> {
@@ -77,7 +84,7 @@ export class FillCmd {
     await this._baseCmd.initEventWatcher(EventWatcher);
   }
 
-  async exec (): Promise<void> {
+  async exec (contractEntitiesMap: Map<string, string[]> = new Map()): Promise<void> {
     assert(this._argv);
 
     const config = this._baseCmd.config;
@@ -92,13 +99,19 @@ export class FillCmd {
     assert(indexer);
     assert(eventWatcher);
 
-    // if (this._argv.state) {
-    //   assert(config.server.enableState, 'State creation disabled');
-    //   await fillState(indexer, graphDb, graphWatcher.dataSources, argv);
-    //   return;
-    // }
+    if (this._argv.state) {
+      assert(config.server.enableState, 'State creation disabled');
 
-    await fillBlocks(jobQueue, indexer, eventWatcher, config.jobQueue.blockDelayInMilliSecs, this._argv);
+      const { startBlock, endBlock } = this._argv;
+
+      // NOTE: Assuming all blocks in the given range are in the pruned region
+      log(`Filling state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
+      await fillState(indexer, contractEntitiesMap, this._argv);
+      log(`Filled state for subgraph entities in range: [${startBlock}, ${endBlock}]`);
+    } else {
+      await fillBlocks(jobQueue, indexer, eventWatcher, config.jobQueue.blockDelayInMilliSecs, this._argv);
+    }
+
     await database.close();
   }
 
