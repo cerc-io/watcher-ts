@@ -14,7 +14,9 @@ import {
   JOB_KIND_CONTRACT,
   MAX_REORG_DEPTH,
   QUEUE_BLOCK_PROCESSING,
-  QUEUE_EVENT_PROCESSING
+  QUEUE_EVENT_PROCESSING,
+  QUEUE_BLOCK_CHECKPOINT,
+  QUEUE_HOOKS
 } from './constants';
 import { JobQueue } from './job-queue';
 import { EventInterface, IndexerInterface } from './types';
@@ -425,5 +427,43 @@ export class JobRunner {
     const { data: { contract } } = job;
     this._indexer.cacheContract(contract);
     this._indexer.updateStateStatusMap(contract.address, {});
+  }
+}
+
+export class WatcherJobRunner {
+  jobQueue: JobQueue
+  baseJobRunner: JobRunner
+  _indexer: IndexerInterface
+  _jobQueueConfig: JobQueueConfig
+
+  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
+    this._jobQueueConfig = jobQueueConfig;
+    this._indexer = indexer;
+    this.jobQueue = jobQueue;
+    this.baseJobRunner = new JobRunner(this._jobQueueConfig, this._indexer, this.jobQueue);
+  }
+
+  async subscribeBlockProcessingQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
+      await this.baseJobRunner.processBlock(job);
+    });
+  }
+
+  async subscribeEventProcessingQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
+      await this.baseJobRunner.processEvent(job);
+    });
+  }
+
+  async subscribeHooksQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
+      await this.baseJobRunner.processHooks(job);
+    });
+  }
+
+  async subscribeBlockCheckpointQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
+      await this.baseJobRunner.processCheckpoint(job);
+    });
   }
 }

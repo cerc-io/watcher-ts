@@ -17,12 +17,7 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  JobRunner as BaseJobRunner,
-  JobQueueConfig,
-  QUEUE_BLOCK_PROCESSING,
-  QUEUE_EVENT_PROCESSING,
-  QUEUE_BLOCK_CHECKPOINT,
-  QUEUE_HOOKS,
+  WatcherJobRunner as JobRunner,
   startMetricsServer
 } from '@cerc-io/util';
 
@@ -110,43 +105,5 @@ export class JobRunnerCmd {
         default: DEFAULT_CONFIG_PATH
       })
       .argv;
-  }
-}
-
-export class JobRunner {
-  jobQueue: JobQueue
-  baseJobRunner: BaseJobRunner
-  _indexer: IndexerInterface
-  _jobQueueConfig: JobQueueConfig
-
-  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
-    this._jobQueueConfig = jobQueueConfig;
-    this._indexer = indexer;
-    this.jobQueue = jobQueue;
-    this.baseJobRunner = new BaseJobRunner(this._jobQueueConfig, this._indexer, this.jobQueue);
-  }
-
-  async subscribeBlockProcessingQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-      await this.baseJobRunner.processBlock(job);
-    });
-  }
-
-  async subscribeEventProcessingQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      await this.baseJobRunner.processEvent(job);
-    });
-  }
-
-  async subscribeHooksQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
-      await this.baseJobRunner.processHooks(job);
-    });
-  }
-
-  async subscribeBlockCheckpointQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
-      await this.baseJobRunner.processCheckpoint(job);
-    });
   }
 }
