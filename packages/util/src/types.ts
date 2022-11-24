@@ -86,6 +86,7 @@ export interface IndexerInterface {
   init (): Promise<void>
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
+  getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]>
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
@@ -121,12 +122,17 @@ export interface IndexerInterface {
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
+  createDiffStaged (contractAddress: string, blockHash: string, data: any): Promise<void>
+  createDiff (contractAddress: string, blockHash: string, data: any): Promise<void>
   createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined>
+  createInit? (blockHash: string, blockNumber: number): Promise<void>
   getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult>
   updateSubgraphState?: (contractAddress: string, data: any) => void
+  dumpSubgraphState?: (blockHash: string, isStateFinalized?: boolean) => Promise<void>
   updateStateStatusMap (address: string, stateStatus: StateStatus): void
   getStateData (state: StateInterface): any
   getStateByCID (cid: string): Promise<StateInterface | undefined>
+  getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]>
   getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
   saveOrUpdateState (state: StateInterface): Promise<StateInterface>
   removeStates (blockNumber: number, kind: StateKind): Promise<void>

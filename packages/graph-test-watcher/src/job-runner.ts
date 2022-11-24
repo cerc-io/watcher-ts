@@ -4,7 +4,8 @@
 
 import debug from 'debug';
 
-import { JobRunner, JobRunnerCmd } from '@cerc-io/cli';
+import { JobRunnerCmd } from '@cerc-io/cli';
+import { WatcherJobRunner as JobRunner } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { Database } from './database';

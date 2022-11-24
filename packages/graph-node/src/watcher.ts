@@ -14,7 +14,8 @@ import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, StateInterface, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
 
-import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction, updateEntitiesFromState } from './utils';
+import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
+import { updateEntitiesFromState } from './state-utils';
 import { Context, GraphData, instantiate } from './loader';
 import { Database, DEFAULT_LIMIT } from './database';
 

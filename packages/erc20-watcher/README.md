@@ -189,15 +189,3 @@ $ yarn fill --startBlock 1000 --endBlock 2000
 }
 
 ```
-
-## Test
-
-To run tests (GQL queries) against the mock server:
-
-```
-yarn run server:mock
-```
-
-```bash
-yarn test
-```

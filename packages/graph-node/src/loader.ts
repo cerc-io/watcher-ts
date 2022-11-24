@@ -24,9 +24,9 @@ import {
   toEthereumValue,
   getEthereumTypes,
   jsonFromBytes,
-  getStorageValueType,
-  prepareEntityState
+  getStorageValueType
 } from './utils';
+import { prepareEntityState } from './state-utils';
 import { Database } from './database';
 
 // Endianness of BN used in bigInt store host API.

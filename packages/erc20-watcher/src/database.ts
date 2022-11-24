@@ -252,6 +252,10 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlockProgressEntities(repo, where, options);
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    return this._baseDatabase.getEntitiesForBlock(blockHash, tableName);
+  }
+
   async saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgress>): Promise<BlockProgress> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 
