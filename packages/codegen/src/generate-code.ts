@@ -38,6 +38,7 @@ import { exportInspectCID } from './inspect-cid';
 import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
+import { exportReset } from './reset';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -238,7 +239,14 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
-  exportWatchContract(outStream, config.subgraphPath);
+  exportWatchContract(outStream);
+
+  const resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
+  const resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
+  const resetWatcherOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/watcher.ts'));
+  const resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
+
+  exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream);
 
   let checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream;
 
@@ -297,13 +305,6 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, 'src/client.ts'))
     : process.stdout;
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
-
-  const resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
-  const resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
-  const resetWatcherOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/watcher.ts'));
-  const resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
-
-  visitor.exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))

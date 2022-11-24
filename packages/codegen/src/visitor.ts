@@ -12,7 +12,6 @@ import { Indexer } from './indexer';
 import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
-import { Reset } from './reset';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { parseSubgraphSchema } from './utils/subgraph';
@@ -25,7 +24,6 @@ export class Visitor {
   _entity: Entity;
   _database: Database;
   _client: Client;
-  _reset: Reset;
   _types: Types;
 
   _contract?: { name: string, kind: string };
@@ -37,7 +35,6 @@ export class Visitor {
     this._entity = new Entity();
     this._database = new Database();
     this._client = new Client();
-    this._reset = new Reset();
     this._types = new Types();
   }
 
@@ -75,7 +72,6 @@ export class Visitor {
       this._entity.addQuery(name, params, returnType);
       this._database.addQuery(name, params, returnType);
       this._client.addQuery(name, params, returnType);
-      this._reset.addQuery(name);
 
       assert(this._contract);
       this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
@@ -123,7 +119,6 @@ export class Visitor {
     this._entity.addQuery(name, params, returnType);
     this._database.addQuery(name, params, returnType);
     this._client.addQuery(name, params, returnType);
-    this._reset.addQuery(name);
 
     assert(this._contract);
     this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, returnType, stateVariableType);
@@ -153,7 +148,6 @@ export class Visitor {
     this._types.addSubgraphTypes(subgraphSchemaDocument);
     this._entity.addSubgraphEntities(subgraphSchemaDocument);
     this._resolvers.addSubgraphResolvers(subgraphSchemaDocument);
-    this._reset.addSubgraphEntities(subgraphSchemaDocument);
     this._indexer.addSubgraphEntities(subgraphSchemaDocument);
     this._database.addSubgraphEntities(subgraphSchemaDocument);
   }
@@ -208,17 +202,6 @@ export class Visitor {
    */
   exportClient (outStream: Writable, schemaContent: string, gqlDir: string): void {
     this._client.exportClient(outStream, schemaContent, gqlDir);
-  }
-
-  /**
-   * Writes the reset.ts, job-queue.ts, watcher.ts, state.ts files generated from templates to respective streams.
-   * @param resetOutStream A writable output stream to write the reset file to.
-   * @param resetJQOutStream A writable output stream to write the reset job-queue file to.
-   * @param resetWatcherOutStream A writable output stream to write the reset watcher file to.
-   * @param resetStateOutStream A writable output stream to write the reset state file to.
-   */
-  exportReset (resetOutStream: Writable, resetJQOutStream: Writable, resetWatcherOutStream: Writable, resetStateOutStream: Writable, subgraphPath: string): void {
-    this._reset.exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream, subgraphPath);
   }
 
   /**
