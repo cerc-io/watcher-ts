@@ -57,7 +57,8 @@ export class FillCmd {
   }
 
   async init (
-    Database: new (config: ConnectionOptions,
+    Database: new (
+      config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
     Indexer: new (

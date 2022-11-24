@@ -17,7 +17,7 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  WatcherJobRunner as JobRunner,
+  JobRunner,
   startMetricsServer
 } from '@cerc-io/util';
 
@@ -51,7 +51,8 @@ export class JobRunnerCmd {
   }
 
   async init (
-    Database: new (config: ConnectionOptions,
+    Database: new (
+      config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
     Indexer: new (
@@ -87,10 +88,10 @@ export class JobRunnerCmd {
     const jobRunner = new JobRunner(config.jobQueue, indexer, jobQueue);
 
     await jobRunner.jobQueue.deleteAllJobs();
-    await jobRunner.baseJobRunner.resetToPrevIndexedBlock();
+    await jobRunner.resetToPrevIndexedBlock();
 
     await startJobRunner(jobRunner);
-    jobRunner.baseJobRunner.handleShutdown();
+    jobRunner.handleShutdown();
 
     await startMetricsServer(config, indexer);
   }
