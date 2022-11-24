@@ -6,8 +6,10 @@
   "dependencies": {
     "@apollo/utils.keyvaluecache": "^1.0.1",
     "@cerc-io/solidity-mapper": "^0.2.15",
+    "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/schema": "^9.0.10",
     "@graphql-tools/utils": "^9.1.1",
+    "@ipld/dag-cbor": "^6.0.12",
     "apollo-server-core": "^3.11.1",
     "apollo-server-express": "^3.11.1",
     "apollo-server-plugin-response-cache": "^3.8.1",
@@ -26,11 +28,16 @@
     "pg-boss": "^6.1.0",
     "prom-client": "^14.0.1",
     "toml": "^3.0.0",
-    "ws": "^8.11.0"
+    "ws": "^8.11.0",
+    "typeorm": "^0.2.32",
+    "typeorm-naming-strategies": "^2.0.0",
+    "graphql-subscriptions": "^2.0.0",
+    "json-bigint": "^1.0.0"
   },
   "devDependencies": {
     "@cerc-io/cache": "^0.2.15",
     "@cerc-io/ipld-eth-client": "^0.2.15",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@types/express": "^4.17.14",
     "@types/fs-extra": "^9.0.11",
     "@types/pg": "^8.6.5",
@@ -46,9 +53,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
-    "hardhat": "^2.3.0",
-    "typeorm": "^0.2.32",
-    "typeorm-naming-strategies": "^2.0.0"
+    "hardhat": "^2.3.0"
   },
   "scripts": {
     "lint": "eslint .",
