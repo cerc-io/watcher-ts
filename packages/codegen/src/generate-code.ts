@@ -319,7 +319,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
     : process.stdout;
-  exportInspectCID(outStream, config.subgraphPath);
+  exportInspectCID(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/index-block.ts'))
