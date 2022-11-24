@@ -114,6 +114,10 @@ export class Indexer implements IndexerInterface {
     return this._storageLayoutMap;
   }
 
+  get graphWatcher (): GraphWatcher {
+    return this._graphWatcher;
+  }
+
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchStateStatus();
@@ -196,6 +200,10 @@ export class Indexer implements IndexerInterface {
       variable,
       ...mappingKeys
     );
+  }
+
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    return this._db.getEntitiesForBlock(blockHash, tableName);
   }
 
   async processInitialState (contractAddress: string, blockHash: string): Promise<any> {

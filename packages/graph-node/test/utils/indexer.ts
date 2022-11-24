@@ -58,6 +58,10 @@ export class Indexer implements IndexerInterface {
     );
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    return [];
+  }
+
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {
     assert(blockHash);
 
@@ -215,6 +219,10 @@ export class Indexer implements IndexerInterface {
 
   async getStateByCID (cid: string): Promise<StateInterface | undefined> {
     return undefined;
+  }
+
+  async getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]> {
+    return [];
   }
 
   async createCheckpoint (contractAddress: string, blockHash: string): Promise<string | undefined> {

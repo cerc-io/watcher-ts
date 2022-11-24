@@ -143,6 +143,12 @@ export class Indexer implements IndexerInterface {
     return this._storageLayoutMap;
   }
 
+  {{#if (subgraphPath)}}
+  get graphWatcher (): GraphWatcher {
+    return this._graphWatcher;
+  }
+
+  {{/if}}
   async init (): Promise<void> {
     await this._baseIndexer.fetchContracts();
     await this._baseIndexer.fetchStateStatus();
@@ -248,6 +254,10 @@ export class Indexer implements IndexerInterface {
     );
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    return this._db.getEntitiesForBlock(blockHash, tableName);
+  }
+
   async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
     // Call initial state hook.
     return createInitialState(this, contractAddress, blockHash);
@@ -341,12 +351,14 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.createCheckpoint(this, contractAddress, block);
   }
 
+  {{#if (subgraphPath)}}
   // Method to be used by fill-state CLI.
   async createInit (blockHash: string, blockNumber: number): Promise<void> {
     // Create initial state for contracts.
     await this._baseIndexer.createInit(this, blockHash, blockNumber);
   }
 
+  {{/if}}
   async saveOrUpdateState (state: State): Promise<State> {
     return this._baseIndexer.saveOrUpdateState(state);
   }

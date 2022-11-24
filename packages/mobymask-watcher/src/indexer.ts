@@ -323,6 +323,10 @@ export class Indexer implements IndexerInterface {
     );
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    return this._db.getEntitiesForBlock(blockHash, tableName);
+  }
+
   async processInitialState (contractAddress: string, blockHash: string): Promise<any> {
     // Call initial state hook.
     return createInitialState(this, contractAddress, blockHash);
@@ -371,6 +375,10 @@ export class Indexer implements IndexerInterface {
 
   async getStateByCID (cid: string): Promise<State | undefined> {
     return this._baseIndexer.getStateByCID(cid);
+  }
+
+  async getStates (where: FindConditions<State>): Promise<State[]> {
+    return this._db.getStates(where);
   }
 
   getStateData (state: State): any {

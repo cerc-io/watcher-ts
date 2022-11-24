@@ -305,6 +305,18 @@ export class Database {
     eventCount.inc(knownEvents);
   }
 
+  async getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]> {
+    const repo = this._conn.getRepository(tableName);
+
+    const entities = await repo.find({
+      where: {
+        blockHash
+      }
+    });
+
+    return entities;
+  }
+
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity>): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository(entity);
 
