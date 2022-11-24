@@ -23,7 +23,7 @@ export function exportCheckpoint (checkpointOutStream: Writable, checkpointCreat
 
   const createCheckpointTemplateString = fs.readFileSync(path.resolve(__dirname, CREATE_TEMPLATE_FILE)).toString();
   const createCheckpointTemplate = Handlebars.compile(createCheckpointTemplateString);
-  const createCheckpoint = createCheckpointTemplate({ subgraphPath });
+  const createCheckpoint = createCheckpointTemplate({});
   checkpointCreateOutStream.write(createCheckpoint);
 
   if (checkpointVerifyOutStream) {
