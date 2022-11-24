@@ -314,7 +314,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))
     : process.stdout;
-  importState(outStream, config.subgraphPath);
+  importState(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
