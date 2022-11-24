@@ -309,7 +309,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))
     : process.stdout;
-  exportState(outStream, config.subgraphPath);
+  exportState(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))

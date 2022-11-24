@@ -21,8 +21,8 @@ export const builder = {
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const createCheckpointCmd = new VerifyCheckpointCmd();
-  await createCheckpointCmd.init(argv, Database, Indexer);
+  const verifyCheckpointCmd = new VerifyCheckpointCmd();
+  await verifyCheckpointCmd.init(argv, Database, Indexer);
 
-  await createCheckpointCmd.exec();
+  await verifyCheckpointCmd.exec();
 };
