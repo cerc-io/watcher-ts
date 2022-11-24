@@ -264,7 +264,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     }
   }
 
-  exportCheckpoint(checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream, config.subgraphPath);
+  exportCheckpoint(checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'))

@@ -21,8 +21,9 @@ import { {{query.entityName}} } from './entity/{{query.entityName}}';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexer: Indexer, eventWatcher: EventWatcher): Promise<any> => {
-  assert(indexer);
+export const createResolvers = async (indexerArg: IndexerInterface, eventWatcherArg: EventWatcherInterface): Promise<any> => {
+  const indexer = indexerArg as Indexer;
+  const eventWatcher = eventWatcherArg as EventWatcher;
 
   const gqlCacheConfig = indexer.serverConfig.gqlCache;
 
