@@ -8,12 +8,12 @@ import spies from 'chai-spies';
 import { utils } from 'ethers';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { GraphDatabase } from '@cerc-io/util';
 
 import { getDummyEventData, getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
 import abi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 import { instantiate } from './loader';
 import { createEvent, createBlock, Block, EventData } from './utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
 chai.use(spies);
@@ -22,7 +22,7 @@ const sandbox = chai.spy.sandbox();
 
 xdescribe('call handler in mapping code', () => {
   let exports: any;
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
 

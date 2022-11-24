@@ -15,8 +15,9 @@ const log = debug('vulcanize:fill');
 
 export const main = async (): Promise<any> => {
   const fillCmd = new FillCmd();
-  await fillCmd.init(Database, Indexer, EventWatcher);
+  await fillCmd.init(Database);
 
+  await fillCmd.initIndexer(Indexer, EventWatcher);
   await fillCmd.exec();
 };
 
@@ -24,9 +25,4 @@ main().catch(err => {
   log(err);
 }).finally(() => {
   process.exit();
-});
-
-process.on('SIGINT', () => {
-  log(`Exiting process ${process.pid} with code 0`);
-  process.exit(0);
 });

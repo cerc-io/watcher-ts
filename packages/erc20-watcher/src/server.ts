@@ -2,6 +2,9 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import fs from 'fs';
+import path from 'path';
+import 'reflect-metadata';
 import debug from 'debug';
 
 import { ServerCmd } from '@cerc-io/cli';
@@ -16,7 +19,8 @@ const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
   const serverCmd = new ServerCmd();
-  await serverCmd.init(Database, Indexer, EventWatcher);
+  await serverCmd.init(Database);
+  await serverCmd.initIndexer(Indexer, EventWatcher);
 
   return serverCmd.exec(createResolvers, typeDefs);
 };

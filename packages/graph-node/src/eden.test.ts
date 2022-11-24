@@ -9,6 +9,7 @@ import chai from 'chai';
 import spies from 'chai-spies';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { GraphDatabase } from '@cerc-io/util';
 
 import { instantiate } from './loader';
 import { createEvent, Block, createBlock, EventData } from './utils';
@@ -16,7 +17,6 @@ import edenNetworkAbi from '../test/subgraph/eden/EdenNetwork/abis/EdenNetwork.j
 import merkleDistributorAbi from '../test/subgraph/eden/EdenNetworkDistribution/abis/MerkleDistributor.json';
 import distributorGovernanceAbi from '../test/subgraph/eden/EdenNetworkGovernance/abis/DistributorGovernance.json';
 import { getDummyEventData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -26,7 +26,7 @@ chai.use(spies);
 const sandbox = chai.spy.sandbox();
 
 xdescribe('eden wasm loader tests', async () => {
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
 

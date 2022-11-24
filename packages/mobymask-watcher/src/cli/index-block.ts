@@ -14,8 +14,8 @@ const log = debug('vulcanize:index-block');
 
 const main = async (): Promise<void> => {
   const indexBlockCmd = new IndexBlockCmd();
-  await indexBlockCmd.init(Database, Indexer);
-
+  await indexBlockCmd.init(Database);
+  await indexBlockCmd.initIndexer(Indexer);
   await indexBlockCmd.exec();
 };
 

@@ -14,8 +14,8 @@ const log = debug('vulcanize:inspect-cid');
 
 const main = async (): Promise<void> => {
   const inspectCIDCmd = new InspectCIDCmd();
-  await inspectCIDCmd.init(Database, Indexer);
-
+  await inspectCIDCmd.init(Database);
+  await inspectCIDCmd.initIndexer(Indexer);
   await inspectCIDCmd.exec();
 };
 

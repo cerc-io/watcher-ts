@@ -14,8 +14,8 @@ const log = debug('vulcanize:export-state');
 
 const main = async (): Promise<void> => {
   const exportStateCmd = new ExportStateCmd();
-  await exportStateCmd.init(Database, Indexer);
-
+  await exportStateCmd.init(Database);
+  await exportStateCmd.initIndexer(Indexer);
   await exportStateCmd.exec();
 };
 

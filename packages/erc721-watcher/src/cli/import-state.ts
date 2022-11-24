@@ -16,8 +16,8 @@ const log = debug('vulcanize:import-state');
 
 export const main = async (): Promise<any> => {
   const importStateCmd = new ImportStateCmd();
-  await importStateCmd.init(Database, Indexer, EventWatcher);
-
+  await importStateCmd.init(Database);
+  await importStateCmd.initIndexer(Indexer, EventWatcher);
   await importStateCmd.exec(State);
 };
 

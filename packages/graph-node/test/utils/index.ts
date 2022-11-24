@@ -3,12 +3,11 @@
 //
 
 import { BaseProvider } from '@ethersproject/providers';
-import { getCustomProvider, Database as BaseDatabase, ServerConfig } from '@cerc-io/util';
+import { getCustomProvider, Database as BaseDatabase, ServerConfig, GraphDatabase } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import { StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { EventData } from '../../src/utils';
-import { Database } from '../../src/database';
 import { Indexer } from './indexer';
 
 const NETWORK_URL = 'http://127.0.0.1:8081';
@@ -70,10 +69,10 @@ export const getDummyGraphData = (): any => {
   };
 };
 
-export const getTestDatabase = (): Database => {
+export const getTestDatabase = (): GraphDatabase => {
   const baseDatabase = new BaseDatabase({ type: 'postgres' });
   const serverConfig = {} as ServerConfig;
-  return new Database(serverConfig, baseDatabase);
+  return new GraphDatabase(serverConfig, baseDatabase);
 };
 
 export const getTestIndexer = (storageLayout?: Map<string, StorageLayout>): Indexer => {

@@ -7,17 +7,17 @@ import { expect } from 'chai';
 import { utils, BigNumber } from 'ethers';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { GraphDatabase } from '@cerc-io/util';
 
 import { instantiate } from './loader';
 import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
 describe('typeConversion wasm tests', () => {
   let exports: any;
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
 

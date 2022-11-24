@@ -18,10 +18,10 @@ const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
   const serverCmd = new ServerCmd();
-  await serverCmd.init(Database, Indexer, EventWatcher);
+  await serverCmd.init(Database);
+  await serverCmd.initIndexer(Indexer, EventWatcher);
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
-
   return serverCmd.exec(createResolvers, typeDefs);
 };
 
@@ -29,9 +29,4 @@ main().then(() => {
   log('Starting server...');
 }).catch(err => {
   log(err);
-});
-
-process.on('SIGINT', () => {
-  log(`Exiting process ${process.pid} with code 0`);
-  process.exit(0);
 });

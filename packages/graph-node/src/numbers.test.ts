@@ -6,12 +6,11 @@ import path from 'path';
 import { expect } from 'chai';
 import BN from 'bn.js';
 
-import { GraphDecimal } from '@cerc-io/util';
+import { GraphDecimal, GraphDatabase } from '@cerc-io/util';
 import { BaseProvider } from '@ethersproject/providers';
 
 import { instantiate } from './loader';
 import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 import {
   UINT128_MAX,
@@ -28,7 +27,7 @@ const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example
 
 describe('numbers wasm tests', () => {
   let exports: any;
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
 
