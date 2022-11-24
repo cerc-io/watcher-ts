@@ -274,15 +274,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   const fillOutStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
-
-  let fillStateOutStream;
-  if (config.subgraphPath) {
-    fillStateOutStream = outputDir
-      ? fs.createWriteStream(path.join(outputDir, 'src/fill-state.ts'))
-      : process.stdout;
-  }
-
-  exportFill(fillOutStream, fillStateOutStream, config.subgraphPath);
+  exportFill(fillOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))

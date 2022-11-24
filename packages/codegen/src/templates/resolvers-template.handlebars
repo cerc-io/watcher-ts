@@ -8,7 +8,17 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
 
-import { ValueResult, BlockHeight, gqlTotalQueryCount, gqlQueryCount, jsonBigIntStringReplacer, getResultState, setGQLCacheHints } from '@cerc-io/util';
+import {
+  ValueResult,
+  BlockHeight,
+  gqlTotalQueryCount,
+  gqlQueryCount,
+  jsonBigIntStringReplacer,
+  getResultState,
+  setGQLCacheHints,
+  IndexerInterface,
+  EventWatcherInterface
+} from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 import { EventWatcher } from './events';
