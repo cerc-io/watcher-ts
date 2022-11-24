@@ -10,7 +10,6 @@
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/"
   },
   "dependencies": {
-    "@cerc-io/graph-node": "^0.2.15",
     "@cerc-io/util": "^0.2.15",
     "@ethersproject/providers": "^5.4.4",
     "reflect-metadata": "^0.1.13",

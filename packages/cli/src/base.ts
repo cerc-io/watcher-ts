@@ -8,7 +8,6 @@ import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, GraphDatabase } from '@cerc-io/graph-node';
 import {
   Config,
   getConfig,
@@ -17,9 +16,9 @@ import {
   DatabaseInterface,
   IndexerInterface,
   ServerConfig,
-  Database as BaseDatabase,
   Clients,
-  EventWatcherInterface
+  EventWatcherInterface,
+  GraphWatcherInterface
 } from '@cerc-io/util';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 
@@ -30,11 +29,18 @@ export class BaseCmd {
   _jobQueue?: JobQueue
   _database?: DatabaseInterface;
   _indexer?: IndexerInterface;
-  _graphDb?: GraphDatabase;
   _eventWatcher?: EventWatcherInterface;
 
   get config (): Config | undefined {
     return this._config;
+  }
+
+  get clients (): Clients | undefined {
+    return this._clients;
+  }
+
+  get ethProvider (): JsonRpcProvider | undefined {
+    return this._ethProvider;
   }
 
   get jobQueue (): JobQueue | undefined {
@@ -43,10 +49,6 @@ export class BaseCmd {
 
   get database (): DatabaseInterface | undefined {
     return this._database;
-  }
-
-  get graphDb (): GraphDatabase | undefined {
-    return this._graphDb;
   }
 
   get indexer (): IndexerInterface | undefined {
@@ -70,17 +72,7 @@ export class BaseCmd {
       config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
-    Indexer: new (
-      serverConfig: ServerConfig,
-      db: DatabaseInterface,
-      clients: Clients,
-      ethProvider: JsonRpcProvider,
-      jobQueue: JobQueue,
-      graphWatcher?: GraphWatcher
-    ) => IndexerInterface,
-    clients: { [key: string]: any } = {},
-    entityQueryTypeMap?: Map<any, any>,
-    entityToLatestEntityMap?: Map<any, any>
+    clients: { [key: string]: any } = {}
   ): Promise<void> {
     assert(this._config);
 
@@ -99,18 +91,31 @@ export class BaseCmd {
     const { ethClient, ethProvider } = await initClients(this._config);
     this._ethProvider = ethProvider;
     this._clients = { ethClient, ...clients };
+  }
 
-    // Check if subgraph watcher.
-    if (this._config.server.subgraphPath) {
-      const graphWatcher = await this._getGraphWatcher(this._database.baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
-      this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, this._jobQueue, graphWatcher);
-      await this._indexer.init();
+  async initIndexer (
+    Indexer: new (
+      serverConfig: ServerConfig,
+      db: DatabaseInterface,
+      clients: Clients,
+      ethProvider: JsonRpcProvider,
+      jobQueue: JobQueue,
+      graphWatcher?: GraphWatcherInterface
+    ) => IndexerInterface,
+    graphWatcher?: GraphWatcherInterface
+  ) {
+    assert(this._config);
+    assert(this._database);
+    assert(this._clients);
+    assert(this._ethProvider);
+    assert(this._jobQueue);
 
+    this._indexer = new Indexer(this._config.server, this._database, this._clients, this._ethProvider, this._jobQueue, graphWatcher);
+    await this._indexer.init();
+
+    if (graphWatcher) {
       graphWatcher.setIndexer(this._indexer);
       await graphWatcher.init();
-    } else {
-      this._indexer = new Indexer(this._config.server, this._database, this._clients, ethProvider, this._jobQueue);
-      await this._indexer.init();
     }
   }
 
@@ -130,20 +135,5 @@ export class BaseCmd {
     // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
     const pubsub = new PubSub();
     this._eventWatcher = new EventWatcher(this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
-  }
-
-  async _getGraphWatcher (
-    baseDatabase: BaseDatabase,
-    entityQueryTypeMap?: Map<any, any>,
-    entityToLatestEntityMap?: Map<any, any>
-  ): Promise<GraphWatcher> {
-    assert(this._config);
-    assert(this._clients?.ethClient);
-    assert(this._ethProvider);
-
-    this._graphDb = new GraphDatabase(this._config.server, baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
-    await this._graphDb.init();
-
-    return new GraphWatcher(this._graphDb, this._clients.ethClient, this._ethProvider, this._config.server);
   }
 }

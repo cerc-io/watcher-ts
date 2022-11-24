@@ -25,7 +25,8 @@ import {
   ResultEvent,
   getResultEvent,
   DatabaseInterface,
-  Clients
+  Clients,
+  GraphWatcherInterface
 } from '@cerc-io/util';
 import { GraphWatcher, updateSubgraphState, dumpSubgraphState } from '@cerc-io/graph-node';
 
@@ -79,7 +80,7 @@ export class Indexer implements IndexerInterface {
 
   _subgraphStateMap: Map<string, any>
 
-  constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher?: GraphWatcher) {
+  constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher?: GraphWatcherInterface) {
     assert(db);
     assert(clients.ethClient);
 
@@ -90,7 +91,7 @@ export class Indexer implements IndexerInterface {
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
 
     assert(graphWatcher);
-    this._graphWatcher = graphWatcher;
+    this._graphWatcher = graphWatcher as GraphWatcher;
 
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();

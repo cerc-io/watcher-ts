@@ -20,6 +20,7 @@ import {
   QueryOptions,
   IndexerInterface,
   BlockProgressInterface,
+  Database as BaseDatabase,
   GraphDatabase,
   resolveEntityFieldConflicts,
   DEFAULT_LIMIT
@@ -472,3 +473,22 @@ export class GraphWatcher {
     return transaction;
   }
 }
+
+export const getGraphDbAndWatcher = async (
+  serverConfig: ServerConfig,
+  ethClient: EthClient,
+  ethProvider: providers.BaseProvider,
+  baseDatabase: BaseDatabase,
+  entityQueryTypeMap?: Map<any, any>,
+  entityToLatestEntityMap?: Map<any, any>
+): Promise<{ graphDb: GraphDatabase, graphWatcher: GraphWatcher }> => {
+  const graphDb = new GraphDatabase(serverConfig, baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, serverConfig);
+
+  return {
+    graphDb,
+    graphWatcher
+  };
+};

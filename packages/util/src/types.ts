@@ -192,6 +192,11 @@ export interface GraphDatabaseInterface {
   getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined>;
 }
 
+export interface GraphWatcherInterface {
+  init (): Promise<void>;
+  setIndexer (indexer: IndexerInterface): void;
+}
+
 export type Clients = {
   ethClient: EthClient;
   [key: string]: any;

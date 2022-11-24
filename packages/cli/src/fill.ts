@@ -11,9 +11,8 @@ import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, fillState } from '@cerc-io/graph-node';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
+  fillState,
   DEFAULT_CONFIG_PATH,
   JobQueue,
   DatabaseInterface,
@@ -21,8 +20,11 @@ import {
   ServerConfig,
   Clients,
   EventWatcherInterface,
-  fillBlocks
+  fillBlocks,
+  GraphWatcherInterface,
+  Config
 } from '@cerc-io/util';
+import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { BaseCmd } from './base';
 
@@ -45,6 +47,22 @@ export class FillCmd {
     this._baseCmd = new BaseCmd();
   }
 
+  get config (): Config | undefined {
+    return this._baseCmd.config;
+  }
+
+  get clients (): Clients | undefined {
+    return this._baseCmd.clients;
+  }
+
+  get ethProvider (): JsonRpcProvider | undefined {
+    return this._baseCmd.ethProvider;
+  }
+
+  get database (): DatabaseInterface | undefined {
+    return this._baseCmd.database;
+  }
+
   get indexer (): IndexerInterface | undefined {
     return this._baseCmd.indexer;
   }
@@ -61,13 +79,21 @@ export class FillCmd {
       config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
+    clients: { [key: string]: any } = {}
+  ): Promise<void> {
+    await this.initConfig();
+
+    await this._baseCmd.init(Database, clients);
+  }
+
+  async initIndexer (
     Indexer: new (
       serverConfig: ServerConfig,
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
       jobQueue: JobQueue,
-      graphWatcher?: GraphWatcher
+      graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     EventWatcher: new(
       ethClient: EthClient,
@@ -75,13 +101,9 @@ export class FillCmd {
       pubsub: PubSub,
       jobQueue: JobQueue
     ) => EventWatcherInterface,
-    clients: { [key: string]: any } = {},
-    entityQueryTypeMap?: Map<any, any>,
-    entityToLatestEntityMap?: Map<any, any>
-  ): Promise<void> {
-    await this.initConfig();
-
-    await this._baseCmd.init(Database, Indexer, clients, entityQueryTypeMap, entityToLatestEntityMap);
+    graphWatcher?: GraphWatcherInterface
+  ) {
+    await this._baseCmd.initIndexer(Indexer, graphWatcher);
     await this._baseCmd.initEventWatcher(EventWatcher);
   }
 
