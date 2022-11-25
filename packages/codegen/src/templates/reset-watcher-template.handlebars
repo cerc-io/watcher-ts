@@ -2,24 +2,10 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import debug from 'debug';
-import { MoreThan } from 'typeorm';
-import assert from 'assert';
-
-import { getConfig, initClients, resetJobs, JobQueue, Config } from '@cerc-io/util';
-{{#if (subgraphPath)}}
-import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
-{{/if}}
+import { ResetWatcherCmd } from '@cerc-io/cli';
 
 import { Database } from '../../database';
 import { Indexer } from '../../indexer';
-import { BlockProgress } from '../../entity/BlockProgress';
-
-{{#each queries as | query |}}
-import { {{query.entityName}} } from '../../entity/{{query.entityName}}';
-{{/each}}
-
-const log = debug('vulcanize:reset-watcher');
 
 export const command = 'watcher';
 
@@ -32,38 +18,8 @@ export const builder = {
 };
 
 export const handler = async (argv: any): Promise<void> => {
-  const config: Config = await getConfig(argv.configFile);
-  await resetJobs(config);
-  const { ethClient, ethProvider } = await initClients(config);
+  const resetWatcherCmd = new ResetWatcherCmd();
+  await resetWatcherCmd.init(argv, Database, Indexer);
 
-  // Initialize database.
-  const db = new Database(config.database);
-  await db.init();
-  {{#if (subgraphPath)}}
-
-  const graphDb = new GraphDatabase(config.server, db.baseDatabase);
-  await graphDb.init();
-
-  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, config.server);
-  {{/if}}
-
-  const jobQueueConfig = config.jobQueue;
-  assert(jobQueueConfig, 'Missing job queue config');
-
-  const { dbConnectionString, maxCompletionLagInSecs } = jobQueueConfig;
-  assert(dbConnectionString, 'Missing job queue db connection string');
-
-  const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
-  await jobQueue.start();
-
-  const indexer = new Indexer(config.server, db, ethClient, ethProvider, jobQueue{{#if (subgraphPath)}}, graphWatcher{{/if}});
-  await indexer.init();
-  {{#if (subgraphPath)}}
-
-  graphWatcher.setIndexer(indexer);
-  await graphWatcher.init();
-  {{/if}}
-
-  await indexer.resetWatcherToBlock(argv.blockNumber);
-  log('Reset watcher successfully');
+  await resetWatcherCmd.exec();
 };

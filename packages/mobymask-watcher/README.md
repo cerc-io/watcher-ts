@@ -63,13 +63,13 @@
 
 Follow the steps below or follow the [Demo](./demo.md)
 
-* Run the watcher:
+  * Run the server:
 
-  ```bash
-  yarn server
-  ```
+    ```bash
+    yarn server
+    ```
 
-GQL console: http://localhost:3010/graphql
+    GQL console: http://localhost:3010/graphql
 
 * If the watcher is an `active` watcher:
 
@@ -78,6 +78,14 @@ GQL console: http://localhost:3010/graphql
     ```bash
     yarn job-runner
     ```
+
+  * Run the server:
+
+    ```bash
+    yarn server
+    ```
+
+    GQL console: http://localhost:3010/graphql
 
   * To watch a contract:
 

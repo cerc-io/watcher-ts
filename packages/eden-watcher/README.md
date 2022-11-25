@@ -61,13 +61,15 @@
 
 ## Run
 
-* Run the watcher:
+* If the watcher is a `lazy` watcher:
 
-  ```bash
-  yarn server
-  ```
+  * Run the server:
 
-GQL console: http://localhost:3012/graphql
+    ```bash
+    yarn server
+    ```
+
+    GQL console: http://localhost:3012/graphql
 
 * If the watcher is an `active` watcher:
 
@@ -76,6 +78,14 @@ GQL console: http://localhost:3012/graphql
     ```bash
     yarn job-runner
     ```
+
+  * Run the server:
+
+    ```bash
+    yarn server
+    ```
+
+    GQL console: http://localhost:3012/graphql
 
   * To watch a contract:
 

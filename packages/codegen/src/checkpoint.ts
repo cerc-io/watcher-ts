@@ -15,15 +15,15 @@ const VERIFY_TEMPLATE_FILE = './templates/checkpoint-verify-template.handlebars'
  * Writes the checkpoint file generated from a template to a stream.
  * @param outStream A writable output stream to write the checkpoint file to.
  */
-export function exportCheckpoint (checkpointOutStream: Writable, checkpointCreateOutStream: Writable, checkpointVerifyOutStream: Writable | undefined, subgraphPath: string): void {
+export function exportCheckpoint (checkpointOutStream: Writable, checkpointCreateOutStream: Writable, checkpointVerifyOutStream: Writable | undefined): void {
   const checkpointTemplateString = fs.readFileSync(path.resolve(__dirname, CHECKPOINT_TEMPLATE_FILE)).toString();
   const checkpointTemplate = Handlebars.compile(checkpointTemplateString);
-  const checkpoint = checkpointTemplate({ subgraphPath });
+  const checkpoint = checkpointTemplate({});
   checkpointOutStream.write(checkpoint);
 
   const createCheckpointTemplateString = fs.readFileSync(path.resolve(__dirname, CREATE_TEMPLATE_FILE)).toString();
   const createCheckpointTemplate = Handlebars.compile(createCheckpointTemplateString);
-  const createCheckpoint = createCheckpointTemplate({ subgraphPath });
+  const createCheckpoint = createCheckpointTemplate({});
   checkpointCreateOutStream.write(createCheckpoint);
 
   if (checkpointVerifyOutStream) {

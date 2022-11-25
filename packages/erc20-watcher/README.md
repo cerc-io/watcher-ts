@@ -70,16 +70,6 @@ yarn build
 
 Run the watcher:
 
-```bash
-$ yarn server
-
-# For development.
-$ yarn server:dev
-
-# For specifying config file.
-$ yarn server -f environments/local.toml
-```
-
 Start the job runner:
 
 ```bash
@@ -90,6 +80,18 @@ $ yarn job-runner:dev
 
 # For specifying config file.
 $ yarn job-runner -f environments/local.toml
+```
+
+Start the server:
+
+```bash
+$ yarn server
+
+# For development.
+$ yarn server:dev
+
+# For specifying config file.
+$ yarn server -f environments/local.toml
 ```
 
 GQL console: http://localhost:3001/graphql

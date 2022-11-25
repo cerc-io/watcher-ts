@@ -6,7 +6,6 @@ import fs from 'fs';
 import path from 'path';
 import 'reflect-metadata';
 import debug from 'debug';
-import 'graphql-import-node';
 
 import { ServerCmd } from '@cerc-io/cli';
 

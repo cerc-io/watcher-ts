@@ -31,7 +31,9 @@ import {
   StateKind,
   StateStatus,
   ResultEvent,
-  getResultEvent
+  getResultEvent,
+  DatabaseInterface,
+  Clients
 } from '@cerc-io/util';
 {{#if (subgraphPath)}}
 import { GraphWatcher, updateSubgraphState, dumpSubgraphState } from '@cerc-io/graph-node';
@@ -87,16 +89,17 @@ export class Indexer implements IndexerInterface {
   _subgraphStateMap: Map<string, any>
 
   {{/if}}
-  constructor (serverConfig: ServerConfig, db: Database, ethClient: EthClient, ethProvider: BaseProvider, jobQueue: JobQueue{{#if (subgraphPath)}}, graphWatcher: GraphWatcher{{/if}}) {
+  constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue{{#if (subgraphPath)}}, graphWatcher?: GraphWatcher{{/if}}) {
     assert(db);
-    assert(ethClient);
+    assert(clients.ethClient);
 
-    this._db = db;
-    this._ethClient = ethClient;
+    this._db = db as Database;
+    this._ethClient = clients.ethClient;
     this._ethProvider = ethProvider;
     this._serverConfig = serverConfig;
     this._baseIndexer = new BaseIndexer(this._serverConfig, this._db, this._ethClient, this._ethProvider, jobQueue);
     {{#if (subgraphPath)}}
+    assert(graphWatcher);
     this._graphWatcher = graphWatcher;
     {{/if}}
 
@@ -105,12 +108,7 @@ export class Indexer implements IndexerInterface {
     this._contractMap = new Map();
     {{#each contracts as | contract |}}
 
-    const {
-      abi: {{contract.contractName}}ABI,
-      {{#if contract.contractStorageLayout}}
-      storageLayout: {{contract.contractName}}StorageLayout
-      {{/if}}
-    } = {{contract.contractName}}Artifacts;
+    const { abi: {{contract.contractName}}ABI{{#if contract.contractStorageLayout}}, storageLayout: {{contract.contractName}}StorageLayout{{/if}} } = {{contract.contractName}}Artifacts;
     {{/each}}
     {{#each contracts as | contract |}}
 

@@ -38,6 +38,7 @@ import { exportInspectCID } from './inspect-cid';
 import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
+import { exportReset } from './reset';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -238,7 +239,14 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
     : process.stdout;
-  exportWatchContract(outStream, config.subgraphPath);
+  exportWatchContract(outStream);
+
+  const resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
+  const resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
+  const resetWatcherOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/watcher.ts'));
+  const resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
+
+  exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream);
 
   let checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream;
 
@@ -256,7 +264,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     }
   }
 
-  exportCheckpoint(checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream, config.subgraphPath);
+  exportCheckpoint(checkpointOutStream, checkpointCreateOutStream, checkpointVerifyOutStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/hooks.ts'))
@@ -266,15 +274,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   const fillOutStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
-
-  let fillStateOutStream;
-  if (config.subgraphPath) {
-    fillStateOutStream = outputDir
-      ? fs.createWriteStream(path.join(outputDir, 'src/fill-state.ts'))
-      : process.stdout;
-  }
-
-  exportFill(fillOutStream, fillStateOutStream, config.subgraphPath);
+  exportFill(fillOutStream, config.subgraphPath);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))
@@ -298,27 +298,20 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     : process.stdout;
   visitor.exportClient(outStream, schemaContent, path.join(outputDir, 'src/gql'));
 
-  const resetOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset.ts'));
-  const resetJQOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/job-queue.ts'));
-  const resetWatcherOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/watcher.ts'));
-  const resetStateOutStream = fs.createWriteStream(path.join(outputDir, 'src/cli/reset-cmds/state.ts'));
-
-  visitor.exportReset(resetOutStream, resetJQOutStream, resetWatcherOutStream, resetStateOutStream, config.subgraphPath);
-
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/export-state.ts'))
     : process.stdout;
-  exportState(outStream, config.subgraphPath);
+  exportState(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/import-state.ts'))
     : process.stdout;
-  importState(outStream, config.subgraphPath);
+  importState(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/inspect-cid.ts'))
     : process.stdout;
-  exportInspectCID(outStream, config.subgraphPath);
+  exportInspectCID(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/index-block.ts'))

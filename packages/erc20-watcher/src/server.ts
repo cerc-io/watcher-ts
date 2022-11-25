@@ -3,7 +3,6 @@
 //
 
 import debug from 'debug';
-import 'graphql-import-node';
 
 import { ServerCmd } from '@cerc-io/cli';
 

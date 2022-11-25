@@ -13,9 +13,9 @@ const TEMPLATE_FILE = './templates/export-state-template.handlebars';
  * Writes the export-state file generated from a template to a stream.
  * @param outStream A writable output stream to write the export-state file to.
  */
-export function exportState (outStream: Writable, subgraphPath: string): void {
+export function exportState (outStream: Writable): void {
   const templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   const template = Handlebars.compile(templateString);
-  const exportState = template({ subgraphPath });
+  const exportState = template({});
   outStream.write(exportState);
 }
