@@ -18,10 +18,10 @@ export const main = async (): Promise<any> => {
   await jobRunnerCmd.init(Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    jobRunnerCmd.config!.server,
-    jobRunnerCmd.clients!.ethClient,
-    jobRunnerCmd.ethProvider!,
-    jobRunnerCmd.database!.baseDatabase,
+    jobRunnerCmd.config.server,
+    jobRunnerCmd.clients.ethClient,
+    jobRunnerCmd.ethProvider,
+    jobRunnerCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

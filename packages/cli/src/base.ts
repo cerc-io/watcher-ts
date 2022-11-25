@@ -30,31 +30,38 @@ export class BaseCmd {
   _indexer?: IndexerInterface;
   _eventWatcher?: EventWatcher;
 
-  get config (): Config | undefined {
+  get config (): Config {
+    assert(this._config);
     return this._config;
   }
 
-  get clients (): Clients | undefined {
+  get clients (): Clients {
+    assert(this._clients);
     return this._clients;
   }
 
-  get ethProvider (): JsonRpcProvider | undefined {
+  get ethProvider (): JsonRpcProvider {
+    assert(this._ethProvider);
     return this._ethProvider;
   }
 
-  get jobQueue (): JobQueue | undefined {
+  get jobQueue (): JobQueue {
+    assert(this._jobQueue);
     return this._jobQueue;
   }
 
-  get database (): DatabaseInterface | undefined {
+  get database (): DatabaseInterface {
+    assert(this._database);
     return this._database;
   }
 
-  get indexer (): IndexerInterface | undefined {
+  get indexer (): IndexerInterface {
+    assert(this._indexer);
     return this._indexer;
   }
 
-  get eventWatcher (): EventWatcher | undefined {
+  get eventWatcher (): EventWatcher {
+    assert(this._eventWatcher);
     return this._eventWatcher;
   }
 

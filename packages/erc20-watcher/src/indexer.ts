@@ -2,6 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import assert from 'assert';
 import debug from 'debug';
 import { JsonFragment } from '@ethersproject/abi';

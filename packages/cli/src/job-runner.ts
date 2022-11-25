@@ -36,27 +36,27 @@ export class JobRunnerCmd {
     this._baseCmd = new BaseCmd();
   }
 
-  get config (): Config | undefined {
+  get config (): Config {
     return this._baseCmd.config;
   }
 
-  get clients (): Clients | undefined {
+  get clients (): Clients {
     return this._baseCmd.clients;
   }
 
-  get ethProvider (): JsonRpcProvider | undefined {
+  get ethProvider (): JsonRpcProvider {
     return this._baseCmd.ethProvider;
   }
 
-  get database (): DatabaseInterface | undefined {
+  get database (): DatabaseInterface {
     return this._baseCmd.database;
   }
 
-  get jobQueue (): JobQueue | undefined {
+  get jobQueue (): JobQueue {
     return this._baseCmd.jobQueue;
   }
 
-  get indexer (): IndexerInterface | undefined {
+  get indexer (): IndexerInterface {
     return this._baseCmd.indexer;
   }
 

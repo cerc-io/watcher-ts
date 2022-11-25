@@ -534,7 +534,7 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
   return config;
 };
 
-export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string) => {
+export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string): Promise<any> => {
   const { __newString, Value } = instanceExports;
   const { isArray, propertyName, isNullable } = field;
 

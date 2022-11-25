@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import _ from 'lodash';
 import { PubSub } from 'graphql-subscriptions';
 
 import { EthClient } from '@cerc-io/ipld-eth-client';

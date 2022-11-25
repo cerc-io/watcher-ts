@@ -2,8 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import fs from 'fs';
-import path from 'path';
 import 'reflect-metadata';
 import debug from 'debug';
 

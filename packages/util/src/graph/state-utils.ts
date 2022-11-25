@@ -26,7 +26,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
 
   if (result) {
     // Update entity data if relations exist.
-    const [_, relations] = result;
+    const [, relations] = result;
 
     // Update relation fields for diff data to be similar to GQL query entities.
     Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
@@ -55,7 +55,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   return diffData;
 };
 
-export const updateEntitiesFromState = async (database: GraphDatabase, indexer: IndexerInterface, state: StateInterface) => {
+export const updateEntitiesFromState = async (database: GraphDatabase, indexer: IndexerInterface, state: StateInterface): Promise<void> => {
   const data = indexer.getStateData(state);
 
   // Get relations for subgraph entity
@@ -70,7 +70,7 @@ export const updateEntitiesFromState = async (database: GraphDatabase, indexer: 
 
     log(`Updating entities from State for entity ${entityName}`);
     console.time(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-    for (const [id, entityData] of Object.entries(entities as any)) {
+    for (const [, entityData] of Object.entries(entities as any)) {
       const dbData = database.fromState(state.block, entityName, entityData, relations);
       await database.saveEntity(entityName, dbData);
     }

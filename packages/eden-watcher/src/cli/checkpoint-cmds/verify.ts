@@ -26,10 +26,10 @@ export const handler = async (argv: any): Promise<void> => {
   await verifyCheckpointCmd.init(argv, Database);
 
   const { graphWatcher, graphDb } = await getGraphDbAndWatcher(
-    verifyCheckpointCmd.config!.server,
-    verifyCheckpointCmd.clients!.ethClient,
-    verifyCheckpointCmd.ethProvider!,
-    verifyCheckpointCmd.database!.baseDatabase,
+    verifyCheckpointCmd.config.server,
+    verifyCheckpointCmd.clients.ethClient,
+    verifyCheckpointCmd.ethProvider,
+    verifyCheckpointCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );
