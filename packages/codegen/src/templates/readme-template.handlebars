@@ -73,13 +73,15 @@ To enable GQL requests caching:
 
 ## Run
 
-* Run the watcher:
+* If the watcher is a `lazy` watcher:
 
-  ```bash
-  yarn server
-  ```
+  * Run the server:
 
-GQL console: http://localhost:{{port}}/graphql
+    ```bash
+    yarn server
+    ```
+
+    GQL console: http://localhost:{{port}}/graphql
 
 * If the watcher is an `active` watcher:
 
@@ -88,6 +90,14 @@ GQL console: http://localhost:{{port}}/graphql
     ```bash
     yarn job-runner
     ```
+
+  * Run the server:
+
+    ```bash
+    yarn server
+    ```
+
+    GQL console: http://localhost:{{port}}/graphql
 
   * To watch a contract:
 
