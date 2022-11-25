@@ -61,7 +61,7 @@ const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNu
   if (blockNumber % BLOCK_SIZE_MAP_CLEAR_HEIGHT_INTERVAL === 0) {
     log(`cacheBlockSizesAsync-clear-map-below-${blockNumber}`);
     const previousBlockHashes = Array.from(blockSizeMap.entries())
-      .filter(([_, value]) => value.blockNumber <= blockNumber)
+      .filter(([, value]) => value.blockNumber <= blockNumber)
       .map(([blockHash]) => blockHash);
 
     previousBlockHashes.forEach(blockHash => blockSizeMap.delete(blockHash));

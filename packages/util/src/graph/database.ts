@@ -76,7 +76,7 @@ export class GraphDatabase {
     this._entityToLatestEntityMap = entityToLatestEntityMap;
   }
 
-  get cachedEntities () {
+  get cachedEntities (): CachedEntities {
     return this._cachedEntities;
   }
 
@@ -154,8 +154,9 @@ export class GraphDatabase {
         }
       }
 
+      assert(repo.queryRunner);
       const endTimer = eventProcessingLoadEntityDBQueryDuration.startTimer();
-      const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner!, repo, findOptions);
+      const dbEntity = await this._baseDatabase.getPrevEntityVersion(repo.queryRunner, repo, findOptions);
       endTimer();
 
       return dbEntity;
@@ -1074,7 +1075,7 @@ export class GraphDatabase {
     }
   }
 
-  async getBlocksAtHeight (height: number, isPruned: boolean) {
+  async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]> {
     const repo: Repository<BlockProgressInterface> = this._conn.getRepository('block_progress');
 
     return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
@@ -1105,7 +1106,7 @@ export class GraphDatabase {
     }
   }
 
-  pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number) {
+  pruneEntityCacheFrothyBlocks (canonicalBlockHash: string, canonicalBlockNumber: number): void {
     const canonicalBlock = this.cachedEntities.frothyBlocks.get(canonicalBlockHash);
 
     if (canonicalBlock) {
@@ -1153,7 +1154,7 @@ export class GraphDatabase {
       .execute();
   }
 
-  async pruneEntities (frothyEntityType: new () => any, queryRunner: QueryRunner, blocks: BlockProgressInterface[], entityTypes: Set<new () => any>) {
+  async pruneEntities (frothyEntityType: new () => any, queryRunner: QueryRunner, blocks: BlockProgressInterface[], entityTypes: Set<new () => any>): Promise<void> {
     // Assumption: all blocks are at same height
     assert(blocks.length);
     const blockNumber = blocks[0].blockNumber;
@@ -1249,7 +1250,7 @@ export class GraphDatabase {
     );
   }
 
-  _measureCachedPrunedEntities () {
+  _measureCachedPrunedEntities (): void {
     const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
       .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
 

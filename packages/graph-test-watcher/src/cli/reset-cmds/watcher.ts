@@ -22,7 +22,7 @@ export const handler = async (argv: any): Promise<void> => {
   const resetWatcherCmd = new ResetWatcherCmd();
   await resetWatcherCmd.init(argv, Database);
 
-  const { graphWatcher, graphDb } = await getGraphDbAndWatcher(
+  const { graphWatcher } = await getGraphDbAndWatcher(
     resetWatcherCmd.config!.server,
     resetWatcherCmd.clients!.ethClient,
     resetWatcherCmd.ethProvider!,
