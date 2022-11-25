@@ -3,8 +3,12 @@
   "license": "AGPL-3.0",
   "private": true,
   "workspaces": {
-    "packages": ["packages/*"],
-    "nohoist": ["**/@graphprotocol/graph-ts"]
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/@graphprotocol/graph-ts"
+    ]
   },
   "devDependencies": {
     "depcheck": "^1.4.2",

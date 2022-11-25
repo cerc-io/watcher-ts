@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/codegen",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "description": "Code generator",
   "private": true,
   "main": "index.js",
@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
-    "@cerc-io/util": "^0.2.15",
+    "@cerc-io/util": "^0.2.16",
     "@graphql-tools/load-files": "^6.5.2",
     "@poanet/solidity-flattener": "https://github.com/vulcanize/solidity-flattener.git",
     "@solidity-parser/parser": "^0.13.2",
