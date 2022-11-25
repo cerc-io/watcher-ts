@@ -29,9 +29,11 @@ import {
   getResultEvent,
   DatabaseInterface,
   Clients,
-  GraphWatcherInterface
+  GraphWatcherInterface,
+  updateSubgraphState,
+  dumpSubgraphState
 } from '@cerc-io/util';
-import { GraphWatcher, updateSubgraphState, dumpSubgraphState } from '@cerc-io/graph-node';
+import { GraphWatcher } from '@cerc-io/graph-node';
 
 import { Database, ENTITIES, SUBGRAPH_ENTITIES } from './database';
 import { Contract } from './entity/Contract';

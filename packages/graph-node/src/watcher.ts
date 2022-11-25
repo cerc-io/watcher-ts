@@ -23,10 +23,13 @@ import {
   Database as BaseDatabase,
   GraphDatabase,
   resolveEntityFieldConflicts,
+  createBlock,
+  createEvent,
+  getSubgraphConfig,
+  Transaction,
   DEFAULT_LIMIT
 } from '@cerc-io/util';
 
-import { createBlock, createEvent, getSubgraphConfig, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
 
 const log = debug('vulcanize:graph-watcher');

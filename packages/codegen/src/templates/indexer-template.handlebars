@@ -36,7 +36,8 @@ import {
   Clients
 } from '@cerc-io/util';
 {{#if (subgraphPath)}}
-import { GraphWatcher, updateSubgraphState, dumpSubgraphState } from '@cerc-io/graph-node';
+import { updateSubgraphState, dumpSubgraphState } from '@cerc-io/util';
+import { GraphWatcher } from '@cerc-io/graph-node';
 {{/if}}
 
 {{#each contracts as | contract |}}

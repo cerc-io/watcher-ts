@@ -1,16 +1,50 @@
+import { BigNumber, utils } from 'ethers';
+import path from 'path';
+import fs from 'fs-extra';
 import debug from 'debug';
+import yaml from 'js-yaml';
 import { Between, DeepPartial, EntityTarget, InsertEvent, Repository, UpdateEvent, ValueTransformer } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
 
+import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
+
 import { IndexerInterface, StateInterface } from '../types';
 import { jsonBigIntStringReplacer } from '../misc';
 import { GraphDecimal } from './graph-decimal';
 import { GraphDatabase } from './database';
-import { TypeId, ValueKind } from './types';
+import { EthereumValueKind, TypeId, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
+
+export const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
+export const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
+export const UINT128_MAX = '340282366920938463463374607431768211455';
+export const UINT256_MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+// Maximum decimal value.
+export const DECIMAL128_MAX = '9.999999999999999999999999999999999e+6144';
+// Minimum decimal value.
+export const DECIMAL128_MIN = '-9.999999999999999999999999999999999e+6144';
+
+// Minimum +ve decimal value.
+export const DECIMAL128_PMIN = '1e-6143';
+// Maximum -ve decimal value.
+export const DECIMAL128_NMAX = '-1e-6143';
+
+export interface Transaction {
+  hash: string;
+  index: number;
+  from: string;
+  to: string;
+  value: string;
+  gasLimit: string;
+  gasPrice?: string;
+  input: string;
+  maxPriorityFeePerGas?: string,
+  maxFeePerGas?: string,
+}
 
 export interface Block {
   headerId: number;
@@ -30,6 +64,478 @@ export interface Block {
   size: string;
   baseFee?: string;
 }
+
+export interface EventData {
+  block: Block;
+  tx: Transaction;
+  inputs: utils.ParamType[];
+  event: { [key: string]: any }
+  eventIndex: number;
+}
+
+export const getEthereumTypes = async (instanceExports: any, value: any): Promise<any> => {
+  const {
+    __getArray,
+    Bytes,
+    ethereum
+  } = instanceExports;
+
+  const kind = await value.kind;
+
+  switch (kind) {
+    case EthereumValueKind.ADDRESS:
+      return 'address';
+
+    case EthereumValueKind.BOOL:
+      return 'bool';
+
+    case EthereumValueKind.STRING:
+      return 'string';
+
+    case EthereumValueKind.BYTES:
+      return 'bytes';
+
+    case EthereumValueKind.FIXED_BYTES: {
+      const bytesPtr = await value.toBytes();
+      const bytes = await Bytes.wrap(bytesPtr);
+      const length = await bytes.length;
+
+      return `bytes${length}`;
+    }
+
+    case EthereumValueKind.INT:
+      return 'int256';
+
+    case EthereumValueKind.UINT: {
+      return 'uint256';
+    }
+
+    case EthereumValueKind.ARRAY: {
+      const valuesPtr = await value.toArray();
+      const [firstValuePtr] = await __getArray(valuesPtr);
+      const firstValue = await ethereum.Value.wrap(firstValuePtr);
+      const type = await getEthereumTypes(instanceExports, firstValue);
+
+      return `${type}[]`;
+    }
+
+    case EthereumValueKind.FIXED_ARRAY: {
+      const valuesPtr = await value.toArray();
+      const values = await __getArray(valuesPtr);
+      const firstValue = await ethereum.Value.wrap(values[0]);
+      const type = await getEthereumTypes(instanceExports, firstValue);
+
+      return `${type}[${values.length}]`;
+    }
+
+    case EthereumValueKind.TUPLE: {
+      let values = await value.toTuple();
+      values = await __getArray(values);
+
+      const typePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return getEthereumTypes(instanceExports, value);
+      });
+
+      const types = await Promise.all(typePromises);
+
+      return `tuple(${types.join(',')})`;
+    }
+
+    default:
+      break;
+  }
+};
+
+/**
+ * Method to get value from graph-ts ethereum.Value wasm instance.
+ * @param instanceExports
+ * @param value
+ * @returns
+ */
+export const fromEthereumValue = async (instanceExports: any, value: any): Promise<any> => {
+  const {
+    __getArray,
+    __getString,
+    BigInt,
+    Address,
+    Bytes,
+    ethereum
+  } = instanceExports;
+
+  const kind = await value.kind;
+
+  switch (kind) {
+    case EthereumValueKind.ADDRESS: {
+      const addressPtr = await value.toAddress();
+      const address = Address.wrap(addressPtr);
+      const addressStringPtr = await address.toHexString();
+      return __getString(addressStringPtr);
+    }
+
+    case EthereumValueKind.BOOL: {
+      const bool = await value.toBoolean();
+      return Boolean(bool);
+    }
+
+    case EthereumValueKind.STRING: {
+      const stringPtr = await value.toString();
+      return __getString(stringPtr);
+    }
+
+    case EthereumValueKind.BYTES:
+    case EthereumValueKind.FIXED_BYTES: {
+      const bytesPtr = await value.toBytes();
+      const bytes = await Bytes.wrap(bytesPtr);
+      const bytesStringPtr = await bytes.toHexString();
+      return __getString(bytesStringPtr);
+    }
+
+    case EthereumValueKind.INT:
+    case EthereumValueKind.UINT: {
+      const bigIntPtr = await value.toBigInt();
+      const bigInt = BigInt.wrap(bigIntPtr);
+      const bigIntStringPtr = await bigInt.toString();
+      const bigIntString = __getString(bigIntStringPtr);
+      return BigNumber.from(bigIntString);
+    }
+
+    case EthereumValueKind.ARRAY:
+    case EthereumValueKind.FIXED_ARRAY: {
+      const valuesPtr = await value.toArray();
+      const values = __getArray(valuesPtr);
+
+      const valuePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return fromEthereumValue(instanceExports, value);
+      });
+
+      return Promise.all(valuePromises);
+    }
+
+    case EthereumValueKind.TUPLE: {
+      let values = await value.toTuple();
+      values = await __getArray(values);
+
+      const valuePromises = values.map(async (value: any) => {
+        value = await ethereum.Value.wrap(value);
+        return fromEthereumValue(instanceExports, value);
+      });
+
+      return Promise.all(valuePromises);
+    }
+
+    default:
+      break;
+  }
+};
+
+/**
+ * Method to get ethereum value for passing to wasm instance.
+ * @param instanceExports
+ * @param value
+ * @param type
+ * @returns
+ */
+export const toEthereumValue = async (instanceExports: any, output: utils.ParamType, value: any): Promise<any> => {
+  const {
+    __newString,
+    __newArray,
+    ByteArray,
+    Bytes,
+    Address,
+    ethereum,
+    BigInt,
+    id_of_type: getIdOfType
+  } = instanceExports;
+
+  const { type, baseType, arrayChildren } = output;
+
+  // For array type.
+  if (baseType === 'array') {
+    const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
+
+    // Get values for array elements.
+    const ethereumValuePromises = value.map(
+      async (value: any) => toEthereumValue(
+        instanceExports,
+        arrayChildren,
+        value
+      )
+    );
+
+    const ethereumValues: any[] = await Promise.all(ethereumValuePromises);
+    const ethereumValuesArray = await __newArray(arrayEthereumValueId, ethereumValues);
+
+    return ethereum.Value.fromArray(ethereumValuesArray);
+  }
+
+  // For tuple type.
+  if (type === 'tuple') {
+    const arrayEthereumValueId = await getIdOfType(TypeId.ArrayEthereumValue);
+
+    // Get values for struct elements.
+    const ethereumValuePromises = output.components
+      .map(
+        async (component: utils.ParamType, index) => toEthereumValue(
+          instanceExports,
+          component,
+          value[index]
+        )
+      );
+
+    const ethereumValues: any[] = await Promise.all(ethereumValuePromises);
+    const ethereumValuesArrayPtr = await __newArray(arrayEthereumValueId, ethereumValues);
+    const ethereumTuple = await ethereum.Tuple.wrap(ethereumValuesArrayPtr);
+
+    return ethereum.Value.fromTuple(ethereumTuple);
+  }
+
+  // For boolean type.
+  if (type === 'bool') {
+    return ethereum.Value.fromBoolean(value ? 1 : 0);
+  }
+
+  const [isIntegerOrEnum, isInteger, isUnsigned] = type.match(/^enum|((u?)int([0-9]+))/) || [false];
+
+  // For uint/int type or enum type.
+  if (isIntegerOrEnum) {
+    const valueStringPtr = await __newString(value.toString());
+    const bigInt = await BigInt.fromString(valueStringPtr);
+    let ethereumValue = await ethereum.Value.fromUnsignedBigInt(bigInt);
+
+    if (Boolean(isInteger) && !isUnsigned) {
+      ethereumValue = await ethereum.Value.fromSignedBigInt(bigInt);
+    }
+
+    return ethereumValue;
+  }
+
+  if (type.startsWith('address')) {
+    const valueStringPtr = await __newString(value);
+    const addressPtr = await Address.fromString(valueStringPtr);
+
+    return ethereum.Value.fromAddress(addressPtr);
+  }
+
+  // TODO: Check between fixed bytes and dynamic bytes.
+  if (type.startsWith('bytes')) {
+    const valueStringPtr = await __newString(value);
+    const byteArray = await ByteArray.fromHexString(valueStringPtr);
+    const bytes = await Bytes.fromByteArray(byteArray);
+    return ethereum.Value.fromBytes(bytes);
+  }
+
+  // For string type.
+  const valueStringPtr = await __newString(value);
+  return ethereum.Value.fromString(valueStringPtr);
+};
+
+/**
+ * Method to create ethereum event.
+ * @param instanceExports
+ * @param contractAddress
+ * @param eventParamsData
+ * @returns
+ */
+export const createEvent = async (instanceExports: any, contractAddress: string, eventData: EventData): Promise<any> => {
+  const {
+    tx,
+    eventIndex,
+    inputs,
+    event,
+    block: blockData
+  } = eventData;
+
+  const {
+    __newString,
+    __newArray,
+    Address,
+    BigInt,
+    ethereum,
+    Bytes,
+    ByteArray,
+    id_of_type: idOfType
+  } = instanceExports;
+
+  const block = await createBlock(instanceExports, blockData);
+
+  // Fill transaction data.
+  const txHashStringPtr = await __newString(tx.hash);
+  const txHashByteArray = await ByteArray.fromHexString(txHashStringPtr);
+  const txHash = await Bytes.fromByteArray(txHashByteArray);
+
+  const txIndex = await BigInt.fromI32(tx.index);
+
+  const txFromStringPtr = await __newString(tx.from);
+  const txFrom = await Address.fromString(txFromStringPtr);
+
+  const txToStringPtr = await __newString(tx.to);
+  const txTo = tx.to && await Address.fromString(txToStringPtr);
+
+  const valueStringPtr = await __newString(tx.value);
+  const txValuePtr = await BigInt.fromString(valueStringPtr);
+
+  const gasLimitStringPtr = await __newString(tx.gasLimit);
+  const txGasLimitPtr = await BigInt.fromString(gasLimitStringPtr);
+
+  let gasPrice = tx.gasPrice;
+
+  if (!gasPrice) {
+    // Compute gasPrice for EIP-1559 transaction
+    // https://ethereum.stackexchange.com/questions/122090/what-does-tx-gasprice-represent-after-eip-1559
+    const feeDifference = BigNumber.from(tx.maxFeePerGas).sub(BigNumber.from(blockData.baseFee));
+    const maxPriorityFeePerGas = BigNumber.from(tx.maxPriorityFeePerGas);
+    const priorityFeePerGas = maxPriorityFeePerGas.lt(feeDifference) ? maxPriorityFeePerGas : feeDifference;
+    gasPrice = BigNumber.from(blockData.baseFee).add(priorityFeePerGas).toString();
+  }
+
+  const gasPriceStringPtr = await __newString(gasPrice);
+  const txGasPricePtr = await BigInt.fromString(gasPriceStringPtr);
+
+  const inputStringPtr = await __newString(tx.input);
+  const txInputByteArray = await ByteArray.fromHexString(inputStringPtr);
+  const txInputPtr = await Bytes.fromByteArray(txInputByteArray);
+
+  const transaction = await ethereum.Transaction.__new(
+    txHash,
+    txIndex,
+    txFrom,
+    txTo,
+    txValuePtr,
+    txGasLimitPtr,
+    txGasPricePtr,
+    txInputPtr
+  );
+
+  const eventParamArrayPromise = inputs.map(async input => {
+    const { name } = input;
+
+    const ethValue = await toEthereumValue(instanceExports, input, event[name]);
+    const namePtr = await __newString(name);
+
+    return ethereum.EventParam.__new(
+      namePtr,
+      ethValue
+    );
+  });
+
+  const eventParamArray = await Promise.all(eventParamArrayPromise);
+  const arrayEventParamId = await idOfType(TypeId.ArrayEventParam);
+  const eventParams = await __newArray(arrayEventParamId, eventParamArray);
+
+  const addStrPtr = await __newString(contractAddress);
+  const eventAddressPtr = await Address.fromString(addStrPtr);
+
+  const eventIndexPtr = await BigInt.fromI32(eventIndex);
+  const transactionLogIndexPtr = await BigInt.fromI32(0);
+
+  // Create event to be passed to handler.
+  return ethereum.Event.__new(
+    eventAddressPtr,
+    eventIndexPtr,
+    transactionLogIndexPtr,
+    null,
+    block,
+    transaction,
+    eventParams
+  );
+};
+
+export const createBlock = async (instanceExports: any, blockData: Block): Promise<any> => {
+  const {
+    __newString,
+    Address,
+    BigInt,
+    ethereum,
+    Bytes,
+    ByteArray
+  } = instanceExports;
+
+  // Fill block data.
+  const blockHashStringPtr = await __newString(blockData.blockHash);
+  const blockHashByteArray = await ByteArray.fromHexString(blockHashStringPtr);
+  const blockHash = await Bytes.fromByteArray(blockHashByteArray);
+
+  const parentHashStringPtr = await __newString(blockData.parentHash);
+  const parentHashByteArray = await ByteArray.fromHexString(parentHashStringPtr);
+  const parentHash = await Bytes.fromByteArray(parentHashByteArray);
+
+  const uncleHashStringPtr = await __newString(blockData.uncleHash);
+  const uncleHashByteArray = await ByteArray.fromHexString(uncleHashStringPtr);
+  const uncleHash = await Bytes.fromByteArray(uncleHashByteArray);
+
+  const blockNumberStringPtr = await __newString(blockData.blockNumber);
+  const blockNumber = await BigInt.fromString(blockNumberStringPtr);
+
+  const gasUsedStringPtr = await __newString(blockData.gasUsed);
+  const gasUsed = await BigInt.fromString(gasUsedStringPtr);
+
+  const gasLimitStringPtr = await __newString(blockData.gasLimit);
+  const gasLimit = await BigInt.fromString(gasLimitStringPtr);
+
+  const timestampStringPtr = await __newString(blockData.timestamp);
+  const blockTimestamp = await BigInt.fromString(timestampStringPtr);
+
+  const stateRootStringPtr = await __newString(blockData.stateRoot);
+  const stateRootByteArray = await ByteArray.fromHexString(stateRootStringPtr);
+  const stateRoot = await Bytes.fromByteArray(stateRootByteArray);
+
+  const txRootStringPtr = await __newString(blockData.txRoot);
+  const transactionsRootByteArray = await ByteArray.fromHexString(txRootStringPtr);
+  const transactionsRoot = await Bytes.fromByteArray(transactionsRootByteArray);
+
+  const receiptRootStringPtr = await __newString(blockData.receiptRoot);
+  const receiptsRootByteArray = await ByteArray.fromHexString(receiptRootStringPtr);
+  const receiptsRoot = await Bytes.fromByteArray(receiptsRootByteArray);
+
+  const difficultyStringPtr = await __newString(blockData.difficulty);
+  const difficulty = await BigInt.fromString(difficultyStringPtr);
+
+  const tdStringPtr = await __newString(blockData.td);
+  const totalDifficulty = await BigInt.fromString(tdStringPtr);
+
+  const authorStringPtr = await __newString(blockData.author);
+  const authorPtr = await Address.fromString(authorStringPtr);
+
+  const sizePtr = await __newString(blockData.size);
+  const size = await BigInt.fromString(sizePtr);
+
+  // Missing fields from watcher in block data:
+  // author
+  // size
+  return await ethereum.Block.__new(
+    blockHash,
+    parentHash,
+    uncleHash,
+    authorPtr,
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
+    blockNumber,
+    gasUsed,
+    gasLimit,
+    blockTimestamp,
+    difficulty,
+    totalDifficulty,
+    size
+  );
+};
+
+export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
+  const configFilePath = path.resolve(path.join(subgraphPath, 'subgraph.yaml'));
+  const fileExists = await fs.pathExists(configFilePath);
+
+  if (!fileExists) {
+    throw new Error(`Config file not found: ${configFilePath}`);
+  }
+
+  const configFile = await fs.readFile(configFilePath, 'utf8');
+  const config = yaml.load(configFile);
+  log('config', JSON.stringify(config, null, 2));
+
+  return config;
+};
 
 export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string) => {
   const { __newString, Value } = instanceExports;
@@ -211,45 +717,91 @@ export const resolveEntityFieldConflicts = (entity: any): any => {
   return entity;
 };
 
-export const prepareEntityState = (updatedEntity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
-  // Resolve any field name conflicts in the dbData for auto-diff.
-  updatedEntity = resolveEntityFieldConflicts(updatedEntity);
+export const toJSONValue = async (instanceExports: any, value: any): Promise<any> => {
+  const { CustomJSONValue, JSONValueTypedMap, __newString, __newArray, id_of_type: getIdOfType } = instanceExports;
 
-  // Prepare the diff data.
-  const diffData: any = { state: {} };
-
-  const result = Array.from(relationsMap.entries())
-    .find(([key]) => key.name === entityName);
-
-  if (result) {
-    // Update entity data if relations exist.
-    const [_, relations] = result;
-
-    // Update relation fields for diff data to be similar to GQL query entities.
-    Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
-      if (isDerived || !updatedEntity[relation]) {
-        // Field is not present in dbData for derived relations
-        return;
-      }
-
-      if (isArray) {
-        updatedEntity[relation] = updatedEntity[relation].map((id: string) => ({ id }));
-      } else {
-        updatedEntity[relation] = { id: updatedEntity[relation] };
-      }
-    });
+  if (!value) {
+    return CustomJSONValue.fromNull();
   }
 
-  // JSON stringify and parse data for handling unknown types when encoding.
-  // For example, decimal.js values are converted to string in the diff data.
-  diffData.state[entityName] = {
-    // Using custom replacer to store bigints as string values to be encoded by IPLD dag-cbor.
-    // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
-    // https://github.com/rvagg/cborg#type-encoders
-    [updatedEntity.id]: JSON.parse(JSON.stringify(updatedEntity, jsonBigIntStringReplacer))
-  };
+  if (Array.isArray(value)) {
+    const arrayPromise = value.map(async (el: any) => toJSONValue(instanceExports, el));
+    const array = await Promise.all(arrayPromise);
+    const arrayJsonValueId = await getIdOfType(TypeId.ArrayJsonValue);
+    const arrayPtr = __newArray(arrayJsonValueId, array);
 
-  return diffData;
+    return CustomJSONValue.fromArray(arrayPtr);
+  }
+
+  if (typeof value === 'object') {
+    const map = await JSONValueTypedMap.__new();
+
+    const valuePromises = Object.entries(value).map(async ([key, value]) => {
+      const valuePtr = await toJSONValue(instanceExports, value);
+      const keyPtr = await __newString(key);
+      await map.set(keyPtr, valuePtr);
+    });
+
+    await Promise.all(valuePromises);
+
+    return CustomJSONValue.fromObject(map);
+  }
+
+  if (typeof value === 'string') {
+    const stringPtr = await __newString(value);
+
+    return CustomJSONValue.fromString(stringPtr);
+  }
+
+  if (typeof value === 'number') {
+    const stringPtr = await __newString(value.toString());
+
+    return CustomJSONValue.fromNumber(stringPtr);
+  }
+
+  if (typeof value === 'boolean') {
+    return CustomJSONValue.fromBoolean(value);
+  }
+};
+
+export const jsonFromBytes = async (instanceExports: any, bytesPtr: number): Promise<any> => {
+  const { ByteArray, __getString } = instanceExports;
+
+  const byteArray = await ByteArray.wrap(bytesPtr);
+  const jsonStringPtr = await byteArray.toString();
+  const json = JSON.parse(__getString(jsonStringPtr));
+  const jsonValue = await toJSONValue(instanceExports, json);
+
+  return jsonValue;
+};
+
+export const getStorageValueType = (storageLayout: StorageLayout, variableString: string, mappingKeys: MappingKey[]): utils.ParamType => {
+  const storage = storageLayout.storage.find(({ label }) => label === variableString);
+  assert(storage);
+
+  return getEthereumType(storageLayout.types, storage.type, mappingKeys);
+};
+
+const getEthereumType = (storageTypes: StorageLayout['types'], type: string, mappingKeys: MappingKey[]): utils.ParamType => {
+  const { label, encoding, members, value } = storageTypes[type];
+
+  if (encoding === 'mapping') {
+    assert(value);
+
+    return getEthereumType(storageTypes, value, mappingKeys.slice(1));
+  }
+
+  // Struct type contains members field.
+  if (members) {
+    const mappingKey = mappingKeys.shift();
+    const member = members.find(({ label }) => label === mappingKey);
+    assert(member);
+    const { type } = member;
+
+    return getEthereumType(storageTypes, type, mappingKeys);
+  }
+
+  return utils.ParamType.from(label);
 };
 
 export const fromStateEntityValues = (
@@ -283,29 +835,6 @@ export const fromStateEntityValues = (
   }
 
   return stateEntity[propertyName];
-};
-
-export const updateEntitiesFromState = async (database: GraphDatabase, indexer: IndexerInterface, state: StateInterface) => {
-  const data = indexer.getStateData(state);
-
-  // Get relations for subgraph entity
-  assert(indexer.getRelationsMap);
-  const relationsMap = indexer.getRelationsMap();
-
-  for (const [entityName, entities] of Object.entries(data.state)) {
-    const result = Array.from(relationsMap.entries())
-      .find(([key]) => key.name === entityName);
-
-    const relations = result ? result[1] : {};
-
-    log(`Updating entities from State for entity ${entityName}`);
-    console.time(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-    for (const [id, entityData] of Object.entries(entities as any)) {
-      const dbData = database.fromState(state.block, entityName, entityData, relations);
-      await database.saveEntity(entityName, dbData);
-    }
-    console.timeEnd(`time:watcher#GraphWatcher-updateEntitiesFromState-update-entity-${entityName}`);
-  }
 };
 
 export const afterEntityInsertOrUpdate = async<Entity> (
@@ -366,90 +895,3 @@ export function getLatestEntityFromEntity<Entity> (latestEntityRepo: Repository<
   const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
   return latestEntityRepo.create(_.pick(entity, latestEntityFields) as DeepPartial<Entity>);
 }
-
-export const fillState = async (
-  indexer: IndexerInterface,
-  contractEntitiesMap: Map<string, string[]>,
-  argv: {
-    startBlock: number,
-    endBlock: number
-  }
-): Promise<void> => {
-  const { startBlock, endBlock } = argv;
-  if (startBlock > endBlock) {
-    log('endBlock should be greater than or equal to startBlock');
-    process.exit(1);
-  }
-
-  // Check that there are no existing diffs in this range
-  const existingStates = await indexer.getStates({ block: { blockNumber: Between(startBlock, endBlock) } });
-  if (existingStates.length > 0) {
-    log('found existing state(s) in the given range');
-    process.exit(1);
-  }
-
-  console.time('time:fill-state');
-
-  // Fill state for blocks in the given range
-  for (let blockNumber = startBlock; blockNumber <= endBlock; blockNumber++) {
-    console.time(`time:fill-state-${blockNumber}`);
-
-    // Get the canonical block hash at current height
-    const blocks = await indexer.getBlocksAtHeight(blockNumber, false);
-
-    if (blocks.length === 0) {
-      log(`block not found at height ${blockNumber}`);
-      process.exit(1);
-    } else if (blocks.length > 1) {
-      log(`found more than one non-pruned block at height ${blockNumber}`);
-      process.exit(1);
-    }
-
-    const blockHash = blocks[0].blockHash;
-
-    // Create initial state for contracts
-    assert(indexer.createInit);
-    await indexer.createInit(blockHash, blockNumber);
-
-    // Fill state for each contract in contractEntitiesMap
-    const contractStatePromises = Array.from(contractEntitiesMap.entries())
-      .map(async ([contractAddress, entities]): Promise<void> => {
-        // Get all the updated entities at this block
-        const updatedEntitiesListPromises = entities.map(async (entity): Promise<any[]> => {
-          return indexer.getEntitiesForBlock(blockHash, entity);
-        });
-        const updatedEntitiesList = await Promise.all(updatedEntitiesListPromises);
-
-        // Populate state with all the updated entities of each entity type
-        updatedEntitiesList.forEach((updatedEntities, index) => {
-          const entityName = entities[index];
-
-          updatedEntities.forEach((updatedEntity) => {
-            assert(indexer.getRelationsMap);
-            assert(indexer.updateSubgraphState);
-
-            // Prepare diff data for the entity update
-            const diffData = prepareEntityState(updatedEntity, entityName, indexer.getRelationsMap());
-
-            // Update the in-memory subgraph state
-            indexer.updateSubgraphState(contractAddress, diffData);
-          });
-        });
-      });
-
-    await Promise.all(contractStatePromises);
-
-    // Persist subgraph state to the DB
-    assert(indexer.dumpSubgraphState);
-    await indexer.dumpSubgraphState(blockHash, true);
-    await indexer.updateStateSyncStatusIndexedBlock(blockNumber);
-
-    // Create checkpoints
-    await indexer.processCheckpoint(blockHash);
-    await indexer.updateStateSyncStatusCheckpointBlock(blockNumber);
-
-    console.timeEnd(`time:fill-state-${blockNumber}`);
-  }
-
-  console.timeEnd('time:fill-state');
-};

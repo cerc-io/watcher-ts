@@ -15,17 +15,21 @@ import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
 import loader from '@vulcanize/assemblyscript/lib/loader';
-import { IndexerInterface, GraphDecimal, getGraphDigitsAndExp, prepareEntityState, TypeId, GraphDatabase } from '@cerc-io/util';
-
-import { Level } from './types';
 import {
+  IndexerInterface,
+  GraphDecimal,
+  getGraphDigitsAndExp,
+  prepareEntityState,
+  TypeId,
+  Level,
+  GraphDatabase,
   Block,
   fromEthereumValue,
   toEthereumValue,
   getEthereumTypes,
   jsonFromBytes,
   getStorageValueType
-} from './utils';
+} from '@cerc-io/util';
 
 // Endianness of BN used in bigInt store host API.
 // Negative bigInt is being stored in wasm in 2's compliment, 'le' representation.

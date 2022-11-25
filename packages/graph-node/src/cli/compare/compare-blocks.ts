@@ -8,7 +8,15 @@ import debug from 'debug';
 import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { getConfig as getWatcherConfig, wait, Database as BaseDatabase, Config as WatcherConfig, GraphDatabase } from '@cerc-io/util';
+
+import {
+  getConfig as getWatcherConfig,
+  wait,
+  Database as BaseDatabase,
+  Config as WatcherConfig,
+  GraphDatabase,
+  getSubgraphConfig
+} from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
 import {
@@ -22,7 +30,6 @@ import {
   getConfig,
   checkGQLEntitiesInState
 } from './utils';
-import { getSubgraphConfig } from '../../utils';
 
 const DEFAULT_ENTITIES_LIMIT = 100;
 

@@ -7,7 +7,8 @@ import 'reflect-metadata';
 import debug from 'debug';
 
 import { FillCmd } from '@cerc-io/cli';
-import { getContractEntitiesMap, getGraphDbAndWatcher } from '@cerc-io/graph-node';
+import { getContractEntitiesMap } from '@cerc-io/util';
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 
 import { Database, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP } from './database';
 import { Indexer } from './indexer';
