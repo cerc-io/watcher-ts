@@ -37,10 +37,8 @@ export const SUBGRAPH_ENTITIES = new Set([
   {{~/each}}]);
 {{/if}}
 export const ENTITIES = [
-  {{~#if (subgraphPath)}}...SUBGRAPH_ENTITIES, {{/if}}
-  {{~#each queries as | query |}}{{query.entityName}}
-  {{~#unless @last}}, {{/unless}}
-  {{~/each}}];
+  {{~#each queries as | query |}}{{query.entityName}}, {{/each}}
+  {{~#if (subgraphPath)}}...SUBGRAPH_ENTITIES{{/if}}];
 {{#if (subgraphPath)}}
 // Map: Entity to suitable query type.
 export const ENTITY_QUERY_TYPE_MAP = new Map<new() => any, ENTITY_QUERY_TYPE>([]);
