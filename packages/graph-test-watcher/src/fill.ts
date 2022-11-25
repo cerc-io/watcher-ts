@@ -32,7 +32,6 @@ export const main = async (): Promise<any> => {
 
   // Get contractEntitiesMap required for fill-state
   // NOTE: Assuming each entity type is only mapped to a single contract
-  //       This is true for eden subgraph; may not be the case for other subgraphs
   const contractEntitiesMap = getContractEntitiesMap(graphWatcher.dataSources);
 
   await fillCmd.exec(contractEntitiesMap);

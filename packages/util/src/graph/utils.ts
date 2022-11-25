@@ -4,7 +4,8 @@ import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
 
-import { IndexerInterface, jsonBigIntStringReplacer, StateInterface } from '../index';
+import { IndexerInterface, StateInterface } from '../types';
+import { jsonBigIntStringReplacer } from '../misc';
 import { GraphDecimal } from './graph-decimal';
 import { GraphDatabase } from './database';
 import { TypeId, ValueKind } from './types';

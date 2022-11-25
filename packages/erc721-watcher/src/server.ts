@@ -30,3 +30,8 @@ main().then(() => {
 }).catch(err => {
   log(err);
 });
+
+process.on('SIGINT', () => {
+  log(`Exiting process ${process.pid} with code 0`);
+  process.exit(0);
+});
