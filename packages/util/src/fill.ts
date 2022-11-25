@@ -5,17 +5,18 @@
 import debug from 'debug';
 
 import { JobQueue } from './job-queue';
-import { EventWatcherInterface, IndexerInterface } from './types';
+import { IndexerInterface } from './types';
 import { wait } from './misc';
 import { processBlockByNumber } from './common';
 import { DEFAULT_PREFETCH_BATCH_SIZE } from './constants';
+import { EventWatcher } from './events';
 
 const log = debug('vulcanize:fill');
 
 export const fillBlocks = async (
   jobQueue: JobQueue,
   indexer: IndexerInterface,
-  eventWatcher: EventWatcherInterface,
+  eventWatcher: EventWatcher,
   blockDelayInMilliSecs: number,
   argv: {
     startBlock: number,

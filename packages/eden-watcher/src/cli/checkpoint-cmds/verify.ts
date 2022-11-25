@@ -35,5 +35,6 @@ export const handler = async (argv: any): Promise<void> => {
   );
 
   await verifyCheckpointCmd.initIndexer(Indexer, graphWatcher);
+
   await verifyCheckpointCmd.exec(graphDb);
 };

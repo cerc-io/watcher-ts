@@ -2,7 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import assert from 'assert';
 import 'reflect-metadata';
 import debug from 'debug';
 
@@ -14,7 +13,6 @@ import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 
 import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from './database';
 import { Indexer } from './indexer';
-import { EventWatcher } from './events';
 
 const log = debug('vulcanize:fill');
 
@@ -33,7 +31,7 @@ export const main = async (): Promise<any> => {
   );
 
   {{/if}}
-  await fillCmd.initIndexer(Indexer, EventWatcher{{#if (subgraphPath)}}, graphWatcher{{/if}});
+  await fillCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
 
   {{#if (subgraphPath)}}
   // Get contractEntitiesMap required for fill-state

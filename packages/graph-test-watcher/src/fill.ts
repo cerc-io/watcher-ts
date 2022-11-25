@@ -2,7 +2,6 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import assert from 'assert';
 import 'reflect-metadata';
 import debug from 'debug';
 
@@ -12,7 +11,6 @@ import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 
 import { Database, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP } from './database';
 import { Indexer } from './indexer';
-import { EventWatcher } from './events';
 
 const log = debug('vulcanize:fill');
 
@@ -29,7 +27,7 @@ export const main = async (): Promise<any> => {
     ENTITY_TO_LATEST_ENTITY_MAP
   );
 
-  await fillCmd.initIndexer(Indexer, EventWatcher, graphWatcher);
+  await fillCmd.initIndexer(Indexer, graphWatcher);
 
   // Get contractEntitiesMap required for fill-state
   // NOTE: Assuming each entity type is only mapped to a single contract

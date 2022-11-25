@@ -9,14 +9,13 @@ import { FillCmd } from '@cerc-io/cli';
 
 import { Database } from './database';
 import { Indexer } from './indexer';
-import { EventWatcher } from './events';
 
 const log = debug('vulcanize:fill');
 
 export const main = async (): Promise<any> => {
   const fillCmd = new FillCmd();
   await fillCmd.init(Database);
-  await fillCmd.initIndexer(Indexer, EventWatcher);
+  await fillCmd.initIndexer(Indexer);
   await fillCmd.exec();
 };
 

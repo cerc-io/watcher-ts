@@ -140,13 +140,6 @@ export interface IndexerInterface {
   getResultEvent (event: EventInterface): any
 }
 
-export interface EventWatcherInterface {
-  start (): Promise<void>
-  getBlockProgressEventIterator (): AsyncIterator<any>
-  initBlockProcessingOnCompleteHandler (): Promise<void>
-  initEventProcessingOnCompleteHandler (): Promise<void>
-}
-
 export interface DatabaseInterface {
   _conn: Connection;
   readonly baseDatabase: Database

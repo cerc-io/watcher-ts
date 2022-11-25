@@ -27,6 +27,7 @@ const main = async (): Promise<void> => {
   );
 
   await indexBlockCmd.initIndexer(Indexer, graphWatcher);
+
   await indexBlockCmd.exec();
 };
 

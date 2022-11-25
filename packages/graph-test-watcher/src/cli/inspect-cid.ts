@@ -27,6 +27,7 @@ const main = async (): Promise<void> => {
   );
 
   await inspectCIDCmd.initIndexer(Indexer, graphWatcher);
+
   await inspectCIDCmd.exec();
 };
 

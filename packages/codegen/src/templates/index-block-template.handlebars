@@ -31,6 +31,7 @@ const main = async (): Promise<void> => {
 
   {{/if}}
   await indexBlockCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
+
   await indexBlockCmd.exec();
 };
 

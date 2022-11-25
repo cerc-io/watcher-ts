@@ -15,7 +15,6 @@ import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 import { createResolvers } from './resolvers';
 import { Indexer } from './indexer';
 import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from './database';
-import { EventWatcher } from './events';
 
 const log = debug('vulcanize:server');
 
@@ -34,9 +33,10 @@ export const main = async (): Promise<any> => {
   );
 
   {{/if}}
-  await serverCmd.initIndexer(Indexer, EventWatcher{{#if (subgraphPath)}}, graphWatcher{{/if}});
+  await serverCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
+
   return serverCmd.exec(createResolvers, typeDefs);
 };
 

@@ -24,7 +24,6 @@ import { generateArtifacts } from './artifacts';
 import { exportPackage } from './package';
 import { exportTSConfig } from './tsconfig';
 import { exportReadme } from './readme';
-import { exportEvents } from './events';
 import { exportJobRunner } from './job-runner';
 import { exportWatchContract } from './watch-contract';
 import { exportLint } from './lint';
@@ -225,11 +224,6 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
     : process.stdout;
   exportReadme(path.basename(outputDir), config.port, outStream);
-
-  outStream = outputDir
-    ? fs.createWriteStream(path.join(outputDir, 'src/events.ts'))
-    : process.stdout;
-  exportEvents(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))

@@ -9,7 +9,6 @@ import { ImportStateCmd } from '@cerc-io/cli';
 
 import { Database } from '../database';
 import { Indexer } from '../indexer';
-import { EventWatcher } from '../events';
 import { State } from '../entity/State';
 
 const log = debug('vulcanize:import-state');
@@ -17,7 +16,8 @@ const log = debug('vulcanize:import-state');
 export const main = async (): Promise<any> => {
   const importStateCmd = new ImportStateCmd();
   await importStateCmd.init(Database);
-  await importStateCmd.initIndexer(Indexer, EventWatcher);
+  await importStateCmd.initIndexer(Indexer);
+
   await importStateCmd.exec(State);
 };
 

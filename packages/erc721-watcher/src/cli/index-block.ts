@@ -16,6 +16,7 @@ const main = async (): Promise<void> => {
   const indexBlockCmd = new IndexBlockCmd();
   await indexBlockCmd.init(Database);
   await indexBlockCmd.initIndexer(Indexer);
+
   await indexBlockCmd.exec();
 };
 

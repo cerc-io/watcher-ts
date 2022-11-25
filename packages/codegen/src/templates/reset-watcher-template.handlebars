@@ -36,5 +36,6 @@ export const handler = async (argv: any): Promise<void> => {
 
   {{/if}}
   await resetWatcherCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
+
   await resetWatcherCmd.exec();
 };

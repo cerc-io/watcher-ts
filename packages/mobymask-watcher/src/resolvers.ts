@@ -8,16 +8,14 @@ import debug from 'debug';
 import Decimal from 'decimal.js';
 import { GraphQLScalarType } from 'graphql';
 
-import { ValueResult, gqlTotalQueryCount, gqlQueryCount, getResultState, IndexerInterface, EventWatcherInterface } from '@cerc-io/util';
+import { ValueResult, gqlTotalQueryCount, gqlQueryCount, getResultState, IndexerInterface, EventWatcher } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
-import { EventWatcher } from './events';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexerArg: IndexerInterface, eventWatcherArg: EventWatcherInterface): Promise<any> => {
+export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
   const indexer = indexerArg as Indexer;
-  const eventWatcher = eventWatcherArg as EventWatcher;
 
   return {
     BigInt: new BigInt('bigInt'),

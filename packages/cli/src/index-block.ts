@@ -80,7 +80,7 @@ export class IndexBlockCmd {
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     return this._baseCmd.initIndexer(Indexer, graphWatcher);
   }
 

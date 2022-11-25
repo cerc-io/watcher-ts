@@ -87,7 +87,7 @@ export class ExportStateCmd {
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     return this._baseCmd.initIndexer(Indexer, graphWatcher);
   }
 
