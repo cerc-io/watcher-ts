@@ -8,7 +8,6 @@ import debug from 'debug';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { ConnectionOptions } from 'typeorm';
-import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -19,12 +18,10 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  EventWatcherInterface,
   fillBlocks,
   GraphWatcherInterface,
   Config
 } from '@cerc-io/util';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { BaseCmd } from './base';
 
@@ -63,10 +60,6 @@ export class FillCmd {
     return this._baseCmd.database;
   }
 
-  get indexer (): IndexerInterface | undefined {
-    return this._baseCmd.indexer;
-  }
-
   async initConfig<ConfigType> (): Promise<ConfigType> {
     this._argv = this._getArgv();
     assert(this._argv);
@@ -95,16 +88,10 @@ export class FillCmd {
       jobQueue: JobQueue,
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
-    EventWatcher: new(
-      ethClient: EthClient,
-      indexer: IndexerInterface,
-      pubsub: PubSub,
-      jobQueue: JobQueue
-    ) => EventWatcherInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     await this._baseCmd.initIndexer(Indexer, graphWatcher);
-    await this._baseCmd.initEventWatcher(EventWatcher);
+    await this._baseCmd.initEventWatcher();
   }
 
   async exec (contractEntitiesMap: Map<string, string[]> = new Map()): Promise<void> {

@@ -32,5 +32,6 @@ export const handler = async (argv: any): Promise<void> => {
   );
 
   await resetWatcherCmd.initIndexer(Indexer, graphWatcher);
+
   await resetWatcherCmd.exec();
 };

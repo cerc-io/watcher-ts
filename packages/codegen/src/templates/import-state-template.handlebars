@@ -12,7 +12,6 @@ import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 
 import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../database';
 import { Indexer } from '../indexer';
-import { EventWatcher } from '../events';
 import { State } from '../entity/State';
 
 const log = debug('vulcanize:import-state');
@@ -32,7 +31,8 @@ export const main = async (): Promise<any> => {
   );
 
   {{/if}}
-  await importStateCmd.initIndexer(Indexer, EventWatcher{{#if (subgraphPath)}}, graphWatcher{{/if}});
+  await importStateCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
+
   await importStateCmd.exec(State{{#if (subgraphPath)}}, graphDb{{/if}});
 };
 

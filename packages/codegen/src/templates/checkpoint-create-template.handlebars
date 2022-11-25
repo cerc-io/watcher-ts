@@ -43,5 +43,6 @@ export const handler = async (argv: any): Promise<void> => {
 
   {{/if}}
   await createCheckpointCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
+
   await createCheckpointCmd.exec();
 };

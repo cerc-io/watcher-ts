@@ -7,12 +7,10 @@ import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
-import { PubSub } from 'graphql-subscriptions';
 import express, { Application } from 'express';
 import { ApolloServer } from 'apollo-server-express';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   DEFAULT_CONFIG_PATH,
   JobQueue,
@@ -20,10 +18,10 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  EventWatcherInterface,
   KIND_ACTIVE,
   createAndStartServer,
   startGQLMetricsServer,
+  EventWatcher,
   GraphWatcherInterface,
   Config
 } from '@cerc-io/util';
@@ -87,20 +85,14 @@ export class ServerCmd {
       jobQueue: JobQueue,
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
-    EventWatcher: new(
-      ethClient: EthClient,
-      indexer: IndexerInterface,
-      pubsub: PubSub,
-      jobQueue: JobQueue
-    ) => EventWatcherInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     await this._baseCmd.initIndexer(Indexer, graphWatcher);
-    await this._baseCmd.initEventWatcher(EventWatcher);
+    await this._baseCmd.initEventWatcher();
   }
 
   async exec (
-    createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcherInterface) => Promise<any>,
+    createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
     typeDefs: TypeSource
   ): Promise<{
     app: Application,

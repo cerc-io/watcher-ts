@@ -16,6 +16,7 @@ const main = async (): Promise<void> => {
   const watchContractCmd = new WatchContractCmd();
   await watchContractCmd.init(Database);
   await watchContractCmd.initIndexer(Indexer);
+
   await watchContractCmd.exec();
 };
 

@@ -9,10 +9,8 @@ import path from 'path';
 import fs from 'fs';
 import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
-import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   DEFAULT_CONFIG_PATH,
   JobQueue,
@@ -20,7 +18,6 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  EventWatcherInterface,
   fillBlocks,
   StateKind,
   GraphWatcherInterface,
@@ -91,16 +88,10 @@ export class ImportStateCmd {
       jobQueue: JobQueue,
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
-    EventWatcher: new(
-      ethClient: EthClient,
-      indexer: IndexerInterface,
-      pubsub: PubSub,
-      jobQueue: JobQueue
-    ) => EventWatcherInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     await this._baseCmd.initIndexer(Indexer, graphWatcher);
-    await this._baseCmd.initEventWatcher(EventWatcher);
+    await this._baseCmd.initEventWatcher();
   }
 
   async exec (State: new() => any, graphDb?: GraphDatabase): Promise<void> {

@@ -82,7 +82,7 @@ export class WatchContractCmd {
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     return this._baseCmd.initIndexer(Indexer, graphWatcher);
   }
 

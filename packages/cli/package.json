@@ -10,7 +10,6 @@
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/"
   },
   "dependencies": {
-    "@cerc-io/ipld-eth-client": "^0.2.16",
     "@cerc-io/util": "^0.2.16",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
@@ -24,6 +23,7 @@
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.14",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint-config-semistandard": "^15.0.1",

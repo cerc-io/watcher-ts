@@ -23,7 +23,6 @@ export const BlockProgressEvent = 'block-progress-event';
 export class EventWatcher {
   _ethClient: EthClient
   _indexer: IndexerInterface
-  _subscription?: ZenObservable.Subscription
   _pubsub: PubSub
   _jobQueue: JobQueue
 
@@ -42,11 +41,22 @@ export class EventWatcher {
     return this._pubsub.asyncIterator([BlockProgressEvent]);
   }
 
-  async stop (): Promise<void> {
-    if (this._subscription) {
-      log('Stopped watching upstream blocks');
-      this._subscription.unsubscribe();
-    }
+  async start (): Promise<void> {
+    await this.initBlockProcessingOnCompleteHandler();
+    await this.initEventProcessingOnCompleteHandler();
+    this.startBlockProcessing();
+  }
+
+  async initBlockProcessingOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
+      await this.blockProcessingCompleteHandler(job);
+    });
+  }
+
+  async initEventProcessingOnCompleteHandler (): Promise<void> {
+    await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
+      await this.eventProcessingCompleteHandler(job);
+    });
   }
 
   async startBlockProcessing (): Promise<void> {

@@ -17,10 +17,9 @@ import {
   IndexerInterface,
   ServerConfig,
   Clients,
-  EventWatcherInterface,
+  EventWatcher,
   GraphWatcherInterface
 } from '@cerc-io/util';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 
 export class BaseCmd {
   _config?: Config;
@@ -29,7 +28,7 @@ export class BaseCmd {
   _jobQueue?: JobQueue
   _database?: DatabaseInterface;
   _indexer?: IndexerInterface;
-  _eventWatcher?: EventWatcherInterface;
+  _eventWatcher?: EventWatcher;
 
   get config (): Config | undefined {
     return this._config;
@@ -55,7 +54,7 @@ export class BaseCmd {
     return this._indexer;
   }
 
-  get eventWatcher (): EventWatcherInterface | undefined {
+  get eventWatcher (): EventWatcher | undefined {
     return this._eventWatcher;
   }
 
@@ -103,7 +102,7 @@ export class BaseCmd {
       graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     graphWatcher?: GraphWatcherInterface
-  ) {
+  ): Promise<void> {
     assert(this._config);
     assert(this._database);
     assert(this._clients);
@@ -119,14 +118,7 @@ export class BaseCmd {
     }
   }
 
-  async initEventWatcher (
-    EventWatcher: new(
-      ethClient: EthClient,
-      indexer: IndexerInterface,
-      pubsub: PubSub,
-      jobQueue: JobQueue
-    ) => EventWatcherInterface
-  ): Promise<void> {
+  async initEventWatcher (): Promise<void> {
     assert(this._clients?.ethClient);
     assert(this._indexer);
     assert(this._jobQueue);

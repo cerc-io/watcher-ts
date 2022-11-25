@@ -17,11 +17,10 @@ import {
   getResultState,
   setGQLCacheHints,
   IndexerInterface,
-  EventWatcherInterface
+  EventWatcher
 } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
-import { EventWatcher } from './events';
 
 import { Author } from './entity/Author';
 import { Blog } from './entity/Blog';
@@ -29,9 +28,8 @@ import { Category } from './entity/Category';
 
 const log = debug('vulcanize:resolver');
 
-export const createResolvers = async (indexerArg: IndexerInterface, eventWatcherArg: EventWatcherInterface): Promise<any> => {
+export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
   const indexer = indexerArg as Indexer;
-  const eventWatcher = eventWatcherArg as EventWatcher;
 
   const gqlCacheConfig = indexer.serverConfig.gqlCache;
 

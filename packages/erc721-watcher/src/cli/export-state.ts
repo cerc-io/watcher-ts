@@ -16,6 +16,7 @@ const main = async (): Promise<void> => {
   const exportStateCmd = new ExportStateCmd();
   await exportStateCmd.init(Database);
   await exportStateCmd.initIndexer(Indexer);
+
   await exportStateCmd.exec();
 };
 
