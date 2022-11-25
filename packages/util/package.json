@@ -19,6 +19,7 @@
     "express": "^4.18.2",
     "express-queue": "^0.0.13",
     "fs-extra": "^10.0.0",
+    "js-yaml": "^4.1.0",
     "graphql": "^15.5.0",
     "graphql-subscriptions": "^2.0.0",
     "graphql-ws": "^5.11.2",
@@ -32,6 +33,7 @@
     "toml": "^3.0.0",
     "typeorm": "^0.2.32",
     "typeorm-naming-strategies": "^2.0.0",
+    "yargs": "^17.0.1",
     "ws": "^8.11.0"
   },
   "devDependencies": {
@@ -44,6 +46,7 @@
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
+    "@types/js-yaml": "^4.0.4",
     "decimal.js": "^10.3.1",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
