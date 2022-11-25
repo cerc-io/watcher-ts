@@ -25,7 +25,8 @@ import { BlockHeight, Database as BaseDatabase, QueryOptions, Where } from '../d
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
-import { Block, fromEntityValue, fromStateEntityValues, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { Block, fromEntityValue, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { fromStateEntityValues } from './state-utils';
 
 const log = debug('vulcanize:graph-database');
 

@@ -3,17 +3,14 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import { Between, DeepPartial, EntityTarget, InsertEvent, Repository, UpdateEvent, ValueTransformer } from 'typeorm';
+import { DeepPartial, EntityTarget, InsertEvent, Repository, UpdateEvent } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
-import { IndexerInterface, StateInterface } from '../types';
-import { jsonBigIntStringReplacer } from '../misc';
 import { GraphDecimal } from './graph-decimal';
-import { GraphDatabase } from './database';
 import { EthereumValueKind, TypeId, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
@@ -802,39 +799,6 @@ const getEthereumType = (storageTypes: StorageLayout['types'], type: string, map
   }
 
   return utils.ParamType.from(label);
-};
-
-export const fromStateEntityValues = (
-  stateEntity: any,
-  propertyName: string,
-  relations: { [key: string]: any } = {},
-  transformer?: ValueTransformer | ValueTransformer[]
-): any => {
-  // Parse DB data value from state entity data.
-  if (relations) {
-    const relation = relations[propertyName];
-
-    if (relation) {
-      if (relation.isArray) {
-        return stateEntity[propertyName].map((relatedEntity: { id: string }) => relatedEntity.id);
-      } else {
-        return stateEntity[propertyName]?.id;
-      }
-    }
-  }
-
-  if (transformer) {
-    if (Array.isArray(transformer)) {
-      // Apply transformer in reverse order similar to when reading from DB.
-      return transformer.reduceRight((acc, elTransformer) => {
-        return elTransformer.from(acc);
-      }, stateEntity[propertyName]);
-    }
-
-    return transformer.from(stateEntity[propertyName]);
-  }
-
-  return stateEntity[propertyName];
 };
 
 export const afterEntityInsertOrUpdate = async<Entity> (
