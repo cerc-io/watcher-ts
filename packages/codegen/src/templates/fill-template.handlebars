@@ -2,15 +2,14 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-{{#if (subgraphPath)}}
 import assert from 'assert';
-{{/if}}
 import 'reflect-metadata';
 import debug from 'debug';
 
 import { FillCmd } from '@cerc-io/cli';
 {{#if (subgraphPath)}}
-import { getContractEntitiesMap } from '@cerc-io/graph-node';
+import { getContractEntitiesMap } from '@cerc-io/util';
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 {{/if}}
 
 import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from './database';
@@ -21,15 +20,25 @@ const log = debug('vulcanize:fill');
 
 export const main = async (): Promise<any> => {
   const fillCmd = new FillCmd();
-  await fillCmd.init(Database, Indexer, EventWatcher{{#if (subgraphPath)}}, {}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}});
+  await fillCmd.init(Database);
 
   {{#if (subgraphPath)}}
-  const indexer = fillCmd.indexer as Indexer;
-  assert(indexer);
+  const { graphWatcher } = await getGraphDbAndWatcher(
+    fillCmd.config!.server,
+    fillCmd.clients!.ethClient,
+    fillCmd.ethProvider!,
+    fillCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
 
+  {{/if}}
+  await fillCmd.initIndexer(Indexer, EventWatcher{{#if (subgraphPath)}}, graphWatcher{{/if}});
+
+  {{#if (subgraphPath)}}
   // Get contractEntitiesMap required for fill-state
   // NOTE: Assuming each entity type is only mapped to a single contract
-  const contractEntitiesMap = getContractEntitiesMap(indexer.graphWatcher.dataSources);
+  const contractEntitiesMap = getContractEntitiesMap(graphWatcher.dataSources);
 
   {{/if}}
   await fillCmd.exec({{#if (subgraphPath)}}contractEntitiesMap{{/if}});

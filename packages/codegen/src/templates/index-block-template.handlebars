@@ -6,16 +6,31 @@ import 'reflect-metadata';
 import debug from 'debug';
 
 import { IndexBlockCmd } from '@cerc-io/cli';
+{{#if (subgraphPath)}}
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
+{{/if}}
 
-import { Database } from '../database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../database';
 import { Indexer } from '../indexer';
 
 const log = debug('vulcanize:index-block');
 
 const main = async (): Promise<void> => {
   const indexBlockCmd = new IndexBlockCmd();
-  await indexBlockCmd.init(Database, Indexer);
+  await indexBlockCmd.init(Database);
 
+  {{#if (subgraphPath)}}
+  const { graphWatcher } = await getGraphDbAndWatcher(
+    indexBlockCmd.config!.server,
+    indexBlockCmd.clients!.ethClient,
+    indexBlockCmd.ethProvider!,
+    indexBlockCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
+
+  {{/if}}
+  await indexBlockCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await indexBlockCmd.exec();
 };
 

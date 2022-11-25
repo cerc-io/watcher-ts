@@ -3,8 +3,11 @@
 //
 
 import { CreateCheckpointCmd } from '@cerc-io/cli';
+{{#if (subgraphPath)}}
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
+{{/if}}
 
-import { Database } from '../../database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../../database';
 import { Indexer } from '../../indexer';
 
 export const command = 'create';
@@ -26,7 +29,19 @@ export const builder = {
 
 export const handler = async (argv: any): Promise<void> => {
   const createCheckpointCmd = new CreateCheckpointCmd();
-  await createCheckpointCmd.init(argv, Database, Indexer);
+  await createCheckpointCmd.init(argv, Database);
 
+  {{#if (subgraphPath)}}
+  const { graphWatcher } = await getGraphDbAndWatcher(
+    createCheckpointCmd.config!.server,
+    createCheckpointCmd.clients!.ethClient,
+    createCheckpointCmd.ethProvider!,
+    createCheckpointCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
+
+  {{/if}}
+  await createCheckpointCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await createCheckpointCmd.exec();
 };

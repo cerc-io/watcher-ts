@@ -3,8 +3,9 @@
 //
 
 import { VerifyCheckpointCmd } from '@cerc-io/cli';
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
 
-import { Database } from '../../database';
+import { Database, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP } from '../../database';
 import { Indexer } from '../../indexer';
 
 export const command = 'verify';
@@ -22,7 +23,17 @@ export const builder = {
 
 export const handler = async (argv: any): Promise<void> => {
   const verifyCheckpointCmd = new VerifyCheckpointCmd();
-  await verifyCheckpointCmd.init(argv, Database, Indexer);
+  await verifyCheckpointCmd.init(argv, Database);
 
-  await verifyCheckpointCmd.exec();
+  const { graphWatcher, graphDb } = await getGraphDbAndWatcher(
+    verifyCheckpointCmd.config!.server,
+    verifyCheckpointCmd.clients!.ethClient,
+    verifyCheckpointCmd.ethProvider!,
+    verifyCheckpointCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
+
+  await verifyCheckpointCmd.initIndexer(Indexer, graphWatcher);
+  await verifyCheckpointCmd.exec(graphDb);
 };
