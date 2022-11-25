@@ -108,12 +108,7 @@ export class Indexer implements IndexerInterface {
     this._contractMap = new Map();
     {{#each contracts as | contract |}}
 
-    const {
-      abi: {{contract.contractName}}ABI,
-      {{#if contract.contractStorageLayout}}
-      storageLayout: {{contract.contractName}}StorageLayout
-      {{/if}}
-    } = {{contract.contractName}}Artifacts;
+    const { abi: {{contract.contractName}}ABI{{#if contract.contractStorageLayout}}, storageLayout: {{contract.contractName}}StorageLayout{{/if}} } = {{contract.contractName}}Artifacts;
     {{/each}}
     {{#each contracts as | contract |}}
 
