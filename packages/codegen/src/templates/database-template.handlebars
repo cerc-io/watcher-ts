@@ -6,10 +6,16 @@ import assert from 'assert';
 import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, EntityTarget } from 'typeorm';
 import path from 'path';
 
-import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
-{{#if (subgraphPath)}}
-import { ENTITY_QUERY_TYPE } from '@cerc-io/graph-node';
-{{/if}}
+import {
+  {{#if (subgraphPath)}}
+  ENTITY_QUERY_TYPE,
+  {{/if}}
+  Database as BaseDatabase,
+  DatabaseInterface,
+  QueryOptions,
+  StateKind,
+  Where
+} from '@cerc-io/util';
 
 import { Contract } from './entity/Contract';
 import { Event } from './entity/Event';

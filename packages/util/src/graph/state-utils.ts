@@ -5,11 +5,11 @@
 import assert from 'assert';
 import debug from 'debug';
 import _ from 'lodash';
+import { Between, ValueTransformer } from 'typeorm';
 
-import { Between } from 'typeorm';
-import { IndexerInterface, jsonBigIntStringReplacer, StateInterface } from '@cerc-io/util';
-
-import { Database } from './database';
+import { jsonBigIntStringReplacer } from '../misc';
+import { IndexerInterface, StateInterface } from '../types';
+import { GraphDatabase } from './database';
 import { resolveEntityFieldConflicts } from './utils';
 
 const log = debug('vulcanize:state-utils');
@@ -55,7 +55,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   return diffData;
 };
 
-export const updateEntitiesFromState = async (database: Database, indexer: IndexerInterface, state: StateInterface) => {
+export const updateEntitiesFromState = async (database: GraphDatabase, indexer: IndexerInterface, state: StateInterface) => {
   const data = indexer.getStateData(state);
 
   // Get relations for subgraph entity
@@ -205,4 +205,37 @@ export const fillState = async (
   }
 
   console.timeEnd('time:fill-state');
+};
+
+export const fromStateEntityValues = (
+  stateEntity: any,
+  propertyName: string,
+  relations: { [key: string]: any } = {},
+  transformer?: ValueTransformer | ValueTransformer[]
+): any => {
+  // Parse DB data value from state entity data.
+  if (relations) {
+    const relation = relations[propertyName];
+
+    if (relation) {
+      if (relation.isArray) {
+        return stateEntity[propertyName].map((relatedEntity: { id: string }) => relatedEntity.id);
+      } else {
+        return stateEntity[propertyName]?.id;
+      }
+    }
+  }
+
+  if (transformer) {
+    if (Array.isArray(transformer)) {
+      // Apply transformer in reverse order similar to when reading from DB.
+      return transformer.reduceRight((acc, elTransformer) => {
+        return elTransformer.from(acc);
+      }, stateEntity[propertyName]);
+    }
+
+    return transformer.from(stateEntity[propertyName]);
+  }
+
+  return stateEntity[propertyName];
 };

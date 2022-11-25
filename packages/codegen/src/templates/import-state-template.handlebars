@@ -6,8 +6,11 @@ import 'reflect-metadata';
 import debug from 'debug';
 
 import { ImportStateCmd } from '@cerc-io/cli';
+{{#if (subgraphPath)}}
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
+{{/if}}
 
-import { Database } from '../database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../database';
 import { Indexer } from '../indexer';
 import { EventWatcher } from '../events';
 import { State } from '../entity/State';
@@ -16,9 +19,21 @@ const log = debug('vulcanize:import-state');
 
 export const main = async (): Promise<any> => {
   const importStateCmd = new ImportStateCmd();
-  await importStateCmd.init(Database, Indexer, EventWatcher);
+  await importStateCmd.init(Database);
 
-  await importStateCmd.exec(State);
+  {{#if (subgraphPath)}}
+  const { graphWatcher, graphDb } = await getGraphDbAndWatcher(
+    importStateCmd.config!.server,
+    importStateCmd.clients!.ethClient,
+    importStateCmd.ethProvider!,
+    importStateCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
+
+  {{/if}}
+  await importStateCmd.initIndexer(Indexer, EventWatcher{{#if (subgraphPath)}}, graphWatcher{{/if}});
+  await importStateCmd.exec(State{{#if (subgraphPath)}}, graphDb{{/if}});
 };
 
 main().catch(err => {

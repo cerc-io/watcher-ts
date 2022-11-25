@@ -10,14 +10,15 @@ import { ConnectionOptions } from 'typeorm';
 import util from 'util';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher } from '@cerc-io/graph-node';
 import {
   DEFAULT_CONFIG_PATH,
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
   ServerConfig,
-  Clients
+  Clients,
+  GraphWatcherInterface,
+  Config
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
@@ -37,6 +38,22 @@ export class InspectCIDCmd {
     this._baseCmd = new BaseCmd();
   }
 
+  get config (): Config | undefined {
+    return this._baseCmd.config;
+  }
+
+  get clients (): Clients | undefined {
+    return this._baseCmd.clients;
+  }
+
+  get ethProvider (): JsonRpcProvider | undefined {
+    return this._baseCmd.ethProvider;
+  }
+
+  get database (): DatabaseInterface | undefined {
+    return this._baseCmd.database;
+  }
+
   async initConfig<ConfigType> (): Promise<ConfigType> {
     this._argv = this._getArgv();
     assert(this._argv);
@@ -49,19 +66,25 @@ export class InspectCIDCmd {
       config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
+    clients: { [key: string]: any } = {}
+  ): Promise<void> {
+    await this.initConfig();
+
+    await this._baseCmd.init(Database, clients);
+  }
+
+  async initIndexer (
     Indexer: new (
       serverConfig: ServerConfig,
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
       jobQueue: JobQueue,
-      graphWatcher?: GraphWatcher
+      graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
-    clients: { [key: string]: any } = {}
-  ): Promise<void> {
-    await this.initConfig();
-
-    await this._baseCmd.init(Database, Indexer, clients);
+    graphWatcher?: GraphWatcherInterface
+  ) {
+    return this._baseCmd.initIndexer(Indexer, graphWatcher);
   }
 
   async exec (): Promise<void> {

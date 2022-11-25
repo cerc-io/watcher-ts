@@ -15,8 +15,9 @@ const log = debug('vulcanize:fill');
 
 export const main = async (): Promise<any> => {
   const fillCmd = new FillCmd();
-  await fillCmd.init(Database, Indexer, EventWatcher);
+  await fillCmd.init(Database);
 
+  await fillCmd.initIndexer(Indexer, EventWatcher);
   await fillCmd.exec();
 };
 

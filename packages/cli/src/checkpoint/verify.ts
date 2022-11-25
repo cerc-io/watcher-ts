@@ -8,14 +8,16 @@ import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, Database as GraphDatabase } from '@cerc-io/graph-node';
 import {
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
   ServerConfig,
   Clients,
-  verifyCheckpointData
+  verifyCheckpointData,
+  GraphDatabase,
+  GraphWatcherInterface,
+  Config
 } from '@cerc-io/util';
 
 import { BaseCmd } from '../base';
@@ -35,6 +37,22 @@ export class VerifyCheckpointCmd {
     this._baseCmd = new BaseCmd();
   }
 
+  get config (): Config | undefined {
+    return this._baseCmd.config;
+  }
+
+  get clients (): Clients | undefined {
+    return this._baseCmd.clients;
+  }
+
+  get ethProvider (): JsonRpcProvider | undefined {
+    return this._baseCmd.ethProvider;
+  }
+
+  get database (): DatabaseInterface | undefined {
+    return this._baseCmd.database;
+  }
+
   async initConfig<ConfigType> (configFile: string): Promise<ConfigType> {
     return this._baseCmd.initConfig(configFile);
   }
@@ -45,23 +63,29 @@ export class VerifyCheckpointCmd {
       config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
+    clients: { [key: string]: any } = {}
+  ): Promise<void> {
+    this._argv = argv;
+    await this.initConfig(argv.configFile);
+
+    await this._baseCmd.init(Database, clients);
+  }
+
+  async initIndexer (
     Indexer: new (
       serverConfig: ServerConfig,
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
       jobQueue: JobQueue,
-      graphWatcher?: GraphWatcher
+      graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
-    clients: { [key: string]: any } = {}
-  ): Promise<void> {
-    this._argv = argv;
-    await this.initConfig(argv.configFile);
-
-    await this._baseCmd.init(Database, Indexer, clients);
+    graphWatcher?: GraphWatcherInterface
+  ) {
+    return this._baseCmd.initIndexer(Indexer, graphWatcher);
   }
 
-  async exec (): Promise<void> {
+  async exec (graphDb: GraphDatabase): Promise<void> {
     assert(this._argv);
 
     const database = this._baseCmd.database;
@@ -69,9 +93,6 @@ export class VerifyCheckpointCmd {
 
     assert(database);
     assert(indexer);
-
-    const graphDb: GraphDatabase | undefined = this._baseCmd.graphDb || database.graphDatabase;
-    assert(graphDb);
 
     const state = await indexer.getStateByCID(this._argv.cid);
     assert(state, 'State for the provided CID doesn\'t exist.');

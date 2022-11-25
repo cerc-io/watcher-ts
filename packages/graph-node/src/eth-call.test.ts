@@ -6,17 +6,16 @@ import assert from 'assert';
 import path from 'path';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { GraphDatabase, EventData } from '@cerc-io/util';
 
 import { instantiate } from './loader';
 import exampleAbi from '../test/subgraph/example1/build/Example1/abis/Example1.json';
 import { getTestDatabase, getTestIndexer, getTestProvider, getDummyEventData } from '../test/utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
-import { EventData } from './utils';
 
 xdescribe('eth-call wasm tests', () => {
   let exports: any;
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
 

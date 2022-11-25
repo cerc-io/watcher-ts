@@ -18,10 +18,10 @@ const log = debug('vulcanize:server');
 
 export const main = async (): Promise<any> => {
   const serverCmd = new ServerCmd();
-  await serverCmd.init(Database, Indexer, EventWatcher);
+  await serverCmd.init(Database);
+  await serverCmd.initIndexer(Indexer, EventWatcher);
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
-
   return serverCmd.exec(createResolvers, typeDefs);
 };
 

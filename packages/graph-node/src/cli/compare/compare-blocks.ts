@@ -8,7 +8,15 @@ import debug from 'debug';
 import path from 'path';
 import assert from 'assert';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { getConfig as getWatcherConfig, wait, Database as BaseDatabase, Config as WatcherConfig } from '@cerc-io/util';
+
+import {
+  getConfig as getWatcherConfig,
+  wait,
+  Database as BaseDatabase,
+  Config as WatcherConfig,
+  GraphDatabase,
+  getSubgraphConfig
+} from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
 import {
@@ -22,8 +30,6 @@ import {
   getConfig,
   checkGQLEntitiesInState
 } from './utils';
-import { Database } from '../../database';
-import { getSubgraphConfig } from '../../utils';
 
 const DEFAULT_ENTITIES_LIMIT = 100;
 
@@ -116,7 +122,7 @@ export const main = async (): Promise<void> => {
   let blockDelay = wait(0);
   let subgraphContracts: string[] = [];
   const contractLatestStateCIDMap: Map<string, { diff: string, checkpoint: string }> = new Map();
-  let db: Database | undefined, subgraphGQLClient: GraphQLClient | undefined;
+  let db: GraphDatabase | undefined, subgraphGQLClient: GraphQLClient | undefined;
 
   if (config.watcher) {
     const watcherConfigPath = path.resolve(path.dirname(configFile), config.watcher.configPath);
@@ -126,7 +132,7 @@ export const main = async (): Promise<void> => {
     const baseDatabase = new BaseDatabase({ ...watcherConfig.database, entities: [entitiesDir] });
     await baseDatabase.init();
 
-    db = new Database(watcherConfig.server, baseDatabase);
+    db = new GraphDatabase(watcherConfig.server, baseDatabase);
     await db.init();
 
     if (config.watcher.verifyState) {

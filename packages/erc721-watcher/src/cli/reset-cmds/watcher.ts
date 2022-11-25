@@ -19,7 +19,7 @@ export const builder = {
 
 export const handler = async (argv: any): Promise<void> => {
   const resetWatcherCmd = new ResetWatcherCmd();
-  await resetWatcherCmd.init(argv, Database, Indexer);
-
+  await resetWatcherCmd.init(argv, Database);
+  await resetWatcherCmd.initIndexer(Indexer);
   await resetWatcherCmd.exec();
 };

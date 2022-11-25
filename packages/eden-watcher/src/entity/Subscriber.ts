@@ -4,7 +4,7 @@
 
 import { EventSubscriber, EntitySubscriberInterface, InsertEvent, UpdateEvent } from 'typeorm';
 
-import { afterEntityInsertOrUpdate } from '@cerc-io/graph-node';
+import { afterEntityInsertOrUpdate } from '@cerc-io/util';
 
 import { FrothyEntity } from './FrothyEntity';
 import { ENTITY_TO_LATEST_ENTITY_MAP, SUBGRAPH_ENTITIES } from '../database';

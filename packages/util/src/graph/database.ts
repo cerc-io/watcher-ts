@@ -21,20 +21,12 @@ import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
-import {
-  BlockHeight,
-  BlockProgressInterface,
-  cachePrunedEntitiesCount,
-  Database as BaseDatabase,
-  eventProcessingLoadEntityCacheHitCount,
-  eventProcessingLoadEntityCount,
-  eventProcessingLoadEntityDBQueryDuration,
-  QueryOptions,
-  ServerConfig,
-  Where
-} from '@cerc-io/util';
-
-import { Block, fromEntityValue, fromStateEntityValues, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { BlockHeight, Database as BaseDatabase, QueryOptions, Where } from '../database';
+import { BlockProgressInterface } from '../types';
+import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
+import { ServerConfig } from '../config';
+import { Block, fromEntityValue, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { fromStateEntityValues } from './state-utils';
 
 const log = debug('vulcanize:graph-database');
 
@@ -60,7 +52,7 @@ interface CachedEntities {
   latestPrunedEntities: Map<string, Map<string, { [key: string]: any }>>;
 }
 
-export class Database {
+export class GraphDatabase {
   _serverConfig: ServerConfig
   _conn!: Connection
   _baseDatabase: BaseDatabase

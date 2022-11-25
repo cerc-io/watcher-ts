@@ -12,11 +12,25 @@ import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { getFullBlock, BlockHeight, ServerConfig, getFullTransaction, QueryOptions, IndexerInterface, BlockProgressInterface } from '@cerc-io/util';
+import {
+  getFullBlock,
+  BlockHeight,
+  ServerConfig,
+  getFullTransaction,
+  QueryOptions,
+  IndexerInterface,
+  BlockProgressInterface,
+  Database as BaseDatabase,
+  GraphDatabase,
+  resolveEntityFieldConflicts,
+  createBlock,
+  createEvent,
+  getSubgraphConfig,
+  Transaction,
+  DEFAULT_LIMIT
+} from '@cerc-io/util';
 
-import { createBlock, createEvent, getSubgraphConfig, resolveEntityFieldConflicts, Transaction } from './utils';
 import { Context, GraphData, instantiate } from './loader';
-import { Database, DEFAULT_LIMIT } from './database';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -27,7 +41,7 @@ interface DataSource {
 }
 
 export class GraphWatcher {
-  _database: Database;
+  _database: GraphDatabase;
   _indexer?: IndexerInterface;
   _ethClient: EthClient;
   _ethProvider: providers.BaseProvider;
@@ -39,7 +53,7 @@ export class GraphWatcher {
 
   _context: Context = {};
 
-  constructor (database: Database, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
+  constructor (database: GraphDatabase, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
@@ -462,3 +476,22 @@ export class GraphWatcher {
     return transaction;
   }
 }
+
+export const getGraphDbAndWatcher = async (
+  serverConfig: ServerConfig,
+  ethClient: EthClient,
+  ethProvider: providers.BaseProvider,
+  baseDatabase: BaseDatabase,
+  entityQueryTypeMap?: Map<any, any>,
+  entityToLatestEntityMap?: Map<any, any>
+): Promise<{ graphDb: GraphDatabase, graphWatcher: GraphWatcher }> => {
+  const graphDb = new GraphDatabase(serverConfig, baseDatabase, entityQueryTypeMap, entityToLatestEntityMap);
+  await graphDb.init();
+
+  const graphWatcher = new GraphWatcher(graphDb, ethClient, ethProvider, serverConfig);
+
+  return {
+    graphDb,
+    graphWatcher
+  };
+};

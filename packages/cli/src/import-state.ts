@@ -12,7 +12,6 @@ import { ConnectionOptions } from 'typeorm';
 import { PubSub } from 'graphql-subscriptions';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { GraphWatcher, updateEntitiesFromState } from '@cerc-io/graph-node';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   DEFAULT_CONFIG_PATH,
@@ -23,7 +22,11 @@ import {
   Clients,
   EventWatcherInterface,
   fillBlocks,
-  StateKind
+  StateKind,
+  GraphWatcherInterface,
+  GraphDatabase,
+  updateEntitiesFromState,
+  Config
 } from '@cerc-io/util';
 import * as codec from '@ipld/dag-cbor';
 
@@ -44,6 +47,22 @@ export class ImportStateCmd {
     this._baseCmd = new BaseCmd();
   }
 
+  get config (): Config | undefined {
+    return this._baseCmd.config;
+  }
+
+  get clients (): Clients | undefined {
+    return this._baseCmd.clients;
+  }
+
+  get ethProvider (): JsonRpcProvider | undefined {
+    return this._baseCmd.ethProvider;
+  }
+
+  get database (): DatabaseInterface | undefined {
+    return this._baseCmd.database;
+  }
+
   async initConfig<ConfigType> (): Promise<ConfigType> {
     this._argv = this._getArgv();
     assert(this._argv);
@@ -56,13 +75,21 @@ export class ImportStateCmd {
       config: ConnectionOptions,
       serverConfig?: ServerConfig
     ) => DatabaseInterface,
+    clients: { [key: string]: any } = {}
+  ): Promise<void> {
+    await this.initConfig();
+
+    await this._baseCmd.init(Database, clients);
+  }
+
+  async initIndexer (
     Indexer: new (
       serverConfig: ServerConfig,
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
       jobQueue: JobQueue,
-      graphWatcher?: GraphWatcher
+      graphWatcher?: GraphWatcherInterface
     ) => IndexerInterface,
     EventWatcher: new(
       ethClient: EthClient,
@@ -70,15 +97,13 @@ export class ImportStateCmd {
       pubsub: PubSub,
       jobQueue: JobQueue
     ) => EventWatcherInterface,
-    clients: { [key: string]: any } = {}
-  ): Promise<void> {
-    await this.initConfig();
-
-    await this._baseCmd.init(Database, Indexer, clients);
+    graphWatcher?: GraphWatcherInterface
+  ) {
+    await this._baseCmd.initIndexer(Indexer, graphWatcher);
     await this._baseCmd.initEventWatcher(EventWatcher);
   }
 
-  async exec (State: new() => any): Promise<void> {
+  async exec (State: new() => any, graphDb?: GraphDatabase): Promise<void> {
     assert(this._argv);
 
     const config = this._baseCmd.config;
@@ -134,12 +159,8 @@ export class ImportStateCmd {
       //  relationsMap defined for the watcher,
       //  graphDb instance is avaiable
       // TODO: Fill latest entity tables
-      if (indexer.getRelationsMap) {
-        if (this._baseCmd.graphDb) {
-          await updateEntitiesFromState(this._baseCmd.graphDb, indexer, state);
-        } else if (database.graphDatabase) {
-          await updateEntitiesFromState(database.graphDatabase, indexer, state);
-        }
+      if (indexer.getRelationsMap && graphDb) {
+        await updateEntitiesFromState(graphDb, indexer, state);
       }
     }
 

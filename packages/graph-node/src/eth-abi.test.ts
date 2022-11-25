@@ -6,15 +6,15 @@ import path from 'path';
 import { expect } from 'chai';
 
 import { BaseProvider } from '@ethersproject/providers';
+import { GraphDatabase } from '@cerc-io/util';
 
 import { instantiate } from './loader';
 import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
-import { Database } from './database';
 import { Indexer } from '../test/utils/indexer';
 
 describe('ethereum ABI encode decode', () => {
   let exports: any;
-  let db: Database;
+  let db: GraphDatabase;
   let indexer: Indexer;
   let provider: BaseProvider;
   let encoded: string;

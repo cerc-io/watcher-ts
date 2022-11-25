@@ -14,7 +14,8 @@ const log = debug('vulcanize:job-runner');
 
 export const main = async (): Promise<any> => {
   const jobRunnerCmd = new JobRunnerCmd();
-  await jobRunnerCmd.init(Database, Indexer);
+  await jobRunnerCmd.init(Database);
+  await jobRunnerCmd.initIndexer(Indexer);
 
   await jobRunnerCmd.exec(async (jobRunner: JobRunner): Promise<void> => {
     await jobRunner.subscribeBlockProcessingQueue();

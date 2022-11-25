@@ -14,8 +14,8 @@ const log = debug('vulcanize:watch-contract');
 
 const main = async (): Promise<void> => {
   const watchContractCmd = new WatchContractCmd();
-  await watchContractCmd.init(Database, Indexer);
-
+  await watchContractCmd.init(Database);
+  await watchContractCmd.initIndexer(Indexer);
   await watchContractCmd.exec();
 };
 

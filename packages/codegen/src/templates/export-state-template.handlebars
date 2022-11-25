@@ -6,16 +6,31 @@ import 'reflect-metadata';
 import debug from 'debug';
 
 import { ExportStateCmd } from '@cerc-io/cli';
+{{#if (subgraphPath)}}
+import { getGraphDbAndWatcher } from '@cerc-io/graph-node';
+{{/if}}
 
-import { Database } from '../database';
+import { Database{{#if (subgraphPath)}}, ENTITY_QUERY_TYPE_MAP, ENTITY_TO_LATEST_ENTITY_MAP{{/if}} } from '../database';
 import { Indexer } from '../indexer';
 
 const log = debug('vulcanize:export-state');
 
 const main = async (): Promise<void> => {
   const exportStateCmd = new ExportStateCmd();
-  await exportStateCmd.init(Database, Indexer);
+  await exportStateCmd.init(Database);
 
+  {{#if (subgraphPath)}}
+  const { graphWatcher } = await getGraphDbAndWatcher(
+    exportStateCmd.config!.server,
+    exportStateCmd.clients!.ethClient,
+    exportStateCmd.ethProvider!,
+    exportStateCmd.database!.baseDatabase,
+    ENTITY_QUERY_TYPE_MAP,
+    ENTITY_TO_LATEST_ENTITY_MAP
+  );
+
+  {{/if}}
+  await exportStateCmd.initIndexer(Indexer{{#if (subgraphPath)}}, graphWatcher{{/if}});
   await exportStateCmd.exec();
 };
 
