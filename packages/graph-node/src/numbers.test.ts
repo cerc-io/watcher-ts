@@ -6,13 +6,9 @@ import path from 'path';
 import { expect } from 'chai';
 import BN from 'bn.js';
 
-import { GraphDecimal, GraphDatabase } from '@cerc-io/util';
-import { BaseProvider } from '@ethersproject/providers';
-
-import { instantiate } from './loader';
-import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
-import { Indexer } from '../test/utils/indexer';
 import {
+  GraphDecimal,
+  GraphDatabase,
   UINT128_MAX,
   UINT256_MAX,
   INT256_MIN,
@@ -21,7 +17,12 @@ import {
   DECIMAL128_MAX,
   DECIMAL128_PMIN,
   DECIMAL128_NMAX
-} from './utils';
+} from '@cerc-io/util';
+import { BaseProvider } from '@ethersproject/providers';
+
+import { instantiate } from './loader';
+import { getDummyGraphData, getTestDatabase, getTestIndexer, getTestProvider } from '../test/utils';
+import { Indexer } from '../test/utils/indexer';
 
 const EXAMPLE_WASM_FILE_PATH = '../test/subgraph/example1/build/Example1/Example1.wasm';
 
