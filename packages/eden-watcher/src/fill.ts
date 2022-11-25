@@ -19,10 +19,10 @@ export const main = async (): Promise<any> => {
   await fillCmd.init(Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    fillCmd.config!.server,
-    fillCmd.clients!.ethClient,
-    fillCmd.ethProvider!,
-    fillCmd.database!.baseDatabase,
+    fillCmd.config.server,
+    fillCmd.clients.ethClient,
+    fillCmd.ethProvider,
+    fillCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

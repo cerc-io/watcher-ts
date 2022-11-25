@@ -19,10 +19,10 @@ export const main = async (): Promise<any> => {
   await importStateCmd.init(Database);
 
   const { graphWatcher, graphDb } = await getGraphDbAndWatcher(
-    importStateCmd.config!.server,
-    importStateCmd.clients!.ethClient,
-    importStateCmd.ethProvider!,
-    importStateCmd.database!.baseDatabase,
+    importStateCmd.config.server,
+    importStateCmd.clients.ethClient,
+    importStateCmd.ethProvider,
+    importStateCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

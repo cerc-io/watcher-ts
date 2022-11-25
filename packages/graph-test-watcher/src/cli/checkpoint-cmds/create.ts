@@ -30,10 +30,10 @@ export const handler = async (argv: any): Promise<void> => {
   await createCheckpointCmd.init(argv, Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    createCheckpointCmd.config!.server,
-    createCheckpointCmd.clients!.ethClient,
-    createCheckpointCmd.ethProvider!,
-    createCheckpointCmd.database!.baseDatabase,
+    createCheckpointCmd.config.server,
+    createCheckpointCmd.clients.ethClient,
+    createCheckpointCmd.ethProvider,
+    createCheckpointCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

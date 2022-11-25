@@ -18,10 +18,10 @@ const main = async (): Promise<void> => {
   await inspectCIDCmd.init(Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    inspectCIDCmd.config!.server,
-    inspectCIDCmd.clients!.ethClient,
-    inspectCIDCmd.ethProvider!,
-    inspectCIDCmd.database!.baseDatabase,
+    inspectCIDCmd.config.server,
+    inspectCIDCmd.clients.ethClient,
+    inspectCIDCmd.ethProvider,
+    inspectCIDCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

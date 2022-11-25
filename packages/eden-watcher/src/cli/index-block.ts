@@ -18,10 +18,10 @@ const main = async (): Promise<void> => {
   await indexBlockCmd.init(Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    indexBlockCmd.config!.server,
-    indexBlockCmd.clients!.ethClient,
-    indexBlockCmd.ethProvider!,
-    indexBlockCmd.database!.baseDatabase,
+    indexBlockCmd.config.server,
+    indexBlockCmd.clients.ethClient,
+    indexBlockCmd.ethProvider,
+    indexBlockCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );

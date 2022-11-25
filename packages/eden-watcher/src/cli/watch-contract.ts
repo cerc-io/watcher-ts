@@ -18,10 +18,10 @@ const main = async (): Promise<void> => {
   await watchContractCmd.init(Database);
 
   const { graphWatcher } = await getGraphDbAndWatcher(
-    watchContractCmd.config!.server,
-    watchContractCmd.clients!.ethClient,
-    watchContractCmd.ethProvider!,
-    watchContractCmd.database!.baseDatabase,
+    watchContractCmd.config.server,
+    watchContractCmd.clients.ethClient,
+    watchContractCmd.ethProvider,
+    watchContractCmd.database.baseDatabase,
     ENTITY_QUERY_TYPE_MAP,
     ENTITY_TO_LATEST_ENTITY_MAP
   );
