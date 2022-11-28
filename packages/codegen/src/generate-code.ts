@@ -193,12 +193,12 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/server.ts'))
     : process.stdout;
-  exportServer(outStream, config.subgraphPath);
+  exportServer(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'environments/local.toml'))
     : process.stdout;
-  exportConfig(config.kind, config.port, path.basename(outputDir), outStream, config.subgraphPath);
+  exportConfig(config.kind, config.port, path.basename(outputDir), outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/database.ts'))
@@ -228,7 +228,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
     : process.stdout;
-  exportJobRunner(outStream, config.subgraphPath);
+  exportJobRunner(outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/watch-contract.ts'))
@@ -268,7 +268,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   const fillOutStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/fill.ts'))
     : process.stdout;
-  exportFill(fillOutStream, config.subgraphPath);
+  exportFill(fillOutStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/types.ts'))

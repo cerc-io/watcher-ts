@@ -71,9 +71,7 @@ export class Client {
     this._exportGql(schemaContent, gqlDir);
 
     const template = Handlebars.compile(this._templateString);
-    const client = template({
-      queries: this._queries
-    });
+    const client = template({ queries: this._queries });
     outStream.write(client);
   }
 
