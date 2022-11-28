@@ -7,8 +7,8 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "server": "DEBUG=vulcanize:* node --enable-source-maps dist/server.js",
-    "server:dev": "DEBUG=vulcanize:* nodemon --watch src src/server.ts",
+    "server": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true node --enable-source-maps dist/server.js",
+    "server:dev": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true ts-node src/server.ts",
     "job-runner": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true node --enable-source-maps dist/job-runner.js",
     "job-runner:dev": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true ts-node src/job-runner.ts",
     "watch:contract": "node --enable-source-maps dist/cli/watch-contract.js",

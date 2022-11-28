@@ -39,9 +39,10 @@ export class JobRunner {
   _jobQueueConfig: JobQueueConfig
   _blockProcessStartTime?: Date
   _endBlockProcessTimer?: () => void
+  _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map()
+
   _shutDown = false
   _signalCount = 0
-  _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map()
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -220,6 +221,7 @@ export class JobRunner {
 
     if (this._signalCount >= 3 || process.env.YARN_CHILD_PROCESS === 'true') {
       // Forceful exit on receiving signal for the 3rd time or if job-runner is a child process of yarn.
+      log('Forceful shutdown');
       this.jobQueue.stop();
       process.exit(1);
     }
