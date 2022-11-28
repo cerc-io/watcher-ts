@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cli",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "scripts": {
@@ -10,7 +10,7 @@
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/"
   },
   "dependencies": {
-    "@cerc-io/util": "^0.2.16",
+    "@cerc-io/util": "^0.2.17",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
     "@ipld/dag-cbor": "^6.0.12",
