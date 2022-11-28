@@ -163,7 +163,7 @@ Steps:
     * Reset job-queue:
 
       ```bash
-      yarn reset job-queue --block-number <previous-block-number>
+      yarn reset job-queue
       ```
 
   * To export the watcher state:

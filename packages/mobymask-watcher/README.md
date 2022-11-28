@@ -141,7 +141,7 @@ Follow the steps below or follow the [Demo](./demo.md)
     * Reset job-queue:
 
       ```bash
-      yarn reset job-queue --block-number <previous-block-number>
+      yarn reset job-queue
       ```
 
     * Reset state:
