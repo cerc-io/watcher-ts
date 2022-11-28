@@ -17,4 +17,7 @@ export class TransferCount {
 
   @Column('integer')
   count!: number;
+
+  @Column('boolean', { default: false })
+  isPruned!: boolean
 }

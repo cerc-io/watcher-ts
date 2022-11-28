@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual, EntityTarget } from 'typeorm';
+import { Connection, ConnectionOptions, DeepPartial, FindConditions, QueryRunner, FindManyOptions, FindOneOptions, LessThanOrEqual, EntityTarget, UpdateResult } from 'typeorm';
 import path from 'path';
 
 import { Database as BaseDatabase, DatabaseInterface, QueryOptions, StateKind, Where } from '@cerc-io/util';
@@ -502,6 +502,15 @@ export class Database implements DatabaseInterface {
 
   async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
     return this._baseDatabase.getAncestorAtDepth(blockHash, depth);
+  }
+
+  async updateEntity<Entity> (queryRunner: QueryRunner, entityType: new () => Entity, criteria: any, update: any): Promise<UpdateResult> {
+    const repo = queryRunner.manager.getRepository(entityType);
+    return repo.createQueryBuilder()
+      .update()
+      .set(update)
+      .where(criteria)
+      .execute();
   }
 
   _getPropertyColumnMapForEntity (entityName: string): Map<string, string> {
