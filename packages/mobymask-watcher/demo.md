@@ -1,49 +1,18 @@
 # Demo
 
-* Clone the [stack-orchestrator](https://github.com/vulcanize/stack-orchestrator) repo.
-
-* Create a `config.sh` file.
-
-  ```bash
-  cd stack-orchestrator/helper-scripts
-  ./create-config.sh
-  ```
-
-* Setup the required repositories.
-
-  ```bash
-  ./setup-repositories.sh -p ssh
-  ```
-
-* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.3-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
-
-  ```bash
-  # In go-ethereum repo.
-  git checkout v1.10.19-statediff-4.0.4-alpha
-  ```
-
-* To run the stack-orchestrator, the docker-compose version used is:
-
-  ```bash
-  docker-compose version
-  
-  # docker-compose version 1.29.2, build 5becea4c
-  ```
-
-* Run the stack-orchestrator
-
-  ```bash
-  cd stack-orchestrator/helper-scripts 
-  ```
-
-  ```bash
-  ./wrapper.sh -f true \
-    -m true \
-    -s v4 \
-    -l latest \
-    -v remove \
-    -p ../config.sh
-  ```
+* The following core services need to be running for the demo:
+  * [ipld-eth-db](https://github.com/cerc-io/ipld-eth-db)
+    * Version: [v4.2.3-alpha](https://github.com/cerc-io/ipld-eth-db/releases/tag/v4.2.3-alpha)
+  * [geth](https://github.com/cerc-io/go-ethereum)
+    * State diffing service should use `ipld-eth-db` for database.
+    * Version: [v1.10.26-statediff-4.2.2-alpha](https://github.com/cerc-io/go-ethereum/releases/tag/v1.10.26-statediff-4.2.2-alpha)
+    * Endpoint: http://127.0.0.1:8545
+  * [ipld-eth-server](https://github.com/cerc-io/ipld-eth-server)
+    * Should use `ipld-eth-db` for database.
+    * Version: [v4.2.3-alpha](https://github.com/cerc-io/ipld-eth-server/releases/tag/v4.2.3-alpha)
+    * Endpoints:
+      * GQL: http://127.0.0.1:8082/graphql
+      * RPC: http://127.0.0.1:8081
 
 * Create a postgres12 database for the watcher:
 
@@ -248,25 +217,3 @@
   ```
 
   The data is fetched from watcher database as it is already indexed.
-
-## Reset / Clean up
-
-* Reset and clear deployments in MobyMask repo:
-
-  ```bash
-  cd packages/hardhat
-
-  # Remove previous deployments in local network if any
-  cd deployments
-  git clean -xdf
-  ```
-
-* To close down services in stack-orchestrator, hit `ctrl + c` in the terminal where it was run.
-
-* To stop and remove stack-orchestrator services running in background run:
-
-  ```bash
-  cd stack-orchestrator
-
-  docker-compose -f ./docker/latest/docker-compose-db-sharding.yml down -v --remove-orphans
-  ```

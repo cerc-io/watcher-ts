@@ -1,4 +1,4 @@
-# Subgraph watcher demo
+# Demo
 
 * The following core services need to be running for the demo:
   * [ipld-eth-db](https://github.com/cerc-io/ipld-eth-db)
@@ -14,97 +14,39 @@
       * GQL: http://127.0.0.1:8082/graphql
       * RPC: http://127.0.0.1:8081
 
-* In watcher-ts [packages/graph-node](../graph-node/), deploy an `Example` contract:
-
-  ```bash
-  yarn example:deploy
-  ```
-
-* Set the returned address to the variable `$EXAMPLE_ADDRESS`:
-
-  ```bash
-  export EXAMPLE_ADDRESS=<EXAMPLE_ADDRESS>
-  ```
-
-* In [packages/graph-node/test/subgraph/example1/subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml), set the source address for `Example1` datasource to the `EXAMPLE_ADDRESS`. Then in [packages/graph-node](../graph-node/) run:
-
-  ```bash
-  yarn build:example
-  ```
-
-* In [packages/codegen](./), create a `config.yaml` file:
-
-  ```yaml
-  # Example config.yaml
-  # Contracts to watch (required).
-  # Can pass empty array ([]) when using subgraphPath.
-  contracts:
-      # Contract name.
-    - name: Example
-      # Contract file path or an url.
-      path: ../graph-node/test/contracts/Example.sol
-      # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
-      kind: Example1
-
-  # Output folder path (logs output using `stdout` if not provided).
-  outputFolder: ../test-watcher
-
-  # Code generation mode [eth_call | storage | all | none] (default: none).
-  mode: none
-
-  # Kind of watcher [lazy | active] (default: active).
-  kind: active
-
-  # Watcher server port (default: 3008).
-  port: 3008
-
-  # Flatten the input contract file(s) [true | false] (default: true).
-  flatten: true
-
-  # Path to the subgraph build (optional).
-  # Can set empty contracts array when using subgraphPath.
-  subgraphPath: ../graph-node/test/subgraph/example1/build
-  ```
-
-* Run codegen to generate watcher:
-
-  ```bash
-  yarn codegen --config-file ./config.yaml
-  ```
-
-  The watcher should be generated in `packages/test-watcher`
-
 * Create a postgres12 database for the watcher:
 
   ```bash
   sudo su - postgres
 
   # If database already exists
-  # dropdb test-watcher
+  # dropdb graph-test-watcher
 
-  createdb test-watcher
+  createdb graph-test-watcher
   ```
 
 * Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
   ```bash
   # If database already exists
-  # dropdb test-watcher-job-queue
+  # dropdb graph-test-watcher-job-queue
 
-  createdb test-watcher-job-queue
+  createdb graph-test-watcher-job-queue
   ```
 
   ```
-  postgres@tesla:~$ psql -U postgres -h localhost test-watcher-job-queue
+  postgres@tesla:~$ psql -U postgres -h localhost graph-test-watcher-job-queue
   Password for user postgres:
   psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
   SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
   Type "help" for help.
 
-  test-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  graph-test-watcher-job-queue=# CREATE EXTENSION pgcrypto;
   CREATE EXTENSION
-  test-watcher-job-queue=# exit
+  graph-test-watcher-job-queue=# exit
   ```
+
+* In the [config file](./environments/local.toml) update the `database` connection settings.
 
 * In `watcher-ts` repo, follow the instructions in [Setup](../../README.md#setup) for installing and building packages.
 
@@ -113,7 +55,30 @@
   yarn && yarn build
   ```
 
-* In `packages/test-watcher`, run the job-runner:
+* In [packages/graph-node](../graph-node/), deploy an `Example` contract:
+
+  ```bash
+  yarn example:deploy
+  ```
+
+* Set the returned address to the variable `$EXAMPLE_ADDRESS`:
+
+  ```bash
+  EXAMPLE_ADDRESS=<EXAMPLE_ADDRESS>
+  ```
+
+* In [packages/graph-node/test/subgraph/example1/subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml):
+    
+    * Set the source address for `Example1` datasource to the `EXAMPLE_ADDRESS`.
+    * Set the `startBlock` less than or equal to the latest mined block.
+
+* Build the example subgraph:
+
+  ```bash
+  yarn build:example
+  ```
+
+* Run the job-runner:
 
   ```bash
   yarn job-runner
@@ -125,9 +90,9 @@
   yarn server
   ```
 
-## Operations
+* The output from the block handler in the mapping code should be visible in the `job-runner` for each block.
 
-* Run the following GQL subscription at the [graphql endpoint](http://localhost:3008/graphql):
+* Run the following GQL subscription at the graphql endpoint http://127.0.0.1:3008/graphql
 
   ```graphql
   subscription {
@@ -202,7 +167,7 @@
 
 * `diff` states get created corresponding to the `diff_staged` states when their respective blocks reach the pruned region.
 
-* In `packages/test-watcher`:
+* In [packages/graph-test-watcher](./):
 
   * After the `diff` state has been created, create a `checkpoint`:
 
