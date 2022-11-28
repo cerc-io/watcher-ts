@@ -26,6 +26,9 @@ export class EventWatcher {
   _pubsub: PubSub
   _jobQueue: JobQueue
 
+  _shutDown = false
+  _signalCount = 0
+
   constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
     this._indexer = indexer;
@@ -44,7 +47,10 @@ export class EventWatcher {
   async start (): Promise<void> {
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
+
     this.startBlockProcessing();
+
+    this.handleShutdown();
   }
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
@@ -85,9 +91,30 @@ export class EventWatcher {
     for await (const data of blockProgressEventIterable) {
       const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
 
+      if (this._shutDown) {
+        log(`Graceful shutdown after processing block ${blockNumber}`);
+        process.exit(0);
+      }
+
       if (isComplete) {
         await processBlockByNumber(this._jobQueue, blockNumber + 1);
       }
+    }
+  }
+
+  handleShutdown (): void {
+    process.on('SIGINT', this._processShutdown.bind(this));
+    process.on('SIGTERM', this._processShutdown.bind(this));
+  }
+
+  async _processShutdown (): Promise<void> {
+    this._shutDown = true;
+    this._signalCount++;
+
+    if (this._signalCount >= 3 || process.env.YARN_CHILD_PROCESS === 'true') {
+      // Forceful exit on receiving signal for the 3rd time or if job-runner is a child process of yarn.
+      log('Forceful shutdown');
+      process.exit(1);
     }
   }
 

@@ -17,8 +17,6 @@ const TEMPLATE_FILE = './templates/package-template.handlebars';
 export function exportPackage (folderName: string, outStream: Writable): void {
   const templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   const template = Handlebars.compile(templateString);
-  const packageString = template({
-    folderName
-  });
+  const packageString = template({ folderName });
   outStream.write(packageString);
 }

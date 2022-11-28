@@ -16,14 +16,13 @@ const TEMPLATE_FILE = './templates/config-template.handlebars';
  * @param folderName Watcher folder name to be passed to the template.
  * @param outStream A writable output stream to write the config file to.
  */
-export function exportConfig (watcherKind: string, port: number, folderName: string, outStream: Writable, subgraphPath?: string): void {
+export function exportConfig (watcherKind: string, port: number, folderName: string, outStream: Writable): void {
   const templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   const template = Handlebars.compile(templateString);
   const config = template({
     watcherKind,
     port,
-    folderName,
-    subgraphPath
+    folderName
   });
   outStream.write(config);
 }

@@ -16,7 +16,7 @@
     "lerna": "^4.0.0"
   },
   "scripts": {
-    "lint": "lerna run lint --stream",
+    "lint": "lerna run lint --stream -- --max-warnings=0",
     "test:init": "lerna run test:init --stream --ignore @cerc-io/*-watcher",
     "test": "lerna run test --stream --ignore @cerc-io/*-watcher",
     "build": "lerna run build --stream",
