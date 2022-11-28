@@ -58,18 +58,12 @@ union TokenEvent = TransferEvent | ApprovalEvent
 
 # Result type, with proof, for event return values.
 type ResultEvent {
-  event: TokenEvent!
+  blockHash: String!
+  contract: String!
 
+  event: TokenEvent!
   # Proof from receipts trie.
   proof: Proof
-}
-
-# Watched event, include additional context over and above the event data.
-type WatchedEvent {
-  blockHash: String!
-  token: String!
-
-  event: ResultEvent!
 }
 
 type SyncStatus {
@@ -156,7 +150,7 @@ type Query {
 type Subscription {
 
   # Watch for token events (at head of chain).
-  onTokenEvent: WatchedEvent!
+  onEvent: ResultEvent!
 }
 
 #

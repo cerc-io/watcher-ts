@@ -47,6 +47,8 @@ const TRANSFER_EVENT = 'Transfer';
 const APPROVAL_EVENT = 'Approval';
 
 interface EventResult {
+  blockHash: string;
+  contract: string;
   event: {
     from?: string;
     to?: string;
@@ -105,9 +107,12 @@ export class Indexer implements IndexerInterface {
   }
 
   getResultEvent (event: Event): EventResult {
+    const block = event.block;
     const eventFields = JSON.parse(event.eventInfo);
 
     return {
+      blockHash: block.blockHash,
+      contract: event.contract,
       event: {
         __typename: `${event.eventName}Event`,
         ...eventFields

@@ -28,7 +28,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
     },
 
     Subscription: {
-      onTokenEvent: {
+      onEvent: {
         subscribe: () => eventWatcher.getEventIterator()
       }
     },
