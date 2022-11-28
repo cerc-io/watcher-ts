@@ -62,6 +62,8 @@ Ensure that watcher is of active kind. Update the kind in `server` config to act
 
 ## Run
 
+Follow the steps below or follow the [Demo](./demo.md)
+
 Build files:
 
 ```bash
@@ -104,16 +106,16 @@ $ yarn token:deploy
 Start watching a token:
 
 ```bash
-$ yarn watch:contract --address 0xTokenAddress --startingBlock <start-block>
+$ yarn watch:contract --address 0xTokenAddress --startingBlock <start-block> --kind ERC20 --checkpoint false
 
 # For specifying config file.
-$ yarn watch:contract -f environments/local.toml --address 0xTokenAddress --startingBlock <start-block>
+$ yarn watch:contract -f environments/local.toml --address 0xTokenAddress --startingBlock <start-block> --kind ERC20 --checkpoint false
 ```
 
 Example:
 
 ```bash
-$ yarn watch:contract --address 0xfE0034a874c2707c23F91D7409E9036F5e08ac34 --startingBlock 100
+$ yarn watch:contract --address 0xfE0034a874c2707c23F91D7409E9036F5e08ac34 --startingBlock 100 --kind ERC20 --checkpoint false
 ```
 
 To fill a block range:
@@ -189,5 +191,4 @@ $ yarn fill --startBlock 1000 --endBlock 2000
     }
   }
 }
-
 ```

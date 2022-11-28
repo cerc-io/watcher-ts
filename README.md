@@ -45,10 +45,6 @@ yarn build
 
 * [graph-node](./packages/graph-node/README.md)
 
-## Demos
-
-* [IPLD statediff and checkpointing](./ipld-demo.md)
-
 ## Services
 
 The default config files used by the watchers assume the following services are setup and running on localhost:
@@ -65,82 +61,7 @@ The default config files used by the watchers assume the following services are 
 ## Watchers
 
 * [eden-watcher](./packages/eden-watcher/README.md)
-
-## Databases
-
-Note: Requires `postgres12`.
-
-Login as the postgres user:
-
-```bash
-sudo su - postgres
-```
-
-Create the databases for the watchers:
-
-```
-createdb erc20-watcher
-createdb address-watcher
-```
-
-Create the databases for the job queues and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
-
-```
-createdb erc20-watcher-job-queue
-createdb address-watcher-job-queue
-```
-
-```
-postgres@tesla:~$ psql -U postgres -h localhost erc20-watcher-job-queue
-Password for user postgres:
-psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-Type "help" for help.
-
-erc20-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-CREATE EXTENSION
-erc20-watcher-job-queue=# exit
-```
-
-```
-postgres@tesla:~$ psql -U postgres -h localhost address-watcher-job-queue
-Password for user postgres:
-psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-Type "help" for help.
-
-address-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-CREATE EXTENSION
-address-watcher-job-queue=# exit
-```
-
-#### Reset
-
-Reset the databases used by the watchers:
-
-```bash
-yarn db:reset
-```
-
-## Run
-
-Build the files in packages:
-
-```bash
-yarn build
-
-# To watch for changes and build (used in development).
-yarn build:watch
-```
-
-To run any watcher, `cd` into their package folder and run:
-
-```bash
-yarn server
-```
-
-If the watcher uses a job queue, start the job runner in another terminal:
-
-```bash
-yarn job-runner
-```
+* [erc20-watcher](./packages/erc20-watcher/README.md)
+* [erc721-watcher](./packages/erc721-watcher/README.md)
+* [graph-test-watcher](./packages/graph-test-watcher/README.md)
+* [mobymask-watcher](./packages/mobymask-watcher/README.md)
