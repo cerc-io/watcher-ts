@@ -15,12 +15,30 @@
   ./setup-repositories.sh -p ssh
   ```
 
-* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.19-statediff-4.0.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
+* Checkout [v4 release](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.26-statediff-4.2.2-alpha) in go-ethereum repo. The path for go-ethereum is specified by `vulcanize_go_ethereum` variable in `config.sh` file created in stack-orchestrator repo.
 
   ```bash
   # In go-ethereum repo.
-  git checkout v1.10.19-statediff-4.0.2-alpha
+  git checkout v1.10.26-statediff-4.2.2-alpha
   ```
+
+* Update docker compose file to use latest images for ipld-eth-db and ipld-eth-server
+
+  * In [docker/latest/docker-compose-db-sharding.yml](https://github.com/vulcanize/stack-orchestrator/blob/main/docker/latest/docker-compose-db-sharding.yml) update image version
+
+    ```yml
+    services:
+      migrations:
+        image: git.vdb.to/cerc-io/ipld-eth-db/ipld-eth-db:v4.2.3-alpha
+    ```
+  
+  * In [docker/latest/docker-compose-ipld-eth-server.yml](https://github.com/vulcanize/stack-orchestrator/blob/main/docker/latest/docker-compose-ipld-eth-server.yml) update image version
+
+    ```yml
+    services:
+      ipld-eth-server:
+        image: git.vdb.to/cerc-io/ipld-eth-server/ipld-eth-server:v4.2.3-alpha
+    ```
 
 * To run the stack-orchestrator, the docker-compose version used is:
 

@@ -26,7 +26,7 @@
   git checkout v1.10.26-statediff-4.2.2-alpha
   ```
 
-* Update to use latest images for ipld-eth-db and ipld-eth-server
+* Update docker compose file to use latest images for ipld-eth-db and ipld-eth-server
 
   * In [docker/latest/docker-compose-db-sharding.yml](https://github.com/vulcanize/stack-orchestrator/blob/main/docker/latest/docker-compose-db-sharding.yml) update image version
 

@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, In } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 
@@ -870,7 +870,36 @@ export class Indexer implements IndexerInterface {
   }
 
   async markBlocksAsPruned (blocks: BlockProgress[]): Promise<void> {
-    return this._baseIndexer.markBlocksAsPruned(blocks);
+    await this._baseIndexer.markBlocksAsPruned(blocks);
+
+    await this._pruneEntities(blocks);
+  }
+
+  // Prune custom entities.
+  async _pruneEntities (blocks: BlockProgress[]): Promise<void> {
+    const entityTypes = [TransferCount];
+    const blockHashes = blocks.map(block => block.blockHash);
+
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      const updatePromises = entityTypes.map(async entityType => {
+        await this._db.updateEntity(
+          dbTx,
+          entityType,
+          { blockHash: In(blockHashes) },
+          { isPruned: true }
+        );
+      });
+
+      await Promise.all(updatePromises);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async updateBlockProgress (block: BlockProgress, lastProcessedEventIndex: number): Promise<BlockProgress> {
