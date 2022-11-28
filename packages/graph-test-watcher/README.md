@@ -63,13 +63,15 @@
 
 ## Run
 
-  * Run the server:
+Follow the steps below or follow the [Demo](./demo.md)
 
-    ```bash
-    yarn server
-    ```
+* Run the server:
 
-    GQL console: http://localhost:3008/graphql
+  ```bash
+  yarn server
+  ```
+
+  GQL console: http://localhost:3008/graphql
 
 * If the watcher is an `active` watcher:
 
