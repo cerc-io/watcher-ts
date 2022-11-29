@@ -80,6 +80,36 @@ Steps:
 
   This will create a folder containing the generated code at the path provided in config. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
+## Development
+
+* `lint`
+
+  Command to check lint issues in files
+
+  ```bash
+  yarn lint
+  ```
+
+  To fix lint issue
+
+  ```bash
+  yarn lint --fix
+  ```
+
+* `version:set`
+
+  Command to set cerc-io package versions in package.json template
+
+  ```bash
+  yarn version:set <VERSION>
+  ```
+
+  Example
+
+  ```bash
+  yarn version:set 0.2.17
+  ```
+
 ## Run Generated Watcher
 
 ### Setup

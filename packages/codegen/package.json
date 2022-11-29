@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
-    "codegen": "ts-node src/generate-code.ts"
+    "codegen": "ts-node src/generate-code.ts",
+    "version:set": "./scripts/set-version.sh"
   },
   "repository": {
     "type": "git",
