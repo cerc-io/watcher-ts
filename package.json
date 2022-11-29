@@ -23,6 +23,7 @@
     "build:watch": "lerna run build --stream --parallel -- -w",
     "prepare": "husky install",
     "publish:workspace": "yarn build && lerna publish",
-    "version:set": "lerna version --no-git-tag-version"
+    "version:set": "lerna version --no-git-tag-version",
+    "version:set-codegen": "yarn workspace @cerc-io/codegen version:set"
   }
 }
