@@ -3129,15 +3129,6 @@
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.2.7.tgz#c792bf92d19025e7940358536d468218a11eeedb"
   integrity sha512-YwGOcNZjOY/MmadpzFBXWyHEwZSf0lVU4XF5zpD7tXC9dmqjdo38Jkk06wATu4LYHDPW4emXKMB5YLFPWPkwFA==
 
-"@vulcanize/assemblyscript@0.0.1":
-  version "0.0.1"
-  resolved "https://npm.pkg.github.com/download/@vulcanize/assemblyscript/0.0.1/f1dc67712e8582a0748a9eeac772920b4a33baf03aba382b5086a8d0054e43b5#c98f2a706f797ba205f49b86a9de7093e7033726"
-  integrity sha512-CCTyGjUH9NPASd3YRx2YeJQquEeiPRcQ5DaZjQn2c/PHOdSAoKStU/9JkO1+oKTDhuF/eEX7LZh09NeojWjibg==
-  dependencies:
-    asyncify-wasm "^1.2.1"
-    binaryen "101.0.0-nightly.20210723"
-    long "^4.0.0"
-
 "@wry/context@^0.6.0":
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/@wry/context/-/context-0.6.0.tgz#f903eceb89d238ef7e8168ed30f4511f92d83e06"
@@ -3712,6 +3703,15 @@ assemblyscript@0.19.10:
   resolved "https://registry.yarnpkg.com/assemblyscript/-/assemblyscript-0.19.10.tgz#7ede6d99c797a219beb4fa4614c3eab9e6343c8e"
   integrity sha512-HavcUBXB3mBTRGJcpvaQjmnmaqKHBGREjSPNsIvnAk2f9dj78y4BkMaSSdvBQYWcDDzsHQjyUC8stICFkD1Odg==
   dependencies:
+    binaryen "101.0.0-nightly.20210723"
+    long "^4.0.0"
+
+assemblyscript@0.19.10-watcher-ts-0.1.1:
+  version "0.19.10-watcher-ts-0.1.1"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/assemblyscript/-/0.19.10-watcher-ts-0.1.1/assemblyscript-0.19.10-watcher-ts-0.1.1.tgz#8f1ee9f215fc28caf1f8d5ae9bc1fc0815aecb11"
+  integrity sha512-sZCyxwzr/4F7yrLmowLyZtfpRM0EMoZ48DOuas6SI2ezqZMQS+Gp1v/iULoc4R+RD1s1UNXB4TWRqQbMWODpSA==
+  dependencies:
+    asyncify-wasm "^1.2.1"
     binaryen "101.0.0-nightly.20210723"
     long "^4.0.0"
 
