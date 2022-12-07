@@ -14,7 +14,7 @@ import BN from 'bn.js';
 import debug from 'debug';
 
 import { BaseProvider } from '@ethersproject/providers';
-import loader from 'assemblyscript/lib/loader';
+import loader from '@cerc-io/assemblyscript/lib/loader';
 import {
   IndexerInterface,
   GraphDecimal,
