@@ -10,7 +10,7 @@ import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
 import { SelectionNode } from 'graphql';
 
-import { ResultObject } from '@vulcanize/assemblyscript/lib/loader';
+import { ResultObject } from '@cerc-io/assemblyscript/lib/loader';
 import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   getFullBlock,

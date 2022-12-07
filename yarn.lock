@@ -248,6 +248,15 @@
     "@babel/helper-validator-identifier" "^7.14.9"
     to-fast-properties "^2.0.0"
 
+"@cerc-io/assemblyscript@0.19.10-watcher-ts-0.1.2":
+  version "0.19.10-watcher-ts-0.1.2"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fassemblyscript/-/0.19.10-watcher-ts-0.1.2/assemblyscript-0.19.10-watcher-ts-0.1.2.tgz#c6a20eeddca44ddb08994831845c0b172433566b"
+  integrity sha512-iovY7xoH5ZMGQZgsK/Wy8175AN2z6I0WUnzEWaxykkAFQUvnErgiw/Y4crkcOb/fDp8gslRfTeEFtR90m1AyPA==
+  dependencies:
+    asyncify-wasm "^1.2.1"
+    binaryen "101.0.0-nightly.20210723"
+    long "^4.0.0"
+
 "@cspotcode/source-map-consumer@0.8.0":
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/@cspotcode/source-map-consumer/-/source-map-consumer-0.8.0.tgz#33bf4b7b39c178821606f669bbc447a6a629786b"
@@ -3128,15 +3137,6 @@
   version "3.2.7"
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.2.7.tgz#c792bf92d19025e7940358536d468218a11eeedb"
   integrity sha512-YwGOcNZjOY/MmadpzFBXWyHEwZSf0lVU4XF5zpD7tXC9dmqjdo38Jkk06wATu4LYHDPW4emXKMB5YLFPWPkwFA==
-
-"@vulcanize/assemblyscript@0.0.1":
-  version "0.0.1"
-  resolved "https://npm.pkg.github.com/download/@vulcanize/assemblyscript/0.0.1/f1dc67712e8582a0748a9eeac772920b4a33baf03aba382b5086a8d0054e43b5#c98f2a706f797ba205f49b86a9de7093e7033726"
-  integrity sha512-CCTyGjUH9NPASd3YRx2YeJQquEeiPRcQ5DaZjQn2c/PHOdSAoKStU/9JkO1+oKTDhuF/eEX7LZh09NeojWjibg==
-  dependencies:
-    asyncify-wasm "^1.2.1"
-    binaryen "101.0.0-nightly.20210723"
-    long "^4.0.0"
 
 "@wry/context@^0.6.0":
   version "0.6.0"
