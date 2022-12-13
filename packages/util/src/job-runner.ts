@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { In } from 'typeorm';
+import { DeepPartial, In } from 'typeorm';
 
 import { JobQueueConfig } from './config';
 import {
@@ -19,7 +19,7 @@ import {
   QUEUE_HOOKS
 } from './constants';
 import { JobQueue } from './job-queue';
-import { EventInterface, IndexerInterface } from './types';
+import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
 import { wait } from './misc';
 import {
   createPruningJob,
@@ -79,14 +79,30 @@ export class JobRunner {
 
     switch (kind) {
       case JOB_KIND_INDEX: {
-        const blocksToBeIndexed = await fetchBlocksAtHeight(
-          job,
-          this._indexer,
-          this._jobQueueConfig,
-          this._blockAndEventsMap
-        );
-        const indexBlockPromises = blocksToBeIndexed.map(blockToBeIndexed => this._indexBlock(job, blockToBeIndexed));
-        await Promise.all(indexBlockPromises);
+        const { data: { cid, blockHash, blockNumber, parentHash, timestamp } } = job;
+
+        // Check if blockHash present in job.
+        if (blockHash) {
+          // If blockHash is present it is a job for indexing missing parent block.
+          await this._indexBlock(job, {
+            blockTimestamp: timestamp,
+            cid,
+            blockHash,
+            blockNumber,
+            parentHash
+          });
+        } else {
+          // If blockHash is not present, it is a job to index the next consecutive blockNumber.
+          const blocksToBeIndexed = await fetchBlocksAtHeight(
+            blockNumber,
+            this._indexer,
+            this._jobQueueConfig,
+            this._blockAndEventsMap
+          );
+          const indexBlockPromises = blocksToBeIndexed.map(blockToBeIndexed => this._indexBlock(job, blockToBeIndexed));
+          await Promise.all(indexBlockPromises);
+        }
+
         break;
       }
 
@@ -277,12 +293,15 @@ export class JobRunner {
     console.timeEnd('time:job-runner#_pruneChain');
   }
 
-  async _indexBlock (job: any, blockToBeIndexed: any): Promise<void> {
+  async _indexBlock (job: any, blockToBeIndexed: DeepPartial<BlockProgressInterface>): Promise<void> {
     const syncStatus = await this._indexer.getSyncStatus();
     assert(syncStatus);
 
     const { data: { priority } } = job;
     const { cid, blockHash, blockNumber, parentHash, blockTimestamp } = blockToBeIndexed;
+    assert(blockNumber);
+    assert(blockHash);
+    assert(parentHash);
 
     const indexBlockStartTime = new Date();
 
@@ -350,7 +369,8 @@ export class JobRunner {
         const message = `Parent block number ${parentBlockNumber} hash ${parentHash} of block number ${blockNumber} hash ${blockHash} not fetched yet, aborting`;
         log(message);
 
-        throw new Error(message);
+        // Do not throw error and complete the job as block will be processed after parent block processing.
+        return;
       }
 
       if (!parentBlock.isComplete) {
@@ -368,7 +388,8 @@ export class JobRunner {
           priority: newPriority
         }, { priority: newPriority });
 
-        throw new Error(message);
+        // Do not throw error and complete the job as block will be processed after parent block processing.
+        return;
       } else {
         // Remove the unknown events of the parent block if it is marked complete.
         console.time('time:job-runner#_indexBlock-remove-unknown-events');
