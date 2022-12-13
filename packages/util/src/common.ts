@@ -55,12 +55,11 @@ export const processBlockByNumber = async (
  * @param blockAndEventsMap
  */
 export const fetchBlocksAtHeight = async (
-  job: any,
+  blockNumber: number,
   indexer: IndexerInterface,
   jobQueueConfig: JobQueueConfig,
   blockAndEventsMap: Map<string, PrefetchedBlock>
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
-  const { blockNumber } = job.data;
   let blocks = [];
 
   // Check for blocks in cache if prefetchBlocksInMem flag set.
