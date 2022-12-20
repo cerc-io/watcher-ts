@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "node dist/index.js",
-    "test": ""
+    "signal-server": "webrtc-star --port=13579 --host=127.0.0.1"
   },
   "dependencies": {
     "@chainsafe/libp2p-noise": "^10.2.0",
@@ -29,10 +29,13 @@
     "@libp2p/mplex": "^7.1.1",
     "@libp2p/webrtc-star": "^5.0.3",
     "@libp2p/websockets": "^5.0.2",
+    "it-map": "^2.0.0",
+    "it-pipe": "^2.0.5",
     "libp2p": "^0.41.0",
     "wrtc": "^0.4.7"
   },
   "devDependencies": {
+    "@libp2p/webrtc-star-signalling-server": "^2.0.5",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint": "^7.27.0",
