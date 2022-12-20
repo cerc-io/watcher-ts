@@ -2,16 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
-            steps {
-                script{
-
-                }
-            }
-        }
-        stage('Test') {
-
-        }
         stage('Packaging') {
             agent {
                 docker {
@@ -19,9 +9,6 @@ pipeline {
                 }
             }
 
-            environment {
-                // ??? NODE_AUTH_TOKEN: ${ secrets.PAT_PACKAGES }
-            }
             steps {
                 sh 'yarn'
                 sh 'yarn build'
