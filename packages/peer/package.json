@@ -1,0 +1,47 @@
+{
+  "name": "@cerc-io/peer",
+  "version": "0.2.18",
+  "description": "libp2p module",
+  "main": "dist/index.js",
+  "exports": "./dist/index.js",
+  "type": "module",
+  "license": "AGPL-version-3.0",
+  "private": true,
+  "engines": {
+    "node": ">=14.16",
+    "npm": ">= 6.0.0"
+  },
+  "homepage": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": "",
+  "keywords": [],
+  "scripts": {
+    "build": "tsc",
+    "dev": "node dist/index.js",
+    "test": ""
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^10.2.0",
+    "@libp2p/bootstrap": "^5.0.2",
+    "@libp2p/mplex": "^7.1.1",
+    "@libp2p/webrtc-star": "^5.0.3",
+    "@libp2p/websockets": "^5.0.2",
+    "libp2p": "^0.41.0",
+    "wrtc": "^0.4.7"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-semistandard": "^15.0.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "eslint-plugin-standard": "^5.0.0",
+    "typescript": "^4.3.2"
+  }
+}
