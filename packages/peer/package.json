@@ -29,9 +29,11 @@
     "@libp2p/mplex": "^7.1.1",
     "@libp2p/webrtc-star": "^5.0.3",
     "@libp2p/websockets": "^5.0.2",
+    "assert": "^2.0.0",
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",
     "libp2p": "^0.41.0",
+    "stream-browserify": "^3.0.0",
     "wrtc": "^0.4.7"
   },
   "devDependencies": {
@@ -45,6 +47,6 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
-    "typescript": "^4.3.2"
+    "typescript": "^4.9.4"
   }
 }

@@ -3,4 +3,3 @@
 //
 
 declare module 'stream-browserify';
-declare module 'wrtc';
