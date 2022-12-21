@@ -14,6 +14,10 @@ pipeline {
             }
 
             steps {
+                sh 'npm config set -- "//npm.pkg.github.com/:_authToken" "${ GITHUB_BASTION_PAT }"'
+                //sh 'echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc'
+                //sh 'echo "registry=https://npm.pkg.github.com/" >> ~/.npmrc'
+                //sh 'echo "always-auth=true" >> ~/.npmrc'
                 sh 'yarn'
                 sh 'yarn build'
                 sh 'npm config set @cerc-io:registry https://git.vdb.to/api/packages/cerc-io/npm/'
