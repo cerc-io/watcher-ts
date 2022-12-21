@@ -154,7 +154,6 @@ export class Peer {
     // Handle message from stream
     pipe(
       // Read from the stream (the source)
-      // TODO: Implement read stream for browser
       stream.source,
       // Decode length-prefixed data
       lp.decode(),
