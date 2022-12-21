@@ -12,7 +12,7 @@ pipeline {
             environment {
                 NODE_AUTH_TOKEN = credentials('GITHUB_BASTION_PAT')
                 GITEA_JENKINS_PUBLISH = credentials('GITEA_JENKINS_PUBLISH')
-                NPM_CONFIG_USERCONFIG = "/tmp"
+                NPM_CONFIG_USERCONFIG = "/usr/local/share/npm-global"
             }
 
             steps {
