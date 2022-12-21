@@ -12,13 +12,21 @@ function App() {
   const [peer, setPeer] = useState<Peer>()
   
   useEffect(() => {
-    if (peer) {
-      peer.init(process.env.REACT_APP_SIGNAL_SERVER)
+    (async () => {
+      if (peer) {
+        await peer.init(process.env.REACT_APP_SIGNAL_SERVER)
 
-      window.broadcast = (message: string) => {
-        peer.broadcastMessage(message)
+        peer.subscribeMessage((peerId, message) => {
+          console.log(`${peerId.toString()} > ${message}`)
+        })
+  
+        window.broadcast = (message: string) => {
+          peer.broadcastMessage(message)
+        }
+  
+        console.log(`Peer ID is ${peer.peerId!.toString()}`);
       }
-    }
+    })()
   }, [peer])
 
   useEffect(() => {
