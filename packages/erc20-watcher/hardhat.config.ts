@@ -9,6 +9,7 @@ import './test/tasks/token-transfer';
 import './test/tasks/token-approve';
 import './test/tasks/token-transfer-from';
 import './test/tasks/block-latest';
+import './test/tasks/account';
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
@@ -20,7 +21,7 @@ export default {
   solidity: '0.8.0',
   networks: {
     docker: {
-      url: 'http://geth:8545'
+      url: process.env.ETH_RPC_URL
     }
   },
   paths: {
