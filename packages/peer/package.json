@@ -20,6 +20,7 @@
   "keywords": [],
   "scripts": {
     "build": "tsc",
+    "lint": "eslint .",
     "dev": "node dist/index.js",
     "signal-server": "webrtc-star --port=13579 --host=0.0.0.0"
   },
