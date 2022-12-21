@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "node dist/index.js",
-    "signal-server": "webrtc-star --port=13579 --host=127.0.0.1"
+    "signal-server": "webrtc-star --port=13579 --host=0.0.0.0"
   },
   "dependencies": {
     "@chainsafe/libp2p-noise": "^10.2.0",

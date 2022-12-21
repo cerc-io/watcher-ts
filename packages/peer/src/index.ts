@@ -9,6 +9,7 @@ import assert from 'assert'
 import { pipe, Source } from 'it-pipe'
 import * as lp from 'it-length-prefixed'
 import map from 'it-map'
+import { pushable, Pushable } from 'it-pushable'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 
@@ -24,19 +25,18 @@ const PROTOCOL = '/chat/1.0.0';
 const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export class Peer {
-  _messageSource?: Source<string>
   _node?: Libp2p
   _wrtcStar: WebRTCStarTuple
   _remotePeerIds: PeerId[] = []
+  _peerStreamMap: Map<string, Pushable<string>> = new Map()
 
   constructor () {
     // Instantiation in nodejs.
-    this._wrtcStar = webRTCStar({ wrtc });
+    // this._wrtcStar = webRTCStar({ wrtc });
+    this._wrtcStar = webRTCStar();
   }
 
-  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, messageSource: Source<string>) {
-    this._messageSource = messageSource;
-  
+  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL) {
     this._node = await createLibp2p({
       addresses: {
         // Add the signaling server address, along with our PeerId to our multiaddrs list
@@ -49,16 +49,12 @@ export class Peer {
         ]
       },
       transports: [
-        // webSockets(),
         this._wrtcStar.transport
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
       peerDiscovery: [
         this._wrtcStar.discovery,
-        // bootstrap({
-        //   list: bootstrapMultiaddrs, // provide array of multiaddrs
-        // })
       ],
     })
 
@@ -91,27 +87,29 @@ export class Peer {
     console.log(`libp2p id is ${this._node.peerId.toString()}`)
   }
 
+  broadcastMessage (message: string) {
+    for (let [, stream] of this._peerStreamMap) {
+      stream.push(message)
+    }
+  }
+
   async _connectPeer (peer: PeerInfo) {
     assert(this._node)
     console.log(`Found peer ${peer.id.toString()}`)
 
-    try {
-      // dial them when we discover them
-      const stream = await this._node.dialProtocol(peer.id, PROTOCOL)
-  
-      this._handleStream(peer.id, stream)
-    } catch (err) {
-      console.log("dial failed for peer.id", peer.id)
-    }
+    // dial them when we discover them
+    const stream = await this._node.dialProtocol(peer.id, PROTOCOL)
+
+    this._handleStream(peer.id, stream)
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream) {
-    assert(this._messageSource)
+    const messageStream = pushable<string>({ objectMode: true })
 
     // Send message to pipe from stdin
     pipe(
-      // Read from readable stream (the source)
-      this._messageSource,
+      // Read from stream (the source)
+      messageStream,
       // Turn strings into buffers
       (source) => map(source, (string) => uint8ArrayFromString(string)),
       // Encode with length prefix (so receiving side knows how much data is coming)
@@ -138,5 +136,7 @@ export class Peer {
         }
       }
     )
+
+    this._peerStreamMap.set(peerId.toString(), messageStream)
   }
 }
