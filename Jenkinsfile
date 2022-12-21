@@ -9,6 +9,10 @@ pipeline {
                 }
             }
 
+            environment {
+                NODE_AUTH_TOKEN = ${ GITHUB_BASTION_PAT }
+            }
+
             steps {
                 sh 'yarn'
                 sh 'yarn build'
