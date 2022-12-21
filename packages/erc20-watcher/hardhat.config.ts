@@ -20,7 +20,7 @@ export default {
   solidity: '0.8.0',
   networks: {
     docker: {
-      url: 'http://geth:8545'
+      url: process.env.ETH_RPC_URL
     }
   },
   paths: {
