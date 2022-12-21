@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Peer } from '@cerc-io/peer';
-import { pushable } from 'it-pushable'
 
 import logo from './logo.svg';
 import './App.css';
@@ -14,11 +13,10 @@ function App() {
   
   useEffect(() => {
     if (peer) {
-      const source = pushable<string>({ objectMode: true })
-      peer.init(undefined, source)
-  
+      peer.init(process.env.REACT_APP_SIGNAL_SERVER)
+
       window.broadcast = (message: string) => {
-        source.push(message)
+        peer.broadcastMessage(message)
       }
     }
   }, [peer])
