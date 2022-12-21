@@ -32,7 +32,8 @@
     "nft:transfer:docker": "hardhat --network docker nft-transfer",
     "block:latest": "hardhat --network localhost block-latest",
     "block:latest:docker": "hardhat --network docker block-latest",
-    "account": "hardhat --network localhost account"
+    "account": "hardhat --network localhost account",
+    "account:docker": "hardhat --network docker account"
   },
   "repository": {
     "type": "git",

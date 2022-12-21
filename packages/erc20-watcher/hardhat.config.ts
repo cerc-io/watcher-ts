@@ -9,6 +9,7 @@ import './test/tasks/token-transfer';
 import './test/tasks/token-approve';
 import './test/tasks/token-transfer-from';
 import './test/tasks/block-latest';
+import './test/tasks/account';
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
