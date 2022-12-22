@@ -2,6 +2,50 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Instructions
+
+* Install dependencies
+  
+  ```bash
+  yarn install
+  ```
+
+* Build the peer package
+
+  ```bash
+  # From repo root
+  cd packages/peer
+
+  yarn build
+  ```
+
+* Run the signalling server
+
+  ```bash
+  # In packages/peer
+  yarn signal-server
+  ```
+
+* Start the react app in development mode
+
+  ```bash
+  # In packages/peer-test-app
+  yarn start
+  ```
+
+* The app can be opened in multiple browsers
+
+## Development
+
+* After making changes in [peer](../peer/) package run build
+
+  ```bash
+  # In packages/peer
+  yarn build
+  ```
+
+* The react app server running in development mode should recompile after changes are made in peer package
+
 ## Available Scripts
 
 In the project directory, you can run:
