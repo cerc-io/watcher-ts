@@ -65,18 +65,23 @@ export class Peer {
       ]
     });
 
+    console.log('libp2p node created', this._node);
+
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
+      console.log('event peer:discovery', evt);
       this._handleDiscovery(evt.detail);
     });
 
     // Listen for peers connection
     this._node.connectionManager.addEventListener('peer:connect', (evt) => {
+      console.log('event peer:connect', evt);
       this._handleConnect(evt.detail);
     });
 
     // Listen for peers disconnecting
     this._node.connectionManager.addEventListener('peer:disconnect', (evt) => {
+      console.log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
     });
 
@@ -84,6 +89,18 @@ export class Peer {
     await this._node.handle(PROTOCOL, async ({ stream, connection }) => {
       this._handleStream(connection.remotePeer, stream);
     });
+  }
+
+  async close (): Promise<void> {
+    assert(this._node);
+
+    this._node.removeEventListener('peer:discovery');
+    this._node.connectionManager.removeEventListener('peer:connect');
+    this._node.connectionManager.removeEventListener('peer:disconnect');
+
+    await this._node.unhandle(PROTOCOL);
+    const hangUpPromises = this._remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
+    await Promise.all(hangUpPromises);
   }
 
   broadcastMessage (message: string): void {
@@ -104,6 +121,8 @@ export class Peer {
   }
 
   _handleDiscovery (peer: PeerInfo): void {
+    console.log('Discovered peer multiaddrs', peer.multiaddrs.map(addr => addr.toString()));
+
     // Check connected peers as they are discovered repeatedly.
     if (!this._remotePeerIds.some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
       this._connectPeer(peer);
@@ -128,7 +147,7 @@ export class Peer {
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
     assert(this._node);
-    console.log(`Found peer ${peer.id.toString()}`);
+    console.log(`Dialling peer ${peer.id.toString()}`);
 
     // Dial them when we discover them
     const stream = await this._node.dialProtocol(peer.id, PROTOCOL);
@@ -137,6 +156,7 @@ export class Peer {
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
+    console.log('Stream after connection', stream);
     const messageStream = pushable<string>({ objectMode: true });
 
     // Send message to pipe from stdin
