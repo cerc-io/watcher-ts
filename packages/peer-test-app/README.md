@@ -4,13 +4,13 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Instructions
 
-* Install dependencies
-  
+* Install dependencies:
+
   ```bash
   yarn install
   ```
 
-* Build the peer package
+* Build the peer package:
 
   ```bash
   # From repo root
@@ -19,14 +19,30 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   yarn build
   ```
 
-* Run the signalling server
+* (Optional) Run a local signalling server:
 
   ```bash
   # In packages/peer
   yarn signal-server
   ```
 
-* Start the react app in development mode
+* (Optional) Run a local relay node:
+
+  ```bash
+  # In packages/peer
+  yarn relay-node --signal-server [SIGNAL_SERVER_URL]
+  ```
+
+  * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
+
+* Set the signalling server and relay node multiaddrs in the [env](./.env) file:
+
+  ```
+  REACT_APP_SIGNAL_SERVER=/ip4/127.0.0.1/tcp/13579/ws/p2p-webrtc-star/
+  REACT_APP_RELAY_NODE=/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star/p2p/12D3KooWRzH3ZRFP6RDbs2EKA8jSrD4Y6VYtLnCRMj3mYCiMHCJP
+  ```
+
+* Start the react app in development mode:
 
   ```bash
   # In packages/peer-test-app

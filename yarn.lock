@@ -4430,9 +4430,9 @@
   dependencies:
     "@multiformats/multiaddr" "^11.0.0"
 
-"@multiformats/multiaddr@^11.0.0":
+"@multiformats/multiaddr@^11.0.0", "@multiformats/multiaddr@^11.1.4":
   version "11.1.4"
-  resolved "https://registry.npmjs.org/@multiformats/multiaddr/-/multiaddr-11.1.4.tgz"
+  resolved "https://registry.yarnpkg.com/@multiformats/multiaddr/-/multiaddr-11.1.4.tgz#55be2da1d82973af1f9f38415143b894ec2d095c"
   integrity sha512-eaFX7Pp5DNVoSk5xlWbmKwHmo1+ab90VT0xzWSocoXj9IkShx+lYm7Zo4tmfX8RnwTNGzBSZqY5G4jmqvYFoPg==
   dependencies:
     "@chainsafe/is-ip" "^2.0.1"

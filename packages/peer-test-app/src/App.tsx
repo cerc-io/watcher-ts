@@ -10,17 +10,17 @@ declare global {
 
 function App() {
   const [peer, setPeer] = useState<Peer>()
-  
+
   useEffect(() => {
     (async () => {
       if (peer) {
-        await peer.init(process.env.REACT_APP_SIGNAL_SERVER)
+        await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
         console.log(`Peer ID is ${peer.peerId!.toString()}`);
 
         peer.subscribeMessage((peerId, message) => {
           console.log(`${peerId.toString()} > ${message}`)
         })
-  
+
         window.broadcast = (message: string) => {
           peer.broadcastMessage(message)
         }
