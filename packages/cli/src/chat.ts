@@ -7,6 +7,7 @@ import { PeerId } from '@libp2p/interface-peer-id';
 
 interface Arguments {
   signalServer: string;
+  relayNode: string;
 }
 
 async function main (): Promise<void> {
@@ -16,7 +17,7 @@ async function main (): Promise<void> {
   }
 
   const peer = new Peer(true);
-  await peer.init(argv.signalServer);
+  await peer.init(argv.signalServer, argv.relayNode);
 
   peer.subscribeMessage((peerId: PeerId, message: string) => {
     console.log(`> ${peerId.toString()} > ${message}`);
@@ -43,6 +44,10 @@ function _getArgv (): any {
     signalServer: {
       type: 'string',
       describe: 'Signalling server URL'
+    },
+    relayNode: {
+      type: 'string',
+      describe: 'Relay node URL'
     }
   }).argv;
 }

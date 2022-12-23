@@ -19,9 +19,10 @@ import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
+import { multiaddr } from '@multiformats/multiaddr';
 
-const PROTOCOL = '/chat/1.0.0';
-const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
+export const PROTOCOL = '/chat/1.0.0';
+export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export class Peer {
   _node?: Libp2p
@@ -44,7 +45,7 @@ export class Peer {
     return this._node?.peerId;
   }
 
-  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL): Promise<void> {
+  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
     this._node = await createLibp2p({
       addresses: {
         // Add the signaling server address, along with our PeerId to our multiaddrs list
@@ -64,7 +65,14 @@ export class Peer {
       streamMuxers: [mplex()],
       peerDiscovery: [
         this._wrtcStar.discovery
-      ]
+      ],
+      relay: {
+        enabled: true,
+        autoRelay: {
+          enabled: true,
+          maxListeners: 2
+        }
+      }
     });
 
     console.log('libp2p node created', this._node);
@@ -91,6 +99,22 @@ export class Peer {
     await this._node.handle(PROTOCOL, async ({ stream, connection }) => {
       this._handleStream(connection.remotePeer, stream);
     });
+
+    if (relayNodeURL) {
+      const conn = await this._node.dial(multiaddr(relayNodeURL));
+      console.log(`Connected to the HOP relay ${conn.remotePeer.toString()}`);
+
+      // Wait for connection and relay to be bind
+      this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
+        assert(this._node);
+        const { peerId } = evt.detail;
+
+        // Updated self multiaddrs?
+        if (peerId.equals(this._node.peerId)) {
+          console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
+        }
+      });
+    }
   }
 
   async close (): Promise<void> {

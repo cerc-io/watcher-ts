@@ -22,7 +22,8 @@
     "build": "tsc",
     "lint": "eslint .",
     "dev": "node dist/index.js",
-    "signal-server": "webrtc-star --port=13579 --host=0.0.0.0"
+    "signal-server": "webrtc-star --port=13579 --host=0.0.0.0",
+    "relay-node": "node dist/relay.js"
   },
   "dependencies": {
     "@chainsafe/libp2p-noise": "^10.2.0",
@@ -30,6 +31,7 @@
     "@libp2p/mplex": "^7.1.1",
     "@libp2p/webrtc-star": "^5.0.3",
     "@libp2p/websockets": "^5.0.2",
+    "@multiformats/multiaddr": "^11.1.4",
     "assert": "^2.0.0",
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",
