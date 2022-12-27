@@ -1,6 +1,6 @@
 {
-  "name": "peer-test-app",
-  "version": "0.1.0",
+  "name": "@cerc-io/peer-test-app",
+  "version": "0.2.18",
   "private": true,
   "dependencies": {
     "@cerc-io/peer": "^0.2.18",
