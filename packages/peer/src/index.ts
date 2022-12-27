@@ -19,7 +19,7 @@ import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
-import { multiaddr } from '@multiformats/multiaddr';
+import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 
 export const PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -107,11 +107,13 @@ export class Peer {
       // Wait for connection and relay to be bind
       this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
         assert(this._node);
-        const { peerId } = evt.detail;
+        const { peerId, multiaddrs } = evt.detail;
 
-        // Updated self multiaddrs?
+        // Log updated self multiaddrs
         if (peerId.equals(this._node.peerId)) {
           console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
+        } else {
+          console.log('Updated other node\'s multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
         }
       });
     }

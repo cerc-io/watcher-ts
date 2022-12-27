@@ -13,7 +13,7 @@ interface Arguments {
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
   if (!argv.signalServer) {
-    console.log('Using default signalling server URL');
+    console.log('Using the default signalling server URL');
   }
 
   const peer = new Peer(true);

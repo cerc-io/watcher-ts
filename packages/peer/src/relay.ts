@@ -1,5 +1,7 @@
 import { createLibp2p } from 'libp2p';
 import wrtc from 'wrtc';
+import { hideBin } from 'yargs/helpers';
+import yargs from 'yargs';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -7,12 +9,21 @@ import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
 
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
 
+interface Arguments {
+  signalServer: string;
+}
+
 async function main (): Promise<void> {
+  const argv: Arguments = _getArgv();
+  if (!argv.signalServer) {
+    console.log('Using the default signalling server URL');
+  }
+
   const wrtcStar: WebRTCStarTuple = webRTCStar({ wrtc });
   const node = await createLibp2p({
     addresses: {
       listen: [
-        DEFAULT_SIGNAL_SERVER_URL
+        argv.signalServer || DEFAULT_SIGNAL_SERVER_URL
       ]
     },
     transports: [
@@ -34,6 +45,21 @@ async function main (): Promise<void> {
   console.log(`Relay node started with id ${node.peerId.toString()}`);
   console.log('Listening on:');
   node.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
+}
+
+function _getArgv (): any {
+  return yargs(hideBin(process.argv)).parserConfiguration({
+    'parse-numbers': false
+  }).options({
+    signalServer: {
+      type: 'string',
+      describe: 'Signalling server URL'
+    },
+    relayNode: {
+      type: 'string',
+      describe: 'Relay node URL'
+    }
+  }).argv;
 }
 
 main().catch(err => {

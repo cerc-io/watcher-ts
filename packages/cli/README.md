@@ -17,7 +17,7 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   yarn build
   ```
 
-* Run a local signalling server (skip if an already running signalling server is available):
+* (Optional) Run a local signalling server:
 
   ```bash
   # In packages/peer
@@ -28,8 +28,10 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
   ```bash
   # In packages/peer
-  yarn relay-node
+  yarn relay-node --signal-server [SIGNAL_SERVER_URL]
   ```
+
+  * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
 
 * Start the node:
 
