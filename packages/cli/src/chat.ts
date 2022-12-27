@@ -50,7 +50,3 @@ function _getArgv (): any {
 main().catch(err => {
   console.log(err);
 });
-
-// Run:
-// $ yarn build
-// $ yarn chat --signalServer <SIGNAL_SERVER_URL>
