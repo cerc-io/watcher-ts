@@ -4,7 +4,7 @@
 
 import { createLibp2p, Libp2p } from 'libp2p';
 // For nodejs.
-// import wrtc from 'wrtc';
+import wrtc from 'wrtc';
 import assert from 'assert';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
@@ -13,7 +13,6 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webSockets } from '@libp2p/websockets';
 import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -32,10 +31,13 @@ export class Peer {
   _peerStreamMap: Map<string, Pushable<string>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: string) => void> = []
 
-  constructor () {
+  constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
-    // this._wrtcStar = webRTCStar({ wrtc });
-    this._wrtcStar = webRTCStar();
+    if (nodejs) {
+      this._wrtcStar = webRTCStar({ wrtc });
+    } else {
+      this._wrtcStar = webRTCStar();
+    }
   }
 
   get peerId (): PeerId | undefined {

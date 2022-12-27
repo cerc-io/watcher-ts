@@ -7,7 +7,7 @@ Package used for connecting between peers and send messages
 - [x] Discover peers
 - [x] Connect between peers and send messages
 - [x] Use package in browser
-- [ ] Use package in server
+- [x] Use package in server
 - [ ] Send messages between systems in different LANs
 
 ## Issues
