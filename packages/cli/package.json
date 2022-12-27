@@ -1,6 +1,7 @@
 {
   "name": "@cerc-io/cli",
   "version": "0.2.18",
+  "main": "dist/index.js",
   "exports": "./dist/index.js",
   "license": "AGPL-3.0",
   "type": "module",

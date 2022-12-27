@@ -54,7 +54,7 @@ interface EventResult {
     to?: string;
     owner?: string;
     spender?: string;
-    value?: BigInt;
+    value?: bigint;
     __typename: string;
   }
   proof?: string;

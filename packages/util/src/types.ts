@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, QueryRunner } from 'typeorm';
+import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import { EthClient } from '@cerc-io/ipld-eth-client';
@@ -182,7 +182,7 @@ export interface DatabaseInterface {
 }
 
 export interface GraphDatabaseInterface {
-  getEntity<Entity> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined>;
+  getEntity<Entity extends ObjectLiteral> (entity: (new () => Entity) | string, id: string, blockHash?: string): Promise<Entity | undefined>;
 }
 
 export interface GraphWatcherInterface {
