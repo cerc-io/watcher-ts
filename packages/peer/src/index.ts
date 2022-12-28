@@ -20,6 +20,7 @@ import type { Stream as P2PStream, Connection } from '@libp2p/interface-connecti
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
+import { bootstrap } from '@libp2p/bootstrap';
 
 export const PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -27,6 +28,7 @@ export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrt
 export class Peer {
   _node?: Libp2p
   _wrtcStar: WebRTCStarTuple
+  _relayNodeMultiaddr?: Multiaddr
 
   _remotePeerIds: PeerId[] = []
   _peerStreamMap: Map<string, Pushable<string>> = new Map()
@@ -46,6 +48,20 @@ export class Peer {
   }
 
   async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
+    let peerDiscovery: any;
+    if (relayNodeURL) {
+      console.log('bootstrapping relay node');
+      this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+      peerDiscovery = [
+        bootstrap({
+          list: [this._relayNodeMultiaddr.toString()]
+        }),
+        this._wrtcStar.discovery
+      ];
+    } else {
+      peerDiscovery = [this._wrtcStar.discovery];
+    }
+
     this._node = await createLibp2p({
       addresses: {
         // Add the signaling server address, along with our PeerId to our multiaddrs list
@@ -63,9 +79,7 @@ export class Peer {
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      peerDiscovery: [
-        this._wrtcStar.discovery
-      ],
+      peerDiscovery: peerDiscovery,
       relay: {
         enabled: true,
         autoRelay: {
@@ -76,6 +90,19 @@ export class Peer {
     });
 
     console.log('libp2p node created', this._node);
+
+    // Wait for connection and relay to be bind
+    this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
+      assert(this._node);
+      const { peerId, multiaddrs } = evt.detail;
+
+      // Log updated self multiaddrs
+      if (peerId.equals(this._node.peerId)) {
+        console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
+      } else {
+        console.log('Updated other node\'s multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
+      }
+    });
 
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
@@ -99,24 +126,6 @@ export class Peer {
     await this._node.handle(PROTOCOL, async ({ stream, connection }) => {
       this._handleStream(connection.remotePeer, stream);
     });
-
-    if (relayNodeURL) {
-      const conn = await this._node.dial(multiaddr(relayNodeURL));
-      console.log(`Connected to the HOP relay ${conn.remotePeer.toString()}`);
-
-      // Wait for connection and relay to be bind
-      this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
-        assert(this._node);
-        const { peerId, multiaddrs } = evt.detail;
-
-        // Log updated self multiaddrs
-        if (peerId.equals(this._node.peerId)) {
-          console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
-        } else {
-          console.log('Updated other node\'s multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
-        }
-      });
-    }
   }
 
   async close (): Promise<void> {
@@ -178,9 +187,21 @@ export class Peer {
     console.log(`Dialling peer ${peer.id.toString()}`);
 
     // Dial them when we discover them
-    const stream = await this._node.dialProtocol(peer.id, PROTOCOL);
+    if (this._relayNodeMultiaddr) {
+      const relayNodePeerId = this._relayNodeMultiaddr.getPeerId();
+      if (relayNodePeerId && relayNodePeerId === peer.id.toString()) {
+        await this._node.dial(this._relayNodeMultiaddr);
+        return;
+      }
+    }
 
-    this._handleStream(peer.id, stream);
+    const stream = await this._node.dialProtocol(peer.id, PROTOCOL).catch(err => {
+      console.log(`Could not dial ${peer.id}`, err);
+    });
+
+    if (stream) {
+      this._handleStream(peer.id, stream);
+    }
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
