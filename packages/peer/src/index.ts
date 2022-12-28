@@ -91,6 +91,9 @@ export class Peer {
           enabled: true,
           maxListeners: 2
         }
+      },
+      connectionManager: {
+        autoDial: false
       }
     });
 
