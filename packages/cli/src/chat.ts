@@ -1,3 +1,7 @@
+//
+// Copyright 2022 Vulcanize, Inc.
+//
+
 import * as readline from 'readline';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';

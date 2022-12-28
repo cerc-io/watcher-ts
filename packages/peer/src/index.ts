@@ -13,15 +13,15 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
+import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
+import type { PeerInfo } from '@libp2p/interface-peer-info';
+import type { PeerId } from '@libp2p/interface-peer-id';
 import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
-import type { PeerInfo } from '@libp2p/interface-peer-info';
-import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
-import { floodsub } from '@libp2p/floodsub';
+import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 export const PROTOCOL = '/chat/1.0.0';
@@ -52,12 +52,14 @@ export class Peer {
   async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
     let peerDiscovery: any;
     if (relayNodeURL) {
-      console.log('bootstrapping relay node');
+      console.log('Bootstrapping relay node');
       this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+
       peerDiscovery = [
         bootstrap({
           list: [this._relayNodeMultiaddr.toString()]
         }),
+        // Add pubsub discovery; relay server acts as a peer discovery source
         pubsubPeerDiscovery({
           interval: 1000
         })
@@ -83,8 +85,8 @@ export class Peer {
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      pubsub: floodsub(),
-      peerDiscovery: peerDiscovery,
+      pubsub: gossipsub({ allowPublishToZeroPeers: true }),
+      peerDiscovery,
       relay: {
         enabled: true,
         autoRelay: {
@@ -100,7 +102,7 @@ export class Peer {
 
     console.log('libp2p node created', this._node);
 
-    // Wait for connection and relay to be bind
+    // Listen for change in stored multiaddrs
     this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
       assert(this._node);
       const { peerId, multiaddrs } = evt.detail;
@@ -140,6 +142,7 @@ export class Peer {
   async close (): Promise<void> {
     assert(this._node);
 
+    this._node.peerStore.removeEventListener('change:multiaddrs');
     this._node.removeEventListener('peer:discovery');
     this._node.connectionManager.removeEventListener('peer:connect');
     this._node.connectionManager.removeEventListener('peer:disconnect');
@@ -198,7 +201,7 @@ export class Peer {
     assert(this._node);
     console.log(`Dialling peer ${peer.id.toString()}`);
 
-    // Dial them when we discover them
+    // Check if discovered the relay node
     if (this._relayNodeMultiaddr) {
       const relayNodePeerId = this._relayNodeMultiaddr.getPeerId();
       if (relayNodePeerId && relayNodePeerId === peer.id.toString()) {
@@ -207,6 +210,8 @@ export class Peer {
       }
     }
 
+    // Dial them when we discover them
+    // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
       const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL).catch(err => {
         console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
