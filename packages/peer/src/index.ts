@@ -170,10 +170,9 @@ export class Peer {
   }
 
   _handleDiscovery (peer: PeerInfo): void {
-    console.log('Discovered peer multiaddrs', peer.multiaddrs.map(addr => addr.toString()));
-
     // Check connected peers as they are discovered repeatedly.
     if (!this._remotePeerIds.some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
+      console.log('Discovered a new peer with multiaddrs', peer.multiaddrs.map(addr => addr.toString()));
       this._connectPeer(peer);
     }
   }
@@ -264,10 +263,14 @@ export class Peer {
 
   // End an existing stream with the peer if exists
   _endExistingStream (peerId: PeerId): void {
-    const existingPeerStream = this._peerStreamMap.get(peerId.toString());
+    const peerIdString = peerId.toString();
+    const existingPeerStream = this._peerStreamMap.get(peerIdString);
+
     if (existingPeerStream) {
-      console.log('ending existing stream');
+      console.log('Ending existing stream for peer', peerIdString);
       existingPeerStream.end();
     }
+
+    this._peerStreamMap.delete(peerIdString);
   }
 }
