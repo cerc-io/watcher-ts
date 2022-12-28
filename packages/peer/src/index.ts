@@ -184,10 +184,13 @@ export class Peer {
 
   _handleDisconnect (connection: Connection): void {
     const disconnectedPeerId = connection.remotePeer;
-    this._remotePeerIds = this._remotePeerIds.filter(remotePeerId => remotePeerId.toString() !== disconnectedPeerId.toString());
+    const disconnectedPeerIdString = disconnectedPeerId.toString();
+
+    this._remotePeerIds = this._remotePeerIds.filter(remotePeerId => remotePeerId.toString() !== disconnectedPeerIdString);
+    this._endExistingStream(disconnectedPeerId);
 
     // Log disconnected peer
-    console.log(`Disconnected from ${disconnectedPeerId.toString()}`);
+    console.log(`Disconnected from ${disconnectedPeerIdString}`);
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
@@ -248,7 +251,17 @@ export class Peer {
       }
     );
 
-    // TODO: Check if stream already exists for peer id
+    this._endExistingStream(peerId);
+
     this._peerStreamMap.set(peerId.toString(), messageStream);
+  }
+
+  // End an existing stream with the peer if exists
+  _endExistingStream (peerId: PeerId): void {
+    const existingPeerStream = this._peerStreamMap.get(peerId.toString());
+    if (existingPeerStream) {
+      console.log('ending existing stream');
+      existingPeerStream.end();
+    }
   }
 }
