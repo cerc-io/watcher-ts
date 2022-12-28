@@ -93,7 +93,8 @@ export class Peer {
         }
       },
       connectionManager: {
-        autoDial: false
+        autoDial: false,
+        maxDialsPerPeer: 1
       }
     });
 
