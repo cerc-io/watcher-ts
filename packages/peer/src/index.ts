@@ -21,7 +21,7 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
-import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 export const PROTOCOL = '/chat/1.0.0';
@@ -85,7 +85,8 @@ export class Peer {
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      pubsub: gossipsub({ allowPublishToZeroPeers: true }),
+      // pubsub: gossipsub({ allowPublishToZeroPeers: true }),
+      pubsub: floodsub(),
       peerDiscovery,
       relay: {
         enabled: true,
@@ -212,11 +213,15 @@ export class Peer {
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
+      if (!peerMultiaddr.toString().includes('p2p-circuit/p2p')) {
+        continue;
+      }
       const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL).catch(err => {
         console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
       });
 
       if (stream) {
+        console.log('Dial successful using multiaddr', peerMultiaddr.toString());
         this._handleStream(peer.id, stream);
         break;
       }
@@ -267,8 +272,8 @@ export class Peer {
     const existingPeerStream = this._peerStreamMap.get(peerIdString);
 
     if (existingPeerStream) {
-      console.log('Ending existing stream for peer', peerIdString);
-      existingPeerStream.end();
+      // console.log('Ending existing stream for peer', peerIdString);
+      // existingPeerStream.end();
     }
 
     this._peerStreamMap.delete(peerIdString);

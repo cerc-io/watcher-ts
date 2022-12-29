@@ -10,7 +10,7 @@ import yargs from 'yargs';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
-import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
@@ -37,7 +37,8 @@ async function main (): Promise<void> {
     ],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
-    pubsub: gossipsub({ allowPublishToZeroPeers: true }),
+    // pubsub: gossipsub({ allowPublishToZeroPeers: true }),
+    pubsub: floodsub(),
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: 1000
