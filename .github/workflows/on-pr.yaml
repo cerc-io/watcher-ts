@@ -16,11 +16,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://npm.pkg.github.com'
       - run: yarn
-        # https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#use-private-packages
-        env:
-          # GITHUB_TOKEN can't access packages from other private repositories.
-          # https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages
-          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
       - name: Linter check
         run: yarn lint
   test:
@@ -36,11 +31,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://npm.pkg.github.com'
       - run: yarn
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
       - name: Run tests
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
         run: |
           yarn build
           yarn test:init
@@ -53,5 +44,3 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run docker build
         run: make docker-build
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
