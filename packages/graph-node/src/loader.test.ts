@@ -102,7 +102,7 @@ describe('wasm loader tests', () => {
       }
 
       expect.fail('wasm code should throw error');
-    } catch (error) {
+    } catch (error: any) {
       expect(error).to.be.instanceof(WebAssembly.RuntimeError);
       expect(error.message).to.equal('unreachable');
     }

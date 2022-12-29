@@ -2,7 +2,7 @@ import * as readline from 'readline';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 
-import { Peer } from '@cerc-io/peer';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import { PeerId } from '@libp2p/interface-peer-id';
 
 interface Arguments {
@@ -15,6 +15,8 @@ async function main (): Promise<void> {
     console.log('Using default signalling server URL');
   }
 
+  // https://adamcoster.com/blog/commonjs-and-esm-importexport-compatibility-examples#importing-esm-into-commonjs-cjs
+  const { Peer } = await import('@cerc-io/peer');
   const peer = new Peer(true);
   await peer.init(argv.signalServer);
 

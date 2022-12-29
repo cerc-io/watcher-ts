@@ -13,6 +13,7 @@ import {
   FindConditions,
   FindManyOptions,
   In,
+  ObjectLiteral,
   QueryRunner,
   Repository,
   SelectQueryBuilder
@@ -427,7 +428,7 @@ export class Database {
     return event;
   }
 
-  async getFrothyEntity<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, data: { blockHash: string, id: string }): Promise<{ blockHash: string, blockNumber: number, id: string }> {
+  async getFrothyEntity<Entity extends ObjectLiteral> (queryRunner: QueryRunner, repo: Repository<Entity>, data: { blockHash: string, id: string }): Promise<{ blockHash: string, blockNumber: number, id: string }> {
     // Hierarchical query for getting the entity in the frothy region.
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
@@ -478,7 +479,7 @@ export class Database {
     return { blockHash, blockNumber, id };
   }
 
-  async getPrevEntityVersion<Entity> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
+  async getPrevEntityVersion<Entity extends ObjectLiteral> (queryRunner: QueryRunner, repo: Repository<Entity>, findOptions: { [key: string]: any }): Promise<Entity | undefined> {
     const { blockHash, blockNumber, id } = await this.getFrothyEntity(queryRunner, repo, findOptions.where);
 
     if (id) {
@@ -491,7 +492,7 @@ export class Database {
     return this.getLatestPrunedEntity(repo, findOptions.where.id, blockNumber + 1);
   }
 
-  async getLatestPrunedEntity<Entity> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
+  async getLatestPrunedEntity<Entity extends ObjectLiteral> (repo: Repository<Entity>, id: string, canonicalBlockNumber: number): Promise<Entity | undefined> {
     // Filter out latest entity from pruned blocks.
     const entityInPrunedRegion = await repo.createQueryBuilder('entity')
       .where('entity.id = :id', { id })
@@ -797,7 +798,7 @@ export class Database {
     return repo.save(entity);
   }
 
-  buildQuery<Entity> (
+  buildQuery<Entity extends ObjectLiteral> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     where: Where = {},
@@ -867,7 +868,7 @@ export class Database {
     return selectQueryBuilder;
   }
 
-  orderQuery<Entity> (
+  orderQuery<Entity extends ObjectLiteral> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     orderOptions: { orderBy?: string, orderDirection?: string },

@@ -69,7 +69,7 @@ export class Cache {
       log(`${this._name}: cache hit ${key}`);
 
       return [value, true];
-    } catch (err) {
+    } catch (err: any) {
       log(`${this._name}: cache miss ${key}`);
 
       if (err.notFound) {

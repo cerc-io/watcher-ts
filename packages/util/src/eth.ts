@@ -3,9 +3,9 @@ import { utils } from 'ethers';
 
 const log = debug('vulcanize:eth');
 
-function decodeInteger(value : string, defaultValue: BigInt): BigInt
-function decodeInteger(value : string) : BigInt | undefined
-function decodeInteger (value : string, defaultValue?: BigInt): BigInt | undefined {
+function decodeInteger(value : string, defaultValue: bigint): bigint
+function decodeInteger(value : string) : bigint | undefined
+function decodeInteger (value : string, defaultValue?: bigint): bigint | undefined {
   if (value === undefined || value === null || value.length === 0) return defaultValue;
   if (value === '0x') return BigInt(0);
   return BigInt(value);

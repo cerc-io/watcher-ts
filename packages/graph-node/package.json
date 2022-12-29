@@ -27,7 +27,7 @@
     "hardhat": "^2.3.0",
     "mocha": "^8.4.0",
     "nodemon": "^2.0.7",
-    "ts-node": "^10.0.0",
+    "ts-node": "^10.2.1",
     "typescript": "^4.3.2"
   },
   "bin": {

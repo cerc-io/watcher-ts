@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, ObjectLiteral } from 'typeorm';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import { SelectionNode } from 'graphql';
@@ -313,7 +313,7 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.removeStates(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (
+  async getSubgraphEntity<Entity extends ObjectLiteral> (
     entity: new () => Entity,
     id: string,
     block: BlockHeight,
@@ -324,7 +324,7 @@ export class Indexer implements IndexerInterface {
     return data;
   }
 
-  async getSubgraphEntities<Entity> (
+  async getSubgraphEntities<Entity extends ObjectLiteral> (
     entity: new () => Entity,
     block: BlockHeight,
     where: { [key: string]: any } = {},

@@ -31,6 +31,7 @@ import {
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
+import { ObjectLiteral } from 'typeorm';
 
 const log = debug('vulcanize:graph-watcher');
 
@@ -281,7 +282,7 @@ export class GraphWatcher {
     this._indexer = indexer;
   }
 
-  async getEntity<Entity> (
+  async getEntity<Entity extends ObjectLiteral> (
     entity: new () => Entity,
     id: string,
     relationsMap: Map<any, { [key: string]: any }>,
@@ -305,7 +306,7 @@ export class GraphWatcher {
     }
   }
 
-  async getEntities<Entity> (
+  async getEntities<Entity extends ObjectLiteral> (
     entity: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight,

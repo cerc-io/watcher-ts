@@ -22,7 +22,6 @@ import {
   GraphWatcherInterface,
   Config
 } from '@cerc-io/util';
-import * as codec from '@ipld/dag-cbor';
 
 import { BaseCmd } from './base';
 
@@ -164,6 +163,7 @@ export class ExportStateCmd {
     }
 
     if (this._argv.exportFile) {
+      const codec = await import('@ipld/dag-cbor');
       const encodedExportData = codec.encode(exportData);
 
       const filePath = path.resolve(this._argv.exportFile);

@@ -25,7 +25,6 @@ import {
   updateEntitiesFromState,
   Config
 } from '@cerc-io/util';
-import * as codec from '@ipld/dag-cbor';
 
 import { BaseCmd } from './base';
 
@@ -112,6 +111,7 @@ export class ImportStateCmd {
     // Import data.
     const importFilePath = path.resolve(this._argv.importFile);
     const encodedImportData = fs.readFileSync(importFilePath);
+    const codec = await import('@ipld/dag-cbor');
     const importData = codec.decode(Buffer.from(encodedImportData)) as any;
 
     // Fill the snapshot block.

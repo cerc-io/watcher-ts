@@ -1,9 +1,8 @@
 {
   "name": "@cerc-io/cli",
   "version": "0.2.18",
-  "exports": "./dist/index.js",
+  "main": "dist/index.js",
   "license": "AGPL-3.0",
-  "type": "module",
   "scripts": {
     "lint": "eslint .",
     "build": "yarn clean && tsc && yarn copy-assets",
@@ -16,7 +15,7 @@
     "@cerc-io/util": "^0.2.18",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
-    "@ipld/dag-cbor": "^6.0.12",
+    "@ipld/dag-cbor": "^8.0.0",
     "@libp2p/interface-peer-id": "^1.1.2",
     "apollo-server-express": "^3.11.1",
     "debug": "^4.3.1",
