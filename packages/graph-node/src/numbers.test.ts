@@ -576,7 +576,7 @@ describe('numbers wasm tests', () => {
     it('should throw an error for DECIMAL128_PMIN times DECIMAL128_NMAX', async () => {
       try {
         await testBigDecimalTimes(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_NMAX));
-      } catch (error) {
+      } catch (error: any) {
         expect(error.message).to.be.equal('Big decimal exponent \'-12286\' is outside the \'-6143\' to \'6144\' range');
       }
     });
@@ -621,7 +621,7 @@ describe('numbers wasm tests', () => {
     it('should throw an error for DECIMAL128_PMIN divideBy DECIMAL128_MAX', async () => {
       try {
         await testBigDecimalDividedBy(await __newString(DECIMAL128_PMIN), await __newString(DECIMAL128_MAX));
-      } catch (error) {
+      } catch (error: any) {
         expect(error.message).to.be.equal('Big decimal exponent \'-12288\' is outside the \'-6143\' to \'6144\' range');
       }
     });
