@@ -4694,7 +4694,7 @@
 
 "@poanet/solidity-flattener@https://github.com/vulcanize/solidity-flattener.git":
   version "3.0.6"
-  resolved "git+ssh://git@github.com/vulcanize/solidity-flattener.git#144ef6cda8823f4a5e48cb4f615be87a32e2dcbc"
+  resolved "https://github.com/vulcanize/solidity-flattener.git#144ef6cda8823f4a5e48cb4f615be87a32e2dcbc"
   dependencies:
     bunyan "^1.8.12"
     decomment "^0.9.1"
@@ -5283,11 +5283,6 @@
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/@tsconfig/node14/-/node14-1.0.3.tgz#e4386316284f00b98435bf40f72f75a09dabf6c1"
   integrity sha512-ysT8mhdixWK6Hw3i1V2AeRqZ5WfXg1G43mqoYlM2nc6388Fq5jcXyr5mRsqViLx/GJYdoL0bfXD8nmF+Zn/Iow==
-
-"@tsconfig/node16@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/@tsconfig/node16/-/node16-1.0.1.tgz"
-  integrity sha512-FTgBI767POY/lKNDNbIzgAX6miIDBs6NTCbdlDb8TrWovHsSvaVIZDlTqym29C6UqhzwcJx4CYr+AlrMywA0cA==
 
 "@tsconfig/node16@^1.0.2":
   version "1.0.3"
@@ -12986,7 +12981,7 @@ got@^7.1.0:
 
 "gql-generator@https://github.com/vulcanize/gql-generator.git":
   version "1.0.13"
-  resolved "git+ssh://git@github.com/vulcanize/gql-generator.git#0b818b1d41bd383c860d1c88082b7b1f5831c272"
+  resolved "https://github.com/vulcanize/gql-generator.git#0b818b1d41bd383c860d1c88082b7b1f5831c272"
   dependencies:
     commander "^2.15.1"
     del "^3.0.0"
@@ -21373,7 +21368,7 @@ source-map-support@^0.4.15:
   dependencies:
     source-map "^0.5.6"
 
-source-map-support@^0.5.13, source-map-support@^0.5.17:
+source-map-support@^0.5.13:
   version "0.5.19"
   resolved "https://registry.npmjs.org/source-map-support/-/source-map-support-0.5.19.tgz"
   integrity sha512-Wonm7zOCIJzBGQdB+thsPar0kYuCIzYvxZwlBa87yi/Mdjv7Tip2cyVbLj5o0cFPN4EVkuTwb3GDDyUx2DGnGw==
@@ -22459,22 +22454,6 @@ ts-invariant@^0.7.0:
   integrity sha512-UWDDeovyUTIMWj+45g5nhnl+8oo+GhxL5leTaHn5c8FkQWfh8v66gccLd2/YzVmV5hoQUjCEjhrXnQqVDJdvKA==
   dependencies:
     tslib "^2.1.0"
-
-ts-node@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.npmjs.org/ts-node/-/ts-node-10.0.0.tgz"
-  integrity sha512-ROWeOIUvfFbPZkoDis0L/55Fk+6gFQNZwwKPLinacRl6tsxstTF1DbAcLKkovwnpKMVvOMHP1TIbnwXwtLg1gg==
-  dependencies:
-    "@tsconfig/node10" "^1.0.7"
-    "@tsconfig/node12" "^1.0.7"
-    "@tsconfig/node14" "^1.0.0"
-    "@tsconfig/node16" "^1.0.1"
-    arg "^4.1.0"
-    create-require "^1.1.0"
-    diff "^4.0.1"
-    make-error "^1.1.1"
-    source-map-support "^0.5.17"
-    yn "3.1.1"
 
 ts-node@^10.2.1:
   version "10.9.1"
