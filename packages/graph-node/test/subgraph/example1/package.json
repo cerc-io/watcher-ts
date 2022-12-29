@@ -10,7 +10,7 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 example1"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "npm:@vulcanize/graph-ts@0.22.2",
-    "@vulcanize/graph-cli": "0.22.5"
+    "@graphprotocol/graph-ts": "npm:@cerc-io/graph-ts@0.22.1-watcher-ts-0.1.0",
+    "@cerc-io/graph-cli": "0.22.4-watcher-ts-0.1.0"
   }
 }
