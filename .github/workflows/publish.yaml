@@ -37,11 +37,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://npm.pkg.github.com'
       - run: yarn
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
       - name: Run yarn build
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PAT_PACKAGES }}
         run: |
           yarn build
       - name: Configure git.vdb.to npm registry
