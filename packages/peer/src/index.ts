@@ -175,7 +175,7 @@ export class Peer {
     this._remotePeerIds.push(remotePeerId);
 
     // Log connected peer
-    console.log('Connected to %s', remotePeerId.toString());
+    console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
   }
 
   _handleDisconnect (connection: Connection): void {
