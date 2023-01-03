@@ -14,8 +14,14 @@ function App() {
   useEffect(() => {
     (async () => {
       if (peer) {
-        await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
-        console.log(`Peer ID is ${peer.peerId!.toString()}`);
+        const relayNode = process.env.REACT_APP_RELAY_NODE;
+        if (!relayNode) {
+          console.log('REACT_APP_RELAY_NODE not set')
+          return;
+        }
+
+        await peer.init(relayNode)
+        console.log(`Peer ID: ${peer.peerId!.toString()}`);
 
         peer.subscribeMessage((peerId, message) => {
           console.log(`${peerId.toString()} > ${message}`)

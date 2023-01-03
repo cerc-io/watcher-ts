@@ -4245,7 +4245,7 @@
     uint8arraylist "^2.0.0"
     uint8arrays "^4.0.2"
 
-"@libp2p/peer-id@^1.0.0", "@libp2p/peer-id@^1.1.0", "@libp2p/peer-id@^1.1.13", "@libp2p/peer-id@^1.1.15", "@libp2p/peer-id@^1.1.8", "@libp2p/peer-id@^1.1.9":
+"@libp2p/peer-id@^1.0.0", "@libp2p/peer-id@^1.1.0", "@libp2p/peer-id@^1.1.13", "@libp2p/peer-id@^1.1.15", "@libp2p/peer-id@^1.1.8":
   version "1.1.18"
   resolved "https://registry.npmjs.org/@libp2p/peer-id/-/peer-id-1.1.18.tgz"
   integrity sha512-Zh3gzbrQZKDMLpoJAJB8gdGtyYFSBKV0dU5vflQ18/7MJDJmjsgKO+sJTYi72yN5sWREs1eGKMhxLo+N1ust5w==
@@ -4367,7 +4367,7 @@
   dependencies:
     "@libp2p/interface-metrics" "^4.0.0"
 
-"@libp2p/utils@^3.0.0", "@libp2p/utils@^3.0.1", "@libp2p/utils@^3.0.2":
+"@libp2p/utils@^3.0.0", "@libp2p/utils@^3.0.2":
   version "3.0.4"
   resolved "https://registry.npmjs.org/@libp2p/utils/-/utils-3.0.4.tgz"
   integrity sha512-EWJNJtlop2ylmGE1BNiMA0u4eTLKoY0LbZ/DOvSDs9VlGSLua9J+LUjp6XV8lazGv7l1rOLiU+1hP5fcmg1+eg==
@@ -4383,6 +4383,27 @@
     it-stream-types "^1.0.4"
     private-ip "^3.0.0"
     uint8arraylist "^2.3.2"
+
+"@libp2p/webrtc-direct@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/@libp2p/webrtc-direct/-/webrtc-direct-4.0.2.tgz#2227746279950f3586d5f823edc865c673a31897"
+  integrity sha512-mnGBsxECXdsx6UyIbxjEEGM+9FkyfamcInALjpuW+34KNlF/OlLCJV+PBOxDQK9NSGIoVDSJ8VwYItn5MU51Fg==
+  dependencies:
+    "@libp2p/interface-transport" "^2.0.0"
+    "@libp2p/interfaces" "^3.0.3"
+    "@libp2p/logger" "^2.0.1"
+    "@libp2p/utils" "^3.0.2"
+    "@libp2p/webrtc-peer" "^2.0.0"
+    "@multiformats/mafmt" "^11.0.3"
+    "@multiformats/multiaddr" "^11.0.0"
+    abortable-iterator "^4.0.2"
+    err-code "^3.0.0"
+    multiformats "^10.0.0"
+    native-fetch "^4.0.2"
+    p-event "^5.0.1"
+    uint8arrays "^4.0.2"
+    undici "^5.2.0"
+    wherearewe "^2.0.1"
 
 "@libp2p/webrtc-peer@^2.0.0":
   version "2.0.2"
@@ -4423,32 +4444,6 @@
     prom-client "^14.0.0"
     socket.io "^4.1.2"
     socket.io-client "^4.1.2"
-
-"@libp2p/webrtc-star@^5.0.3":
-  version "5.0.3"
-  resolved "https://registry.npmjs.org/@libp2p/webrtc-star/-/webrtc-star-5.0.3.tgz"
-  integrity sha512-tGH72ARnuHaj5FlLMrdU4B2PIZMgUKdS40YqlIu5w9zo4csZ8n07oRHt0B+gRnahLd8wY80uiS6CnmTC5c0skg==
-  dependencies:
-    "@libp2p/interface-connection" "^3.0.1"
-    "@libp2p/interface-peer-discovery" "^1.0.0"
-    "@libp2p/interface-peer-id" "^1.0.2"
-    "@libp2p/interface-transport" "^2.0.0"
-    "@libp2p/interfaces" "^3.0.2"
-    "@libp2p/logger" "^2.0.0"
-    "@libp2p/peer-id" "^1.1.9"
-    "@libp2p/utils" "^3.0.1"
-    "@libp2p/webrtc-peer" "^2.0.0"
-    "@libp2p/webrtc-star-protocol" "^2.0.0"
-    "@multiformats/mafmt" "^11.0.2"
-    "@multiformats/multiaddr" "^11.0.0"
-    abortable-iterator "^4.0.2"
-    delay "^5.0.0"
-    err-code "^3.0.1"
-    iso-random-stream "^2.0.2"
-    multiformats "^10.0.0"
-    p-defer "^4.0.0"
-    socket.io-client "^4.1.2"
-    uint8arrays "^4.0.2"
 
 "@libp2p/websockets@^5.0.2":
   version "5.0.2"
@@ -10702,7 +10697,7 @@ err-code@^2.0.2:
   resolved "https://registry.npmjs.org/err-code/-/err-code-2.0.3.tgz"
   integrity sha512-2bmlRpNKBxT/CRmPOlyISQpNj+qSeYvcym/uT0Jx2bMOlKLtSy1ZmLuVxSEKKyor/N5yhvp/ZiG1oE3DEYMSFA==
 
-err-code@^3.0.1:
+err-code@^3.0.0, err-code@^3.0.1:
   version "3.0.1"
   resolved "https://registry.npmjs.org/err-code/-/err-code-3.0.1.tgz"
   integrity sha512-GiaH0KJUewYok+eeY05IIgjtAe4Yltygk9Wqp1V5yVWLdhf0hYZchRjNIT9bb0mSwRcIusT3cx7PJUf3zEIfUA==
@@ -22788,7 +22783,7 @@ underscore@1.9.1:
   resolved "https://registry.npmjs.org/underscore/-/underscore-1.9.1.tgz"
   integrity sha512-5/4etnCkd9c8gwgowi5/om/mYO5ajCaOgdzj/oW+0eQV9WxKBDZw5+ycmKmeaTXjInS/W0BzpGLo2xR2aBwZdg==
 
-undici@^5.12.0:
+undici@^5.12.0, undici@^5.2.0:
   version "5.14.0"
   resolved "https://registry.npmjs.org/undici/-/undici-5.14.0.tgz"
   integrity sha512-yJlHYw6yXPPsuOH0x2Ib1Km61vu4hLiRRQoafs+WUgX1vO64vgnxiCEN9dpIrhZyHFsai3F0AEj4P9zy19enEQ==

@@ -4,38 +4,21 @@
 
 import { createLibp2p } from 'libp2p';
 import wrtc from 'wrtc';
-import { hideBin } from 'yargs/helpers';
-import yargs from 'yargs';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTCDirect } from '@libp2p/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
-import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
-
-interface Arguments {
-  signalServer: string;
-}
+import { PUBSUB_DISCOVERY_INTERVAL, RELAY_NODE_LISTEN_ADDRESS } from './constants.js';
 
 async function main (): Promise<void> {
-  const argv: Arguments = _getArgv();
-  if (!argv.signalServer) {
-    console.log('Using the default signalling server URL');
-  }
-
-  const wrtcStar: WebRTCStarTuple = webRTCStar({ wrtc });
   const node = await createLibp2p({
     addresses: {
-      listen: [
-        argv.signalServer || DEFAULT_SIGNAL_SERVER_URL
-      ]
+      listen: [RELAY_NODE_LISTEN_ADDRESS]
     },
-    transports: [
-      wrtcStar.transport
-    ],
+    transports: [webRTCDirect({ wrtc })],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub(),
@@ -58,21 +41,6 @@ async function main (): Promise<void> {
   console.log(`Relay node started with id ${node.peerId.toString()}`);
   console.log('Listening on:');
   node.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
-}
-
-function _getArgv (): any {
-  return yargs(hideBin(process.argv)).parserConfiguration({
-    'parse-numbers': false
-  }).options({
-    signalServer: {
-      type: 'string',
-      describe: 'Signalling server URL'
-    },
-    relayNode: {
-      type: 'string',
-      describe: 'Relay node URL'
-    }
-  }).argv;
 }
 
 main().catch(err => {
