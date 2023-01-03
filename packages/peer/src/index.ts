@@ -21,6 +21,8 @@ import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
+import { floodsub } from '@libp2p/floodsub';
+import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 export const PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -56,7 +58,9 @@ export class Peer {
         bootstrap({
           list: [this._relayNodeMultiaddr.toString()]
         }),
-        this._wrtcStar.discovery
+        pubsubPeerDiscovery({
+          interval: 1000
+        })
       ];
     } else {
       peerDiscovery = [this._wrtcStar.discovery];
@@ -79,6 +83,7 @@ export class Peer {
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
+      pubsub: floodsub(),
       peerDiscovery,
       relay: {
         enabled: true,
