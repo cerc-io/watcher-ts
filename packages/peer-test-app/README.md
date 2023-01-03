@@ -19,13 +19,6 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   yarn build
   ```
 
-* (Optional) Run a local signalling server:
-
-  ```bash
-  # In packages/peer
-  yarn signal-server
-  ```
-
 * (Optional) Create and export a peer id for the relay node:
 
   ```bash
@@ -39,18 +32,16 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
   ```bash
   # In packages/peer
-  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
+  yarn relay-node --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
   ```
 
-  * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
   * `peer-id-file`: file path for peer id to be used (json)
   * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
-* Set the signalling server and primary relay node multiaddrs in the [env](./.env) file:
+* Set the relay node multiaddr in the [env](./.env) file:
 
   ```
-  REACT_APP_SIGNAL_SERVER=/ip4/127.0.0.1/tcp/13579/ws/p2p-webrtc-star/
-  REACT_APP_RELAY_NODE=/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star/p2p/12D3KooWRzH3ZRFP6RDbs2EKA8jSrD4Y6VYtLnCRMj3mYCiMHCJP
+  REACT_APP_RELAY_NODE=/ip4/0.0.0.0/tcp/9090/http/p2p-webrtc-direct/p2p/12D3KooWFn2tjcv1ciot6sXJDiCdxXAPh37pzxjBC1UmCkbP3QBo
   ```
 
 * Start the react app in development mode:

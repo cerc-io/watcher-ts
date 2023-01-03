@@ -12,7 +12,7 @@ const root = ReactDOM.createRoot(
 root.render(
   // TODO: StrictMode renders component twice in development which currently causes problems with instantiating peer node.
   // <React.StrictMode>
-  <PeerProvider signalServer={process.env.REACT_APP_SIGNAL_SERVER} relayNode={process.env.REACT_APP_RELAY_NODE}>
+  <PeerProvider relayNode={process.env.REACT_APP_RELAY_NODE}>
     <App />
   </PeerProvider>
   // </React.StrictMode>

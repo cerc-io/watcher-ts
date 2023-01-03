@@ -13,9 +13,10 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTCDirect } from '@libp2p/webrtc-direct';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
+import type { Transport } from '@libp2p/interface-transport';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
@@ -27,13 +28,12 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, CONN_CHECK_INTERVAL, PING_TIMEOUT } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
-export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
 export class Peer {
   _node?: Libp2p
-  _wrtcStar: WebRTCStarTuple
+  _wrtcTransport: () => Transport
   _relayNodeMultiaddr?: Multiaddr
 
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
@@ -44,9 +44,9 @@ export class Peer {
   constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
     if (nodejs) {
-      this._wrtcStar = webRTCStar({ wrtc });
+      this._wrtcTransport = webRTCDirect({ wrtc });
     } else {
-      this._wrtcStar = webRTCStar();
+      this._wrtcTransport = webRTCDirect();
     }
   }
 
@@ -58,39 +58,20 @@ export class Peer {
     return this._node;
   }
 
-  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
-    let peerDiscovery: any;
-    if (relayNodeURL) {
-      this._relayNodeMultiaddr = multiaddr(relayNodeURL);
-
-      peerDiscovery = [
-        pubsubPeerDiscovery({
-          interval: PUBSUB_DISCOVERY_INTERVAL
-        })
-      ];
-    } else {
-      peerDiscovery = [this._wrtcStar.discovery];
-    }
+  async init (relayNodeURL: string): Promise<void> {
+    this._relayNodeMultiaddr = multiaddr(relayNodeURL);
 
     this._node = await createLibp2p({
-      addresses: {
-        // Add the signaling server address, along with our PeerId to our multiaddrs list
-        // libp2p will automatically attempt to dial to the signaling server so that it can
-        // receive inbound connections from other peers
-        listen: [
-          // Public signal servers
-          // '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-          // '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-          signalServerURL
-        ]
-      },
-      transports: [
-        this._wrtcStar.transport
-      ],
+      transports: [this._wrtcTransport],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
       pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
-      peerDiscovery,
+      peerDiscovery: [
+        // Use pubsub based discovery; relay server acts as a peer discovery source
+        pubsubPeerDiscovery({
+          interval: PUBSUB_DISCOVERY_INTERVAL
+        })
+      ],
       relay: {
         enabled: true,
         autoRelay: {
@@ -112,10 +93,8 @@ export class Peer {
 
     console.log('libp2p node created', this._node);
 
-    // Dial to the HOP enabled relay node if available
-    if (this._relayNodeMultiaddr) {
-      await this._dialRelay();
-    }
+    // Dial to the HOP enabled relay node
+    await this._dialRelay();
 
     // Listen for change in stored multiaddrs
     this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
@@ -169,6 +148,7 @@ export class Peer {
   async close (): Promise<void> {
     assert(this._node);
 
+    this._node.peerStore.removeEventListener('change:multiaddrs');
     this._node.removeEventListener('peer:discovery');
     this._node.removeEventListener('peer:connect');
     this._node.removeEventListener('peer:disconnect');
@@ -426,6 +406,7 @@ export class Peer {
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
     assert(this._node);
+    assert(this._relayNodeMultiaddr);
 
     // Dial them when we discover them
     const peerIdString = peer.id.toString();

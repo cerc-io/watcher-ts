@@ -12,29 +12,26 @@ import debug from 'debug';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTCDirect } from '@libp2p/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 import type { Connection } from '@libp2p/interface-connection';
 
-import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 import { multiaddr } from '@multiformats/multiaddr';
 
 const log = debug('laconic:relay');
 
+const RELAY_NODE_LISTEN_ADDRESS = '/ip4/0.0.0.0/tcp/9090/http/p2p-webrtc-direct';
+
 interface Arguments {
-  signalServer: string;
   peerIdFile: string;
   relayPeers: string;
 }
 
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
-  if (!argv.signalServer) {
-    console.log('Using the default signalling server URL');
-  }
 
   let peerId: any;
   if (argv.peerIdFile) {
@@ -48,17 +45,12 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
-  const wrtcStar: WebRTCStarTuple = webRTCStar({ wrtc });
   const node = await createLibp2p({
     peerId,
     addresses: {
-      listen: [
-        argv.signalServer || DEFAULT_SIGNAL_SERVER_URL
-      ]
+      listen: [RELAY_NODE_LISTEN_ADDRESS]
     },
-    transports: [
-      wrtcStar.transport
-    ],
+    transports: [webRTCDirect({ wrtc })],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
@@ -123,10 +115,6 @@ function _getArgv (): any {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
-    signalServer: {
-      type: 'string',
-      describe: 'Signalling server URL'
-    },
     peerIdFile: {
       type: 'string',
       describe: 'Relay Peer Id file path (json)'

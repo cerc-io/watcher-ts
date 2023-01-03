@@ -116,10 +116,8 @@ function App() {
                   <TableCell>{peer && peer.node && peer.node.isStarted().toString()}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell><b>Signal server</b></TableCell>
-                  <TableCell>{process.env.REACT_APP_SIGNAL_SERVER}</TableCell>
                   <TableCell align="right"><b>Relay node</b></TableCell>
-                  <TableCell>{process.env.REACT_APP_RELAY_NODE}</TableCell>
+                  <TableCell colSpan={3}>{process.env.REACT_APP_RELAY_NODE}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><b>Multiaddrs</b></TableCell>

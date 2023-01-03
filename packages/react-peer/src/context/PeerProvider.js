@@ -4,13 +4,18 @@ import { Peer } from '@cerc-io/peer';
 
 import { PeerContext } from './PeerContext';
 
-export const PeerProvider = ({ signalServer, relayNode, children }) => {
+export const PeerProvider = ({ relayNode, children }) => {
   const [peer, setPeer] = React.useState(null);
 
   React.useEffect(() => {
     const init = async () => {
+      // TODO: Validate prop relayNode
+      if (!relayNode) {
+        throw new Error('REACT_APP_RELAY_NODE not set')
+      }
+
       const peer = new Peer()
-      await peer.init(signalServer, relayNode);
+      await peer.init(relayNode);
 
       // Debug
       console.log(`Peer ID: ${peer.peerId.toString()}`);
@@ -19,7 +24,7 @@ export const PeerProvider = ({ signalServer, relayNode, children }) => {
     };
 
     init();
-    
+
     return () => {
       if (peer.node) {
         // TODO: Await for peer close
