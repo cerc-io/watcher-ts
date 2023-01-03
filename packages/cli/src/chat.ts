@@ -1,3 +1,7 @@
+//
+// Copyright 2022 Vulcanize, Inc.
+//
+
 import * as readline from 'readline';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
@@ -7,18 +11,19 @@ import { PeerId } from '@libp2p/interface-peer-id';
 
 interface Arguments {
   signalServer: string;
+  relayNode: string;
 }
 
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
   if (!argv.signalServer) {
-    console.log('Using default signalling server URL');
+    console.log('Using the default signalling server URL');
   }
 
   // https://adamcoster.com/blog/commonjs-and-esm-importexport-compatibility-examples#importing-esm-into-commonjs-cjs
   const { Peer } = await import('@cerc-io/peer');
   const peer = new Peer(true);
-  await peer.init(argv.signalServer);
+  await peer.init(argv.signalServer, argv.relayNode);
 
   peer.subscribeMessage((peerId: PeerId, message: string) => {
     console.log(`> ${peerId.toString()} > ${message}`);
@@ -45,6 +50,10 @@ function _getArgv (): any {
     signalServer: {
       type: 'string',
       describe: 'Signalling server URL'
+    },
+    relayNode: {
+      type: 'string',
+      describe: 'Relay node URL'
     }
   }).argv;
 }
