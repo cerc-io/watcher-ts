@@ -120,3 +120,7 @@ Ensure that watcher is of active kind. Update the kind in `server` config to act
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
   * Update the `server` config with state checkpoint settings.
+
+## Watcher CLI commands (yarn)
+
+spot to explain core commands and flags so they aren't repeated in every tutorial
