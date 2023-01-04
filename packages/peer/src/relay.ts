@@ -14,6 +14,7 @@ import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
+import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
 
 interface Arguments {
   signalServer: string;
@@ -40,7 +41,7 @@ async function main (): Promise<void> {
     pubsub: floodsub(),
     peerDiscovery: [
       pubsubPeerDiscovery({
-        interval: 1000
+        interval: PUBSUB_DISCOVERY_INTERVAL
       })
     ],
     relay: {

@@ -23,6 +23,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
 
 export const PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -52,14 +53,14 @@ export class Peer {
   async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
     let peerDiscovery: any;
     if (relayNodeURL) {
-      console.log('Bootstrapping relay node');
       this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+      console.log(`Bootstrapping with relay node ${this._relayNodeMultiaddr.toString()}`);
       peerDiscovery = [
         bootstrap({
           list: [this._relayNodeMultiaddr.toString()]
         }),
         pubsubPeerDiscovery({
-          interval: 1000
+          interval: PUBSUB_DISCOVERY_INTERVAL
         })
       ];
     } else {
@@ -105,7 +106,7 @@ export class Peer {
       if (peerId.equals(this._node.peerId)) {
         console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
       } else {
-        console.log('Updated other node\'s multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
+        console.log('Updated peer node multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
       }
     });
 
@@ -183,7 +184,7 @@ export class Peer {
     this._remotePeerIds = this._remotePeerIds.filter(remotePeerId => remotePeerId.toString() !== disconnectedPeerId.toString());
 
     // Log disconnected peer
-    console.log(`Disconnected from ${disconnectedPeerId.toString()}`);
+    console.log(`Disconnected to ${disconnectedPeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
@@ -207,14 +208,13 @@ export class Peer {
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
-      console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
-      const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL).catch(err => {
-        console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
-      });
+      try {
+        console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
+        const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL);
 
-      if (stream) {
         this._handleStream(peer.id, stream);
-        break;
+      } catch (err) {
+        console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
       }
     }
   }
