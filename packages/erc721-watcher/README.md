@@ -2,106 +2,311 @@
 
 ## Setup
 
-* Run the following command to install required packages:
+Run the following command to install required packages:
 
-  ```bash
-  yarn
+```bash
+yarn && yarn build
+```
+
+If the watcher is "active", first run the job-runner:
+
+```bash
+yarn job-runner
+```
+
+then run the watcher:
+
+```bash
+yarn server
+```
+
+For "lazy" watchers, you only need to run the above command.
+
+
+Deploy an ERC721 token:
+
+```bash
+yarn nft:deploy
+```
+```
+# NFT deployed to: 0xNFTAddress
+```
+Export the address of the deployed token to a shell variable for later use:
+
+```bash
+export NFT_ADDRESS="0xNFTAddress"
   ```
 
-* Create a postgres12 database for the watcher:
+Run the following GQL mutation in generated watcher GraphQL endpoint http://127.0.0.1:3006/graphql
 
-  ```bash
-  sudo su - postgres
-  createdb erc721-watcher
-  ```
+```graphql
+mutation {
+  watchContract(
+    address: "0xNFTAddress"
+    kind: "ERC721"
+    checkpoint: true
+  )
+}
+```
 
-* If the watcher is an `active` watcher:
+TODO: settle on WC (signer/primary/main...across the docs)
 
-  Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+Get the signer (primary/main) account address and export to a shell variable:
 
-  ```
-  createdb erc721-watcher-job-queue
-  ```
+```bash
+yarn account
+```
 
-  ```
-  postgres@tesla:~$ psql -U postgres -h localhost erc721-watcher-job-queue
-  Password for user postgres:
-  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-  Type "help" for help.
+```bash
+export SIGNER_ADDRESS="0xSignerAddress"
+```
 
-  erc721-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-  CREATE EXTENSION
-  erc721-watcher-job-queue=# exit
-  ```
+Connect MetaMask to `http://localhost:8545` (with chain ID `99`)
 
-* The following core services should be setup and running on localhost:
+Add a an account to Metamask and export the account address to a shell variable for later use:
 
-  * `vulcanize/go-ethereum` [v1.10.18-statediff-4.0.2-alpha](https://github.com/vulcanize/go-ethereum/releases/tag/v1.10.18-statediff-4.0.2-alpha) on port 8545
+```bash
+export RECIPIENT_ADDRESS="0xRecipientAddress"
+```
 
-  * `vulcanize/ipld-eth-server` [v4.0.3-alpha](https://github.com/vulcanize/ipld-eth-server/releases/tag/v4.0.3-alpha) with native GQL API enabled, on port 8082
+To get the current block hash at any time, run:
 
-* In the [config file](./environments/local.toml):
+```bash
+yarn block:latest
+```
 
-  * Update the database connection settings.
+Run the following GQL query (`eth_call`) in the GraphQL playground at http://127.0.0.1:3006/graphql
 
-  * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
+```graphql
+query {
+  name(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  symbol(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  balanceOf(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    owner: "0xSignerAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+}
+```
 
-  * Update the `server` config with state checkpoint settings.
+Run the following GQL query (`storage`) in generated watcher GraphQL endpoint http://127.0.0.1:3006/graphql
 
-## Customize
+```graphql
+query {
+  _name(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  _symbol(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  _balances(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    key0: "0xSignerAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+}
+```
 
-* Indexing on an event:
+Run the following GQL subscription in the playground:
 
-  * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
+```graphql
+subscription {
+  onEvent {
+    event {
+      __typename
+      ... on TransferEvent {
+        from
+        to
+        tokenId
+      },
+      ... on ApprovalEvent {
+        owner
+        approved
+        tokenId
+      }
+    },
+    block {
+      number
+      hash
+    }
+  }
+}
+```
 
-  * While using the indexer storage methods for indexing, pass `diff` as true if default state is desired to be generated using the state variables being indexed.
+Mint token
 
-* Generating state:
+```bash
+yarn nft:mint --nft $NFT_ADDRESS --to $SIGNER_ADDRESS --token-id 1
+```
 
-  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial `State` using the `Indexer` object.
+- A Transfer event to 0xSignerAddress should be visible in the subscription.
 
-  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
+- An auto-generated `diff_staged` `State` should be added with parent CID pointing to the initial `checkpoint` `State`.
 
-  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `State` using the `Indexer` object.
+- Custom property `transferCount` should be 1 initially.
 
-## Run
+- Run the `getState` query at the endpoint to get the latest `State` for 0xNFTAddress:
 
-Follow the steps below or follow the [Demo](./demo.md)
+```graphql
+query {
+  getState (
+    blockHash: "EVENT_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    # kind: "checkpoint"
+    # kind: "diff"
+    kind: "diff_staged"
+  ) {
+    cid
+    block {
+      cid
+      hash
+      number
+      timestamp
+      parentHash
+    }
+    contractAddress
+    data
+  }
+}
+```
 
-* Run the watcher:
+- `diff` States get created corresponding to the `diff_staged` blocks when their respective eth_blocks reach the pruned region.
 
-* If the watcher is a `lazy` watcher:
+- `data` contains the default state and also the custom state property `transferCount` that is indexed in [hooks.ts](./src/hooks.ts) file.
 
-  * Run the server:
+- Get the latest blockHash and run the following query for `transferCount` entity:
 
-    ```bash
-    yarn server
-    ```
+```graphql
+query {
+  transferCount(
+    block: {
+      hash: "LATEST_BLOCK_HASH"
+    }
+    id: "0xNFTAddress"
+  ) {
+    id
+    count
+  }
+}
+```
 
-    GQL console: http://localhost:3006/graphql
+*Note: Contract address is assigned to the Entity ID.*
 
-* If the watcher is an `active` watcher:
+With the latest blockHash, run the following query for `balanceOf` and `ownerOf` (`eth_call`):
 
-  * Run the job-runner:
+```graphql
+query {
+  fromBalanceOf: balanceOf(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    owner: "0xSignerAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  toBalanceOf: balanceOf(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    owner: "0xRecipientAddress"
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+  ownerOf(
+    blockHash: "LATEST_BLOCK_HASH"
+    contractAddress: "0xNFTAddress"
+    tokenId: 1
+  ) {
+    value
+    proof {
+      data
+    }
+  }
+}
+```
 
-    ```bash
-    yarn job-runner
-    ```
+Transfer token
 
-  * Run the server:
+```bash
+yarn nft:transfer --nft $NFT_ADDRESS --from $SIGNER_ADDRESS --to $RECIPIENT_ADDRESS --token-id 1
+```
 
-    ```bash
-    yarn server
-    ```
+- An Approval event for SIGNER_ADDRESS shall be visible in the subscription at endpoint.
 
-    GQL console: http://localhost:3012/graphql
+- A Transfer event to $RECIPIENT_ADDRESS shall be visible in the subscription at endpoint.
 
-  * To watch a contract:
+- An auto-generated `diff_staged` State should be added with parent CID pointing to the previous State.
 
-    ```bash
-    yarn watch:contract --address <contract-address> --kind <contract-kind> --checkpoint <true | false> --starting-block [block-number]
-    ```
+- Custom property `transferCount` should be incremented after transfer. This can be checked in the `getState` query.
+
+- Get the latest blockHash and replace the blockHash in the above `eth_call` query. The result should be different and the token should be transferred to the recipient.
+
+- Run the `getState` query again at the endpoint with the event blockHash.
+
+- Run the `transferCount` entity query again with the latest blockHash. The updated count should be returned.
+
+- After the `diff` block has been created (can check if event block number pruned in yarn server log), create a checkpoint using CLI in `packages/erc721-watcher`:
+
+```bash
+yarn checkpoint create --address $NFT_ADDRESS
+```
+
+- Run the `getState` query again with the output blockHash and kind `checkpoint` at the endpoint.
+
+- The latest checkpoint should have the aggregate of state diffs since the last checkpoint.
+    - The `State` entries can be seen in pg-admin in table `state`.
+
+- The state should have auto indexed data and also custom property `transferCount` according to code in [hooks](./src/hooks.ts) file `handleEvent` method.
+
+## Watch
+
+To watch a contract:
+
+```bash
+yarn watch:contract --address <contract-address> --kind <contract-kind> --checkpoint <true | false> --starting-block [block-number]
+```
 
     * `address`: Address or identifier of the contract to be watched.
     * `kind`: Kind of the contract.
@@ -200,3 +405,20 @@ Follow the steps below or follow the [Demo](./demo.md)
     ```
 
     * `cid`: CID to be inspected.
+
+
+## Customize
+
+* Indexing on an event:
+
+  * Edit the custom hook function `handleEvent` (triggered on an event) in [hooks.ts](./src/hooks.ts) to perform corresponding indexing using the `Indexer` object.
+
+  * While using the indexer storage methods for indexing, pass `diff` as true if default state is desired to be generated using the state variables being indexed.
+
+* Generating state:
+
+  * Edit the custom hook function `createInitialState` (triggered if the watcher passes the start block, checkpoint: `true`) in [hooks.ts](./src/hooks.ts) to save an initial `State` using the `Indexer` object.
+
+  * Edit the custom hook function `createStateDiff` (triggered on a block) in [hooks.ts](./src/hooks.ts) to save the state in a `diff` `State` using the `Indexer` object. The default state (if exists) is updated.
+
+  * Edit the custom hook function `createStateCheckpoint` (triggered just before default and CLI checkpoint) in [hooks.ts](./src/hooks.ts) to save the state in a `checkpoint` `State` using the `Indexer` object.
