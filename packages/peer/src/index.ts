@@ -188,13 +188,18 @@ export class Peer {
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
     assert(this._node);
-    console.log(`Dialling peer ${peer.id.toString()}`);
 
     // Check if discovered the relay node
     if (this._relayNodeMultiaddr) {
-      const relayNodePeerId = this._relayNodeMultiaddr.getPeerId();
+      const relayMultiaddr = this._relayNodeMultiaddr;
+      const relayNodePeerId = relayMultiaddr.getPeerId();
+
       if (relayNodePeerId && relayNodePeerId === peer.id.toString()) {
-        await this._node.dial(this._relayNodeMultiaddr);
+        console.log(`Dialling relay peer ${peer.id.toString()} using multiaddr ${relayMultiaddr.toString()}`);
+        await this._node.dial(relayMultiaddr).catch(err => {
+          console.log(`Could not dial relay ${relayMultiaddr.toString()}`, err);
+        });
+
         return;
       }
     }
@@ -202,6 +207,7 @@ export class Peer {
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
+      console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
       const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL).catch(err => {
         console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
       });
@@ -214,7 +220,7 @@ export class Peer {
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
-    console.log('Stream after connection', stream);
+    // console.log('Stream after connection', stream);
     const messageStream = pushable<string>({ objectMode: true });
 
     // Send message to pipe from stdin
