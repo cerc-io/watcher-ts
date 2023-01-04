@@ -121,6 +121,36 @@ Ensure that watcher is of active kind. Update the kind in `server` config to act
 
   * Update the `server` config with state checkpoint settings.
 
+## mm watcher
+
+* Create a postgres12 database for the watcher:
+
+  ```bash
+  sudo su - postgres
+  createdb mobymask-watcher
+  ```
+
+* If the watcher is an `active` watcher:
+
+  Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
+
+  ```
+  createdb mobymask-watcher-job-queue
+  ```
+
+  ```
+  postgres@tesla:~$ psql -U postgres -h localhost mobymask-watcher-job-queue
+  Password for user postgres:
+  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
+  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+  Type "help" for help.
+
+  mobymask-watcher-job-queue=# CREATE EXTENSION pgcrypto;
+  CREATE EXTENSION
+  mobymask-watcher-job-queue=# exit
+  ```
+
+
 ## Watcher CLI commands (yarn)
 
 spot to explain core commands and flags so they aren't repeated in every tutorial

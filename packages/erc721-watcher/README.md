@@ -1,5 +1,7 @@
 # erc721-watcher
 
+To setup the stack required to run this demo, either [use stack-orchestrator](https://github.com/cerc-io/stack-orchestrator) or [do it manually](../../docs/README.md).
+
 ## Setup
 
 Run the following command to install required packages:
