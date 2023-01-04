@@ -4,7 +4,6 @@
 
 import { createLibp2p, Libp2p } from 'libp2p';
 // For nodejs.
-import wrtc from 'wrtc';
 import assert from 'assert';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
@@ -13,7 +12,7 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTC } from '@libp2p/webrtc';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
@@ -21,69 +20,43 @@ import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
-import { floodsub } from '@libp2p/floodsub';
-import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+// import { floodsub } from '@libp2p/floodsub';
+// import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 export const PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export class Peer {
   _node?: Libp2p
-  _wrtcStar: WebRTCStarTuple
   _relayNodeMultiaddr?: Multiaddr
 
   _remotePeerIds: PeerId[] = []
   _peerStreamMap: Map<string, Pushable<string>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: string) => void> = []
 
-  constructor (nodejs?: boolean) {
-    // Instantiation in nodejs.
-    if (nodejs) {
-      this._wrtcStar = webRTCStar({ wrtc });
-    } else {
-      this._wrtcStar = webRTCStar();
-    }
-  }
-
   get peerId (): PeerId | undefined {
     return this._node?.peerId;
   }
 
-  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
-    let peerDiscovery: any;
-    if (relayNodeURL) {
-      console.log('Bootstrapping relay node');
-      this._relayNodeMultiaddr = multiaddr(relayNodeURL);
-      peerDiscovery = [
-        bootstrap({
-          list: [this._relayNodeMultiaddr.toString()]
-        }),
-        pubsubPeerDiscovery({
-          interval: 1000
-        })
-      ];
-    } else {
-      peerDiscovery = [this._wrtcStar.discovery];
-    }
+  async init (relayNodeURL?: string): Promise<void> {
+    console.log('Bootstrapping relay node');
+    this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+    const peerDiscovery = [
+      bootstrap({
+        list: [this._relayNodeMultiaddr.toString()]
+      })
+      // pubsubPeerDiscovery({
+      //   interval: 1000
+      // })
+    ];
 
     this._node = await createLibp2p({
-      addresses: {
-        // Add the signaling server address, along with our PeerId to our multiaddrs list
-        // libp2p will automatically attempt to dial to the signaling server so that it can
-        // receive inbound connections from other peers
-        listen: [
-          // Public signal servers
-          // '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-          // '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-          signalServerURL
-        ]
-      },
       transports: [
-        this._wrtcStar.transport
+        webRTC()
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      pubsub: floodsub(),
+      // pubsub: floodsub(),
       peerDiscovery,
       relay: {
         enabled: true,

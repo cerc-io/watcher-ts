@@ -19,13 +19,6 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   yarn build
   ```
 
-* (Optional) Run a local signalling server:
-
-  ```bash
-  # In packages/peer
-  yarn signal-server
-  ```
-
 * (Optional) Run a local relay node:
 
   ```bash
@@ -35,11 +28,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
 
-* Set the signalling server and relay node multiaddrs in the [env](./.env) file:
+* Set the relay node multiaddr in the [env](./.env) file:
 
   ```
-  REACT_APP_SIGNAL_SERVER=/ip4/127.0.0.1/tcp/13579/ws/p2p-webrtc-star/
-  REACT_APP_RELAY_NODE=/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star/p2p/12D3KooWRzH3ZRFP6RDbs2EKA8jSrD4Y6VYtLnCRMj3mYCiMHCJP
+  REACT_APP_RELAY_NODE=/ip4/0.0.0.0/udp/56352/webrtc/certhash/uEiDc_lNCEKrl3Jm_jhlqNlBc6y5xMKwjIvWxeIPqluHppg/p2p/12D3KooWHSZqWZ5vtKVooz2XCU6v2FjVQnQxhA2hANFN4VYyDfp3
+
   ```
 
 * Start the react app in development mode:

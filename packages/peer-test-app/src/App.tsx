@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     (async () => {
       if (peer) {
-        await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
+        await peer.init(process.env.REACT_APP_RELAY_NODE)
         console.log(`Peer ID is ${peer.peerId!.toString()}`);
 
         peer.subscribeMessage((peerId, message) => {
