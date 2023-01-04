@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "dev": "node dist/index.js",
     "signal-server": "webrtc-star --port=13579 --host=0.0.0.0",
-    "relay-node": "node dist/relay.js"
+    "relay-node": "cd go-libp2p-server && go run main.go"
   },
   "dependencies": {
     "@chainsafe/libp2p-noise": "^10.2.0",
