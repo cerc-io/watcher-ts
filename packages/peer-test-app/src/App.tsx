@@ -18,35 +18,45 @@ function App() {
   const forceUpdate = useForceUpdate();
 
   useEffect(() => {
+    const peer = new Peer();
+    setPeer(peer);
+
     (async () => {
-      if (peer) {
-        await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
-        console.log(`Peer ID is ${peer.peerId!.toString()}`);
+      await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
+      console.log(`Peer ID is ${peer.peerId!.toString()}`);
 
-        // Subscribe to messages from remote peers
-        peer.subscribeMessage((peerId, message) => {
-          console.log(`${peerId.toString()} > ${message}`)
-        })
+      // Subscribe to messages from remote peers
+      peer.subscribeMessage((peerId, message) => {
+        console.log(`${peerId.toString()} > ${message}`)
+      })
 
-        // Expose broadcast method in browser to send messages
-        window.broadcast = (message: string) => {
-          peer.broadcastMessage(message)
-        }
-
-        peer.node?.peerStore.addEventListener('change:multiaddrs', () => forceUpdate())
+      // Expose broadcast method in browser to send messages
+      window.broadcast = (message: string) => {
+        peer.broadcastMessage(message)
       }
-    })()
+
+      peer.node?.peerStore.addEventListener('change:multiaddrs', () => forceUpdate())
+      peer.node?.connectionManager.addEventListener('peer:connect', () => forceUpdate())
+      
+      let lastDisconnect = new Date()
+      peer.node?.connectionManager.addEventListener('peer:disconnect', () => {
+        forceUpdate()
+
+        const now = new Date();
+        const disconnectAfterSeconds = (now.getTime() - lastDisconnect.getTime()) / 1000;
+        console.log("Disconnected after seconds:", disconnectAfterSeconds);
+        lastDisconnect = now;
+      })
+    })();
 
     return () => {
-      if (peer) {
+      if (peer.node) {
         // TODO: Await for peer close
         peer.close()
       }
     }
-  }, [peer])
-
-  useEffect(() => {
-    setPeer(new Peer())
+  // TODO: Refactor instantiation of peer node.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -63,8 +73,7 @@ function App() {
         <Box
           sx={{
             bgcolor: 'background.paper',
-            pt: 6,
-            pb: 6,
+            py: 3,
             px: 3
           }}
         >
@@ -81,7 +90,12 @@ function App() {
                   <TableCell align="right"><b>Node started</b></TableCell>
                   <TableCell>{peer && peer.node && peer.node.isStarted().toString()}</TableCell>
                 </TableRow>
-                {/* Add signal server and relay node */}
+                <TableRow>
+                  <TableCell><b>Signal server</b></TableCell>
+                  <TableCell>{process.env.REACT_APP_SIGNAL_SERVER}</TableCell>
+                  <TableCell align="right"><b>Relay node</b></TableCell>
+                  <TableCell>{process.env.REACT_APP_RELAY_NODE}</TableCell>
+                </TableRow>
                 <TableRow>
                   <TableCell><b>Multiaddrs</b></TableCell>
                   <TableCell colSpan={3}>
@@ -105,6 +119,45 @@ function App() {
               </TableBody>
             </Table>
           </TableContainer>
+          <br/>
+          {
+            peer && peer.node && (
+              <>
+                <Typography variant="subtitle1" color="inherit" noWrap>
+                  Remote Peer Connections (Count: {peer.node.connectionManager.getConnections().length})
+                </Typography>
+                <br/>
+                {peer.node.connectionManager.getConnections().map(connection => (
+                  <TableContainer sx={{ mb: 2 }} key={connection.id} component={Paper}>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ width: 175 }}><b>Connection ID</b></TableCell>
+                          <TableCell>{connection.id}</TableCell>
+                          <TableCell align="right"><b>Direction</b></TableCell>
+                          <TableCell>{connection.stat.direction}</TableCell>
+                          <TableCell align="right"><b>Status</b></TableCell>
+                          <TableCell>{connection.stat.status}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ width: 175 }}><b>Peer ID</b></TableCell>
+                          <TableCell colSpan={5}>{connection.remotePeer.toString()}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ width: 175 }}><b>Connected multiaddr</b></TableCell>
+                          <TableCell colSpan={5}>
+                            {connection.remoteAddr.toString()}
+                            &nbsp;
+                            <b>{connection.remoteAddr.toString() === process.env.REACT_APP_RELAY_NODE && "(RELAY NODE)"}</b>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ))}
+              </>
+            )
+          }
         </Box>
       </main>
     </ThemeProvider>
