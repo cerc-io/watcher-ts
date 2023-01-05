@@ -8,10 +8,9 @@ import wrtc from 'wrtc';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { webRTCDirect } from '@libp2p/webrtc-direct';
-import { floodsub } from '@libp2p/floodsub';
-import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import { kadDHT } from '@libp2p/kad-dht';
 
-import { PUBSUB_DISCOVERY_INTERVAL, RELAY_NODE_LISTEN_ADDRESS } from './constants.js';
+import { RELAY_NODE_LISTEN_ADDRESS } from './constants.js';
 
 async function main (): Promise<void> {
   const node = await createLibp2p({
@@ -21,12 +20,6 @@ async function main (): Promise<void> {
     transports: [webRTCDirect({ wrtc })],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
-    pubsub: floodsub(),
-    peerDiscovery: [
-      pubsubPeerDiscovery({
-        interval: PUBSUB_DISCOVERY_INTERVAL
-      })
-    ],
     relay: {
       enabled: true,
       hop: {
@@ -35,7 +28,10 @@ async function main (): Promise<void> {
       advertise: {
         enabled: true
       }
-    }
+    },
+    dht: kadDHT({
+      clientMode: false
+    })
   });
 
   console.log(`Relay node started with id ${node.peerId.toString()}`);

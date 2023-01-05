@@ -4054,7 +4054,7 @@
     "@libp2p/interfaces" "^3.0.0"
     multiformats "^10.0.0"
 
-"@libp2p/interface-dht@^1.0.1":
+"@libp2p/interface-dht@^1.0.0", "@libp2p/interface-dht@^1.0.1":
   version "1.0.5"
   resolved "https://registry.npmjs.org/@libp2p/interface-dht/-/interface-dht-1.0.5.tgz"
   integrity sha512-kqcHpv0VlhZbHNXVou6qOFw3UUtJBlsJi641Jh6BUZouoej8b2wp/TacOuiHvC6Uy8ACanzprzVG1Rk01mgZwA==
@@ -4172,6 +4172,58 @@
   resolved "https://registry.npmjs.org/@libp2p/interfaces/-/interfaces-3.1.0.tgz"
   integrity sha512-WxzUVaeOpMcNPyjruVbjNvVnjFzay8udqiaW0+rDltlYHSA1LXvZIzk1s5+/m+PKFM+UK7KmY1FZ70HiJzlZ9Q==
 
+"@libp2p/kad-dht@^6.1.1":
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/@libp2p/kad-dht/-/kad-dht-6.1.1.tgz#089e8fdabcd79aefa1c8e6eb0c4a15ebefbd481b"
+  integrity sha512-Y4qv5MyX4BPkuaPLx5hsb8AyLSqJf5LUcyzCflqQUbgHP+vn4Pf9q4c/mjAjBvF56zZSFTiXgnQKvY/XXpWnbg==
+  dependencies:
+    "@libp2p/crypto" "^1.0.4"
+    "@libp2p/interface-address-manager" "^2.0.0"
+    "@libp2p/interface-connection" "^3.0.2"
+    "@libp2p/interface-connection-manager" "^1.1.1"
+    "@libp2p/interface-dht" "^1.0.1"
+    "@libp2p/interface-metrics" "^4.0.0"
+    "@libp2p/interface-peer-discovery" "^1.0.1"
+    "@libp2p/interface-peer-id" "^1.0.4"
+    "@libp2p/interface-peer-info" "^1.0.3"
+    "@libp2p/interface-peer-store" "^1.2.2"
+    "@libp2p/interface-registrar" "^2.0.3"
+    "@libp2p/interfaces" "^3.0.3"
+    "@libp2p/logger" "^2.0.1"
+    "@libp2p/peer-collections" "^2.2.0"
+    "@libp2p/peer-id" "^1.1.15"
+    "@libp2p/record" "^2.0.2"
+    "@libp2p/topology" "^3.0.0"
+    "@multiformats/multiaddr" "^11.0.0"
+    abortable-iterator "^4.0.2"
+    any-signal "^3.0.0"
+    datastore-core "^8.0.1"
+    err-code "^3.0.1"
+    events "^3.3.0"
+    hashlru "^2.3.0"
+    interface-datastore "^7.0.0"
+    it-all "^2.0.0"
+    it-drain "^2.0.0"
+    it-first "^2.0.0"
+    it-length "^2.0.0"
+    it-length-prefixed "^8.0.2"
+    it-map "^2.0.0"
+    it-merge "^2.0.0"
+    it-parallel "^3.0.0"
+    it-pipe "^2.0.3"
+    it-stream-types "^1.0.4"
+    it-take "^2.0.0"
+    k-bucket "^5.1.0"
+    multiformats "^10.0.0"
+    p-defer "^4.0.0"
+    p-queue "^7.2.0"
+    private-ip "^3.0.0"
+    protons-runtime "^4.0.1"
+    timeout-abort-controller "^3.0.0"
+    uint8arraylist "^2.0.0"
+    uint8arrays "^4.0.2"
+    varint "^6.0.0"
+
 "@libp2p/logger@^2.0.0", "@libp2p/logger@^2.0.1":
   version "2.0.2"
   resolved "https://registry.npmjs.org/@libp2p/logger/-/logger-2.0.2.tgz"
@@ -4223,7 +4275,7 @@
     uint8arraylist "^2.3.1"
     uint8arrays "^4.0.2"
 
-"@libp2p/peer-collections@^2.0.0":
+"@libp2p/peer-collections@^2.0.0", "@libp2p/peer-collections@^2.2.0":
   version "2.2.2"
   resolved "https://registry.npmjs.org/@libp2p/peer-collections/-/peer-collections-2.2.2.tgz"
   integrity sha512-sL1A0LBHJAlvqROe+OT61Y6Rg7ff+B+YNDZj+3f/LGvDssyffAQX78cXU+lWKPsT+AwHt7Sk7sO4CsYJbdOScQ==
@@ -4347,6 +4399,18 @@
     multiformats "^10.0.0"
     p-queue "^7.2.0"
     uint8arraylist "^2.0.0"
+    uint8arrays "^4.0.2"
+
+"@libp2p/record@^2.0.2":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@libp2p/record/-/record-2.0.4.tgz#f9592d834908e9b084c54bb63b3986c30b32bcf1"
+  integrity sha512-BLdw/zDh4Nq65nKD/BRKad7++h2pPwY7IxoZNyEN4uvCo6knmfTSlKwqlw4NCYaH27YcupXrhKZ2WAoYjt5ACw==
+  dependencies:
+    "@libp2p/interface-dht" "^1.0.0"
+    err-code "^3.0.1"
+    multiformats "^10.0.0"
+    protons-runtime "^4.0.1"
+    uint8arraylist "^2.1.1"
     uint8arrays "^4.0.2"
 
 "@libp2p/topology@^3.0.0":
@@ -14618,6 +14682,11 @@ it-length-prefixed@^8.0.2, it-length-prefixed@^8.0.3:
     uint8arraylist "^2.0.0"
     uint8arrays "^4.0.2"
 
+it-length@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/it-length/-/it-length-2.0.0.tgz#0cbea9206ec3429f1383e37d9bd3165669a174d5"
+  integrity sha512-YFe6AW6RKkSTburcbyBChf6+HnyWumKZH9KRVfUSVXYkVqJxaJh/8aM8pnaFHm26lKQxYo57YW6RP+wL4CMx0Q==
+
 it-map@^1.0.4, it-map@^1.0.5:
   version "1.0.6"
   resolved "https://registry.npmjs.org/it-map/-/it-map-1.0.6.tgz"
@@ -14648,6 +14717,13 @@ it-pair@^2.0.2:
   integrity sha512-heCgsbYscFCQY5YvltlGT9tjgLGYo7NxPEoJyl55X4BD2KOXpTyuwOhPLWhi9Io0y6+4ZUXCkyaQXIB6Y8xhRw==
   dependencies:
     it-stream-types "^1.0.3"
+    p-defer "^4.0.0"
+
+it-parallel@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/it-parallel/-/it-parallel-3.0.0.tgz#30e376c579da9f755d02b2735a69aac19cf5373b"
+  integrity sha512-/y70cY7VoZ7natLbWrPxoRaKWMD67RvtWx21cyLJr6kkuHrUWOrHNr8CPMBqzDRh73aig/uUT82hzTTmTTkDUg==
+  dependencies:
     p-defer "^4.0.0"
 
 it-pb-stream@^2.0.2:
@@ -14710,6 +14786,11 @@ it-take@^1.0.1:
   version "1.0.2"
   resolved "https://registry.npmjs.org/it-take/-/it-take-1.0.2.tgz"
   integrity sha512-u7I6qhhxH7pSevcYNaMECtkvZW365ARqAIt9K+xjdK1B2WUDEjQSfETkOCT8bxFq/59LqrN3cMLUtTgmDBaygw==
+
+it-take@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/it-take/-/it-take-2.0.0.tgz#e62bdf0f9bf1590b369a116b37de9f74b1f61f00"
+  integrity sha512-lN3diSTomOvYBk2K0LHAgrQ52DlQfvq8tH/+HLAFpX8Q3JwBkr/BPJEi3Z3Lf8jMmN1KOCBXvt5sXa3eW9vUmg==
 
 it-to-stream@^1.0.0:
   version "1.0.0"
@@ -15559,6 +15640,13 @@ jsprim@^1.2.2:
   dependencies:
     array-includes "^3.1.5"
     object.assign "^4.1.3"
+
+k-bucket@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/k-bucket/-/k-bucket-5.1.0.tgz#db2c9e72bd168b432e3f3e8fc092e2ccb61bff89"
+  integrity sha512-Fac7iINEovXIWU20GPnOMLUbjctiS+cnmyjC4zAUgvs3XPf1vo9akfCHkigftSic/jiKqKl+KA3a/vFcJbHyCg==
+  dependencies:
+    randombytes "^2.1.0"
 
 keccak@3.0.1, keccak@^3.0.0:
   version "3.0.1"

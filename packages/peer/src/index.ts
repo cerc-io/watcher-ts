@@ -22,8 +22,7 @@ import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
-import { floodsub } from '@libp2p/floodsub';
-import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import { kadDHT } from '@libp2p/kad-dht';
 
 export const PROTOCOL = '/chat/1.0.0';
 
@@ -53,28 +52,26 @@ export class Peer {
     this._relayNodeMultiaddr = multiaddr(relayNodeURL);
 
     console.log(`Bootstrapping with relay node ${this._relayNodeMultiaddr.toString()}`);
-    const peerDiscovery = [
-      bootstrap({
-        list: [this._relayNodeMultiaddr.toString()]
-      }),
-      // Add pubsub discovery; relay server acts as a peer discovery source
-      pubsubPeerDiscovery({
-        interval: 1000
-      })
-    ];
 
     this._node = await createLibp2p({
       transports: [this._wrtcTransport],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      pubsub: floodsub(),
-      peerDiscovery,
+      peerDiscovery: [
+        bootstrap({
+          list: [this._relayNodeMultiaddr.toString()]
+        })
+      ],
       relay: {
         enabled: true,
         autoRelay: {
           enabled: true,
           maxListeners: 2
         }
+      },
+      dht: kadDHT(),
+      connectionManager: {
+        autoDial: false
       }
     });
 
