@@ -50,6 +50,10 @@ export class Peer {
     return this._node?.peerId;
   }
 
+  get node (): Libp2p | undefined {
+    return this._node;
+  }
+
   async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
     let peerDiscovery: any;
     if (relayNodeURL) {
