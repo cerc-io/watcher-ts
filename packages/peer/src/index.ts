@@ -98,7 +98,7 @@ export class Peer {
         }
       },
       connectionManager: {
-        maxDialsPerPeer: 1 // Number of max concurrent dials per peer
+        maxDialsPerPeer: 3 // Number of max concurrent dials per peer
       }
     });
 

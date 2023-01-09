@@ -14,7 +14,7 @@ import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
-import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
 
 interface Arguments {
   signalServer: string;
@@ -47,7 +47,8 @@ async function main (): Promise<void> {
     relay: {
       enabled: true,
       hop: {
-        enabled: true
+        enabled: true,
+        timeout: HOP_TIMEOUT
       },
       advertise: {
         enabled: true
