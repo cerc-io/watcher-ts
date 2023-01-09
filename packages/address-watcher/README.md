@@ -2,39 +2,7 @@
 
 ## Setup
 
-Create a postgres12 database for the job queue:
-
-```
-sudo su - postgres
-createdb address-watcher-job-queue
-```
-
-Enable the `pgcrypto` extension on the job queue database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
-
-Example:
-
-```
-postgres@tesla:~$ psql -U postgres -h localhost address-watcher-job-queue
-Password for user postgres:
-psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-Type "help" for help.
-
-address-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-CREATE EXTENSION
-address-watcher-job-queue=# exit
-```
-
-Create a postgres12 database for the address watcher:
-
-```
-sudo su - postgres
-createdb address-watcher
-```
-
-Update `environments/local.toml` with database connection settings for both the databases.
-
-Update the `upstream` config in `environments/local.toml` and provide the `ipld-eth-server` GQL API and the tracing API (`debug_traceTransaction` RPC provider) endpoints.
+First try the [stack orchestrator](https://github.com/cerc-io/stack-orchestrator) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
 
 ## Run
 

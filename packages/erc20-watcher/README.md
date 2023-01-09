@@ -1,6 +1,6 @@
 # ERC20 Watcher
 
-To setup the stack required to run this demo, either [use stack-orchestrator](https://github.com/cerc-io/stack-orchestrator) or [do it manually](../../docs/README.md).
+First try the [stack orchestrator](https://github.com/cerc-io/stack-orchestrator) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
 
 ## Build 
 

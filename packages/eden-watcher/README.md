@@ -2,46 +2,7 @@
 
 ## Setup
 
-* Run the following command to install required packages:
-
-  ```bash
-  yarn
-  ```
-
-* Create a postgres12 database for the watcher:
-
-  ```bash
-  sudo su - postgres
-  createdb eden-watcher
-  ```
-
-* If the watcher is an `active` watcher:
-
-  Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
-
-  ```
-  createdb eden-watcher-job-queue
-  ```
-
-  ```
-  postgres@tesla:~$ psql -U postgres -h localhost eden-watcher-job-queue
-  Password for user postgres:
-  psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-  SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-  Type "help" for help.
-
-  eden-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-  CREATE EXTENSION
-  eden-watcher-job-queue=# exit
-  ```
-
-* In the [config file](./environments/local.toml):
-
-  * Update the database connection settings.
-
-  * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
-
-  * Update the `server` config with state checkpoint settings.
+First try the [stack orchestrator](https://github.com/cerc-io/stack-orchestrator) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
 
 ## Customize
 
