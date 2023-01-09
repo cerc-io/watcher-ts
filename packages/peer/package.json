@@ -6,7 +6,7 @@
   "exports": "./dist/index.js",
   "type": "module",
   "license": "AGPL-version-3.0",
-  "private": true,
+  "private": false,
   "engines": {
     "node": ">=14.16",
     "npm": ">= 6.0.0"

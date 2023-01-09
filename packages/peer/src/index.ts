@@ -34,8 +34,8 @@ export class Peer {
   _relayNodeMultiaddr?: Multiaddr
 
   _remotePeerIds: PeerId[] = []
-  _peerStreamMap: Map<string, Pushable<string>> = new Map()
-  _messageHandlers: Array<(peerId: PeerId, message: string) => void> = []
+  _peerStreamMap: Map<string, Pushable<any>> = new Map()
+  _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
 
   constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
@@ -150,13 +150,13 @@ export class Peer {
     await Promise.all(hangUpPromises);
   }
 
-  broadcastMessage (message: string): void {
+  broadcastMessage (message: any): void {
     for (const [, stream] of this._peerStreamMap) {
       stream.push(message);
     }
   }
 
-  subscribeMessage (handler: (peerId: PeerId, message: string) => void) : () => void {
+  subscribeMessage (handler: (peerId: PeerId, message: any) => void) : () => void {
     this._messageHandlers.push(handler);
 
     const unsubscribe = () => {
@@ -225,14 +225,16 @@ export class Peer {
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
     // console.log('Stream after connection', stream);
-    const messageStream = pushable<string>({ objectMode: true });
+    const messageStream = pushable<any>({ objectMode: true });
 
     // Send message to pipe from stdin
     pipe(
       // Read from stream (the source)
       messageStream,
-      // Turn strings into buffers
-      (source) => map(source, (string) => uint8ArrayFromString(string)),
+      // Turn objects into buffers
+      (source) => map(source, (value) => {
+        return uint8ArrayFromString(JSON.stringify(value));
+      }),
       // Encode with length prefix (so receiving side knows how much data is coming)
       lp.encode(),
       // Write to the stream (the sink)
@@ -245,13 +247,15 @@ export class Peer {
       stream.source,
       // Decode length-prefixed data
       lp.decode(),
-      // Turn buffers into strings
-      (source) => map(source, (buf) => uint8ArrayToString(buf.subarray())),
+      // Turn buffers into objects
+      (source) => map(source, (buf) => {
+        return JSON.parse(uint8ArrayToString(buf.subarray()));
+      }),
       // Sink function
       async (source) => {
         // For each chunk of data
         for await (const msg of source) {
-          this._messageHandlers.forEach(messageHandler => messageHandler(peerId, msg.toString()));
+          this._messageHandlers.forEach(messageHandler => messageHandler(peerId, msg));
         }
       }
     );
