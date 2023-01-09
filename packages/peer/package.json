@@ -39,7 +39,8 @@
     "it-pipe": "^2.0.5",
     "libp2p": "^0.41.0",
     "stream-browserify": "^3.0.0",
-    "wrtc": "^0.4.7"
+    "wrtc": "^0.4.7",
+    "node-pre-gyp": "^0.13.0"
   },
   "devDependencies": {
     "@libp2p/webrtc-star-signalling-server": "^2.0.5",

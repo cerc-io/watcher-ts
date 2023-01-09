@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@cerc-io/peer": "^0.2.18",
+    "@cerc-io/react-peer": "^0.2.18",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@mui/material": "^5.11.3",
@@ -48,6 +49,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.18.6",
     "eslint-config-react-app": "^7.0.1",
     "serve": "^14.1.2"
   }

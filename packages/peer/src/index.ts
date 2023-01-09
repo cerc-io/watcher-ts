@@ -116,7 +116,7 @@ export class Peer {
 
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
-      console.log('event peer:discovery', evt);
+      // console.log('event peer:discovery', evt);
       this._handleDiscovery(evt.detail);
     });
 

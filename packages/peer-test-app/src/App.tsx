@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect } from 'react';
+import { PeerContext } from '@cerc-io/react-peer'
 
 import { Peer } from '@cerc-io/peer';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -14,19 +15,13 @@ declare global {
 const theme = createTheme();
 
 function App() {
-  const [peer, setPeer] = useState<Peer>()
   const forceUpdate = useForceUpdate();
+  const peer: Peer = useContext(PeerContext);
 
   useEffect(() => {
-    const peer = new Peer();
-    setPeer(peer);
-
-    (async () => {
-      await peer.init(process.env.REACT_APP_SIGNAL_SERVER, process.env.REACT_APP_RELAY_NODE)
-      console.log(`Peer ID is ${peer.peerId!.toString()}`);
-
+    if (peer) {
       // Subscribe to messages from remote peers
-      peer.subscribeMessage((peerId, message) => {
+      const unsubscribeMessage = peer.subscribeMessage((peerId, message) => {
         console.log(`${peerId.toString()} > ${message}`)
       })
 
@@ -35,29 +30,29 @@ function App() {
         peer.broadcastMessage(message)
       }
 
-      peer.node?.peerStore.addEventListener('change:multiaddrs', () => forceUpdate())
-      peer.node?.connectionManager.addEventListener('peer:connect', () => forceUpdate())
-      
+      peer.node?.peerStore.addEventListener('change:multiaddrs', forceUpdate)
+      peer.node?.connectionManager.addEventListener('peer:connect', forceUpdate)
+
       let lastDisconnect = new Date()
-      peer.node?.connectionManager.addEventListener('peer:disconnect', () => {
+      const disconnectHandler = () => {
         forceUpdate()
 
         const now = new Date();
         const disconnectAfterSeconds = (now.getTime() - lastDisconnect.getTime()) / 1000;
         console.log("Disconnected after seconds:", disconnectAfterSeconds);
         lastDisconnect = now;
-      })
-    })();
+      }
 
-    return () => {
-      if (peer.node) {
-        // TODO: Await for peer close
-        peer.close()
+      peer.node?.connectionManager.addEventListener('peer:disconnect', disconnectHandler)
+
+      return () => {
+        unsubscribeMessage()
+        peer.node?.peerStore.removeEventListener('change:multiaddrs', forceUpdate)
+        peer.node?.connectionManager.removeEventListener('peer:connect', forceUpdate)
+        peer.node?.connectionManager.removeEventListener('peer:disconnect', disconnectHandler)
       }
     }
-  // TODO: Refactor instantiation of peer node.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [peer, forceUpdate])
 
   return (
     <ThemeProvider theme={theme}>
