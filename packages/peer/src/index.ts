@@ -20,7 +20,6 @@ import type { Stream as P2PStream, Connection } from '@libp2p/interface-connecti
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
-import { bootstrap } from '@libp2p/bootstrap';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
@@ -59,11 +58,8 @@ export class Peer {
     let peerDiscovery: any;
     if (relayNodeURL) {
       this._relayNodeMultiaddr = multiaddr(relayNodeURL);
-      console.log(`Bootstrapping with relay node ${this._relayNodeMultiaddr.toString()}`);
+
       peerDiscovery = [
-        bootstrap({
-          list: [this._relayNodeMultiaddr.toString()]
-        }),
         pubsubPeerDiscovery({
           interval: PUBSUB_DISCOVERY_INTERVAL
         })
@@ -105,6 +101,14 @@ export class Peer {
     });
 
     console.log('libp2p node created', this._node);
+
+    // Dial to the HOP enabled relay node if available
+    if (this._relayNodeMultiaddr) {
+      const relayMultiaddr = this._relayNodeMultiaddr;
+
+      console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
+      await this._node.dial(relayMultiaddr);
+    }
 
     // Listen for change in stored multiaddrs
     this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {

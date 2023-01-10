@@ -4695,20 +4695,6 @@
     npmlog "^4.1.2"
     write-file-atomic "^3.0.3"
 
-"@libp2p/bootstrap@^5.0.2":
-  version "5.0.2"
-  resolved "https://registry.npmjs.org/@libp2p/bootstrap/-/bootstrap-5.0.2.tgz"
-  integrity sha512-AOr/uCjHpkfVWFylYXn7KRa1oIGmyZpadoMUr09nAEG0S3ejTda3TMFu90SXApMDnfSsaWyrnsfxNlH8HbfdSg==
-  dependencies:
-    "@libp2p/interface-peer-discovery" "^1.0.1"
-    "@libp2p/interface-peer-info" "^1.0.3"
-    "@libp2p/interface-peer-store" "^1.2.2"
-    "@libp2p/interfaces" "^3.0.3"
-    "@libp2p/logger" "^2.0.1"
-    "@libp2p/peer-id" "^1.1.15"
-    "@multiformats/mafmt" "^11.0.3"
-    "@multiformats/multiaddr" "^11.0.0"
-
 "@libp2p/crypto@^1.0.0", "@libp2p/crypto@^1.0.4":
   version "1.0.10"
   resolved "https://registry.npmjs.org/@libp2p/crypto/-/crypto-1.0.10.tgz"
@@ -5307,7 +5293,7 @@
     prop-types "^15.8.1"
     react-is "^18.2.0"
 
-"@multiformats/mafmt@^11.0.2", "@multiformats/mafmt@^11.0.3":
+"@multiformats/mafmt@^11.0.2":
   version "11.0.3"
   resolved "https://registry.npmjs.org/@multiformats/mafmt/-/mafmt-11.0.3.tgz"
   integrity sha512-DvCQeZJgaC4kE3BLqMuW3gQkNAW14Z7I+yMt30Ze+wkfHkWSp+bICcHGihhtgfzYCumHA/vHlJ9n54mrCcmnvQ==
