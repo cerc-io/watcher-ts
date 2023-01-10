@@ -13,7 +13,8 @@ import {
   QueryRunner,
   Repository,
   SelectQueryBuilder,
-  UpdateResult
+  UpdateResult,
+  ObjectLiteral
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
@@ -93,7 +94,7 @@ export class GraphDatabase {
     return this._baseDatabase.createTransactionRunner();
   }
 
-  async getModelEntity<Entity> (repo: Repository<Entity>, whereOptions: any): Promise<Entity | undefined> {
+  async getModelEntity<Entity extends ObjectLiteral> (repo: Repository<Entity>, whereOptions: any): Promise<Entity | undefined> {
     eventProcessingLoadEntityCount.inc();
 
     const findOptions = {
@@ -165,7 +166,7 @@ export class GraphDatabase {
     return repo.findOne(findOptions);
   }
 
-  async getEntity<Entity> (entityName: string, id: string, blockHash?: string): Promise<Entity | undefined> {
+  async getEntity<Entity extends ObjectLiteral> (entityName: string, id: string, blockHash?: string): Promise<Entity | undefined> {
     const queryRunner = this._conn.createQueryRunner();
 
     try {
@@ -212,7 +213,7 @@ export class GraphDatabase {
     return count > 0;
   }
 
-  async getEntityWithRelations<Entity> (
+  async getEntityWithRelations<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: (new () => Entity),
     id: string,
@@ -343,7 +344,7 @@ export class GraphDatabase {
     return entityData;
   }
 
-  async getEntities<Entity> (
+  async getEntities<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
@@ -411,7 +412,7 @@ export class GraphDatabase {
     return entities;
   }
 
-  async getEntitiesGroupBy<Entity> (
+  async getEntitiesGroupBy<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     block: BlockHeight,
@@ -475,7 +476,7 @@ export class GraphDatabase {
     return entities;
   }
 
-  async getEntitiesDistinctOn<Entity> (
+  async getEntitiesDistinctOn<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     block: BlockHeight,
@@ -516,7 +517,7 @@ export class GraphDatabase {
         `(${subQuery.getQuery()})`,
         'latestEntities'
       )
-      .setParameters(subQuery.getParameters());
+      .setParameters(subQuery.getParameters()) as SelectQueryBuilder<Entity>;
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
@@ -539,7 +540,7 @@ export class GraphDatabase {
     return entities as Entity[];
   }
 
-  async getEntitiesSingular<Entity> (
+  async getEntitiesSingular<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     block: BlockHeight,
@@ -574,7 +575,7 @@ export class GraphDatabase {
     return entities as Entity[];
   }
 
-  async getEntitiesUnique<Entity> (
+  async getEntitiesUnique<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     block: BlockHeight,
@@ -676,7 +677,7 @@ export class GraphDatabase {
     return selectQueryBuilder.getMany();
   }
 
-  async getEntitiesLateral<Entity> (
+  async getEntitiesLateral<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     latestEntity: new () => any,
@@ -717,7 +718,7 @@ export class GraphDatabase {
           return qb;
         },
         'result'
-      );
+      ) as SelectQueryBuilder<Entity>;
 
     selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, 'latest');
 
@@ -1040,11 +1041,11 @@ export class GraphDatabase {
   }
 
   cacheUpdatedEntityByName (entityName: string, entity: any, pruned = false): void {
-    const repo = this._conn.getRepository(entityName);
+    const repo = this._conn.getRepository<ObjectLiteral>(entityName);
     this.cacheUpdatedEntity(repo, entity, pruned);
   }
 
-  cacheUpdatedEntity<Entity> (repo: Repository<Entity>, entity: any, pruned = false): void {
+  cacheUpdatedEntity<Entity extends ObjectLiteral> (repo: Repository<Entity>, entity: any, pruned = false): void {
     const tableName = repo.metadata.tableName;
 
     if (pruned) {
@@ -1204,8 +1205,8 @@ export class GraphDatabase {
   }
 
   async canonicalizeLatestEntity (queryRunner: QueryRunner, entityType: any, latestEntityType: any, entities: any[], blockNumber: number): Promise<void> {
-    const repo = queryRunner.manager.getRepository(entityType);
-    const latestEntityRepo = queryRunner.manager.getRepository(latestEntityType);
+    const repo = queryRunner.manager.getRepository<ObjectLiteral>(entityType);
+    const latestEntityRepo = queryRunner.manager.getRepository<ObjectLiteral>(latestEntityType);
 
     await Promise.all(entities.map(async (entity: any) => {
       // Get latest pruned (canonical) version for the given entity

@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
+import { DeepPartial, FindConditions, FindManyOptions, ObjectLiteral } from 'typeorm';
 import { ethers } from 'ethers';
 import { SelectionNode } from 'graphql';
 
@@ -281,13 +281,13 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.removeStates(blockNumber, kind);
   }
 
-  async getSubgraphEntity<Entity> (entity: new () => Entity, id: string, block: BlockHeight, selections: ReadonlyArray<SelectionNode> = []): Promise<any> {
+  async getSubgraphEntity<Entity extends ObjectLiteral> (entity: new () => Entity, id: string, block: BlockHeight, selections: ReadonlyArray<SelectionNode> = []): Promise<any> {
     const data = await this._graphWatcher.getEntity(entity, id, this._relationsMap, block, selections);
 
     return data;
   }
 
-  async getSubgraphEntities<Entity> (
+  async getSubgraphEntities<Entity extends ObjectLiteral> (
     entity: new () => Entity,
     block: BlockHeight,
     where: { [key: string]: any } = {},

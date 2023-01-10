@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import debug from 'debug';
 import yaml from 'js-yaml';
-import { DeepPartial, EntityTarget, InsertEvent, Repository, UpdateEvent } from 'typeorm';
+import { DeepPartial, EntityTarget, InsertEvent, ObjectLiteral, Repository, UpdateEvent } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
@@ -855,7 +855,7 @@ export const afterEntityInsertOrUpdate = async<Entity> (
     .execute();
 };
 
-export function getLatestEntityFromEntity<Entity> (latestEntityRepo: Repository<Entity>, entity: any): Entity {
+export function getLatestEntityFromEntity<Entity extends ObjectLiteral> (latestEntityRepo: Repository<Entity>, entity: any): Entity {
   const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
   return latestEntityRepo.create(_.pick(entity, latestEntityFields) as DeepPartial<Entity>);
 }
