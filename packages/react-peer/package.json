@@ -12,7 +12,7 @@
   "scripts": {
     "build": "nwb build-react-component --no-demo",
     "clean": "nwb clean-module && nwb clean-demo",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "yarn build",
     "start": "nwb serve-react-demo",
     "test:coverage": "nwb test-react --coverage",
     "test:watch": "nwb test-react --server"
@@ -30,8 +30,7 @@
   },
   "author": "",
   "homepage": "",
-  "license": "MIT",
-  "repository": "",
+  "license": "AGPL-version-3.0",
   "keywords": [
     "react-component"
   ]
