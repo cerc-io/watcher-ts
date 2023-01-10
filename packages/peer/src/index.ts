@@ -96,6 +96,9 @@ export class Peer {
           enabled: true,
           maxListeners: 2
         }
+      },
+      connectionManager: {
+        maxDialsPerPeer: 3 // Number of max concurrent dials per peer
       }
     });
 
@@ -217,6 +220,7 @@ export class Peer {
         const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL);
 
         this._handleStream(peer.id, stream);
+        break;
       } catch (err) {
         console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
       }
