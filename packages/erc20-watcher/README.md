@@ -31,7 +31,7 @@ yarn server
 ```
 
 For development or to specify the config file:
-```basj
+```bash
 yarn server:dev
 yarn server -f environments/local.toml
 ```
