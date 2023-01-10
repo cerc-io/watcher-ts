@@ -192,7 +192,7 @@ export class Peer {
     this._remotePeerIds = this._remotePeerIds.filter(remotePeerId => remotePeerId.toString() !== disconnectedPeerId.toString());
 
     // Log disconnected peer
-    console.log(`Disconnected to ${disconnectedPeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    console.log(`Disconnected from ${disconnectedPeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
