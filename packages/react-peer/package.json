@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/react-peer",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "description": "react-peer React component",
   "main": "lib/index.js",
   "files": [
@@ -12,13 +12,13 @@
   "scripts": {
     "build": "nwb build-react-component --no-demo",
     "clean": "nwb clean-module && nwb clean-demo",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "yarn build",
     "start": "nwb serve-react-demo",
     "test:coverage": "nwb test-react --coverage",
     "test:watch": "nwb test-react --server"
   },
   "dependencies": {
-    "@cerc-io/peer": "^0.2.20"
+    "@cerc-io/peer": "^0.2.21"
   },
   "peerDependencies": {
     "react": "^18.2.0"
@@ -30,8 +30,7 @@
   },
   "author": "",
   "homepage": "",
-  "license": "MIT",
-  "repository": "",
+  "license": "AGPL-version-3.0",
   "keywords": [
     "react-component"
   ]
