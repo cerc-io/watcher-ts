@@ -1,6 +1,6 @@
 # erc721-watcher
 
-First try the [stack orchestrator](https://github.com/cerc-io/stack-orchestrator) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
+First try the [erc721 demo in stack orchestrator](https://github.com/cerc-io/stack-orchestrator/tree/main/app/data/stacks/erc721) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
 
 ## Setup
 
