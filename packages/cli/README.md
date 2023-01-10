@@ -24,14 +24,24 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   yarn signal-server
   ```
 
+* (Optional) Create and export a peer id for the relay node:
+
+  ```bash
+  # In packages/peer
+  yarn create-peer --file [PEER_ID_FILE_PATH]
+  ```
+
+  * `file (f)`: file path to export the peer id to (json)
+
 * (Optional) Run a local relay node:
 
   ```bash
   # In packages/peer
-  yarn relay-node --signal-server [SIGNAL_SERVER_URL]
+  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH]
   ```
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
+  * `peer-id-file`: file path for peer id to be used (json)
 
 * Start the node:
 
