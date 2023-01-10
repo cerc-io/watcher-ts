@@ -10,6 +10,6 @@ Package used for connecting between peers and send messages
 - [x] Use package in server
 - [x] Send messages between systems in different LANs using relay node
 
-## Issues
+## Known Issues
 
 - `peer:disconnect` event is not fired when remote peer browser is closed

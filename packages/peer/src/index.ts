@@ -23,9 +23,10 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+
 import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
 
-export const PROTOCOL = '/chat/1.0.0';
+export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export class Peer {
@@ -136,7 +137,7 @@ export class Peer {
     });
 
     // Handle messages for the protocol
-    await this._node.handle(PROTOCOL, async ({ stream, connection }) => {
+    await this._node.handle(CHAT_PROTOCOL, async ({ stream, connection }) => {
       this._handleStream(connection.remotePeer, stream);
     });
   }
@@ -148,7 +149,7 @@ export class Peer {
     this._node.connectionManager.removeEventListener('peer:connect');
     this._node.connectionManager.removeEventListener('peer:disconnect');
 
-    await this._node.unhandle(PROTOCOL);
+    await this._node.unhandle(CHAT_PROTOCOL);
     const hangUpPromises = this._remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
   }
@@ -217,7 +218,7 @@ export class Peer {
     for (const peerMultiaddr of peer.multiaddrs) {
       try {
         console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
-        const stream = await this._node.dialProtocol(peerMultiaddr, PROTOCOL);
+        const stream = await this._node.dialProtocol(peerMultiaddr, CHAT_PROTOCOL);
 
         this._handleStream(peer.id, stream);
         break;

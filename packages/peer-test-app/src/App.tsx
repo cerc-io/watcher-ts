@@ -19,38 +19,40 @@ function App() {
   const peer: Peer = useContext(PeerContext);
 
   useEffect(() => {
-    if (peer) {
-      // Subscribe to messages from remote peers
-      const unsubscribeMessage = peer.subscribeMessage((peerId, message) => {
-        console.log(`${peerId.toString()} > ${message}`)
-      })
+    if (!peer || !peer.node) {
+      return
+    }
 
-      // Expose broadcast method in browser to send messages
-      window.broadcast = (message: string) => {
-        peer.broadcastMessage(message)
-      }
+    // Subscribe to messages from remote peers
+    const unsubscribeMessage = peer.subscribeMessage((peerId, message) => {
+      console.log(`${peerId.toString()} > ${message}`)
+    })
 
-      peer.node?.peerStore.addEventListener('change:multiaddrs', forceUpdate)
-      peer.node?.connectionManager.addEventListener('peer:connect', forceUpdate)
+    // Expose broadcast method in browser to send messages
+    window.broadcast = (message: string) => {
+      peer.broadcastMessage(message)
+    }
 
-      let lastDisconnect = new Date()
-      const disconnectHandler = () => {
-        forceUpdate()
+    peer.node.peerStore.addEventListener('change:multiaddrs', forceUpdate)
+    peer.node.connectionManager.addEventListener('peer:connect', forceUpdate)
 
-        const now = new Date();
-        const disconnectAfterSeconds = (now.getTime() - lastDisconnect.getTime()) / 1000;
-        console.log("Disconnected after seconds:", disconnectAfterSeconds);
-        lastDisconnect = now;
-      }
+    let lastDisconnect = new Date()
+    const disconnectHandler = () => {
+      forceUpdate()
 
-      peer.node?.connectionManager.addEventListener('peer:disconnect', disconnectHandler)
+      const now = new Date();
+      const disconnectAfterSeconds = (now.getTime() - lastDisconnect.getTime()) / 1000;
+      console.log("Disconnected after seconds:", disconnectAfterSeconds);
+      lastDisconnect = now;
+    }
 
-      return () => {
-        unsubscribeMessage()
-        peer.node?.peerStore.removeEventListener('change:multiaddrs', forceUpdate)
-        peer.node?.connectionManager.removeEventListener('peer:connect', forceUpdate)
-        peer.node?.connectionManager.removeEventListener('peer:disconnect', disconnectHandler)
-      }
+    peer.node.connectionManager.addEventListener('peer:disconnect', disconnectHandler)
+
+    return () => {
+      unsubscribeMessage()
+      peer.node?.peerStore.removeEventListener('change:multiaddrs', forceUpdate)
+      peer.node?.connectionManager.removeEventListener('peer:connect', forceUpdate)
+      peer.node?.connectionManager.removeEventListener('peer:disconnect', disconnectHandler)
     }
   }, [peer, forceUpdate])
 
