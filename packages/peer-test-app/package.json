@@ -1,10 +1,10 @@
 {
   "name": "@cerc-io/peer-test-app",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "private": true,
   "dependencies": {
-    "@cerc-io/peer": "^0.2.20",
-    "@cerc-io/react-peer": "^0.2.20",
+    "@cerc-io/peer": "^0.2.21",
+    "@cerc-io/react-peer": "^0.2.21",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@mui/material": "^5.11.3",
