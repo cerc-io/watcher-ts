@@ -18,6 +18,7 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
+import type { Message } from '@libp2p/interface-pubsub';
 import { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
@@ -36,6 +37,7 @@ export class Peer {
   _remotePeerIds: PeerId[] = []
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
+  _topicHandlers: Map<string, Array<(data: any) => void>> = new Map()
 
   constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
@@ -145,6 +147,11 @@ export class Peer {
     await this._node.handle(CHAT_PROTOCOL, async ({ stream, connection }) => {
       this._handleStream(connection.remotePeer, stream);
     });
+
+    // Listen for pubsub messages
+    this._node.pubsub.addEventListener('message', (evt) => {
+      this._handleMessage(evt.detail);
+    });
   }
 
   async close (): Promise<void> {
@@ -153,6 +160,7 @@ export class Peer {
     this._node.removeEventListener('peer:discovery');
     this._node.connectionManager.removeEventListener('peer:connect');
     this._node.connectionManager.removeEventListener('peer:disconnect');
+    this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
     const hangUpPromises = this._remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
@@ -165,12 +173,48 @@ export class Peer {
     }
   }
 
+  floodMessage (topic: string, msg: any): void {
+    assert(this._node);
+    this._node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
+  }
+
   subscribeMessage (handler: (peerId: PeerId, message: any) => void) : () => void {
     this._messageHandlers.push(handler);
 
     const unsubscribe = () => {
       this._messageHandlers = this._messageHandlers
         .filter(registeredHandler => registeredHandler !== handler);
+    };
+
+    return unsubscribe;
+  }
+
+  subscribeTopic (topic: string, handler: (data: any) => void): () => void {
+    assert(this._node);
+
+    // Subscribe node to the topic
+    this._node.pubsub.subscribe(topic);
+
+    // Register provided handler for the topic
+    if (!this._topicHandlers.has(topic)) {
+      this._topicHandlers.set(topic, [handler]);
+    } else {
+      this._topicHandlers.get(topic)?.push(handler);
+    }
+
+    // Create a unsubscribe callback
+    const unsubscribe = () => {
+      // Remove handler from registered handlers for the topic
+      const filteredTopicHandlers = this._topicHandlers.get(topic)
+        ?.filter(registeredHandler => registeredHandler !== handler);
+
+      if (filteredTopicHandlers?.length) {
+        this._topicHandlers.set(topic, filteredTopicHandlers);
+      } else {
+        // Remove topic from map and unsubscribe node from the topic if no handlers left
+        this._topicHandlers.delete(topic);
+        this._node?.pubsub.unsubscribe(topic);
+      }
     };
 
     return unsubscribe;
@@ -272,5 +316,13 @@ export class Peer {
 
     // TODO: Check if stream already exists for peer id
     this._peerStreamMap.set(peerId.toString(), messageStream);
+  }
+
+  _handleMessage (msg: Message): void {
+    // Send msg data to registered topic handlers
+    this._topicHandlers.get(msg.topic)?.forEach(handler => {
+      const dataObj = JSON.parse(uint8ArrayToString(msg.data));
+      handler(dataObj);
+    });
   }
 }
