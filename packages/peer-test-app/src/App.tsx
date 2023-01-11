@@ -8,8 +8,13 @@ import { AppBar, Box, CssBaseline, Paper, Table, TableBody, TableCell, TableCont
 import './App.css';
 import { useForceUpdate } from './hooks/forceUpdate';
 
+const TEST_TOPIC = 'test';
+
 declare global {
-  interface Window { broadcast: (message: string) => void; }
+  interface Window {
+    broadcast: (message: string) => void;
+    flood: (message: string) => void;
+  }
 }
 
 const theme = createTheme();
@@ -33,6 +38,14 @@ function App() {
       peer.broadcastMessage(message)
     }
 
+    const unsubscribeTopic = peer.subscribeTopic(TEST_TOPIC, (data) => {
+      console.log(`> ${data}`)
+    })
+
+    window.flood = (message: string) => {
+      peer.floodMessage(TEST_TOPIC, message)
+    }
+
     peer.node.peerStore.addEventListener('change:multiaddrs', forceUpdate)
     peer.node.connectionManager.addEventListener('peer:connect', forceUpdate)
 
@@ -50,6 +63,7 @@ function App() {
 
     return () => {
       unsubscribeMessage()
+      unsubscribeTopic()
       peer.node?.peerStore.removeEventListener('change:multiaddrs', forceUpdate)
       peer.node?.connectionManager.removeEventListener('peer:connect', forceUpdate)
       peer.node?.connectionManager.removeEventListener('peer:disconnect', disconnectHandler)
@@ -64,7 +78,7 @@ function App() {
           <Typography variant="h6" color="inherit" noWrap>
             Peer Test App
           </Typography>
-        </Toolbar>  
+        </Toolbar>
       </AppBar>
       <main>
         <Box
