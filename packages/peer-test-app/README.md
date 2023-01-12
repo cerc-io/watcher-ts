@@ -33,7 +33,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   yarn create-peer --file [PEER_ID_FILE_PATH]
   ```
 
-  * `file (f)`: file path to export the peer id to (json)
+  * `file (f)`: file path to export the peer id to (json) (default: logs to console)
 
 * (Optional) Run a local relay node:
 
