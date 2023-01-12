@@ -17,7 +17,7 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 
 interface Arguments {
   signalServer: string;
@@ -55,7 +55,7 @@ async function main (): Promise<void> {
     ],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
-    pubsub: floodsub(),
+    pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: PUBSUB_DISCOVERY_INTERVAL

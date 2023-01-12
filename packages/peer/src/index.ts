@@ -24,7 +24,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { PUBSUB_DISCOVERY_INTERVAL } from './constants.js';
+import { PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -37,7 +37,7 @@ export class Peer {
   _remotePeerIds: PeerId[] = []
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
-  _topicHandlers: Map<string, Array<(data: any) => void>> = new Map()
+  _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
 
   constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
@@ -87,7 +87,7 @@ export class Peer {
       ],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
-      pubsub: floodsub(),
+      pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
       peerDiscovery,
       relay: {
         enabled: true,
@@ -189,7 +189,7 @@ export class Peer {
     return unsubscribe;
   }
 
-  subscribeTopic (topic: string, handler: (data: any) => void): () => void {
+  subscribeTopic (topic: string, handler: (peerId: PeerId, data: any) => void): () => void {
     assert(this._node);
 
     // Subscribe node to the topic
@@ -321,10 +321,13 @@ export class Peer {
   }
 
   _handleMessage (msg: Message): void {
+    // Messages should be signed since globalSignaturePolicy is set to 'StrictSign'
+    assert(msg.type === 'signed');
+
     // Send msg data to registered topic handlers
     this._topicHandlers.get(msg.topic)?.forEach(handler => {
       const dataObj = JSON.parse(uint8ArrayToString(msg.data));
-      handler(dataObj);
+      handler(msg.from, dataObj);
     });
   }
 }
