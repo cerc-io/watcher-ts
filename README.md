@@ -20,7 +20,7 @@ The Laconic Stack Orchestrator provides all the tools to quickly get started wit
 - `yarn` [Install](https://yarnpkg.com/getting-started/install)
 - `postgres` [Install](https://www.postgresql.org/download/)
 
-You'll need the above if you plan on digging into this repo, writing your own watchers, or experimenting with watchers not currentlysupported by Stack Orchestrator.
+You'll need the above if you plan on digging into this repo, writing your own watchers, or experimenting with watchers not currently supported by Stack Orchestrator. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
 
 ## Services
 
@@ -48,8 +48,6 @@ Orient yourself with the available CLI commands [here](docs/cli.md) and in some 
 ## Tests
 
 * [graph-node](./packages/graph-node/README.md)
-
-[//]: # (TODO: ## Contibuting: https://github.com/LaconicNetwork/Laconic-Documentation/issues/93)
 
 ## Further Reading
 
