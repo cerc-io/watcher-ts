@@ -265,6 +265,12 @@ export class Peer {
   async _handleConnect (connection: Connection): Promise<void> {
     const remotePeerId = connection.remotePeer;
 
+    if (this._node?.getPeers().some(peerId => peerId.toString() === remotePeerId.toString())) {
+      console.log('closing connection');
+      await connection.close();
+      console.log('closed');
+    }
+
     // Log connected peer
     console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
