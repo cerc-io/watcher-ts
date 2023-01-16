@@ -37,11 +37,12 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
   ```bash
   # In packages/peer
-  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH]
+  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
   ```
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
   * `peer-id-file`: file path for peer id to be used (json)
+  * `relay-peers`: file path for relay peer multiaddr(s) to dial to (json)
 
 * Start the node:
 
@@ -51,6 +52,6 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   ```
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
-  * `relay-node`: multiaddr of a hop enabled relay node
+  * `relay-node`: multiaddr of a primary hop enabled relay node
 
 * The process starts reading from `stdin` and outputs messages from others peers to `stdout`.
