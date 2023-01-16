@@ -1,68 +1,8 @@
 # ERC20 Watcher
 
-## Setup
+First try the [erc20 demo in stack orchestrator](https://github.com/cerc-io/stack-orchestrator/tree/main/app/data/stacks/erc20) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand. 
 
-Create a postgres12 database for the job queue:
-
-```
-sudo su - postgres
-createdb erc20-watcher-job-queue
-```
-
-Enable the `pgcrypto` extension on the job queue database (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro).
-
-Example:
-
-```
-postgres@tesla:~$ psql -U postgres -h localhost erc20-watcher-job-queue
-Password for user postgres:
-psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-Type "help" for help.
-
-erc20-watcher-job-queue=# CREATE EXTENSION pgcrypto;
-CREATE EXTENSION
-erc20-watcher-job-queue=# exit
-```
-
-Create a postgres12 database for the erc20 watcher:
-
-```
-sudo su - postgres
-createdb erc20-watcher
-```
-
-Update `environments/local.toml` with database connection settings for both the databases.
-```toml
-[database]
-  type = "postgres"
-  host = "localhost"
-  port = 5432
-  database = "erc20-watcher"
-  username = "postgres"
-  password = "postgres"
-
-[jobQueue]
-  dbConnectionString = "postgres://postgres:postgres@localhost/erc20-watcher-job-queue"
-```
-
-Update the `upstream` config in `environments/local.toml`. Provide the `ipld-eth-server` GQL and RPC API endpoints.
-```toml
-[upstream]
-  [upstream.ethServer]
-    gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
-    rpcProviderEndpoint = "http://127.0.0.1:8081"
-```
-
-Ensure that watcher is of active kind. Update the kind in `server` config to active.
-```toml
-[server]
-  kind = "active"
-```
-
-## Run
-
-Follow the steps below or follow the [Demo](./demo.md)
+## Build 
 
 Build files:
 
@@ -70,116 +10,170 @@ Build files:
 yarn build
 ```
 
-Run the watcher:
-
+## Run 
+  
 Start the job runner:
 
 ```bash
-$ yarn job-runner
-
-# For development.
-$ yarn job-runner:dev
-
-# For specifying config file.
-$ yarn job-runner -f environments/local.toml
+yarn job-runner
 ```
 
-Start the server:
+For development or to specify the config file:
+```bash
+ yarn job-runner:dev
+ yarn job-runner -f environments/local.toml
+```
+
+Then, Start the server:
 
 ```bash
-$ yarn server
-
-# For development.
-$ yarn server:dev
-
-# For specifying config file.
-$ yarn server -f environments/local.toml
+yarn server
 ```
 
-GQL console: http://localhost:3001/graphql
+For development or to specify the config file:
+```bash
+yarn server:dev
+yarn server -f environments/local.toml
+```
+
+See the GQL console at: http://localhost:3001/graphql
+Note: the port may be different depending on your configuration.
 
 Deploy an ERC20 token:
+
 ```bash
-$ yarn token:deploy
+yarn token:deploy
+```
+In the output you'll see:
+
+```bash
+GLD Token deployed to: 0xTokenAddress
+```
+  
+Export the address of the deployed token to a shell variable for later use:
+
+```bash
+export TOKEN_ADDRESS=0xTokenAddress
 ```
 
-Start watching a token:
-
+Get the main account address:
 ```bash
-$ yarn watch:contract --address 0xTokenAddress --startingBlock <start-block> --kind ERC20 --checkpoint false
-
-# For specifying config file.
-$ yarn watch:contract -f environments/local.toml --address 0xTokenAddress --startingBlock <start-block> --kind ERC20 --checkpoint false
+yarn account
 ```
 
-Example:
+and export it as well:
 
 ```bash
-$ yarn watch:contract --address 0xfE0034a874c2707c23F91D7409E9036F5e08ac34 --startingBlock 100 --kind ERC20 --checkpoint false
+export PRIMARY_ACCOUNT=0xPrimaryAccount
+```
+
+Run the following command to watch the contract:
+
+```bash
+yarn watch:contract --address $TOKEN_ADDRESS --kind ERC20 --checkpoint false
+```
+
+For specifying a config file:
+```bash
+yarn watch:contract -f environments/local.toml --address 0xTokenAddress --kind ERC20 --checkpoint false
 ```
 
 To fill a block range:
 
 ```bash
 yarn fill --startBlock <from-block> --endBlock <to-block>
-
-# For specifying config file.
-$ yarn fill -f environments/local.toml --startBlock <from-block> --endBlock <to-block>
 ```
 
-Example:
+To get the current block hash at any time, run:
 
 ```bash
-$ yarn fill --startBlock 1000 --endBlock 2000
+yarn block:latest
 ```
 
-### Example GQL Queries
+Add a new account to Metamask and export the account address to a shell variable for later use:
 
-```text
-{
-  name(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
+```bash
+export RECIPIENT_ADDRESS=0xRecipientAddress
+```
+
+Run the following GQL query against the [http://127.0.0.1:3001/graphql](http://127.0.0.1:3001/graphql) to get the name, symbol and total supply of the deployed token:
+
+```graphql
+query {
+  name(
+    blockHash: "LATEST_BLOCK_HASH"
+    token: "0xTokenAddress"
+  ) {
     value
     proof {
       data
     }
   }
 
-  symbol(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
+  symbol(
+    blockHash: "LATEST_BLOCK_HASH"
+    token: "0xTokenAddress"
+  ) {
     value
     proof {
       data
     }
   }
 
-  totalSupply(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
+  totalSupply(
+    blockHash: "LATEST_BLOCK_HASH"
+    token: "0xTokenAddress"
+  ) {
     value
     proof {
       data
     }
   }
+}
+```
 
-  balanceOf(blockHash: "0x5ef95c9847f15179b64fa57994355623f899aca097ad779421b8dff866a8b9c3", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc") {
+Run the following GQL query to get balances for the main and the recipient account at the latest block hash:
+
+```graphql
+query {
+  fromBalanceOf: balanceOf(
+      blockHash: "LATEST_BLOCK_HASH"
+      token: "0xTokenAddress",
+      # main/primary account having all the balance initially
+      owner: "0xPrimaryAccount"
+    ) {
     value
     proof {
       data
     }
   }
-
-  allowance(blockHash: "0x81ed2b04af35b1b276281c37243212731202d5a191a27d07b22a605fd442998d", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1", owner: "0xDC7d7A8920C8Eecc098da5B7522a5F31509b5Bfc", spender: "0xCA6D29232D1435D8198E3E5302495417dD073d61") {
+  toBalanceOf: balanceOf(
+      blockHash: "LATEST_BLOCK_HASH"
+      token: "0xTokenAddress",
+      owner: "0xRecipientAddress"
+    ) {
     value
     proof {
       data
     }
   }
+}
+```
 
-  events(blockHash: "0x3441ba476dff95c58528afe754ceec659e0ef8ff1b59244ec4545f4f9784a51c", token: "0x1ca7c995f8eF0A2989BbcE08D5B7Efe50A584aa1") {
+Run the following GQL subscription at the GraphQL endpoint:
+
+```graphql
+subscription {
+  onEvent {
+    blockHash
+    contract
     event {
       __typename
       ... on TransferEvent {
         from
         to
         value
-      }
+      },
       ... on ApprovalEvent {
         owner
         spender
@@ -192,3 +186,13 @@ $ yarn fill --startBlock 1000 --endBlock 2000
   }
 }
 ```
+
+Transfer tokens to the recipient account:
+
+```bash
+yarn token:transfer --token $TOKEN_ADDRESS --to $RECIPIENT_ADDRESS --amount 100
+```
+
+A Transfer event to the `RECIPIENT_ADDRESS` should be visible in the subscription.
+
+Get the latest block hash again, then fire the GQL query above to get updated balances for the main (from) and the recipient (to) account.
