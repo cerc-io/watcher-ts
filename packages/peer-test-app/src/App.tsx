@@ -38,8 +38,8 @@ function App() {
       peer.broadcastMessage(message)
     }
 
-    const unsubscribeTopic = peer.subscribeTopic(TEST_TOPIC, (data) => {
-      console.log(`> ${data}`)
+    const unsubscribeTopic = peer.subscribeTopic(TEST_TOPIC, (peerId, data) => {
+      console.log(`${peerId.toString()} > ${data}`)
     })
 
     window.flood = (message: string) => {

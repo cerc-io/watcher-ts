@@ -15,11 +15,6 @@ interface Arguments {
 }
 
 async function main (): Promise<void> {
-  const argv: Arguments = _getArgv();
-
-  const exportFilePath = path.resolve(argv.file);
-  const exportFileDir = path.dirname(exportFilePath);
-
   const peerId = await createEd25519PeerId();
   assert(peerId.privateKey);
 
@@ -29,12 +24,20 @@ async function main (): Promise<void> {
     pubKey: Buffer.from(peerId.publicKey).toString('base64')
   };
 
-  if (!fs.existsSync(exportFileDir)) {
-    fs.mkdirSync(exportFileDir, { recursive: true });
-  }
+  const argv: Arguments = _getArgv();
+  if (argv.file) {
+    const exportFilePath = path.resolve(argv.file);
+    const exportFileDir = path.dirname(exportFilePath);
 
-  fs.writeFileSync(exportFilePath, JSON.stringify(obj));
-  console.log(`Peer id ${peerId.toString()} exported to file ${exportFilePath}`);
+    if (!fs.existsSync(exportFileDir)) {
+      fs.mkdirSync(exportFileDir, { recursive: true });
+    }
+
+    fs.writeFileSync(exportFilePath, JSON.stringify(obj, null, 2));
+    console.log(`Peer id ${peerId.toString()} exported to file ${exportFilePath}`);
+  } else {
+    console.log(obj);
+  }
 }
 
 function _getArgv (): any {
@@ -44,8 +47,7 @@ function _getArgv (): any {
     file: {
       type: 'string',
       alias: 'f',
-      describe: 'Peer Id export file path (json)',
-      demandOption: true
+      describe: 'Peer Id export file path (json)'
     }
   }).argv;
 }
