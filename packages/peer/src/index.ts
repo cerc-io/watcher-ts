@@ -24,7 +24,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
+import { PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -114,6 +114,13 @@ export class Peer {
 
       console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
       await this._node.dial(relayMultiaddr);
+
+      // Tag the relay node with a high value to avoid disconnect on crossing maxConnections limit
+      const relayPeerId = this._node.getPeers().find(
+        peerId => peerId.toString() === relayMultiaddr.getPeerId()
+      );
+      assert(relayPeerId);
+      this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
     }
 
     // Listen for change in stored multiaddrs
