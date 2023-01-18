@@ -19,7 +19,7 @@ import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
-import { PeerId } from '@libp2p/interface-peer-id';
+import type { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
@@ -134,13 +134,13 @@ export class Peer {
     });
 
     // Listen for peers connection
-    this._node.connectionManager.addEventListener('peer:connect', async (evt) => {
+    this._node.addEventListener('peer:connect', async (evt) => {
       console.log('event peer:connect', evt);
       await this._handleConnect(evt.detail);
     });
 
     // Listen for peers disconnecting
-    this._node.connectionManager.addEventListener('peer:disconnect', (evt) => {
+    this._node.addEventListener('peer:disconnect', (evt) => {
       console.log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
     });
@@ -160,8 +160,8 @@ export class Peer {
     assert(this._node);
 
     this._node.removeEventListener('peer:discovery');
-    this._node.connectionManager.removeEventListener('peer:connect');
-    this._node.connectionManager.removeEventListener('peer:disconnect');
+    this._node.removeEventListener('peer:connect');
+    this._node.removeEventListener('peer:disconnect');
     this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
