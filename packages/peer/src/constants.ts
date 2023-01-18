@@ -21,6 +21,9 @@ export const RELAY_TAG = {
   value: 100
 };
 
+export const CONN_CHECK_INTERVAL = 10000; // 10 seconds
+export const REDIAL_RELAY_DELAY = 5000; // 5 sconds
+
 // Peer connection manager config constants
 
 // Number of max concurrent dials per peer
