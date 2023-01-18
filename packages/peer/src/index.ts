@@ -29,6 +29,8 @@ import { PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
+export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
+
 export class Peer {
   _node?: Libp2p
   _wrtcStar: WebRTCStarTuple
@@ -249,21 +251,6 @@ export class Peer {
   async _connectPeer (peer: PeerInfo): Promise<void> {
     assert(this._node);
 
-    // Check if discovered the relay node
-    if (this._relayNodeMultiaddr) {
-      const relayMultiaddr = this._relayNodeMultiaddr;
-      const relayNodePeerId = relayMultiaddr.getPeerId();
-
-      if (relayNodePeerId && relayNodePeerId === peer.id.toString()) {
-        console.log(`Dialling relay peer ${peer.id.toString()} using multiaddr ${relayMultiaddr.toString()}`);
-        await this._node.dial(relayMultiaddr).catch(err => {
-          console.log(`Could not dial relay ${relayMultiaddr.toString()}`, err);
-        });
-
-        return;
-      }
-    }
-
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
@@ -273,8 +260,14 @@ export class Peer {
 
         this._handleStream(peer.id, stream);
         break;
-      } catch (err) {
-        console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
+      } catch (err: any) {
+        // Check if protocol negotiation failed (in case of relay nodes)
+        if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
+          console.log(`Protocol selection failed with peer ${peerMultiaddr}`);
+          break;
+        } else {
+          console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
+        }
       }
     }
   }
