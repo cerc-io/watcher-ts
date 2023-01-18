@@ -263,6 +263,11 @@ export class Peer {
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
+      // Avoid incomplete multiaddr
+      if (!peerMultiaddr.toString().includes('p2p/')) {
+        continue;
+      }
+
       try {
         console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
         const stream = await this._node.dialProtocol(peerMultiaddr, CHAT_PROTOCOL);
