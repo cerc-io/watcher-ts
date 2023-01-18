@@ -8,6 +8,7 @@ import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 import fs from 'fs';
 import path from 'path';
+import debug from 'debug';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -20,6 +21,8 @@ import type { Connection } from '@libp2p/interface-connection';
 import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 import { multiaddr } from '@multiformats/multiaddr';
+
+const log = debug('vulcanize:relay');
 
 interface Arguments {
   signalServer: string;
@@ -89,7 +92,7 @@ async function main (): Promise<void> {
     // console.log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
-    console.log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
   });
 
   // Listen for peers disconnecting
@@ -97,7 +100,7 @@ async function main (): Promise<void> {
     // console.log('event peer:disconnect', evt);
     // Log disconnected peer
     const connection: Connection = evt.detail;
-    console.log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
   });
 
   if (argv.relayPeers) {

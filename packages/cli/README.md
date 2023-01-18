@@ -42,7 +42,7 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
   * `peer-id-file`: file path for peer id to be used (json)
-  * `relay-peers`: file path for relay peer multiaddr(s) to dial to (json)
+  * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
 * Start the node:
 

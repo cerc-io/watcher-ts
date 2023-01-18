@@ -35,6 +35,7 @@
     "@libp2p/pubsub-peer-discovery": "^7.0.1",
     "@libp2p/webrtc-star": "^5.0.3",
     "@multiformats/multiaddr": "^11.1.4",
+    "debug": "^4.3.1",
     "it-length-prefixed": "^8.0.4",
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",

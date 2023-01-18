@@ -44,7 +44,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
   * `peer-id-file`: file path for peer id to be used (json)
-  * `relay-peers`: file path for relay peer multiaddr(s) to dial to (json)
+  * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
 * Set the signalling server and primary relay node multiaddrs in the [env](./.env) file:
 
