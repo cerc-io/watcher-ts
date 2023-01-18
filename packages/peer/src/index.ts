@@ -100,7 +100,9 @@ export class Peer {
       },
       connectionManager: {
         maxDialsPerPeer: 3, // Number of max concurrent dials per peer
-        autoDial: false
+        autoDial: false,
+        maxConnections: 5,
+        minConnections: 0
       }
     });
 
