@@ -24,7 +24,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG } from './constants.js';
+import { MAX_CONNECTIONS, MAX_DIALS_PER_PEER, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -99,10 +99,10 @@ export class Peer {
         }
       },
       connectionManager: {
-        maxDialsPerPeer: 3, // Number of max concurrent dials per peer
+        maxDialsPerPeer: MAX_DIALS_PER_PEER, // Number of max concurrent dials per peer
         autoDial: false,
-        maxConnections: 5,
-        minConnections: 0
+        maxConnections: MAX_CONNECTIONS,
+        minConnections: MIN_CONNECTIONS
       }
     });
 

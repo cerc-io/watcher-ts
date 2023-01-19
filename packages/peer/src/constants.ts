@@ -11,3 +11,8 @@ export const RELAY_TAG = {
   tag: 'laconic:relay-primary',
   value: 100
 };
+
+// Peer connection manager config constants
+export const MAX_DIALS_PER_PEER = 3;
+export const MAX_CONNECTIONS = 10;
+export const MIN_CONNECTIONS = 0;
