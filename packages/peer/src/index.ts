@@ -24,7 +24,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { MAX_CONNECTIONS, MAX_DIALS_PER_PEER, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG } from './constants.js';
+import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -99,7 +99,7 @@ export class Peer {
         }
       },
       connectionManager: {
-        maxDialsPerPeer: MAX_DIALS_PER_PEER, // Number of max concurrent dials per peer
+        maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER, // Number of max concurrent dials per peer
         autoDial: false,
         maxConnections: MAX_CONNECTIONS,
         minConnections: MIN_CONNECTIONS
@@ -115,7 +115,8 @@ export class Peer {
       console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
       await this._node.dial(relayMultiaddr);
 
-      // Tag the relay node with a high value to avoid disconnect on crossing maxConnections limit
+      // Tag the relay node with a high value to prioritize it's connection
+      // in connection pruning on crossing peer's maxConnections limit
       const relayPeerId = this._node.getPeers().find(
         peerId => peerId.toString() === relayMultiaddr.getPeerId()
       );
@@ -263,7 +264,9 @@ export class Peer {
     // Dial them when we discover them
     // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
     for (const peerMultiaddr of peer.multiaddrs) {
-      // Avoid incomplete multiaddr
+      // Relay nodes sometimes give an additional multiaddr of signalling server (without peer id) in discovery
+      // Eg. /ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star
+      // Workaround to avoid dialling multiaddr(s) without peer id
       if (!peerMultiaddr.toString().includes('p2p/')) {
         continue;
       }
@@ -275,7 +278,8 @@ export class Peer {
         this._handleStream(peer.id, stream);
         break;
       } catch (err: any) {
-        // Check if protocol negotiation failed (in case of relay nodes)
+        // Check if protocol negotiation failed (dial still succeeds)
+        // (happens in case of dialProtocol to relay nodes since they don't handle CHAT_PROTOCOL)
         if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
           console.log(`Protocol selection failed with peer ${peerMultiaddr}`);
           break;

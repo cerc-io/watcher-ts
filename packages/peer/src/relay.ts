@@ -2,7 +2,7 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import { createLibp2p } from 'libp2p';
+import { Libp2p, createLibp2p } from 'libp2p';
 import wrtc from 'wrtc';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
@@ -22,7 +22,7 @@ import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 import { multiaddr } from '@multiformats/multiaddr';
 
-const log = debug('vulcanize:relay');
+const log = debug('laconic:relay');
 
 interface Arguments {
   signalServer: string;
@@ -105,17 +105,17 @@ async function main (): Promise<void> {
 
   if (argv.relayPeers) {
     const relayPeersFilePath = path.resolve(argv.relayPeers);
-    console.log(`Reading relay peer multiaddr(s) from file ${relayPeersFilePath}`);
 
+    if (!fs.existsSync(relayPeersFilePath)) {
+      console.log(`File at given path ${relayPeersFilePath} not found, exiting`);
+      process.exit();
+    }
+
+    console.log(`Reading relay peer multiaddr(s) from file ${relayPeersFilePath}`);
     const relayPeersListObj = fs.readFileSync(relayPeersFilePath, 'utf-8');
     const relayPeersList: string[] = JSON.parse(relayPeersListObj);
 
-    relayPeersList.forEach(async (relayPeer) => {
-      const relayMultiaddr = multiaddr(relayPeer);
-
-      console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-      await node.dial(relayMultiaddr);
-    });
+    await _dialRelayPeers(node, relayPeersList);
   }
 }
 
@@ -136,6 +136,15 @@ function _getArgv (): any {
       describe: 'Relay peer multiaddr(s) list file path (json)'
     }
   }).argv;
+}
+
+async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise<void> {
+  relayPeersList.forEach(async (relayPeer) => {
+    const relayMultiaddr = multiaddr(relayPeer);
+
+    console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
+    await node.dial(relayMultiaddr);
+  });
 }
 
 main().catch(err => {
