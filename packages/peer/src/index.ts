@@ -296,11 +296,6 @@ export class Peer {
         // Clear and remove check interval for remote peer if not connected
         this._stopHeartbeatChecks(peerId);
 
-        // Close existing connections of peer
-        console.log('closing connections');
-        await this._node.hangUp(peerId);
-        console.log('closed');
-
         if (!this._relayNodeMultiaddr) {
           return;
         }
@@ -310,6 +305,11 @@ export class Peer {
         const relayNodePeerId = relayMultiaddr.getPeerId();
 
         if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
+          // Close existing connections of relay node
+          console.log(`closing connections for ${peerId}`);
+          await this._node.hangUp(peerId);
+          console.log('closed');
+
           // Redial relay node
           await this._dialRelay();
         }
