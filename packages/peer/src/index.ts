@@ -24,7 +24,7 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, REDIAL_RELAY_DELAY, CONN_CHECK_INTERVAL } from './constants.js';
+import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, CONN_CHECK_INTERVAL } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
@@ -242,13 +242,16 @@ export class Peer {
         assert(relayPeerId);
         this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
 
+        // Start heartbeat check for relay node
+        await this._startHeartbeatChecks(relayPeerId);
+
         break;
       } catch (err) {
         console.log(`Could not dial relay ${relayMultiaddr.toString()}`, err);
 
         // TODO: Use wait method from util package.
         // Issue using util package in react app.
-        await new Promise(resolve => setTimeout(resolve, REDIAL_RELAY_DELAY));
+        await new Promise(resolve => setTimeout(resolve, RELAY_REDIAL_DELAY));
       }
     }
   }
@@ -268,8 +271,6 @@ export class Peer {
     // Log connected peer
     console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
-
-    await this._startHeartbeatChecks(remotePeerId);
   }
 
   async _startHeartbeatChecks (peerId: PeerId): Promise<void> {
@@ -296,6 +297,11 @@ export class Peer {
         // Clear and remove check interval for remote peer if not connected
         this._stopHeartbeatChecks(peerId);
 
+        // Close existing connections of remote peer
+        console.log(`closing connections for ${peerId}`);
+        await this._node.hangUp(peerId);
+        console.log('closed');
+
         if (!this._relayNodeMultiaddr) {
           return;
         }
@@ -305,11 +311,6 @@ export class Peer {
         const relayNodePeerId = relayMultiaddr.getPeerId();
 
         if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
-          // Close existing connections of relay node
-          console.log(`closing connections for ${peerId}`);
-          await this._node.hangUp(peerId);
-          console.log('closed');
-
           // Redial relay node
           await this._dialRelay();
         }
