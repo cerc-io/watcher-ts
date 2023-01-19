@@ -14,6 +14,7 @@ declare global {
   interface Window {
     broadcast: (message: string) => void;
     flood: (message: string) => void;
+    peer: Peer;
   }
 }
 
@@ -27,6 +28,9 @@ function App() {
     if (!peer || !peer.node) {
       return
     }
+
+    // For debugging
+    window.peer = peer;
 
     // Subscribe to messages from remote peers
     const unsubscribeMessage = peer.subscribeMessage((peerId, message) => {
