@@ -232,18 +232,19 @@ export class Peer {
     while (true) {
       try {
         console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-        await this._node.dial(relayMultiaddr);
+        const connection = await this._node.dial(relayMultiaddr);
+        const relayPeerId = connection.remotePeer;
 
+        // TODO: Check if tag already exists. When checking tags issue with relay node connect event
         // Tag the relay node with a high value to prioritize it's connection
         // in connection pruning on crossing peer's maxConnections limit
-        const relayPeerId = this._node.getPeers().find(
-          peerId => peerId.toString() === relayMultiaddr.getPeerId()
-        );
-        assert(relayPeerId);
         this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
 
         // Start heartbeat check for relay node
-        await this._startHeartbeatChecks(relayPeerId);
+        await this._startHeartbeatChecks(
+          relayPeerId,
+          async () => await this._handleRelayDisconnect(relayPeerId)
+        );
 
         break;
       } catch (err) {
@@ -254,6 +255,18 @@ export class Peer {
         await new Promise(resolve => setTimeout(resolve, RELAY_REDIAL_DELAY));
       }
     }
+  }
+
+  async _handleRelayDisconnect (relayPeerId: PeerId): Promise<void> {
+    assert(this._node);
+
+    // Close existing connection of relay node
+    console.log(`closing connections for ${relayPeerId}`);
+    await this._node.hangUp(relayPeerId);
+    console.log('closed');
+
+    // Reconnect to relay node
+    await this._dialRelay();
   }
 
   _handleDiscovery (peer: PeerInfo): void {
@@ -273,51 +286,44 @@ export class Peer {
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
   }
 
-  async _startHeartbeatChecks (peerId: PeerId): Promise<void> {
+  async _startHeartbeatChecks (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
     if (this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
       // Do not start connection check interval if already present
       return;
     }
 
     const intervalId = setInterval(async () => {
-      assert(this._node);
+      await this._validatePing(
+        peerId,
+        async () => {
+          // Check if connection check interval for peer is already cleared
+          if (!this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
+            return;
+          }
 
-      try {
-        // Ping remote peer
-        await this._node.ping(peerId);
-      } catch (err) {
-        // On error i.e. no pong
-        console.log(`Not connected to peer ${peerId.toString()}`);
+          // Clear and remove check interval for remote peer if not connected
+          this._stopHeartbeatChecks(peerId);
 
-        // Check if connection check interval for peer is already cleared
-        if (!this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
-          return;
+          await handleDisconnect();
         }
-
-        // Clear and remove check interval for remote peer if not connected
-        this._stopHeartbeatChecks(peerId);
-
-        // Close existing connections of remote peer
-        console.log(`closing connections for ${peerId}`);
-        await this._node.hangUp(peerId);
-        console.log('closed');
-
-        if (!this._relayNodeMultiaddr) {
-          return;
-        }
-
-        // Reconnect to relay node
-        const relayMultiaddr = this._relayNodeMultiaddr;
-        const relayNodePeerId = relayMultiaddr.getPeerId();
-
-        if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
-          // Redial relay node
-          await this._dialRelay();
-        }
-      }
+      );
     }, CONN_CHECK_INTERVAL);
 
     this._peerHeartbeatIntervalIdsMap.set(peerId.toString(), intervalId);
+  }
+
+  async _validatePing (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
+    assert(this._node);
+
+    try {
+      // Ping remote peer
+      await this._node.ping(peerId);
+    } catch (err) {
+      // On error i.e. no pong
+      console.log(`Not connected to peer ${peerId.toString()}`);
+
+      await handleDisconnect();
+    }
   }
 
   _handleDisconnect (connection: Connection): void {
