@@ -40,7 +40,7 @@ export class Peer {
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
-  _peerIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
+  _peerHeartbeatIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
 
   constructor (nodejs?: boolean) {
     // Instantiation in nodejs.
@@ -165,7 +165,7 @@ export class Peer {
     this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
-    this._remotePeerIds.forEach(remotePeerId => this._stopConnectionCheck(remotePeerId));
+    this._remotePeerIds.forEach(remotePeerId => this._stopHeartbeatChecks(remotePeerId));
     const hangUpPromises = [...this._remotePeerIds].map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
   }
@@ -269,11 +269,11 @@ export class Peer {
     console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
 
-    await this._startConnectionCheck(remotePeerId);
+    await this._startHeartbeatChecks(remotePeerId);
   }
 
-  async _startConnectionCheck (peerId: PeerId): Promise<void> {
-    if (this._peerIntervalIdsMap.has(peerId.toString())) {
+  async _startHeartbeatChecks (peerId: PeerId): Promise<void> {
+    if (this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
       // Do not start connection check interval if already present
       return;
     }
@@ -286,34 +286,37 @@ export class Peer {
         await this._node.ping(peerId);
       } catch (err) {
         // On error i.e. no pong
-        // TODO: Debug interval method executed again even after clearing it
-        console.log(`Not connected to peer ${peerId.toString()}; connecting`);
+        console.log(`Not connected to peer ${peerId.toString()}`);
 
-        // Check if interval for peer is already cleared
-        if (this._peerIntervalIdsMap.has(peerId.toString())) {
-          // Clear and remove check interval for remote peer if not connected
-          this._stopConnectionCheck(peerId);
+        // Check if connection check interval for peer is already cleared
+        if (!this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
+          return;
+        }
 
-          // Close existing connections of peer
-          console.log('closing connections');
-          await this._node.hangUp(peerId);
-          console.log('closed');
+        // Clear and remove check interval for remote peer if not connected
+        this._stopHeartbeatChecks(peerId);
 
-          if (this._relayNodeMultiaddr) {
-            // Reconnect to relay node
-            const relayMultiaddr = this._relayNodeMultiaddr;
-            const relayNodePeerId = relayMultiaddr.getPeerId();
+        // Close existing connections of peer
+        console.log('closing connections');
+        await this._node.hangUp(peerId);
+        console.log('closed');
 
-            if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
-              // Redial relay node
-              await this._dialRelay();
-            }
-          }
+        if (!this._relayNodeMultiaddr) {
+          return;
+        }
+
+        // Reconnect to relay node
+        const relayMultiaddr = this._relayNodeMultiaddr;
+        const relayNodePeerId = relayMultiaddr.getPeerId();
+
+        if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
+          // Redial relay node
+          await this._dialRelay();
         }
       }
     }, CONN_CHECK_INTERVAL);
 
-    this._peerIntervalIdsMap.set(peerId.toString(), intervalId);
+    this._peerHeartbeatIntervalIdsMap.set(peerId.toString(), intervalId);
   }
 
   _handleDisconnect (connection: Connection): void {
@@ -326,7 +329,7 @@ export class Peer {
       this._remotePeerIds = new Set([...this._remotePeerIds].filter(remotePeerId => remotePeerId.toString() !== disconnectedPeerId.toString()));
 
       // Stop connection check for disconnected peer
-      this._stopConnectionCheck(disconnectedPeerId);
+      this._stopHeartbeatChecks(disconnectedPeerId);
     }
 
     // Log disconnected peer
@@ -334,15 +337,15 @@ export class Peer {
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
   }
 
-  _stopConnectionCheck (peerId: PeerId): void {
+  _stopHeartbeatChecks (peerId: PeerId): void {
     // Clear check interval for disconnected peer
-    const intervalId = this._peerIntervalIdsMap.get(peerId.toString());
+    const intervalId = this._peerHeartbeatIntervalIdsMap.get(peerId.toString());
 
     if (intervalId) {
       clearInterval(intervalId);
     }
 
-    this._peerIntervalIdsMap.delete(peerId.toString());
+    this._peerHeartbeatIntervalIdsMap.delete(peerId.toString());
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
