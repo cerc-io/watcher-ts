@@ -21,7 +21,10 @@ export const RELAY_TAG = {
   value: 100
 };
 
+// Interval time in ms to check connection with ping for every connected peer
 export const CONN_CHECK_INTERVAL = 10000; // 10 seconds
+
+// Delay time in ms to redial relay node on failing to connect
 export const REDIAL_RELAY_DELAY = 5000; // 5 sconds
 
 // Peer connection manager config constants

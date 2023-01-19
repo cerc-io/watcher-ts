@@ -165,6 +165,7 @@ export class Peer {
     this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
+    this._remotePeerIds.forEach(remotePeerId => this._stopConnectionCheck(remotePeerId));
     const hangUpPromises = [...this._remotePeerIds].map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
   }
@@ -284,25 +285,31 @@ export class Peer {
         // Ping remote peer
         await this._node.ping(peerId);
       } catch (err) {
+        // On error i.e. no pong
         // TODO: Debug interval method executed again even after clearing it
         console.log(`Not connected to peer ${peerId.toString()}; connecting`);
-        // On error i.e. no pong
 
-        // Close existing connections of peer
-        await this._node.hangUp(peerId);
-        // Clear and remove interval before dialing to relay
-        this._stopConnectionCheck(peerId);
+        // Check if interval for peer is already cleared
+        if (this._peerIntervalIdsMap.has(peerId.toString())) {
+          // Clear and remove check interval for remote peer if not connected
+          this._stopConnectionCheck(peerId);
 
-        const peer = await this._node.peerStore.get(peerId);
+          // Close existing connections of peer
+          console.log('closing connections');
+          await this._node.hangUp(peerId);
+          console.log('closed');
 
-        const peerInfo = {
-          id: peer.id,
-          multiaddrs: peer.addresses.map(addr => addr.multiaddr),
-          protocols: peer.protocols
-        };
+          if (this._relayNodeMultiaddr) {
+            // Reconnect to relay node
+            const relayMultiaddr = this._relayNodeMultiaddr;
+            const relayNodePeerId = relayMultiaddr.getPeerId();
 
-        // Reconnect peer
-        await this._connectPeer(peerInfo);
+            if (relayNodePeerId && relayNodePeerId === peerId.toString()) {
+              // Redial relay node
+              await this._dialRelay();
+            }
+          }
+        }
       }
     }, CONN_CHECK_INTERVAL);
 
