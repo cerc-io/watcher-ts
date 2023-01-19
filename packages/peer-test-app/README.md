@@ -39,13 +39,14 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
   ```bash
   # In packages/peer
-  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH]
+  yarn relay-node --signal-server [SIGNAL_SERVER_URL] --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
   ```
 
   * `signal-server`: multiaddr of a signalling server (default: local signalling server multiaddr)
   * `peer-id-file`: file path for peer id to be used (json)
+  * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
-* Set the signalling server and relay node multiaddrs in the [env](./.env) file:
+* Set the signalling server and primary relay node multiaddrs in the [env](./.env) file:
 
   ```
   REACT_APP_SIGNAL_SERVER=/ip4/127.0.0.1/tcp/13579/ws/p2p-webrtc-star/
