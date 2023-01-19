@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/react-peer",
-  "version": "0.2.22",
+  "version": "0.2.24",
   "description": "react-peer React component",
   "main": "lib/index.js",
   "files": [
@@ -18,7 +18,7 @@
     "test:watch": "nwb test-react --server"
   },
   "dependencies": {
-    "@cerc-io/peer": "^0.2.22"
+    "@cerc-io/peer": "^0.2.24"
   },
   "peerDependencies": {
     "react": "^18.2.0"
