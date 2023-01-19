@@ -356,36 +356,24 @@ export class Peer {
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
+    assert(this._node);
+
     // Dial them when we discover them
-    // Attempt to dial all the multiaddrs of the discovered peer
-    // Dial using a direct multiaddr might fail if the discovered peer is behind NAT
-    // Dial using relayed multiaddr should succeed in that case
-    peer.multiaddrs.map(async (peerMultiaddr): Promise<void> => {
-      assert(this._node);
-
-      // Relay nodes sometimes give an additional multiaddr of signalling server (without peer id) in discovery
-      // Eg. /ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star
-      // Workaround to avoid dialling multiaddr(s) without peer id
-      if (!peerMultiaddr.toString().includes('p2p/')) {
-        return;
+    const peerIdString = peer.id.toString();
+    try {
+      console.log(`Dialling peer ${peerIdString}`);
+      // Dialling using peer id tries using all multiaddr(s) (direct/relayed) of the discovered peer
+      const stream = await this._node.dialProtocol(peer.id, CHAT_PROTOCOL);
+      this._handleStream(peer.id, stream);
+    } catch (err: any) {
+      // Check if protocol negotiation failed (dial still succeeds)
+      // (happens in case of dialProtocol to relay nodes since they don't handle CHAT_PROTOCOL)
+      if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
+        console.log(`Protocol selection failed with peer ${peerIdString}`);
+      } else {
+        console.log(`Could not dial ${peerIdString}`, err);
       }
-
-      try {
-        console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
-        const stream = await this._node.dialProtocol(peerMultiaddr, CHAT_PROTOCOL);
-
-        // TODO: Handle multiple successful dials to a peer
-        this._handleStream(peer.id, stream);
-      } catch (err: any) {
-        // Check if protocol negotiation failed (dial still succeeds)
-        // (happens in case of dialProtocol to relay nodes since they don't handle CHAT_PROTOCOL)
-        if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
-          console.log(`Protocol selection failed with peer ${peerMultiaddr}`);
-        } else {
-          console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
-        }
-      }
-    });
+    }
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
