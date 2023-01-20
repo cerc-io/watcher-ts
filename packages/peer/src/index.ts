@@ -272,7 +272,7 @@ export class Peer {
   _handleDiscovery (peer: PeerInfo): void {
     // Check connected peers as they are discovered repeatedly.
     if (![...this._remotePeerIds].some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
-      console.log('Discovered peer multiaddrs', peer.multiaddrs.map(addr => addr.toString()));
+      console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
       this._connectPeer(peer);
     }
   }
@@ -362,7 +362,7 @@ export class Peer {
     const peerIdString = peer.id.toString();
     try {
       console.log(`Dialling peer ${peerIdString}`);
-      // Dialling using peer id tries using all multiaddr(s) (direct/relayed) of the discovered peer
+      // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
       const stream = await this._node.dialProtocol(peer.id, CHAT_PROTOCOL);
       this._handleStream(peer.id, stream);
     } catch (err: any) {
