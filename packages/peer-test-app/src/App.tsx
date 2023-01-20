@@ -51,7 +51,7 @@ function App() {
     }
 
     peer.node.peerStore.addEventListener('change:multiaddrs', forceUpdate)
-    peer.node.connectionManager.addEventListener('peer:connect', forceUpdate)
+    peer.node.addEventListener('peer:connect', forceUpdate)
 
     let lastDisconnect = new Date()
     const disconnectHandler = () => {
@@ -63,14 +63,14 @@ function App() {
       lastDisconnect = now;
     }
 
-    peer.node.connectionManager.addEventListener('peer:disconnect', disconnectHandler)
+    peer.node.addEventListener('peer:disconnect', disconnectHandler)
 
     return () => {
       unsubscribeMessage()
       unsubscribeTopic()
       peer.node?.peerStore.removeEventListener('change:multiaddrs', forceUpdate)
-      peer.node?.connectionManager.removeEventListener('peer:connect', forceUpdate)
-      peer.node?.connectionManager.removeEventListener('peer:disconnect', disconnectHandler)
+      peer.node?.removeEventListener('peer:connect', forceUpdate)
+      peer.node?.removeEventListener('peer:disconnect', disconnectHandler)
     }
   }, [peer, forceUpdate])
 
@@ -139,10 +139,10 @@ function App() {
             peer && peer.node && (
               <>
                 <Typography variant="subtitle1" color="inherit" noWrap>
-                  Remote Peer Connections (Count: {peer.node.connectionManager.getConnections().length})
+                  Remote Peer Connections (Count: {peer.node.getConnections().length})
                 </Typography>
                 <br/>
-                {peer.node.connectionManager.getConnections().map(connection => (
+                {peer.node.getConnections().map(connection => (
                   <TableContainer sx={{ mb: 2 }} key={connection.id} component={Paper}>
                     <Table size="small">
                       <TableBody>

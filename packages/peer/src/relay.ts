@@ -88,7 +88,7 @@ async function main (): Promise<void> {
   console.log();
 
   // Listen for peers connection
-  node.connectionManager.addEventListener('peer:connect', (evt) => {
+  node.addEventListener('peer:connect', (evt) => {
     // console.log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
@@ -96,7 +96,7 @@ async function main (): Promise<void> {
   });
 
   // Listen for peers disconnecting
-  node.connectionManager.addEventListener('peer:disconnect', (evt) => {
+  node.addEventListener('peer:disconnect', (evt) => {
     // console.log('event peer:disconnect', evt);
     // Log disconnected peer
     const connection: Connection = evt.detail;

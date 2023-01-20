@@ -19,7 +19,7 @@ import { mplex } from '@libp2p/mplex';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
-import { PeerId } from '@libp2p/interface-peer-id';
+import type { PeerId } from '@libp2p/interface-peer-id';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
@@ -134,13 +134,13 @@ export class Peer {
     });
 
     // Listen for peers connection
-    this._node.connectionManager.addEventListener('peer:connect', async (evt) => {
+    this._node.addEventListener('peer:connect', async (evt) => {
       console.log('event peer:connect', evt);
       await this._handleConnect(evt.detail);
     });
 
     // Listen for peers disconnecting
-    this._node.connectionManager.addEventListener('peer:disconnect', (evt) => {
+    this._node.addEventListener('peer:disconnect', (evt) => {
       console.log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
     });
@@ -160,8 +160,8 @@ export class Peer {
     assert(this._node);
 
     this._node.removeEventListener('peer:discovery');
-    this._node.connectionManager.removeEventListener('peer:connect');
-    this._node.connectionManager.removeEventListener('peer:disconnect');
+    this._node.removeEventListener('peer:connect');
+    this._node.removeEventListener('peer:disconnect');
     this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
@@ -272,7 +272,7 @@ export class Peer {
   _handleDiscovery (peer: PeerInfo): void {
     // Check connected peers as they are discovered repeatedly.
     if (![...this._remotePeerIds].some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
-      console.log('Discovered peer multiaddrs', peer.multiaddrs.map(addr => addr.toString()));
+      console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
       this._connectPeer(peer);
     }
   }
@@ -359,30 +359,19 @@ export class Peer {
     assert(this._node);
 
     // Dial them when we discover them
-    // Attempt to dial all the multiaddrs of the discovered peer (to connect through relay)
-    for (const peerMultiaddr of peer.multiaddrs) {
-      // Relay nodes sometimes give an additional multiaddr of signalling server (without peer id) in discovery
-      // Eg. /ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star
-      // Workaround to avoid dialling multiaddr(s) without peer id
-      if (!peerMultiaddr.toString().includes('p2p/')) {
-        continue;
-      }
-
-      try {
-        console.log(`Dialling peer ${peer.id.toString()} using multiaddr ${peerMultiaddr.toString()}`);
-        const stream = await this._node.dialProtocol(peerMultiaddr, CHAT_PROTOCOL);
-
-        this._handleStream(peer.id, stream);
-        break;
-      } catch (err: any) {
-        // Check if protocol negotiation failed (dial still succeeds)
-        // (happens in case of dialProtocol to relay nodes since they don't handle CHAT_PROTOCOL)
-        if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
-          console.log(`Protocol selection failed with peer ${peerMultiaddr}`);
-          break;
-        } else {
-          console.log(`Could not dial ${peerMultiaddr.toString()}`, err);
-        }
+    const peerIdString = peer.id.toString();
+    try {
+      console.log(`Dialling peer ${peerIdString}`);
+      // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
+      const stream = await this._node.dialProtocol(peer.id, CHAT_PROTOCOL);
+      this._handleStream(peer.id, stream);
+    } catch (err: any) {
+      // Check if protocol negotiation failed (dial still succeeds)
+      // (happens in case of dialProtocol to relay nodes since they don't handle CHAT_PROTOCOL)
+      if ((err as Error).message === ERR_PROTOCOL_SELECTION) {
+        console.log(`Protocol selection failed with peer ${peerIdString}`);
+      } else {
+        console.log(`Could not dial ${peerIdString}`, err);
       }
     }
   }
