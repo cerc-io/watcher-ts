@@ -1,4 +1,4 @@
-# Subgraph watcher demo
+# Non-Subgraph watcher demo
 
 * The following core services need to be running for the demo:
   * [ipld-eth-db](https://github.com/cerc-io/ipld-eth-db)
