@@ -25,6 +25,10 @@ export const RELAY_TAG = {
 // Currently only checking for relay node
 export const CONN_CHECK_INTERVAL = 10000; // 10 seconds
 
+// Ping timeout used to check if connection is alive
+// Should be lesser than CONN_CHECK_INTERVAL
+export const PING_TIMEOUT = 5000; // 5 seconds
+
 // Delay time in ms to redial relay node on failing to connect
 export const RELAY_REDIAL_DELAY = 5000; // 5 sconds
 
