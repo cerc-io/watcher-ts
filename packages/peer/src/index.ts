@@ -270,9 +270,9 @@ export class Peer {
     // Log connected peer
     console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
 
+    // Keep only one connection with a peer.
     if (remoteConnections.length > 1) {
-      // Close connections only on one of the peers.
-      // Connections are closed on peer with the smaller id.
+      // Close new connection from peer having the smaller peer id.
       if (this._node.peerId.toString() < remotePeerId.toString()) {
         console.log('Closing new connection for already connected peer');
         // Close new connection as protocol stream is opened in the first connection that is established.
