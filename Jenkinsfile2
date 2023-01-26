@@ -1,0 +1,23 @@
+
+
+pipeline {
+    agent {
+        docker { 
+            image 'node:16.13.1-alpine' 
+            args '-u root:root'
+        } 
+    }
+    stages {
+        stage('Build Project') {
+            steps {
+                sh 'node --version'
+                sh 'apk add git yarn npm'
+                sh 'git config --global --add safe.directory /var/lib/jenkins/workspace/watcher-ts-testing'
+                sh 'yarn'
+                sh 'yarn build'
+                sh 'npm config set @cerc-io:registry https://git.vdb.to/api/packages/cerc-io/npm/'
+                sh 'lerna publish from-package --no-git-tag-version --yes'
+            }
+        }
+    }
+}
