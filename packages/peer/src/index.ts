@@ -13,7 +13,7 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webRTCDirect } from '@libp2p/webrtc-direct';
+import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID } from '@libp2p/webrtc-direct';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import type { Transport } from '@libp2p/interface-transport';
@@ -33,20 +33,25 @@ export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
 export class Peer {
   _node?: Libp2p
-  _wrtcTransport: () => Transport
-  _relayNodeMultiaddr?: Multiaddr
+  _wrtcTransport: (components: WebRTCDirectComponents) => Transport
+  _relayNodeMultiaddr: Multiaddr
 
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
   _peerHeartbeatIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
 
-  constructor (nodejs?: boolean) {
+  constructor (relayNodeURL: string, nodejs?: boolean) {
+    this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+
+    const relayPeerId = this._relayNodeMultiaddr.getPeerId();
+    assert(relayPeerId);
+
     // Instantiation in nodejs.
     if (nodejs) {
-      this._wrtcTransport = webRTCDirect({ wrtc });
+      this._wrtcTransport = webRTCDirect({ wrtc, relayPeerId, enableSignalling: true });
     } else {
-      this._wrtcTransport = webRTCDirect();
+      this._wrtcTransport = webRTCDirect({ relayPeerId, enableSignalling: true });
     }
   }
 
@@ -58,10 +63,13 @@ export class Peer {
     return this._node;
   }
 
-  async init (relayNodeURL: string): Promise<void> {
-    this._relayNodeMultiaddr = multiaddr(relayNodeURL);
-
+  async init (): Promise<void> {
     this._node = await createLibp2p({
+      addresses: {
+        // Use existing protocol id in multiaddr to listen through signalling channel to relay node
+        // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
+        listen: [`${this._relayNodeMultiaddr.toString()}/${P2P_WEBRTC_STAR_ID}`]
+      },
       transports: [this._wrtcTransport],
       connectionEncryption: [noise()],
       streamMuxers: [mplex()],
@@ -80,7 +88,7 @@ export class Peer {
         }
       },
       connectionManager: {
-        maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER, // Number of max concurrent dials per peer
+        maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
         autoDial: false,
         maxConnections: MAX_CONNECTIONS,
         minConnections: MIN_CONNECTIONS,
@@ -239,7 +247,6 @@ export class Peer {
   }
 
   async _dialRelay (): Promise<void> {
-    assert(this._relayNodeMultiaddr);
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
 
@@ -406,7 +413,6 @@ export class Peer {
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
     assert(this._node);
-    assert(this._relayNodeMultiaddr);
 
     // Dial them when we discover them
     const peerIdString = peer.id.toString();

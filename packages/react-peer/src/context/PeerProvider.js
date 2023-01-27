@@ -14,8 +14,8 @@ export const PeerProvider = ({ relayNode, children }) => {
         throw new Error('REACT_APP_RELAY_NODE not set')
       }
 
-      const peer = new Peer()
-      await peer.init(relayNode);
+      const peer = new Peer(relayNode)
+      await peer.init();
 
       // Debug
       console.log(`Peer ID: ${peer.peerId.toString()}`);

@@ -50,7 +50,7 @@ async function main (): Promise<void> {
     addresses: {
       listen: [RELAY_NODE_LISTEN_ADDRESS]
     },
-    transports: [webRTCDirect({ wrtc })],
+    transports: [webRTCDirect({ wrtc, enableSignalling: true })],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
