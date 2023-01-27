@@ -8,12 +8,13 @@ import { AppBar, Box, CssBaseline, Paper, Table, TableBody, TableCell, TableCont
 import './App.css';
 import { useForceUpdate } from './hooks/forceUpdate';
 
+const REFRESH_INTERVAL = 5000; // ms
 const TEST_TOPIC = 'test';
 
 declare global {
   interface Window {
     broadcast: (message: string) => void;
-    flood: (message: string) => void;
+    flood: (message: string) => Promise<void>;
     peer: Peer;
   }
 }
@@ -46,8 +47,8 @@ function App() {
       console.log(`${peerId.toString()} > ${data}`)
     })
 
-    window.flood = (message: string) => {
-      peer.floodMessage(TEST_TOPIC, message)
+    window.flood = async (message: string) => {
+      return peer.floodMessage(TEST_TOPIC, message)
     }
 
     peer.node.peerStore.addEventListener('change:multiaddrs', forceUpdate)
@@ -73,6 +74,15 @@ function App() {
       peer.node?.removeEventListener('peer:disconnect', disconnectHandler)
     }
   }, [peer, forceUpdate])
+
+  useEffect(() => {
+    // TODO: Add event for connection close and remove refresh in interval
+    const intervalID = setInterval(forceUpdate, REFRESH_INTERVAL);
+    
+    return () => {
+      clearInterval(intervalID)
+    }
+  }, [forceUpdate])
 
   return (
     <ThemeProvider theme={theme}>
