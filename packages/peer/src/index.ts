@@ -263,11 +263,27 @@ export class Peer {
   }
 
   async _handleConnect (connection: Connection): Promise<void> {
+    assert(this._node);
     const remotePeerId = connection.remotePeer;
+    const remoteConnections = this._node.getConnections(remotePeerId);
 
     // Log connected peer
     console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
-    console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
+
+    // Keep only one connection with a peer.
+    if (remoteConnections.length > 1) {
+      // Close new connection from peer having the smaller peer id.
+      if (this._node.peerId.toString() < remotePeerId.toString()) {
+        console.log('Closing new connection for already connected peer');
+        // Close new connection as protocol stream is opened in the first connection that is established.
+        await connection.close();
+        console.log('Closed');
+      }
+
+      return;
+    }
+
+    console.log(`Current number of peers connected: ${this._node.getPeers().length}`);
 
     // Start heartbeat check peer
     await this._startHeartbeatChecks(
