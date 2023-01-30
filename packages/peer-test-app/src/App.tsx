@@ -78,7 +78,7 @@ function App() {
   useEffect(() => {
     // TODO: Add event for connection close and remove refresh in interval
     const intervalID = setInterval(forceUpdate, REFRESH_INTERVAL);
-    
+
     return () => {
       clearInterval(intervalID)
     }
@@ -159,6 +159,8 @@ function App() {
                           <TableCell>{connection.id}</TableCell>
                           <TableCell align="right"><b>Direction</b></TableCell>
                           <TableCell>{connection.stat.direction}</TableCell>
+                          <TableCell align="right"><b>Type</b></TableCell>
+                          <TableCell>{connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? "relayed" : "direct"}</TableCell>
                           <TableCell align="right"><b>Status</b></TableCell>
                           <TableCell>{connection.stat.status}</TableCell>
                         </TableRow>
