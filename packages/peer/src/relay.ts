@@ -17,9 +17,9 @@ import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 import type { Connection } from '@libp2p/interface-connection';
+import { multiaddr } from '@multiformats/multiaddr';
 
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
-import { multiaddr } from '@multiformats/multiaddr';
 
 const log = debug('laconic:relay');
 

@@ -64,40 +64,45 @@ export class Peer {
   }
 
   async init (): Promise<void> {
-    this._node = await createLibp2p({
-      addresses: {
-        // Use existing protocol id in multiaddr to listen through signalling channel to relay node
-        // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
-        listen: [`${this._relayNodeMultiaddr.toString()}/${P2P_WEBRTC_STAR_ID}`]
-      },
-      transports: [this._wrtcTransport],
-      connectionEncryption: [noise()],
-      streamMuxers: [mplex()],
-      pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
-      peerDiscovery: [
-        // Use pubsub based discovery; relay server acts as a peer discovery source
-        pubsubPeerDiscovery({
-          interval: PUBSUB_DISCOVERY_INTERVAL
-        })
-      ],
-      relay: {
-        enabled: true,
-        autoRelay: {
+    try {
+      this._node = await createLibp2p({
+        addresses: {
+          // Use existing protocol id in multiaddr to listen through signalling channel to relay node
+          // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
+          listen: [`${this._relayNodeMultiaddr.toString()}/${P2P_WEBRTC_STAR_ID}`]
+        },
+        transports: [this._wrtcTransport],
+        connectionEncryption: [noise()],
+        streamMuxers: [mplex()],
+        pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
+        peerDiscovery: [
+          // Use pubsub based discovery; relay server acts as a peer discovery source
+          pubsubPeerDiscovery({
+            interval: PUBSUB_DISCOVERY_INTERVAL
+          })
+        ],
+        relay: {
           enabled: true,
-          maxListeners: 2
+          autoRelay: {
+            enabled: true,
+            maxListeners: 2
+          }
+        },
+        connectionManager: {
+          maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
+          autoDial: false,
+          maxConnections: MAX_CONNECTIONS,
+          minConnections: MIN_CONNECTIONS,
+          keepMultipleConnections: true // Set true to get connections with multiple multiaddr
+        },
+        ping: {
+          timeout: PING_TIMEOUT
         }
-      },
-      connectionManager: {
-        maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
-        autoDial: false,
-        maxConnections: MAX_CONNECTIONS,
-        minConnections: MIN_CONNECTIONS,
-        keepMultipleConnections: true // Set true to get connections with multiple multiaddr
-      },
-      ping: {
-        timeout: PING_TIMEOUT
-      }
-    });
+      });
+    } catch (err: any) {
+      console.log('Could not initialize a libp2p node', err);
+      return;
+    }
 
     console.log('libp2p node created', this._node);
 
