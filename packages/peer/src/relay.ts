@@ -129,9 +129,14 @@ function _getArgv (): any {
 async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise<void> {
   relayPeersList.forEach(async (relayPeer) => {
     const relayMultiaddr = multiaddr(relayPeer);
+    const peerIdString = relayMultiaddr.getPeerId()?.toString();
 
-    console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-    await node.dial(relayMultiaddr);
+    try {
+      console.log(`Dialling relay node ${peerIdString} using multiaddr ${relayMultiaddr.toString()}`);
+      await node.dial(relayMultiaddr);
+    } catch (err: any) {
+      console.log(`Could not dial ${peerIdString}`, err);
+    }
   });
 }
 
