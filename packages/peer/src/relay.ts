@@ -23,10 +23,12 @@ import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from 
 
 const log = debug('laconic:relay');
 
-const RELAY_NODE_LISTEN_ADDRESS = '/ip4/0.0.0.0/tcp/9090/http/p2p-webrtc-direct';
+const DEFAULT_HOST = '0.0.0.0';
+const DEFAULT_PORT = 9090;
 
 interface Arguments {
   peerIdFile: string;
+  port: number;
   relayPeers: string;
 }
 
@@ -45,10 +47,13 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
+  const listenPort = argv.port ? argv.port : DEFAULT_PORT;
+  const listenMultiaddr = `/ip4/${DEFAULT_HOST}/tcp/${listenPort}/http/p2p-webrtc-direct`;
+
   const node = await createLibp2p({
     peerId,
     addresses: {
-      listen: [RELAY_NODE_LISTEN_ADDRESS]
+      listen: [listenMultiaddr]
     },
     transports: [webRTCDirect({ wrtc, enableSignalling: true })],
     connectionEncryption: [noise()],
@@ -118,6 +123,10 @@ function _getArgv (): any {
     peerIdFile: {
       type: 'string',
       describe: 'Relay Peer Id file path (json)'
+    },
+    port: {
+      type: 'number',
+      describe: 'Port to start listening on'
     },
     relayPeers: {
       type: 'string',

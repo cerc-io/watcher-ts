@@ -30,10 +30,11 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
   ```bash
   # In packages/peer
-  yarn relay-node --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
+  yarn relay-node --peer-id-file [PEER_ID_FILE_PATH] --port [LISTEN_PORT] --relay-peers [RELAY_PEERS_FILE_PATH]
   ```
 
   * `peer-id-file`: file path for peer id to be used (json)
+  * `port`: Port to start listening on (default: `9090`)
   * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
 * Start the node:
