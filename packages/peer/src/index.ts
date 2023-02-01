@@ -172,6 +172,8 @@ export class Peer {
     this._node.removeEventListener('peer:discovery');
     this._node.removeEventListener('peer:connect');
     this._node.removeEventListener('peer:disconnect');
+    this._node.peerStore.removeEventListener('change:multiaddrs');
+    this._node.peerStore.removeEventListener('change:protocols');
     this._node.pubsub.removeEventListener('message');
 
     await this._node.unhandle(CHAT_PROTOCOL);
@@ -237,18 +239,22 @@ export class Peer {
   async _handleChangeProtocols ({ peerId, protocols }: { peerId: PeerId, protocols: string[] }) {
     assert(this._node);
 
-    if (this._node.peerId.toString() < peerId.toString()) {
     // Handle protocol and open stream from only one peer
-      if (!peerId.equals(this._node.peerId) && protocols.includes(CHAT_PROTOCOL)) {
-        // Open stream if not self peer and chat protocol is handled by remote peer
-        const [connection] = this._node.getConnections(peerId);
+    if (this._node.peerId.toString() > peerId.toString()) {
+      return;
+    }
 
-        if (connection && !connection.streams.some(stream => stream.stat.protocol === CHAT_PROTOCOL)) {
-          // Open stream if connection exists and it doesn't already have a stream with chat protocol
-          const stream = await connection.newStream([CHAT_PROTOCOL]);
-          this._handleStream(peerId, stream);
-        }
-      }
+    // Return if stream is self peer or chat protocol is not handled by remote peer
+    if (peerId.equals(this._node.peerId) || !protocols.includes(CHAT_PROTOCOL)) {
+      return;
+    }
+
+    const [connection] = this._node.getConnections(peerId);
+
+    // Open stream if connection exists and it doesn't already have a stream with chat protocol
+    if (connection && !connection.streams.some(stream => stream.stat.protocol === CHAT_PROTOCOL)) {
+      const stream = await connection.newStream([CHAT_PROTOCOL]);
+      this._handleStream(peerId, stream);
     }
   }
 
@@ -301,8 +307,8 @@ export class Peer {
 
       // Keep only one connection with a peer
       if (remoteConnections.length > 1) {
+        // Close new connection if using relayed multiaddr
         if (connection.remoteAddr.protoNames().includes('p2p-circuit')) {
-          // Close new connection if using relayed multiaddr
           console.log('Closing new connection for already connected peer');
           await connection.close();
           console.log('Closed');
@@ -322,8 +328,9 @@ export class Peer {
       // Open stream in new connection for chat protocol
       const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
 
+      // Dial if protocol is handled by remote peer
+      // The chat protocol may not be updated in the list and will be handled later on change:protocols event
       if (protocols.includes(CHAT_PROTOCOL)) {
-        // Dial if protocol is handled by remote peer
         const stream = await connection.newStream([CHAT_PROTOCOL]);
         this._handleStream(remotePeerId, stream);
       }
