@@ -9,6 +9,7 @@ import yargs from 'yargs';
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import { PeerId } from '@libp2p/interface-peer-id';
 
+const TEST_TOPIC = 'test';
 interface Arguments {
   relayNode: string;
 }
@@ -23,6 +24,10 @@ async function main (): Promise<void> {
 
   peer.subscribeMessage((peerId: PeerId, message: string) => {
     console.log(`> ${peerId.toString()} > ${message}`);
+  });
+
+  peer.subscribeTopic(TEST_TOPIC, (peerId, data) => {
+    console.log(`> ${peerId.toString()} > ${data}`);
   });
 
   console.log(`Peer ID: ${peer.peerId?.toString()}`);
