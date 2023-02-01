@@ -317,14 +317,18 @@ export class Peer {
         console.log('Closed');
       }
 
-      // Open stream in new connection for chat protocol
-      const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
+      try {
+        // Open stream in new connection for chat protocol
+        const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
 
-      // Dial if protocol is handled by remote peer
-      // The chat protocol may not be updated in the list and will be handled later on change:protocols event
-      if (protocols.includes(CHAT_PROTOCOL)) {
-        const stream = await connection.newStream([CHAT_PROTOCOL]);
-        this._handleStream(remotePeerId, stream);
+        // Dial if protocol is handled by remote peer
+        // The chat protocol may not be updated in the list and will be handled later on change:protocols event
+        if (protocols.includes(CHAT_PROTOCOL)) {
+          const stream = await connection.newStream([CHAT_PROTOCOL]);
+          this._handleStream(remotePeerId, stream);
+        }
+      } catch (err: any) {
+        console.log(`Could not create a new protocol stream with ${remotePeerId.toString()}`, err);
       }
     }
 
@@ -421,9 +425,14 @@ export class Peer {
 
     // Dial them when we discover them
     const peerIdString = peer.id.toString();
-    console.log(`Dialling peer ${peerIdString}`);
-    // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
-    await this._node.dial(peer.id);
+
+    try {
+      console.log(`Dialling peer ${peerIdString}`);
+      // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
+      await this._node.dial(peer.id);
+    } catch (err: any) {
+      console.log(`Could not dial ${peerIdString}`, err);
+    }
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
