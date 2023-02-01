@@ -27,6 +27,7 @@
     "relay-node": "node dist/relay.js"
   },
   "dependencies": {
+    "@cerc-io/libp2p": "0.42.2-laconic-0.1.0",
     "@chainsafe/libp2p-noise": "^11.0.0",
     "@libp2p/floodsub": "^6.0.0",
     "@libp2p/mplex": "^7.1.1",
@@ -39,7 +40,6 @@
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",
     "it-pushable": "^3.1.2",
-    "libp2p": "^0.42.2",
     "node-pre-gyp": "^0.13.0",
     "uint8arrays": "^4.0.3",
     "wrtc": "^0.4.7",
