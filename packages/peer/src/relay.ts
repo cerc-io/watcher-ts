@@ -2,7 +2,7 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import { Libp2p, createLibp2p } from 'libp2p';
+import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import wrtc from 'wrtc';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';

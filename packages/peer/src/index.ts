@@ -2,7 +2,7 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import { createLibp2p, Libp2p } from 'libp2p';
+import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
 // For nodejs.
 import wrtc from 'wrtc';
 import assert from 'assert';
