@@ -383,76 +383,148 @@ describe('Get value from storage', () => {
 
   describe('byte array', () => {
     let testBytes: Contract, storageLayout: StorageLayout, blockHash: string;
-    const bytesTenValue = ethers.utils.hexlify(ethers.utils.randomBytes(10));
-    const bytesTwentyValue = ethers.utils.hexlify(ethers.utils.randomBytes(20));
-    const bytesThirtyValue = ethers.utils.hexlify(ethers.utils.randomBytes(30));
-    const bytesArray1 = ethers.utils.hexlify(ethers.utils.randomBytes(24));
-    const bytesArray2 = ethers.utils.hexlify(ethers.utils.randomBytes(100));
 
     before(async () => {
       ({ contract: testBytes, storageLayout } = contracts.TestBytes);
-
-      const transactions = await Promise.all([
-        testBytes.setBytesTen(bytesTenValue),
-        testBytes.setBytesTwenty(bytesTwentyValue),
-        testBytes.setBytesThirty(bytesThirtyValue),
-        testBytes.setBytesArray1(bytesArray1),
-        testBytes.setBytesArray2(bytesArray2)
-      ]);
-
-      await Promise.all(transactions.map(transaction => transaction.wait()));
-      blockHash = await getBlockHash();
     });
 
-    it('get value for fixed size byte arrays packed together', async () => {
-      let { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTen');
-      expect(value).to.equal(bytesTenValue);
+    describe('fixed size byte array', () => {
+      const bytesTenValue = ethers.utils.hexlify(ethers.utils.randomBytes(10));
+      const bytesTwentyValue = ethers.utils.hexlify(ethers.utils.randomBytes(20));
+      const bytesThirtyValue = ethers.utils.hexlify(ethers.utils.randomBytes(30));
 
-      if (isIpldGql) {
-        assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
-      }
+      before(async () => {
+        const transactions = await Promise.all([
+          testBytes.setBytesTen(bytesTenValue),
+          testBytes.setBytesTwenty(bytesTwentyValue),
+          testBytes.setBytesThirty(bytesThirtyValue)
+        ]);
 
-      ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTwenty'));
-      expect(value).to.equal(bytesTwentyValue);
+        await Promise.all(transactions.map(transaction => transaction.wait()));
+        blockHash = await getBlockHash();
+      });
 
-      if (isIpldGql) {
-        assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
-      }
-    });
+      it('get value for fixed size byte arrays packed together', async () => {
+        let { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTen');
+        expect(value).to.equal(bytesTenValue);
 
-    it('get value for fixed size byte arrays using single slot', async () => {
-      const { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesThirty');
-      expect(value).to.equal(bytesThirtyValue);
+        if (isIpldGql) {
+          assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
+        }
 
-      if (isIpldGql) {
-        assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
-      }
+        ({ value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesTwenty'));
+        expect(value).to.equal(bytesTwentyValue);
+
+        if (isIpldGql) {
+          assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
+        }
+      });
+
+      it('get value for fixed size byte arrays using single slot', async () => {
+        const { value, proof: { data: proofData } } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesThirty');
+        expect(value).to.equal(bytesThirtyValue);
+
+        if (isIpldGql) {
+          assertProofData(blockHash, testBytes.address, JSON.parse(proofData));
+        }
+      });
     });
 
     // Dynamically sized byte array.
-    it('get value for dynamic byte array of length less than 32 bytes', async () => {
-      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray1');
-      expect(value).to.equal(bytesArray1);
-      const proofData = JSON.parse(proof.data);
-      expect(proofData.length).to.equal(1);
+    describe('dynamic byte array', () => {
+      const byteArray1 = ethers.utils.hexlify(ethers.utils.randomBytes(20));
+      const byteArray2 = ethers.utils.hexlify(ethers.utils.randomBytes(100));
 
-      if (isIpldGql) {
-        assertProofArray(blockHash, testBytes.address, proofData);
-      }
-    });
+      const setBytesAndGetBlock = async (value: string) => {
+        const transaction = await testBytes.setByteArray(value);
+        await transaction.wait();
+        return getBlockHash();
+      };
 
-    it('get value for dynamic byte array of length more than 32 bytes', async () => {
-      const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'bytesArray2');
-      expect(value).to.equal(bytesArray2);
-      const proofData = JSON.parse(proof.data);
+      it('get value for dynamic byte array of length less than 32 bytes', async () => {
+        blockHash = await setBytesAndGetBlock(byteArray1);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray1);
+        const proofData = JSON.parse(proof.data);
+        expect(proofData.length).to.equal(1);
 
-      // Length is equal to slots required by the data plus the initial slot used to calculate the actual slots holding the data.
-      const proofDataLength = (Math.ceil(ethers.utils.hexDataLength(bytesArray2) / 32)) + 1;
-      expect(proofData.length).to.equal(proofDataLength);
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
 
-      if (isIpldGql) {
-        assertProofArray(blockHash, testBytes.address, proofData);
-      }
+      it('get value for dynamic byte array of length more than 32 bytes', async () => {
+        blockHash = await setBytesAndGetBlock(byteArray2);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray2);
+        const proofData = JSON.parse(proof.data);
+
+        // Length is equal to slots required by the data plus the initial slot used to calculate the actual slots holding the data.
+        const proofDataLength = (Math.ceil(ethers.utils.hexDataLength(byteArray2) / 32)) + 1;
+        expect(proofData.length).to.equal(proofDataLength);
+
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
+
+      it('get value for dynamic byte array with leading zeros and of length less than 32', async () => {
+        const byteArray = ethers.utils.hexZeroPad(byteArray1, 24);
+        blockHash = await setBytesAndGetBlock(byteArray);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray);
+        const proofData = JSON.parse(proof.data);
+        expect(proofData.length).to.equal(1);
+
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
+
+      it('get value for dynamic byte array with leading zeros and of length more than 32', async () => {
+        const byteArray = ethers.utils.hexZeroPad(byteArray2, 110);
+        blockHash = await setBytesAndGetBlock(byteArray);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray);
+        const proofData = JSON.parse(proof.data);
+
+        // Length is equal to slots required by the data plus the initial slot used to calculate the actual slots holding the data.
+        const proofDataLength = (Math.ceil(ethers.utils.hexDataLength(byteArray) / 32)) + 1;
+        expect(proofData.length).to.equal(proofDataLength);
+
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
+
+      it('get value for dynamic byte array of length 31', async () => {
+        const byteArray = ethers.utils.hexlify(ethers.utils.randomBytes(31));
+        blockHash = await setBytesAndGetBlock(byteArray);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray);
+        const proofData = JSON.parse(proof.data);
+        expect(proofData.length).to.equal(1);
+
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
+
+      it('get value for dynamic byte array of length 32', async () => {
+        const byteArray = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+        blockHash = await setBytesAndGetBlock(byteArray);
+        const { value, proof } = await getStorageValue(storageLayout, getStorageAt, blockHash, testBytes.address, 'byteArray');
+        expect(value).to.equal(byteArray);
+        const proofData = JSON.parse(proof.data);
+
+        // Length is equal to slots required by the data plus the initial slot used to calculate the actual slots holding the data.
+        const proofDataLength = (Math.ceil(ethers.utils.hexDataLength(byteArray) / 32)) + 1;
+        expect(proofData.length).to.equal(proofDataLength);
+
+        if (isIpldGql) {
+          assertProofArray(blockHash, testBytes.address, proofData);
+        }
+      });
     });
   });
 
