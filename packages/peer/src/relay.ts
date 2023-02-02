@@ -12,7 +12,7 @@ import debug from 'debug';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { webRTCDirect } from '@libp2p/webrtc-direct';
+import { webRTCDirect } from '@cerc-io/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
