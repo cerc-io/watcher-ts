@@ -12,29 +12,28 @@ import debug from 'debug';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTCDirect } from '@cerc-io/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 import type { Connection } from '@libp2p/interface-connection';
-
-import { DEFAULT_SIGNAL_SERVER_URL } from './index.js';
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 import { multiaddr } from '@multiformats/multiaddr';
+
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
 
 const log = debug('laconic:relay');
 
+const DEFAULT_HOST = '0.0.0.0';
+const DEFAULT_PORT = 9090;
+
 interface Arguments {
-  signalServer: string;
+  port: number;
   peerIdFile: string;
   relayPeers: string;
 }
 
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
-  if (!argv.signalServer) {
-    console.log('Using the default signalling server URL');
-  }
 
   let peerId: any;
   if (argv.peerIdFile) {
@@ -48,17 +47,15 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
-  const wrtcStar: WebRTCStarTuple = webRTCStar({ wrtc });
+  const listenPort = argv.port ? argv.port : DEFAULT_PORT;
+  const listenMultiaddr = `/ip4/${DEFAULT_HOST}/tcp/${listenPort}/http/p2p-webrtc-direct`;
+
   const node = await createLibp2p({
     peerId,
     addresses: {
-      listen: [
-        argv.signalServer || DEFAULT_SIGNAL_SERVER_URL
-      ]
+      listen: [listenMultiaddr]
     },
-    transports: [
-      wrtcStar.transport
-    ],
+    transports: [webRTCDirect({ wrtc, enableSignalling: true })],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
@@ -123,9 +120,9 @@ function _getArgv (): any {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
-    signalServer: {
-      type: 'string',
-      describe: 'Signalling server URL'
+    port: {
+      type: 'number',
+      describe: 'Port to start listening on'
     },
     peerIdFile: {
       type: 'string',
@@ -141,9 +138,14 @@ function _getArgv (): any {
 async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise<void> {
   relayPeersList.forEach(async (relayPeer) => {
     const relayMultiaddr = multiaddr(relayPeer);
+    const peerIdString = relayMultiaddr.getPeerId()?.toString();
 
-    console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-    await node.dial(relayMultiaddr);
+    try {
+      console.log(`Dialling relay node ${peerIdString} using multiaddr ${relayMultiaddr.toString()}`);
+      await node.dial(relayMultiaddr);
+    } catch (err: any) {
+      console.log(`Could not dial ${peerIdString}`, err);
+    }
   });
 }
 

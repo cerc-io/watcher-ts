@@ -13,9 +13,10 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webRTCStar, WebRTCStarTuple } from '@libp2p/webrtc-star';
+import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID } from '@cerc-io/webrtc-direct';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
+import type { Transport } from '@libp2p/interface-transport';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
@@ -27,26 +28,30 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, CONN_CHECK_INTERVAL, PING_TIMEOUT } from './constants.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
-export const DEFAULT_SIGNAL_SERVER_URL = '/ip4/127.0.0.1/tcp/13579/wss/p2p-webrtc-star';
 
 export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
 export class Peer {
   _node?: Libp2p
-  _wrtcStar: WebRTCStarTuple
-  _relayNodeMultiaddr?: Multiaddr
+  _wrtcTransport: (components: WebRTCDirectComponents) => Transport
+  _relayNodeMultiaddr: Multiaddr
 
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
   _peerHeartbeatIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
 
-  constructor (nodejs?: boolean) {
+  constructor (relayNodeURL: string, nodejs?: boolean) {
+    this._relayNodeMultiaddr = multiaddr(relayNodeURL);
+
+    const relayPeerId = this._relayNodeMultiaddr.getPeerId();
+    assert(relayPeerId);
+
     // Instantiation in nodejs.
     if (nodejs) {
-      this._wrtcStar = webRTCStar({ wrtc });
+      this._wrtcTransport = webRTCDirect({ wrtc, relayPeerId, enableSignalling: true });
     } else {
-      this._wrtcStar = webRTCStar();
+      this._wrtcTransport = webRTCDirect({ relayPeerId, enableSignalling: true });
     }
   }
 
@@ -58,64 +63,51 @@ export class Peer {
     return this._node;
   }
 
-  async init (signalServerURL = DEFAULT_SIGNAL_SERVER_URL, relayNodeURL?: string): Promise<void> {
-    let peerDiscovery: any;
-    if (relayNodeURL) {
-      this._relayNodeMultiaddr = multiaddr(relayNodeURL);
-
-      peerDiscovery = [
-        pubsubPeerDiscovery({
-          interval: PUBSUB_DISCOVERY_INTERVAL
-        })
-      ];
-    } else {
-      peerDiscovery = [this._wrtcStar.discovery];
-    }
-
-    this._node = await createLibp2p({
-      addresses: {
-        // Add the signaling server address, along with our PeerId to our multiaddrs list
-        // libp2p will automatically attempt to dial to the signaling server so that it can
-        // receive inbound connections from other peers
-        listen: [
-          // Public signal servers
-          // '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-          // '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-          signalServerURL
-        ]
-      },
-      transports: [
-        this._wrtcStar.transport
-      ],
-      connectionEncryption: [noise()],
-      streamMuxers: [mplex()],
-      pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
-      peerDiscovery,
-      relay: {
-        enabled: true,
-        autoRelay: {
+  async init (): Promise<void> {
+    try {
+      this._node = await createLibp2p({
+        addresses: {
+          // Use existing protocol id in multiaddr to listen through signalling channel to relay node
+          // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
+          listen: [`${this._relayNodeMultiaddr.toString()}/${P2P_WEBRTC_STAR_ID}`]
+        },
+        transports: [this._wrtcTransport],
+        connectionEncryption: [noise()],
+        streamMuxers: [mplex()],
+        pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
+        peerDiscovery: [
+          // Use pubsub based discovery; relay server acts as a peer discovery source
+          pubsubPeerDiscovery({
+            interval: PUBSUB_DISCOVERY_INTERVAL
+          })
+        ],
+        relay: {
           enabled: true,
-          maxListeners: 2
+          autoRelay: {
+            enabled: true,
+            maxListeners: 2
+          }
+        },
+        connectionManager: {
+          maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
+          autoDial: false,
+          maxConnections: MAX_CONNECTIONS,
+          minConnections: MIN_CONNECTIONS,
+          keepMultipleConnections: true // Set true to get connections with multiple multiaddr
+        },
+        ping: {
+          timeout: PING_TIMEOUT
         }
-      },
-      connectionManager: {
-        maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER, // Number of max concurrent dials per peer
-        autoDial: false,
-        maxConnections: MAX_CONNECTIONS,
-        minConnections: MIN_CONNECTIONS,
-        keepMultipleConnections: true // Set true to get connections with multiple multiaddr
-      },
-      ping: {
-        timeout: PING_TIMEOUT
-      }
-    });
+      });
+    } catch (err: any) {
+      console.log('Could not initialize a libp2p node', err);
+      return;
+    }
 
     console.log('libp2p node created', this._node);
 
-    // Dial to the HOP enabled relay node if available
-    if (this._relayNodeMultiaddr) {
-      await this._dialRelay();
-    }
+    // Dial to the HOP enabled relay node
+    await this._dialRelay();
 
     // Listen for change in stored multiaddrs
     this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
@@ -169,6 +161,7 @@ export class Peer {
   async close (): Promise<void> {
     assert(this._node);
 
+    this._node.peerStore.removeEventListener('change:multiaddrs');
     this._node.removeEventListener('peer:discovery');
     this._node.removeEventListener('peer:connect');
     this._node.removeEventListener('peer:disconnect');
@@ -259,7 +252,6 @@ export class Peer {
   }
 
   async _dialRelay (): Promise<void> {
-    assert(this._relayNodeMultiaddr);
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
 
@@ -325,14 +317,18 @@ export class Peer {
         console.log('Closed');
       }
 
-      // Open stream in new connection for chat protocol
-      const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
+      try {
+        // Open stream in new connection for chat protocol
+        const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
 
-      // Dial if protocol is handled by remote peer
-      // The chat protocol may not be updated in the list and will be handled later on change:protocols event
-      if (protocols.includes(CHAT_PROTOCOL)) {
-        const stream = await connection.newStream([CHAT_PROTOCOL]);
-        this._handleStream(remotePeerId, stream);
+        // Dial if protocol is handled by remote peer
+        // The chat protocol may not be updated in the list and will be handled later on change:protocols event
+        if (protocols.includes(CHAT_PROTOCOL)) {
+          const stream = await connection.newStream([CHAT_PROTOCOL]);
+          this._handleStream(remotePeerId, stream);
+        }
+      } catch (err: any) {
+        console.log(`Could not create a new protocol stream with ${remotePeerId.toString()}`, err);
       }
     }
 
@@ -429,9 +425,14 @@ export class Peer {
 
     // Dial them when we discover them
     const peerIdString = peer.id.toString();
-    console.log(`Dialling peer ${peerIdString}`);
-    // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
-    await this._node.dial(peer.id);
+
+    try {
+      console.log(`Dialling peer ${peerIdString}`);
+      // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
+      await this._node.dial(peer.id);
+    } catch (err: any) {
+      console.log(`Could not dial ${peerIdString}`, err);
+    }
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
