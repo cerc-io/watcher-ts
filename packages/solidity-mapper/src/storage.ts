@@ -351,17 +351,20 @@ const getInplaceValue = async (getStorageAt: GetStorageAt, blockHash: string, ad
  */
 const getBytesValue = async (getStorageAt: GetStorageAt, blockHash: string, address: string, slot: string) => {
   const { value, proof } = await getStorageAt({ blockHash, contract: address, slot });
-  let length = 0;
   const proofs = [JSON.parse(proof.data)];
+  const slotValue = BigNumber.from(value);
+  let length = 0;
 
   // Get length of bytes stored.
-  if (BigNumber.from(utils.hexDataSlice(value, 0, 1)).isZero()) {
-    // If first byte is not set, get length directly from the zero padded byte array.
-    const slotValue = BigNumber.from(value);
+  // https://docs.soliditylang.org/en/v0.7.6/internals/layout_in_storage.html#bytes-and-string
+  // Check if the lowest bit is set.
+  if ((slotValue.and(1)).toNumber() !== 0) {
+    // If the lowest bit is set, the value is an odd number.
+    // So subtract 1 and divide by 2 to get the length.
     length = slotValue.sub(1).div(2).toNumber();
   } else {
-    // If first byte is set the length is lesser than 32 bytes.
-    // Length of the value can be computed from the last byte.
+    // If the lowest bit is not set, the value is an even number.
+    // Extract the last byte of the hex string and divide by 2 to get the length.
     const lastByteHex = utils.hexDataSlice(value, 31, 32);
     length = BigNumber.from(lastByteHex).div(2).toNumber();
   }
