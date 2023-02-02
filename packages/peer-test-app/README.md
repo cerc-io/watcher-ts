@@ -32,11 +32,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
   ```bash
   # In packages/peer
-  yarn relay-node --peer-id-file [PEER_ID_FILE_PATH] --port [LISTEN_PORT] --relay-peers [RELAY_PEERS_FILE_PATH]
+  yarn relay-node --port [LISTEN_PORT] --peer-id-file [PEER_ID_FILE_PATH] --relay-peers [RELAY_PEERS_FILE_PATH]
   ```
 
-  * `peer-id-file`: file path for peer id to be used (json)
   * `port`: Port to start listening on (default: `9090`)
+  * `peer-id-file`: file path for peer id to be used (json)
   * `relay-peers`: file path for relay peer multiaddr(s) to dial on startup (json)
 
 * Set the relay node multiaddr in the [env](./.env) file:

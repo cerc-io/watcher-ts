@@ -27,8 +27,8 @@ const DEFAULT_HOST = '0.0.0.0';
 const DEFAULT_PORT = 9090;
 
 interface Arguments {
-  peerIdFile: string;
   port: number;
+  peerIdFile: string;
   relayPeers: string;
 }
 
@@ -120,13 +120,13 @@ function _getArgv (): any {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
-    peerIdFile: {
-      type: 'string',
-      describe: 'Relay Peer Id file path (json)'
-    },
     port: {
       type: 'number',
       describe: 'Port to start listening on'
+    },
+    peerIdFile: {
+      type: 'string',
+      describe: 'Relay Peer Id file path (json)'
     },
     relayPeers: {
       type: 'string',
