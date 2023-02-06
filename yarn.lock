@@ -2472,18 +2472,10 @@
   dependencies:
     "@libp2p/interface-connection" "^3.0.0"
 
-"@libp2p/interface-peer-discovery@^1.0.0":
+"@libp2p/interface-peer-discovery@^1.0.0", "@libp2p/interface-peer-discovery@^1.0.1":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@libp2p/interface-peer-discovery/-/interface-peer-discovery-1.0.5.tgz#0fb935d55221e0ff58b4dad93646111a4fc7dcdf"
   integrity sha512-R0TN/vDaCJLvRhop0y4qoPqapHxX4AEQDEtqmpayAA1BuPgbBq4fS4mepR3FAMcNva/szeqVCDuI4gDejtCaVg==
-  dependencies:
-    "@libp2p/interface-peer-info" "^1.0.0"
-    "@libp2p/interfaces" "^3.0.0"
-
-"@libp2p/interface-peer-discovery@^1.0.1":
-  version "1.0.4"
-  resolved "https://registry.npmjs.org/@libp2p/interface-peer-discovery/-/interface-peer-discovery-1.0.4.tgz"
-  integrity sha512-VPLi7onA+WOjYFYH79Qq2hqR+b+OLqTRom5WJaAXv6pclFb1gUetBv4W1MEHY8Hb7l1MidANO/kSySHZ5A3yPg==
   dependencies:
     "@libp2p/interface-peer-info" "^1.0.0"
     "@libp2p/interfaces" "^3.0.0"
@@ -2604,12 +2596,7 @@
     "@multiformats/multiaddr" "^11.0.0"
     it-stream-types "^1.0.4"
 
-"@libp2p/interfaces@^3.0.0", "@libp2p/interfaces@^3.0.2":
-  version "3.1.0"
-  resolved "https://registry.npmjs.org/@libp2p/interfaces/-/interfaces-3.1.0.tgz"
-  integrity sha512-WxzUVaeOpMcNPyjruVbjNvVnjFzay8udqiaW0+rDltlYHSA1LXvZIzk1s5+/m+PKFM+UK7KmY1FZ70HiJzlZ9Q==
-
-"@libp2p/interfaces@^3.0.3":
+"@libp2p/interfaces@^3.0.0", "@libp2p/interfaces@^3.0.2", "@libp2p/interfaces@^3.0.3":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@libp2p/interfaces/-/interfaces-3.3.0.tgz#19299d0a627d8513170506261e3a1a572df58154"
   integrity sha512-X02bdMBl3tFoQfQWIioSnupOpA9lbBkmTx920idtfmes02kHcGWI+vEtMs1Prm+HtlIPQLQiQe5ZEr1WKwhPRQ==

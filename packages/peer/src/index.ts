@@ -25,7 +25,8 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, CONN_CHECK_INTERVAL, PING_TIMEOUT } from './constants.js';
+import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT } from './constants.js';
+import { PeerHearbeats } from './peer-heartbeats.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
@@ -33,13 +34,13 @@ export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
 export class Peer {
   _node?: Libp2p
+  _peerHeartbeats?: PeerHearbeats
   _wrtcTransport: (components: WebRTCDirectComponents) => Transport
   _relayNodeMultiaddr: Multiaddr
 
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
-  _peerHeartbeatIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
 
   constructor (relayNodeURL: string, nodejs?: boolean) {
     this._relayNodeMultiaddr = multiaddr(relayNodeURL);
@@ -105,6 +106,7 @@ export class Peer {
     }
 
     console.log('libp2p node created', this._node);
+    this._peerHeartbeats = new PeerHearbeats(this._node);
 
     // Dial to the HOP enabled relay node
     await this._dialRelay();
@@ -171,7 +173,7 @@ export class Peer {
 
     await this._node.unhandle(CHAT_PROTOCOL);
     const remotePeerIds = this._node.getPeers();
-    remotePeerIds.forEach(remotePeerId => this._stopHeartbeatChecks(remotePeerId));
+    remotePeerIds.forEach(remotePeerId => this._peerHeartbeats?.stopChecks(remotePeerId));
     const hangUpPromises = remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
   }
@@ -334,8 +336,8 @@ export class Peer {
 
     console.log(`Current number of peers connected: ${this._node.getPeers().length}`);
 
-    // Start heartbeat check peer
-    await this._startHeartbeatChecks(
+    // Start heartbeat check for peer
+    await this._peerHeartbeats?.startChecks(
       remotePeerId,
       async () => this._handleDeadConnections(remotePeerId)
     );
@@ -346,46 +348,6 @@ export class Peer {
     console.log(`Closing connections for ${remotePeerId}`);
     await this._node?.hangUp(remotePeerId);
     console.log('Closed');
-  }
-
-  async _startHeartbeatChecks (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
-    if (this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
-      // Do not start connection check interval if already present
-      return;
-    }
-
-    const intervalId = setInterval(async () => {
-      await this._validatePing(
-        peerId,
-        async () => {
-          // Check if connection check interval for peer is already cleared
-          if (!this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
-            return;
-          }
-
-          // Clear and remove check interval for remote peer if not connected
-          this._stopHeartbeatChecks(peerId);
-
-          await handleDisconnect();
-        }
-      );
-    }, CONN_CHECK_INTERVAL);
-
-    this._peerHeartbeatIntervalIdsMap.set(peerId.toString(), intervalId);
-  }
-
-  async _validatePing (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
-    assert(this._node);
-
-    try {
-      // Ping remote peer
-      await this._node.ping(peerId);
-    } catch (err) {
-      // On error i.e. no pong
-      console.log(`Not connected to peer ${peerId.toString()}`);
-
-      await handleDisconnect();
-    }
   }
 
   async _handleDisconnect (connection: Connection): Promise<void> {
@@ -400,24 +362,13 @@ export class Peer {
 
     if (!peerConnections.length) {
       // Stop connection check for disconnected peer
-      this._stopHeartbeatChecks(disconnectedPeerId);
+      this._peerHeartbeats?.stopChecks(disconnectedPeerId);
 
       if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
         // Reconnect to relay node if disconnected
         await this._dialRelay();
       }
     }
-  }
-
-  _stopHeartbeatChecks (peerId: PeerId): void {
-    // Clear check interval for disconnected peer
-    const intervalId = this._peerHeartbeatIntervalIdsMap.get(peerId.toString());
-
-    if (intervalId) {
-      clearInterval(intervalId);
-    }
-
-    this._peerHeartbeatIntervalIdsMap.delete(peerId.toString());
   }
 
   async _connectPeer (peer: PeerInfo): Promise<void> {
