@@ -18,8 +18,10 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
+import type { PeerId } from '@libp2p/interface-peer-id';
 
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
+import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 const log = debug('laconic:relay');
 
@@ -79,17 +81,24 @@ async function main (): Promise<void> {
     }
   });
 
+  const peerHeartbeatChecker = new PeerHearbeatChecker(node);
+
   console.log(`Relay node started with id ${node.peerId.toString()}`);
   console.log('Listening on:');
   node.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
-  console.log();
 
   // Listen for peers connection
-  node.addEventListener('peer:connect', (evt) => {
+  node.addEventListener('peer:connect', async (evt) => {
     // console.log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
     log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+
+    // Start heartbeat check for peer
+    await peerHeartbeatChecker.start(
+      connection.remotePeer,
+      async () => _handleDeadConnections(node, connection.remotePeer)
+    );
   });
 
   // Listen for peers disconnecting
@@ -147,6 +156,13 @@ async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise
       console.log(`Could not dial ${peerIdString}`, err);
     }
   });
+}
+
+async function _handleDeadConnections (node: Libp2p, remotePeerId: PeerId): Promise<void> {
+  // Close existing connections of remote peer
+  log(`Closing connections for ${remotePeerId}`);
+  await node.hangUp(remotePeerId);
+  log('Closed');
 }
 
 main().catch(err => {
