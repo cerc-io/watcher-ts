@@ -21,7 +21,7 @@ import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
-import { PeerHearbeats } from './peer-heartbeats.js';
+import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 const log = debug('laconic:relay');
 
@@ -81,7 +81,7 @@ async function main (): Promise<void> {
     }
   });
 
-  const peerHeartbeats = new PeerHearbeats(node);
+  const peerHeartbeatChecker = new PeerHearbeatChecker(node);
 
   console.log(`Relay node started with id ${node.peerId.toString()}`);
   console.log('Listening on:');
@@ -95,7 +95,7 @@ async function main (): Promise<void> {
     log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
 
     // Start heartbeat check for peer
-    await peerHeartbeats.startChecks(
+    await peerHeartbeatChecker.start(
       connection.remotePeer,
       async () => _handleDeadConnections(node, connection.remotePeer)
     );

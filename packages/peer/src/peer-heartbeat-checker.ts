@@ -7,7 +7,10 @@ import type { PeerId } from '@libp2p/interface-peer-id';
 
 import { CONN_CHECK_INTERVAL } from './constants.js';
 
-export class PeerHearbeats {
+/**
+ * Used for tracking heartbeat of connected remote peers
+ */
+export class PeerHearbeatChecker {
   _node: Libp2p;
   _peerHeartbeatIntervalIdsMap: Map<string, NodeJS.Timer> = new Map();
 
@@ -20,7 +23,7 @@ export class PeerHearbeats {
    * @param peerId
    * @param handleDisconnect
    */
-  async startChecks (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
+  async start (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
     if (this._peerHeartbeatIntervalIdsMap.has(peerId.toString())) {
       // Do not start connection check interval if already present
       return;
@@ -36,7 +39,7 @@ export class PeerHearbeats {
           }
 
           // Clear and remove check interval for remote peer if not connected
-          this.stopChecks(peerId);
+          this.stop(peerId);
 
           await handleDisconnect();
         }
@@ -67,7 +70,7 @@ export class PeerHearbeats {
    * Method to stop heartbeat checks for a peer
    * @param peerId
    */
-  stopChecks (peerId: PeerId): void {
+  stop (peerId: PeerId): void {
     // Clear check interval for disconnected peer
     const intervalId = this._peerHeartbeatIntervalIdsMap.get(peerId.toString());
 

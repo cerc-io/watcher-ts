@@ -26,7 +26,7 @@ import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT } from './constants.js';
-import { PeerHearbeats } from './peer-heartbeats.js';
+import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
@@ -34,7 +34,7 @@ export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
 export class Peer {
   _node?: Libp2p
-  _peerHeartbeats?: PeerHearbeats
+  _peerHeartbeatChecker?: PeerHearbeatChecker
   _wrtcTransport: (components: WebRTCDirectComponents) => Transport
   _relayNodeMultiaddr: Multiaddr
 
@@ -106,7 +106,7 @@ export class Peer {
     }
 
     console.log('libp2p node created', this._node);
-    this._peerHeartbeats = new PeerHearbeats(this._node);
+    this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node);
 
     // Dial to the HOP enabled relay node
     await this._dialRelay();
@@ -173,7 +173,7 @@ export class Peer {
 
     await this._node.unhandle(CHAT_PROTOCOL);
     const remotePeerIds = this._node.getPeers();
-    remotePeerIds.forEach(remotePeerId => this._peerHeartbeats?.stopChecks(remotePeerId));
+    remotePeerIds.forEach(remotePeerId => this._peerHeartbeatChecker?.stop(remotePeerId));
     const hangUpPromises = remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
   }
@@ -337,7 +337,7 @@ export class Peer {
     console.log(`Current number of peers connected: ${this._node.getPeers().length}`);
 
     // Start heartbeat check for peer
-    await this._peerHeartbeats?.startChecks(
+    await this._peerHeartbeatChecker?.start(
       remotePeerId,
       async () => this._handleDeadConnections(remotePeerId)
     );
@@ -362,7 +362,7 @@ export class Peer {
 
     if (!peerConnections.length) {
       // Stop connection check for disconnected peer
-      this._peerHeartbeats?.stopChecks(disconnectedPeerId);
+      this._peerHeartbeatChecker?.stop(disconnectedPeerId);
 
       if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
         // Reconnect to relay node if disconnected
