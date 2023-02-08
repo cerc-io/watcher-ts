@@ -12,7 +12,7 @@ import debug from 'debug';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { webRTCDirect } from '@cerc-io/webrtc-direct';
+import { WebRTCDirectNodeType, webRTCDirect } from '@cerc-io/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { createFromJSON } from '@libp2p/peer-id-factory';
@@ -57,7 +57,13 @@ async function main (): Promise<void> {
     addresses: {
       listen: [listenMultiaddr]
     },
-    transports: [webRTCDirect({ wrtc, enableSignalling: true })],
+    transports: [
+      webRTCDirect({
+        wrtc,
+        enableSignalling: true,
+        nodeType: WebRTCDirectNodeType.Relay
+      })
+    ],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
