@@ -373,15 +373,16 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.1":
-  version "5.0.0-laconic-0.1.1"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.1/webrtc-direct-5.0.0-laconic-0.1.1.tgz#d2a709551d1ff25675f247ea9224af26fc6b0aeb"
-  integrity sha512-FvzC1DMgV8TrIKm5rsIoLDcoIxw9L97gc3Xl+7uYA49l70WmbKPBWuCtLnkfqRRWiWYqFTXeyS2zXpcPaMUtJQ==
+"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.2":
+  version "5.0.0-laconic-0.1.2"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.2/webrtc-direct-5.0.0-laconic-0.1.2.tgz#b0697f3efe297ce7ccccadd537a36b012425df61"
+  integrity sha512-SSHpUHDjyTwFX1bYL+cMjKqbAiEJQRd0N5bVMQGl86hWmmVXu+09vtpHxO6VTUZNNpnYkOisQPvn9CUyAsfWng==
   dependencies:
-    "@cerc-io/webrtc-peer" "^2.0.2-laconic-0.1.0"
+    "@cerc-io/webrtc-peer" "^2.0.2-laconic-0.1.3"
     "@libp2p/interface-transport" "^2.0.0"
     "@libp2p/interfaces" "^3.0.3"
     "@libp2p/logger" "^2.0.1"
+    "@libp2p/peer-id" "^2.0.1"
     "@libp2p/utils" "^3.0.2"
     "@multiformats/mafmt" "^11.0.3"
     "@multiformats/multiaddr" "^11.0.0"
@@ -390,15 +391,18 @@
     err-code "^3.0.0"
     multiformats "^11.0.0"
     native-fetch "^4.0.2"
+    p-defer "^4.0.0"
     p-event "^5.0.1"
+    timed-cache "^2.0.0"
+    timeout-abort-controller "^3.0.0"
     uint8arrays "^4.0.2"
     undici "^5.2.0"
     wherearewe "^2.0.1"
 
-"@cerc-io/webrtc-peer@^2.0.2-laconic-0.1.0":
-  version "2.0.2-laconic-0.1.0"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-peer/-/2.0.2-laconic-0.1.0/webrtc-peer-2.0.2-laconic-0.1.0.tgz#453d949a593ac7c6954778eb710385f69a566a82"
-  integrity sha512-ikNtTqhKz4UTOu1DHGZzzLmFJus+mos/ctRxBVHcs4rhsv2GXnOYgtEpbPQlKoOSgj3Ewsy50x3kcM1k4klwOg==
+"@cerc-io/webrtc-peer@^2.0.2-laconic-0.1.3":
+  version "2.0.2-laconic-0.1.3"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-peer/-/2.0.2-laconic-0.1.3/webrtc-peer-2.0.2-laconic-0.1.3.tgz#decfc53539f206d70f7250b8f913a5d74da5c505"
+  integrity sha512-B0fcADAeU8W0EfdLp/ju6wBDrd/WOXnsqZuGAk+EVTXqvm2cSJiA/TzttmiKQIAvYuWTsLvmRUQ14KHCbtMdSA==
   dependencies:
     "@libp2p/interfaces" "^3.0.2"
     "@libp2p/logger" "^2.0.0"
@@ -2601,6 +2605,11 @@
   resolved "https://registry.yarnpkg.com/@libp2p/interfaces/-/interfaces-3.3.0.tgz#19299d0a627d8513170506261e3a1a572df58154"
   integrity sha512-X02bdMBl3tFoQfQWIioSnupOpA9lbBkmTx920idtfmes02kHcGWI+vEtMs1Prm+HtlIPQLQiQe5ZEr1WKwhPRQ==
 
+"@libp2p/interfaces@^3.2.0":
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/@libp2p/interfaces/-/interfaces-3.3.1.tgz#519c77c030b10d776250bbebf65990af53ccb2ee"
+  integrity sha512-3N+goQt74SmaVOjwpwMPKLNgh1uDQGw8GD12c40Kc86WOq0qvpm3NfACW+H8Su2X6KmWjCSMzk9JWs9+8FtUfg==
+
 "@libp2p/logger@^2.0.0":
   version "2.0.2"
   resolved "https://registry.npmjs.org/@libp2p/logger/-/logger-2.0.2.tgz"
@@ -2691,6 +2700,16 @@
   dependencies:
     "@libp2p/interface-peer-id" "^2.0.0"
     err-code "^3.0.1"
+    multiformats "^11.0.0"
+    uint8arrays "^4.0.2"
+
+"@libp2p/peer-id@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@libp2p/peer-id/-/peer-id-2.0.1.tgz#1cfa5a51a3adcf91489d88c5b75d3cf6f03e2ab4"
+  integrity sha512-uGIR4rS+j+IzzIu0kih4MonZEfRmjGNfXaSPMIFOeMxZItZT6TIpxoVNYxHl4YtneSFKzlLnf9yx9EhRcyfy8Q==
+  dependencies:
+    "@libp2p/interface-peer-id" "^2.0.0"
+    "@libp2p/interfaces" "^3.2.0"
     multiformats "^11.0.0"
     uint8arrays "^4.0.2"
 
@@ -15402,6 +15421,11 @@ through@2, "through@>=2.2.7 <3", through@^2.3.4, through@^2.3.6, through@~2.3.4,
   version "2.3.8"
   resolved "https://registry.npmjs.org/through/-/through-2.3.8.tgz"
   integrity sha1-DdTJ/6q8NXlgsbckEV1+Doai4fU=
+
+timed-cache@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/timed-cache/-/timed-cache-2.0.0.tgz#34472e5dbb9c32075a0fe15883ef73d87be13f3d"
+  integrity sha512-9owe3VtDCtZKo8bfk5bSC4tSzIRP65doXI0i2oFWNP4VjQDwoRIsADynZQZz6XXK7exL7bOuI3HExFQ9LGi3tQ==
 
 timed-out@^4.0.0, timed-out@^4.0.1:
   version "4.0.1"
