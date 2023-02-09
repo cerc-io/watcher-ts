@@ -29,6 +29,7 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT, DEFAULT_MAX_RELAY_CONNECTIONS } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
+import { dialWithRetry } from './utils/index.js';
 
 const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
@@ -280,28 +281,14 @@ export class Peer {
   async _dialRelay (): Promise<void> {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
+    console.log('Dialling relay node');
+    const connection = await dialWithRetry(this._node, relayMultiaddr, RELAY_REDIAL_DELAY);
+    const relayPeerId = connection.remotePeer;
 
-    // Keep dialling relay node until it connects
-    while (true) {
-      try {
-        console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-        const connection = await this._node.dial(relayMultiaddr);
-        const relayPeerId = connection.remotePeer;
-
-        // TODO: Check if tag already exists. When checking tags issue with relay node connect event
-        // Tag the relay node with a high value to prioritize it's connection
-        // in connection pruning on crossing peer's maxConnections limit
-        this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
-
-        break;
-      } catch (err) {
-        console.log(`Could not dial relay ${relayMultiaddr.toString()}`, err);
-
-        // TODO: Use wait method from util package.
-        // Issue using util package in react app.
-        await new Promise(resolve => setTimeout(resolve, RELAY_REDIAL_DELAY));
-      }
-    }
+    // TODO: Check if tag already exists. When checking tags issue with relay node connect event
+    // Tag the relay node with a high value to prioritize it's connection
+    // in connection pruning on crossing peer's maxConnections limit
+    this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
   }
 
   _isRelayPeerMultiaddr (multiaddrString: string): boolean {
