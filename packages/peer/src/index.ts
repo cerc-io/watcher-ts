@@ -258,8 +258,7 @@ export class Peer {
 
     // Open stream if connection exists and it doesn't already have a stream with chat protocol
     if (connection && !connection.streams.some(stream => stream.stat.protocol === CHAT_PROTOCOL)) {
-      const stream = await connection.newStream([CHAT_PROTOCOL]);
-      this._handleStream(peerId, stream);
+      await this._createProtocolStream(connection, CHAT_PROTOCOL);
     }
   }
 
@@ -329,18 +328,12 @@ export class Peer {
         console.log('Closed');
       }
 
-      try {
-        // Open stream in new connection for chat protocol
-        const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
+      // Open stream in new connection for chat protocol (if handled by remote peer)
+      const protocols = await this._node.peerStore.protoBook.get(remotePeerId);
 
-        // Dial if protocol is handled by remote peer
-        // The chat protocol may not be updated in the list and will be handled later on change:protocols event
-        if (protocols.includes(CHAT_PROTOCOL)) {
-          const stream = await connection.newStream([CHAT_PROTOCOL]);
-          this._handleStream(remotePeerId, stream);
-        }
-      } catch (err: any) {
-        console.log(`Could not create a new protocol stream with ${remotePeerId.toString()}`, err);
+      // The chat protocol may not be updated in the list and will be handled later on change:protocols event
+      if (protocols.includes(CHAT_PROTOCOL)) {
+        await this._createProtocolStream(connection, CHAT_PROTOCOL);
       }
     }
 
@@ -351,6 +344,18 @@ export class Peer {
       remotePeerId,
       async () => this._handleDeadConnections(remotePeerId)
     );
+  }
+
+  async _createProtocolStream (connection: Connection, protocol: string) {
+    assert(this._node);
+    const remotePeerId = connection.remotePeer;
+
+    try {
+      const stream = await connection.newStream([protocol]);
+      this._handleStream(remotePeerId, stream);
+    } catch (err: any) {
+      console.log(`Could not create a new ${protocol} stream with ${remotePeerId.toString()}`, err);
+    }
   }
 
   async _handleDeadConnections (remotePeerId: PeerId) {
