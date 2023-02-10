@@ -239,13 +239,18 @@ export class Peer {
   async _handleChangeProtocols ({ peerId, protocols }: { peerId: PeerId, protocols: string[] }) {
     assert(this._node);
 
-    // Handle protocol and open stream from only one peer
-    if (this._node.peerId.toString() > peerId.toString()) {
+    // Ignore self protocol changes
+    if (peerId.equals(this._node.peerId)) {
       return;
     }
 
-    // Return if stream is self peer or chat protocol is not handled by remote peer
-    if (peerId.equals(this._node.peerId) || !protocols.includes(CHAT_PROTOCOL)) {
+    // Ignore if chat protocol is not handled by remote peer
+    if (!protocols.includes(CHAT_PROTOCOL)) {
+      return;
+    }
+
+    // Handle protocol and open stream from only one side
+    if (this._node.peerId.toString() > peerId.toString()) {
       return;
     }
 
@@ -308,14 +313,14 @@ export class Peer {
       if (remoteConnections.length > 1) {
         // Close new connection if using relayed multiaddr
         if (connection.remoteAddr.protoNames().includes('p2p-circuit')) {
-          console.log('Closing new connection for already connected peer');
+          console.log('Closing new relayed connection in favor of existing connection');
           await connection.close();
           console.log('Closed');
 
           return;
         }
 
-        console.log('Closing exisiting connections for new webrtc connection');
+        console.log('Closing exisiting connections in favor of new webrtc connection');
         // Close existing connections if new connection is not using relayed multiaddr (so it is a webrtc connection)
         const closeConnectionPromises = remoteConnections.filter(remoteConnection => remoteConnection.id !== connection.id)
           .map(remoteConnection => remoteConnection.close());
@@ -365,8 +370,9 @@ export class Peer {
 
     const peerConnections = this._node.getConnections(disconnectedPeerId);
 
+    // If no connections left to the peer
     if (!peerConnections.length) {
-      // Stop connection check for disconnected peer
+      // Stop the heartbeat check
       this._peerHeartbeatChecker?.stop(disconnectedPeerId);
 
       if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
