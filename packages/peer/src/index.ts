@@ -14,7 +14,7 @@ import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID, WebRTCDirectNodeType } from '@cerc-io/webrtc-direct';
+import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID, WebRTCDirectNodeType, WebRTCDirectInit } from '@cerc-io/webrtc-direct';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import type { Transport } from '@libp2p/interface-transport';
@@ -59,17 +59,13 @@ export class Peer {
     const relayPeerId = this._relayNodeMultiaddr.getPeerId();
     assert(relayPeerId);
 
-    // Instantiation in nodejs.
-    if (nodejs) {
-      this._wrtcTransport = webRTCDirect({
-        wrtc,
-        enableSignalling: true,
-        nodeType: WebRTCDirectNodeType.Peer,
-        relayPeerId
-      });
-    } else {
-      this._wrtcTransport = webRTCDirect({ relayPeerId, enableSignalling: true });
-    }
+    const initOptions: WebRTCDirectInit = {
+      wrtc: nodejs ? wrtc : undefined, // Instantiation in nodejs
+      enableSignalling: true,
+      nodeType: WebRTCDirectNodeType.Peer,
+      relayPeerId
+    };
+    this._wrtcTransport = webRTCDirect(initOptions);
   }
 
   get peerId (): PeerId | undefined {
@@ -183,7 +179,7 @@ export class Peer {
 
     // Listen for pubsub messages
     this._node.pubsub.addEventListener('message', (evt) => {
-      this._handleMessage(evt.detail);
+      this._handlePubSubMessage(evt.detail);
     });
   }
 
@@ -355,7 +351,8 @@ export class Peer {
       this._numRelayConnections++;
     }
 
-    // Manage connections and stream if peer id is smaller to break symmetry
+    // Manage connections and streams
+    // Check if peer id is smaller to break symmetry
     if (this._node.peerId.toString() < remotePeerId.toString()) {
       const remoteConnections = this._node.getConnections(remotePeerId);
 
@@ -494,7 +491,7 @@ export class Peer {
     this._peerStreamMap.set(peerId.toString(), messageStream);
   }
 
-  _handleMessage (msg: Message): void {
+  _handlePubSubMessage (msg: Message): void {
     // Messages should be signed since globalSignaturePolicy is set to 'StrictSign'
     assert(msg.type === 'signed');
 
