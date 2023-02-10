@@ -34,7 +34,7 @@ import { dialWithRetry } from './utils/index.js';
 const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
-export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
+const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 
 type PeerIdObj = {
   id: string
@@ -169,7 +169,7 @@ export class Peer {
     });
 
     // Listen for peers disconnecting
-    // peer:disconnect event is trigerred when all connections to a peer closes
+    // peer:disconnect event is trigerred when all connections to a peer close
     // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
     this._node.addEventListener('peer:disconnect', (evt) => {
       console.log('event peer:disconnect', evt);
@@ -284,13 +284,32 @@ export class Peer {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
     console.log('Dialling relay node');
-    const connection = await dialWithRetry(this._node, relayMultiaddr, RELAY_REDIAL_DELAY);
+
+    const connection = await dialWithRetry(
+      this._node,
+      relayMultiaddr,
+      {
+        redialDelay: RELAY_REDIAL_DELAY,
+        maxRetry: Infinity
+      }
+    );
+
     const relayPeerId = connection.remotePeer;
 
-    // TODO: Check if tag already exists. When checking tags issue with relay node connect event
     // Tag the relay node with a high value to prioritize it's connection
     // in connection pruning on crossing peer's maxConnections limit
-    this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
+    this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value }).catch((err: Error) => {
+      // TODO: Check if tag already exists
+      // If awaited on the getTags / tagPeer method, relay node connect event is not triggered
+      // const peerTags = await this._node.peerStore.getTags(relayPeerId);
+
+      // Ignore the error thrown on retagging a peer on reconnect
+      if (err.message === ERR_PEER_ALREADY_TAGGED) {
+        return;
+      }
+
+      throw err;
+    });
   }
 
   _isRelayPeerMultiaddr (multiaddrString: string): boolean {

@@ -26,12 +26,17 @@ import { dialWithRetry } from './utils/index.js';
 
 const log = debug('laconic:relay');
 
+const DEFAULT_HOST = '127.0.0.1';
+const DEFAULT_PORT = 9090;
+const DEFAULT_MAX_DIAL_RETRY = 5;
+
 interface Arguments {
   host: string;
   port: number;
-  announce: string;
-  peerIdFile: string;
-  relayPeers: string;
+  announce?: string;
+  peerIdFile?: string;
+  relayPeers?: string;
+  maxDialRetry: number;
 }
 
 async function main (): Promise<void> {
@@ -129,7 +134,7 @@ async function main (): Promise<void> {
   });
 
   // Listen for peers disconnecting
-  // peer:disconnect event is trigerred when all connections to a peer closes
+  // peer:disconnect event is trigerred when all connections to a peer close
   // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
   node.addEventListener('peer:disconnect', async (evt) => {
     log('event peer:disconnect', evt);
@@ -144,30 +149,37 @@ async function main (): Promise<void> {
 
     // Redial if disconnected peer is in relayPeers list
     if (relayPeersList.includes(remoteAddr.toString())) {
-      await dialWithRetry(node, remoteAddr, RELAY_REDIAL_DELAY);
+      await dialWithRetry(
+        node,
+        remoteAddr,
+        {
+          redialDelay: RELAY_REDIAL_DELAY,
+          maxRetry: argv.maxDialRetry
+        }
+      ).catch((error: Error) => console.log(error.message));
     }
   });
 
   if (relayPeersList.length) {
     console.log('Dialling relay peers');
-    await _dialRelayPeers(node, relayPeersList);
+    await _dialRelayPeers(node, relayPeersList, argv.maxDialRetry);
   }
 }
 
-function _getArgv (): any {
+function _getArgv (): Arguments {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
     host: {
       type: 'string',
       alias: 'h',
-      default: '127.0.0.1',
+      default: DEFAULT_HOST,
       describe: 'Host to bind to'
     },
     port: {
       type: 'number',
       alias: 'p',
-      default: '9090',
+      default: DEFAULT_PORT,
       describe: 'Port to start listening on'
     },
     announce: {
@@ -184,14 +196,27 @@ function _getArgv (): any {
       type: 'string',
       alias: 'r',
       describe: 'Relay peer multiaddr(s) list file path (json)'
+    },
+    maxDialRetry: {
+      type: 'number',
+      describe: 'Maximum number of retries for dialling a relay peer',
+      default: DEFAULT_MAX_DIAL_RETRY
     }
-  }).argv;
+  // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
+  }).parseSync();
 }
 
-async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise<void> {
+async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialRetry: number): Promise<void> {
   relayPeersList.forEach(async (relayPeer) => {
     const relayMultiaddr = multiaddr(relayPeer);
-    await dialWithRetry(node, relayMultiaddr, RELAY_REDIAL_DELAY);
+    await dialWithRetry(
+      node,
+      relayMultiaddr,
+      {
+        redialDelay: RELAY_REDIAL_DELAY,
+        maxRetry: maxDialRetry
+      }
+    ).catch((error: Error) => console.log(error.message));
   });
 }
 
