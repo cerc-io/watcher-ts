@@ -129,12 +129,18 @@ async function main (): Promise<void> {
   });
 
   // Listen for peers disconnecting
+  // peer:disconnect event is trigerred when all connections to a peer closes
+  // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
   node.addEventListener('peer:disconnect', async (evt) => {
-    // console.log('event peer:disconnect', evt);
+    log('event peer:disconnect', evt);
+
     // Log disconnected peer
     const connection: Connection = evt.detail;
     const remoteAddr = connection.remoteAddr;
     log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${remoteAddr.toString()}`);
+
+    // Stop connection check for disconnected peer
+    peerHeartbeatChecker.stop(connection.remotePeer);
 
     // Redial if disconnected peer is in relayPeers list
     if (relayPeersList.includes(remoteAddr.toString())) {

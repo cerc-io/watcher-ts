@@ -169,6 +169,8 @@ export class Peer {
     });
 
     // Listen for peers disconnecting
+    // peer:disconnect event is trigerred when all connections to a peer closes
+    // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
     this._node.addEventListener('peer:disconnect', (evt) => {
       console.log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
@@ -398,16 +400,12 @@ export class Peer {
       this._numRelayConnections--;
     }
 
-    const peerConnections = this._node.getConnections(disconnectedPeerId);
+    // Stop connection check for disconnected peer
+    this._peerHeartbeatChecker?.stop(disconnectedPeerId);
 
-    if (!peerConnections.length) {
-      // Stop connection check for disconnected peer
-      this._peerHeartbeatChecker?.stop(disconnectedPeerId);
-
-      if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
-        // Reconnect to relay node if disconnected
-        await this._dialRelay();
-      }
+    if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
+      // Reconnect to relay node if disconnected
+      await this._dialRelay();
     }
   }
 
