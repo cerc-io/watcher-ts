@@ -25,9 +25,10 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT } from './constants.js';
+import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT, DEFAULT_MAX_RELAY_CONNECTIONS } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
+const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
 export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
@@ -37,6 +38,7 @@ export class Peer {
   _peerHeartbeatChecker?: PeerHearbeatChecker
   _wrtcTransport: (components: WebRTCDirectComponents) => Transport
   _relayNodeMultiaddr: Multiaddr
+  _numRelayConnections = 0
 
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
@@ -69,7 +71,7 @@ export class Peer {
     return this._node;
   }
 
-  async init (): Promise<void> {
+  async init (maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
     try {
       this._node = await createLibp2p({
         addresses: {
@@ -139,7 +141,7 @@ export class Peer {
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
       // console.log('event peer:discovery', evt);
-      this._handleDiscovery(evt.detail);
+      this._handleDiscovery(evt.detail, maxRelayConnections);
     });
 
     // Listen for peers connection
@@ -285,9 +287,28 @@ export class Peer {
     }
   }
 
-  _handleDiscovery (peer: PeerInfo): void {
+  _isRelayPeerMultiaddr (multiaddrString: string): boolean {
+    // Multiaddr not having p2p-circuit id or webrtc-star id is of a relay node
+    return !(multiaddrString.includes(P2P_CIRCUIT_ID) || multiaddrString.includes(P2P_WEBRTC_STAR_ID));
+  }
+
+  _handleDiscovery (peer: PeerInfo, maxRelayConnections: number): void {
     // Check connected peers as they are discovered repeatedly.
     if (!this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
+      let isRelayPeer = false;
+      for (const multiaddr of peer.multiaddrs) {
+        if (this._isRelayPeerMultiaddr(multiaddr.toString())) {
+          isRelayPeer = true;
+          break;
+        }
+      }
+
+      // Check relay connections limit if it's a relay peer
+      if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
+        // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
+        return;
+      }
+
       console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
       this._connectPeer(peer);
     }
@@ -296,9 +317,14 @@ export class Peer {
   async _handleConnect (connection: Connection): Promise<void> {
     assert(this._node);
     const remotePeerId = connection.remotePeer;
+    const remoteAddrString = connection.remoteAddr.toString();
 
     // Log connected peer
-    console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${remoteAddrString}`);
+
+    if (this._isRelayPeerMultiaddr(remoteAddrString)) {
+      this._numRelayConnections++;
+    }
 
     // Manage connections and stream if peer id is smaller to break symmetry
     if (this._node.peerId.toString() < remotePeerId.toString()) {
@@ -307,7 +333,7 @@ export class Peer {
       // Keep only one connection with a peer
       if (remoteConnections.length > 1) {
         // Close new connection if using relayed multiaddr
-        if (connection.remoteAddr.protoNames().includes('p2p-circuit')) {
+        if (connection.remoteAddr.protoNames().includes(P2P_CIRCUIT_ID)) {
           console.log('Closing new connection for already connected peer');
           await connection.close();
           console.log('Closed');
@@ -358,10 +384,15 @@ export class Peer {
   async _handleDisconnect (connection: Connection): Promise<void> {
     assert(this._node);
     const disconnectedPeerId = connection.remotePeer;
+    const remoteAddrString = connection.remoteAddr.toString();
 
     // Log disconnected peer
-    console.log(`Disconnected from ${disconnectedPeerId.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    console.log(`Disconnected from ${disconnectedPeerId.toString()} using multiaddr ${remoteAddrString}`);
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
+
+    if (this._isRelayPeerMultiaddr(remoteAddrString)) {
+      this._numRelayConnections--;
+    }
 
     const peerConnections = this._node.getConnections(disconnectedPeerId);
 
