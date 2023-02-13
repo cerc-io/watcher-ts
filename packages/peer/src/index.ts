@@ -305,6 +305,7 @@ export class Peer {
 
       // Check relay connections limit if it's a relay peer
       if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
+        // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
         return;
       }
 
