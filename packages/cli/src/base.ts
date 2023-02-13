@@ -25,7 +25,7 @@ export class BaseCmd {
   _config?: Config;
   _clients?: Clients;
   _ethProvider?: JsonRpcProvider;
-  _jobQueue?: JobQueue
+  _jobQueue?: JobQueue;
   _database?: DatabaseInterface;
   _indexer?: IndexerInterface;
   _eventWatcher?: EventWatcher;
