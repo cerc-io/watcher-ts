@@ -32,6 +32,9 @@ export const PING_TIMEOUT = 5000; // 5 seconds
 // Delay time in ms to redial relay node on failing to connect
 export const RELAY_REDIAL_DELAY = 5000; // 5 sconds
 
+// Max number of relay node connections for a peer after which it starts igoring them
+export const DEFAULT_MAX_RELAY_CONNECTIONS = 2;
+
 // Peer connection manager config constants
 
 // Number of max concurrent dials per peer
