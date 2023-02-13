@@ -2,8 +2,8 @@
   "name": "@cerc-io/peer",
   "version": "0.2.27",
   "description": "libp2p module",
-  "main": "dist/index.js",
-  "exports": "./dist/index.js",
+  "main": "dist/src/index.js",
+  "exports": "./dist/src/index.js",
   "type": "module",
   "license": "AGPL-version-3.0",
   "private": false,
@@ -21,9 +21,10 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
-    "dev": "node dist/index.js",
-    "create-peer": "node dist/create-peer.js",
-    "relay-node": "node dist/relay.js"
+    "test": "mocha dist/**/*.test.js",
+    "dev": "node dist/src/index.js",
+    "create-peer": "node dist/cli/create-peer.js",
+    "relay-node": "node dist/cli/relay.js"
   },
   "dependencies": {
     "@cerc-io/libp2p": "0.42.2-laconic-0.1.1",
@@ -35,20 +36,26 @@
     "@libp2p/pubsub-peer-discovery": "^8.0.0",
     "@multiformats/multiaddr": "^11.1.4",
     "debug": "^4.3.1",
+    "install": "^0.13.0",
     "it-length-prefixed": "^8.0.4",
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",
     "it-pushable": "^3.1.2",
     "node-pre-gyp": "^0.13.0",
     "p-event": "^5.0.1",
+    "playwright-test": "^8.2.0",
     "uint8arrays": "^4.0.3",
     "wrtc": "^0.4.7",
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.19",
+    "@types/mocha": "^8.2.3",
     "@types/node": "16.11.7",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",
+    "aegir": "^38.1.2",
+    "chai": "^4.3.4",
     "eslint": "^7.27.0",
     "eslint-config-semistandard": "^15.0.1",
     "eslint-config-standard": "^16.0.3",
@@ -56,6 +63,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
+    "mocha": "^8.4.0",
     "typescript": "^4.9.4"
   }
 }
