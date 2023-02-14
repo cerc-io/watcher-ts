@@ -3,10 +3,8 @@ import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import path from 'path';
 
-import { createFromJSON } from '@libp2p/peer-id-factory';
-import type { PeerId } from '@libp2p/interface-peer-id';
-
-import { createRelayNode } from '../relay.js';
+import { RelayNodeInit, createRelayNode } from '../relay.js';
+import { PeerIdObj } from '../peer.js';
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 9090;
@@ -23,16 +21,15 @@ interface Arguments {
 
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
-  let peerId: PeerId | undefined;
+  let peerIdObj: PeerIdObj | undefined;
   let relayPeersList: string[] = [];
 
   if (argv.peerIdFile) {
     const peerIdFilePath = path.resolve(argv.peerIdFile);
     console.log(`Reading peer id from file ${peerIdFilePath}`);
 
-    const peerIdObj = fs.readFileSync(peerIdFilePath, 'utf-8');
-    const peerIdJson = JSON.parse(peerIdObj);
-    peerId = await createFromJSON(peerIdJson);
+    const peerIdJson = fs.readFileSync(peerIdFilePath, 'utf-8');
+    peerIdObj = JSON.parse(peerIdJson);
   } else {
     console.log('Creating a new peer id');
   }
@@ -50,7 +47,15 @@ async function main (): Promise<void> {
     relayPeersList = JSON.parse(relayPeersListObj);
   }
 
-  await createRelayNode(argv.host, argv.port, relayPeersList, argv.maxDialRetry, argv.announce, peerId);
+  const relayNodeInit: RelayNodeInit = {
+    host: argv.host,
+    port: argv.port,
+    announceDomain: argv.announce,
+    relayPeers: relayPeersList,
+    maxDialRetry: argv.maxDialRetry,
+    peerIdObj
+  };
+  await createRelayNode(relayNodeInit);
 }
 
 function _getArgv (): any {

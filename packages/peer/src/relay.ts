@@ -14,19 +14,35 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import { createFromJSON } from '@libp2p/peer-id-factory';
 
 import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE, RELAY_REDIAL_DELAY } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
+import { PeerIdObj } from './peer.js';
 
 const log = debug('laconic:relay');
 
-export async function createRelayNode (listenHost: string, listenPort: number, relayPeersList: string[], maxDialRetry: number, announceDomain?: string, peerId?: PeerId): Promise<Libp2p> {
-  const listenMultiaddrs = [`/ip4/${listenHost}/tcp/${listenPort}/http/p2p-webrtc-direct`];
+export interface RelayNodeInit {
+  host: string;
+  port: number;
+  announceDomain?: string;
+  relayPeers: string[];
+  maxDialRetry: number;
+  peerIdObj?: PeerIdObj;
+}
+
+export async function createRelayNode (init: RelayNodeInit): Promise<Libp2p> {
+  const listenMultiaddrs = [`/ip4/${init.host}/tcp/${init.port}/http/p2p-webrtc-direct`];
   const announceMultiaddrs = [];
 
-  if (announceDomain) {
-    announceMultiaddrs.push(`/dns4/${announceDomain}/tcp/443/https/p2p-webrtc-direct`);
+  if (init.announceDomain) {
+    announceMultiaddrs.push(`/dns4/${init.announceDomain}/tcp/443/https/p2p-webrtc-direct`);
+  }
+
+  let peerId: PeerId | undefined;
+  if (init.peerIdObj) {
+    peerId = await createFromJSON(init.peerIdObj);
   }
 
   const node = await createLibp2p({
@@ -102,21 +118,21 @@ export async function createRelayNode (listenHost: string, listenPort: number, r
     peerHeartbeatChecker.stop(connection.remotePeer);
 
     // Redial if disconnected peer is in relayPeers list
-    if (relayPeersList.includes(remoteAddr.toString())) {
+    if (init.relayPeers.includes(remoteAddr.toString())) {
       await dialWithRetry(
         node,
         remoteAddr,
         {
           redialDelay: RELAY_REDIAL_DELAY,
-          maxRetry: maxDialRetry
+          maxRetry: init.maxDialRetry
         }
       ).catch((error: Error) => console.log(error.message));
     }
   });
 
-  if (relayPeersList.length) {
+  if (init.relayPeers.length) {
     console.log('Dialling relay peers');
-    await _dialRelayPeers(node, relayPeersList, maxDialRetry);
+    await _dialRelayPeers(node, init.relayPeers, init.maxDialRetry);
   }
 
   return node;
