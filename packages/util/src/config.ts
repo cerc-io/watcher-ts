@@ -36,6 +36,20 @@ export interface GQLCacheConfig {
   timeTravelMaxAge: number;
 }
 
+export interface RelayConfig {
+  host?: string;
+  port?: number;
+  announce?: string;
+  peerIdFile?: string;
+  relayPeers?: string[];
+  maxDialRetry?: number;
+}
+
+export interface P2PConfig {
+  enableRelay: boolean;
+  relay: RelayConfig;
+}
+
 export interface ServerConfig {
   host: string;
   port: number;
@@ -63,11 +77,13 @@ export interface ServerConfig {
   loadRelationsSequential: boolean;
 
   // GQL cache-control max-age settings (in seconds)
-  gqlCache: GQLCacheConfig
+  gqlCache: GQLCacheConfig;
+
+  p2p: P2PConfig;
 }
 
 export interface UpstreamConfig {
-  cache: CacheConfig,
+  cache: CacheConfig;
   ethServer: {
     gqlApiEndpoint: string;
     rpcProviderEndpoint: string;
@@ -88,9 +104,9 @@ export interface MetricsConfig {
 export interface Config {
   server: ServerConfig;
   database: ConnectionOptions;
-  upstream: UpstreamConfig,
-  jobQueue: JobQueueConfig,
-  metrics: MetricsConfig,
+  upstream: UpstreamConfig;
+  jobQueue: JobQueueConfig;
+  metrics: MetricsConfig;
 }
 
 export const getConfig = async<ConfigType> (configFile: string): Promise<ConfigType> => {

@@ -28,6 +28,7 @@ import {
 import { TypeSource } from '@graphql-tools/utils';
 
 import { BaseCmd } from './base';
+import { readPeerId } from './utils/index';
 
 interface Arguments {
   configFile: string;
@@ -98,6 +99,9 @@ export class ServerCmd {
     app: Application,
     server: ApolloServer
   }> {
+    const { createRelayNode } = await import('@cerc-io/peer');
+    const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
+
     const config = this._baseCmd.config;
     const jobQueue = this._baseCmd.jobQueue;
     const indexer = this._baseCmd.indexer;
@@ -121,6 +125,28 @@ export class ServerCmd {
     const server = await createAndStartServer(app, typeDefs, resolvers, config.server);
 
     await startGQLMetricsServer(config);
+
+    // Run the relay node if enabled
+    if (config.server.p2p.enableRelay) {
+      const relayConfig = config.server.p2p.relay;
+
+      let peerIdObj: any;
+      if (relayConfig.peerIdFile) {
+        peerIdObj = readPeerId(relayConfig.peerIdFile);
+      }
+
+      const relayNodeInit = {
+        host: relayConfig.host ?? RELAY_DEFAULT_HOST,
+        port: relayConfig.port ?? RELAY_DEFAULT_PORT,
+        announceDomain: relayConfig.announce,
+        relayPeers: relayConfig.relayPeers ?? [],
+        maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
+        peerIdObj
+      };
+      await createRelayNode(relayNodeInit);
+    }
+
+    // TODO: Run a peer
 
     return { app, server };
   }

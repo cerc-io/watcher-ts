@@ -5,10 +5,7 @@ import path from 'path';
 
 import { RelayNodeInit, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
-
-const DEFAULT_HOST = '127.0.0.1';
-const DEFAULT_PORT = 9090;
-const DEFAULT_MAX_DIAL_RETRY = 5;
+import { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } from '../constants.js';
 
 interface Arguments {
   host: string;
@@ -65,13 +62,13 @@ function _getArgv (): any {
     host: {
       type: 'string',
       alias: 'h',
-      default: DEFAULT_HOST,
+      default: RELAY_DEFAULT_HOST,
       describe: 'Host to bind to'
     },
     port: {
       type: 'number',
       alias: 'p',
-      default: DEFAULT_PORT,
+      default: RELAY_DEFAULT_PORT,
       describe: 'Port to start listening on'
     },
     announce: {
@@ -92,7 +89,7 @@ function _getArgv (): any {
     maxDialRetry: {
       type: 'number',
       describe: 'Maximum number of retries for dialling a relay peer',
-      default: DEFAULT_MAX_DIAL_RETRY
+      default: RELAY_DEFAULT_MAX_DIAL_RETRY
     }
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
   }).parseSync();
