@@ -25,10 +25,8 @@ import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 const log = debug('laconic:relay');
 
-const DEFAULT_HOST = '0.0.0.0';
-const DEFAULT_PORT = 9090;
-
 interface Arguments {
+  host: string;
   port: number;
   peerIdFile: string;
   relayPeers: string;
@@ -49,8 +47,7 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
-  const listenPort = argv.port ? argv.port : DEFAULT_PORT;
-  const listenMultiaddr = `/ip4/${DEFAULT_HOST}/tcp/${listenPort}/http/p2p-webrtc-direct`;
+  const listenMultiaddr = `/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`;
 
   const node = await createLibp2p({
     peerId,
@@ -135,16 +132,26 @@ function _getArgv (): any {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
+    host: {
+      type: 'string',
+      alias: 'h',
+      default: '127.0.0.1',
+      describe: 'Host to bind to'
+    },
     port: {
       type: 'number',
+      alias: 'p',
+      default: '9090',
       describe: 'Port to start listening on'
     },
     peerIdFile: {
       type: 'string',
+      alias: 'f',
       describe: 'Relay Peer Id file path (json)'
     },
     relayPeers: {
       type: 'string',
+      alias: 'r',
       describe: 'Relay peer multiaddr(s) list file path (json)'
     }
   }).argv;
