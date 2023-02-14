@@ -34,6 +34,12 @@ export const CHAT_PROTOCOL = '/chat/1.0.0';
 
 export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
 
+type PeerIdObj = {
+  id: string
+  privKey: string
+  pubKey: string
+};
+
 export class Peer {
   _node?: Libp2p
   _peerHeartbeatChecker?: PeerHearbeatChecker
@@ -73,17 +79,13 @@ export class Peer {
   }
 
   async init (
-    peerIdJson?: {
-      id: string,
-      privKey: string,
-      pubKey: string
-    },
+    peerIdObj?: PeerIdObj,
     maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS
   ): Promise<void> {
     try {
       let peerId: PeerId | undefined;
-      if (peerIdJson) {
-        peerId = await createFromJSON(peerIdJson);
+      if (peerIdObj) {
+        peerId = await createFromJSON(peerIdObj);
       }
 
       this._node = await createLibp2p({
@@ -489,11 +491,7 @@ export class Peer {
   }
 }
 
-export async function createPeerId (): Promise<{
-  id: string,
-  privKey: string,
-  pubKey: string
-}> {
+export async function createPeerId (): Promise<PeerIdObj> {
   const peerId = await createEd25519PeerId();
   assert(peerId.privateKey);
 
