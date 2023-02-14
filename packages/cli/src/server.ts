@@ -2,6 +2,7 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
+import debug from 'debug';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
@@ -29,6 +30,8 @@ import { TypeSource } from '@graphql-tools/utils';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
+
+const libp2pLog = debug('vulcanize:libp2p');
 
 interface Arguments {
   configFile: string;
@@ -99,7 +102,7 @@ export class ServerCmd {
     app: Application,
     server: ApolloServer
   }> {
-    const { createRelayNode } = await import('@cerc-io/peer');
+    const { createRelayNode, Peer } = await import('@cerc-io/peer');
     const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
 
     const config = this._baseCmd.config;
@@ -126,8 +129,10 @@ export class ServerCmd {
 
     await startGQLMetricsServer(config);
 
+    const p2pConfig = config.server.p2p;
+
     // Run the relay node if enabled
-    if (config.server.p2p.enableRelay) {
+    if (p2pConfig.enableRelay) {
       const relayConfig = config.server.p2p.relay;
 
       let peerIdObj: any;
@@ -146,7 +151,17 @@ export class ServerCmd {
       await createRelayNode(relayNodeInit);
     }
 
-    // TODO: Run a peer
+    // Run a peer node if enabled
+    if (p2pConfig.enablePeer) {
+      const peer = new Peer(p2pConfig.relayMultiaddr, true);
+      await peer.init();
+
+      peer.subscribeTopic(p2pConfig.pubSubTopic, (peerId, data) => {
+        libp2pLog(`> ${peerId.toString()} > ${data}`);
+      });
+
+      libp2pLog(`Peer ID: ${peer.peerId?.toString()}`);
+    }
 
     return { app, server };
   }

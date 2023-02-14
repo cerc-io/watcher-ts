@@ -48,6 +48,9 @@ export interface RelayConfig {
 export interface P2PConfig {
   enableRelay: boolean;
   relay: RelayConfig;
+  enablePeer: boolean;
+  relayMultiaddr: string;
+  pubSubTopic: string;
 }
 
 export interface ServerConfig {
