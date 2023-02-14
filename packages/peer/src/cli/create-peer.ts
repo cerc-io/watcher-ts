@@ -7,7 +7,7 @@ import path from 'path';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 
-import { createPeerId } from './index.js';
+import { createPeerId } from '../index.js';
 
 interface Arguments {
   file: string;
