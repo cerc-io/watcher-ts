@@ -2,27 +2,19 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 
-import { createEd25519PeerId } from '@libp2p/peer-id-factory';
+import { createPeerId } from './index.js';
 
 interface Arguments {
   file: string;
 }
 
 async function main (): Promise<void> {
-  const peerId = await createEd25519PeerId();
-  assert(peerId.privateKey);
-
-  const obj = {
-    id: peerId.toString(),
-    privKey: Buffer.from(peerId.privateKey).toString('base64'),
-    pubKey: Buffer.from(peerId.publicKey).toString('base64')
-  };
+  const obj = await createPeerId();
 
   const argv: Arguments = _getArgv();
   if (argv.file) {
@@ -34,7 +26,7 @@ async function main (): Promise<void> {
     }
 
     fs.writeFileSync(exportFilePath, JSON.stringify(obj, null, 2));
-    console.log(`Peer id ${peerId.toString()} exported to file ${exportFilePath}`);
+    console.log(`Peer id ${obj.id.toString()} exported to file ${exportFilePath}`);
   } else {
     console.log(obj);
   }

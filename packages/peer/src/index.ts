@@ -6,6 +6,7 @@ import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
 // For nodejs.
 import wrtc from 'wrtc';
 import assert from 'assert';
+import { Buffer } from 'buffer';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
 import map from 'it-map';
@@ -21,6 +22,7 @@ import type { Stream as P2PStream, Connection } from '@libp2p/interface-connecti
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
@@ -32,6 +34,12 @@ const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
 export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
+
+type PeerIdObj = {
+  id: string
+  privKey: string
+  pubKey: string
+};
 
 export class Peer {
   _node?: Libp2p
@@ -71,9 +79,18 @@ export class Peer {
     return this._node;
   }
 
-  async init (maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
+  async init (
+    peerIdObj?: PeerIdObj,
+    maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS
+  ): Promise<void> {
     try {
+      let peerId: PeerId | undefined;
+      if (peerIdObj) {
+        peerId = await createFromJSON(peerIdObj);
+      }
+
       this._node = await createLibp2p({
+        peerId,
         addresses: {
           // Use existing protocol id in multiaddr to listen through signalling channel to relay node
           // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
@@ -473,4 +490,15 @@ export class Peer {
       handler(msg.from, dataObj);
     });
   }
+}
+
+export async function createPeerId (): Promise<PeerIdObj> {
+  const peerId = await createEd25519PeerId();
+  assert(peerId.privateKey);
+
+  return {
+    id: peerId.toString(),
+    privKey: Buffer.from(peerId.privateKey).toString('base64'),
+    pubKey: Buffer.from(peerId.publicKey).toString('base64')
+  };
 }
