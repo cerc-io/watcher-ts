@@ -6,6 +6,7 @@ import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
 // For nodejs.
 import wrtc from 'wrtc';
 import assert from 'assert';
+import { Buffer } from 'buffer';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
 import map from 'it-map';
