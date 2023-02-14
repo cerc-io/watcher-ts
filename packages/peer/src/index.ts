@@ -21,6 +21,7 @@ import type { Stream as P2PStream, Connection } from '@libp2p/interface-connecti
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
@@ -71,9 +72,22 @@ export class Peer {
     return this._node;
   }
 
-  async init (maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
+  async init (
+    peerIdJson?: {
+      id: string,
+      privKey: string,
+      pubKey: string
+    },
+    maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS
+  ): Promise<void> {
     try {
+      let peerId: PeerId | undefined;
+      if (peerIdJson) {
+        peerId = await createFromJSON(peerIdJson);
+      }
+
       this._node = await createLibp2p({
+        peerId,
         addresses: {
           // Use existing protocol id in multiaddr to listen through signalling channel to relay node
           // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
@@ -473,4 +487,19 @@ export class Peer {
       handler(msg.from, dataObj);
     });
   }
+}
+
+export async function createPeerId (): Promise<{
+  id: string,
+  privKey: string,
+  pubKey: string
+}> {
+  const peerId = await createEd25519PeerId();
+  assert(peerId.privateKey);
+
+  return {
+    id: peerId.toString(),
+    privKey: Buffer.from(peerId.privateKey).toString('base64'),
+    pubKey: Buffer.from(peerId.publicKey).toString('base64')
+  };
 }
