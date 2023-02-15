@@ -40,7 +40,7 @@
   type = "postgres"
   host = "localhost"
   port = 5432
-  database = "mobymask-watcher-v2"
+  database = "mobymask-v2-watcher"
   username = "postgres"
   password = "postgres"
   synchronize = true
@@ -57,7 +57,7 @@
     deleteOnStart = false
 
 [jobQueue]
-  dbConnectionString = "postgres://postgres:postgres@localhost/mobymask-watcher-v2-job-queue"
+  dbConnectionString = "postgres://postgres:postgres@localhost/mobymask-v2-watcher-job-queue"
   maxCompletionLagInSecs = 300
   jobDelayInMilliSecs = 100
   eventsInBatch = 50

@@ -1,4 +1,4 @@
-# MobyMask Watcher v2
+# MobyMask v2 Watcher
 
 First try the [mobymask demo in stack orchestrator](https://github.com/cerc-io/stack-orchestrator/tree/main/app/data/stacks/mobymask) to quickly get started. Advanced users can see [here](/docs/README.md) for instructions on setting up a local environment by hand.
 
@@ -144,7 +144,7 @@ yarn claimMember --contract $MOBY_ADDRESS --name memberName
 
 - The events should be visible in the subscription at GQL endpoint. Note down the event blockHash from result.
 
-- The isMember and isPhisher lists should be indexed. Check the database (mobymask-watcher) tables `is_phisher` and `is_member`, there should be entries at the event blockHash and the value should be true. The data is indexed in `handleEvent` method in the [hooks file](./src/hooks.ts).
+- The isMember and isPhisher lists should be indexed. Check the database (mobymask-v2-watcher) tables `is_phisher` and `is_member`, there should be entries at the event blockHash and the value should be true. The data is indexed in `handleEvent` method in the [hooks file](./src/hooks.ts).
 
 Update the the previous query with event blockHash and check isPhisher and isMember in GraphQL playground
 

@@ -1,7 +1,7 @@
 {
-  "name": "@cerc-io/mobymask-watcher-v2",
+  "name": "@cerc-io/mobymask-v2-watcher",
   "version": "0.2.28",
-  "description": "mobymask-watcher-v2",
+  "description": "mobymask-v2-watcher",
   "private": true,
   "main": "dist/index.js",
   "scripts": {

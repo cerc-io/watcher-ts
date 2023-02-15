@@ -11,7 +11,7 @@ This readme can be followed to index required blocks out of order for a contract
       ```bash
       docker-compose -f docker-compose.yml up
       ```
-    
+
   * [leveldb-ethdb-rpc](https://github.com/vulcanize/leveldb-ethdb-rpc)
 
     It is an RPC wrapper around LevelDB. The endpoint can be used by eth-statediff-service to access LevelDB.
@@ -65,7 +65,7 @@ This readme can be followed to index required blocks out of order for a contract
       ```bash
       make build && ./eth-statediff-service serve --config environments/config.toml
       ```
-  
+
 * Indexing required blocks can be done in the following way:
 
   * Call `writeStateDiffAt` API with watched addresses for required blocks:
@@ -119,7 +119,7 @@ This readme can be followed to index required blocks out of order for a contract
       clientName = "Geth" # $ETH_CLIENT_NAME
       networkID = "1" # $ETH_NETWORK_ID
     ```
-  
+
   * Run the server with the config above:
 
     ```bash
@@ -135,8 +135,8 @@ This readme can be followed to index required blocks out of order for a contract
     ```bash
     # Replace $CONTRACT_ADDRESS and $CONTRACT_NAME witch actual values
     yarn watch:contract --address $CONTRACT_ADDRESS --kind $CONTRACT_NAME --checkpoint true
-    
-    # Example for mobymask-watcher
+
+    # Example for mobymask-v2-watcher
     yarn watch:contract --address 0xB06E6DB9288324738f04fCAAc910f5A60102C1F8 --kind PhisherRegistry --checkpoint true
     ```
 
@@ -151,11 +151,11 @@ This readme can be followed to index required blocks out of order for a contract
     ```bash
     yarn index-block --block 14869713
     ```
-  
+
   * Check the `event` and `block_progress` table to confirm that the required blocks have been indexed properly.
 
 * The watcher can be started to perform queries on the indexed data:
-  
+
   * The watcher can be started in lazy mode:
 
     * Update `server.kind` in [config](./environments/local.toml):
@@ -171,7 +171,7 @@ This readme can be followed to index required blocks out of order for a contract
       yarn server
       ```
 
-  * Run query in [GraphQL endpoint](http://127.0.0.1:3010/graphql) to get events in a range. Following query is for getting events in the range of mainnet blocks indexed for mobymask-watcher:
+  * Run query in [GraphQL endpoint](http://127.0.0.1:3010/graphql) to get events in a range. Following query is for getting events in the range of mainnet blocks indexed for mobymask-v2-watcher:
 
     ```graphql
     query {
