@@ -35,6 +35,8 @@ export const RELAY_REDIAL_DELAY = 5000; // 5 sconds
 // Max number of relay node connections for a peer after which it starts igoring them
 export const DEFAULT_MAX_RELAY_CONNECTIONS = 2;
 
+// Range of ports to be used for WebRTC connections
+// (option only availabe when running in nodejs)
 export const WEBRTC_PORT_RANGE = {
   min: 10000,
   max: 11000
