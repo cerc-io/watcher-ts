@@ -20,7 +20,7 @@ import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 const log = debug('laconic:relay');
@@ -65,7 +65,9 @@ async function main (): Promise<void> {
       webRTCDirect({
         wrtc,
         enableSignalling: true,
-        nodeType: WebRTCDirectNodeType.Relay
+        nodeType: WebRTCDirectNodeType.Relay,
+        initiatorOptions: { webRTCPortRange: WEBRTC_PORT_RANGE },
+        receiverOptions: { webRTCPortRange: WEBRTC_PORT_RANGE }
       })
     ],
     connectionEncryption: [noise()],
