@@ -33,7 +33,7 @@ import { RelayNodeInit, PeerIdObj } from '@cerc-io/peer';
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
 
-const libp2pLog = debug('vulcanize:libp2p');
+const log = debug('vulcanize:server');
 
 interface Arguments {
   configFile: string;
@@ -99,7 +99,8 @@ export class ServerCmd {
 
   async exec (
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
-    typeDefs: TypeSource
+    typeDefs: TypeSource,
+    parseLibp2pMessage?: (peerId: string, data: any) => void
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -159,10 +160,12 @@ export class ServerCmd {
       await peer.init();
 
       peer.subscribeTopic(p2pConfig.pubSubTopic, (peerId, data) => {
-        libp2pLog(`> ${peerId.toString()} > ${data}`);
+        if (parseLibp2pMessage) {
+          parseLibp2pMessage(peerId.toString(), data);
+        }
       });
 
-      libp2pLog(`Peer ID: ${peer.peerId?.toString()}`);
+      log(`Peer ID: ${peer.peerId?.toString()}`);
     }
 
     return { app, server };

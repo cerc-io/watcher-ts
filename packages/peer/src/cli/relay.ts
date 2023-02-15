@@ -55,7 +55,7 @@ async function main (): Promise<void> {
   await createRelayNode(relayNodeInit);
 }
 
-function _getArgv (): any {
+function _getArgv (): Arguments {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
