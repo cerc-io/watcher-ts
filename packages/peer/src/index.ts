@@ -29,11 +29,12 @@ import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
 import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT, DEFAULT_MAX_RELAY_CONNECTIONS } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
+import { dialWithRetry } from './utils/index.js';
 
 const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 
-export const ERR_PROTOCOL_SELECTION = 'protocol selection failed';
+const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 
 type PeerIdObj = {
   id: string
@@ -168,6 +169,8 @@ export class Peer {
     });
 
     // Listen for peers disconnecting
+    // peer:disconnect event is trigerred when all connections to a peer close
+    // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
     this._node.addEventListener('peer:disconnect', (evt) => {
       console.log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
@@ -280,28 +283,33 @@ export class Peer {
   async _dialRelay (): Promise<void> {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
+    console.log('Dialling relay node');
 
-    // Keep dialling relay node until it connects
-    while (true) {
-      try {
-        console.log(`Dialling relay node ${relayMultiaddr.getPeerId()} using multiaddr ${relayMultiaddr.toString()}`);
-        const connection = await this._node.dial(relayMultiaddr);
-        const relayPeerId = connection.remotePeer;
-
-        // TODO: Check if tag already exists. When checking tags issue with relay node connect event
-        // Tag the relay node with a high value to prioritize it's connection
-        // in connection pruning on crossing peer's maxConnections limit
-        this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value });
-
-        break;
-      } catch (err) {
-        console.log(`Could not dial relay ${relayMultiaddr.toString()}`, err);
-
-        // TODO: Use wait method from util package.
-        // Issue using util package in react app.
-        await new Promise(resolve => setTimeout(resolve, RELAY_REDIAL_DELAY));
+    const connection = await dialWithRetry(
+      this._node,
+      relayMultiaddr,
+      {
+        redialDelay: RELAY_REDIAL_DELAY,
+        maxRetry: Infinity
       }
-    }
+    );
+
+    const relayPeerId = connection.remotePeer;
+
+    // Tag the relay node with a high value to prioritize it's connection
+    // in connection pruning on crossing peer's maxConnections limit
+    this._node.peerStore.tagPeer(relayPeerId, RELAY_TAG.tag, { value: RELAY_TAG.value }).catch((err: Error) => {
+      // TODO: Check if tag already exists
+      // If awaited on the getTags / tagPeer method, relay node connect event is not triggered
+      // const peerTags = await this._node.peerStore.getTags(relayPeerId);
+
+      // Ignore the error thrown on retagging a peer on reconnect
+      if (err.message === ERR_PEER_ALREADY_TAGGED) {
+        return;
+      }
+
+      throw err;
+    });
   }
 
   _isRelayPeerMultiaddr (multiaddrString: string): boolean {
@@ -411,16 +419,12 @@ export class Peer {
       this._numRelayConnections--;
     }
 
-    const peerConnections = this._node.getConnections(disconnectedPeerId);
+    // Stop connection check for disconnected peer
+    this._peerHeartbeatChecker?.stop(disconnectedPeerId);
 
-    if (!peerConnections.length) {
-      // Stop connection check for disconnected peer
-      this._peerHeartbeatChecker?.stop(disconnectedPeerId);
-
-      if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
-        // Reconnect to relay node if disconnected
-        await this._dialRelay();
-      }
+    if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
+      // Reconnect to relay node if disconnected
+      await this._dialRelay();
     }
   }
 

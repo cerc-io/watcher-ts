@@ -20,23 +20,30 @@ import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE, RELAY_REDIAL_DELAY } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
+import { dialWithRetry } from './utils/index.js';
 
 const log = debug('laconic:relay');
+
+const DEFAULT_HOST = '127.0.0.1';
+const DEFAULT_PORT = 9090;
+const DEFAULT_MAX_DIAL_RETRY = 5;
 
 interface Arguments {
   host: string;
   port: number;
-  announce: string;
-  peerIdFile: string;
-  relayPeers: string;
+  announce?: string;
+  peerIdFile?: string;
+  relayPeers?: string;
+  maxDialRetry: number;
 }
 
 async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
+  let peerId: PeerId | undefined;
+  let relayPeersList: string[] = [];
 
-  let peerId: any;
   if (argv.peerIdFile) {
     const peerIdFilePath = path.resolve(argv.peerIdFile);
     console.log(`Reading peer id from file ${peerIdFilePath}`);
@@ -46,6 +53,19 @@ async function main (): Promise<void> {
     peerId = await createFromJSON(peerIdJson);
   } else {
     console.log('Creating a new peer id');
+  }
+
+  if (argv.relayPeers) {
+    const relayPeersFilePath = path.resolve(argv.relayPeers);
+
+    if (!fs.existsSync(relayPeersFilePath)) {
+      console.log(`File at given path ${relayPeersFilePath} not found, exiting`);
+      process.exit();
+    }
+
+    console.log(`Reading relay peer multiaddr(s) from file ${relayPeersFilePath}`);
+    const relayPeersListObj = fs.readFileSync(relayPeersFilePath, 'utf-8');
+    relayPeersList = JSON.parse(relayPeersListObj);
   }
 
   const listenMultiaddrs = [`/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`];
@@ -114,43 +134,52 @@ async function main (): Promise<void> {
   });
 
   // Listen for peers disconnecting
-  node.addEventListener('peer:disconnect', (evt) => {
-    // console.log('event peer:disconnect', evt);
+  // peer:disconnect event is trigerred when all connections to a peer close
+  // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
+  node.addEventListener('peer:disconnect', async (evt) => {
+    log('event peer:disconnect', evt);
+
     // Log disconnected peer
     const connection: Connection = evt.detail;
-    log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    const remoteAddr = connection.remoteAddr;
+    log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${remoteAddr.toString()}`);
+
+    // Stop connection check for disconnected peer
+    peerHeartbeatChecker.stop(connection.remotePeer);
+
+    // Redial if disconnected peer is in relayPeers list
+    if (relayPeersList.includes(remoteAddr.toString())) {
+      await dialWithRetry(
+        node,
+        remoteAddr,
+        {
+          redialDelay: RELAY_REDIAL_DELAY,
+          maxRetry: argv.maxDialRetry
+        }
+      ).catch((error: Error) => console.log(error.message));
+    }
   });
 
-  if (argv.relayPeers) {
-    const relayPeersFilePath = path.resolve(argv.relayPeers);
-
-    if (!fs.existsSync(relayPeersFilePath)) {
-      console.log(`File at given path ${relayPeersFilePath} not found, exiting`);
-      process.exit();
-    }
-
-    console.log(`Reading relay peer multiaddr(s) from file ${relayPeersFilePath}`);
-    const relayPeersListObj = fs.readFileSync(relayPeersFilePath, 'utf-8');
-    const relayPeersList: string[] = JSON.parse(relayPeersListObj);
-
-    await _dialRelayPeers(node, relayPeersList);
+  if (relayPeersList.length) {
+    console.log('Dialling relay peers');
+    await _dialRelayPeers(node, relayPeersList, argv.maxDialRetry);
   }
 }
 
-function _getArgv (): any {
+function _getArgv (): Arguments {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
     host: {
       type: 'string',
       alias: 'h',
-      default: '127.0.0.1',
+      default: DEFAULT_HOST,
       describe: 'Host to bind to'
     },
     port: {
       type: 'number',
       alias: 'p',
-      default: '9090',
+      default: DEFAULT_PORT,
       describe: 'Port to start listening on'
     },
     announce: {
@@ -167,21 +196,27 @@ function _getArgv (): any {
       type: 'string',
       alias: 'r',
       describe: 'Relay peer multiaddr(s) list file path (json)'
+    },
+    maxDialRetry: {
+      type: 'number',
+      describe: 'Maximum number of retries for dialling a relay peer',
+      default: DEFAULT_MAX_DIAL_RETRY
     }
-  }).argv;
+  // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
+  }).parseSync();
 }
 
-async function _dialRelayPeers (node: Libp2p, relayPeersList: string[]): Promise<void> {
+async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialRetry: number): Promise<void> {
   relayPeersList.forEach(async (relayPeer) => {
     const relayMultiaddr = multiaddr(relayPeer);
-    const peerIdString = relayMultiaddr.getPeerId()?.toString();
-
-    try {
-      console.log(`Dialling relay node ${peerIdString} using multiaddr ${relayMultiaddr.toString()}`);
-      await node.dial(relayMultiaddr);
-    } catch (err: any) {
-      console.log(`Could not dial ${peerIdString}`, err);
-    }
+    await dialWithRetry(
+      node,
+      relayMultiaddr,
+      {
+        redialDelay: RELAY_REDIAL_DELAY,
+        maxRetry: maxDialRetry
+      }
+    ).catch((error: Error) => console.log(error.message));
   });
 }
 
