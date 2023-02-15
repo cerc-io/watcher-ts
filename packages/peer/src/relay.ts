@@ -28,6 +28,7 @@ const log = debug('laconic:relay');
 interface Arguments {
   host: string;
   port: number;
+  announce: string;
   peerIdFile: string;
   relayPeers: string;
 }
@@ -47,12 +48,17 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
-  const listenMultiaddr = `/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`;
+  const listenMultiaddrs = [`/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`];
+  const announceMultiaddrs = [];
+  if (argv.announce) {
+    announceMultiaddrs.push(`/dns4/${argv.announce}/tcp/443/https/p2p-webrtc-direct`);
+  }
 
   const node = await createLibp2p({
     peerId,
     addresses: {
-      listen: [listenMultiaddr]
+      listen: listenMultiaddrs,
+      announce: announceMultiaddrs
     },
     transports: [
       webRTCDirect({
@@ -143,6 +149,11 @@ function _getArgv (): any {
       alias: 'p',
       default: '9090',
       describe: 'Port to start listening on'
+    },
+    announce: {
+      type: 'string',
+      alias: 'a',
+      describe: 'Domain name to be used in the announce address'
     },
     peerIdFile: {
       type: 'string',
