@@ -50,6 +50,7 @@ async function main (): Promise<void> {
 
   const listenMultiaddrs = [`/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`];
   const announceMultiaddrs = [];
+
   if (argv.announce) {
     announceMultiaddrs.push(`/dns4/${argv.announce}/tcp/443/https/p2p-webrtc-direct`);
   }
