@@ -5,10 +5,10 @@
 import fs from 'fs';
 import path from 'path';
 
-// TODO: Import PeerIdObj type from @cerc-io/peer
-// import { PeerIdObj } from '@cerc-io/peer';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import { PeerIdObj } from '@cerc-io/peer';
 
-export function readPeerId (filePath: string): any {
+export function readPeerId (filePath: string): PeerIdObj {
   const peerIdFilePath = path.resolve(filePath);
   console.log(`Reading peer id from file ${peerIdFilePath}`);
 

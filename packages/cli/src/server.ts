@@ -27,6 +27,8 @@ import {
   Config
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import { RelayNodeInit, PeerIdObj } from '@cerc-io/peer';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
@@ -135,12 +137,12 @@ export class ServerCmd {
     if (p2pConfig.enableRelay) {
       const relayConfig = config.server.p2p.relay;
 
-      let peerIdObj: any;
+      let peerIdObj: PeerIdObj | undefined;
       if (relayConfig.peerIdFile) {
         peerIdObj = readPeerId(relayConfig.peerIdFile);
       }
 
-      const relayNodeInit = {
+      const relayNodeInit: RelayNodeInit = {
         host: relayConfig.host ?? RELAY_DEFAULT_HOST,
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
