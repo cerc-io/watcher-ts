@@ -20,7 +20,7 @@ import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY } from './constants.js';
+import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 
 const log = debug('laconic:relay');
@@ -28,6 +28,7 @@ const log = debug('laconic:relay');
 interface Arguments {
   host: string;
   port: number;
+  announce: string;
   peerIdFile: string;
   relayPeers: string;
 }
@@ -47,18 +48,26 @@ async function main (): Promise<void> {
     console.log('Creating a new peer id');
   }
 
-  const listenMultiaddr = `/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`;
+  const listenMultiaddrs = [`/ip4/${argv.host}/tcp/${argv.port}/http/p2p-webrtc-direct`];
+  const announceMultiaddrs = [];
+
+  if (argv.announce) {
+    announceMultiaddrs.push(`/dns4/${argv.announce}/tcp/443/https/p2p-webrtc-direct`);
+  }
 
   const node = await createLibp2p({
     peerId,
     addresses: {
-      listen: [listenMultiaddr]
+      listen: listenMultiaddrs,
+      announce: announceMultiaddrs
     },
     transports: [
       webRTCDirect({
         wrtc,
         enableSignalling: true,
-        nodeType: WebRTCDirectNodeType.Relay
+        nodeType: WebRTCDirectNodeType.Relay,
+        initiatorOptions: { webRTCPortRange: WEBRTC_PORT_RANGE },
+        receiverOptions: { webRTCPortRange: WEBRTC_PORT_RANGE }
       })
     ],
     connectionEncryption: [noise()],
@@ -143,6 +152,11 @@ function _getArgv (): any {
       alias: 'p',
       default: '9090',
       describe: 'Port to start listening on'
+    },
+    announce: {
+      type: 'string',
+      alias: 'a',
+      describe: 'Domain name to be used in the announce address'
     },
     peerIdFile: {
       type: 'string',

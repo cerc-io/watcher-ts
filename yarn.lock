@@ -373,12 +373,12 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.2":
-  version "5.0.0-laconic-0.1.2"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.2/webrtc-direct-5.0.0-laconic-0.1.2.tgz#b0697f3efe297ce7ccccadd537a36b012425df61"
-  integrity sha512-SSHpUHDjyTwFX1bYL+cMjKqbAiEJQRd0N5bVMQGl86hWmmVXu+09vtpHxO6VTUZNNpnYkOisQPvn9CUyAsfWng==
+"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.3":
+  version "5.0.0-laconic-0.1.3"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.3/webrtc-direct-5.0.0-laconic-0.1.3.tgz#14802ba88899c904bddc327082d96cb541523ffb"
+  integrity sha512-HiRn2eoXbOFM2Dklecr+H76BB0H1H/k4I59Hnjj7tppdlr6wwts9MuA/SX0draXYEiRA5Ft4vXrfo469fGS68A==
   dependencies:
-    "@cerc-io/webrtc-peer" "^2.0.2-laconic-0.1.3"
+    "@cerc-io/webrtc-peer" "^2.0.2-laconic-0.1.4"
     "@libp2p/interface-transport" "^2.0.0"
     "@libp2p/interfaces" "^3.0.3"
     "@libp2p/logger" "^2.0.1"
@@ -399,10 +399,10 @@
     undici "^5.2.0"
     wherearewe "^2.0.1"
 
-"@cerc-io/webrtc-peer@^2.0.2-laconic-0.1.3":
-  version "2.0.2-laconic-0.1.3"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-peer/-/2.0.2-laconic-0.1.3/webrtc-peer-2.0.2-laconic-0.1.3.tgz#decfc53539f206d70f7250b8f913a5d74da5c505"
-  integrity sha512-B0fcADAeU8W0EfdLp/ju6wBDrd/WOXnsqZuGAk+EVTXqvm2cSJiA/TzttmiKQIAvYuWTsLvmRUQ14KHCbtMdSA==
+"@cerc-io/webrtc-peer@^2.0.2-laconic-0.1.4":
+  version "2.0.2-laconic-0.1.4"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-peer/-/2.0.2-laconic-0.1.4/webrtc-peer-2.0.2-laconic-0.1.4.tgz#9ce10477ad4f6391de61a3f6f9a6063b09c0e196"
+  integrity sha512-tCXLCmDW1NKjn9m2ymgh6GbN3YWvEHMIsupW27L2Xt3q02DmWM7acZB04mjvuCDtQt5FC7ok0B6yTQ8a1liXnQ==
   dependencies:
     "@libp2p/interfaces" "^3.0.2"
     "@libp2p/logger" "^2.0.0"
