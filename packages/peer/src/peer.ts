@@ -286,6 +286,14 @@ export class Peer {
     return multiaddrString === this._relayNodeMultiaddr.toString();
   }
 
+  getLatencyData (peerId: PeerId): Array<number> {
+    if (this._peerHeartbeatChecker) {
+      return this._peerHeartbeatChecker.getLatencyData(peerId);
+    }
+
+    return [];
+  }
+
   async _handleChangeProtocols ({ peerId, protocols }: { peerId: PeerId, protocols: string[] }) {
     assert(this._node);
 
