@@ -76,6 +76,10 @@ export class Peer {
     return this._node;
   }
 
+  get relayNodeMultiaddr (): Multiaddr {
+    return this._relayNodeMultiaddr;
+  }
+
   async init (
     peerIdObj?: PeerIdObj,
     maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS
