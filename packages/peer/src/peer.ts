@@ -27,7 +27,18 @@ import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 
-import { MAX_CONCURRENT_DIALS_PER_PEER, MAX_CONNECTIONS, MIN_CONNECTIONS, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, RELAY_TAG, RELAY_REDIAL_DELAY, PING_TIMEOUT, DEFAULT_MAX_RELAY_CONNECTIONS } from './constants.js';
+import {
+  MAX_CONCURRENT_DIALS_PER_PEER,
+  MAX_CONNECTIONS,
+  MIN_CONNECTIONS,
+  DIAL_TIMEOUT,
+  PUBSUB_DISCOVERY_INTERVAL,
+  PUBSUB_SIGNATURE_POLICY,
+  RELAY_TAG,
+  RELAY_REDIAL_DELAY,
+  DEFAULT_MAX_RELAY_CONNECTIONS,
+  PING_TIMEOUT
+} from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 
@@ -119,6 +130,7 @@ export class Peer {
           autoDial: false,
           maxConnections: MAX_CONNECTIONS,
           minConnections: MIN_CONNECTIONS,
+          dialTimeout: DIAL_TIMEOUT,
           keepMultipleConnections: true // Set true to get connections with multiple multiaddr
         },
         ping: {
