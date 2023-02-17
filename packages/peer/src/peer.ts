@@ -165,7 +165,7 @@ export class Peer {
     // Listen for peers connection
     this._node.addEventListener('peer:connect', async (evt) => {
       console.log('event peer:connect', evt);
-      await this._handleConnect(evt.detail);
+      await this._handleConnect(evt.detail, maxRelayConnections);
     });
 
     // Listen for peers disconnecting
@@ -343,21 +343,29 @@ export class Peer {
     }
   }
 
-  async _handleConnect (connection: Connection): Promise<void> {
+  async _handleConnect (connection: Connection, maxRelayConnections: number): Promise<void> {
     assert(this._node);
     const remotePeerId = connection.remotePeer;
+    const remotePeerIdString = connection.remotePeer.toString();
     const remoteAddrString = connection.remoteAddr.toString();
 
     // Log connected peer
-    console.log(`Connected to ${remotePeerId.toString()} using multiaddr ${remoteAddrString}`);
+    console.log(`Connected to ${remotePeerIdString} using multiaddr ${remoteAddrString}`);
 
     if (this._isRelayPeerMultiaddr(remoteAddrString)) {
+      // Check if relay connections limit has already been reached
+      if (this._numRelayConnections >= maxRelayConnections) {
+        console.log(`Closing connection to relay ${remotePeerIdString} as max relay connections limit reached`);
+        await connection.close();
+        return;
+      }
+
       this._numRelayConnections++;
     }
 
     // Manage connections and streams
     // Check if peer id is smaller to break symmetry
-    if (this._node.peerId.toString() < remotePeerId.toString()) {
+    if (this._node.peerId.toString() < remotePeerIdString) {
       const remoteConnections = this._node.getConnections(remotePeerId);
 
       // Keep only one connection with a peer
