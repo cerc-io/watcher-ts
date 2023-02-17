@@ -30,7 +30,7 @@ export const CONN_CHECK_INTERVAL = 10000; // 10 seconds
 export const PING_TIMEOUT = 5000; // 5 seconds
 
 // Delay time in ms to redial relay node on failing to connect
-export const RELAY_REDIAL_DELAY = 5000; // 5 sconds
+export const RELAY_REDIAL_DELAY = 5000; // 5 seconds
 
 // Max number of relay node connections for a peer after which it starts igoring them
 export const DEFAULT_MAX_RELAY_CONNECTIONS = 2;
@@ -52,3 +52,6 @@ export const MAX_CONNECTIONS = 10;
 
 // Min number of connections for a peer below which autodial triggers (if enabled)
 export const MIN_CONNECTIONS = 0;
+
+// How long a dial is allowed to take before it's aborted
+export const DIAL_TIMEOUT = 10000; // 10 seconds
