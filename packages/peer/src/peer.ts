@@ -26,7 +26,7 @@ import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
-import { PrometheusMetrics } from '@cerc-io/prom-browser-metrics';
+import { PrometheusMetrics } from '@cerc-io/prometheus-metrics';
 
 import {
   MAX_CONCURRENT_DIALS_PER_PEER,
