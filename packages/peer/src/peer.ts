@@ -26,6 +26,7 @@ import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import { PrometheusMetrics } from '@cerc-io/prometheus-metrics';
 
 import {
   MAX_CONCURRENT_DIALS_PER_PEER,
@@ -63,6 +64,7 @@ export class Peer {
   _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
+  _metrics = new PrometheusMetrics()
 
   constructor (relayNodeURL: string, nodejs?: boolean) {
     this._relayNodeMultiaddr = multiaddr(relayNodeURL);
@@ -89,6 +91,10 @@ export class Peer {
 
   get relayNodeMultiaddr (): Multiaddr {
     return this._relayNodeMultiaddr;
+  }
+
+  get metrics (): PrometheusMetrics {
+    return this._metrics;
   }
 
   async init (
@@ -135,7 +141,8 @@ export class Peer {
         },
         ping: {
           timeout: PING_TIMEOUT
-        }
+        },
+        metrics: () => this._metrics
       });
     } catch (err: any) {
       console.log('Could not initialize a libp2p node', err);
@@ -279,6 +286,14 @@ export class Peer {
     return multiaddrString === this._relayNodeMultiaddr.toString();
   }
 
+  getLatencyData (peerId: PeerId): Array<number> {
+    if (this._peerHeartbeatChecker) {
+      return this._peerHeartbeatChecker.getLatencyData(peerId);
+    }
+
+    return [];
+  }
+
   async _handleChangeProtocols ({ peerId, protocols }: { peerId: PeerId, protocols: string[] }) {
     assert(this._node);
 
@@ -369,14 +384,14 @@ export class Peer {
     console.log(`Connected to ${remotePeerIdString} using multiaddr ${remoteAddrString}`);
 
     if (this.isRelayPeerMultiaddr(remoteAddrString)) {
+      this._numRelayConnections++;
+
       // Check if relay connections limit has already been reached
-      if (this._numRelayConnections >= maxRelayConnections) {
+      if (this._numRelayConnections > maxRelayConnections && !this.isPrimaryRelay(remoteAddrString)) {
         console.log(`Closing connection to relay ${remotePeerIdString} as max relay connections limit reached`);
         await connection.close();
         return;
       }
-
-      this._numRelayConnections++;
     }
 
     // Manage connections and streams

@@ -373,6 +373,18 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
+"@cerc-io/prometheus-metrics@1.1.4":
+  version "1.1.4"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fprometheus-metrics/-/1.1.4/prometheus-metrics-1.1.4.tgz#51006b0b5bf6168394390c78072a1c0bb2b02f28"
+  integrity sha512-Mqg7o1Wer8zKv3/0NWB1sCMmW8hyYI0Fw58d/MR62+5EDZ2yPhwMUrLZUhyqdo3qXJzxMylAPSVx8URDcthmKA==
+  dependencies:
+    "@libp2p/interface-connection" "^3.0.2"
+    "@libp2p/interface-metrics" "^4.0.2"
+    "@libp2p/logger" "^2.0.2"
+    it-foreach "^1.0.0"
+    it-stream-types "^1.0.4"
+    promjs "^0.4.2"
+
 "@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.3":
   version "5.0.0-laconic-0.1.3"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.3/webrtc-direct-5.0.0-laconic-0.1.3.tgz#14802ba88899c904bddc327082d96cb541523ffb"
@@ -2620,7 +2632,7 @@
     interface-datastore "^7.0.0"
     multiformats "^10.0.0"
 
-"@libp2p/logger@^2.0.1", "@libp2p/logger@^2.0.5":
+"@libp2p/logger@^2.0.1", "@libp2p/logger@^2.0.2", "@libp2p/logger@^2.0.5":
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/@libp2p/logger/-/logger-2.0.5.tgz#cf0ee695ba21471fd085a7fda3e534e03946ad20"
   integrity sha512-WEhxsc7+gsfuTcljI4vSgW/H2f18aBaC+JiO01FcX841Wxe9szjzHdBLDh9eqygUlzoK0LEeIBfctN7ibzus5A==
@@ -13504,6 +13516,11 @@ promise-to-callback@^1.0.0:
   dependencies:
     is-fn "^1.0.0"
     set-immediate-shim "^1.0.1"
+
+promjs@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/promjs/-/promjs-0.4.2.tgz#9c2b4a60e00c1a0ecb69a3c1c322d1cfb47a300d"
+  integrity sha512-qvHcTU9xwEieFOf2Qnf5JYPKkdJU2lRbJfJvJspw6XpnoH7VPmNfnJJnOLPfN8ODJMBLRt8wEPVjxyyn0Or6RQ==
 
 promzard@^0.3.0:
   version "0.3.0"
