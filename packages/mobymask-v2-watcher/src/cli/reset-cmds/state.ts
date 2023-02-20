@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Vulcanize, Inc.
+// Copyright 2023 Vulcanize, Inc.
 //
 
 import { ResetStateCmd } from '@cerc-io/cli';

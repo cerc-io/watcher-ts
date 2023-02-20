@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Vulcanize, Inc.
+// Copyright 2023 Vulcanize, Inc.
 //
 
 import 'reflect-metadata';
