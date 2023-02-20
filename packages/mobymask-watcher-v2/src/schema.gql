@@ -1,0 +1,117 @@
+scalar BigInt
+
+scalar BigDecimal
+
+scalar Bytes
+
+type Block_height {
+  hash: Bytes
+  number: Int
+}
+
+type Proof {
+  data: String!
+}
+
+type ResultBoolean {
+  value: Boolean!
+  proof: Proof
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultInt {
+  value: Int!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
+  proof: Proof
+}
+
+type _Block_ {
+  cid: String!
+  hash: String!
+  number: Int!
+  timestamp: Int!
+  parentHash: String!
+}
+
+type _Transaction_ {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+type ResultEvent {
+  block: _Block_!
+  tx: _Transaction_!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
+union Event = DelegationTriggeredEvent | MemberStatusUpdatedEvent | OwnershipTransferredEvent | PhisherStatusUpdatedEvent
+
+type DelegationTriggeredEvent {
+  principal: String!
+  agent: String!
+}
+
+type MemberStatusUpdatedEvent {
+  entity: String!
+  isMember: Boolean!
+}
+
+type OwnershipTransferredEvent {
+  previousOwner: String!
+  newOwner: String!
+}
+
+type PhisherStatusUpdatedEvent {
+  entity: String!
+  isPhisher: Boolean!
+}
+
+type ResultState {
+  block: _Block_!
+  contractAddress: String!
+  cid: String!
+  kind: String!
+  data: String!
+}
+
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  multiNonce(blockHash: String!, contractAddress: String!, key0: String!, key1: BigInt!): ResultBigInt!
+  _owner(blockHash: String!, contractAddress: String!): ResultString!
+  isRevoked(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
+  isPhisher(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
+  isMember(blockHash: String!, contractAddress: String!, key0: String!): ResultBoolean!
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
+  getSyncStatus: SyncStatus
+  latestBlock: Block_height
+}
+
+type Mutation {
+  watchContract(address: String!, kind: String!, checkpoint: Boolean!, startingBlock: Int): Boolean!
+}
+
+type Subscription {
+  onEvent: ResultEvent!
+}
