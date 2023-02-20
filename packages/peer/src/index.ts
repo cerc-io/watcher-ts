@@ -4,3 +4,4 @@
 
 export { Peer, PeerIdObj, createPeerId } from './peer.js';
 export { RelayNodeInit, createRelayNode } from './relay.js';
+export { getPseudonymForPeerId } from './utils/index.js';
