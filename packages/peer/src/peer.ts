@@ -385,7 +385,7 @@ export class Peer {
 
     if (this.isRelayPeerMultiaddr(remoteAddrString)) {
       // Check if relay connections limit has already been reached
-      if (this._numRelayConnections >= maxRelayConnections) {
+      if (this._numRelayConnections >= maxRelayConnections && !this.isPrimaryRelay(remoteAddrString)) {
         console.log(`Closing connection to relay ${remotePeerIdString} as max relay connections limit reached`);
         await connection.close();
         return;
