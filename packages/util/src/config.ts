@@ -36,20 +36,40 @@ export interface GQLCacheConfig {
   timeTravelMaxAge: number;
 }
 
+// Relay node config
 export interface RelayConfig {
+  // Host to bind the relay server to
   host?: string;
+
+  // Port to start listening on
   port?: number;
+
+  // Domain name to be used in the announce address
   announce?: string;
+
+  // Relay peer id file path (json)
   peerIdFile?: string;
+
+  // Relay peer multiaddr(s) list
   relayPeers?: string[];
+
+  // Max number of dial retries to be attempted to a relay peer
   maxDialRetry?: number;
 }
 
+// P2P config
 export interface P2PConfig {
+  // Enable relay node
   enableRelay: boolean;
   relay: RelayConfig;
+
+  // Enable peer node
   enablePeer: boolean;
+
+  // Multiaddr of the primary relay node for this peer
   relayMultiaddr: string;
+
+  // Pubsub topic to subscribe this peer to
   pubSubTopic: string;
 }
 

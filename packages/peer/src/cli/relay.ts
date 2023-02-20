@@ -88,7 +88,7 @@ function _getArgv (): Arguments {
     },
     maxDialRetry: {
       type: 'number',
-      describe: 'Maximum number of retries for dialling a relay peer',
+      describe: 'Maximum number of dial retries to be attempted to a relay peer',
       default: RELAY_DEFAULT_MAX_DIAL_RETRY
     }
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83

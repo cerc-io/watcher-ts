@@ -24,7 +24,8 @@ import {
   startGQLMetricsServer,
   EventWatcher,
   GraphWatcherInterface,
-  Config
+  Config,
+  P2PConfig
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
@@ -105,9 +106,6 @@ export class ServerCmd {
     app: Application,
     server: ApolloServer
   }> {
-    const { createRelayNode, Peer } = await import('@cerc-io/peer');
-    const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
-
     const config = this._baseCmd.config;
     const jobQueue = this._baseCmd.jobQueue;
     const indexer = this._baseCmd.indexer;
@@ -134,9 +132,25 @@ export class ServerCmd {
 
     const p2pConfig = config.server.p2p;
 
+    // Start P2P nodes if config provided
+    if (p2pConfig) {
+      await this._startP2PNodes(p2pConfig, parseLibp2pMessage);
+    }
+
+    return { app, server };
+  }
+
+  async _startP2PNodes (
+    p2pConfig: P2PConfig,
+    parseLibp2pMessage?: (peerId: string, data: any) => void
+  ): Promise<void> {
+    const { createRelayNode, Peer } = await import('@cerc-io/peer');
+    const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
+
     // Run the relay node if enabled
     if (p2pConfig.enableRelay) {
-      const relayConfig = config.server.p2p.relay;
+      const relayConfig = p2pConfig.relay;
+      assert(relayConfig, 'Relay config not set');
 
       let peerIdObj: PeerIdObj | undefined;
       if (relayConfig.peerIdFile) {
@@ -167,8 +181,6 @@ export class ServerCmd {
 
       log(`Peer ID: ${peer.peerId?.toString()}`);
     }
-
-    return { app, server };
   }
 
   _getArgv (): any {
