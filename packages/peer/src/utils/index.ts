@@ -4,6 +4,7 @@
 
 import { Libp2p } from '@cerc-io/libp2p';
 import { Multiaddr } from '@multiformats/multiaddr';
+import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator';
 
 interface DialWithRetryOptions {
   redialDelay: number
@@ -46,4 +47,19 @@ export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options:
   }
 
   throw new Error(`Stopping dial retry after ${maxRetry} attempts for multiaddr ${multiaddr.toString()}`);
+};
+
+/**
+ * Get a deterministic pseudonym of form [adjective-color-name] for a given libp2p peer id
+ * Eg. 12D3KooWJLXEX2GfHPSZR3z9QKNSN8EY6pXo7FZ9XtFhiKLJATtC -> jolly-green-diann
+ * @param peerId
+ */
+export const getPseudonymForPeerId = (peerId: string): string => {
+  return uniqueNamesGenerator({
+    seed: peerId,
+    dictionaries: [adjectives, colors, names],
+    length: 3,
+    style: 'lowerCase',
+    separator: '-'
+  });
 };

@@ -270,6 +270,15 @@ export class Peer {
     return unsubscribe;
   }
 
+  isRelayPeerMultiaddr (multiaddrString: string): boolean {
+    // Multiaddr not having p2p-circuit id or webrtc-star id is of a relay node
+    return !(multiaddrString.includes(P2P_CIRCUIT_ID) || multiaddrString.includes(P2P_WEBRTC_STAR_ID));
+  }
+
+  isPrimaryRelay (multiaddrString: string): boolean {
+    return multiaddrString === this._relayNodeMultiaddr.toString();
+  }
+
   async _handleChangeProtocols ({ peerId, protocols }: { peerId: PeerId, protocols: string[] }) {
     assert(this._node);
 
@@ -328,17 +337,12 @@ export class Peer {
     });
   }
 
-  _isRelayPeerMultiaddr (multiaddrString: string): boolean {
-    // Multiaddr not having p2p-circuit id or webrtc-star id is of a relay node
-    return !(multiaddrString.includes(P2P_CIRCUIT_ID) || multiaddrString.includes(P2P_WEBRTC_STAR_ID));
-  }
-
   _handleDiscovery (peer: PeerInfo, maxRelayConnections: number): void {
     // Check connected peers as they are discovered repeatedly.
     if (!this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
       let isRelayPeer = false;
       for (const multiaddr of peer.multiaddrs) {
-        if (this._isRelayPeerMultiaddr(multiaddr.toString())) {
+        if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
           isRelayPeer = true;
           break;
         }
@@ -364,7 +368,7 @@ export class Peer {
     // Log connected peer
     console.log(`Connected to ${remotePeerIdString} using multiaddr ${remoteAddrString}`);
 
-    if (this._isRelayPeerMultiaddr(remoteAddrString)) {
+    if (this.isRelayPeerMultiaddr(remoteAddrString)) {
       // Check if relay connections limit has already been reached
       if (this._numRelayConnections >= maxRelayConnections) {
         console.log(`Closing connection to relay ${remotePeerIdString} as max relay connections limit reached`);
@@ -446,7 +450,7 @@ export class Peer {
     console.log(`Disconnected from ${disconnectedPeerId.toString()} using multiaddr ${remoteAddrString}`);
     console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
 
-    if (this._isRelayPeerMultiaddr(remoteAddrString)) {
+    if (this.isRelayPeerMultiaddr(remoteAddrString)) {
       this._numRelayConnections--;
     }
 

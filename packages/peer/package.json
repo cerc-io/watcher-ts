@@ -43,6 +43,7 @@
     "node-pre-gyp": "^0.13.0",
     "p-event": "^5.0.1",
     "uint8arrays": "^4.0.3",
+    "unique-names-generator": "^4.7.1",
     "wrtc": "^0.4.7",
     "yargs": "^17.0.1"
   },
