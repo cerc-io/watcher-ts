@@ -55,3 +55,14 @@ export const MIN_CONNECTIONS = 0;
 
 // How long a dial is allowed to take before it's aborted
 export const DIAL_TIMEOUT = 10000; // 10 seconds
+
+// Relay node defaults
+
+// Default host to bind relay server to
+export const RELAY_DEFAULT_HOST = '127.0.0.1';
+
+// Default port to start listening on
+export const RELAY_DEFAULT_PORT = 9090;
+
+// Default max number of dial retries to a relay peer
+export const RELAY_DEFAULT_MAX_DIAL_RETRY = 5;

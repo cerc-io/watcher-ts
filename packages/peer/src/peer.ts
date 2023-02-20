@@ -152,7 +152,7 @@ export class Peer {
     console.log('libp2p node created', this._node);
     this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node);
 
-    // Dial to the HOP enabled relay node
+    // Dial to the HOP enabled primary relay node
     await this._dialRelay();
 
     // Listen for change in stored multiaddrs
@@ -323,7 +323,7 @@ export class Peer {
   async _dialRelay (): Promise<void> {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
-    console.log('Dialling relay node');
+    console.log('Dialling primary relay node');
 
     const connection = await dialWithRetry(
       this._node,
@@ -473,7 +473,7 @@ export class Peer {
     this._peerHeartbeatChecker?.stop(disconnectedPeerId);
 
     if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
-      // Reconnect to relay node if disconnected
+      // Reconnect to primary relay node if disconnected
       await this._dialRelay();
     }
   }

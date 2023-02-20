@@ -2,6 +2,7 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
+import debug from 'debug';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
@@ -23,11 +24,17 @@ import {
   startGQLMetricsServer,
   EventWatcher,
   GraphWatcherInterface,
-  Config
+  Config,
+  P2PConfig
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import { RelayNodeInit, PeerIdObj } from '@cerc-io/peer';
 
 import { BaseCmd } from './base';
+import { readPeerId } from './utils/index';
+
+const log = debug('vulcanize:server');
 
 interface Arguments {
   configFile: string;
@@ -93,7 +100,8 @@ export class ServerCmd {
 
   async exec (
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
-    typeDefs: TypeSource
+    typeDefs: TypeSource,
+    parseLibp2pMessage?: (peerId: string, data: any) => void
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -122,7 +130,57 @@ export class ServerCmd {
 
     await startGQLMetricsServer(config);
 
+    const p2pConfig = config.server.p2p;
+
+    // Start P2P nodes if config provided
+    if (p2pConfig) {
+      await this._startP2PNodes(p2pConfig, parseLibp2pMessage);
+    }
+
     return { app, server };
+  }
+
+  async _startP2PNodes (
+    p2pConfig: P2PConfig,
+    parseLibp2pMessage?: (peerId: string, data: any) => void
+  ): Promise<void> {
+    const { createRelayNode, Peer } = await import('@cerc-io/peer');
+    const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
+
+    // Run the relay node if enabled
+    if (p2pConfig.enableRelay) {
+      const relayConfig = p2pConfig.relay;
+      assert(relayConfig, 'Relay config not set');
+
+      let peerIdObj: PeerIdObj | undefined;
+      if (relayConfig.peerIdFile) {
+        peerIdObj = readPeerId(relayConfig.peerIdFile);
+      }
+
+      const relayNodeInit: RelayNodeInit = {
+        host: relayConfig.host ?? RELAY_DEFAULT_HOST,
+        port: relayConfig.port ?? RELAY_DEFAULT_PORT,
+        announceDomain: relayConfig.announce,
+        relayPeers: relayConfig.relayPeers ?? [],
+        maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
+        peerIdObj
+      };
+      await createRelayNode(relayNodeInit);
+    }
+
+    // Run a peer node if enabled
+    if (p2pConfig.enablePeer) {
+      const peer = new Peer(p2pConfig.relayMultiaddr, true);
+      await peer.init();
+
+      peer.subscribeTopic(p2pConfig.pubSubTopic, (peerId, data) => {
+        if (parseLibp2pMessage) {
+          parseLibp2pMessage(peerId.toString(), data);
+        }
+      });
+
+      log(`Peer ID: ${peer.peerId?.toString()}`);
+    }
   }
 
   _getArgv (): any {
