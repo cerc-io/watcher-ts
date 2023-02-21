@@ -29,8 +29,8 @@ import {
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import {
-  RelayNodeInit,
-  PeerInit,
+  RelayNodeInitConfig,
+  PeerInitConfig,
   PeerIdObj,
   RELAY_DEFAULT_HOST,
   RELAY_DEFAULT_PORT,
@@ -165,7 +165,7 @@ export class ServerCmd {
         peerIdObj = readPeerId(relayConfig.peerIdFile);
       }
 
-      const relayNodeInit: RelayNodeInit = {
+      const relayNodeInit: RelayNodeInitConfig = {
         host: relayConfig.host ?? RELAY_DEFAULT_HOST,
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
@@ -185,7 +185,7 @@ export class ServerCmd {
 
       const peer = new Peer(peerConfig.relayMultiaddr, true);
 
-      const peerNodeInit: PeerInit = {
+      const peerNodeInit: PeerInitConfig = {
         pingInterval: peerConfig.pingInterval,
         pingTimeout: peerConfig.pingTimeout,
         maxRelayConnections: peerConfig.maxRelayConnections,

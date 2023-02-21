@@ -3,7 +3,7 @@ import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import path from 'path';
 
-import { RelayNodeInit, createRelayNode } from '../relay.js';
+import { RelayNodeInitConfig, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
 import { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY, RELAY_REDIAL_INTERVAL, PING_INTERVAL } from '../constants.js';
 
@@ -46,7 +46,7 @@ async function main (): Promise<void> {
     relayPeersList = JSON.parse(relayPeersListObj);
   }
 
-  const relayNodeInit: RelayNodeInit = {
+  const relayNodeInit: RelayNodeInitConfig = {
     host: argv.host,
     port: argv.port,
     peerIdObj,

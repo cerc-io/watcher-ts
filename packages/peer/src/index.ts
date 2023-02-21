@@ -2,8 +2,8 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-export { Peer, PeerIdObj, PeerInit, createPeerId } from './peer.js';
-export { RelayNodeInit, createRelayNode } from './relay.js';
+export { Peer, PeerIdObj, PeerInitConfig, createPeerId } from './peer.js';
+export { RelayNodeInitConfig, createRelayNode } from './relay.js';
 export { getPseudonymForPeerId } from './utils/index.js';
 export {
   RELAY_DEFAULT_HOST,

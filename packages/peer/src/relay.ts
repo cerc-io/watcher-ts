@@ -23,7 +23,7 @@ import { PeerIdObj } from './peer.js';
 
 const log = debug('laconic:relay');
 
-export interface RelayNodeInit {
+export interface RelayNodeInitConfig {
   host: string;
   port: number;
   peerIdObj?: PeerIdObj;
@@ -34,7 +34,7 @@ export interface RelayNodeInit {
   maxDialRetry: number;
 }
 
-export async function createRelayNode (init: RelayNodeInit): Promise<Libp2p> {
+export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2p> {
   const listenMultiaddrs = [`/ip4/${init.host}/tcp/${init.port}/http/p2p-webrtc-direct`];
   const announceMultiaddrs = [];
 

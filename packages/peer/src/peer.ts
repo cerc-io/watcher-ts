@@ -54,7 +54,7 @@ export interface PeerIdObj {
   pubKey: string;
 }
 
-export interface PeerInit {
+export interface PeerInitConfig {
   pingInterval?: number;
   pingTimeout?: number;
   maxRelayConnections?: number;
@@ -112,10 +112,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     return this._metrics;
   }
 
-  async init (
-    initOptions: PeerInit,
-    peerIdObj?: PeerIdObj
-  ): Promise<void> {
+  async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
     this._pingInterval = initOptions.pingInterval;
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
