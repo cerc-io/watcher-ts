@@ -28,8 +28,17 @@ import {
   P2PConfig
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
-// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
-import { RelayNodeInit, PeerIdObj } from '@cerc-io/peer';
+import {
+  RelayNodeInit,
+  PeerInit,
+  PeerIdObj,
+  RELAY_DEFAULT_HOST,
+  RELAY_DEFAULT_PORT,
+  RELAY_DEFAULT_MAX_DIAL_RETRY,
+  RELAY_REDIAL_INTERVAL,
+  PING_INTERVAL
+  // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+} from '@cerc-io/peer';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
@@ -145,7 +154,6 @@ export class ServerCmd {
     parseLibp2pMessage?: (peerId: string, data: any) => void
   ): Promise<void> {
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
-    const { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY } = await import('@cerc-io/peer');
 
     // Run the relay node if enabled
     if (p2pConfig.enableRelay) {
@@ -162,6 +170,8 @@ export class ServerCmd {
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
         relayPeers: relayConfig.relayPeers ?? [],
+        pingInterval: relayConfig.pingInterval ?? PING_INTERVAL,
+        redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
         peerIdObj
       };
@@ -170,10 +180,22 @@ export class ServerCmd {
 
     // Run a peer node if enabled
     if (p2pConfig.enablePeer) {
-      const peer = new Peer(p2pConfig.relayMultiaddr, true);
-      await peer.init();
+      const peerConfig = p2pConfig.peer;
+      assert(peerConfig, 'Peer config not set');
 
-      peer.subscribeTopic(p2pConfig.pubSubTopic, (peerId, data) => {
+      const peer = new Peer(peerConfig.relayMultiaddr, true);
+
+      const peerNodeInit: PeerInit = {
+        pingInterval: peerConfig.pingInterval,
+        pingTimeout: peerConfig.pingTimeout,
+        maxRelayConnections: peerConfig.maxRelayConnections,
+        relayRedialInterval: peerConfig.relayRedialInterval,
+        maxConnections: peerConfig.maxConnections,
+        dialTimeout: peerConfig.dialTimeout
+      };
+      await peer.init(peerNodeInit);
+
+      peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
           parseLibp2pMessage(peerId.toString(), data);
         }

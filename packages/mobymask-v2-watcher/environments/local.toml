@@ -20,16 +20,17 @@
   maxEventsBlockRange = -1
 
   [server.p2p]
-    enablePeer = true
-    relayMultiaddr = ''
-    pubSubTopic = 'mobymask'
     enableRelay = true
-
     [server.p2p.relay]
       host = "127.0.0.1"
       port = 9090
       relayPeers = []
       peerIdFile = ''
+
+    enablePeer = true
+    [server.p2p.peer]
+      relayMultiaddr = ''
+      pubSubTopic = 'mobymask'
 
 [metrics]
   host = "127.0.0.1"

@@ -20,7 +20,7 @@ async function main (): Promise<void> {
   // https://adamcoster.com/blog/commonjs-and-esm-importexport-compatibility-examples#importing-esm-into-commonjs-cjs
   const { Peer } = await import('@cerc-io/peer');
   const peer = new Peer(argv.relayNode, true);
-  await peer.init();
+  await peer.init({});
 
   peer.subscribeMessage((peerId: PeerId, message: string) => {
     console.log(`> ${peerId.toString()} > ${message}`);
