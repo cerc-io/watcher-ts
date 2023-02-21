@@ -5,7 +5,7 @@
 import { Libp2p } from '@cerc-io/libp2p';
 import type { PeerId } from '@libp2p/interface-peer-id';
 
-import { CONN_CHECK_INTERVAL } from './constants.js';
+import { PING_INTERVAL } from './constants.js';
 
 interface PeerData {
   intervalId: NodeJS.Timer;
@@ -17,10 +17,12 @@ interface PeerData {
  */
 export class PeerHearbeatChecker {
   _node: Libp2p;
+  _pingInterval: number;
   _peerMap: Map<string, PeerData> = new Map()
 
-  constructor (node: Libp2p) {
+  constructor (node: Libp2p, pingInterval = PING_INTERVAL) {
     this._node = node;
+    this._pingInterval = pingInterval;
   }
 
   /**
@@ -53,7 +55,7 @@ export class PeerHearbeatChecker {
         peerId,
         handlePingDisconnect
       );
-    }, CONN_CHECK_INTERVAL);
+    }, this._pingInterval);
 
     this._peerMap.set(
       peerIdString,

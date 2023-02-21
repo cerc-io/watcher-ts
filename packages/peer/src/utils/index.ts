@@ -7,12 +7,12 @@ import { Multiaddr } from '@multiformats/multiaddr';
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator';
 
 interface DialWithRetryOptions {
-  redialDelay: number
+  redialInterval: number
   maxRetry: number
 }
 
 const DEFAULT_DIAL_RETRY_OPTIONS: DialWithRetryOptions = {
-  redialDelay: 5000, // ms
+  redialInterval: 5000, // ms
   maxRetry: 5
 };
 
@@ -24,7 +24,7 @@ const DEFAULT_DIAL_RETRY_OPTIONS: DialWithRetryOptions = {
  * @param options
  */
 export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options: Partial<DialWithRetryOptions>) => {
-  const { redialDelay, maxRetry } = {
+  const { redialInterval, maxRetry } = {
     ...DEFAULT_DIAL_RETRY_OPTIONS,
     ...options
   };
@@ -38,11 +38,11 @@ export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options:
       return connection;
     } catch (err) {
       console.log(`Could not dial node ${multiaddr.toString()}`, err);
-      console.log(`Retrying after ${redialDelay}ms`);
+      console.log(`Retrying after ${redialInterval}ms`);
 
       // TODO: Use wait method from util package.
       // Issue using util package in react app.
-      await new Promise(resolve => setTimeout(resolve, redialDelay));
+      await new Promise(resolve => setTimeout(resolve, redialInterval));
     }
   }
 
