@@ -31,12 +31,7 @@ import { TypeSource } from '@graphql-tools/utils';
 import {
   RelayNodeInitConfig,
   PeerInitConfig,
-  PeerIdObj,
-  RELAY_DEFAULT_HOST,
-  RELAY_DEFAULT_PORT,
-  RELAY_DEFAULT_MAX_DIAL_RETRY,
-  RELAY_REDIAL_INTERVAL,
-  PING_INTERVAL
+  PeerIdObj
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
@@ -154,6 +149,13 @@ export class ServerCmd {
     parseLibp2pMessage?: (peerId: string, data: any) => void
   ): Promise<void> {
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
+    const {
+      RELAY_DEFAULT_HOST,
+      RELAY_DEFAULT_PORT,
+      RELAY_DEFAULT_MAX_DIAL_RETRY,
+      RELAY_REDIAL_INTERVAL,
+      PING_INTERVAL
+    } = await import('@cerc-io/peer');
 
     // Run the relay node if enabled
     if (p2pConfig.enableRelay) {

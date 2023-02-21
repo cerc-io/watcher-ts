@@ -21,13 +21,14 @@
 
   [server.p2p]
     enableRelay = true
+    enablePeer = true
+
     [server.p2p.relay]
       host = "127.0.0.1"
       port = 9090
       relayPeers = []
       peerIdFile = ''
 
-    enablePeer = true
     [server.p2p.peer]
       relayMultiaddr = ''
       pubSubTopic = 'mobymask'
