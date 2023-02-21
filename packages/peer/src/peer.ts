@@ -36,7 +36,7 @@ import {
   PUBSUB_DISCOVERY_INTERVAL,
   PUBSUB_SIGNATURE_POLICY,
   RELAY_TAG,
-  RELAY_REDIAL_DELAY,
+  RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
   PING_TIMEOUT
 } from './constants.js';
@@ -48,20 +48,35 @@ export const CHAT_PROTOCOL = '/chat/1.0.0';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 
-export type PeerIdObj = {
+export interface PeerIdObj {
   id: string;
   privKey: string;
   pubKey: string;
-};
+}
+
+export interface PeerInitConfig {
+  pingInterval?: number;
+  pingTimeout?: number;
+  maxRelayConnections?: number;
+  relayRedialInterval?: number;
+  maxConnections?: number;
+  minConnections?: number;
+  dialTimeout?: number;
+}
 
 export class Peer {
   _node?: Libp2p
   _peerHeartbeatChecker?: PeerHearbeatChecker
   _wrtcTransport: (components: WebRTCDirectComponents) => Transport
+
   _relayNodeMultiaddr: Multiaddr
   _numRelayConnections = 0
 
-  _peerStreamMap: Map<string, Pushable<any>> = new Map()
+  _pingInterval?: number
+  _relayRedialInterval?: number
+  _maxRelayConnections?: number
+
+_peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
   _topicHandlers: Map<string, Array<(peerId: PeerId, data: any) => void>> = new Map()
   _metrics = new PrometheusMetrics()
@@ -97,10 +112,11 @@ export class Peer {
     return this._metrics;
   }
 
-  async init (
-    peerIdObj?: PeerIdObj,
-    maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS
-  ): Promise<void> {
+  async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
+    this._pingInterval = initOptions.pingInterval;
+    this._relayRedialInterval = initOptions.relayRedialInterval;
+    this._maxRelayConnections = initOptions.maxRelayConnections;
+
     try {
       let peerId: PeerId | undefined;
       if (peerIdObj) {
@@ -134,13 +150,13 @@ export class Peer {
         connectionManager: {
           maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
           autoDial: false,
-          maxConnections: MAX_CONNECTIONS,
-          minConnections: MIN_CONNECTIONS,
-          dialTimeout: DIAL_TIMEOUT,
+          maxConnections: initOptions.maxConnections ?? MAX_CONNECTIONS,
+          minConnections: initOptions.minConnections ?? MIN_CONNECTIONS,
+          dialTimeout: initOptions.dialTimeout ?? DIAL_TIMEOUT,
           keepMultipleConnections: true // Set true to get connections with multiple multiaddr
         },
         ping: {
-          timeout: PING_TIMEOUT
+          timeout: initOptions.pingTimeout ?? PING_TIMEOUT
         },
         metrics: () => this._metrics
       });
@@ -150,10 +166,10 @@ export class Peer {
     }
 
     console.log('libp2p node created', this._node);
-    this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node);
+    this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node, this._pingInterval);
 
     // Dial to the HOP enabled primary relay node
-    await this._dialRelay();
+    await this._dialRelay(this._relayRedialInterval);
 
     // Listen for change in stored multiaddrs
     this._node.peerStore.addEventListener('change:multiaddrs', (evt) => {
@@ -178,13 +194,13 @@ export class Peer {
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
       // console.log('event peer:discovery', evt);
-      this._handleDiscovery(evt.detail, maxRelayConnections);
+      this._handleDiscovery(evt.detail, this._maxRelayConnections);
     });
 
     // Listen for peers connection
     this._node.addEventListener('peer:connect', async (evt) => {
       console.log('event peer:connect', evt);
-      await this._handleConnect(evt.detail, maxRelayConnections);
+      await this._handleConnect(evt.detail, this._maxRelayConnections);
     });
 
     // Listen for peers disconnecting
@@ -320,7 +336,7 @@ export class Peer {
     }
   }
 
-  async _dialRelay (): Promise<void> {
+  async _dialRelay (redialInterval = RELAY_REDIAL_INTERVAL): Promise<void> {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
     console.log('Dialling primary relay node');
@@ -329,7 +345,7 @@ export class Peer {
       this._node,
       relayMultiaddr,
       {
-        redialDelay: RELAY_REDIAL_DELAY,
+        redialInterval: redialInterval,
         maxRetry: Infinity
       }
     );
@@ -352,7 +368,7 @@ export class Peer {
     });
   }
 
-  _handleDiscovery (peer: PeerInfo, maxRelayConnections: number): void {
+  _handleDiscovery (peer: PeerInfo, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): void {
     // Check connected peers as they are discovered repeatedly.
     if (!this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
       let isRelayPeer = false;
@@ -374,7 +390,7 @@ export class Peer {
     }
   }
 
-  async _handleConnect (connection: Connection, maxRelayConnections: number): Promise<void> {
+  async _handleConnect (connection: Connection, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
     assert(this._node);
     const remotePeerId = connection.remotePeer;
     const remotePeerIdString = connection.remotePeer.toString();
@@ -474,7 +490,7 @@ export class Peer {
 
     if (disconnectedPeerId.toString() === this._relayNodeMultiaddr?.getPeerId()) {
       // Reconnect to primary relay node if disconnected
-      await this._dialRelay();
+      await this._dialRelay(this._relayRedialInterval);
     }
   }
 

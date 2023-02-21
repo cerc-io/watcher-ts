@@ -44,17 +44,50 @@ export interface RelayConfig {
   // Port to start listening on
   port?: number;
 
-  // Domain name to be used in the announce address
-  announce?: string;
-
   // Relay peer id file path (json)
   peerIdFile?: string;
+
+  // Domain name to be used in the announce address
+  announce?: string;
 
   // Relay peer multiaddr(s) list
   relayPeers?: string[];
 
+  // Interval in ms to check relay peer connections using ping
+  pingInterval?: number;
+
+  // Redial interval in ms on connection failure
+  redialInterval?: number;
+
   // Max number of dial retries to be attempted to a relay peer
   maxDialRetry?: number;
+}
+
+// Peer config
+export interface PeerConfig {
+  // Multiaddr of the primary relay node for this peer
+  relayMultiaddr: string;
+
+  // Pubsub topic to subscribe this peer to
+  pubSubTopic: string;
+
+  // Interval (ms) to check relay peer connections using ping
+  pingInterval?: number;
+
+  // Ping timeout (ms) used to check if connection is alive
+  pingTimeout?: number;
+
+  // Max number of relay node connections for a peer
+  maxRelayConnections?: number;
+
+  // Redial interval (ms) to relay node on connection failure
+  relayRedialInterval?: number;
+
+  // Max number of connections for a peer
+  maxConnections?: number;
+
+  // Timeout (ms) for dial to peers
+  dialTimeout?: number;
 }
 
 // P2P config
@@ -65,12 +98,7 @@ export interface P2PConfig {
 
   // Enable peer node
   enablePeer: boolean;
-
-  // Multiaddr of the primary relay node for this peer
-  relayMultiaddr: string;
-
-  // Pubsub topic to subscribe this peer to
-  pubSubTopic: string;
+  peer: PeerConfig;
 }
 
 export interface ServerConfig {

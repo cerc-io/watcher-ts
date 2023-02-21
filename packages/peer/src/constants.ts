@@ -21,16 +21,15 @@ export const RELAY_TAG = {
   value: 100
 };
 
-// Interval time in ms to check connection with ping for connected peer
-// Currently only checking for relay node
-export const CONN_CHECK_INTERVAL = 10000; // 10 seconds
+// Interval in ms to check peer connections using ping
+export const PING_INTERVAL = 10000; // 10 seconds
 
 // Ping timeout used to check if connection is alive
-// Should be lesser than CONN_CHECK_INTERVAL
+// Should be less than PING_INTERVAL
 export const PING_TIMEOUT = 5000; // 5 seconds
 
-// Delay time in ms to redial relay node on failing to connect
-export const RELAY_REDIAL_DELAY = 5000; // 5 seconds
+// Redial interval (in ms) to relay node on connection failure
+export const RELAY_REDIAL_INTERVAL = 5000; // 5 seconds
 
 // Max number of relay node connections for a peer after which it starts igoring them
 export const DEFAULT_MAX_RELAY_CONNECTIONS = 2;
