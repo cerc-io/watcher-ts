@@ -5,7 +5,7 @@ import path from 'path';
 
 import { RelayNodeInitConfig, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
-import { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY, RELAY_REDIAL_INTERVAL, PING_INTERVAL } from '../constants.js';
+import { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY, RELAY_REDIAL_INTERVAL, DEFAULT_PING_INTERVAL } from '../constants.js';
 
 interface Arguments {
   host: string;
@@ -93,7 +93,7 @@ function _getArgv (): Arguments {
     pingInterval: {
       type: 'number',
       describe: 'Interval to check relay peer connections using ping (ms)',
-      default: PING_INTERVAL
+      default: DEFAULT_PING_INTERVAL
     },
     redialInterval: {
       type: 'number',

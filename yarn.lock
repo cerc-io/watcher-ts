@@ -385,10 +385,10 @@
     it-stream-types "^1.0.4"
     promjs "^0.4.2"
 
-"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.3":
-  version "5.0.0-laconic-0.1.3"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.3/webrtc-direct-5.0.0-laconic-0.1.3.tgz#14802ba88899c904bddc327082d96cb541523ffb"
-  integrity sha512-HiRn2eoXbOFM2Dklecr+H76BB0H1H/k4I59Hnjj7tppdlr6wwts9MuA/SX0draXYEiRA5Ft4vXrfo469fGS68A==
+"@cerc-io/webrtc-direct@^5.0.0-laconic-0.1.4":
+  version "5.0.0-laconic-0.1.4"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fwebrtc-direct/-/5.0.0-laconic-0.1.4/webrtc-direct-5.0.0-laconic-0.1.4.tgz#5cd7ab544c58a7785f126959f02b30869b643b90"
+  integrity sha512-5HTnSBc7WoH4Y9SZskUxVAqXvTvgJe6+i8YCESwk2+kimDXo9W8y6C+bZm7B2apK/G9UXkWMMHGrx3w6bgRBEg==
   dependencies:
     "@cerc-io/webrtc-peer" "^2.0.2-laconic-0.1.4"
     "@libp2p/interface-transport" "^2.0.0"

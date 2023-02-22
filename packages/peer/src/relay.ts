@@ -16,7 +16,7 @@ import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
+import { HOP_TIMEOUT, DEFAULT_PING_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
@@ -30,6 +30,7 @@ export interface RelayNodeInitConfig {
   announceDomain?: string;
   relayPeers: string[];
   pingInterval: number;
+  pingTimeout?: number;
   redialInterval: number;
   maxDialRetry: number;
 }
@@ -46,6 +47,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   if (init.peerIdObj) {
     peerId = await createFromJSON(init.peerIdObj);
   }
+
+  const pingTimeout = init.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
   const node = await createLibp2p({
     peerId,
@@ -82,10 +85,19 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     },
     connectionManager: {
       autoDial: false
+    },
+    ping: {
+      timeout: pingTimeout
     }
   });
 
-  const peerHeartbeatChecker = new PeerHearbeatChecker(node, init.pingInterval);
+  const peerHeartbeatChecker = new PeerHearbeatChecker(
+    node,
+    {
+      pingInterval: init.pingInterval,
+      pingTimeout
+    }
+  );
 
   console.log(`Relay node started with id ${node.peerId.toString()}`);
   console.log('Listening on:');

@@ -38,7 +38,7 @@ import {
   RELAY_TAG,
   RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
-  PING_TIMEOUT
+  DEFAULT_PING_TIMEOUT
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
@@ -72,7 +72,6 @@ export class Peer {
   _relayNodeMultiaddr: Multiaddr
   _numRelayConnections = 0
 
-  _pingInterval?: number
   _relayRedialInterval?: number
   _maxRelayConnections?: number
 
@@ -113,9 +112,9 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   }
 
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
-    this._pingInterval = initOptions.pingInterval;
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
+    const pingTimeout = initOptions.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
     try {
       let peerId: PeerId | undefined;
@@ -156,7 +155,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
           keepMultipleConnections: true // Set true to get connections with multiple multiaddr
         },
         ping: {
-          timeout: initOptions.pingTimeout ?? PING_TIMEOUT
+          timeout: pingTimeout
         },
         metrics: () => this._metrics
       });
@@ -166,7 +165,13 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     }
 
     console.log('libp2p node created', this._node);
-    this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node, this._pingInterval);
+    this._peerHeartbeatChecker = new PeerHearbeatChecker(
+      this._node,
+      {
+        pingInterval: initOptions.pingInterval,
+        pingTimeout
+      }
+    );
 
     // Dial to the HOP enabled primary relay node
     await this._dialRelay(this._relayRedialInterval);
