@@ -88,6 +88,9 @@ export interface PeerConfig {
 
   // Timeout (ms) for dial to peers
   dialTimeout?: number;
+
+  // Peer id file path (json)
+  peerIdFile?: string;
 }
 
 // P2P config

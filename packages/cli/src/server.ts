@@ -185,6 +185,11 @@ export class ServerCmd {
       const peerConfig = p2pConfig.peer;
       assert(peerConfig, 'Peer config not set');
 
+      let peerIdObj: PeerIdObj | undefined;
+      if (peerConfig.peerIdFile) {
+        peerIdObj = readPeerId(peerConfig.peerIdFile);
+      }
+
       const peer = new Peer(peerConfig.relayMultiaddr, true);
 
       const peerNodeInit: PeerInitConfig = {
@@ -195,7 +200,7 @@ export class ServerCmd {
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout
       };
-      await peer.init(peerNodeInit);
+      await peer.init(peerNodeInit, peerIdObj);
 
       peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
