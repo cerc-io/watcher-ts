@@ -112,7 +112,7 @@ export class PeerHearbeatChecker {
    */
   async _validatePing (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
     // Number of retries depends on the ping interval and ping timeout
-    const pingRetriesOnFail = this._pingInterval / this._pingTimeout;
+    const pingRetriesOnFail = Math.floor(this._pingInterval / this._pingTimeout);
     let pingSuccess = false;
 
     // Loop to retry ping on failure and confirm that there is no connection
