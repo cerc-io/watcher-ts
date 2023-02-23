@@ -136,9 +136,9 @@ export class PeerHearbeatChecker {
             latencyValues.pop();
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         // On error i.e. no pong
-        log(err);
+        log(err?.message);
 
         // Retry after a delay of pingTimeout in case ping fails immediately
         await retryDelayPromise;
