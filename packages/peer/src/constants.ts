@@ -64,4 +64,4 @@ export const RELAY_DEFAULT_HOST = '127.0.0.1';
 export const RELAY_DEFAULT_PORT = 9090;
 
 // Default max number of dial retries to a relay peer
-export const RELAY_DEFAULT_MAX_DIAL_RETRY = 5;
+export const RELAY_DEFAULT_MAX_DIAL_RETRY = 10;
