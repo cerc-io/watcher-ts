@@ -13,3 +13,4 @@ export {
   DEFAULT_PING_INTERVAL,
   DIAL_TIMEOUT
 } from './constants.js';
+export { DebugMsg } from './utils/debug-info.js';

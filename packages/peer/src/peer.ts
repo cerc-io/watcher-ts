@@ -38,13 +38,14 @@ import {
   RELAY_TAG,
   RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
-  DEFAULT_PING_TIMEOUT
+  DEFAULT_PING_TIMEOUT,
+  P2P_CIRCUIT_ID,
+  CHAT_PROTOCOL,
+  DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
-
-const P2P_CIRCUIT_ID = 'p2p-circuit';
-export const CHAT_PROTOCOL = '/chat/1.0.0';
+import { ConnectionInfo, DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, SelfInfo } from './utils/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 
@@ -111,6 +112,40 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   get metrics (): PrometheusMetrics {
     return this._metrics;
+  }
+
+  async getPeerInfo (): Promise<DebugPeerInfo> {
+    assert(this.node);
+    assert(this.peerId);
+
+    const selfInfo: SelfInfo = {
+      peerId: this.peerId.toString(),
+      primaryRelayNode: this.relayNodeMultiaddr.toString(),
+      multiaddrs: this.node.getMultiaddrs().map(multiaddr => multiaddr.toString())
+    };
+
+    const connInfo: ConnectionInfo[] = this.node.getConnections().map(connection => {
+      return {
+        id: connection.id,
+        peerId: connection.remotePeer.toString(),
+        multiaddr: connection.remoteAddr.toString(),
+        direction: connection.stat.direction,
+        status: connection.stat.status,
+        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? 'relayed' : 'direct',
+        nodeType: this.isRelayPeerMultiaddr(connection.remoteAddr.toString())
+          ? this.isPrimaryRelay(connection.remoteAddr.toString()) ? 'Relay (Primary)' : 'Relay (Secondary)'
+          : 'Peer',
+        latency: this.getLatencyData(connection.remotePeer)
+      };
+    });
+
+    const metrics = await this.metrics.getMetricsAsMap();
+
+    return {
+      selfInfo,
+      connInfo,
+      metrics
+    };
   }
 
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
@@ -258,6 +293,13 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     await this._node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
   }
 
+  async requestPeerInfo (): Promise<void> {
+    assert(this._node);
+
+    const request: DebugRequest = { type: 'Request' };
+    await this._node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(request)));
+  }
+
   subscribeMessage (handler: (peerId: PeerId, message: any) => void) : () => void {
     this._messageHandlers.push(handler);
 
@@ -298,6 +340,11 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     };
 
     return unsubscribe;
+  }
+
+  subscribeDebugInfo (handler: (peerId: PeerId, data: any) => void): void {
+    this.subscribeTopic(DEBUG_INFO_TOPIC, this._debugInfoRequestHandler.bind(this));
+    this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
   }
 
   isRelayPeerMultiaddr (multiaddrString: string): boolean {
@@ -570,6 +617,22 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
       const dataObj = JSON.parse(uint8ArrayToString(msg.data));
       handler(msg.from, dataObj);
     });
+  }
+
+  async _debugInfoRequestHandler (peerId: PeerId, msg: any): Promise<void> {
+    const debugMsg = msg as DebugMsg;
+    const msgType = debugMsg.type;
+
+    if (msgType === 'Request') {
+      const peerInfo = await this.getPeerInfo();
+      const response: DebugResponse = {
+        type: 'Response',
+        dst: peerId.toString(),
+        peerInfo
+      };
+
+      await this.floodMessage(DEBUG_INFO_TOPIC, response);
+    }
   }
 }
 
