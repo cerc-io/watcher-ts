@@ -109,13 +109,13 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     }
   );
 
-  console.log(`Relay node started with id ${node.peerId.toString()}`);
-  console.log('Listening on:');
-  node.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
+  log(`Relay node started with id ${node.peerId.toString()}`);
+  log('Listening on:');
+  node.getMultiaddrs().forEach((ma) => log(ma.toString()));
 
   // Listen for peers connection
   node.addEventListener('peer:connect', async (evt) => {
-    // console.log('event peer:connect', evt);
+    // log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
     log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
@@ -131,7 +131,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   // peer:disconnect event is trigerred when all connections to a peer close
   // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
   node.addEventListener('peer:disconnect', async (evt) => {
-    log('event peer:disconnect', evt);
+    // log('event peer:disconnect', evt);
 
     // Log disconnected peer
     const connection: Connection = evt.detail;
@@ -150,12 +150,12 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
           redialInterval: init.redialInterval,
           maxRetry: init.maxDialRetry
         }
-      ).catch((error: Error) => console.log(error.message));
+      ).catch((error: Error) => log(error.message));
     }
   });
 
   if (init.relayPeers.length) {
-    console.log('Dialling relay peers');
+    log('Dialling relay peers');
     await _dialRelayPeers(node, init.relayPeers, init.maxDialRetry, init.redialInterval);
   }
 
@@ -172,7 +172,7 @@ async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialR
         redialInterval,
         maxRetry: maxDialRetry
       }
-    ).catch((error: Error) => console.log(error.message));
+    ).catch((error: Error) => log(error.message));
   });
 }
 

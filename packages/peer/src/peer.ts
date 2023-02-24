@@ -86,6 +86,8 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     const relayPeerId = this._relayNodeMultiaddr.getPeerId();
     assert(relayPeerId);
 
+    console.log(`Using peer ${relayPeerId.toString()} as the primary relay node`);
+
     const initOptions: WebRTCDirectInit = {
       wrtc: nodejs ? wrtc : undefined, // Instantiation in nodejs
       enableSignalling: true,
