@@ -377,24 +377,26 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   _handleDiscovery (peer: PeerInfo, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): void {
     // Check connected peers as they are discovered repeatedly.
-    if (!this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
-      let isRelayPeer = false;
-      for (const multiaddr of peer.multiaddrs) {
-        if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
-          isRelayPeer = true;
-          break;
-        }
-      }
-
-      // Check relay connections limit if it's a relay peer
-      if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
-        // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
-        return;
-      }
-
-      console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
-      this._connectPeer(peer);
+    if (this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
+      return;
     }
+
+    let isRelayPeer = false;
+    for (const multiaddr of peer.multiaddrs) {
+      if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
+        isRelayPeer = true;
+        break;
+      }
+    }
+
+    // Check relay connections limit if it's a relay peer
+    if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
+      // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
+      return;
+    }
+
+    console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
+    this._connectPeer(peer);
   }
 
   async _handleConnect (connection: Connection, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
