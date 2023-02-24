@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "dev": "node dist/index.js",
     "create-peer": "node dist/cli/create-peer.js",
-    "relay-node": "node dist/cli/relay.js"
+    "relay-node": "DEBUG='laconic:*' node dist/cli/relay.js"
   },
   "dependencies": {
     "@cerc-io/libp2p": "0.42.2-laconic-0.1.1",
