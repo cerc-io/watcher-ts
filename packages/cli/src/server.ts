@@ -154,7 +154,8 @@ export class ServerCmd {
       RELAY_DEFAULT_PORT,
       RELAY_DEFAULT_MAX_DIAL_RETRY,
       RELAY_REDIAL_INTERVAL,
-      DEFAULT_PING_INTERVAL
+      DEFAULT_PING_INTERVAL,
+      DIAL_TIMEOUT
     } = await import('@cerc-io/peer');
 
     // Run the relay node if enabled
@@ -172,6 +173,7 @@ export class ServerCmd {
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
         relayPeers: relayConfig.relayPeers ?? [],
+        dialTimeout: relayConfig.dialTimeout ?? DIAL_TIMEOUT,
         pingInterval: relayConfig.pingInterval ?? DEFAULT_PING_INTERVAL,
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,

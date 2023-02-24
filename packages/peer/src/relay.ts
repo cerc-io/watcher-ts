@@ -16,7 +16,14 @@ import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 
-import { HOP_TIMEOUT, DEFAULT_PING_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
+import {
+  HOP_TIMEOUT,
+  DEFAULT_PING_TIMEOUT,
+  PUBSUB_DISCOVERY_INTERVAL,
+  PUBSUB_SIGNATURE_POLICY,
+  WEBRTC_PORT_RANGE,
+  MAX_CONCURRENT_DIALS_PER_PEER
+} from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
@@ -29,6 +36,7 @@ export interface RelayNodeInitConfig {
   peerIdObj?: PeerIdObj;
   announceDomain?: string;
   relayPeers: string[];
+  dialTimeout: number;
   pingInterval: number;
   pingTimeout?: number;
   redialInterval: number;
@@ -84,7 +92,9 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
       }
     },
     connectionManager: {
-      autoDial: false
+      maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
+      autoDial: false,
+      dialTimeout: init.dialTimeout
     },
     ping: {
       timeout: pingTimeout
