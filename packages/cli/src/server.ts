@@ -105,7 +105,7 @@ export class ServerCmd {
   async exec (
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
     typeDefs: TypeSource,
-    parseLibp2pMessage?: (peerId: string, data: any) => void
+    parseLibp2pMessage?: (log: debug.Debugger, peerId: string, data: any) => void
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -146,7 +146,7 @@ export class ServerCmd {
 
   async _startP2PNodes (
     p2pConfig: P2PConfig,
-    parseLibp2pMessage?: (peerId: string, data: any) => void
+    parseLibp2pMessage?: (log: debug.Debugger, peerId: string, data: any) => void
   ): Promise<void> {
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
     const {
@@ -206,7 +206,7 @@ export class ServerCmd {
 
       peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
-          parseLibp2pMessage(peerId.toString(), data);
+          parseLibp2pMessage(log, peerId.toString(), data);
         }
       });
 

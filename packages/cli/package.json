@@ -8,7 +8,7 @@
     "build": "yarn clean && tsc && yarn copy-assets",
     "clean": "rm -rf ./dist",
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/",
-    "chat": "node dist/chat.js"
+    "chat": "DEBUG='vulcanize:*, laconic:*' node dist/chat.js"
   },
   "dependencies": {
     "@cerc-io/peer": "^0.2.29",
