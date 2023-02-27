@@ -3,13 +3,10 @@
 // Copyright 2023 Vulcanize, Inc.
 //
 
-import * as readline from 'readline';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 import debug from 'debug';
 
-// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
-import { PeerId } from '@libp2p/interface-peer-id';
 import {
   PeerInitConfig,
   PeerIdObj
@@ -29,7 +26,7 @@ interface Arguments {
 }
 
 export class PeerCmd {
-  async exec (pubSubTopic?: string, parseLibp2pMessage?: (log: debug.Debugger, peerId: string, data: any) => void): Promise<void> {
+  async exec (pubSubTopic?: string, parseLibp2pMessage?: (log: debug.Debugger, peerId: string, data: any) => void): Promise<any> {
     const argv: Arguments = _getArgv();
 
     const { Peer } = await import('@cerc-io/peer');
@@ -50,7 +47,6 @@ export class PeerCmd {
     log(`Peer ID: ${peer.peerId?.toString()}`);
 
     // Subscribe this peer to a pubsub topic if provided
-    // Otherwise participate in the chat protocol
     if (pubSubTopic) {
       peer.subscribeTopic(pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
@@ -59,22 +55,9 @@ export class PeerCmd {
           log(`> ${peerId.toString()} > ${data}`);
         }
       });
-    } else {
-      peer.subscribeMessage((peerId: PeerId, message: string) => {
-        log(`> ${peerId.toString()} > ${message}`);
-      });
-
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-
-      rl.on('line', (input: string) => {
-        peer.broadcastMessage(input);
-      });
-
-      log('Reading input...');
     }
+
+    return peer;
   }
 }
 
