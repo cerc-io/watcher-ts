@@ -14,3 +14,4 @@ export * from './server';
 export * from './job-runner';
 export * from './index-block';
 export * from './fill';
+export * from './peer';
