@@ -43,7 +43,7 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
   ```bash
   # In packages/cli
-  yarn chat --relay-multiaddr <RELAY_MULTIADDR> --max-connections [MAX_CONNECTIONS] --dial-timeout [DIAL_TIMEOUT] --max-relay-connections [MAX_RELAY_CONNECTIONS] --peer-id-file [PEER_ID_FILE_PATH]
+  yarn chat --relay-multiaddr <RELAY_MULTIADDR> --max-connections [MAX_CONNECTIONS] --dial-timeout [DIAL_TIMEOUT] --max-relay-connections [MAX_RELAY_CONNECTIONS] --peer-id-file [PEER_ID_FILE_PATH] --enable-debug-info [ENABLE_DEBUG_INFO]
   ```
 
   * `relay-multiaddr (r)`: multiaddr of a primary hop enabled relay node
@@ -51,5 +51,6 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   * `dial-timeout`: timeout for dial to peers (ms)
   * `max-relay-connections`: max number of relay node connections for this peer
   * `peer-id-file (f)`: file path for peer id to be used (json)
+  * `enable-debug-info`: Whether to broadcast node's info over floodsub on request
 
 * The process starts reading from `stdin` and outputs messages from others peers over the `/chat/1.0.0` protocol to `stdout`.

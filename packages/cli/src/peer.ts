@@ -23,6 +23,7 @@ interface Arguments {
   dialTimeout: number;
   maxRelayConnections: number;
   peerIdFile: string;
+  enableDebugInfo: boolean;
 }
 
 export class PeerCmd {
@@ -57,6 +58,10 @@ export class PeerCmd {
       });
     }
 
+    if (argv.enableDebugInfo) {
+      peer.subscribeDebugInfo();
+    }
+
     return peer;
   }
 }
@@ -87,6 +92,11 @@ function _getArgv (): any {
       type: 'string',
       alias: 'f',
       describe: 'Peer id file path (json)'
+    },
+    enableDebugInfo: {
+      type: 'boolean',
+      describe: "Whether to broadcast node's info over floodsub on request",
+      default: false
     }
   }).argv;
 }

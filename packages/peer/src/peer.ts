@@ -342,9 +342,12 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     return unsubscribe;
   }
 
-  subscribeDebugInfo (handler: (peerId: PeerId, data: any) => void): void {
+  subscribeDebugInfo (handler?: (peerId: PeerId, data: any) => void): void {
     this.subscribeTopic(DEBUG_INFO_TOPIC, this._debugInfoRequestHandler.bind(this));
-    this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
+
+    if (handler) {
+      this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
+    }
   }
 
   isRelayPeerMultiaddr (multiaddrString: string): boolean {
