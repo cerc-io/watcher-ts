@@ -24,6 +24,7 @@ interface Arguments {
   pingInterval: number;
   redialInterval: number;
   maxDialRetry: number;
+  enableDebugInfo: boolean;
 }
 
 async function main (): Promise<void> {
@@ -63,7 +64,8 @@ async function main (): Promise<void> {
     dialTimeout: argv.dialTimeout,
     pingInterval: argv.pingInterval,
     redialInterval: argv.redialInterval,
-    maxDialRetry: argv.maxDialRetry
+    maxDialRetry: argv.maxDialRetry,
+    enableDebugInfo: argv.enableDebugInfo
   };
   await createRelayNode(relayNodeInit);
 }
@@ -118,6 +120,11 @@ function _getArgv (): Arguments {
       type: 'number',
       describe: 'Maximum number of dial retries to be attempted to a relay peer',
       default: RELAY_DEFAULT_MAX_DIAL_RETRY
+    },
+    enableDebugInfo: {
+      type: 'boolean',
+      describe: "Whether to broadcast node's info over floodsub on request",
+      default: false
     }
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
   }).parseSync();

@@ -5,16 +5,21 @@
 import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import wrtc from 'wrtc';
 import debug from 'debug';
+import assert from 'assert';
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { WebRTCDirectNodeType, webRTCDirect } from '@cerc-io/webrtc-direct';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import type { Message } from '@libp2p/interface-pubsub';
 import type { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON } from '@libp2p/peer-id-factory';
+import { PrometheusMetrics } from '@cerc-io/prometheus-metrics';
 
 import {
   HOP_TIMEOUT,
@@ -22,11 +27,13 @@ import {
   PUBSUB_DISCOVERY_INTERVAL,
   PUBSUB_SIGNATURE_POLICY,
   WEBRTC_PORT_RANGE,
-  MAX_CONCURRENT_DIALS_PER_PEER
+  MAX_CONCURRENT_DIALS_PER_PEER,
+  DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
+import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse } from './utils/debug-info.js';
 
 const log = debug('laconic:relay');
 
@@ -41,6 +48,7 @@ export interface RelayNodeInitConfig {
   pingTimeout?: number;
   redialInterval: number;
   maxDialRetry: number;
+  enableDebugInfo: boolean;
 }
 
 export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2p> {
@@ -57,6 +65,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   }
 
   const pingTimeout = init.pingTimeout ?? DEFAULT_PING_TIMEOUT;
+
+  const metrics = new PrometheusMetrics();
 
   const node = await createLibp2p({
     peerId,
@@ -98,7 +108,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     },
     ping: {
       timeout: pingTimeout
-    }
+    },
+    metrics: () => metrics
   });
 
   const peerHeartbeatChecker = new PeerHearbeatChecker(
@@ -159,6 +170,10 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     await _dialRelayPeers(node, init.relayPeers, init.maxDialRetry, init.redialInterval);
   }
 
+  if (init.enableDebugInfo) {
+    await _subscribeToDebugTopic(node, peerHeartbeatChecker, metrics);
+  }
+
   return node;
 }
 
@@ -181,4 +196,64 @@ async function _handleDeadConnections (node: Libp2p, remotePeerId: PeerId): Prom
   log(`Closing connections for ${remotePeerId}`);
   await node.hangUp(remotePeerId);
   log('Closed');
+}
+
+async function _subscribeToDebugTopic (node: Libp2p, peerHeartbeatChecker: PeerHearbeatChecker, metrics: PrometheusMetrics): Promise<void> {
+  node.pubsub.subscribe(DEBUG_INFO_TOPIC);
+
+  const debugInfoRequestHandler = async (peerId: PeerId, msg: any): Promise<void> => {
+    const debugMsg = msg as DebugMsg;
+    const msgType = debugMsg.type;
+
+    if (msgType === 'Request') {
+      const peerInfo: DebugRelayInfo = await _getRelayPeerInfo(node, peerHeartbeatChecker, metrics);
+      const response: DebugResponse = {
+        type: 'Response',
+        dst: peerId.toString(),
+        peerInfo
+      };
+
+      await node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(response)));
+    }
+  };
+
+  // Listen for pubsub messages
+  node.pubsub.addEventListener('message', (evt) => {
+    const msg: Message = evt.detail;
+
+    // Messages should be signed since globalSignaturePolicy is set to 'StrictSign'
+    assert(msg.type === 'signed');
+
+    if (msg.topic === DEBUG_INFO_TOPIC) {
+      const dataObj = JSON.parse(uint8ArrayToString(msg.data));
+      debugInfoRequestHandler(msg.from, dataObj);
+    }
+  });
+}
+
+async function _getRelayPeerInfo (node: Libp2p, peerHeartbeatChecker: PeerHearbeatChecker, metrics: PrometheusMetrics): Promise<any> {
+  const selfInfo: SelfInfo = {
+    peerId: node.peerId.toString(),
+    multiaddrs: node.getMultiaddrs().map(multiaddr => multiaddr.toString())
+  };
+
+  const connInfo: ConnectionInfo[] = node.getConnections().map(connection => {
+    return {
+      id: connection.id,
+      peerId: connection.remotePeer.toString(),
+      multiaddr: connection.remoteAddr.toString(),
+      direction: connection.stat.direction,
+      status: connection.stat.status,
+      type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? 'relayed' : 'direct',
+      latency: peerHeartbeatChecker.getLatencyData(connection.remotePeer)
+    };
+  });
+
+  const metricsMap = await metrics.getMetricsAsMap();
+
+  return {
+    selfInfo,
+    connInfo,
+    metrics: metricsMap
+  };
 }

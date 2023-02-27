@@ -45,7 +45,7 @@ import {
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
-import { ConnectionInfo, DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, SelfInfo } from './utils/debug-info.js';
+import { DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './utils/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 
@@ -118,13 +118,13 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     assert(this.node);
     assert(this.peerId);
 
-    const selfInfo: SelfInfo = {
+    const selfInfo: PeerSelfInfo = {
       peerId: this.peerId.toString(),
       primaryRelayNode: this.relayNodeMultiaddr.toString(),
       multiaddrs: this.node.getMultiaddrs().map(multiaddr => multiaddr.toString())
     };
 
-    const connInfo: ConnectionInfo[] = this.node.getConnections().map(connection => {
+    const connInfo: PeerConnectionInfo[] = this.node.getConnections().map(connection => {
       return {
         id: connection.id,
         peerId: connection.remotePeer.toString(),

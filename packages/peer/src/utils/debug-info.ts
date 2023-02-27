@@ -7,8 +7,11 @@ import { RegistryMetricData } from '@cerc-io/prometheus-metrics';
 
 export interface SelfInfo {
   peerId: string;
-  primaryRelayNode: string;
   multiaddrs: string[];
+}
+
+export interface PeerSelfInfo extends SelfInfo {
+  primaryRelayNode: string;
 }
 
 export interface ConnectionInfo {
@@ -17,12 +20,21 @@ export interface ConnectionInfo {
   multiaddr: string;
   direction: Direction;
   status: string;
-  type: string;
-  nodeType: string;
   latency: number[];
+  type: string;
+}
+
+export interface PeerConnectionInfo extends ConnectionInfo {
+  nodeType: string;
 }
 
 export interface DebugPeerInfo {
+  selfInfo: PeerSelfInfo;
+  connInfo: PeerConnectionInfo[];
+  metrics: Map<string, RegistryMetricData<any>>;
+}
+
+export interface DebugRelayInfo {
   selfInfo: SelfInfo;
   connInfo: ConnectionInfo[];
   metrics: Map<string, RegistryMetricData<any>>;
@@ -35,7 +47,7 @@ export interface DebugRequest {
 export interface DebugResponse {
   type: 'Response',
   dst: string,
-  peerInfo: DebugPeerInfo
+  peerInfo: DebugPeerInfo | DebugRelayInfo
 }
 
 export type DebugMsg = DebugRequest | DebugResponse
