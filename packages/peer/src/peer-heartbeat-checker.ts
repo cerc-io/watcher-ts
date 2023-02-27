@@ -4,12 +4,20 @@
 
 import { Libp2p } from '@cerc-io/libp2p';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import debug from 'debug';
 
-import { PING_INTERVAL } from './constants.js';
+import { DEFAULT_PING_INTERVAL, DEFAULT_PING_TIMEOUT } from './constants.js';
+
+const log = debug('laconic:peer-heartbeat-checker');
 
 interface PeerData {
   intervalId: NodeJS.Timer;
   latencyValues: Array<number>;
+}
+
+interface PeerHearbeatCheckerOptions {
+  pingInterval: number;
+  pingTimeout: number;
 }
 
 /**
@@ -18,11 +26,13 @@ interface PeerData {
 export class PeerHearbeatChecker {
   _node: Libp2p;
   _pingInterval: number;
+  _pingTimeout: number;
   _peerMap: Map<string, PeerData> = new Map()
 
-  constructor (node: Libp2p, pingInterval = PING_INTERVAL) {
+  constructor (node: Libp2p, options: Partial<PeerHearbeatCheckerOptions> = {}) {
     this._node = node;
-    this._pingInterval = pingInterval;
+    this._pingInterval = options.pingInterval ?? DEFAULT_PING_INTERVAL;
+    this._pingTimeout = options.pingTimeout ?? DEFAULT_PING_TIMEOUT;
   }
 
   /**
@@ -101,24 +111,45 @@ export class PeerHearbeatChecker {
    * @param handleDisconnect
    */
   async _validatePing (peerId: PeerId, handleDisconnect: () => Promise<void>): Promise<void> {
-    try {
-      // Ping remote peer
-      const latency = await this._node.ping(peerId);
+    // Number of retries depends on the ping interval and ping timeout
+    const pingRetriesOnFail = Math.floor(this._pingInterval / this._pingTimeout);
+    let pingSuccess = false;
 
-      const latencyValues = this._peerMap.get(peerId.toString())?.latencyValues;
+    // Loop to retry ping on failure and confirm that there is no connection
+    // Loop breaks on a successful ping pong
+    for (let i = 0; !pingSuccess && (i < pingRetriesOnFail); i++) {
+      const retryDelayPromise = new Promise(resolve => setTimeout(resolve, this._pingTimeout));
 
-      if (latencyValues) {
-        const length = latencyValues.unshift(latency);
+      try {
+        // Ping remote peer
+        const latency = await this._node.ping(peerId);
+        pingSuccess = true;
 
-        if (length > 5) {
-          latencyValues.pop();
+        const latencyValues = this._peerMap.get(peerId.toString())?.latencyValues;
+
+        if (latencyValues) {
+          // Update latency values with latest
+          const length = latencyValues.unshift(latency);
+
+          if (length > 5) {
+            // Pop oldest latency value from list
+            latencyValues.pop();
+          }
         }
-      }
-    } catch (err) {
-      // On error i.e. no pong
-      console.log(`Not connected to peer ${peerId.toString()}`);
+      } catch (err: any) {
+        // On error i.e. no pong
+        log(err?.message);
 
-      await handleDisconnect();
+        // Retry after a delay of pingTimeout in case ping fails immediately
+        await retryDelayPromise;
+      }
     }
+
+    if (pingSuccess) {
+      return;
+    }
+
+    console.log(`Not connected to peer ${peerId.toString()}`);
+    await handleDisconnect();
   }
 }

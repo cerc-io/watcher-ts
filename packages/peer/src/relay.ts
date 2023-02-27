@@ -16,7 +16,14 @@ import { multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON } from '@libp2p/peer-id-factory';
 
-import { HOP_TIMEOUT, PUBSUB_DISCOVERY_INTERVAL, PUBSUB_SIGNATURE_POLICY, WEBRTC_PORT_RANGE } from './constants.js';
+import {
+  HOP_TIMEOUT,
+  DEFAULT_PING_TIMEOUT,
+  PUBSUB_DISCOVERY_INTERVAL,
+  PUBSUB_SIGNATURE_POLICY,
+  WEBRTC_PORT_RANGE,
+  MAX_CONCURRENT_DIALS_PER_PEER
+} from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
@@ -29,7 +36,9 @@ export interface RelayNodeInitConfig {
   peerIdObj?: PeerIdObj;
   announceDomain?: string;
   relayPeers: string[];
+  dialTimeout: number;
   pingInterval: number;
+  pingTimeout?: number;
   redialInterval: number;
   maxDialRetry: number;
 }
@@ -46,6 +55,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   if (init.peerIdObj) {
     peerId = await createFromJSON(init.peerIdObj);
   }
+
+  const pingTimeout = init.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
   const node = await createLibp2p({
     peerId,
@@ -81,19 +92,30 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
       }
     },
     connectionManager: {
-      autoDial: false
+      maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
+      autoDial: false,
+      dialTimeout: init.dialTimeout
+    },
+    ping: {
+      timeout: pingTimeout
     }
   });
 
-  const peerHeartbeatChecker = new PeerHearbeatChecker(node, init.pingInterval);
+  const peerHeartbeatChecker = new PeerHearbeatChecker(
+    node,
+    {
+      pingInterval: init.pingInterval,
+      pingTimeout
+    }
+  );
 
-  console.log(`Relay node started with id ${node.peerId.toString()}`);
-  console.log('Listening on:');
-  node.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
+  log(`Relay node started with id ${node.peerId.toString()}`);
+  log('Listening on:');
+  node.getMultiaddrs().forEach((ma) => log(ma.toString()));
 
   // Listen for peers connection
   node.addEventListener('peer:connect', async (evt) => {
-    // console.log('event peer:connect', evt);
+    // log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
     log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
@@ -109,7 +131,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   // peer:disconnect event is trigerred when all connections to a peer close
   // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
   node.addEventListener('peer:disconnect', async (evt) => {
-    log('event peer:disconnect', evt);
+    // log('event peer:disconnect', evt);
 
     // Log disconnected peer
     const connection: Connection = evt.detail;
@@ -128,12 +150,12 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
           redialInterval: init.redialInterval,
           maxRetry: init.maxDialRetry
         }
-      ).catch((error: Error) => console.log(error.message));
+      ).catch((error: Error) => log(error.message));
     }
   });
 
   if (init.relayPeers.length) {
-    console.log('Dialling relay peers');
+    log('Dialling relay peers');
     await _dialRelayPeers(node, init.relayPeers, init.maxDialRetry, init.redialInterval);
   }
 
@@ -150,7 +172,7 @@ async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialR
         redialInterval,
         maxRetry: maxDialRetry
       }
-    ).catch((error: Error) => console.log(error.message));
+    ).catch((error: Error) => log(error.message));
   });
 }
 

@@ -5,7 +5,14 @@ import path from 'path';
 
 import { RelayNodeInitConfig, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
-import { RELAY_DEFAULT_HOST, RELAY_DEFAULT_PORT, RELAY_DEFAULT_MAX_DIAL_RETRY, RELAY_REDIAL_INTERVAL, PING_INTERVAL } from '../constants.js';
+import {
+  RELAY_DEFAULT_HOST,
+  RELAY_DEFAULT_PORT,
+  RELAY_DEFAULT_MAX_DIAL_RETRY,
+  RELAY_REDIAL_INTERVAL,
+  DEFAULT_PING_INTERVAL,
+  DIAL_TIMEOUT
+} from '../constants.js';
 
 interface Arguments {
   host: string;
@@ -13,6 +20,7 @@ interface Arguments {
   announce?: string;
   peerIdFile?: string;
   relayPeers?: string;
+  dialTimeout: number;
   pingInterval: number;
   redialInterval: number;
   maxDialRetry: number;
@@ -52,6 +60,7 @@ async function main (): Promise<void> {
     peerIdObj,
     announceDomain: argv.announce,
     relayPeers: relayPeersList,
+    dialTimeout: argv.dialTimeout,
     pingInterval: argv.pingInterval,
     redialInterval: argv.redialInterval,
     maxDialRetry: argv.maxDialRetry
@@ -93,7 +102,12 @@ function _getArgv (): Arguments {
     pingInterval: {
       type: 'number',
       describe: 'Interval to check relay peer connections using ping (ms)',
-      default: PING_INTERVAL
+      default: DEFAULT_PING_INTERVAL
+    },
+    dialTimeout: {
+      type: 'number',
+      describe: 'Timeout for dial to relay peers (ms)',
+      default: DIAL_TIMEOUT
     },
     redialInterval: {
       type: 'number',

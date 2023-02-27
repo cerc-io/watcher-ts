@@ -53,6 +53,9 @@ export interface RelayConfig {
   // Relay peer multiaddr(s) list
   relayPeers?: string[];
 
+  // Timeout (ms) for dial to relay peers
+  dialTimeout?: number;
+
   // Interval in ms to check relay peer connections using ping
   pingInterval?: number;
 
@@ -88,6 +91,9 @@ export interface PeerConfig {
 
   // Timeout (ms) for dial to peers
   dialTimeout?: number;
+
+  // Peer id file path (json)
+  peerIdFile?: string;
 }
 
 // P2P config

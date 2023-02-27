@@ -38,7 +38,7 @@ import {
   RELAY_TAG,
   RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
-  PING_TIMEOUT
+  DEFAULT_PING_TIMEOUT
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
@@ -72,7 +72,6 @@ export class Peer {
   _relayNodeMultiaddr: Multiaddr
   _numRelayConnections = 0
 
-  _pingInterval?: number
   _relayRedialInterval?: number
   _maxRelayConnections?: number
 
@@ -86,6 +85,8 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
     const relayPeerId = this._relayNodeMultiaddr.getPeerId();
     assert(relayPeerId);
+
+    console.log(`Using peer ${relayPeerId.toString()} as the primary relay node`);
 
     const initOptions: WebRTCDirectInit = {
       wrtc: nodejs ? wrtc : undefined, // Instantiation in nodejs
@@ -113,9 +114,9 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   }
 
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
-    this._pingInterval = initOptions.pingInterval;
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
+    const pingTimeout = initOptions.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
     try {
       let peerId: PeerId | undefined;
@@ -156,7 +157,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
           keepMultipleConnections: true // Set true to get connections with multiple multiaddr
         },
         ping: {
-          timeout: initOptions.pingTimeout ?? PING_TIMEOUT
+          timeout: pingTimeout
         },
         metrics: () => this._metrics
       });
@@ -166,7 +167,13 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     }
 
     console.log('libp2p node created', this._node);
-    this._peerHeartbeatChecker = new PeerHearbeatChecker(this._node, this._pingInterval);
+    this._peerHeartbeatChecker = new PeerHearbeatChecker(
+      this._node,
+      {
+        pingInterval: initOptions.pingInterval,
+        pingTimeout
+      }
+    );
 
     // Dial to the HOP enabled primary relay node
     await this._dialRelay(this._relayRedialInterval);
@@ -399,7 +406,9 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     // Log connected peer
     console.log(`Connected to ${remotePeerIdString} using multiaddr ${remoteAddrString}`);
 
-    if (this.isRelayPeerMultiaddr(remoteAddrString)) {
+    const isRemoteARelayPeer = this.isRelayPeerMultiaddr(remoteAddrString);
+
+    if (isRemoteARelayPeer) {
       this._numRelayConnections++;
 
       // Check if relay connections limit has already been reached
@@ -411,22 +420,22 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     }
 
     // Manage connections and streams
-    // Check if peer id is smaller to break symmetry
-    if (this._node.peerId.toString() < remotePeerIdString) {
+    // Check if peer id is smaller to break symmetry in case of peer nodes
+    if (isRemoteARelayPeer || this._node.peerId.toString() < remotePeerIdString) {
       const remoteConnections = this._node.getConnections(remotePeerId);
 
       // Keep only one connection with a peer
       if (remoteConnections.length > 1) {
         // Close new connection if using relayed multiaddr
         if (connection.remoteAddr.protoNames().includes(P2P_CIRCUIT_ID)) {
-          console.log('Closing new relayed connection in favor of existing connection');
+          console.log(`Closing new relayed connection with ${remotePeerIdString} in favor of existing connection`);
           await connection.close();
           console.log('Closed');
 
           return;
         }
 
-        console.log('Closing exisiting connections in favor of new webrtc connection');
+        console.log(`Closing exisiting connections with ${remotePeerIdString} in favor of new webrtc connection`);
         // Close existing connections if new connection is not using relayed multiaddr (so it is a webrtc connection)
         const closeConnectionPromises = remoteConnections.filter(remoteConnection => remoteConnection.id !== connection.id)
           .map(remoteConnection => remoteConnection.close());

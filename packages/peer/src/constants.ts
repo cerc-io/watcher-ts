@@ -22,11 +22,11 @@ export const RELAY_TAG = {
 };
 
 // Interval in ms to check peer connections using ping
-export const PING_INTERVAL = 10000; // 10 seconds
+export const DEFAULT_PING_INTERVAL = 10000; // 10 seconds
 
 // Ping timeout used to check if connection is alive
-// Should be less than PING_INTERVAL
-export const PING_TIMEOUT = 5000; // 5 seconds
+// Should be less than DEFAULT_PING_INTERVAL
+export const DEFAULT_PING_TIMEOUT = 3000; // 3 seconds
 
 // Redial interval (in ms) to relay node on connection failure
 export const RELAY_REDIAL_INTERVAL = 5000; // 5 seconds
@@ -64,4 +64,4 @@ export const RELAY_DEFAULT_HOST = '127.0.0.1';
 export const RELAY_DEFAULT_PORT = 9090;
 
 // Default max number of dial retries to a relay peer
-export const RELAY_DEFAULT_MAX_DIAL_RETRY = 5;
+export const RELAY_DEFAULT_MAX_DIAL_RETRY = 10;
