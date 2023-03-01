@@ -33,7 +33,7 @@ import {
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
-import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse } from './utils/debug-info.js';
+import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse } from './types/debug-info.js';
 
 const log = debug('laconic:relay');
 

@@ -45,7 +45,7 @@ import {
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
-import { DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './utils/debug-info.js';
+import { DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
