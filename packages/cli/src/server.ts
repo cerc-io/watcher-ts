@@ -178,7 +178,7 @@ export class ServerCmd {
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
         peerIdObj,
-        enableDebugInfo: relayConfig.enableDebugInfo ?? false
+        enableDebugInfo: relayConfig.enableDebugInfo
       };
       await createRelayNode(relayNodeInit);
     }

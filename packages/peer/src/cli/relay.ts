@@ -24,7 +24,7 @@ interface Arguments {
   pingInterval: number;
   redialInterval: number;
   maxDialRetry: number;
-  enableDebugInfo: boolean;
+  enableDebugInfo?: boolean;
 }
 
 async function main (): Promise<void> {
@@ -123,8 +123,7 @@ function _getArgv (): Arguments {
     },
     enableDebugInfo: {
       type: 'boolean',
-      describe: "Whether to broadcast node's info over floodsub on request",
-      default: false
+      describe: "Whether to broadcast node's info over floodsub on request"
     }
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
   }).parseSync();

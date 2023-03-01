@@ -48,7 +48,7 @@ export interface RelayNodeInitConfig {
   pingTimeout?: number;
   redialInterval: number;
   maxDialRetry: number;
-  enableDebugInfo: boolean;
+  enableDebugInfo?: boolean;
 }
 
 export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2p> {
