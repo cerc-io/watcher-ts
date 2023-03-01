@@ -201,7 +201,8 @@ export class ServerCmd {
         maxRelayConnections: peerConfig.maxRelayConnections,
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
-        dialTimeout: peerConfig.dialTimeout
+        dialTimeout: peerConfig.dialTimeout,
+        enableDebugInfo: peerConfig.enableDebugInfo
       };
       await peer.init(peerNodeInit, peerIdObj);
 

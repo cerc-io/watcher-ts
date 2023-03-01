@@ -97,6 +97,9 @@ export interface PeerConfig {
 
   // Peer id file path (json)
   peerIdFile?: string;
+
+  // Participate in exchange of debug info over floodsub
+  enableDebugInfo?: boolean;
 }
 
 // P2P config

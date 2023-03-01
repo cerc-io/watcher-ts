@@ -171,6 +171,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   }
 
   if (init.enableDebugInfo) {
+    log('Debug info enabled');
     await _subscribeToDebugTopic(node, peerHeartbeatChecker, metrics);
   }
 

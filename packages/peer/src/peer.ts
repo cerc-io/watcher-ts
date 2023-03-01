@@ -48,6 +48,7 @@ import { dialWithRetry } from './utils/index.js';
 import { DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './utils/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
+const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
 
 export interface PeerIdObj {
   id: string;
@@ -63,6 +64,7 @@ export interface PeerInitConfig {
   maxConnections?: number;
   minConnections?: number;
   dialTimeout?: number;
+  enableDebugInfo?: boolean;
 }
 
 export class Peer {
@@ -75,6 +77,8 @@ export class Peer {
 
   _relayRedialInterval?: number
   _maxRelayConnections?: number
+
+  _debugInfoEnabled?: boolean
 
 _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
@@ -114,6 +118,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     return this._metrics;
   }
 
+  // TODO: Refactor to be reused in react apps
   async getPeerInfo (): Promise<DebugPeerInfo> {
     assert(this.node);
     assert(this.peerId);
@@ -151,6 +156,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
+    this._debugInfoEnabled = initOptions.enableDebugInfo;
     const pingTimeout = initOptions.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
     try {
@@ -262,6 +268,11 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     this._node.pubsub.addEventListener('message', (evt) => {
       this._handlePubSubMessage(evt.detail);
     });
+
+    if (this._debugInfoEnabled) {
+      console.log('Debug info enabled');
+      this._registerDebugInfoRequestHandler();
+    }
   }
 
   async close (): Promise<void> {
@@ -295,6 +306,10 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   async requestPeerInfo (): Promise<void> {
     assert(this._node);
+
+    if (!this._debugInfoEnabled) {
+      throw new Error(ERR_DEBUG_INFO_NOT_ENABLED);
+    }
 
     const request: DebugRequest = { type: 'Request' };
     await this._node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(request)));
@@ -342,12 +357,12 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     return unsubscribe;
   }
 
-  subscribeDebugInfo (handler?: (peerId: PeerId, data: any) => void): void {
-    this.subscribeTopic(DEBUG_INFO_TOPIC, this._debugInfoRequestHandler.bind(this));
-
-    if (handler) {
-      this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
+  subscribeDebugInfo (handler: (peerId: PeerId, data: any) => void): void {
+    if (!this._debugInfoEnabled) {
+      throw new Error(ERR_DEBUG_INFO_NOT_ENABLED);
     }
+
+    this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
   }
 
   isRelayPeerMultiaddr (multiaddrString: string): boolean {
@@ -622,20 +637,23 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     });
   }
 
-  async _debugInfoRequestHandler (peerId: PeerId, msg: any): Promise<void> {
-    const debugMsg = msg as DebugMsg;
-    const msgType = debugMsg.type;
+  _registerDebugInfoRequestHandler (): void {
+    this.subscribeTopic(DEBUG_INFO_TOPIC, async (peerId: PeerId, msg: any): Promise<void> => {
+      const debugMsg = msg as DebugMsg;
+      const msgType = debugMsg.type;
 
-    if (msgType === 'Request') {
-      const peerInfo = await this.getPeerInfo();
-      const response: DebugResponse = {
-        type: 'Response',
-        dst: peerId.toString(),
-        peerInfo
-      };
+      if (msgType === 'Request') {
+        console.log('got a debug info request from', peerId.toString());
+        const peerInfo = await this.getPeerInfo();
+        const response: DebugResponse = {
+          type: 'Response',
+          dst: peerId.toString(),
+          peerInfo
+        };
 
-      await this.floodMessage(DEBUG_INFO_TOPIC, response);
-    }
+        await this.floodMessage(DEBUG_INFO_TOPIC, response);
+      }
+    });
   }
 }
 

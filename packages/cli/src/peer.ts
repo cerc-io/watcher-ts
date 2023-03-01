@@ -41,7 +41,8 @@ export class PeerCmd {
     const peerNodeInit: PeerInitConfig = {
       maxConnections: argv.maxConnections,
       dialTimeout: argv.dialTimeout,
-      maxRelayConnections: argv.maxRelayConnections
+      maxRelayConnections: argv.maxRelayConnections,
+      enableDebugInfo: argv.enableDebugInfo
     };
 
     await peer.init(peerNodeInit, peerIdObj);
@@ -56,10 +57,6 @@ export class PeerCmd {
           log(`> ${peerId.toString()} > ${data}`);
         }
       });
-    }
-
-    if (argv.enableDebugInfo) {
-      peer.subscribeDebugInfo();
     }
 
     return peer;
@@ -95,7 +92,7 @@ function _getArgv (): any {
     },
     enableDebugInfo: {
       type: 'boolean',
-      describe: "Whether to broadcast node's info over floodsub on request",
+      describe: 'Whether to participate in exchanging debug info over floodsub',
       default: false
     }
   }).argv;
