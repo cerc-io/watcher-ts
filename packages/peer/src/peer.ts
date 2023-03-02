@@ -45,7 +45,7 @@ import {
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
-import { DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
+import { ConnectionType, DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
@@ -130,18 +130,23 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     };
 
     const connInfo: PeerConnectionInfo[] = this.node.getConnections().map(connection => {
-      return {
+      const connInfo: PeerConnectionInfo = {
         id: connection.id,
-        peerId: connection.remotePeer.toString(),
         multiaddr: connection.remoteAddr.toString(),
         direction: connection.stat.direction,
         status: connection.stat.status,
-        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? 'relayed' : 'direct',
-        nodeType: this.isRelayPeerMultiaddr(connection.remoteAddr.toString())
-          ? this.isPrimaryRelay(connection.remoteAddr.toString()) ? 'Relay (Primary)' : 'Relay (Secondary)'
-          : 'Peer',
+        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
+        peerId: connection.remotePeer.toString(),
+        isPeerRelay: this.isRelayPeerMultiaddr(connection.remoteAddr.toString()),
+        isPeerRelayPrimary: this.isPrimaryRelay(connection.remoteAddr.toString()),
         latency: this.getLatencyData(connection.remotePeer)
       };
+
+      if (connInfo.type === ConnectionType.Relayed) {
+        connInfo.hopRelayPeerId = connection.remoteAddr.decapsulate('p2p-circuit/p2p').getPeerId();
+      }
+
+      return connInfo;
     });
 
     const metrics = await this.metrics.getMetricsAsMap();

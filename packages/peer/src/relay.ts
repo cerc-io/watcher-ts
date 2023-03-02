@@ -33,7 +33,7 @@ import {
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { dialWithRetry } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
-import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse } from './types/debug-info.js';
+import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse, ConnectionType } from './types/debug-info.js';
 
 const log = debug('laconic:relay');
 
@@ -245,7 +245,7 @@ async function _getRelayPeerInfo (node: Libp2p, peerHeartbeatChecker: PeerHearbe
       multiaddr: connection.remoteAddr.toString(),
       direction: connection.stat.direction,
       status: connection.stat.status,
-      type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? 'relayed' : 'direct',
+      type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
       latency: peerHeartbeatChecker.getLatencyData(connection.remotePeer)
     };
   });

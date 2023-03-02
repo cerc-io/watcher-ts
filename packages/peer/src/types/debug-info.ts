@@ -14,6 +14,11 @@ export interface PeerSelfInfo extends SelfInfo {
   primaryRelayNode: string;
 }
 
+export enum ConnectionType {
+  Relayed = 'relayed',
+  Direct = 'direct'
+}
+
 export interface ConnectionInfo {
   id: string;
   peerId: string;
@@ -21,11 +26,13 @@ export interface ConnectionInfo {
   direction: Direction;
   status: string;
   latency: number[];
-  type: string;
+  type: ConnectionType;
 }
 
 export interface PeerConnectionInfo extends ConnectionInfo {
-  nodeType: string;
+  isPeerRelay: boolean;
+  isPeerRelayPrimary: boolean;
+  hopRelayPeerId?: string | null;
 }
 
 export interface DebugPeerInfo {
