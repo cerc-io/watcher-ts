@@ -99,18 +99,8 @@ export const debugInfoRequestHandler = async (
       peerInfo
     };
 
-    await floodMessage(node, DEBUG_INFO_TOPIC, response);
+    await node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(response)));
   }
-};
-
-/**
- * Method to send messages over floodsub
- * @param node
- * @param topic
- * @param msg
- */
-export const floodMessage = async (node: Libp2p, topic: string, msg: any) => {
-  await node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
 };
 
 /**

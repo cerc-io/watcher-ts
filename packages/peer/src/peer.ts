@@ -44,7 +44,7 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, floodMessage, getConnectionsInfo, getSelfInfo } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getSelfInfo } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
@@ -262,8 +262,8 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     assert(this.node);
     assert(this.peerId);
 
-    const selfInfo: PeerSelfInfo = this.getSelfInfo();
-    const connInfo: PeerConnectionInfo[] = this.getConnectionsInfo();
+    const selfInfo: PeerSelfInfo = this.getPeerSelfInfo();
+    const connInfo: PeerConnectionInfo[] = this.getPeerConnectionsInfo();
     const metrics = await this.metrics.getMetricsAsMap();
 
     return {
@@ -273,7 +273,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     };
   }
 
-  getSelfInfo (): PeerSelfInfo {
+  getPeerSelfInfo (): PeerSelfInfo {
     assert(this._node);
 
     const selfInfo = getSelfInfo(this._node);
@@ -285,7 +285,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     };
   }
 
-  getConnectionsInfo (): PeerConnectionInfo[] {
+  getPeerConnectionsInfo (): PeerConnectionInfo[] {
     assert(this._node);
     assert(this._peerHeartbeatChecker);
     const connectionsInfo = getConnectionsInfo(this._node, this._peerHeartbeatChecker);
@@ -313,7 +313,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   async floodMessage (topic: string, msg: any): Promise<void> {
     assert(this._node);
-    await floodMessage(this._node, topic, msg);
+    await this._node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
   }
 
   async requestPeerInfo (): Promise<void> {
