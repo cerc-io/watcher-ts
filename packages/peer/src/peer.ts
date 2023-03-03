@@ -118,46 +118,6 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     return this._metrics;
   }
 
-  // TODO: Refactor to be reused in react apps
-  async getPeerInfo (): Promise<DebugPeerInfo> {
-    assert(this.node);
-    assert(this.peerId);
-
-    const selfInfo: PeerSelfInfo = {
-      peerId: this.peerId.toString(),
-      primaryRelayNode: this.relayNodeMultiaddr.toString(),
-      multiaddrs: this.node.getMultiaddrs().map(multiaddr => multiaddr.toString())
-    };
-
-    const connInfo: PeerConnectionInfo[] = this.node.getConnections().map(connection => {
-      const connInfo: PeerConnectionInfo = {
-        id: connection.id,
-        multiaddr: connection.remoteAddr.toString(),
-        direction: connection.stat.direction,
-        status: connection.stat.status,
-        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
-        peerId: connection.remotePeer.toString(),
-        isPeerRelay: this.isRelayPeerMultiaddr(connection.remoteAddr.toString()),
-        isPeerRelayPrimary: this.isPrimaryRelay(connection.remoteAddr.toString()),
-        latency: this.getLatencyData(connection.remotePeer)
-      };
-
-      if (connInfo.type === ConnectionType.Relayed) {
-        connInfo.hopRelayPeerId = connection.remoteAddr.decapsulate('p2p-circuit/p2p').getPeerId();
-      }
-
-      return connInfo;
-    });
-
-    const metrics = await this.metrics.getMetricsAsMap();
-
-    return {
-      selfInfo,
-      connInfo,
-      metrics
-    };
-  }
-
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
@@ -296,6 +256,59 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     remotePeerIds.forEach(remotePeerId => this._peerHeartbeatChecker?.stop(remotePeerId));
     const hangUpPromises = remotePeerIds.map(async peerId => this._node?.hangUp(peerId));
     await Promise.all(hangUpPromises);
+  }
+
+  async getInfo (): Promise<DebugPeerInfo> {
+    assert(this.node);
+    assert(this.peerId);
+
+    const selfInfo: PeerSelfInfo = this.getSelfInfo();
+
+    const connInfo: PeerConnectionInfo[] = this.getConnectionsInfo();
+
+    const metrics = await this.metrics.getMetricsAsMap();
+
+    return {
+      selfInfo,
+      connInfo,
+      metrics
+    };
+  }
+
+  getSelfInfo (): PeerSelfInfo {
+    assert(this.node);
+    assert(this.peerId);
+
+    return {
+      peerId: this.peerId.toString(),
+      primaryRelayMultiaddr: this.relayNodeMultiaddr.toString(),
+      primaryRelayPeerId: this.relayNodeMultiaddr.getPeerId(),
+      multiaddrs: this.node.getMultiaddrs().map(multiaddr => multiaddr.toString())
+    };
+  }
+
+  getConnectionsInfo (): PeerConnectionInfo[] {
+    assert(this.node);
+
+    return this.node.getConnections().map(connection => {
+      const connInfo: PeerConnectionInfo = {
+        id: connection.id,
+        multiaddr: connection.remoteAddr.toString(),
+        direction: connection.stat.direction,
+        status: connection.stat.status,
+        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
+        peerId: connection.remotePeer.toString(),
+        isPeerRelay: this.isRelayPeerMultiaddr(connection.remoteAddr.toString()),
+        isPeerRelayPrimary: this.isPrimaryRelay(connection.remoteAddr.toString()),
+        latency: this.getLatencyData(connection.remotePeer)
+      };
+
+      if (connInfo.type === ConnectionType.Relayed) {
+        connInfo.hopRelayPeerId = connection.remoteAddr.decapsulate('p2p-circuit/p2p').getPeerId();
+      }
+
+      return connInfo;
+    });
   }
 
   broadcastMessage (message: any): void {
@@ -649,7 +662,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
       if (msgType === 'Request') {
         console.log('got a debug info request from', peerId.toString());
-        const peerInfo = await this.getPeerInfo();
+        const peerInfo = await this.getInfo();
         const response: DebugResponse = {
           type: 'Response',
           dst: peerId.toString(),

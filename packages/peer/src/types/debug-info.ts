@@ -11,7 +11,8 @@ export interface SelfInfo {
 }
 
 export interface PeerSelfInfo extends SelfInfo {
-  primaryRelayNode: string;
+  primaryRelayMultiaddr: string;
+  primaryRelayPeerId: string | null;
 }
 
 export enum ConnectionType {
