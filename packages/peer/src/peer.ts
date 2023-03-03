@@ -44,8 +44,8 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { dialWithRetry } from './utils/index.js';
-import { ConnectionType, DebugMsg, DebugPeerInfo, DebugRequest, DebugResponse, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
+import { debugInfoRequestHandler, dialWithRetry, floodMessage, getConnectionsInfo, getSelfInfo } from './utils/index.js';
+import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
@@ -263,9 +263,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     assert(this.peerId);
 
     const selfInfo: PeerSelfInfo = this.getSelfInfo();
-
     const connInfo: PeerConnectionInfo[] = this.getConnectionsInfo();
-
     const metrics = await this.metrics.getMetricsAsMap();
 
     return {
@@ -276,38 +274,34 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   }
 
   getSelfInfo (): PeerSelfInfo {
-    assert(this.node);
-    assert(this.peerId);
+    assert(this._node);
+
+    const selfInfo = getSelfInfo(this._node);
 
     return {
-      peerId: this.peerId.toString(),
+      ...selfInfo,
       primaryRelayMultiaddr: this.relayNodeMultiaddr.toString(),
-      primaryRelayPeerId: this.relayNodeMultiaddr.getPeerId(),
-      multiaddrs: this.node.getMultiaddrs().map(multiaddr => multiaddr.toString())
+      primaryRelayPeerId: this.relayNodeMultiaddr.getPeerId()
     };
   }
 
   getConnectionsInfo (): PeerConnectionInfo[] {
-    assert(this.node);
+    assert(this._node);
+    assert(this._peerHeartbeatChecker);
+    const connectionsInfo = getConnectionsInfo(this._node, this._peerHeartbeatChecker);
 
-    return this.node.getConnections().map(connection => {
-      const connInfo: PeerConnectionInfo = {
-        id: connection.id,
-        multiaddr: connection.remoteAddr.toString(),
-        direction: connection.stat.direction,
-        status: connection.stat.status,
-        type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
-        peerId: connection.remotePeer.toString(),
-        isPeerRelay: this.isRelayPeerMultiaddr(connection.remoteAddr.toString()),
-        isPeerRelayPrimary: this.isPrimaryRelay(connection.remoteAddr.toString()),
-        latency: this.getLatencyData(connection.remotePeer)
+    return connectionsInfo.map(connectionInfo => {
+      const peerConnectionInfo: PeerConnectionInfo = {
+        ...connectionInfo,
+        isPeerRelay: this.isRelayPeerMultiaddr(connectionInfo.multiaddr),
+        isPeerRelayPrimary: this.isPrimaryRelay(connectionInfo.multiaddr)
       };
 
-      if (connInfo.type === ConnectionType.Relayed) {
-        connInfo.hopRelayPeerId = connection.remoteAddr.decapsulate('p2p-circuit/p2p').getPeerId();
+      if (peerConnectionInfo.type === ConnectionType.Relayed) {
+        peerConnectionInfo.hopRelayPeerId = multiaddr(peerConnectionInfo.multiaddr).decapsulate('p2p-circuit/p2p').getPeerId();
       }
 
-      return connInfo;
+      return peerConnectionInfo;
     });
   }
 
@@ -319,7 +313,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   async floodMessage (topic: string, msg: any): Promise<void> {
     assert(this._node);
-    await this._node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
+    await floodMessage(this._node, topic, msg);
   }
 
   async requestPeerInfo (): Promise<void> {
@@ -330,7 +324,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     }
 
     const request: DebugRequest = { type: 'Request' };
-    await this._node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(request)));
+    await this.floodMessage(DEBUG_INFO_TOPIC, request);
   }
 
   subscribeMessage (handler: (peerId: PeerId, message: any) => void) : () => void {
@@ -657,20 +651,14 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   _registerDebugInfoRequestHandler (): void {
     this.subscribeTopic(DEBUG_INFO_TOPIC, async (peerId: PeerId, msg: any): Promise<void> => {
-      const debugMsg = msg as DebugMsg;
-      const msgType = debugMsg.type;
+      assert(this._node);
 
-      if (msgType === 'Request') {
-        console.log('got a debug info request from', peerId.toString());
-        const peerInfo = await this.getInfo();
-        const response: DebugResponse = {
-          type: 'Response',
-          dst: peerId.toString(),
-          peerInfo
-        };
-
-        await this.floodMessage(DEBUG_INFO_TOPIC, response);
-      }
+      await debugInfoRequestHandler({
+        node: this._node,
+        getPeerInfo: this.getInfo.bind(this),
+        peerId,
+        msg
+      });
     });
   }
 }

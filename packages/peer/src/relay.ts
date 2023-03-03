@@ -6,7 +6,6 @@ import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import wrtc from 'wrtc';
 import debug from 'debug';
 import assert from 'assert';
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
 import { noise } from '@chainsafe/libp2p-noise';
@@ -31,9 +30,9 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { dialWithRetry } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getSelfInfo } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
-import { SelfInfo, ConnectionInfo, DebugMsg, DebugRelayInfo, DebugResponse, ConnectionType } from './types/debug-info.js';
+import { SelfInfo, ConnectionInfo } from './types/debug-info.js';
 
 const log = debug('laconic:relay');
 
@@ -202,24 +201,8 @@ async function _handleDeadConnections (node: Libp2p, remotePeerId: PeerId): Prom
 async function _subscribeToDebugTopic (node: Libp2p, peerHeartbeatChecker: PeerHearbeatChecker, metrics: PrometheusMetrics): Promise<void> {
   node.pubsub.subscribe(DEBUG_INFO_TOPIC);
 
-  const debugInfoRequestHandler = async (peerId: PeerId, msg: any): Promise<void> => {
-    const debugMsg = msg as DebugMsg;
-    const msgType = debugMsg.type;
-
-    if (msgType === 'Request') {
-      const peerInfo: DebugRelayInfo = await _getRelayPeerInfo(node, peerHeartbeatChecker, metrics);
-      const response: DebugResponse = {
-        type: 'Response',
-        dst: peerId.toString(),
-        peerInfo
-      };
-
-      await node.pubsub.publish(DEBUG_INFO_TOPIC, uint8ArrayFromString(JSON.stringify(response)));
-    }
-  };
-
   // Listen for pubsub messages
-  node.pubsub.addEventListener('message', (evt) => {
+  node.pubsub.addEventListener('message', async (evt) => {
     const msg: Message = evt.detail;
 
     // Messages should be signed since globalSignaturePolicy is set to 'StrictSign'
@@ -227,29 +210,20 @@ async function _subscribeToDebugTopic (node: Libp2p, peerHeartbeatChecker: PeerH
 
     if (msg.topic === DEBUG_INFO_TOPIC) {
       const dataObj = JSON.parse(uint8ArrayToString(msg.data));
-      debugInfoRequestHandler(msg.from, dataObj);
+
+      await debugInfoRequestHandler({
+        node,
+        getPeerInfo: async () => _getRelayPeerInfo(node, peerHeartbeatChecker, metrics),
+        peerId: msg.from,
+        msg: dataObj
+      });
     }
   });
 }
 
 async function _getRelayPeerInfo (node: Libp2p, peerHeartbeatChecker: PeerHearbeatChecker, metrics: PrometheusMetrics): Promise<any> {
-  const selfInfo: SelfInfo = {
-    peerId: node.peerId.toString(),
-    multiaddrs: node.getMultiaddrs().map(multiaddr => multiaddr.toString())
-  };
-
-  const connInfo: ConnectionInfo[] = node.getConnections().map(connection => {
-    return {
-      id: connection.id,
-      peerId: connection.remotePeer.toString(),
-      multiaddr: connection.remoteAddr.toString(),
-      direction: connection.stat.direction,
-      status: connection.stat.status,
-      type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
-      latency: peerHeartbeatChecker.getLatencyData(connection.remotePeer)
-    };
-  });
-
+  const selfInfo: SelfInfo = getSelfInfo(node);
+  const connInfo: ConnectionInfo[] = getConnectionsInfo(node, peerHeartbeatChecker);
   const metricsMap = await metrics.getMetricsAsMap();
 
   return {
