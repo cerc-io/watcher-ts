@@ -177,7 +177,8 @@ export class ServerCmd {
         pingInterval: relayConfig.pingInterval ?? DEFAULT_PING_INTERVAL,
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
-        peerIdObj
+        peerIdObj,
+        enableDebugInfo: relayConfig.enableDebugInfo
       };
       await createRelayNode(relayNodeInit);
     }
@@ -200,7 +201,8 @@ export class ServerCmd {
         maxRelayConnections: peerConfig.maxRelayConnections,
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
-        dialTimeout: peerConfig.dialTimeout
+        dialTimeout: peerConfig.dialTimeout,
+        enableDebugInfo: peerConfig.enableDebugInfo
       };
       await peer.init(peerNodeInit, peerIdObj);
 

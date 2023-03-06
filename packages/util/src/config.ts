@@ -64,6 +64,9 @@ export interface RelayConfig {
 
   // Max number of dial retries to be attempted to a relay peer
   maxDialRetry?: number;
+
+  // Broadcast node's info over floodsub on requests
+  enableDebugInfo?: boolean;
 }
 
 // Peer config
@@ -94,6 +97,9 @@ export interface PeerConfig {
 
   // Peer id file path (json)
   peerIdFile?: string;
+
+  // Participate in exchange of debug info over floodsub
+  enableDebugInfo?: boolean;
 }
 
 // P2P config

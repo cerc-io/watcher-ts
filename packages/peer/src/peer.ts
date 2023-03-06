@@ -38,15 +38,17 @@ import {
   RELAY_TAG,
   RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
-  DEFAULT_PING_TIMEOUT
+  DEFAULT_PING_TIMEOUT,
+  P2P_CIRCUIT_ID,
+  CHAT_PROTOCOL,
+  DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { dialWithRetry } from './utils/index.js';
-
-const P2P_CIRCUIT_ID = 'p2p-circuit';
-export const CHAT_PROTOCOL = '/chat/1.0.0';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getSelfInfo } from './utils/index.js';
+import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
+const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
 
 export interface PeerIdObj {
   id: string;
@@ -62,6 +64,7 @@ export interface PeerInitConfig {
   maxConnections?: number;
   minConnections?: number;
   dialTimeout?: number;
+  enableDebugInfo?: boolean;
 }
 
 export class Peer {
@@ -74,6 +77,8 @@ export class Peer {
 
   _relayRedialInterval?: number
   _maxRelayConnections?: number
+
+  _debugInfoEnabled?: boolean
 
 _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _messageHandlers: Array<(peerId: PeerId, message: any) => void> = []
@@ -116,6 +121,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._maxRelayConnections = initOptions.maxRelayConnections;
+    this._debugInfoEnabled = initOptions.enableDebugInfo;
     const pingTimeout = initOptions.pingTimeout ?? DEFAULT_PING_TIMEOUT;
 
     try {
@@ -227,6 +233,11 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     this._node.pubsub.addEventListener('message', (evt) => {
       this._handlePubSubMessage(evt.detail);
     });
+
+    if (this._debugInfoEnabled) {
+      console.log('Debug info enabled');
+      this._registerDebugInfoRequestHandler();
+    }
   }
 
   async close (): Promise<void> {
@@ -247,6 +258,53 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     await Promise.all(hangUpPromises);
   }
 
+  async getInfo (): Promise<DebugPeerInfo> {
+    assert(this.node);
+    assert(this.peerId);
+
+    const selfInfo: PeerSelfInfo = this.getPeerSelfInfo();
+    const connInfo: PeerConnectionInfo[] = this.getPeerConnectionsInfo();
+    const metrics = await this.metrics.getMetricsAsMap();
+
+    return {
+      selfInfo,
+      connInfo,
+      metrics
+    };
+  }
+
+  getPeerSelfInfo (): PeerSelfInfo {
+    assert(this._node);
+
+    const selfInfo = getSelfInfo(this._node);
+
+    return {
+      ...selfInfo,
+      primaryRelayMultiaddr: this.relayNodeMultiaddr.toString(),
+      primaryRelayPeerId: this.relayNodeMultiaddr.getPeerId()
+    };
+  }
+
+  getPeerConnectionsInfo (): PeerConnectionInfo[] {
+    assert(this._node);
+    assert(this._peerHeartbeatChecker);
+    const connectionsInfo = getConnectionsInfo(this._node, this._peerHeartbeatChecker);
+
+    return connectionsInfo.map(connectionInfo => {
+      const peerConnectionInfo: PeerConnectionInfo = {
+        ...connectionInfo,
+        isPeerRelay: this.isRelayPeerMultiaddr(connectionInfo.multiaddr),
+        isPeerRelayPrimary: this.isPrimaryRelay(connectionInfo.multiaddr)
+      };
+
+      if (peerConnectionInfo.type === ConnectionType.Relayed) {
+        peerConnectionInfo.hopRelayPeerId = multiaddr(peerConnectionInfo.multiaddr).decapsulate('p2p-circuit/p2p').getPeerId();
+      }
+
+      return peerConnectionInfo;
+    });
+  }
+
   broadcastMessage (message: any): void {
     for (const [, stream] of this._peerStreamMap) {
       stream.push(message);
@@ -256,6 +314,17 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   async floodMessage (topic: string, msg: any): Promise<void> {
     assert(this._node);
     await this._node.pubsub.publish(topic, uint8ArrayFromString(JSON.stringify(msg)));
+  }
+
+  async requestPeerInfo (): Promise<void> {
+    assert(this._node);
+
+    if (!this._debugInfoEnabled) {
+      throw new Error(ERR_DEBUG_INFO_NOT_ENABLED);
+    }
+
+    const request: DebugRequest = { type: 'Request' };
+    await this.floodMessage(DEBUG_INFO_TOPIC, request);
   }
 
   subscribeMessage (handler: (peerId: PeerId, message: any) => void) : () => void {
@@ -298,6 +367,14 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     };
 
     return unsubscribe;
+  }
+
+  subscribeDebugInfo (handler: (peerId: PeerId, data: any) => void): () => void {
+    if (!this._debugInfoEnabled) {
+      throw new Error(ERR_DEBUG_INFO_NOT_ENABLED);
+    }
+
+    return this.subscribeTopic(DEBUG_INFO_TOPIC, handler);
   }
 
   isRelayPeerMultiaddr (multiaddrString: string): boolean {
@@ -377,24 +454,26 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
   _handleDiscovery (peer: PeerInfo, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): void {
     // Check connected peers as they are discovered repeatedly.
-    if (!this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
-      let isRelayPeer = false;
-      for (const multiaddr of peer.multiaddrs) {
-        if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
-          isRelayPeer = true;
-          break;
-        }
-      }
-
-      // Check relay connections limit if it's a relay peer
-      if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
-        // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
-        return;
-      }
-
-      console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
-      this._connectPeer(peer);
+    if (this._node?.getPeers().some(remotePeerId => remotePeerId.toString() === peer.id.toString())) {
+      return;
     }
+
+    let isRelayPeer = false;
+    for (const multiaddr of peer.multiaddrs) {
+      if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
+        isRelayPeer = true;
+        break;
+      }
+    }
+
+    // Check relay connections limit if it's a relay peer
+    if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
+      // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
+      return;
+    }
+
+    console.log(`Discovered peer ${peer.id.toString()} with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
+    this._connectPeer(peer);
   }
 
   async _handleConnect (connection: Connection, maxRelayConnections = DEFAULT_MAX_RELAY_CONNECTIONS): Promise<void> {
@@ -567,6 +646,19 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     this._topicHandlers.get(msg.topic)?.forEach(handler => {
       const dataObj = JSON.parse(uint8ArrayToString(msg.data));
       handler(msg.from, dataObj);
+    });
+  }
+
+  _registerDebugInfoRequestHandler (): void {
+    this.subscribeTopic(DEBUG_INFO_TOPIC, async (peerId: PeerId, msg: any): Promise<void> => {
+      assert(this._node);
+
+      await debugInfoRequestHandler({
+        node: this._node,
+        getPeerInfo: this.getInfo.bind(this),
+        peerId,
+        msg
+      });
     });
   }
 }
