@@ -30,7 +30,7 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getSelfInfo } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
 import { SelfInfo, ConnectionInfo } from './types/debug-info.js';
 
@@ -119,7 +119,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     }
   );
 
-  log(`Relay node started with id ${node.peerId.toString()}`);
+  log(`Relay node started with id ${node.peerId.toString()} (${getPseudonymForPeerId(node.peerId.toString())})`);
   log('Listening on:');
   node.getMultiaddrs().forEach((ma) => log(ma.toString()));
 
@@ -128,7 +128,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     // log('event peer:connect', evt);
     // Log connected peer
     const connection: Connection = evt.detail;
-    log(`Connected to ${connection.remotePeer.toString()} using multiaddr ${connection.remoteAddr.toString()}`);
+    log(`Connected to ${connection.remotePeer.toString()} (${getPseudonymForPeerId(connection.remotePeer.toString())}) using multiaddr ${connection.remoteAddr.toString()}`);
 
     // Start heartbeat check for peer
     await peerHeartbeatChecker.start(
@@ -146,7 +146,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     // Log disconnected peer
     const connection: Connection = evt.detail;
     const remoteAddr = connection.remoteAddr;
-    log(`Disconnected from ${connection.remotePeer.toString()} using multiaddr ${remoteAddr.toString()}`);
+    log(`Disconnected from ${connection.remotePeer.toString()} (${getPseudonymForPeerId(connection.remotePeer.toString())}) using multiaddr ${remoteAddr.toString()}`);
 
     // Stop connection check for disconnected peer
     peerHeartbeatChecker.stop(connection.remotePeer);
@@ -193,7 +193,7 @@ async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialR
 
 async function _handleDeadConnections (node: Libp2p, remotePeerId: PeerId): Promise<void> {
   // Close existing connections of remote peer
-  log(`Closing connections for ${remotePeerId}`);
+  log(`Closing connections for ${remotePeerId} (${getPseudonymForPeerId(remotePeerId.toString())})`);
   await node.hangUp(remotePeerId);
   log('Closed');
 }
