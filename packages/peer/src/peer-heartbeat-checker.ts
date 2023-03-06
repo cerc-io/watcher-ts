@@ -7,6 +7,7 @@ import type { PeerId } from '@libp2p/interface-peer-id';
 import debug from 'debug';
 
 import { DEFAULT_PING_INTERVAL, DEFAULT_PING_TIMEOUT } from './constants.js';
+import { getPseudonymForPeerId } from './utils/index.js';
 
 const log = debug('laconic:peer-heartbeat-checker');
 
@@ -149,7 +150,7 @@ export class PeerHearbeatChecker {
       return;
     }
 
-    console.log(`Not connected to peer ${peerId.toString()}`);
+    log(`Not connected to peer ${peerId.toString()} (${getPseudonymForPeerId(peerId.toString())})`);
     await handleDisconnect();
   }
 }

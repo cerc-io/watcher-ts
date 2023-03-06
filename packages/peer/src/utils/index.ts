@@ -5,6 +5,7 @@
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import debug from 'debug';
+import assert from 'assert';
 
 import { Libp2p } from '@cerc-io/libp2p';
 import { Multiaddr } from '@multiformats/multiaddr';
@@ -41,13 +42,16 @@ export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options:
 
   // Keep dialling node until it connects
   for (let i = 0; i < maxRetry; i++) {
+    const peerId = multiaddr.getPeerId();
+    assert(peerId);
+
     try {
-      console.log(`Dialling node ${multiaddr.getPeerId()} using multiaddr ${multiaddr.toString()}`);
+      console.log(`Dialling node ${peerId} (${getPseudonymForPeerId(peerId.toString())}) using multiaddr ${multiaddr.toString()}`);
       const connection = await node.dial(multiaddr);
 
       return connection;
     } catch (err) {
-      console.log(`Could not dial node ${multiaddr.toString()}`, err);
+      console.log(`Could not dial node ${multiaddr.toString()} (${getPseudonymForPeerId(peerId.toString())})`, err);
       console.log(`Retrying after ${redialInterval}ms`);
 
       // TODO: Use wait method from util package.
@@ -91,7 +95,7 @@ export const debugInfoRequestHandler = async (
   const msgType = debugMsg.type;
 
   if (msgType === 'Request') {
-    log('got a debug info request from', peerId.toString());
+    log('got a debug info request from', peerId.toString(), `(${getPseudonymForPeerId(peerId.toString())})`);
     const peerInfo: DebugPeerInfo = await getPeerInfo();
     const response: DebugResponse = {
       type: 'Response',
