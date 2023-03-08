@@ -19,11 +19,13 @@
   "bugs": "",
   "keywords": [],
   "scripts": {
-    "build": "tsc",
+    "build": "yarn clean && tsc",
+    "clean": "rm -rf ./dist",
     "lint": "eslint .",
     "dev": "node dist/index.js",
     "create-peer": "node dist/cli/create-peer.js",
-    "relay-node": "DEBUG='laconic:*' node dist/cli/relay.js"
+    "relay-node": "DEBUG='laconic:*' node dist/cli/relay.js",
+    "test" : "DEBUG='laconic:*' yarn build && mocha dist/peer.test.js"
   },
   "dependencies": {
     "@cerc-io/libp2p": "0.42.2-laconic-0.1.1",
@@ -36,11 +38,14 @@
     "@libp2p/pubsub-peer-discovery": "^8.0.0",
     "@multiformats/multiaddr": "^11.1.4",
     "buffer": "^6.0.3",
+    "chai": "^4.3.4",
     "debug": "^4.3.1",
+    "dotenv": "^16.0.3",
     "it-length-prefixed": "^8.0.4",
     "it-map": "^2.0.0",
     "it-pipe": "^2.0.5",
     "it-pushable": "^3.1.2",
+    "mocha": "^8.4.0",
     "node-pre-gyp": "^0.13.0",
     "p-event": "^5.0.1",
     "uint8arrays": "^4.0.3",
@@ -49,6 +54,8 @@
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.19",
+    "@types/mocha": "^8.2.2",
     "@types/node": "16.11.7",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",
