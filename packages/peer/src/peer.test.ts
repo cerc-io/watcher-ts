@@ -6,11 +6,14 @@ import 'mocha';
 import assert from 'assert';
 import { expect } from 'chai';
 import { pEvent } from 'p-event';
+import debug from 'debug';
 
 import { Connection } from '@libp2p/interface-connection';
 import { multiaddr } from '@multiformats/multiaddr';
 
 import { Peer } from './peer.js';
+
+const log = debug('laconic:test');
 
 const ONE_SECOND = 1000; // 1s
 const PEER_CONNECTION_TIMEOUT = 15 * ONE_SECOND; // 15s
@@ -18,7 +21,7 @@ const PEER_CONNECTION_TIMEOUT = 15 * ONE_SECOND; // 15s
 // Get relay node address from the .env file
 dotenv.config({ path: path.resolve('./.env') });
 
-describe('basic peer testing', () => {
+describe('basic p2p tests', () => {
   let peers: Peer[];
   const relayMultiAddr = process.env.RELAY;
 
@@ -35,8 +38,8 @@ describe('basic peer testing', () => {
     });
   });
 
-  it('peers get connected to the primary relay node', () => {
-    peers.forEach(async (peer) => {
+  it('peers get connected to the primary relay node', async () => {
+    await Promise.all(peers.map(async (peer) => {
       assert(peer.node);
 
       // Wait for a connection to be established
@@ -49,7 +52,7 @@ describe('basic peer testing', () => {
       const connectedPeerIds = connections?.map(connection => connection.remotePeer.toString());
 
       expect(connectedPeerIds).to.include(expectedPeerId);
-    });
+    }));
   });
 
   it('peers discover and get connected to each other', async () => {
@@ -57,7 +60,6 @@ describe('basic peer testing', () => {
       assert(peer.node);
 
       const otherPeersId = peers[1 - index].node?.peerId.toString();
-      console.log('otherPeersId', peer.peerId?.toString(), otherPeersId);
 
       return new Promise<void>((resolve, reject) => {
         peer.node?.addEventListener('peer:connect', async (event) => {
@@ -90,13 +92,13 @@ describe('basic peer testing', () => {
       if (data === msgFromPeer2) {
         messageReceivedByPeer1 = true;
       }
-      console.log(`${peerId.toString()} > ${data}`);
+      log(`${peerId.toString()} > ${data}`);
     });
     peers[1].subscribeTopic(pubSubTopic, (peerId, data) => {
       if (data === msgFromPeer1) {
         messageReceivedByPeer2 = true;
       }
-      console.log(`${peerId.toString()} > ${data}`);
+      log(`${peerId.toString()} > ${data}`);
     });
 
     // Wait for the connection between peers to be stabilized

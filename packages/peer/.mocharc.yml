@@ -1,4 +1,4 @@
 require:
   - 'ts-node/register'
   - 'dotenv/config'
-timeout: '0'
+timeout: '300000'

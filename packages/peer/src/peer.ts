@@ -2,8 +2,6 @@
 // Copyright 2023 Vulcanize, Inc.
 //
 
-import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
-// For nodejs.
 import wrtc from 'wrtc';
 import assert from 'assert';
 import { Buffer } from 'buffer';
@@ -13,7 +11,9 @@ import map from 'it-map';
 import { pushable, Pushable } from 'it-pushable';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
+import debug from 'debug';
 
+import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
 import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID, WebRTCDirectNodeType, WebRTCDirectInit } from '@cerc-io/webrtc-direct';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -46,6 +46,8 @@ import {
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
+
+const log = debug('laconic:peer');
 
 const ERR_PEER_ALREADY_TAGGED = 'Peer already tagged';
 const ERR_DEBUG_INFO_NOT_ENABLED = 'Debug info not enabled';
@@ -91,7 +93,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     const relayPeerId = this._relayNodeMultiaddr.getPeerId();
     assert(relayPeerId);
 
-    console.log(`Using peer ${relayPeerId.toString()} (${getPseudonymForPeerId(relayPeerId.toString())}) as the primary relay node`);
+    log(`Using peer ${relayPeerId.toString()} (${getPseudonymForPeerId(relayPeerId.toString())}) as the primary relay node`);
 
     const initOptions: WebRTCDirectInit = {
       wrtc: nodejs ? wrtc : undefined, // Instantiation in nodejs
@@ -168,11 +170,11 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
         metrics: () => this._metrics
       });
     } catch (err: any) {
-      console.log('Could not initialize a libp2p node', err);
+      log('Could not initialize a libp2p node', err);
       return;
     }
 
-    console.log('libp2p node created', this._node);
+    log('libp2p node created', this._node);
     this._peerHeartbeatChecker = new PeerHearbeatChecker(
       this._node,
       {
@@ -191,28 +193,28 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
       // Log updated self multiaddrs
       if (peerId.equals(this._node.peerId)) {
-        console.log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
+        log('Updated self multiaddrs', this._node.getMultiaddrs().map(addr => addr.toString()));
       } else {
-        console.log('Updated peer node multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
+        log('Updated peer node multiaddrs', multiaddrs.map((addr: Multiaddr) => addr.toString()));
       }
     });
 
     // Listen for change in peer protocols
     this._node.peerStore.addEventListener('change:protocols', async (evt) => {
       assert(this._node);
-      console.log('event change:protocols', evt);
+      log('event change:protocols', evt);
       await this._handleChangeProtocols(evt.detail);
     });
 
     // Listen for peers discovery
     this._node.addEventListener('peer:discovery', (evt) => {
-      // console.log('event peer:discovery', evt);
+      // log('event peer:discovery', evt);
       this._handleDiscovery(evt.detail, this._maxRelayConnections);
     });
 
     // Listen for peers connection
     this._node.addEventListener('peer:connect', async (evt) => {
-      console.log('event peer:connect', evt);
+      // log('event peer:connect', evt);
       await this._handleConnect(evt.detail, this._maxRelayConnections);
     });
 
@@ -220,7 +222,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     // peer:disconnect event is trigerred when all connections to a peer close
     // https://github.com/libp2p/js-libp2p-interfaces/blob/master/packages/interface-libp2p/src/index.ts#L64
     this._node.addEventListener('peer:disconnect', (evt) => {
-      console.log('event peer:disconnect', evt);
+      // log('event peer:disconnect', evt);
       this._handleDisconnect(evt.detail);
     });
 
@@ -235,7 +237,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     });
 
     if (this._debugInfoEnabled) {
-      console.log('Debug info enabled');
+      log('Debug info enabled');
       this._registerDebugInfoRequestHandler();
     }
   }
@@ -423,7 +425,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   async _dialRelay (redialInterval = RELAY_REDIAL_INTERVAL): Promise<void> {
     assert(this._node);
     const relayMultiaddr = this._relayNodeMultiaddr;
-    console.log('Dialling primary relay node');
+    log('Dialling primary relay node');
 
     const connection = await dialWithRetry(
       this._node,
@@ -468,11 +470,11 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
     // Check relay connections limit if it's a relay peer
     if (isRelayPeer && this._numRelayConnections >= maxRelayConnections) {
-      // console.log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
+      // log(`Ignoring discovered relay node ${peer.id.toString()} as max relay connections limit reached`);
       return;
     }
 
-    console.log(`Discovered peer ${peer.id.toString()} (${getPseudonymForPeerId(peer.id.toString())}) with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
+    log(`Discovered peer ${peer.id.toString()} (${getPseudonymForPeerId(peer.id.toString())}) with multiaddrs`, peer.multiaddrs.map(addr => addr.toString()));
     this._connectPeer(peer);
   }
 
@@ -483,7 +485,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     const remoteAddrString = connection.remoteAddr.toString();
 
     // Log connected peer
-    console.log(`Connected to ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) using multiaddr ${remoteAddrString}`);
+    log(`Connected to ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) using multiaddr ${remoteAddrString}`);
 
     const isRemoteARelayPeer = this.isRelayPeerMultiaddr(remoteAddrString);
 
@@ -492,7 +494,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
 
       // Check if relay connections limit has already been reached
       if (this._numRelayConnections > maxRelayConnections && !this.isPrimaryRelay(remoteAddrString)) {
-        console.log(`Closing connection to relay ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) as max relay connections limit reached`);
+        log(`Closing connection to relay ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) as max relay connections limit reached`);
         await connection.close();
         return;
       }
@@ -507,20 +509,20 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
       if (remoteConnections.length > 1) {
         // Close new connection if using relayed multiaddr
         if (connection.remoteAddr.protoNames().includes(P2P_CIRCUIT_ID)) {
-          console.log(`Closing new relayed connection with ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) in favor of existing connection`);
+          log(`Closing new relayed connection with ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) in favor of existing connection`);
           await connection.close();
-          console.log('Closed');
+          log('Closed');
 
           return;
         }
 
-        console.log(`Closing exisiting connections with ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) in favor of new webrtc connection`);
+        log(`Closing exisiting connections with ${remotePeerIdString} (${getPseudonymForPeerId(remotePeerIdString)}) in favor of new webrtc connection`);
         // Close existing connections if new connection is not using relayed multiaddr (so it is a webrtc connection)
         const closeConnectionPromises = remoteConnections.filter(remoteConnection => remoteConnection.id !== connection.id)
           .map(remoteConnection => remoteConnection.close());
 
         await Promise.all(closeConnectionPromises);
-        console.log('Closed');
+        log('Closed');
       }
 
       // Open stream in new connection for chat protocol (if handled by remote peer)
@@ -532,7 +534,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
       }
     }
 
-    console.log(`Current number of peers connected: ${this._node.getPeers().length}`);
+    log(`Current number of peers connected: ${this._node.getPeers().length}`);
 
     // Start heartbeat check for peer
     await this._peerHeartbeatChecker?.start(
@@ -549,15 +551,15 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
       const stream = await connection.newStream([protocol]);
       this._handleStream(remotePeerId, stream);
     } catch (err: any) {
-      console.log(`Could not create a new ${protocol} stream with ${remotePeerId.toString()} (${getPseudonymForPeerId(remotePeerId.toString())})`, err);
+      log(`Could not create a new ${protocol} stream with ${remotePeerId.toString()} (${getPseudonymForPeerId(remotePeerId.toString())})`, err);
     }
   }
 
   async _handleDeadConnections (remotePeerId: PeerId) {
     // Close existing connections of remote peer
-    console.log(`Closing connections for ${remotePeerId} (${getPseudonymForPeerId(remotePeerId.toString())})`);
+    log(`Closing connections for ${remotePeerId} (${getPseudonymForPeerId(remotePeerId.toString())})`);
     await this._node?.hangUp(remotePeerId);
-    console.log('Closed');
+    log('Closed');
   }
 
   async _handleDisconnect (connection: Connection): Promise<void> {
@@ -566,8 +568,8 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     const remoteAddrString = connection.remoteAddr.toString();
 
     // Log disconnected peer
-    console.log(`Disconnected from ${disconnectedPeerId.toString()} (${getPseudonymForPeerId(disconnectedPeerId.toString())}) using multiaddr ${remoteAddrString}`);
-    console.log(`Current number of peers connected: ${this._node?.getPeers().length}`);
+    log(`Disconnected from ${disconnectedPeerId.toString()} (${getPseudonymForPeerId(disconnectedPeerId.toString())}) using multiaddr ${remoteAddrString}`);
+    log(`Current number of peers connected: ${this._node?.getPeers().length}`);
 
     if (this.isRelayPeerMultiaddr(remoteAddrString)) {
       this._numRelayConnections--;
@@ -589,16 +591,16 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
     const peerIdString = peer.id.toString();
 
     try {
-      console.log(`Dialling peer ${peerIdString} (${getPseudonymForPeerId(peerIdString)})`);
+      log(`Dialling peer ${peerIdString} (${getPseudonymForPeerId(peerIdString)})`);
       // When dialling with peer id, all multiaddr(s) (direct/relayed) of the discovered peer are dialled in parallel
       await this._node.dial(peer.id);
     } catch (err: any) {
-      console.log(`Could not dial ${peerIdString} (${getPseudonymForPeerId(peerIdString)})`, err);
+      log(`Could not dial ${peerIdString} (${getPseudonymForPeerId(peerIdString)})`, err);
     }
   }
 
   _handleStream (peerId: PeerId, stream: P2PStream): void {
-    // console.log('Stream after connection', stream);
+    // log('Stream after connection', stream);
     const messageStream = pushable<any>({ objectMode: true });
 
     // Send message to pipe from stdin

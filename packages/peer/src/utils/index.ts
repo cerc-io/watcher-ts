@@ -46,13 +46,13 @@ export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options:
     assert(peerId);
 
     try {
-      console.log(`Dialling node ${peerId} (${getPseudonymForPeerId(peerId.toString())}) using multiaddr ${multiaddr.toString()}`);
+      log(`Dialling node ${peerId} (${getPseudonymForPeerId(peerId.toString())}) using multiaddr ${multiaddr.toString()}`);
       const connection = await node.dial(multiaddr);
 
       return connection;
     } catch (err) {
-      console.log(`Could not dial node ${multiaddr.toString()} (${getPseudonymForPeerId(peerId.toString())})`, err);
-      console.log(`Retrying after ${redialInterval}ms`);
+      log(`Could not dial node ${multiaddr.toString()} (${getPseudonymForPeerId(peerId.toString())})`, err);
+      log(`Retrying after ${redialInterval}ms`);
 
       // TODO: Use wait method from util package.
       // Issue using util package in react app.
