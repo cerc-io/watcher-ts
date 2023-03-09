@@ -15,8 +15,7 @@ import { Peer } from './peer.js';
 
 const log = debug('laconic:test');
 
-const ONE_SECOND = 1000; // 1s
-const PEER_CONNECTION_TIMEOUT = 15 * ONE_SECOND; // 15s
+const PEER_CONNECTION_TIMEOUT = 15 * 1000; // 15s
 
 // Get relay node address from the .env file
 dotenv.config({ path: path.resolve('./.env') });
@@ -25,7 +24,7 @@ describe('basic p2p tests', () => {
   let peers: Peer[];
   const relayMultiAddr = process.env.RELAY;
 
-  before('peers initialization', async () => {
+  it('peers get initialized', async () => {
     assert(relayMultiAddr, 'Relay multiaddr not provided');
 
     peers = [
@@ -33,9 +32,9 @@ describe('basic p2p tests', () => {
       new Peer(relayMultiAddr, true)
     ];
 
-    peers.forEach(async (peer) => {
+    await Promise.all(peers.map(async (peer) => {
       await peer.init({});
-    });
+    }));
   });
 
   it('peers get connected to the primary relay node', async () => {
@@ -103,12 +102,12 @@ describe('basic p2p tests', () => {
 
     // Wait for the connection between peers to be stabilized
     // Peers upgrade to a direct connection from a relayed one if possible
-    await sleep(3 * ONE_SECOND);
+    await sleep(3000);
 
     peers[0].floodMessage(pubSubTopic, msgFromPeer1);
     peers[1].floodMessage(pubSubTopic, msgFromPeer2);
 
-    await sleep(ONE_SECOND);
+    await sleep(2000);
 
     expect(messageReceivedByPeer1).to.be.true;
     expect(messageReceivedByPeer2).to.be.true;
