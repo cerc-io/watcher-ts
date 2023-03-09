@@ -66,21 +66,21 @@ const KIND_MERKLEDISTRIBUTOR = 'EdenNetworkDistribution';
 const KIND_DISTRIBUTORGOVERNANCE = 'EdenNetworkGovernance';
 
 export class Indexer implements IndexerInterface {
-  _db: Database
-  _ethClient: EthClient
-  _ethProvider: BaseProvider
-  _baseIndexer: BaseIndexer
-  _serverConfig: ServerConfig
+  _db: Database;
+  _ethClient: EthClient;
+  _ethProvider: BaseProvider;
+  _baseIndexer: BaseIndexer;
+  _serverConfig: ServerConfig;
   _graphWatcher: GraphWatcher;
 
-  _abiMap: Map<string, JsonFragment[]>
-  _storageLayoutMap: Map<string, StorageLayout>
-  _contractMap: Map<string, ethers.utils.Interface>
+  _abiMap: Map<string, JsonFragment[]>;
+  _storageLayoutMap: Map<string, StorageLayout>;
+  _contractMap: Map<string, ethers.utils.Interface>;
 
-  _entityTypesMap: Map<string, { [key: string]: string }>
-  _relationsMap: Map<any, { [key: string]: any }>
+  _entityTypesMap: Map<string, { [key: string]: string }>;
+  _relationsMap: Map<any, { [key: string]: any }>;
 
-  _subgraphStateMap: Map<string, any>
+  _subgraphStateMap: Map<string, any>;
 
   constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue, graphWatcher?: GraphWatcherInterface) {
     assert(db);

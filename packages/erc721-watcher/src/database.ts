@@ -36,7 +36,7 @@ export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
-  _propColMaps: { [key: string]: Map<string, string>; }
+  _propColMaps: { [key: string]: Map<string, string>; };
 
   constructor (config: ConnectionOptions) {
     assert(config);

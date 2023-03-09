@@ -68,9 +68,9 @@ export interface Where {
 export type Relation = string | { property: string, alias: string }
 
 export class Database {
-  _config: ConnectionOptions
-  _conn!: Connection
-  _pgPool: Pool
+  _config: ConnectionOptions;
+  _conn!: Connection;
+  _pgPool: Pool;
 
   constructor (config: ConnectionOptions) {
     assert(config);

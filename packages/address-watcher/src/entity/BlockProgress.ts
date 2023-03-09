@@ -20,5 +20,5 @@ export class BlockProgress {
   numTracedTx!: number;
 
   @Column('boolean')
-  isComplete!: boolean
+  isComplete!: boolean;
 }

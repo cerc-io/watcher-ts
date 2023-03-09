@@ -19,5 +19,5 @@ export class TransferCount {
   count!: number;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

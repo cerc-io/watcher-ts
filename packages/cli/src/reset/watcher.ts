@@ -28,7 +28,7 @@ interface Arguments {
 }
 
 export class ResetWatcherCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

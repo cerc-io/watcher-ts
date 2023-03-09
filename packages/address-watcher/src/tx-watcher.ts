@@ -19,11 +19,11 @@ export const BlockProgressEvent = 'block-progress-event';
 export const QUEUE_TX_TRACING = 'tx-tracing';
 
 export class TxWatcher {
-  _ethClient: EthClient
-  _indexer: Indexer
-  _pubsub: PubSub
-  _watchTxSubscription: ZenObservable.Subscription | undefined
-  _jobQueue: JobQueue
+  _ethClient: EthClient;
+  _indexer: Indexer;
+  _pubsub: PubSub;
+  _watchTxSubscription: ZenObservable.Subscription | undefined;
+  _jobQueue: JobQueue;
 
   constructor (ethClient: EthClient, indexer: Indexer, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;

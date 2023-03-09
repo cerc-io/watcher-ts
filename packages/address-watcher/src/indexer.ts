@@ -19,10 +19,10 @@ import { BlockProgress } from './entity/BlockProgress';
 const log = debug('vulcanize:indexer');
 
 export class Indexer {
-  _db: Database
-  _ethClient: EthClient
-  _getStorageAt: GetStorageAt
-  _tracingClient: TracingClient
+  _db: Database;
+  _ethClient: EthClient;
+  _getStorageAt: GetStorageAt;
+  _tracingClient: TracingClient;
 
   constructor (db: Database, ethClient: EthClient, tracingClient: TracingClient) {
     assert(db);

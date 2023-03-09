@@ -27,5 +27,5 @@ export class ProducerRewardCollectorChange {
   rewardCollector!: string;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

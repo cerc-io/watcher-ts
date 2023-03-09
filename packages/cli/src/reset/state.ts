@@ -22,9 +22,9 @@ interface Arguments {
 }
 
 export class ResetStateCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _config?: Config;
-  _database?: DatabaseInterface
+  _database?: DatabaseInterface;
 
   async initConfig (configFile: string): Promise<Config> {
     this._config = await getConfig(configFile);

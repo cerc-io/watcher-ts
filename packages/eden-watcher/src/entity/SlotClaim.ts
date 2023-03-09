@@ -41,5 +41,5 @@ export class SlotClaim {
   taxRatePerDay!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

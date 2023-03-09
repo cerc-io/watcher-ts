@@ -30,8 +30,8 @@ interface Arguments {
 }
 
 export class VerifyCheckpointCmd {
-  _argv?: Arguments
-  _baseCmd: BaseCmd
+  _argv?: Arguments;
+  _baseCmd: BaseCmd;
 
   constructor () {
     this._baseCmd = new BaseCmd();

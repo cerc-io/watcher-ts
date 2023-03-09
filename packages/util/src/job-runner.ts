@@ -34,15 +34,15 @@ import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber 
 const log = debug('vulcanize:job-runner');
 
 export class JobRunner {
-  jobQueue: JobQueue
-  _indexer: IndexerInterface
-  _jobQueueConfig: JobQueueConfig
-  _blockProcessStartTime?: Date
-  _endBlockProcessTimer?: () => void
-  _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map()
+  jobQueue: JobQueue;
+  _indexer: IndexerInterface;
+  _jobQueueConfig: JobQueueConfig;
+  _blockProcessStartTime?: Date;
+  _endBlockProcessTimer?: () => void;
+  _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map();
 
-  _shutDown = false
-  _signalCount = 0
+  _shutDown = false;
+  _signalCount = 0;
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;

@@ -5,7 +5,7 @@
 import { create, IPFSHTTPClient } from 'ipfs-http-client';
 
 export class IPFSClient {
-  _client: IPFSHTTPClient
+  _client: IPFSHTTPClient;
 
   constructor (url: string) {
     this._client = create({ url });

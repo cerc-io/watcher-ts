@@ -62,7 +62,7 @@ export class Foo {
 export const FooID = idof<Foo>();
 
 export class Bar {
-  prop: string
+  prop: string;
 
   constructor (prop: string) {
     this.prop = prop;

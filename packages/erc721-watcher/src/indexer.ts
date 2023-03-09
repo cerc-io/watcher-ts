@@ -48,15 +48,15 @@ const JSONbigNative = JSONbig({ useNativeBigInt: true });
 const KIND_ERC721 = 'ERC721';
 
 export class Indexer implements IndexerInterface {
-  _db: Database
-  _ethClient: EthClient
-  _ethProvider: BaseProvider
-  _baseIndexer: BaseIndexer
-  _serverConfig: ServerConfig
+  _db: Database;
+  _ethClient: EthClient;
+  _ethProvider: BaseProvider;
+  _baseIndexer: BaseIndexer;
+  _serverConfig: ServerConfig;
 
-  _abiMap: Map<string, JsonFragment[]>
-  _storageLayoutMap: Map<string, StorageLayout>
-  _contractMap: Map<string, ethers.utils.Interface>
+  _abiMap: Map<string, JsonFragment[]>;
+  _storageLayoutMap: Map<string, StorageLayout>;
+  _contractMap: Map<string, ethers.utils.Interface>;
 
   constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);
