@@ -16,6 +16,15 @@ import { ethers } from 'ethers';
 
 const log = debug('vulcanize:peer-listener');
 
+const DEFAULT_GAS_LIMIT = 5000;
+
+interface Arguments {
+  configFile: string;
+  privateKey: string;
+  contractAddress: string;
+  gasLimit: number;
+}
+
 export const main = async (): Promise<any> => {
   const argv = _getArgv();
   const config: Config = await getConfig(argv.configFile);
@@ -51,19 +60,18 @@ export const main = async (): Promise<any> => {
     log('Received a message on mobymask P2P network from peer:', peerId);
 
     // TODO: throttle message handler
-    sendMessageToL2(wallet, argv.contractAddress, data);
+    sendMessageToL2(wallet, argv, data);
   });
 
   log(`Peer ID: ${peer.peerId?.toString()}`);
 };
 
-const _getArgv = (): any => {
+const _getArgv = (): Arguments => {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
     configFile: {
       alias: 'config-file',
-      demandOption: true,
       describe: 'configuration file path (toml)',
       type: 'string',
       default: DEFAULT_CONFIG_PATH
@@ -79,8 +87,15 @@ const _getArgv = (): any => {
       demandOption: true,
       describe: 'Address of MobyMask contract',
       type: 'string'
+    },
+    gasLimit: {
+      alias: 'gas-limit',
+      describe: 'Gas limit for eth txs',
+      type: 'number',
+      default: DEFAULT_GAS_LIMIT
     }
-  }).argv;
+  // https://github.com/yargs/yargs/blob/main/docs/typescript.md?plain=1#L83
+  }).parseSync();
 };
 
 main().then(() => {

@@ -17,7 +17,14 @@ const MESSAGE_KINDS = {
   REVOKE: 'revoke'
 };
 
-export async function sendMessageToL2 (signer: Signer, contractAddress: string, data: any): Promise<void> {
+export async function sendMessageToL2 (
+  signer: Signer,
+  { contractAddress, gasLimit }: {
+    contractAddress: string,
+    gasLimit: number
+  },
+  data: any
+): Promise<void> {
   const { kind, message } = data;
   const contract = new ethers.Contract(contractAddress, PhisherRegistryABI, signer);
   let receipt: TransactionReceipt | undefined;
@@ -27,7 +34,12 @@ export async function sendMessageToL2 (signer: Signer, contractAddress: string, 
       case MESSAGE_KINDS.INVOKE: {
         const signedInvocations = message;
 
-        const transaction: TransactionResponse = await contract.invoke(signedInvocations);
+        const transaction: TransactionResponse = await contract.invoke(
+          signedInvocations,
+          // Setting gasLimit as eth_estimateGas call takes too long in L2 chain
+          { gasLimit }
+        );
+
         receipt = await transaction.wait();
 
         break;
@@ -37,7 +49,13 @@ export async function sendMessageToL2 (signer: Signer, contractAddress: string, 
         const { signedDelegation, signedIntendedRevocation } = message;
         const parsedSignedIntendedRevocation = _parseSignedIntendedRevocation(signedIntendedRevocation);
 
-        const transaction: TransactionResponse = await contract.revokeDelegation(signedDelegation, parsedSignedIntendedRevocation);
+        const transaction: TransactionResponse = await contract.revokeDelegation(
+          signedDelegation,
+          parsedSignedIntendedRevocation,
+          // Setting gasLimit as eth_estimateGas call takes too long in L2 chain
+          { gasLimit }
+        );
+
         receipt = await transaction.wait();
 
         break;
