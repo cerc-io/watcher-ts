@@ -4,7 +4,7 @@
 
 import debug from 'debug';
 import { ethers, Signer } from 'ethers';
-import { TransactionResponse } from '@ethersproject/providers';
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/providers';
 
 import { abi as PhisherRegistryABI } from './artifacts/PhisherRegistry.json';
 
@@ -17,36 +17,51 @@ const MESSAGE_KINDS = {
   REVOKE: 'revoke'
 };
 
-export async function sendMessageToLaconic (signer: Signer, contractAddress: string, data: any): Promise<void> {
+export async function sendMessageToL2 (signer: Signer, contractAddress: string, data: any): Promise<void> {
   const { kind, message } = data;
   const contract = new ethers.Contract(contractAddress, PhisherRegistryABI, signer);
+  let receipt: TransactionReceipt | undefined;
 
-  switch (kind) {
-    case MESSAGE_KINDS.INVOKE: {
-      const signedInvocations = message;
+  try {
+    switch (kind) {
+      case MESSAGE_KINDS.INVOKE: {
+        const signedInvocations = message;
 
-      const transaction: TransactionResponse = await contract.invoke(signedInvocations);
-      const receipt = await transaction.wait();
+        const transaction: TransactionResponse = await contract.invoke(signedInvocations);
+        receipt = await transaction.wait();
 
-      log('Transaction receipt', {
-        contractAddress: receipt.contractAddress,
+        break;
+      }
+
+      case MESSAGE_KINDS.REVOKE: {
+        const { signedDelegation, signedIntendedRevocation } = message;
+        const parsedSignedIntendedRevocation = _parseSignedIntendedRevocation(signedIntendedRevocation);
+
+        const transaction: TransactionResponse = await contract.revokeDelegation(signedDelegation, parsedSignedIntendedRevocation);
+        receipt = await transaction.wait();
+
+        break;
+      }
+
+      default: {
+        log(`Handler for libp2p message kind ${kind} not implemented`);
+        log(JSON.stringify(message, null, 2));
+        break;
+      }
+    }
+
+    if (receipt) {
+      log(`Transaction receipt for ${kind} message`, {
+        to: receipt.to,
         blockNumber: receipt.blockNumber,
         blockHash: receipt.blockHash,
         transactionHash: receipt.transactionHash,
-        effectiveGasPrice: receipt.effectiveGasPrice,
-        gasUsed: receipt.gasUsed
+        effectiveGasPrice: receipt.effectiveGasPrice.toString(),
+        gasUsed: receipt.gasUsed.toString()
       });
-
-      break;
     }
-
-    // TODO: Handle revoke messages
-
-    default: {
-      log(`Handler for libp2p message kind ${kind} not implemented`);
-      log(JSON.stringify(message, null, 2));
-      break;
-    }
+  } catch (error) {
+    log(error);
   }
 }
 
@@ -94,16 +109,19 @@ function _parseRevocation (log: debug.Debugger, msg: any): void {
   log(JSON.stringify(signedDelegation, null, 2));
   log('Signed intention to revoke:');
   const stringifiedSignedIntendedRevocation = JSON.stringify(
-    signedIntendedRevocation,
-    (key, value) => {
-      if (key === 'delegationHash' && value.type === 'Buffer') {
-        // Show hex value for delegationHash instead of Buffer
-        return ethers.utils.hexlify(Buffer.from(value));
-      }
-
-      return value;
-    },
+    _parseSignedIntendedRevocation(signedIntendedRevocation),
+    null,
     2
   );
   log(stringifiedSignedIntendedRevocation);
+}
+
+function _parseSignedIntendedRevocation (signedIntendedRevocation: any): any {
+  // TODO: Parse broadcast messages with types not supported by JSON
+  return {
+    ...signedIntendedRevocation,
+    intentionToRevoke: {
+      delegationHash: ethers.utils.hexlify(Buffer.from(signedIntendedRevocation.intentionToRevoke.delegationHash))
+    }
+  };
 }

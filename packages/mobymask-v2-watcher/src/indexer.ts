@@ -270,7 +270,7 @@ export class Indexer implements IndexerInterface {
     defaultValue: any
   ): Promise<Entity> {
     const [{ number }, syncStatus] = await Promise.all([
-      // Laconic chain doesn't support eth_getHeaderByHash
+      // Laconicd doesn't support eth_getHeaderByHash
       // this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
       this._ethProvider.getBlock(blockHash),
       this.getSyncStatus()
@@ -334,7 +334,7 @@ export class Indexer implements IndexerInterface {
       return {
         value,
         proof: {
-          // Returning null value as proof, since ethers library getStorageAt method doesnt return proof.
+          // Returning null value as proof, since ethers library getStorageAt method doesn't return proof.
           data: JSON.stringify(null)
         }
       };

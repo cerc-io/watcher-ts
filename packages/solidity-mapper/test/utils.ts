@@ -13,7 +13,7 @@ import isArray from 'lodash/isArray';
 
 import { StorageLayout, GetStorageAt } from '../src';
 
-// storageLayout doesnt exist in type CompilerOutput doesnt.
+// storageLayout doesn't exist in type CompilerOutput doesn't.
 // Extending CompilerOutput type to include storageLayout property.
 interface StorageCompilerOutput extends CompilerOutput {
   contracts: {
@@ -82,7 +82,7 @@ export const getStorageAt: GetStorageAt = async ({ blockHash, contract, slot }) 
   return {
     value,
     proof: {
-      // Returning null value as proof, since ethers library getStorageAt method doesnt return proof.
+      // Returning null value as proof, since ethers library getStorageAt method doesn't return proof.
       // This function is used in tests to mock the getStorageAt method of ipld-eth-client which returns proof along with value.
       data: JSON.stringify(null)
     }

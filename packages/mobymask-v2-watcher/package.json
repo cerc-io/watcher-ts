@@ -25,7 +25,7 @@
     "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts",
     "index-block": "DEBUG=vulcanize:* ts-node src/cli/index-block.ts",
     "peer": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/cli/peer.js",
-    "peer-laconic": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/peer-laconic.js"
+    "peer-listener": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/peer-listener.js"
   },
   "repository": {
     "type": "git",

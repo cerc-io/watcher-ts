@@ -10,11 +10,11 @@ import {
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
-import { sendMessageToLaconic } from './libp2p-utils';
+import { sendMessageToL2 } from './libp2p-utils';
 import { readPeerId } from '@cerc-io/cli';
 import { ethers } from 'ethers';
 
-const log = debug('vulcanize:peer-laconic');
+const log = debug('vulcanize:peer-listener');
 
 export const main = async (): Promise<any> => {
   const argv = _getArgv();
@@ -51,7 +51,7 @@ export const main = async (): Promise<any> => {
     log('Received a message on mobymask P2P network from peer:', peerId);
 
     // TODO: throttle message handler
-    sendMessageToLaconic(wallet, argv.contractAddress, data);
+    sendMessageToL2(wallet, argv.contractAddress, data);
   });
 
   log(`Peer ID: ${peer.peerId?.toString()}`);
@@ -71,7 +71,7 @@ const _getArgv = (): any => {
     privateKey: {
       alias: 'private-key',
       demandOption: true,
-      describe: 'Private key of the laconic account used for eth_call',
+      describe: 'Private key of the account to use for eth_call',
       type: 'string'
     },
     contractAddress: {
