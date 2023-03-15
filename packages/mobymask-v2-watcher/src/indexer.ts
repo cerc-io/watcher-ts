@@ -11,7 +11,7 @@ import { ethers } from 'ethers';
 import { JsonFragment } from '@ethersproject/abi';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { EthClient } from '@cerc-io/ipld-eth-client';
-import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
+import { MappingKey, StorageLayout, getStorageValue } from '@cerc-io/solidity-mapper';
 import {
   Indexer as BaseIndexer,
   IndexerInterface,
@@ -270,11 +270,14 @@ export class Indexer implements IndexerInterface {
     defaultValue: any
   ): Promise<Entity> {
     const [{ number }, syncStatus] = await Promise.all([
-      this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      // Laconic chain doesn't support eth_getHeaderByHash
+      // this._ethProvider.send('eth_getHeaderByHash', [blockHash]),
+      this._ethProvider.getBlock(blockHash),
       this.getSyncStatus()
     ]);
 
-    const blockNumber = ethers.BigNumber.from(number).toNumber();
+    // const blockNumber = ethers.BigNumber.from(number).toNumber();
+    const blockNumber = number;
 
     let result: ValueResult = {
       value: defaultValue
@@ -294,7 +297,17 @@ export class Indexer implements IndexerInterface {
       const storageLayout = this._storageLayoutMap.get(KIND_PHISHERREGISTRY);
       assert(storageLayout);
 
-      result = await this._baseIndexer.getStorageValue(
+      // Get storage value using ipld-eth-server
+      // result = await this._baseIndexer.getStorageValue(
+      //   storageLayout,
+      //   blockHash,
+      //   contractAddress,
+      //   storageVariableName,
+      //   ...Object.values(mappingKeys)
+      // );
+
+      // Get storage value using ETH RPC endpoint
+      result = await this._getStorageValueRPC(
         storageLayout,
         blockHash,
         contractAddress,
@@ -311,6 +324,30 @@ export class Indexer implements IndexerInterface {
       value: result.value,
       proof: result.proof ? JSONbigNative.stringify(result.proof) : null
     } as any;
+  }
+
+  async _getStorageValueRPC (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
+    const getStorageAt = async (params: { blockHash: string, contract: string, slot: string }) => {
+      const { blockHash, contract, slot } = params;
+      const value = await this._ethProvider.getStorageAt(contract, slot, blockHash);
+
+      return {
+        value,
+        proof: {
+          // Returning null value as proof, since ethers library getStorageAt method doesnt return proof.
+          data: JSON.stringify(null)
+        }
+      };
+    };
+
+    return getStorageValue(
+      storageLayout,
+      getStorageAt,
+      blockHash,
+      contractAddress,
+      variable,
+      ...mappingKeys
+    );
   }
 
   async getStorageValue (storageLayout: StorageLayout, blockHash: string, contractAddress: string, variable: string, ...mappingKeys: MappingKey[]): Promise<ValueResult> {
@@ -608,11 +645,19 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getAncestorAtDepth(blockHash, depth);
   }
 
-  // Get latest block using eth client.
+  // Get latest block using eth provider.
   async getLatestBlock (): Promise<BlockHeight> {
-    const { block } = await this._ethClient.getBlockByHash();
+    // Use ipld-eth-server
+    // const { block } = await this._ethClient.getBlockByHash();
 
-    return block;
+    // Use ETH RPC endpoint
+    const number = await this._ethProvider.getBlockNumber();
+    const { hash } = await this._ethProvider.getBlock(number);
+
+    return {
+      number,
+      hash
+    };
   }
 
   // Get full transaction data.
