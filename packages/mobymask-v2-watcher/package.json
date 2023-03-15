@@ -24,7 +24,8 @@
     "import-state:dev": "DEBUG=vulcanize:* ts-node src/cli/import-state.ts",
     "inspect-cid": "DEBUG=vulcanize:* ts-node src/cli/inspect-cid.ts",
     "index-block": "DEBUG=vulcanize:* ts-node src/cli/index-block.ts",
-    "peer": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/cli/peer.js"
+    "peer": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/cli/peer.js",
+    "peer-laconic": "DEBUG='vulcanize:*, laconic:*' node --enable-source-maps dist/peer-laconic.js"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,7 @@
     "@cerc-io/ipld-eth-client": "^0.2.30",
     "@cerc-io/solidity-mapper": "^0.2.30",
     "@cerc-io/util": "^0.2.30",
+    "@cerc-io/peer": "^0.2.30",
     "@ethersproject/providers": "^5.4.4",
     "apollo-type-bigint": "^0.1.3",
     "debug": "^4.3.1",

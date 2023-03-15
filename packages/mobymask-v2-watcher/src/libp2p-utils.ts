@@ -3,9 +3,12 @@
 //
 
 import debug from 'debug';
-import { ethers } from 'ethers';
+import { ethers, Signer } from 'ethers';
+import { TransactionResponse } from '@ethersproject/providers';
 
 import { abi as PhisherRegistryABI } from './artifacts/PhisherRegistry.json';
+
+const log = debug('laconic:libp2p-utils');
 
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
 
@@ -13,6 +16,39 @@ const MESSAGE_KINDS = {
   INVOKE: 'invoke',
   REVOKE: 'revoke'
 };
+
+export async function sendMessageToLaconic (signer: Signer, contractAddress: string, data: any): Promise<void> {
+  const { kind, message } = data;
+  const contract = new ethers.Contract(contractAddress, PhisherRegistryABI, signer);
+
+  switch (kind) {
+    case MESSAGE_KINDS.INVOKE: {
+      const signedInvocations = message;
+
+      const transaction: TransactionResponse = await contract.invoke(signedInvocations);
+      const receipt = await transaction.wait();
+
+      log('Transaction receipt', {
+        contractAddress: receipt.contractAddress,
+        blockNumber: receipt.blockNumber,
+        blockHash: receipt.blockHash,
+        transactionHash: receipt.transactionHash,
+        effectiveGasPrice: receipt.effectiveGasPrice,
+        gasUsed: receipt.gasUsed
+      });
+
+      break;
+    }
+
+    // TODO: Handle revoke messages
+
+    default: {
+      log(`Handler for libp2p message kind ${kind} not implemented`);
+      log(JSON.stringify(message, null, 2));
+      break;
+    }
+  }
+}
 
 export function parseLibp2pMessage (log: debug.Debugger, peerId: string, data: any): void {
   log('Received a message on mobymask P2P network from peer:', peerId);
