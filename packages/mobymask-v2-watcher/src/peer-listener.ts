@@ -16,7 +16,7 @@ import { ethers } from 'ethers';
 
 const log = debug('vulcanize:peer-listener');
 
-const DEFAULT_GAS_LIMIT = 5000;
+const DEFAULT_GAS_LIMIT = 500000;
 
 interface Arguments {
   configFile: string;

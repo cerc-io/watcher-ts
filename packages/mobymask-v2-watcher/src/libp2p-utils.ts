@@ -47,11 +47,10 @@ export async function sendMessageToL2 (
 
       case MESSAGE_KINDS.REVOKE: {
         const { signedDelegation, signedIntendedRevocation } = message;
-        const parsedSignedIntendedRevocation = _parseSignedIntendedRevocation(signedIntendedRevocation);
 
         const transaction: TransactionResponse = await contract.revokeDelegation(
           signedDelegation,
-          parsedSignedIntendedRevocation,
+          signedIntendedRevocation,
           // Setting gasLimit as eth_estimateGas call takes too long in L2 chain
           { gasLimit }
         );
@@ -126,20 +125,5 @@ function _parseRevocation (log: debug.Debugger, msg: any): void {
   log('Signed delegation:');
   log(JSON.stringify(signedDelegation, null, 2));
   log('Signed intention to revoke:');
-  const stringifiedSignedIntendedRevocation = JSON.stringify(
-    _parseSignedIntendedRevocation(signedIntendedRevocation),
-    null,
-    2
-  );
-  log(stringifiedSignedIntendedRevocation);
-}
-
-function _parseSignedIntendedRevocation (signedIntendedRevocation: any): any {
-  // TODO: Parse broadcast messages with types not supported by JSON
-  return {
-    ...signedIntendedRevocation,
-    intentionToRevoke: {
-      delegationHash: ethers.utils.hexlify(Buffer.from(signedIntendedRevocation.intentionToRevoke.delegationHash))
-    }
-  };
+  log(JSON.stringify(signedIntendedRevocation, null, 2));
 }
