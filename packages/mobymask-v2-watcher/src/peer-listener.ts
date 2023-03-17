@@ -10,7 +10,7 @@ import {
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
-import { sendMessageToL2 } from './libp2p-utils';
+import { getCurrentTime, sendMessageToL2 } from './libp2p-utils';
 import { readPeerId } from '@cerc-io/cli';
 import { ethers } from 'ethers';
 
@@ -57,7 +57,7 @@ export const main = async (): Promise<any> => {
   const wallet = new ethers.Wallet(argv.privateKey, ethProvider);
 
   peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
-    log('Received a message on mobymask P2P network from peer:', peerId);
+    log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
 
     // TODO: throttle message handler
     sendMessageToL2(wallet, argv, data);

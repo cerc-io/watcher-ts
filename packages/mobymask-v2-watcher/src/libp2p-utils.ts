@@ -83,7 +83,7 @@ export async function sendMessageToL2 (
 }
 
 export function parseLibp2pMessage (log: debug.Debugger, peerId: string, data: any): void {
-  log('Received a message on mobymask P2P network from peer:', peerId);
+  log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
   const { kind, message } = data;
 
   switch (kind) {
@@ -106,6 +106,11 @@ export function parseLibp2pMessage (log: debug.Debugger, peerId: string, data: a
 
   log('------------------------------------------');
 }
+
+export const getCurrentTime = (): string => {
+  const now = new Date();
+  return `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+};
 
 function _parseInvocation (log: debug.Debugger, msg: any): void {
   log('Signed invocations:');
