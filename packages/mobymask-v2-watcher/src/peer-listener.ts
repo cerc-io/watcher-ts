@@ -57,7 +57,7 @@ export const main = async (): Promise<any> => {
   const wallet = new ethers.Wallet(argv.privateKey, ethProvider);
 
   peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
-    log(`[${getCurrentTime}] Received a message on mobymask P2P network from peer:`, peerId);
+    log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
 
     // TODO: throttle message handler
     sendMessageToL2(wallet, argv, data);
