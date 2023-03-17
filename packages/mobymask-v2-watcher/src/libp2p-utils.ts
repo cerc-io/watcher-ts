@@ -3,9 +3,12 @@
 //
 
 import debug from 'debug';
-import { ethers } from 'ethers';
+import { ethers, Signer } from 'ethers';
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/providers';
 
 import { abi as PhisherRegistryABI } from './artifacts/PhisherRegistry.json';
+
+const log = debug('laconic:libp2p-utils');
 
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
 
@@ -13,6 +16,71 @@ const MESSAGE_KINDS = {
   INVOKE: 'invoke',
   REVOKE: 'revoke'
 };
+
+export async function sendMessageToL2 (
+  signer: Signer,
+  { contractAddress, gasLimit }: {
+    contractAddress: string,
+    gasLimit: number
+  },
+  data: any
+): Promise<void> {
+  const { kind, message } = data;
+  const contract = new ethers.Contract(contractAddress, PhisherRegistryABI, signer);
+  let receipt: TransactionReceipt | undefined;
+
+  try {
+    switch (kind) {
+      case MESSAGE_KINDS.INVOKE: {
+        const signedInvocations = message;
+
+        const transaction: TransactionResponse = await contract.invoke(
+          signedInvocations,
+          // Setting gasLimit as eth_estimateGas call takes too long in L2 chain
+          { gasLimit }
+        );
+
+        receipt = await transaction.wait();
+
+        break;
+      }
+
+      case MESSAGE_KINDS.REVOKE: {
+        const { signedDelegation, signedIntendedRevocation } = message;
+
+        const transaction: TransactionResponse = await contract.revokeDelegation(
+          signedDelegation,
+          signedIntendedRevocation,
+          // Setting gasLimit as eth_estimateGas call takes too long in L2 chain
+          { gasLimit }
+        );
+
+        receipt = await transaction.wait();
+
+        break;
+      }
+
+      default: {
+        log(`Handler for libp2p message kind ${kind} not implemented`);
+        log(JSON.stringify(message, null, 2));
+        break;
+      }
+    }
+
+    if (receipt) {
+      log(`Transaction receipt for ${kind} message`, {
+        to: receipt.to,
+        blockNumber: receipt.blockNumber,
+        blockHash: receipt.blockHash,
+        transactionHash: receipt.transactionHash,
+        effectiveGasPrice: receipt.effectiveGasPrice.toString(),
+        gasUsed: receipt.gasUsed.toString()
+      });
+    }
+  } catch (error) {
+    log(error);
+  }
+}
 
 export function parseLibp2pMessage (log: debug.Debugger, peerId: string, data: any): void {
   log('Received a message on mobymask P2P network from peer:', peerId);
@@ -57,17 +125,5 @@ function _parseRevocation (log: debug.Debugger, msg: any): void {
   log('Signed delegation:');
   log(JSON.stringify(signedDelegation, null, 2));
   log('Signed intention to revoke:');
-  const stringifiedSignedIntendedRevocation = JSON.stringify(
-    signedIntendedRevocation,
-    (key, value) => {
-      if (key === 'delegationHash' && value.type === 'Buffer') {
-        // Show hex value for delegationHash instead of Buffer
-        return ethers.utils.hexlify(Buffer.from(value));
-      }
-
-      return value;
-    },
-    2
-  );
-  log(stringifiedSignedIntendedRevocation);
+  log(JSON.stringify(signedIntendedRevocation, null, 2));
 }
