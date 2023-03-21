@@ -3,14 +3,13 @@
 //
 
 import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
-import wrtc from 'wrtc';
 import debug from 'debug';
 import assert from 'assert';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import { WebRTCDirectNodeType, webRTCDirect } from '@cerc-io/webrtc-direct';
+import { webSockets } from '@libp2p/websockets';
 import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import type { Message } from '@libp2p/interface-pubsub';
@@ -25,7 +24,6 @@ import {
   DEFAULT_PING_TIMEOUT,
   PUBSUB_DISCOVERY_INTERVAL,
   PUBSUB_SIGNATURE_POLICY,
-  WEBRTC_PORT_RANGE,
   MAX_CONCURRENT_DIALS_PER_PEER,
   DEBUG_INFO_TOPIC
 } from './constants.js';
@@ -51,11 +49,11 @@ export interface RelayNodeInitConfig {
 }
 
 export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2p> {
-  const listenMultiaddrs = [`/ip4/${init.host}/tcp/${init.port}/http/p2p-webrtc-direct`];
+  const listenMultiaddrs = [`/ip4/${init.host}/tcp/${init.port}/ws`];
   const announceMultiaddrs = [];
 
   if (init.announceDomain) {
-    announceMultiaddrs.push(`/dns4/${init.announceDomain}/tcp/443/https/p2p-webrtc-direct`);
+    announceMultiaddrs.push(`/dns4/${init.announceDomain}/tcp/443/wss`);
   }
 
   let peerId: PeerId | undefined;
@@ -73,15 +71,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
       listen: listenMultiaddrs,
       announce: announceMultiaddrs
     },
-    transports: [
-      webRTCDirect({
-        wrtc,
-        enableSignalling: true,
-        nodeType: WebRTCDirectNodeType.Relay,
-        initiatorOptions: { webRTCPortRange: WEBRTC_PORT_RANGE },
-        receiverOptions: { webRTCPortRange: WEBRTC_PORT_RANGE }
-      })
-    ],
+    transports: [webSockets()],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
     pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
@@ -99,6 +89,10 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
       advertise: {
         enabled: true
       }
+    },
+    webRTCSignal: {
+      enabled: true,
+      isSignallingNode: true
     },
     connectionManager: {
       maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,

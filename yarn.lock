@@ -2376,12 +2376,12 @@
     uint8arrays "^4.0.3"
 
 "@libp2p/interface-address-manager@^2.0.0":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@libp2p/interface-address-manager/-/interface-address-manager-2.0.4.tgz#c62853e692306c19619c05d7650b73502e2b7c61"
-  integrity sha512-RcSi+z+xpVKJXq3BsfLf2rq8zb8VTAFown6uJBu02towMc0enYqqhwlV9DxcCaC573MgQ7gY2s/3XvxQdFraVA==
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@libp2p/interface-address-manager/-/interface-address-manager-2.0.5.tgz#913fceed38b7cfe12a1e546764e3428a1fbaffda"
+  integrity sha512-e2vLstKkYlAG2PZe6SEBpnnP2Y/ej6URue+zAiyjJPuXoOGNzHyLaqcv7MKye171OEf9dg5wv1gFphWcUJJbSA==
   dependencies:
     "@libp2p/interfaces" "^3.0.0"
-    "@multiformats/multiaddr" "^11.0.0"
+    "@multiformats/multiaddr" "^12.0.0"
 
 "@libp2p/interface-connection-encrypter@^3.0.0":
   version "3.0.5"
@@ -2558,9 +2558,9 @@
     "@multiformats/multiaddr" "^11.0.0"
 
 "@libp2p/interface-pubsub@^3.0.0":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@libp2p/interface-pubsub/-/interface-pubsub-3.0.5.tgz#f0c5af114aa0d26fc20ac0d32d24c2fb1f237523"
-  integrity sha512-+DsqrkDeYBuokMCuqLvlsdq4D/Tcs9bwSHeNUw1V88ffZE+pqmMIYntyIpFoI4SCLOxqB8U1B5yAlF/OBuJFSw==
+  version "3.0.6"
+  resolved "https://registry.yarnpkg.com/@libp2p/interface-pubsub/-/interface-pubsub-3.0.6.tgz#416f52d44ebc7e62e6b5caf086aff3e429e4a950"
+  integrity sha512-c1aVHAhxmEh9IpLBgJyCsMscVDl7YUeP1Iq6ILEQoWiPJhNpQqdfmqyk7ZfrzuBU19VFe1EqH0bLuLDbtfysTQ==
   dependencies:
     "@libp2p/interface-connection" "^3.0.0"
     "@libp2p/interface-peer-id" "^2.0.0"
@@ -2853,6 +2853,26 @@
     private-ip "^3.0.0"
     uint8arraylist "^2.3.2"
 
+"@libp2p/websockets@^5.0.5":
+  version "5.0.7"
+  resolved "https://registry.yarnpkg.com/@libp2p/websockets/-/websockets-5.0.7.tgz#5bbc8bba329cda0deb541b1a8a3b1722d848090a"
+  integrity sha512-N/tbngkT+eX4/9MQJtSD4S6EkVwWkD86Qt3VRw2cH0ksYiLc2oEZoCxuVhp8Fj708xnw+3ozF2RuQNmhkXAOSw==
+  dependencies:
+    "@libp2p/interface-connection" "^3.0.2"
+    "@libp2p/interface-transport" "^2.0.0"
+    "@libp2p/interfaces" "^3.0.3"
+    "@libp2p/logger" "^2.0.0"
+    "@libp2p/utils" "^3.0.2"
+    "@multiformats/mafmt" "^12.0.0"
+    "@multiformats/multiaddr" "^12.0.0"
+    "@multiformats/multiaddr-to-uri" "^9.0.2"
+    abortable-iterator "^4.0.2"
+    it-ws "^5.0.6"
+    p-defer "^4.0.0"
+    p-timeout "^6.0.0"
+    wherearewe "^2.0.1"
+    ws "^8.12.1"
+
 "@metamask/eth-sig-util@^4.0.0":
   version "4.0.1"
   resolved "https://registry.npmjs.org/@metamask/eth-sig-util/-/eth-sig-util-4.0.1.tgz"
@@ -2871,6 +2891,20 @@
   dependencies:
     "@multiformats/multiaddr" "^11.0.0"
 
+"@multiformats/mafmt@^12.0.0":
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/@multiformats/mafmt/-/mafmt-12.0.0.tgz#9fb8d023029b40451639742cb6253cb452e8cb1b"
+  integrity sha512-dBKVV9/2zXY2Iz/NpRTS88YbUHtPefG75NAq3ucciwnMtSvWTyiQfh3I6FMqClEk0jEv2mRLLg5VhekbhfebfA==
+  dependencies:
+    "@multiformats/multiaddr" "^12.0.0"
+
+"@multiformats/multiaddr-to-uri@^9.0.2":
+  version "9.0.4"
+  resolved "https://registry.yarnpkg.com/@multiformats/multiaddr-to-uri/-/multiaddr-to-uri-9.0.4.tgz#d739e1bfed8d060553f2b63aaedeba26b017efce"
+  integrity sha512-y2XDH/h6U1hnkFNyt3NeJhUv+9PiXJlzC6RZOOzK2OY3JgM6l6RrPrOJ1Tc2Sn4Aw6b2aUKY4C6nN4h6j9/+Vg==
+  dependencies:
+    "@multiformats/multiaddr" "^12.0.0"
+
 "@multiformats/multiaddr@^11.0.0", "@multiformats/multiaddr@^11.1.4":
   version "11.1.4"
   resolved "https://registry.yarnpkg.com/@multiformats/multiaddr/-/multiaddr-11.1.4.tgz#55be2da1d82973af1f9f38415143b894ec2d095c"
@@ -2887,6 +2921,18 @@
   version "11.3.0"
   resolved "https://registry.yarnpkg.com/@multiformats/multiaddr/-/multiaddr-11.3.0.tgz#c73a4bfd6a63a64b77964be291334c70382a49d5"
   integrity sha512-Inrmp986nHe92pgYyOWNVnB8QDmYe5EhR/7TStc46O4YEm87pbc1i4DWiTlEJ6tOpL8V6IBH5ol8BZsIaN+Tww==
+  dependencies:
+    "@chainsafe/is-ip" "^2.0.1"
+    dns-over-http-resolver "^2.1.0"
+    err-code "^3.0.1"
+    multiformats "^11.0.0"
+    uint8arrays "^4.0.2"
+    varint "^6.0.0"
+
+"@multiformats/multiaddr@^12.0.0":
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/@multiformats/multiaddr/-/multiaddr-12.0.0.tgz#9bdb5ed92f47b743a22197062d0ab7a85ac0bb3b"
+  integrity sha512-qqrRN3d7xb4iFzdF11Nni7rsUwdxdWx9F/txyQc6y+eLPRc9NhZ1TSFOk3hArI0RAWAfogEMYmkiXtqfX6RRpw==
   dependencies:
     "@chainsafe/is-ip" "^2.0.1"
     dns-over-http-resolver "^2.1.0"
@@ -10244,7 +10290,7 @@ iso-random-stream@^2.0.2:
     events "^3.3.0"
     readable-stream "^3.4.0"
 
-iso-url@^1.1.5:
+iso-url@^1.1.2, iso-url@^1.1.5:
   version "1.2.1"
   resolved "https://registry.npmjs.org/iso-url/-/iso-url-1.2.1.tgz"
   integrity sha512-9JPDgCN4B7QPkLtYAAOrEuAWvP9rWvR5offAr0/SeF046wIkglqH3VXgYYP6NcsKslH80UIVgmPqNe3j7tG2ng==
@@ -10422,7 +10468,7 @@ it-sort@^2.0.0:
   dependencies:
     it-all "^2.0.0"
 
-it-stream-types@^1.0.3, it-stream-types@^1.0.4:
+it-stream-types@^1.0.2, it-stream-types@^1.0.3, it-stream-types@^1.0.4:
   version "1.0.5"
   resolved "https://registry.npmjs.org/it-stream-types/-/it-stream-types-1.0.5.tgz"
   integrity sha512-I88Ka1nHgfX62e5mi5LLL+oueqz7Ltg0bUdtsUKDe9SoUqbQPf2Mp5kxDTe9pNhHQGs4pvYPAINwuZ1HAt42TA==
@@ -10443,6 +10489,17 @@ it-to-stream@^1.0.0:
     p-defer "^3.0.0"
     p-fifo "^1.0.0"
     readable-stream "^3.6.0"
+
+it-ws@^5.0.6:
+  version "5.0.6"
+  resolved "https://registry.yarnpkg.com/it-ws/-/it-ws-5.0.6.tgz#9b69ff2ef9d08fda18ef2db604acf972d0fedded"
+  integrity sha512-TEEJQaGtkxgP/nGVq8dq48nPT85Afu8kwwvtDFLj4rQLWRhZcb26RWdXLdn9qhXkWPiWbK5H7JWBW1Bebj/SuQ==
+  dependencies:
+    event-iterator "^2.0.0"
+    iso-url "^1.1.2"
+    it-stream-types "^1.0.2"
+    uint8arrays "^4.0.2"
+    ws "^8.4.0"
 
 iterall@^1.2.1, iterall@^1.3.0:
   version "1.3.0"
@@ -16791,6 +16848,11 @@ ws@^8.11.0:
   version "8.11.0"
   resolved "https://registry.npmjs.org/ws/-/ws-8.11.0.tgz"
   integrity sha512-HPG3wQd9sNQoT9xHyNCXoDUa+Xw/VevmY9FoHyQ+g+rrMn4j6FB4np7Z0OhdTgjx6MgQLK7jwSy1YecU1+4Asg==
+
+ws@^8.12.1, ws@^8.4.0:
+  version "8.13.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-8.13.0.tgz#9a9fb92f93cf41512a0735c8f4dd09b8a1211cd0"
+  integrity sha512-x9vcZYTrFPC7aSIbj7sRCYo7L/Xb8Iy+pW0ng0wt2vCJv7M9HOMy0UoN3rr+IFC7hb7vXoqS+P9ktyLLLhO+LA==
 
 xdg-basedir@^4.0.0:
   version "4.0.0"
