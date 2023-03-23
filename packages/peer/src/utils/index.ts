@@ -2,6 +2,7 @@
 // Copyright 2023 Vulcanize, Inc.
 //
 
+import * as mafmt from '@multiformats/mafmt';
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import debug from 'debug';
@@ -10,12 +11,17 @@ import assert from 'assert';
 import { Libp2p } from '@cerc-io/libp2p';
 import { Multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import type { Connection } from '@libp2p/interface-connection';
 
 import { ConnectionInfo, ConnectionType, DebugMsg, DebugPeerInfo, DebugResponse, SelfInfo } from '../types/debug-info.js';
-import { DEBUG_INFO_TOPIC } from '../constants.js';
+import { DEBUG_INFO_TOPIC, P2P_WEBRTC_STAR_ID } from '../constants.js';
 import { PeerHearbeatChecker } from '../peer-heartbeat-checker.js';
 
 const log = debug('laconic:utils');
+
+// p2p multi-address codes
+export const CODE_P2P = 421;
+export const CODE_CIRCUIT = 290;
 
 interface DialWithRetryOptions {
   redialInterval: number
@@ -34,7 +40,7 @@ const DEFAULT_DIAL_RETRY_OPTIONS: DialWithRetryOptions = {
  * @param multiaddr
  * @param options
  */
-export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options: Partial<DialWithRetryOptions>) => {
+export const dialWithRetry = async (node: Libp2p, multiaddr: Multiaddr, options: Partial<DialWithRetryOptions>): Promise<Connection> => {
   const { redialInterval, maxRetry } = {
     ...DEFAULT_DIAL_RETRY_OPTIONS,
     ...options
@@ -136,5 +142,22 @@ export const getConnectionsInfo = (node: Libp2p, peerHeartbeatChecker: PeerHearb
       type: connection.remoteAddr.toString().includes('p2p-circuit/p2p') ? ConnectionType.Relayed : ConnectionType.Direct,
       latency: peerHeartbeatChecker.getLatencyData(connection.remotePeer)
     };
+  });
+};
+
+export const wsPeerFilter = (multiaddrs: Multiaddr[]): Multiaddr[] => {
+  return multiaddrs.filter((ma) => {
+    if (ma.protoCodes().includes(CODE_CIRCUIT)) {
+      return false;
+    }
+
+    if (ma.protoNames().includes(P2P_WEBRTC_STAR_ID)) {
+      return false;
+    }
+
+    const testMa = ma.decapsulateCode(CODE_P2P);
+
+    return mafmt.WebSockets.matches(testMa) ||
+      mafmt.WebSocketsSecure.matches(testMa);
   });
 };

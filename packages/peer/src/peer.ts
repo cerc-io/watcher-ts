@@ -2,7 +2,6 @@
 // Copyright 2023 Vulcanize, Inc.
 //
 
-import wrtc from 'wrtc';
 import assert from 'assert';
 import { Buffer } from 'buffer';
 import { pipe } from 'it-pipe';
@@ -14,10 +13,9 @@ import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import debug from 'debug';
 
 import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
-import { webRTCDirect, WebRTCDirectComponents, P2P_WEBRTC_STAR_ID, WebRTCDirectNodeType, WebRTCDirectInit } from '@cerc-io/webrtc-direct';
+import { webSockets } from '@libp2p/websockets';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
-import type { Transport } from '@libp2p/interface-transport';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
@@ -41,10 +39,11 @@ import {
   DEFAULT_PING_TIMEOUT,
   P2P_CIRCUIT_ID,
   CHAT_PROTOCOL,
-  DEBUG_INFO_TOPIC
+  DEBUG_INFO_TOPIC,
+  P2P_WEBRTC_STAR_ID
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, wsPeerFilter } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const log = debug('laconic:peer');
@@ -72,7 +71,7 @@ export interface PeerInitConfig {
 export class Peer {
   _node?: Libp2p
   _peerHeartbeatChecker?: PeerHearbeatChecker
-  _wrtcTransport: (components: WebRTCDirectComponents) => Transport
+  _webRTCSignallingEnabled: boolean
 
   _relayNodeMultiaddr: Multiaddr
   _numRelayConnections = 0
@@ -88,20 +87,13 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
   _metrics = new PrometheusMetrics()
 
   constructor (relayNodeURL: string, nodejs?: boolean) {
+    this._webRTCSignallingEnabled = !(nodejs === true);
     this._relayNodeMultiaddr = multiaddr(relayNodeURL);
 
     const relayPeerId = this._relayNodeMultiaddr.getPeerId();
     assert(relayPeerId);
 
-    log(`Using peer ${relayPeerId.toString()} (${getPseudonymForPeerId(relayPeerId.toString())}) as the primary relay node`);
-
-    const initOptions: WebRTCDirectInit = {
-      wrtc: nodejs ? wrtc : undefined, // Instantiation in nodejs
-      enableSignalling: true,
-      nodeType: WebRTCDirectNodeType.Peer,
-      relayPeerId
-    };
-    this._wrtcTransport = webRTCDirect(initOptions);
+    log(`Using peer ${relayPeerId} (${getPseudonymForPeerId(relayPeerId)}) as the primary relay node`);
   }
 
   get peerId (): PeerId | undefined {
@@ -132,14 +124,26 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
         peerId = await createFromJSON(peerIdObj);
       }
 
+      let webRTCSignal = {};
+      if (this._webRTCSignallingEnabled) {
+        const relayPeerIdString = this._relayNodeMultiaddr.getPeerId();
+        assert(relayPeerIdString);
+
+        webRTCSignal = {
+          enabled: true,
+          isSignallingNode: false,
+          autoSignal: {
+            enabled: true,
+            relayPeerId: relayPeerIdString
+          }
+        };
+      }
+
       this._node = await createLibp2p({
         peerId,
-        addresses: {
-          // Use existing protocol id in multiaddr to listen through signalling channel to relay node
-          // Allows direct webrtc connection to a peer if possible (eg. peers on a same network)
-          listen: [`${this._relayNodeMultiaddr.toString()}/${P2P_WEBRTC_STAR_ID}`]
-        },
-        transports: [this._wrtcTransport],
+        transports: [webSockets({
+          filter: wsPeerFilter
+        })],
         connectionEncryption: [noise()],
         streamMuxers: [mplex()],
         pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
@@ -156,6 +160,7 @@ _peerStreamMap: Map<string, Pushable<any>> = new Map()
             maxListeners: 2
           }
         },
+        webRTCSignal,
         connectionManager: {
           maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
           autoDial: false,

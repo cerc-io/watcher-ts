@@ -2,6 +2,7 @@
 // Copyright 2023 Vulcanize, Inc.
 //
 
+export const P2P_WEBRTC_STAR_ID = 'p2p-webrtc-star';
 export const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEBUG_INFO_TOPIC = 'debug-info';
