@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/peer",
-  "version": "0.2.30",
+  "version": "0.2.31",
   "description": "libp2p module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
@@ -25,7 +25,7 @@
     "dev": "node dist/index.js",
     "create-peer": "node dist/cli/create-peer.js",
     "relay-node": "DEBUG='laconic:*' node dist/cli/relay.js",
-    "test" : "mocha dist/peer.test.js"
+    "test": "mocha dist/peer.test.js"
   },
   "dependencies": {
     "@cerc-io/libp2p": "0.42.2-laconic-0.1.2",

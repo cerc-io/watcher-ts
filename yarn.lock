@@ -299,10 +299,10 @@
     binaryen "101.0.0-nightly.20210723"
     long "^4.0.0"
 
-"@cerc-io/libp2p@0.42.2-laconic-0.1.1":
-  version "0.42.2-laconic-0.1.1"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Flibp2p/-/0.42.2-laconic-0.1.1/libp2p-0.42.2-laconic-0.1.1.tgz#428272102b0fff29816e387557f43d7b31aa6b68"
-  integrity sha512-uoXiyLMhO4vPvNK9Vmpj+p9GHZJk4+ON3qdMj22ui+8sjf/CNOfhOG9mQcUa2u2FMDo5rUAXp2wMehKphCVDzg==
+"@cerc-io/libp2p@0.42.2-laconic-0.1.2":
+  version "0.42.2-laconic-0.1.2"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Flibp2p/-/0.42.2-laconic-0.1.2/libp2p-0.42.2-laconic-0.1.2.tgz#43aba6b6b96a26c72ad262234ad1f7d164d3f510"
+  integrity sha512-FKiA5KmyWZ0gjYhbRA4bpk/V5prXJazehPLnCDjnHmHvkAe84GkmX+AZvKhTSHunkZCRy2JWclBfFocQhfLE1g==
   dependencies:
     "@achingbrain/nat-port-mapper" "^1.0.3"
     "@libp2p/crypto" "^1.0.4"
@@ -333,6 +333,7 @@
     "@libp2p/peer-store" "^6.0.0"
     "@libp2p/tracked-map" "^3.0.0"
     "@libp2p/utils" "^3.0.2"
+    "@libp2p/webrtc-peer" "^2.0.2"
     "@multiformats/mafmt" "^11.0.2"
     "@multiformats/multiaddr" "^11.0.0"
     abortable-iterator "^4.0.2"
@@ -353,6 +354,7 @@
     it-merge "^2.0.0"
     it-pair "^2.0.2"
     it-pipe "^2.0.3"
+    it-pushable "^3.1.2"
     it-sort "^2.0.0"
     it-stream-types "^1.0.4"
     merge-options "^3.0.4"
@@ -2795,6 +2797,22 @@
     it-stream-types "^1.0.4"
     private-ip "^3.0.0"
     uint8arraylist "^2.3.2"
+
+"@libp2p/webrtc-peer@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@libp2p/webrtc-peer/-/webrtc-peer-2.0.2.tgz#71c240e34905c6c97e20fdf703cec025c745c155"
+  integrity sha512-FozliUqHO1CIzrL8hPc5uT+5AGUWf5Dw3HncL9tte/CoDNVpj6O59ITIRWefssp3oIGEAIjpcebNu1d+mYfVug==
+  dependencies:
+    "@libp2p/interfaces" "^3.0.2"
+    "@libp2p/logger" "^2.0.0"
+    delay "^5.0.0"
+    err-code "^3.0.1"
+    iso-random-stream "^2.0.2"
+    it-pushable "^3.0.0"
+    it-stream-types "^1.0.4"
+    p-defer "^4.0.0"
+    p-event "^5.0.1"
+    uint8arrays "^4.0.2"
 
 "@libp2p/websockets@^5.0.5":
   version "5.0.7"
@@ -10212,6 +10230,14 @@ isexe@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
+
+iso-random-stream@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/iso-random-stream/-/iso-random-stream-2.0.2.tgz#a24f77c34cfdad9d398707d522a6a0cc640ff27d"
+  integrity sha512-yJvs+Nnelic1L2vH2JzWvvPQFA4r7kSTnpST/+LkAQjSz0hos2oqLD+qIVi9Qk38Hoe7mNDt3j0S27R58MVjLQ==
+  dependencies:
+    events "^3.3.0"
+    readable-stream "^3.4.0"
 
 iso-url@^1.1.2, iso-url@^1.1.5:
   version "1.2.1"
