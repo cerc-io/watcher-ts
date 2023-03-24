@@ -27,7 +27,7 @@ interface Arguments {
 }
 
 export class PeerCmd {
-  async exec (pubSubTopic?: string, parseLibp2pMessage?: (log: debug.Debugger, peerId: string, data: any) => void): Promise<any> {
+  async exec (pubSubTopic?: string, parseLibp2pMessage?: (peerId: string, data: any) => void): Promise<any> {
     const argv: Arguments = _getArgv();
 
     const { Peer } = await import('@cerc-io/peer');
@@ -52,7 +52,7 @@ export class PeerCmd {
     if (pubSubTopic) {
       peer.subscribeTopic(pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
-          parseLibp2pMessage(log, peerId.toString(), data);
+          parseLibp2pMessage(peerId.toString(), data);
         } else {
           log(`> ${peerId.toString()} > ${data}`);
         }

@@ -69,6 +69,18 @@ export interface RelayConfig {
   enableDebugInfo?: boolean;
 }
 
+// L2 tx config
+interface L2TxConfig {
+  // Address of contract for which txs are sent
+  contractAddress: string;
+
+  // Private key of tx signer (needs to have some balance)
+  privateKey: string;
+
+  // Gas limit for tx
+  gasLimit?: number
+}
+
 // Peer config
 export interface PeerConfig {
   // Multiaddr of the primary relay node for this peer
@@ -100,6 +112,9 @@ export interface PeerConfig {
 
   // Participate in exchange of debug info over floodsub
   enableDebugInfo?: boolean;
+
+  // Config for sending txs to L2
+  l2TxConfig?: L2TxConfig;
 }
 
 // P2P config

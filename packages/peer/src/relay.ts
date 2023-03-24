@@ -85,9 +85,6 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
       hop: {
         enabled: true,
         timeout: HOP_TIMEOUT
-      },
-      advertise: {
-        enabled: true
       }
     },
     webRTCSignal: {
