@@ -41,5 +41,5 @@ export class Network {
   stakedPercentiles!: bigint[];
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

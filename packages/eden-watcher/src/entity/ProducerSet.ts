@@ -20,5 +20,5 @@ export class ProducerSet {
   producers!: string[];
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

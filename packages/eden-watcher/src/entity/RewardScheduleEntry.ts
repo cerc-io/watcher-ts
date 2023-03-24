@@ -27,5 +27,5 @@ export class RewardScheduleEntry {
   rewardsPerEpoch!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

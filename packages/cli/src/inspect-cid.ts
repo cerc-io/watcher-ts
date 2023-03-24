@@ -31,7 +31,7 @@ interface Arguments {
 }
 
 export class InspectCIDCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

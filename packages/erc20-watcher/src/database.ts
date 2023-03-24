@@ -20,8 +20,8 @@ import { StateSyncStatus } from './entity/StateSyncStatus';
 export const ENTITIES = [Allowance, Balance];
 
 export class Database implements DatabaseInterface {
-  _config: ConnectionOptions
-  _conn!: Connection
+  _config: ConnectionOptions;
+  _conn!: Connection;
   _baseDatabase: BaseDatabase;
 
   constructor (config: ConnectionOptions) {

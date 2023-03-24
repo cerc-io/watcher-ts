@@ -24,5 +24,5 @@ export class Staker {
   rank!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

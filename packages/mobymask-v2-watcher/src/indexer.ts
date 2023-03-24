@@ -53,15 +53,15 @@ const JSONbigNative = JSONbig({ useNativeBigInt: true });
 export const KIND_PHISHERREGISTRY = 'PhisherRegistry';
 
 export class Indexer implements IndexerInterface {
-  _db: Database
-  _ethClient: EthClient
-  _ethProvider: JsonRpcProvider
-  _baseIndexer: BaseIndexer
-  _serverConfig: ServerConfig
+  _db: Database;
+  _ethClient: EthClient;
+  _ethProvider: JsonRpcProvider;
+  _baseIndexer: BaseIndexer;
+  _serverConfig: ServerConfig;
 
-  _abiMap: Map<string, JsonFragment[]>
-  _storageLayoutMap: Map<string, StorageLayout>
-  _contractMap: Map<string, ethers.utils.Interface>
+  _abiMap: Map<string, JsonFragment[]>;
+  _storageLayoutMap: Map<string, StorageLayout>;
+  _contractMap: Map<string, ethers.utils.Interface>;
 
   constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: JsonRpcProvider, jobQueue: JobQueue) {
     assert(db);

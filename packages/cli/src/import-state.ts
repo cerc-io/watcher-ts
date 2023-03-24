@@ -36,7 +36,7 @@ interface Arguments {
 }
 
 export class ImportStateCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

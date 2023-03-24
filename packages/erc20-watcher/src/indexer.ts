@@ -61,16 +61,16 @@ interface EventResult {
 }
 
 export class Indexer implements IndexerInterface {
-  _db: Database
-  _ethClient: EthClient
-  _ethProvider: BaseProvider
-  _baseIndexer: BaseIndexer
-  _serverConfig: ServerConfig
+  _db: Database;
+  _ethClient: EthClient;
+  _ethProvider: BaseProvider;
+  _baseIndexer: BaseIndexer;
+  _serverConfig: ServerConfig;
 
-  _abi: JsonFragment[]
-  _storageLayout: StorageLayout
-  _contract: ethers.utils.Interface
-  _serverMode: string
+  _abi: JsonFragment[];
+  _storageLayout: StorageLayout;
+  _contract: ethers.utils.Interface;
+  _serverMode: string;
 
   constructor (serverConfig: ServerConfig, db: DatabaseInterface, clients: Clients, ethProvider: BaseProvider, jobQueue: JobQueue) {
     assert(db);

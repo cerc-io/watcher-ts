@@ -63,5 +63,5 @@ export class Block {
   size!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

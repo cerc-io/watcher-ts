@@ -54,16 +54,16 @@ interface CachedEntities {
 }
 
 export class GraphDatabase {
-  _serverConfig: ServerConfig
-  _conn!: Connection
-  _baseDatabase: BaseDatabase
-  _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>
-  _entityToLatestEntityMap: Map<new () => any, new () => any> = new Map()
+  _serverConfig: ServerConfig;
+  _conn!: Connection;
+  _baseDatabase: BaseDatabase;
+  _entityQueryTypeMap: Map<new() => any, ENTITY_QUERY_TYPE>;
+  _entityToLatestEntityMap: Map<new () => any, new () => any> = new Map();
 
   _cachedEntities: CachedEntities = {
     frothyBlocks: new Map(),
     latestPrunedEntities: new Map()
-  }
+  };
 
   constructor (
     serverConfig: ServerConfig,

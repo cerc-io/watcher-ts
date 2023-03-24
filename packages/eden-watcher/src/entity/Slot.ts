@@ -41,5 +41,5 @@ export class Slot {
   taxRatePerDay!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

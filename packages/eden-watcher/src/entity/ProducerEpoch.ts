@@ -35,5 +35,5 @@ export class ProducerEpoch {
   blocksProducedRatio!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

@@ -28,7 +28,7 @@ export class PeerHearbeatChecker {
   _node: Libp2p;
   _pingInterval: number;
   _pingTimeout: number;
-  _peerMap: Map<string, PeerData> = new Map()
+  _peerMap: Map<string, PeerData> = new Map();
 
   constructor (node: Libp2p, options: Partial<PeerHearbeatCheckerOptions> = {}) {
     this._node = node;

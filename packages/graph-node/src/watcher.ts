@@ -50,7 +50,7 @@ export class GraphWatcher {
   _wasmRestartBlocksInterval: number;
   _dataSources: any[] = [];
   _dataSourceMap: { [key: string]: DataSource } = {};
-  _transactionsMap: Map<string, Transaction> = new Map()
+  _transactionsMap: Map<string, Transaction> = new Map();
 
   _context: Context = {};
 

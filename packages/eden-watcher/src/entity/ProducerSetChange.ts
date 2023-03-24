@@ -35,5 +35,5 @@ export class ProducerSetChange {
   changeType!: ProducerSetChangeType;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

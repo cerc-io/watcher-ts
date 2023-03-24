@@ -7,7 +7,6 @@ import { Config, DEFAULT_CONFIG_PATH, getConfig, initClients } from '@cerc-io/ut
 import {
   PeerInitConfig,
   PeerIdObj
-  // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
 import { getCurrentTime, sendMessageToL2 } from './libp2p-utils';

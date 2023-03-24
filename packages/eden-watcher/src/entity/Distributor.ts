@@ -20,5 +20,5 @@ export class Distributor {
   currentDistribution!: string;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

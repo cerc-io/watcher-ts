@@ -21,13 +21,13 @@ const log = debug('vulcanize:events');
 export const BlockProgressEvent = 'block-progress-event';
 
 export class EventWatcher {
-  _ethClient: EthClient
-  _indexer: IndexerInterface
-  _pubsub: PubSub
-  _jobQueue: JobQueue
+  _ethClient: EthClient;
+  _indexer: IndexerInterface;
+  _pubsub: PubSub;
+  _jobQueue: JobQueue;
 
-  _shutDown = false
-  _signalCount = 0
+  _shutDown = false;
+  _signalCount = 0;
 
   constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
