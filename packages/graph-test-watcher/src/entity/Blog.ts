@@ -28,10 +28,10 @@ export class Blog {
     enum: BlogType,
     default: BlogType.short
   })
-  kind!: BlogType
+  kind!: BlogType;
 
   @Column('boolean')
-  isActive!: boolean
+  isActive!: boolean;
 
   @Column('numeric', { transformer: bigintArrayTransformer, array: true })
   reviews!: bigint[];

@@ -29,7 +29,7 @@ interface Arguments {
 }
 
 export class JobRunnerCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

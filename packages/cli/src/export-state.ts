@@ -34,7 +34,7 @@ interface Arguments {
 }
 
 export class ExportStateCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

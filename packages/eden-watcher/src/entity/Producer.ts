@@ -33,5 +33,5 @@ export class Producer {
   pendingEpochBlocks!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

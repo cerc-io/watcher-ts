@@ -34,5 +34,5 @@ export class Claim {
   claimed!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

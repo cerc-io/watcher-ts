@@ -39,10 +39,10 @@ export class BlockProgress implements BlockProgressInterface {
   lastProcessedEventIndex!: number;
 
   @Column('boolean')
-  isComplete!: boolean
+  isComplete!: boolean;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 
   @CreateDateColumn()
   createdAt!: Date;

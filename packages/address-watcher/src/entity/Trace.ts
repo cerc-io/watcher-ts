@@ -23,5 +23,5 @@ export class Trace {
   trace!: string;
 
   @ManyToMany(() => Account, account => account.appearances, { eager: true, cascade: ['insert'] })
-  accounts: Account[]
+  accounts: Account[];
 }

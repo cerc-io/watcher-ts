@@ -6,10 +6,10 @@ import { utils } from 'ethers';
 
 // Initialize a Token Definition with the attributes.
 export class StaticTokenDefinition {
-  address : string
-  symbol: string
-  name: string
-  decimals: bigint
+  address : string;
+  symbol: string;
+  name: string;
+  decimals: bigint;
 
   // Initialize a Token Definition with its attributes.
   constructor (address: string, symbol: string, name: string, decimals: bigint) {

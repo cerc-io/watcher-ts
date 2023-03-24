@@ -29,5 +29,5 @@ export class RewardSchedule {
   activeRewardScheduleEntry!: string;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean
+  isPruned!: boolean;
 }

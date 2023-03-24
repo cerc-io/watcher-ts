@@ -37,7 +37,7 @@ interface Arguments {
 }
 
 export class FillCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

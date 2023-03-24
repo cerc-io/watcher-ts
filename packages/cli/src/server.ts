@@ -45,7 +45,7 @@ interface Arguments {
 }
 
 export class ServerCmd {
-  _argv?: Arguments
+  _argv?: Arguments;
   _baseCmd: BaseCmd;
 
   constructor () {

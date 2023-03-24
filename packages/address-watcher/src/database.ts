@@ -12,8 +12,8 @@ import { BlockProgress } from './entity/BlockProgress';
 import { Trace } from './entity/Trace';
 
 export class Database {
-  _config: ConnectionOptions
-  _conn!: Connection
+  _config: ConnectionOptions;
+  _conn!: Connection;
 
   constructor (config: ConnectionOptions) {
     assert(config);
