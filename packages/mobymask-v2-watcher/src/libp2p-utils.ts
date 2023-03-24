@@ -8,6 +8,8 @@ import { TransactionReceipt, TransactionResponse } from '@ethersproject/provider
 
 import { abi as PhisherRegistryABI } from './artifacts/PhisherRegistry.json';
 
+const log = debug('vulcanize:libp2p-utils');
+
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
 
 const MESSAGE_KINDS = {
@@ -24,14 +26,13 @@ export function createMessageToL2Handler (
     gasLimit?: number
   }
 ) {
-  return (log: debug.Debugger, peerId: string, data: any): void => {
+  return (peerId: string, data: any): void => {
     log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
-    sendMessageToL2(log, signer, { contractAddress, gasLimit }, data);
+    sendMessageToL2(signer, { contractAddress, gasLimit }, data);
   };
 }
 
 export async function sendMessageToL2 (
-  log: debug.Debugger,
   signer: Signer,
   { contractAddress, gasLimit = DEFAULT_GAS_LIMIT }: {
     contractAddress: string,
@@ -96,18 +97,18 @@ export async function sendMessageToL2 (
   }
 }
 
-export function parseLibp2pMessage (log: debug.Debugger, peerId: string, data: any): void {
+export function parseLibp2pMessage (peerId: string, data: any): void {
   log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
   const { kind, message } = data;
 
   switch (kind) {
     case MESSAGE_KINDS.INVOKE: {
-      _parseInvocation(log, message);
+      _parseInvocation(message);
       break;
     }
 
     case MESSAGE_KINDS.REVOKE: {
-      _parseRevocation(log, message);
+      _parseRevocation(message);
       break;
     }
 
@@ -126,7 +127,7 @@ export const getCurrentTime = (): string => {
   return `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
 };
 
-function _parseInvocation (log: debug.Debugger, msg: any): void {
+function _parseInvocation (msg: any): void {
   log('Signed invocations:');
   log(JSON.stringify(msg, null, 2));
 
@@ -139,7 +140,7 @@ function _parseInvocation (log: debug.Debugger, msg: any): void {
   });
 }
 
-function _parseRevocation (log: debug.Debugger, msg: any): void {
+function _parseRevocation (msg: any): void {
   const { signedDelegation, signedIntendedRevocation } = msg;
   log('Signed delegation:');
   log(JSON.stringify(signedDelegation, null, 2));
