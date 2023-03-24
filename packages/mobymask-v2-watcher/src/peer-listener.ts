@@ -59,7 +59,7 @@ export const main = async (): Promise<any> => {
     log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
 
     // TODO: throttle message handler
-    sendMessageToL2(wallet, argv, data);
+    sendMessageToL2(log, wallet, argv, data);
   });
 
   log(`Peer ID: ${peer.peerId?.toString()}`);

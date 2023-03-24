@@ -8,8 +8,6 @@ import { TransactionReceipt, TransactionResponse } from '@ethersproject/provider
 
 import { abi as PhisherRegistryABI } from './artifacts/PhisherRegistry.json';
 
-const log = debug('laconic:libp2p-utils');
-
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
 
 const MESSAGE_KINDS = {
@@ -17,11 +15,27 @@ const MESSAGE_KINDS = {
   REVOKE: 'revoke'
 };
 
-export async function sendMessageToL2 (
+const DEFAULT_GAS_LIMIT = 500000;
+
+export function createMessageToL2Handler (
   signer: Signer,
   { contractAddress, gasLimit }: {
     contractAddress: string,
-    gasLimit: number
+    gasLimit?: number
+  }
+) {
+  return (log: debug.Debugger, peerId: string, data: any): void => {
+    log(`[${getCurrentTime()}] Received a message on mobymask P2P network from peer:`, peerId);
+    sendMessageToL2(log, signer, { contractAddress, gasLimit }, data);
+  };
+}
+
+export async function sendMessageToL2 (
+  log: debug.Debugger,
+  signer: Signer,
+  { contractAddress, gasLimit = DEFAULT_GAS_LIMIT }: {
+    contractAddress: string,
+    gasLimit?: number
   },
   data: any
 ): Promise<void> {

@@ -1,7 +1,7 @@
 [server]
   host = "127.0.0.1"
   port = 3010
-  kind = "active"
+  kind = "lazy"
 
   # Checkpointing state.
   checkpointing = true
@@ -32,6 +32,11 @@
     [server.p2p.peer]
       relayMultiaddr = ''
       pubSubTopic = 'mobymask'
+      peerIdFile = ''
+
+      [server.p2p.peer.l2TxConfig]
+        privateKey = ''
+        contractAddress = ''
 
 [metrics]
   host = "127.0.0.1"
