@@ -11,32 +11,32 @@ import { bigintTransformer, decimalTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Author {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  blogCount!: bigint;
+    blogCount!: bigint;
 
   @Column('varchar')
-  name!: string;
+    name!: string;
 
   @Column('integer')
-  paramInt!: number;
+    paramInt!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  paramBigInt!: bigint;
+    paramBigInt!: bigint;
 
   @Column('varchar')
-  paramBytes!: string;
+    paramBytes!: string;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  rating!: Decimal;
+    rating!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

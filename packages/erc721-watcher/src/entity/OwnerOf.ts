@@ -9,23 +9,23 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockHash', 'contractAddress', 'tokenId'], { unique: true })
 export class OwnerOf {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  tokenId!: bigint;
+    tokenId!: bigint;
 
   @Column('varchar')
-  value!: string;
+    value!: string;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

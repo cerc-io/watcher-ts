@@ -8,26 +8,26 @@ import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 @Index(['blockNumber'])
 export class RewardSchedule {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { array: true })
-  rewardScheduleEntries!: string[];
+    rewardScheduleEntries!: string[];
 
   @Column('varchar', { nullable: true })
-  lastEpoch!: string;
+    lastEpoch!: string;
 
   @Column('varchar', { nullable: true })
-  pendingEpoch!: string;
+    pendingEpoch!: string;
 
   @Column('varchar', { nullable: true })
-  activeRewardScheduleEntry!: string;
+    activeRewardScheduleEntry!: string;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

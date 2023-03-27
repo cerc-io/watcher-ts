@@ -8,26 +8,26 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 @Index(['blockHash', 'contractAddress', 'owner', 'operator'], { unique: true })
 export class IsApprovedForAll {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar', { length: 42 })
-  owner!: string;
+    owner!: string;
 
   @Column('varchar', { length: 42 })
-  operator!: string;
+    operator!: string;
 
   @Column('boolean')
-  value!: boolean;
+    value!: boolean;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

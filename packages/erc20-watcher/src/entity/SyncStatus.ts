@@ -9,35 +9,35 @@ import { SyncStatusInterface } from '@cerc-io/util';
 @Entity()
 export class SyncStatus implements SyncStatusInterface {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   // Latest block hash and number from the chain itself.
   @Column('varchar', { length: 66 })
-  chainHeadBlockHash!: string;
+    chainHeadBlockHash!: string;
 
   @Column('integer')
-  chainHeadBlockNumber!: number;
+    chainHeadBlockNumber!: number;
 
   // Most recent block hash that's been indexed.
   @Column('varchar', { length: 66 })
-  latestIndexedBlockHash!: string;
+    latestIndexedBlockHash!: string;
 
   // Most recent block number that's been indexed.
   @Column('integer')
-  latestIndexedBlockNumber!: number;
+    latestIndexedBlockNumber!: number;
 
   // Most recent block hash and number that we can consider as part
   // of the canonical/finalized chain. Reorgs older than this block
   // cannot be processed and processing will halt.
   @Column('varchar', { length: 66 })
-  latestCanonicalBlockHash!: string;
+    latestCanonicalBlockHash!: string;
 
   @Column('integer')
-  latestCanonicalBlockNumber!: number;
+    latestCanonicalBlockNumber!: number;
 
   @Column('varchar', { length: 66 })
-  initialIndexedBlockHash!: string;
+    initialIndexedBlockHash!: string;
 
   @Column('integer')
-  initialIndexedBlockNumber!: number;
+    initialIndexedBlockNumber!: number;
 }

@@ -9,20 +9,20 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Staker {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  staked!: bigint;
+    staked!: bigint;
 
   @Column('numeric', { nullable: true, transformer: bigintTransformer })
-  rank!: bigint;
+    rank!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

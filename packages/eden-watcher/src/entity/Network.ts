@@ -10,36 +10,36 @@ import { bigintArrayTransformer, bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Network {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { nullable: true })
-  slot0!: string;
+    slot0!: string;
 
   @Column('varchar', { nullable: true })
-  slot1!: string;
+    slot1!: string;
 
   @Column('varchar', { nullable: true })
-  slot2!: string;
+    slot2!: string;
 
   @Column('varchar', { array: true })
-  stakers!: string[];
+    stakers!: string[];
 
   @Column('numeric', { nullable: true, transformer: bigintTransformer })
-  numStakers!: bigint;
+    numStakers!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  totalStaked!: bigint;
+    totalStaked!: bigint;
 
   // https://github.com/brianc/node-postgres/issues/1943#issuecomment-520500053
   @Column('varchar', { transformer: bigintArrayTransformer, array: true })
-  stakedPercentiles!: bigint[];
+    stakedPercentiles!: bigint[];
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

@@ -8,12 +8,12 @@ import { Trace } from './Trace';
 @Entity()
 export class Account {
   @PrimaryColumn('varchar', { length: 42 })
-  address!: string;
+    address!: string;
 
   @Column('integer')
-  startingBlock!: number;
+    startingBlock!: number;
 
   @ManyToMany(() => Trace, trace => trace.accounts)
   @JoinTable()
-  appearances: Trace[];
+    appearances: Trace[];
 }

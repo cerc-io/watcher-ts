@@ -8,17 +8,17 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 @Index(['address'], { unique: true })
 export class Contract {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 42 })
-  address!: string;
+    address!: string;
 
   @Column('varchar', { length: 8 })
-  kind!: string;
+    kind!: string;
 
   @Column('boolean')
-  checkpoint!: boolean;
+    checkpoint!: boolean;
 
   @Column('integer')
-  startingBlock!: number;
+    startingBlock!: number;
 }

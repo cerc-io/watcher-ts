@@ -8,17 +8,17 @@ import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 @Index(['blockNumber'])
 export class ProducerSet {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { array: true })
-  producers!: string[];
+    producers!: string[];
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

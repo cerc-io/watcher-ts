@@ -9,23 +9,23 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class RewardScheduleEntry {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  startTime!: bigint;
+    startTime!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  epochDuration!: bigint;
+    epochDuration!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  rewardsPerEpoch!: bigint;
+    rewardsPerEpoch!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

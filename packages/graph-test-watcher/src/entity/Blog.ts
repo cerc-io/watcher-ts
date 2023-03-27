@@ -15,33 +15,33 @@ enum BlogType {
 @Index(['blockNumber'])
 export class Blog {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column({
     type: 'enum',
     enum: BlogType,
     default: BlogType.short
   })
-  kind!: BlogType;
+    kind!: BlogType;
 
   @Column('boolean')
-  isActive!: boolean;
+    isActive!: boolean;
 
   @Column('numeric', { transformer: bigintArrayTransformer, array: true })
-  reviews!: bigint[];
+    reviews!: bigint[];
 
   @Column('varchar')
-  author!: string;
+    author!: string;
 
   @Column('varchar', { array: true })
-  categories!: string[];
+    categories!: string[];
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

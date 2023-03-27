@@ -12,30 +12,30 @@ import { BlockProgress } from './BlockProgress';
 @Index(['block', 'contract', 'eventName'])
 export class Event {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @ManyToOne(() => BlockProgress, { onDelete: 'CASCADE' })
-  block!: BlockProgress;
+    block!: BlockProgress;
 
   @Column('varchar', { length: 66 })
-  txHash!: string;
+    txHash!: string;
 
   // Index of the log in the block.
   @Column('integer')
-  index!: number;
+    index!: number;
 
   @Column('varchar', { length: 42 })
-  contract!: string;
+    contract!: string;
 
   @Column('varchar', { length: 256 })
-  eventName!: string;
+    eventName!: string;
 
   @Column('text')
-  eventInfo!: string;
+    eventInfo!: string;
 
   @Column('text')
-  extraInfo!: string;
+    extraInfo!: string;
 
   @Column('text')
-  proof!: string;
+    proof!: string;
 }

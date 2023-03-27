@@ -9,29 +9,29 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Producer {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('boolean')
-  active!: boolean;
+    active!: boolean;
 
   @Column('varchar', { nullable: true })
-  rewardCollector!: string;
+    rewardCollector!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  rewards!: bigint;
+    rewards!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  confirmedBlocks!: bigint;
+    confirmedBlocks!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  pendingEpochBlocks!: bigint;
+    pendingEpochBlocks!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

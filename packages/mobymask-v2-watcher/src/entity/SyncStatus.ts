@@ -8,29 +8,29 @@ import { SyncStatusInterface } from '@cerc-io/util';
 @Entity()
 export class SyncStatus implements SyncStatusInterface {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  chainHeadBlockHash!: string;
+    chainHeadBlockHash!: string;
 
   @Column('integer')
-  chainHeadBlockNumber!: number;
+    chainHeadBlockNumber!: number;
 
   @Column('varchar', { length: 66 })
-  latestIndexedBlockHash!: string;
+    latestIndexedBlockHash!: string;
 
   @Column('integer')
-  latestIndexedBlockNumber!: number;
+    latestIndexedBlockNumber!: number;
 
   @Column('varchar', { length: 66 })
-  latestCanonicalBlockHash!: string;
+    latestCanonicalBlockHash!: string;
 
   @Column('integer')
-  latestCanonicalBlockNumber!: number;
+    latestCanonicalBlockNumber!: number;
 
   @Column('varchar', { length: 66 })
-  initialIndexedBlockHash!: string;
+    initialIndexedBlockHash!: string;
 
   @Column('integer')
-  initialIndexedBlockNumber!: number;
+    initialIndexedBlockNumber!: number;
 }

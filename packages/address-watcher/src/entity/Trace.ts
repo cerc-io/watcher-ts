@@ -11,17 +11,17 @@ import { Account } from './Account';
 @Index(['blockNumber'])
 export class Trace {
   @PrimaryColumn('varchar', { length: 66 })
-  txHash!: string;
+    txHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('text')
-  trace!: string;
+    trace!: string;
 
   @ManyToMany(() => Account, account => account.appearances, { eager: true, cascade: ['insert'] })
-  accounts: Account[];
+    accounts: Account[];
 }

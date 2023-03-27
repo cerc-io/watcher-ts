@@ -10,29 +10,29 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Distribution {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar')
-  distributor!: string;
+    distributor!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  timestamp!: bigint;
+    timestamp!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  distributionNumber!: bigint;
+    distributionNumber!: bigint;
 
   @Column('varchar')
-  merkleRoot!: string;
+    merkleRoot!: string;
 
   @Column('varchar')
-  metadataURI!: string;
+    metadataURI!: string;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

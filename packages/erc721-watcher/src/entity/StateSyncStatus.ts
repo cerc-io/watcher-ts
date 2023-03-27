@@ -7,11 +7,11 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity()
 export class StateSyncStatus {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('integer')
-  latestIndexedBlockNumber!: number;
+    latestIndexedBlockNumber!: number;
 
   @Column('integer', { nullable: true })
-  latestCheckpointBlockNumber!: number;
+    latestCheckpointBlockNumber!: number;
 }

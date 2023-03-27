@@ -8,17 +8,17 @@ import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 @Index(['blockNumber'])
 export class BlockProgress {
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('integer')
-  numTx!: number;
+    numTx!: number;
 
   @Column('integer')
-  numTracedTx!: number;
+    numTracedTx!: number;
 
   @Column('boolean')
-  isComplete!: boolean;
+    isComplete!: boolean;
 }
