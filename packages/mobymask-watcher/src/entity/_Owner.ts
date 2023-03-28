@@ -8,20 +8,20 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 @Index(['blockHash', 'contractAddress'], { unique: true })
 export class _Owner {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar')
-  value!: string;
+    value!: string;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

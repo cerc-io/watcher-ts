@@ -9,20 +9,20 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockHash', 'contractAddress'], { unique: true })
 export class _Test {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  value!: bigint;
+    value!: bigint;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

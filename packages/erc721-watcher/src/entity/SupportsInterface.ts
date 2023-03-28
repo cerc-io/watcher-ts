@@ -8,23 +8,23 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 @Index(['blockHash', 'contractAddress', 'interfaceId'], { unique: true })
 export class SupportsInterface {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar')
-  interfaceId!: string;
+    interfaceId!: string;
 
   @Column('boolean')
-  value!: boolean;
+    value!: boolean;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

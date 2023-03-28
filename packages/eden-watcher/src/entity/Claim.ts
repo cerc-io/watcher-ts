@@ -10,29 +10,29 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Claim {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  timestamp!: bigint;
+    timestamp!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  index!: bigint;
+    index!: bigint;
 
   @Column('varchar')
-  account!: string;
+    account!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  totalEarned!: bigint;
+    totalEarned!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  claimed!: bigint;
+    claimed!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

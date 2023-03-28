@@ -9,59 +9,59 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Block {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('boolean')
-  fromActiveProducer!: boolean;
+    fromActiveProducer!: boolean;
 
   @Column('varchar')
-  hash!: string;
+    hash!: string;
 
   @Column('varchar')
-  parentHash!: string;
+    parentHash!: string;
 
   @Column('varchar')
-  unclesHash!: string;
+    unclesHash!: string;
 
   @Column('varchar')
-  author!: string;
+    author!: string;
 
   @Column('varchar')
-  stateRoot!: string;
+    stateRoot!: string;
 
   @Column('varchar')
-  transactionsRoot!: string;
+    transactionsRoot!: string;
 
   @Column('varchar')
-  receiptsRoot!: string;
+    receiptsRoot!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  number!: bigint;
+    number!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  gasUsed!: bigint;
+    gasUsed!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  gasLimit!: bigint;
+    gasLimit!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  timestamp!: bigint;
+    timestamp!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  difficulty!: bigint;
+    difficulty!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  totalDifficulty!: bigint;
+    totalDifficulty!: bigint;
 
   @Column('numeric', { nullable: true, transformer: bigintTransformer })
-  size!: bigint;
+    size!: bigint;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

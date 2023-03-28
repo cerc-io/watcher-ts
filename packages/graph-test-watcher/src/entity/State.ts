@@ -14,23 +14,23 @@ import { BlockProgress } from './BlockProgress';
 @Index(['block', 'contractAddress', 'kind'], { unique: true })
 export class State {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @ManyToOne(() => BlockProgress, { onDelete: 'CASCADE' })
-  block!: BlockProgress;
+    block!: BlockProgress;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar')
-  cid!: string;
+    cid!: string;
 
   @Column({
     type: 'enum',
     enum: StateKind
   })
-  kind!: StateKind;
+    kind!: StateKind;
 
   @Column('bytea')
-  data!: Buffer;
+    data!: Buffer;
 }

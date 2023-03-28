@@ -8,14 +8,14 @@ import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 @Index(['blockNumber'])
 export class FrothyEntity {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar')
-  name!: string;
+    name!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 }

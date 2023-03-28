@@ -14,26 +14,26 @@ enum ProducerSetChangeType {
 @Index(['blockNumber'])
 export class ProducerSetChange {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('numeric', { transformer: bigintTransformer })
-  _blockNumber!: bigint;
+    _blockNumber!: bigint;
 
   @Column('varchar')
-  producer!: string;
+    producer!: string;
 
   @Column({
     type: 'enum',
     enum: ProducerSetChangeType
   })
-  changeType!: ProducerSetChangeType;
+    changeType!: ProducerSetChangeType;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

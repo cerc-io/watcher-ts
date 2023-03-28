@@ -16,7 +16,7 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "indent": "off",
+        "indent": ["error", 2, { "SwitchCase": 1 }],
         "@typescript-eslint/no-explicit-any": "off"
     }
 }

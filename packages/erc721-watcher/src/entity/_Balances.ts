@@ -9,23 +9,23 @@ import { bigintTransformer } from '@cerc-io/util';
 @Index(['blockHash', 'contractAddress', 'key0'], { unique: true })
 export class _Balances {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar', { length: 42 })
-  key0!: string;
+    key0!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  value!: bigint;
+    value!: bigint;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

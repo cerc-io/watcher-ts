@@ -8,23 +8,23 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 @Index(['blockHash', 'contractAddress', 'key0'], { unique: true })
 export class IsMember {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number;
 
   @Column('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar', { length: 42 })
-  contractAddress!: string;
+    contractAddress!: string;
 
   @Column('varchar')
-  key0!: string;
+    key0!: string;
 
   @Column('boolean')
-  value!: boolean;
+    value!: boolean;
 
   @Column('text', { nullable: true })
-  proof!: string;
+    proof!: string;
 }

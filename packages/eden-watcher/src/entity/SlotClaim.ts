@@ -11,35 +11,35 @@ import { bigintTransformer, decimalTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class SlotClaim {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('varchar')
-  slot!: string;
+    slot!: string;
 
   @Column('varchar')
-  owner!: string;
+    owner!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  winningBid!: bigint;
+    winningBid!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  oldBid!: bigint;
+    oldBid!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  startTime!: bigint;
+    startTime!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  expirationTime!: bigint;
+    expirationTime!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  taxRatePerDay!: Decimal;
+    taxRatePerDay!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }

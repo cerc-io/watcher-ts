@@ -11,35 +11,35 @@ import { bigintTransformer, decimalTransformer } from '@cerc-io/util';
 @Index(['blockNumber'])
 export class Epoch {
   @PrimaryColumn('varchar')
-  id!: string;
+    id!: string;
 
   @PrimaryColumn('varchar', { length: 66 })
-  blockHash!: string;
+    blockHash!: string;
 
   @Column('integer')
-  blockNumber!: number;
+    blockNumber!: number;
 
   @Column('boolean')
-  finalized!: boolean;
+    finalized!: boolean;
 
   @Column('numeric', { transformer: bigintTransformer })
-  epochNumber!: bigint;
+    epochNumber!: bigint;
 
   @Column('varchar', { nullable: true })
-  startBlock!: string;
+    startBlock!: string;
 
   @Column('varchar', { nullable: true })
-  endBlock!: string;
+    endBlock!: string;
 
   @Column('numeric', { transformer: bigintTransformer })
-  producerBlocks!: bigint;
+    producerBlocks!: bigint;
 
   @Column('numeric', { transformer: bigintTransformer })
-  allBlocks!: bigint;
+    allBlocks!: bigint;
 
   @Column('numeric', { default: 0, transformer: decimalTransformer })
-  producerBlocksRatio!: Decimal;
+    producerBlocksRatio!: Decimal;
 
   @Column('boolean', { default: false })
-  isPruned!: boolean;
+    isPruned!: boolean;
 }
