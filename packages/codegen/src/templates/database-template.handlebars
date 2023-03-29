@@ -37,7 +37,7 @@ export const SUBGRAPH_ENTITIES = new Set([
   {{~/each}}]);
 {{/if}}
 export const ENTITIES = [
-  {{~#each queries as | query |}}{{query.entityName}}, {{/each}}
+  {{~#each queries as | query |}}{{~#if @index }}, {{/if}}{{query.entityName}}{{/each}}
   {{~#if (subgraphPath)}}...SUBGRAPH_ENTITIES{{/if}}];
 {{#if (subgraphPath)}}
 // Map: Entity to suitable query type.
@@ -50,7 +50,7 @@ export class Database implements DatabaseInterface {
   _config: ConnectionOptions;
   _conn!: Connection;
   _baseDatabase: BaseDatabase;
-  _propColMaps: { [key: string]: Map<string, string>; }
+  _propColMaps: { [key: string]: Map<string, string>; };
 
   constructor (config: ConnectionOptions) {
     assert(config);
