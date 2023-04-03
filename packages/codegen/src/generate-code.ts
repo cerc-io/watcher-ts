@@ -47,6 +47,13 @@ const main = async (): Promise<void> => {
       describe: 'Watcher generation config file path (yaml)',
       type: 'string'
     })
+    .option('continue-on-error', {
+      alias: 'C',
+      demandOption: false,
+      default: false,
+      describe: 'Continue generating watcher if unhandled types encountered',
+      type: 'boolean'
+    })
     .argv;
 
   const config = getConfig(path.resolve(argv['config-file']));
@@ -96,7 +103,8 @@ const main = async (): Promise<void> => {
     contracts.push(contractData);
   }
 
-  const visitor = new Visitor();
+  const continueOnError = argv['continue-on-error'];
+  const visitor = new Visitor(continueOnError);
 
   parseAndVisit(visitor, contracts, config.mode);
 

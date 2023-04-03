@@ -25,10 +25,11 @@ export class Visitor {
   _database: Database;
   _client: Client;
   _types: Types;
+  _continueOnError: boolean;
 
   _contract?: { name: string, kind: string };
 
-  constructor () {
+  constructor (continueOnErrorFlag = false) {
     this._schema = new Schema();
     this._resolvers = new Resolvers();
     this._indexer = new Indexer();
@@ -36,6 +37,7 @@ export class Visitor {
     this._database = new Database();
     this._client = new Client();
     this._types = new Types();
+    this._continueOnError = continueOnErrorFlag;
   }
 
   setContract (name: string, kind: string): void {
@@ -66,15 +68,21 @@ export class Visitor {
 
       // TODO Handle multiple return parameters and array return type.
       const returnType = typeName.name;
+      try {
+        this._schema.addQuery(name, params, returnType);
+        this._resolvers.addQuery(name, params, returnType);
+        this._entity.addQuery(name, params, returnType);
+        this._database.addQuery(name, params, returnType);
+        this._client.addQuery(name, params, returnType);
 
-      this._schema.addQuery(name, params, returnType);
-      this._resolvers.addQuery(name, params, returnType);
-      this._entity.addQuery(name, params, returnType);
-      this._database.addQuery(name, params, returnType);
-      this._client.addQuery(name, params, returnType);
-
-      assert(this._contract);
-      this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+        assert(this._contract);
+        this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+      } catch (error: any) {
+        if (!this._continueOnError) {
+          throw error;
+        }
+        console.log(error.message);
+      }
     }
   }
 
