@@ -48,7 +48,7 @@ const main = async (): Promise<void> => {
       type: 'string'
     })
     .option('continue-on-error', {
-      alias: 'C',
+      alias: 'e',
       demandOption: false,
       default: false,
       describe: 'Continue generating watcher if unhandled types encountered',

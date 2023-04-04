@@ -32,9 +32,20 @@ export async function generateArtifacts (contractContent: string, contractFileNa
   };
 
   const solcInstance = (solcVersion === undefined) ? solc : await getSolcByVersion(solcVersion);
+  const compiledContract = JSON.parse(solcInstance.compile(JSON.stringify(input)));
+
+  if (compiledContract.errors?.length) {
+    compiledContract.errors.forEach((error: any) => {
+      if (error.severity === 'error') {
+        throw new Error(error.formattedMessage);
+      }
+
+      console.log(`${error.severity}: ${error.formattedMessage}`);
+    });
+  }
 
   // Get artifacts for the required contract.
-  return JSON.parse(solcInstance.compile(JSON.stringify(input))).contracts[contractFileName][contractName];
+  return compiledContract.contracts[contractFileName][contractName];
 }
 
 async function getSolcByVersion (solcVersion: string): Promise<Solc> {
