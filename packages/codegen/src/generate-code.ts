@@ -90,10 +90,11 @@ const main = async (): Promise<void> => {
       // Generate artifacts from contract.
       const inputFileName = path.basename(inputFile, '.sol');
 
-      const { abi, storageLayout } = generateArtifacts(
+      const { abi, storageLayout } = await generateArtifacts(
         contractData.contractString,
         `${inputFileName}.sol`,
-        contractData.contractName
+        contractData.contractName,
+        config.solc
       );
 
       contractData.contractAbi = abi;
@@ -387,6 +388,7 @@ function getConfig (configFile: string): any {
     mode: inputConfig.mode || MODE_ALL,
     kind: inputConfig.kind || KIND_ACTIVE,
     port: inputConfig.port || DEFAULT_PORT,
+    solc: inputConfig.solc,
     flatten,
     subgraphPath,
     subgraphConfig
