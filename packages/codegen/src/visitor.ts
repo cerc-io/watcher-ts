@@ -25,10 +25,11 @@ export class Visitor {
   _database: Database;
   _client: Client;
   _types: Types;
+  _continueOnError: boolean;
 
   _contract?: { name: string, kind: string };
 
-  constructor () {
+  constructor (continueOnErrorFlag = false) {
     this._schema = new Schema();
     this._resolvers = new Resolvers();
     this._indexer = new Indexer();
@@ -36,6 +37,7 @@ export class Visitor {
     this._database = new Database();
     this._client = new Client();
     this._types = new Types();
+    this._continueOnError = continueOnErrorFlag;
   }
 
   setContract (name: string, kind: string): void {
@@ -56,25 +58,44 @@ export class Visitor {
         return { name: item.name, type: item.typeName.name };
       });
 
-      const typeName = node.returnParameters[0].typeName;
+      let errorMessage = '';
 
-      // TODO Handle user defined type return.
-      if (typeName.type === 'UserDefinedTypeName') {
-        // Skip in case of UserDefinedTypeName.
-        return;
+      const typeName = node.returnParameters[0].typeName;
+      switch (typeName.type) {
+        case 'ElementaryTypeName': {
+          const returnType = typeName.name;
+
+          this._schema.addQuery(name, params, returnType);
+          this._resolvers.addQuery(name, params, returnType);
+          this._entity.addQuery(name, params, returnType);
+          this._database.addQuery(name, params, returnType);
+          this._client.addQuery(name, params, returnType);
+
+          assert(this._contract);
+          this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+
+          break;
+        }
+        case 'UserDefinedTypeName':
+          errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
+          break;
+
+        case 'ArrayTypeName':
+          errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${node.name}"`;
+          break;
+
+        default:
+          errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
       }
 
-      // TODO Handle multiple return parameters and array return type.
-      const returnType = typeName.name;
+      if (errorMessage !== '') {
+        if (this._continueOnError) {
+          console.log(errorMessage);
+          return;
+        }
 
-      this._schema.addQuery(name, params, returnType);
-      this._resolvers.addQuery(name, params, returnType);
-      this._entity.addQuery(name, params, returnType);
-      this._database.addQuery(name, params, returnType);
-      this._client.addQuery(name, params, returnType);
-
-      assert(this._contract);
-      this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+        throw new Error(errorMessage);
+      }
     }
   }
 

@@ -47,6 +47,13 @@ const main = async (): Promise<void> => {
       describe: 'Watcher generation config file path (yaml)',
       type: 'string'
     })
+    .option('continue-on-error', {
+      alias: 'e',
+      demandOption: false,
+      default: false,
+      describe: 'Continue generating watcher if unhandled types encountered',
+      type: 'boolean'
+    })
     .argv;
 
   const config = getConfig(path.resolve(argv['config-file']));
@@ -83,10 +90,11 @@ const main = async (): Promise<void> => {
       // Generate artifacts from contract.
       const inputFileName = path.basename(inputFile, '.sol');
 
-      const { abi, storageLayout } = generateArtifacts(
+      const { abi, storageLayout } = await generateArtifacts(
         contractData.contractString,
         `${inputFileName}.sol`,
-        contractData.contractName
+        contractData.contractName,
+        config.solc
       );
 
       contractData.contractAbi = abi;
@@ -96,7 +104,8 @@ const main = async (): Promise<void> => {
     contracts.push(contractData);
   }
 
-  const visitor = new Visitor();
+  const continueOnError = argv['continue-on-error'];
+  const visitor = new Visitor(continueOnError);
 
   parseAndVisit(visitor, contracts, config.mode);
 
@@ -379,6 +388,7 @@ function getConfig (configFile: string): any {
     mode: inputConfig.mode || MODE_ALL,
     kind: inputConfig.kind || KIND_ACTIVE,
     port: inputConfig.port || DEFAULT_PORT,
+    solc: inputConfig.solc,
     flatten,
     subgraphPath,
     subgraphConfig
