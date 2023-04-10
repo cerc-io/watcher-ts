@@ -33,6 +33,7 @@
       relayMultiaddr = ''
       pubSubTopic = 'mobymask'
       peerIdFile = ''
+      enableL2Txs = false
 
       [server.p2p.peer.l2TxConfig]
         privateKey = ''

@@ -70,7 +70,7 @@ export interface RelayConfig {
 }
 
 // L2 tx config
-interface L2TxConfig {
+interface L2TxsConfig {
   // Address of contract for which txs are sent
   contractAddress: string;
 
@@ -113,8 +113,11 @@ export interface PeerConfig {
   // Participate in exchange of debug info over floodsub
   enableDebugInfo?: boolean;
 
+  // Enable sending txs to L2 chain for every message received in P2P network
+  enableL2Txs: boolean;
+
   // Config for sending txs to L2
-  l2TxConfig?: L2TxConfig;
+  l2TxsConfig?: L2TxsConfig;
 }
 
 // P2P config
