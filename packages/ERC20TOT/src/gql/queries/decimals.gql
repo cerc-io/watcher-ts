@@ -1,0 +1,8 @@
+query decimals($blockHash: String!, $contractAddress: String!){
+    decimals(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}

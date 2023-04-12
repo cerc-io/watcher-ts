@@ -1,0 +1,8 @@
+query _allowances($blockHash: String!, $contractAddress: String!, $key0: String!, $key1: String!){
+    _allowances(blockHash: $blockHash, contractAddress: $contractAddress, key0: $key0, key1: $key1){
+        value
+        proof{
+            data
+        }
+    }
+}

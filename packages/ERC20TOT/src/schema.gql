@@ -1,0 +1,116 @@
+directive @cacheControl(maxAge: Int, inheritMaxAge: Boolean, scope: CacheControlScope) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+scalar BigInt
+
+scalar BigDecimal
+
+scalar Bytes
+
+type Proof {
+  data: String!
+}
+
+type ResultBoolean {
+  value: Boolean!
+  proof: Proof
+}
+
+type ResultString {
+  value: String!
+  proof: Proof
+}
+
+type ResultInt {
+  value: Int!
+  proof: Proof
+}
+
+type ResultBigInt {
+  value: BigInt!
+  proof: Proof
+}
+
+type _Block_ {
+  cid: String!
+  hash: String!
+  number: Int!
+  timestamp: Int!
+  parentHash: String!
+}
+
+type _Transaction_ {
+  hash: String!
+  index: Int!
+  from: String!
+  to: String!
+}
+
+type ResultEvent {
+  block: _Block_!
+  tx: _Transaction_!
+  contract: String!
+  eventIndex: Int!
+  event: Event!
+  proof: Proof
+}
+
+union Event = ApprovalEvent | TransferEvent
+
+type ApprovalEvent {
+  owner: String!
+  spender: String!
+  value: BigInt!
+}
+
+type TransferEvent {
+  from: String!
+  to: String!
+  value: BigInt!
+}
+
+type SyncStatus {
+  latestIndexedBlockHash: String!
+  latestIndexedBlockNumber: Int!
+  latestCanonicalBlockHash: String!
+  latestCanonicalBlockNumber: Int!
+}
+
+type ResultState {
+  block: _Block_!
+  contractAddress: String!
+  cid: String!
+  kind: String!
+  data: String!
+}
+
+type Query {
+  events(blockHash: String!, contractAddress: String!, name: String): [ResultEvent!]
+  eventsInRange(fromBlockNumber: Int!, toBlockNumber: Int!): [ResultEvent!]
+  totalSupply(blockHash: String!, contractAddress: String!): ResultBigInt!
+  balanceOf(blockHash: String!, contractAddress: String!, account: String!): ResultBigInt!
+  allowance(blockHash: String!, contractAddress: String!, owner: String!, spender: String!): ResultBigInt!
+  name(blockHash: String!, contractAddress: String!): ResultString!
+  symbol(blockHash: String!, contractAddress: String!): ResultString!
+  decimals(blockHash: String!, contractAddress: String!): ResultInt!
+  _balances(blockHash: String!, contractAddress: String!, key0: String!): ResultBigInt!
+  _allowances(blockHash: String!, contractAddress: String!, key0: String!, key1: String!): ResultBigInt!
+  _totalSupply(blockHash: String!, contractAddress: String!): ResultBigInt!
+  _name(blockHash: String!, contractAddress: String!): ResultString!
+  _symbol(blockHash: String!, contractAddress: String!): ResultString!
+  getSyncStatus: SyncStatus
+  getStateByCID(cid: String!): ResultState
+  getState(blockHash: String!, contractAddress: String!, kind: String): ResultState
+}
+
+type Mutation {
+  watchContract(address: String!, kind: String!, checkpoint: Boolean!, startingBlock: Int): Boolean!
+}
+
+type Subscription {
+  onEvent: ResultEvent!
+}

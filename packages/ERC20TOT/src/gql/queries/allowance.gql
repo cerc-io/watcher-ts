@@ -1,0 +1,8 @@
+query allowance($blockHash: String!, $contractAddress: String!, $owner: String!, $spender: String!){
+    allowance(blockHash: $blockHash, contractAddress: $contractAddress, owner: $owner, spender: $spender){
+        value
+        proof{
+            data
+        }
+    }
+}

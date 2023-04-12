@@ -1,0 +1,8 @@
+query _totalSupply($blockHash: String!, $contractAddress: String!){
+    _totalSupply(blockHash: $blockHash, contractAddress: $contractAddress){
+        value
+        proof{
+            data
+        }
+    }
+}

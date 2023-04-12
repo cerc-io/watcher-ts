@@ -1,0 +1,15 @@
+query getStateByCID($cid: String!){
+    getStateByCID(cid: $cid){
+        block{
+            cid
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        contractAddress
+        cid
+        kind
+        data
+    }
+}

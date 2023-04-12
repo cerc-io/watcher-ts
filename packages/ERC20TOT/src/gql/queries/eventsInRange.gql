@@ -1,0 +1,34 @@
+query eventsInRange($fromBlockNumber: Int!, $toBlockNumber: Int!){
+    eventsInRange(fromBlockNumber: $fromBlockNumber, toBlockNumber: $toBlockNumber){
+        block{
+            cid
+            hash
+            number
+            timestamp
+            parentHash
+        }
+        tx{
+            hash
+            index
+            from
+            to
+        }
+        contract
+        eventIndex
+        event{
+            ... on ApprovalEvent {
+                owner
+                spender
+                value
+            }
+            ... on TransferEvent {
+                from
+                to
+                value
+            }
+        }
+        proof{
+            data
+        }
+    }
+}

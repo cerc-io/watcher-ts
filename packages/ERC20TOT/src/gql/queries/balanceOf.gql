@@ -1,0 +1,8 @@
+query balanceOf($blockHash: String!, $contractAddress: String!, $account: String!){
+    balanceOf(blockHash: $blockHash, contractAddress: $contractAddress, account: $account){
+        value
+        proof{
+            data
+        }
+    }
+}
