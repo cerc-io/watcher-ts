@@ -62,6 +62,8 @@ Steps:
   # NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.
   ```
 
+* Ensure dependencies are installed in the contracts repository before generating the watcher
+
 * Run the following command to generate a watcher from contract(s):
 
   ```bash

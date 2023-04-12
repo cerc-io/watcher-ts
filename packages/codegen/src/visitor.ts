@@ -60,32 +60,37 @@ export class Visitor {
 
       let errorMessage = '';
 
-      const typeName = node.returnParameters[0].typeName;
-      switch (typeName.type) {
-        case 'ElementaryTypeName': {
-          const returnType = typeName.name;
+      if (node.returnParameters.length > 1) {
+        errorMessage = `No support in codegen for multiple returned values from method ${node.name}`;
+      } else {
+        const typeName = node.returnParameters[0].typeName;
+        switch (typeName.type) {
+          case 'ElementaryTypeName': {
+            const returnType = typeName.name;
 
-          this._schema.addQuery(name, params, returnType);
-          this._resolvers.addQuery(name, params, returnType);
-          this._entity.addQuery(name, params, returnType);
-          this._database.addQuery(name, params, returnType);
-          this._client.addQuery(name, params, returnType);
+            this._schema.addQuery(name, params, returnType);
+            this._resolvers.addQuery(name, params, returnType);
+            this._entity.addQuery(name, params, returnType);
+            this._database.addQuery(name, params, returnType);
+            this._client.addQuery(name, params, returnType);
 
-          assert(this._contract);
-          this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+            assert(this._contract);
+            this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
 
-          break;
+            break;
+          }
+
+          case 'UserDefinedTypeName':
+            errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
+            break;
+
+          case 'ArrayTypeName':
+            errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${node.name}"`;
+            break;
+
+          default:
+            errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
         }
-        case 'UserDefinedTypeName':
-          errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
-          break;
-
-        case 'ArrayTypeName':
-          errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${node.name}"`;
-          break;
-
-        default:
-          errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
       }
 
       if (errorMessage !== '') {
