@@ -37,14 +37,14 @@ export const wait = async (time: number): Promise<void> => new Promise(resolve =
  */
 export const graphDecimalTransformer: ValueTransformer = {
   to: (value?: GraphDecimal) => {
-    if (value) {
+    if (value !== undefined) {
       return value.toFixed();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value) {
+    if (value !== undefined) {
       return new GraphDecimal(value);
     }
 
@@ -57,14 +57,14 @@ export const graphDecimalTransformer: ValueTransformer = {
  */
 export const decimalTransformer: ValueTransformer = {
   to: (value?: Decimal) => {
-    if (value) {
+    if (value !== undefined) {
       return value.toString();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value) {
+    if (value !== undefined) {
       return new Decimal(value);
     }
 
@@ -77,14 +77,14 @@ export const decimalTransformer: ValueTransformer = {
  */
 export const bigintTransformer: ValueTransformer = {
   to: (value?: bigint) => {
-    if (value) {
+    if (value !== undefined) {
       return value.toString();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value) {
+    if (value !== undefined) {
       return BigInt(value);
     }
 
@@ -94,14 +94,14 @@ export const bigintTransformer: ValueTransformer = {
 
 export const bigintArrayTransformer: ValueTransformer = {
   to: (valueArray?: bigint[]) => {
-    if (valueArray) {
+    if (valueArray !== undefined) {
       return valueArray.map(value => bigintTransformer.to(value));
     }
 
     return valueArray;
   },
   from: (valueArray?: string[]) => {
-    if (valueArray) {
+    if (valueArray !== undefined) {
       return valueArray.map(value => bigintTransformer.from(value));
     }
 
@@ -111,14 +111,14 @@ export const bigintArrayTransformer: ValueTransformer = {
 
 export const decimalArrayTransformer: ValueTransformer = {
   to: (valueArray?: Decimal[]) => {
-    if (valueArray) {
+    if (valueArray !== undefined) {
       return valueArray.map(value => decimalTransformer.to(value));
     }
 
     return valueArray;
   },
   from: (valueArray?: string[]) => {
-    if (valueArray) {
+    if (valueArray !== undefined) {
       return valueArray.map(value => decimalTransformer.from(value));
     }
 
