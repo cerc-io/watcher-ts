@@ -67,7 +67,7 @@ export class Visitor {
         switch (typeName.type) {
           case 'ElementaryTypeName': {
             this._schema.addQuery(name, params, typeName);
-            // this._resolvers.addQuery(name, params, returnType);
+            this._resolvers.addQuery(name, params, typeName);
             // this._entity.addQuery(name, params, returnType);
             // this._database.addQuery(name, params, returnType);
             // this._client.addQuery(name, params, returnType);
@@ -83,6 +83,8 @@ export class Visitor {
 
           case 'ArrayTypeName':
             this._schema.addQuery(name, params, typeName);
+            this._resolvers.addQuery(name, params, typeName);
+
             break;
 
           default:

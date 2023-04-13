@@ -31,11 +31,13 @@ export class Resolvers {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
+    const returnType = this._getBaseType(typeName);
+    assert(returnType);
 
     const queryObject = {
       name,
@@ -85,5 +87,18 @@ export class Resolvers {
     };
     const resolvers = template(obj);
     outStream.write(resolvers);
+  }
+
+  _isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
+  _isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
+
+  _getBaseType (typeName: any): string | undefined {
+    if (this._isElementaryType(typeName)) {
+      return typeName.name;
+    } else if (this._isArrayType(typeName)) {
+      return this._getBaseType(typeName.baseTypeName);
+    } else {
+      return undefined;
+    }
   }
 }
