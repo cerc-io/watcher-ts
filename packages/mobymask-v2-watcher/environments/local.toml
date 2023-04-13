@@ -35,7 +35,7 @@
       peerIdFile = ''
       enableL2Txs = false
 
-      [server.p2p.peer.l2TxConfig]
+      [server.p2p.peer.l2TxsConfig]
         privateKey = ''
         contractAddress = ''
 

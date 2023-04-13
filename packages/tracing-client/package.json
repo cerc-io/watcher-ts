@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/tracing-client",
-  "version": "0.2.34",
+  "version": "0.2.36",
   "description": "ETH VM tracing client",
   "private": true,
   "main": "dist/index.js",
