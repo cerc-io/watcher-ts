@@ -13,7 +13,7 @@ import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
 import { Param } from './utils/types';
-import { MODE_STORAGE } from './utils/constants';
+import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { parseSubgraphSchema } from './utils/subgraph';
 import { Types } from './types';
 
@@ -72,8 +72,8 @@ export class Visitor {
             // this._database.addQuery(name, params, returnType);
             // this._client.addQuery(name, params, returnType);
 
-            // assert(this._contract);
-            // this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
+            assert(this._contract);
+            this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);
             break;
           }
 
@@ -85,6 +85,8 @@ export class Visitor {
             this._schema.addQuery(name, params, typeName);
             this._resolvers.addQuery(name, params, typeName);
 
+            assert(this._contract);
+            this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);
             break;
 
           default:

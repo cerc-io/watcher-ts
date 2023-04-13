@@ -37,19 +37,28 @@ export class Indexer {
    * @param returnType Return type for the query.
    * @param stateVariableType Type of the state variable in case of state variable query.
    */
-  addQuery (contract: string, mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
+  addQuery (contract: string, mode: string, name: string, params: Array<Param>, typeName: string, stateVariableType?: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
 
+    const isArray = this._isArrayType(typeName);
+    const baseType = this._getBaseType(typeName);
+    assert(baseType);
+    const tsReturnType = getTsForSol(baseType);
+    assert(tsReturnType);
+
+    if (isArray) {
+      tsReturnType.concat('[]');
+    }
     const queryObject = {
       name,
       entityName: '',
       getQueryName: '',
       saveQueryName: '',
       params: _.cloneDeep(params),
-      returnType,
+      returnType: tsReturnType,
       mode,
       stateVariableType,
       contract
@@ -73,10 +82,6 @@ export class Indexer {
       param.type = tsParamType;
       return param;
     });
-
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType);
-    queryObject.returnType = tsReturnType;
 
     if (stateVariableType) {
       queryObject.stateVariableType = stateVariableType;
@@ -186,5 +191,18 @@ export class Indexer {
     }
 
     return { isDerived, derivedFromField };
+  }
+
+  _isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
+  _isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
+
+  _getBaseType (typeName: any): string | undefined {
+    if (this._isElementaryType(typeName)) {
+      return typeName.name;
+    } else if (this._isArrayType(typeName)) {
+      return this._getBaseType(typeName.baseTypeName);
+    } else {
+      return undefined;
+    }
   }
 }
