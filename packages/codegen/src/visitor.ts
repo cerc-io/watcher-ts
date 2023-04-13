@@ -13,7 +13,7 @@ import { Resolvers } from './resolvers';
 import { Schema } from './schema';
 import { Client } from './client';
 import { Param } from './utils/types';
-import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
+import { MODE_STORAGE } from './utils/constants';
 import { parseSubgraphSchema } from './utils/subgraph';
 import { Types } from './types';
 
@@ -67,16 +67,13 @@ export class Visitor {
         switch (typeName.type) {
           case 'ElementaryTypeName': {
             this._schema.addQuery(name, params, typeName);
+            // this._resolvers.addQuery(name, params, returnType);
+            // this._entity.addQuery(name, params, returnType);
+            // this._database.addQuery(name, params, returnType);
+            // this._client.addQuery(name, params, returnType);
 
-            this._schema.addQuery(name, params, returnType);
-            this._resolvers.addQuery(name, params, returnType);
-            this._entity.addQuery(name, params, returnType);
-            this._database.addQuery(name, params, returnType);
-            this._client.addQuery(name, params, returnType);
-
-            assert(this._contract);
-            this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
-
+            // assert(this._contract);
+            // this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, returnType);
             break;
           }
 
@@ -85,9 +82,7 @@ export class Visitor {
             break;
 
           case 'ArrayTypeName':
-            // this._schema.addQuery(name, params, typeName);
-            errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${node.name}"`;
-            // pass typename in total, inside addQuery, add more brackets by calc
+            this._schema.addQuery(name, params, typeName);
             break;
 
           default:
