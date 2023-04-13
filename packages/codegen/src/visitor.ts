@@ -66,7 +66,7 @@ export class Visitor {
         const typeName = node.returnParameters[0].typeName;
         switch (typeName.type) {
           case 'ElementaryTypeName': {
-            const returnType = typeName.name;
+            this._schema.addQuery(name, params, typeName);
 
             this._schema.addQuery(name, params, returnType);
             this._resolvers.addQuery(name, params, returnType);
@@ -85,7 +85,9 @@ export class Visitor {
             break;
 
           case 'ArrayTypeName':
+            // this._schema.addQuery(name, params, typeName);
             errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${node.name}"`;
+            // pass typename in total, inside addQuery, add more brackets by calc
             break;
 
           default:

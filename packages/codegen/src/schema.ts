@@ -29,26 +29,61 @@ export class Schema {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._composer.Query.hasField(name)) {
       return;
     }
 
     // TODO: Handle cases where returnType/params type is an array.
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType, `ts type for sol type ${returnType} for ${name} not found`);
 
-    const queryObject: { [key: string]: any; } = {};
-    queryObject[name] = {
-      // Get type composer object for return type from the schema composer.
-      type: this._composer.getOTC(`Result${getGqlForTs(tsReturnType)}`).NonNull,
-      args: {
-        blockHash: 'String!',
-        contractAddress: 'String!'
+    if (isArrayType(typeName)) {
+      const arrayTypeName = _getArrayBaseTypeAndDimension(typeName);
+
+      const tsReturnType = getTsForSol(arrayTypeName.baseType)?.concat('[]');
+      assert(tsReturnType, `ts type for sol type ${arrayTypeName.baseType} for ${name} not found`);
+      this._addResultType(getGqlForTs(tsReturnType));
+
+      const queryObject: { [key: string]: any; } = {};
+      queryObject[name] = {
+        // Get type composer object for return type from the schema composer.
+        type: this._composer.getOTC(`Result${getGqlForTs(tsReturnType)}`).NonNull,
+        args: {
+          blockHash: 'String!',
+          contractAddress: 'String!'
+        }
+      };
+
+      if (params.length > 0) {
+        queryObject[name].args = params.reduce((acc, curr) => {
+          const tsCurrType = getTsForSol(curr.type);
+          assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
+          acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
+          return acc;
+        }, queryObject[name].args);
       }
-    };
 
+      // Add a query to the schema composer using queryObject.
+      this._composer.Query.addFields(queryObject);
+    } else {
+      const returnType = typeName.name;
+
+      const tsReturnType = getTsForSol(returnType);
+      assert(tsReturnType, `ts type for sol type ${returnType} for ${name} not found`);
+      this._addResultType(getGqlForTs(tsReturnType));
+
+      const queryObject: { [key: string]: any; } = {};
+
+      queryObject[name] = {
+        // Get type composer object for return type from the schema composer.
+        type: this._composer.getOTC(`Result${getGqlForTs(tsReturnType)}`).NonNull,
+        args: {
+          blockHash: 'String!',
+          contractAddress: 'String!'
+        }
+      };
+
+      if (params.length > 0) {
     if (params.length > 0) {
       queryObject[name].args = params.reduce((acc, curr) => {
         const tsCurrType = getTsForSol(curr.type);
@@ -57,9 +92,18 @@ export class Schema {
         return acc;
       }, queryObject[name].args);
     }
+        queryObject[name].args = params.reduce((acc, curr) => {
+          const tsCurrType = getTsForSol(curr.type);
+          assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
 
-    // Add a query to the schema composer using queryObject.
-    this._composer.Query.addFields(queryObject);
+          acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
+          return acc;
+        }, queryObject[name].args);
+      }
+
+      // Add a query to the schema composer using queryObject.
+      this._composer.Query.addFields(queryObject);
+    }
   }
 
   /**
@@ -221,43 +265,6 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(typeComposer);
 
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultBoolean',
-      fields: {
-        value: 'Boolean!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultString',
-      fields: {
-        value: 'String!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultInt',
-      fields: {
-        value: () => 'Int!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultBigInt',
-      fields: {
-        // Get type composer object for BigInt scalar from the schema composer.
-        value: () => this._composer.getSTC('BigInt').NonNull,
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
     // Create the Block type.
     typeComposer = this._composer.createObjectTC({
       name: '_Block_',
@@ -269,6 +276,27 @@ export class Schema {
         parentHash: 'String!'
       }
     });
+    this._composer.addSchemaMustHaveType(typeComposer);
+  }
+
+  /**
+   * Adds Result types to the schema and typemapping.
+   */
+  _addResultType (typeName?: string): void {
+    assert(typeName);
+
+    const value: any = (typeName === 'BigInt')
+      ? () => this._composer.getSTC('BigInt').NonNull
+      : typeName.concat('!');
+
+    const typeComposer = this._composer.getOrCreateOTC(
+      `Result${typeName}`,
+      (tc) => {
+        tc.addFields({
+          value: value,
+          data: 'String!'
+        });
+      });
     this._composer.addSchemaMustHaveType(typeComposer);
   }
 
@@ -533,5 +561,18 @@ export class Schema {
     const tsCurrType = getTsForSol(param.type);
     assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
     return `${getGqlForTs(tsCurrType)}!`;
+  }
+}
+
+const isElementaryType = (typeName: any) => (typeName.type === 'ElementaryTypeName');
+const isArrayType = (typeName: any) => (typeName.type === 'ArrayTypeName');
+
+function _getArrayBaseTypeAndDimension (typeName: any, dimension = 0): {baseType: string, dimension: number} | undefined {
+  if (isElementaryType(typeName)) {
+    return { baseType: typeName.type, dimension };
+  } else if (isArrayType(typeName)) {
+    return _getArrayBaseTypeAndDimension(typeName.baseType, dimension + 1);
+  } else {
+    return undefined;
   }
 }
