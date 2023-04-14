@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/tracing-client",
-  "version": "0.2.38",
+  "version": "0.2.39",
   "description": "ETH VM tracing client",
   "main": "dist/index.js",
   "scripts": {
@@ -23,9 +23,9 @@
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",
-    "@types/yargs": "^17.0.0",
     "eslint": "^8.35.0",
     "eslint-config-semistandard": "^15.0.1",
     "eslint-config-standard": "^16.0.3",
