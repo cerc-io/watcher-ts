@@ -9,7 +9,7 @@ import { Writable } from 'stream';
 import { utils } from 'ethers';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
-import { Param } from './utils/types';
+import { Param, getBaseType, isArrayType } from './utils/types';
 
 export class Schema {
   _composer: SchemaComposer;
@@ -36,11 +36,10 @@ export class Schema {
     }
 
     // TODO: Handle cases where returnType/params type is an array.
-    const isReturnTypeArray = this._isArrayType(typeName);
-    const baseTypeName = this._getBaseType(typeName);
+    const isReturnTypeArray = isArrayType(typeName);
+    const baseTypeName = getBaseType(typeName);
     assert(baseTypeName);
 
-    // TODO handle arrays of more than 1 dimensions
     const tsReturnType = getTsForSol(baseTypeName);
     assert(tsReturnType, `ts type for sol type ${baseTypeName} for ${name} not found`);
     const gqlReturnType = getGqlForTs(tsReturnType);
@@ -533,18 +532,5 @@ export class Schema {
     const tsCurrType = getTsForSol(param.type);
     assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
     return `${getGqlForTs(tsCurrType)}!`;
-  }
-
-  _isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
-  _isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
-
-  _getBaseType (typeName: any): string | undefined {
-    if (this._isElementaryType(typeName)) {
-      return typeName.name;
-    } else if (this._isArrayType(typeName)) {
-      return this._getBaseType(typeName.baseTypeName);
-    } else {
-      return undefined;
-    }
   }
 }

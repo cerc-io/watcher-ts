@@ -10,7 +10,7 @@ import { Writable } from 'stream';
 import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param } from './utils/types';
+import { Param, getBaseType, isArrayType } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { getFieldType } from './utils/subgraph';
 
@@ -43,15 +43,16 @@ export class Indexer {
       return;
     }
 
-    const isArray = this._isArrayType(typeName);
-    const baseType = this._getBaseType(typeName);
+    const baseType = getBaseType(typeName);
     assert(baseType);
     let tsReturnType = getTsForSol(baseType);
     assert(tsReturnType);
 
+    const isArray = isArrayType(typeName);
     if (isArray) {
       tsReturnType = tsReturnType.concat('[]');
     }
+
     const queryObject = {
       name,
       entityName: '',
@@ -62,7 +63,7 @@ export class Indexer {
       mode,
       stateVariableType,
       contract,
-      disableCache: isArray
+      disableCaching: isArray
     };
 
     if (name.charAt(0) === '_') {
@@ -192,18 +193,5 @@ export class Indexer {
     }
 
     return { isDerived, derivedFromField };
-  }
-
-  _isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
-  _isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
-
-  _getBaseType (typeName: any): string | undefined {
-    if (this._isElementaryType(typeName)) {
-      return typeName.name;
-    } else if (this._isArrayType(typeName)) {
-      return this._getBaseType(typeName.baseTypeName);
-    } else {
-      return undefined;
-    }
   }
 }

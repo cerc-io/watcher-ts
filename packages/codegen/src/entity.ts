@@ -10,7 +10,7 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
 import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
-import { Param } from './utils/types';
+import { Param, getBaseType } from './utils/types';
 import { getFieldType } from './utils/subgraph';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
@@ -31,7 +31,7 @@ export class Entity {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._entities.some(entity => entity.className.toLowerCase() === name.toLowerCase())) {
       return;
@@ -136,6 +136,8 @@ export class Entity {
       })
     );
 
+    const returnType = getBaseType(typeName);
+    assert(returnType);
     const tsReturnType = getTsForSol(returnType);
     assert(tsReturnType);
 

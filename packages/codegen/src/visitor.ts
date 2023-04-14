@@ -68,9 +68,9 @@ export class Visitor {
           case 'ElementaryTypeName': {
             this._schema.addQuery(name, params, typeName);
             this._resolvers.addQuery(name, params, typeName);
-            // this._entity.addQuery(name, params, returnType);
-            // this._database.addQuery(name, params, returnType);
-            // this._client.addQuery(name, params, returnType);
+            this._entity.addQuery(name, params, typeName);
+            this._database.addQuery(name, params, typeName);
+            this._client.addQuery(name, params, typeName);
 
             assert(this._contract);
             this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);

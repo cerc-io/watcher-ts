@@ -10,7 +10,7 @@ import { Writable } from 'stream';
 import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param } from './utils/types';
+import { Param, getBaseType } from './utils/types';
 
 const TEMPLATE_FILE = './templates/database-template.handlebars';
 
@@ -31,11 +31,14 @@ export class Database {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
+
+    const returnType = getBaseType(typeName);
+    assert(returnType);
 
     const queryObject = {
       name,

@@ -166,7 +166,7 @@ export class Indexer implements IndexerInterface {
     {{else~}}
     ): Promise<ValueResult> {
     {{/if}}
-    {{#unless query.disableCache}}
+    {{#unless query.disableCaching}}
     const entity = await this._db.{{query.getQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -224,7 +224,7 @@ export class Indexer implements IndexerInterface {
     );
     {{/if}}
 
-    {{#unless disableCache}}
+    {{#unless disableCaching}}
     await this._db.{{query.saveQueryName}}({ blockHash, blockNumber, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 

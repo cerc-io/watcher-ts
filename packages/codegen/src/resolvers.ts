@@ -10,7 +10,7 @@ import assert from 'assert';
 import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param } from './utils/types';
+import { Param, getBaseType } from './utils/types';
 
 const TEMPLATE_FILE = './templates/resolvers-template.handlebars';
 
@@ -36,7 +36,7 @@ export class Resolvers {
     if (this._queries.some(query => query.name === name)) {
       return;
     }
-    const returnType = this._getBaseType(typeName);
+    const returnType = getBaseType(typeName);
     assert(returnType);
 
     const queryObject = {
@@ -87,18 +87,5 @@ export class Resolvers {
     };
     const resolvers = template(obj);
     outStream.write(resolvers);
-  }
-
-  _isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
-  _isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
-
-  _getBaseType (typeName: any): string | undefined {
-    if (this._isElementaryType(typeName)) {
-      return typeName.name;
-    } else if (this._isArrayType(typeName)) {
-      return this._getBaseType(typeName.baseTypeName);
-    } else {
-      return undefined;
-    }
   }
 }
