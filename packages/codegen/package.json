@@ -40,7 +40,9 @@
   "devDependencies": {
     "@openzeppelin/contracts": "^4.3.2",
     "@types/js-yaml": "^4.0.3",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^16.9.0",
+    "@types/yargs": "^17.0.0",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",
     "eslint": "^8.35.0",
