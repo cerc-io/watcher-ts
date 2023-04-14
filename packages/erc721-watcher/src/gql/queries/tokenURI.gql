@@ -1,8 +1,0 @@
-query tokenURI($blockHash: String!, $contractAddress: String!, $tokenId: BigInt!){
-    tokenURI(blockHash: $blockHash, contractAddress: $contractAddress, tokenId: $tokenId){
-        value
-        proof{
-            data
-        }
-    }
-}

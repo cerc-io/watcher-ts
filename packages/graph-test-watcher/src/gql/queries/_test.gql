@@ -1,8 +1,0 @@
-query _test($blockHash: String!, $contractAddress: String!){
-    _test(blockHash: $blockHash, contractAddress: $contractAddress){
-        value
-        proof{
-            data
-        }
-    }
-}
