@@ -48,8 +48,10 @@ export class Schema {
 
     this._addResultType(gqlReturnType, isReturnTypeArray);
 
-    const objectTCName = `Result${gqlReturnType}`;
-    if (isReturnTypeArray) objectTCName.concat('Array');
+    let objectTCName = `Result${gqlReturnType}`;
+    if (isReturnTypeArray) {
+      objectTCName = objectTCName.concat('Array');
+    }
 
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
@@ -254,8 +256,10 @@ export class Schema {
       ? () => this._composer.getSTC('BigInt').NonNull
       : `${typeName}!`;
 
-    const objectTCName = `Result${typeName}`;
-    if (isArray) objectTCName.concat('Array');
+    let objectTCName = `Result${typeName}`;
+    if (isArray) {
+      objectTCName = objectTCName.concat('Array');
+    }
 
     const typeComposer = this._composer.getOrCreateOTC(
       objectTCName,

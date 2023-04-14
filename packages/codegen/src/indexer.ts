@@ -46,11 +46,11 @@ export class Indexer {
     const isArray = this._isArrayType(typeName);
     const baseType = this._getBaseType(typeName);
     assert(baseType);
-    const tsReturnType = getTsForSol(baseType);
+    let tsReturnType = getTsForSol(baseType);
     assert(tsReturnType);
 
     if (isArray) {
-      tsReturnType.concat('[]');
+      tsReturnType = tsReturnType.concat('[]');
     }
     const queryObject = {
       name,
@@ -61,7 +61,8 @@ export class Indexer {
       returnType: tsReturnType,
       mode,
       stateVariableType,
-      contract
+      contract,
+      disableCache: isArray
     };
 
     if (name.charAt(0) === '_') {
