@@ -10,7 +10,8 @@ import { Writable } from 'stream';
 import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param, getBaseType } from './utils/types';
+import { Param } from './utils/types';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/database-template.handlebars';
 

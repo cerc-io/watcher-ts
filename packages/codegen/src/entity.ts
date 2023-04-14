@@ -10,8 +10,9 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
 import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
-import { Param, getBaseType } from './utils/types';
+import { Param } from './utils/types';
 import { getFieldType } from './utils/subgraph';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';

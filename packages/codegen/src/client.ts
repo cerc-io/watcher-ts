@@ -11,7 +11,8 @@ import _ from 'lodash';
 import { gqlGenerate } from 'gql-generator';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param, getBaseType } from './utils/types';
+import { Param } from './utils/types';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/client-template.handlebars';
 

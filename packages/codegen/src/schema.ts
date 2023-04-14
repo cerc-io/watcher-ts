@@ -9,7 +9,8 @@ import { Writable } from 'stream';
 import { utils } from 'ethers';
 
 import { getTsForSol, getGqlForTs } from './utils/type-mappings';
-import { Param, getBaseType, isArrayType } from './utils/types';
+import { Param } from './utils/types';
+import { getBaseType, isArrayType } from './utils/helpers';
 
 export class Schema {
   _composer: SchemaComposer;
@@ -45,17 +46,12 @@ export class Schema {
     const gqlReturnType = getGqlForTs(tsReturnType);
     assert(gqlReturnType, `gql type for ts type ${tsReturnType} for ${name} not found`);
 
-    this._addResultType(gqlReturnType, isReturnTypeArray);
-
-    let objectTCName = `Result${gqlReturnType}`;
-    if (isReturnTypeArray) {
-      objectTCName = objectTCName.concat('Array');
-    }
+    const objectTC = this._getOrCreateResultType(gqlReturnType, isReturnTypeArray);
 
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
       // Get type composer object for return type from the schema composer.
-      type: this._composer.getOTC(objectTCName).NonNull,
+      type: objectTC.NonNull,
       args: {
         blockHash: 'String!',
         contractAddress: 'String!'
@@ -250,7 +246,7 @@ export class Schema {
   /**
    * Adds Result types to the schema and typemapping.
    */
-  _addResultType (typeName: string, isArray = false): void {
+  _getOrCreateResultType (typeName: string, isArray = false): ObjectTypeComposer<any, any> {
     const value: string | (() => NonNullComposer<ScalarTypeComposer<any>>) = (typeName === 'BigInt')
       ? () => this._composer.getSTC('BigInt').NonNull
       : `${typeName}!`;
@@ -268,7 +264,7 @@ export class Schema {
           proof: () => this._composer.getOTC('Proof')
         });
       });
-    this._composer.addSchemaMustHaveType(typeComposer);
+    return typeComposer;
   }
 
   _addGQLCacheTypes (): void {

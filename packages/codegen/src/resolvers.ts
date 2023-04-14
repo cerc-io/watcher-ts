@@ -10,7 +10,8 @@ import assert from 'assert';
 import _ from 'lodash';
 
 import { getTsForSol } from './utils/type-mappings';
-import { Param, getBaseType } from './utils/types';
+import { Param } from './utils/types';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/resolvers-template.handlebars';
 
@@ -31,7 +32,7 @@ export class Resolvers {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
