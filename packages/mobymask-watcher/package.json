@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/mobymask-watcher",
-  "version": "0.2.37",
+  "version": "0.2.38",
   "description": "mobymask-watcher",
   "private": true,
   "main": "dist/index.js",
@@ -37,10 +37,10 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.3.19",
-    "@cerc-io/cli": "^0.2.37",
-    "@cerc-io/ipld-eth-client": "^0.2.37",
-    "@cerc-io/solidity-mapper": "^0.2.37",
-    "@cerc-io/util": "^0.2.37",
+    "@cerc-io/cli": "^0.2.38",
+    "@cerc-io/ipld-eth-client": "^0.2.38",
+    "@cerc-io/solidity-mapper": "^0.2.38",
+    "@cerc-io/util": "^0.2.38",
     "@ethersproject/providers": "^5.4.4",
     "apollo-type-bigint": "^0.1.3",
     "debug": "^4.3.1",
