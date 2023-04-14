@@ -54,7 +54,7 @@ erc20-watcher-job-queue=# exit
 
 ## Config File
 
-In each watchers' directory is a config file: `packages/<watcher>/environments/local.toml`:
+In each watchers' directory is a config file: `<watcher>/environments/local.toml`:
 
 * Update the database connection settings.
 * Update the `upstream` config and provide the `ipld-eth-server` GraphQL API endpoint.
