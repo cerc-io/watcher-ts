@@ -4,11 +4,11 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean } from 'graphql';
-import { NonNullComposer, ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, ScalarTypeComposer, SchemaComposer } from 'graphql-compose';
+import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 
-import { getTsForSol, getGqlForTs } from './utils/type-mappings';
+import { getGqlForTs, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getBaseType, isArrayType } from './utils/helpers';
 
@@ -41,10 +41,8 @@ export class Schema {
     const baseTypeName = getBaseType(typeName);
     assert(baseTypeName);
 
-    const tsReturnType = getTsForSol(baseTypeName);
-    assert(tsReturnType, `ts type for sol type ${baseTypeName} for ${name} not found`);
-    const gqlReturnType = getGqlForTs(tsReturnType);
-    assert(gqlReturnType, `gql type for ts type ${tsReturnType} for ${name} not found`);
+    const gqlReturnType = getGqlForSol(baseTypeName);
+    assert(gqlReturnType, `gql type for sol type ${baseTypeName} for ${name} not found`);
 
     const objectTC = this._getOrCreateResultType(gqlReturnType, isReturnTypeArray);
 
@@ -60,9 +58,7 @@ export class Schema {
 
     if (params.length > 0) {
       queryObject[name].args = params.reduce((acc, curr) => {
-        const tsCurrType = getTsForSol(curr.type);
-        assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
-        acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
+        acc[curr.name] = `${getGqlForSol(curr.type)}!`;
         return acc;
       }, queryObject[name].args);
     }
@@ -247,9 +243,7 @@ export class Schema {
    * Adds Result types to the schema and typemapping.
    */
   _getOrCreateResultType (typeName: string, isArray = false): ObjectTypeComposer<any, any> {
-    const value: string | (() => NonNullComposer<ScalarTypeComposer<any>>) = (typeName === 'BigInt')
-      ? () => this._composer.getSTC('BigInt').NonNull
-      : `${typeName}!`;
+    const value = `${typeName}!`;
 
     let objectTCName = `Result${typeName}`;
     if (isArray) {
@@ -471,9 +465,7 @@ export class Schema {
     const newFields: any = {};
     params.forEach((param: Param) => {
       if (!commonFields.includes(param.name)) {
-        const tsCurrType = getTsForSol(param.type);
-        assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
-        newFields[param.name] = `${getGqlForTs(tsCurrType)}`;
+        newFields[param.name] = `${getGqlForTs(param.type)}`;
       }
     });
 
@@ -525,8 +517,6 @@ export class Schema {
       return [this._getObjectTypeField(param.arrayChildren)];
     }
 
-    const tsCurrType = getTsForSol(param.type);
-    assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
-    return `${getGqlForTs(tsCurrType)}!`;
+    return `${getGqlForSol(param.type)}!`;
   }
 }

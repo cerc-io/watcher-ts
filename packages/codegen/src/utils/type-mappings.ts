@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import { solToGql } from './solToGql';
 import { solToTs } from './solToTs';
 
 const _tsToGql: Map<string, string> = new Map();
@@ -33,6 +34,10 @@ function getTsForSol (solType: string): string | undefined {
   return solToTs.get(solType);
 }
 
+function getGqlForSol (solType: string): string | undefined {
+  return solToGql.get(solType);
+}
+
 function getGqlForTs (tsType: string): string | undefined {
   return _tsToGql.get(tsType);
 }
@@ -45,4 +50,4 @@ function getTsForGql (gqlType: string): string | undefined {
   return _gqlToTs.get(gqlType);
 }
 
-export { getTsForSol, getGqlForTs, getPgForTs, getTsForGql };
+export { getTsForSol, getGqlForTs, getGqlForSol, getPgForTs, getTsForGql };
