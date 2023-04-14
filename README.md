@@ -2,7 +2,7 @@
 
 ![Cute Panopticon](./docs/watchers-graphic.png)
 
-Watchers make managing data in Dapp development as frictionless as possible. They do this by querying, transforming, and caching Ethereum state data cheaper and faster compared to existing solutions. This data also comes with evidence for generating cryptographic proofs to provide verification that the data is authentic. Public watchers are found in the [packages](/packages) directory.
+Watchers make managing data in Dapp development as frictionless as possible. They do this by querying, transforming, and caching Ethereum state data cheaper and faster compared to existing solutions. This data also comes with evidence for generating cryptographic proofs to provide verification that the data is authentic.
 
 Go [here](https://github.com/cerc-io/stack-orchestrator/tree/main/app/data/stacks/erc20) for a quick start demo of setting up the stack and deploying/using the erc20 watcher via the Laconic Stack Orchestrator.
 
@@ -38,9 +38,9 @@ From the root of this repository, run:
 
 `yarn && yarn build`
 
-to download dependencies and build all the watchers.
+to download dependencies.
 
-Orient yourself with the available CLI commands [here](docs/cli.md) and in some cases, watchers have in-depth demos (e.g. [mobymask](/packages/mobymask-watcher))
+Orient yourself with the available CLI commands [here](docs/cli.md) and in some cases, watchers have in-depth demos (e.g. [mobymask](https://github.com/cerc-io/mobymask-watcher-ts))
 
 
 [//]: # (TODO: ## Generating Watchers)
