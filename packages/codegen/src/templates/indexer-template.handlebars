@@ -195,8 +195,15 @@ export class Indexer implements IndexerInterface {
     value = value.toString();
     value = BigInt(value);
     {{else}}
+    {{!-- Using nested if-else to avoid indentation issue --}}
+    {{#if (compare query.returnType 'bigint[]')}}
+    let value = await contract.{{query.name}}(
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
+    value = value.map(val => val.toBigInt());
+    {{else}}
     const value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
+    {{/if}}
     {{/if}}
 
     const result: ValueResult = { value };
