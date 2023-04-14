@@ -1,8 +1,0 @@
-query producerSetChange($id: String!, $block: Block_height){
-    producerSetChange(id: $id, block: $block){
-        id
-        blockNumber
-        producer
-        changeType
-    }
-}

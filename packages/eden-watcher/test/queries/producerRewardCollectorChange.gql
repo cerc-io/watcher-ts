@@ -1,8 +1,0 @@
-query producerRewardCollectorChange($id: String!, $block: Block_height){
-    producerRewardCollectorChange(id: $id, block: $block){
-        id
-        blockNumber
-        producer
-        rewardCollector
-    }
-}

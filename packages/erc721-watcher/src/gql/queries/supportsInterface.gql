@@ -1,8 +1,0 @@
-query supportsInterface($blockHash: String!, $contractAddress: String!, $interfaceId: String!){
-    supportsInterface(blockHash: $blockHash, contractAddress: $contractAddress, interfaceId: $interfaceId){
-        value
-        proof{
-            data
-        }
-    }
-}

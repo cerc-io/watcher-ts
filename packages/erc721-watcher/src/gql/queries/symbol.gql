@@ -1,8 +1,0 @@
-query symbol($blockHash: String!, $contractAddress: String!){
-    symbol(blockHash: $blockHash, contractAddress: $contractAddress){
-        value
-        proof{
-            data
-        }
-    }
-}
