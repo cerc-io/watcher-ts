@@ -52,6 +52,10 @@ Steps:
   # Watcher server port (default: 3008).
   port: 3008
 
+  # Solc version to use (optional)
+  # If not defined, uses solc version listed in dependencies
+  solc: v0.8.0+commit.c7dfd78e
+
   # Flatten the input contract file(s) [true | false] (default: true).
   flatten: true
 
