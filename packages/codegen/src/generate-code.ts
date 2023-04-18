@@ -39,6 +39,8 @@ import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
 
+const ASSET_DIR = path.resolve(__dirname, 'assets');
+
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
     .option('config-file', {
@@ -235,6 +237,16 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
   exportReadme(path.basename(outputDir), config.port, outStream);
 
   outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'LICENSE'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, 'LICENSE'), outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, '.gitignore'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, '.gitignore'), outStream);
+
+  outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
     : process.stdout;
   exportJobRunner(outStream);
@@ -393,6 +405,11 @@ function getConfig (configFile: string): any {
     subgraphPath,
     subgraphConfig
   };
+}
+
+function writeFileToStream (pathToFile: string, outStream: Writable) {
+  const fileContentString = fs.readFileSync(pathToFile);
+  outStream.write(fileContentString);
 }
 
 main().catch(err => {
