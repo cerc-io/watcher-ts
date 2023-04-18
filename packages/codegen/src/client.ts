@@ -56,7 +56,7 @@ export class Client {
       assert(gqlParamType);
       const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
-      param.type = gqlParamType;
+      param.type = tsParamType;
       return param;
     });
 
