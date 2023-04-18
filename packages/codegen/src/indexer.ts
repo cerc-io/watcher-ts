@@ -9,7 +9,7 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
 
-import { getTsForSol } from './utils/type-mappings';
+import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { getFieldType } from './utils/subgraph';
@@ -46,7 +46,9 @@ export class Indexer {
 
     const baseType = getBaseType(typeName);
     assert(baseType);
-    let tsReturnType = getTsForSol(baseType);
+    const gqlReturnType = getGqlForSol(baseType);
+    assert(gqlReturnType);
+    let tsReturnType = getTsForGql(gqlReturnType);
     assert(tsReturnType);
 
     const isArray = isArrayType(typeName);
@@ -80,7 +82,9 @@ export class Indexer {
     }
 
     queryObject.params = queryObject.params.map((param) => {
-      const tsParamType = getTsForSol(param.type);
+      const gqlParamType = getGqlForSol(param.type);
+      assert(gqlParamType);
+      const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
       param.type = tsParamType;
       return param;

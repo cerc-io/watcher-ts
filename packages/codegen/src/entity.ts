@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
-import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
+import { getPgForTs, getTsForGql, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getFieldType } from './utils/subgraph';
 import { getBaseType } from './utils/helpers';
@@ -110,9 +110,10 @@ export class Entity {
       params.map((param) => {
         const name = param.name;
 
-        const tsType = getTsForSol(param.type);
+        const gqlType = getGqlForSol(param.type);
+        assert(gqlType);
+        const tsType = getTsForGql(gqlType);
         assert(tsType);
-
         const pgType = getPgForTs(tsType);
         assert(pgType);
 
@@ -137,11 +138,13 @@ export class Entity {
       })
     );
 
-    const returnType = getBaseType(typeName);
-    assert(returnType);
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType);
+    const baseType = getBaseType(typeName);
+    assert(baseType);
 
+    const gqlReturnType = getGqlForSol(baseType);
+    assert(gqlReturnType);
+    const tsReturnType = getTsForGql(gqlReturnType);
+    assert(tsReturnType);
     const pgReturnType = getPgForTs(tsReturnType);
     assert(pgReturnType);
 

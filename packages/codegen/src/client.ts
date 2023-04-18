@@ -10,7 +10,7 @@ import { Writable } from 'stream';
 import _ from 'lodash';
 import { gqlGenerate } from 'gql-generator';
 
-import { getTsForSol } from './utils/type-mappings';
+import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getBaseType } from './utils/helpers';
 
@@ -52,13 +52,17 @@ export class Client {
       : `get${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 
     queryObject.params = queryObject.params.map((param) => {
-      const tsParamType = getTsForSol(param.type);
+      const gqlParamType = getGqlForSol(param.type);
+      assert(gqlParamType);
+      const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
-      param.type = tsParamType;
+      param.type = gqlParamType;
       return param;
     });
 
-    const tsReturnType = getTsForSol(returnType);
+    const gqlReturnType = getGqlForSol(returnType);
+    assert(gqlReturnType);
+    const tsReturnType = getTsForGql(gqlReturnType);
     assert(tsReturnType);
     queryObject.returnType = tsReturnType;
 

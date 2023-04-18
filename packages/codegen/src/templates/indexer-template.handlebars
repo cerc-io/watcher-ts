@@ -199,7 +199,7 @@ export class Indexer implements IndexerInterface {
     {{#if (compare query.returnType 'bigint[]')}}
     let value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
-    value = value.map(val => val.toBigInt());
+    value = value.map((val: ethers.BigNumber) => val.toBigInt());
     {{else}}
     const value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
