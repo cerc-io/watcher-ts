@@ -38,6 +38,7 @@ import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
+import { writeFileToStream } from './utils/helpers';
 
 const ASSET_DIR = path.resolve(__dirname, 'assets');
 
@@ -405,11 +406,6 @@ function getConfig (configFile: string): any {
     subgraphPath,
     subgraphConfig
   };
-}
-
-function writeFileToStream (pathToFile: string, outStream: Writable) {
-  const fileContentString = fs.readFileSync(pathToFile);
-  outStream.write(fileContentString);
 }
 
 main().catch(err => {
