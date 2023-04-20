@@ -172,6 +172,9 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
+    const huskyDir = path.join(outputDir, '.husky');
+    if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir);
+
     const environmentsFolder = path.join(outputDir, 'environments');
     if (!fs.existsSync(environmentsFolder)) fs.mkdirSync(environmentsFolder);
 
@@ -268,9 +271,6 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
     ? fs.createWriteStream(path.join(outputDir, '.npmrc'))
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, '.npmrc'), outStream);
-
-  const huskyDir = path.join(outputDir, '.husky');
-  if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, '.husky/pre-commit'))
