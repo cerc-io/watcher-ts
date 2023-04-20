@@ -8,8 +8,9 @@ import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFie
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 
-import { getTsForSol, getGqlForTs } from './utils/type-mappings';
+import { getGqlForTs, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { getBaseType, isArrayType } from './utils/helpers';
 
 export class Schema {
   _composer: SchemaComposer;
@@ -29,20 +30,26 @@ export class Schema {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._composer.Query.hasField(name)) {
       return;
     }
 
     // TODO: Handle cases where returnType/params type is an array.
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType, `ts type for sol type ${returnType} for ${name} not found`);
+    const isReturnTypeArray = isArrayType(typeName);
+    const baseTypeName = getBaseType(typeName);
+    assert(baseTypeName);
+
+    const gqlReturnType = getGqlForSol(baseTypeName);
+    assert(gqlReturnType, `gql type for sol type ${baseTypeName} for ${name} not found`);
+
+    const objectTC = this._getOrCreateResultType(gqlReturnType, isReturnTypeArray);
 
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
       // Get type composer object for return type from the schema composer.
-      type: this._composer.getOTC(`Result${getGqlForTs(tsReturnType)}`).NonNull,
+      type: objectTC.NonNull,
       args: {
         blockHash: 'String!',
         contractAddress: 'String!'
@@ -51,13 +58,10 @@ export class Schema {
 
     if (params.length > 0) {
       queryObject[name].args = params.reduce((acc, curr) => {
-        const tsCurrType = getTsForSol(curr.type);
-        assert(tsCurrType, `ts type for sol type ${curr.type} for ${curr.name} not found`);
-        acc[curr.name] = `${getGqlForTs(tsCurrType)}!`;
+        acc[curr.name] = `${getGqlForSol(curr.type)}!`;
         return acc;
       }, queryObject[name].args);
     }
-
     // Add a query to the schema composer using queryObject.
     this._composer.Query.addFields(queryObject);
   }
@@ -221,43 +225,6 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(typeComposer);
 
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultBoolean',
-      fields: {
-        value: 'Boolean!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultString',
-      fields: {
-        value: 'String!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultInt',
-      fields: {
-        value: () => 'Int!',
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
-    typeComposer = this._composer.createObjectTC({
-      name: 'ResultBigInt',
-      fields: {
-        // Get type composer object for BigInt scalar from the schema composer.
-        value: () => this._composer.getSTC('BigInt').NonNull,
-        proof: () => this._composer.getOTC('Proof')
-      }
-    });
-    this._composer.addSchemaMustHaveType(typeComposer);
-
     // Create the Block type.
     typeComposer = this._composer.createObjectTC({
       name: '_Block_',
@@ -270,6 +237,28 @@ export class Schema {
       }
     });
     this._composer.addSchemaMustHaveType(typeComposer);
+  }
+
+  /**
+   * Adds Result types to the schema and typemapping.
+   */
+  _getOrCreateResultType (typeName: string, isArray = false): ObjectTypeComposer<any, any> {
+    const value = `${typeName}!`;
+
+    let objectTCName = `Result${typeName}`;
+    if (isArray) {
+      objectTCName = objectTCName.concat('Array');
+    }
+
+    const typeComposer = this._composer.getOrCreateOTC(
+      objectTCName,
+      (tc) => {
+        tc.addFields({
+          value: (isArray) ? `[${value}]!` : value,
+          proof: () => this._composer.getOTC('Proof')
+        });
+      });
+    return typeComposer;
   }
 
   _addGQLCacheTypes (): void {
@@ -476,9 +465,7 @@ export class Schema {
     const newFields: any = {};
     params.forEach((param: Param) => {
       if (!commonFields.includes(param.name)) {
-        const tsCurrType = getTsForSol(param.type);
-        assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
-        newFields[param.name] = `${getGqlForTs(tsCurrType)}`;
+        newFields[param.name] = `${getGqlForTs(param.type)}`;
       }
     });
 
@@ -530,8 +517,6 @@ export class Schema {
       return [this._getObjectTypeField(param.arrayChildren)];
     }
 
-    const tsCurrType = getTsForSol(param.type);
-    assert(tsCurrType, `ts type for sol type ${param.type} for ${param.name} not found`);
-    return `${getGqlForTs(tsCurrType)}!`;
+    return `${getGqlForSol(param.type)}!`;
   }
 }

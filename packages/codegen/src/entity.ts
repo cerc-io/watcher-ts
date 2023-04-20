@@ -9,9 +9,10 @@ import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
-import { getTsForSol, getPgForTs, getTsForGql } from './utils/type-mappings';
+import { getPgForTs, getTsForGql, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getFieldType } from './utils/subgraph';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -31,7 +32,7 @@ export class Entity {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._entities.some(entity => entity.className.toLowerCase() === name.toLowerCase())) {
       return;
@@ -109,9 +110,10 @@ export class Entity {
       params.map((param) => {
         const name = param.name;
 
-        const tsType = getTsForSol(param.type);
+        const gqlType = getGqlForSol(param.type);
+        assert(gqlType);
+        const tsType = getTsForGql(gqlType);
         assert(tsType);
-
         const pgType = getPgForTs(tsType);
         assert(pgType);
 
@@ -136,9 +138,13 @@ export class Entity {
       })
     );
 
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType);
+    const baseType = getBaseType(typeName);
+    assert(baseType);
 
+    const gqlReturnType = getGqlForSol(baseType);
+    assert(gqlReturnType);
+    const tsReturnType = getTsForGql(gqlReturnType);
+    assert(tsReturnType);
     const pgReturnType = getPgForTs(tsReturnType);
     assert(pgReturnType);
 

@@ -1,0 +1,112 @@
+//
+// Copyright 2022 Vulcanize, Inc.
+//
+
+const solToGql: Map<string, string> = new Map();
+
+// Solidity to GraphQL type-mapping.
+solToGql.set('string', 'String');
+solToGql.set('address', 'String');
+solToGql.set('bool', 'Boolean');
+
+solToGql.set('int8', 'Int');
+solToGql.set('int16', 'Int');
+solToGql.set('int24', 'Int');
+solToGql.set('int32', 'Int');
+solToGql.set('int48', 'BigInt');
+solToGql.set('int56', 'BigInt');
+solToGql.set('int64', 'BigInt');
+solToGql.set('int72', 'BigInt');
+solToGql.set('int80', 'BigInt');
+solToGql.set('int88', 'BigInt');
+solToGql.set('int96', 'BigInt');
+solToGql.set('int104', 'BigInt');
+solToGql.set('int112', 'BigInt');
+solToGql.set('int120', 'BigInt');
+solToGql.set('int128', 'BigInt');
+solToGql.set('int136', 'BigInt');
+solToGql.set('int144', 'BigInt');
+solToGql.set('int152', 'BigInt');
+solToGql.set('int160', 'BigInt');
+solToGql.set('int168', 'BigInt');
+solToGql.set('int176', 'BigInt');
+solToGql.set('int184', 'BigInt');
+solToGql.set('int192', 'BigInt');
+solToGql.set('int200', 'BigInt');
+solToGql.set('int208', 'BigInt');
+solToGql.set('int216', 'BigInt');
+solToGql.set('int224', 'BigInt');
+solToGql.set('int232', 'BigInt');
+solToGql.set('int240', 'BigInt');
+solToGql.set('int248', 'BigInt');
+solToGql.set('int256', 'BigInt');
+solToGql.set('int', 'BigInt');
+
+solToGql.set('uint8', 'Int');
+solToGql.set('uint16', 'Int');
+solToGql.set('uint24', 'Int');
+solToGql.set('uint32', 'BigInt');
+solToGql.set('uint48', 'BigInt');
+solToGql.set('uint56', 'BigInt');
+solToGql.set('uint64', 'BigInt');
+solToGql.set('uint72', 'BigInt');
+solToGql.set('uint80', 'BigInt');
+solToGql.set('uint88', 'BigInt');
+solToGql.set('uint96', 'BigInt');
+solToGql.set('uint104', 'BigInt');
+solToGql.set('uint112', 'BigInt');
+solToGql.set('uint120', 'BigInt');
+solToGql.set('uint128', 'BigInt');
+solToGql.set('uint136', 'BigInt');
+solToGql.set('uint144', 'BigInt');
+solToGql.set('uint152', 'BigInt');
+solToGql.set('uint160', 'BigInt');
+solToGql.set('uint168', 'BigInt');
+solToGql.set('uint176', 'BigInt');
+solToGql.set('uint184', 'BigInt');
+solToGql.set('uint192', 'BigInt');
+solToGql.set('uint200', 'BigInt');
+solToGql.set('uint208', 'BigInt');
+solToGql.set('uint216', 'BigInt');
+solToGql.set('uint224', 'BigInt');
+solToGql.set('uint232', 'BigInt');
+solToGql.set('uint240', 'BigInt');
+solToGql.set('uint248', 'BigInt');
+solToGql.set('uint256', 'BigInt');
+solToGql.set('uint', 'BigInt');
+
+solToGql.set('bytes', 'String');
+solToGql.set('bytes1', 'String');
+solToGql.set('bytes2', 'String');
+solToGql.set('bytes3', 'String');
+solToGql.set('bytes4', 'String');
+solToGql.set('bytes5', 'String');
+solToGql.set('bytes6', 'String');
+solToGql.set('bytes7', 'String');
+solToGql.set('bytes8', 'String');
+solToGql.set('bytes9', 'String');
+solToGql.set('bytes10', 'String');
+solToGql.set('bytes11', 'String');
+solToGql.set('bytes12', 'String');
+solToGql.set('bytes13', 'String');
+solToGql.set('bytes14', 'String');
+solToGql.set('bytes15', 'String');
+solToGql.set('bytes16', 'String');
+solToGql.set('bytes17', 'String');
+solToGql.set('bytes18', 'String');
+solToGql.set('bytes19', 'String');
+solToGql.set('bytes20', 'String');
+solToGql.set('bytes21', 'String');
+solToGql.set('bytes22', 'String');
+solToGql.set('bytes23', 'String');
+solToGql.set('bytes24', 'String');
+solToGql.set('bytes25', 'String');
+solToGql.set('bytes26', 'String');
+solToGql.set('bytes27', 'String');
+solToGql.set('bytes28', 'String');
+solToGql.set('bytes29', 'String');
+solToGql.set('bytes30', 'String');
+solToGql.set('bytes31', 'String');
+solToGql.set('bytes32', 'String');
+
+export { solToGql };

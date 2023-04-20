@@ -52,6 +52,10 @@ Steps:
   # Watcher server port (default: 3008).
   port: 3008
 
+  # Solc version to use (optional)
+  # If not defined, uses solc version listed in dependencies
+  solc: v0.8.0+commit.c7dfd78e
+
   # Flatten the input contract file(s) [true | false] (default: true).
   flatten: true
 
@@ -72,12 +76,20 @@ Steps:
 
   * `config-file`(alias: `c`): Watcher generation config file path (yaml) (required).
 
+  * `continue-on-error` (alias: `e`): To continue generation if any unhandled data type is encountered (optional).
+
   Example:
 
   * Generate code using a config file `config.yaml`:
 
     ```bash
     yarn codegen --config-file ./config.yaml
+    ```
+
+  * Generate code ignoring any unhandled data types:
+
+    ```bash
+    yarn codegen --config-file ./config.yaml --continue-on-error
     ```
 
   This will create a folder containing the generated code at the path provided in config. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.

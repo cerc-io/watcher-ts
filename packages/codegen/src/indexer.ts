@@ -9,10 +9,11 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
 
-import { getTsForSol } from './utils/type-mappings';
+import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
 import { getFieldType } from './utils/subgraph';
+import { getBaseType, isArrayType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/indexer-template.handlebars';
 
@@ -37,10 +38,22 @@ export class Indexer {
    * @param returnType Return type for the query.
    * @param stateVariableType Type of the state variable in case of state variable query.
    */
-  addQuery (contract: string, mode: string, name: string, params: Array<Param>, returnType: string, stateVariableType?: string): void {
+  addQuery (contract: string, mode: string, name: string, params: Array<Param>, typeName: any, stateVariableType?: string): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
+    }
+
+    const baseType = getBaseType(typeName);
+    assert(baseType);
+    const gqlReturnType = getGqlForSol(baseType);
+    assert(gqlReturnType);
+    let tsReturnType = getTsForGql(gqlReturnType);
+    assert(tsReturnType);
+
+    const isArray = isArrayType(typeName);
+    if (isArray) {
+      tsReturnType = tsReturnType.concat('[]');
     }
 
     const queryObject = {
@@ -49,10 +62,11 @@ export class Indexer {
       getQueryName: '',
       saveQueryName: '',
       params: _.cloneDeep(params),
-      returnType,
+      returnType: tsReturnType,
       mode,
       stateVariableType,
-      contract
+      contract,
+      disableCaching: isArray
     };
 
     if (name.charAt(0) === '_') {
@@ -68,15 +82,13 @@ export class Indexer {
     }
 
     queryObject.params = queryObject.params.map((param) => {
-      const tsParamType = getTsForSol(param.type);
+      const gqlParamType = getGqlForSol(param.type);
+      assert(gqlParamType);
+      const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
       param.type = tsParamType;
       return param;
     });
-
-    const tsReturnType = getTsForSol(returnType);
-    assert(tsReturnType);
-    queryObject.returnType = tsReturnType;
 
     if (stateVariableType) {
       queryObject.stateVariableType = stateVariableType;

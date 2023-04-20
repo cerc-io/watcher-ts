@@ -166,6 +166,7 @@ export class Indexer implements IndexerInterface {
     {{else~}}
     ): Promise<ValueResult> {
     {{/if}}
+    {{#unless query.disableCaching}}
     const entity = await this._db.{{query.getQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -177,6 +178,7 @@ export class Indexer implements IndexerInterface {
       };
     }
 
+    {{/unless}}
     log('{{query.name}}: db miss, fetching from upstream server');
 
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
@@ -193,8 +195,15 @@ export class Indexer implements IndexerInterface {
     value = value.toString();
     value = BigInt(value);
     {{else}}
+    {{!-- Using nested if-else to avoid indentation issue --}}
+    {{#if (compare query.returnType 'bigint[]')}}
+    let value = await contract.{{query.name}}(
+    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
+    value = value.map((val: ethers.BigNumber) => ethers.BigNumber.from(val).toBigInt());
+    {{else}}
     const value = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
+    {{/if}}
     {{/if}}
 
     const result: ValueResult = { value };
@@ -215,9 +224,11 @@ export class Indexer implements IndexerInterface {
     );
     {{/if}}
 
+    {{#unless disableCaching}}
     await this._db.{{query.saveQueryName}}({ blockHash, blockNumber, contractAddress
     {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbigNative.stringify(result.proof) });
 
+    {{/unless}}
     {{#if query.stateVariableType}}
     {{#if (compare query.stateVariableType 'Mapping')}}
     if (diff) {

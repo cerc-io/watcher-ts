@@ -2,7 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import { solToTs } from './solToTs';
+import { solToGql } from './solToGql';
 
 const _tsToGql: Map<string, string> = new Map();
 const _tsToPg: Map<string, string> = new Map();
@@ -29,8 +29,8 @@ _gqlToTs.set('Boolean', 'boolean');
 _gqlToTs.set('BigDecimal', 'Decimal');
 _gqlToTs.set('Bytes', 'string');
 
-function getTsForSol (solType: string): string | undefined {
-  return solToTs.get(solType);
+function getGqlForSol (solType: string): string | undefined {
+  return solToGql.get(solType);
 }
 
 function getGqlForTs (tsType: string): string | undefined {
@@ -45,4 +45,4 @@ function getTsForGql (gqlType: string): string | undefined {
   return _gqlToTs.get(gqlType);
 }
 
-export { getTsForSol, getGqlForTs, getPgForTs, getTsForGql };
+export { getGqlForTs, getGqlForSol, getPgForTs, getTsForGql };

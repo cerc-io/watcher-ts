@@ -38,6 +38,9 @@ import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
+import { writeFileToStream } from './utils/helpers';
+
+const ASSET_DIR = path.resolve(__dirname, 'assets');
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -233,6 +236,16 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
     : process.stdout;
   exportReadme(path.basename(outputDir), config.port, outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'LICENSE'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, 'LICENSE'), outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, '.gitignore'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, '.gitignore'), outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))

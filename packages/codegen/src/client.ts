@@ -10,8 +10,9 @@ import { Writable } from 'stream';
 import _ from 'lodash';
 import { gqlGenerate } from 'gql-generator';
 
-import { getTsForSol } from './utils/type-mappings';
+import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/client-template.handlebars';
 
@@ -30,11 +31,14 @@ export class Client {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, returnType: string): void {
+  addQuery (name: string, params: Array<Param>, typeName: any): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
+
+    const returnType = getBaseType(typeName);
+    assert(returnType);
 
     const queryObject = {
       name,
@@ -48,13 +52,17 @@ export class Client {
       : `get${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 
     queryObject.params = queryObject.params.map((param) => {
-      const tsParamType = getTsForSol(param.type);
+      const gqlParamType = getGqlForSol(param.type);
+      assert(gqlParamType);
+      const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
       param.type = tsParamType;
       return param;
     });
 
-    const tsReturnType = getTsForSol(returnType);
+    const gqlReturnType = getGqlForSol(returnType);
+    assert(gqlReturnType);
+    const tsReturnType = getTsForGql(gqlReturnType);
     assert(tsReturnType);
     queryObject.returnType = tsReturnType;
 
