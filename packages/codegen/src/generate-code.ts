@@ -38,7 +38,8 @@ import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
-import { writeFileToStream } from './utils/helpers';
+import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
+import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 
 const ASSET_DIR = path.resolve(__dirname, 'assets');
 
@@ -146,8 +147,16 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
       // Get the abstract syntax tree for the flattened contract.
       const ast = parse(contract.contractString);
 
-      // Filter out library nodes.
-      ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
+      const contractNode = ast.children.find((node: ASTNode) =>
+        node.type === 'ContractDefinition' &&
+        node.name === contract.contractName
+      );
+      assert(contractNode);
+
+      const nodes: Set<ASTNode> = new Set();
+      filterInheritedContractNodes(ast, [contractNode], nodes);
+
+      ast.children = Array.from(nodes);
 
       visit(ast, {
         StateVariableDeclaration: stateVariableDeclarationVisitor,
