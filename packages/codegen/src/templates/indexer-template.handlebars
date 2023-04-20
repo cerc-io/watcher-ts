@@ -25,10 +25,10 @@ import {
   JobQueue,
   Where,
   QueryOptions,
-  {{#if hasElementaryType}}
+  {{#if hasStateVariableElementaryType}}
   updateStateForElementaryType,
   {{/if}}
-  {{#if hasMappingType}}
+  {{#if hasStateVariableMappingType}}
   updateStateForMappingType,
   {{/if}}
   {{#if (subgraphPath)}}

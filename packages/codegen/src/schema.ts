@@ -257,9 +257,12 @@ export class Schema {
           value: (isArray) ? `[${value}]!` : value,
           proof: () => this._composer.getOTC('Proof')
         });
-      });
+      }
+    );
 
+    // Using this to declare result types before queries
     this._composer.addSchemaMustHaveType(typeComposer);
+
     return typeComposer;
   }
 

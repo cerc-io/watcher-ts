@@ -22,15 +22,15 @@ export class Indexer {
   _events: Array<any>;
   _subgraphEntities: Array<any>;
   _templateString: string;
-  _hasElementaryType: boolean;
-  _hasMappingType: boolean;
+  _hasStateVariableElementaryType: boolean;
+  _hasStateVariableMappingType: boolean;
 
   constructor () {
     this._queries = [];
     this._events = [];
     this._subgraphEntities = [];
-    this._hasElementaryType = false;
-    this._hasMappingType = false;
+    this._hasStateVariableElementaryType = false;
+    this._hasStateVariableMappingType = false;
     this._templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   }
 
@@ -99,10 +99,10 @@ export class Indexer {
 
       switch (stateVariableType) {
         case 'ElementaryTypeName':
-          this._hasElementaryType = true;
+          this._hasStateVariableElementaryType = true;
           break;
         case 'Mapping':
-          this._hasMappingType = true;
+          this._hasStateVariableMappingType = true;
           break;
       }
     }
@@ -186,8 +186,8 @@ export class Indexer {
       contracts,
       queries: this._queries,
       subgraphEntities: this._subgraphEntities,
-      hasElementaryType: this._hasElementaryType,
-      hasMappingType: this._hasMappingType,
+      hasStateVariableElementaryType: this._hasStateVariableElementaryType,
+      hasStateVariableMappingType: this._hasStateVariableMappingType,
       constants: {
         MODE_ETH_CALL,
         MODE_STORAGE
