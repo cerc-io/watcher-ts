@@ -3,9 +3,11 @@
 //
 
 import assert from 'assert';
+import { DeepPartial, FindConditions, FindManyOptions{{#if (subgraphPath)}}, ObjectLiteral{{/if}} } from 'typeorm';
+{{#if queries}}
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions, ObjectLiteral } from 'typeorm';
 import JSONbig from 'json-bigint';
+{{/if}}
 import { ethers } from 'ethers';
 {{#if (subgraphPath)}}
 import { SelectionNode } from 'graphql';
@@ -23,8 +25,12 @@ import {
   JobQueue,
   Where,
   QueryOptions,
+  {{#if hasElementaryType}}
   updateStateForElementaryType,
+  {{/if}}
+  {{#if hasMappingType}}
   updateStateForMappingType,
+  {{/if}}
   {{#if (subgraphPath)}}
   BlockHeight,
   updateSubgraphState,
@@ -59,9 +65,11 @@ import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.classNam
 {{#if (subgraphPath)}}
 import { FrothyEntity } from './entity/FrothyEntity';
 {{/if}}
+{{~#if queries}}
 
 const log = debug('vulcanize:indexer');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
+{{/if}}
 
 {{#each contracts as | contract |}}
 const KIND_{{capitalize contract.contractName}} = '{{contract.contractKind}}';
@@ -178,11 +186,11 @@ export class Indexer implements IndexerInterface {
       };
     }
 
-    {{/unless}}
-    log('{{query.name}}: db miss, fetching from upstream server');
-
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
+
+    {{/unless}}
+    log('{{query.name}}: db miss, fetching from upstream server');
 
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
     const abi = this._abiMap.get(KIND_{{capitalize query.contract}});
@@ -279,7 +287,7 @@ export class Indexer implements IndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
+  async processCanonicalBlock (blockHash: string{{~#if (subgraphPath)}}, blockNumber: number{{/if}}): Promise<void> {
     console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);

@@ -6,18 +6,25 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 import Decimal from 'decimal.js';
-import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
+import {
+  GraphQLScalarType
+  // GraphQLResolveInfo
+} from 'graphql';
 
 import {
+  {{#if queries}}
   ValueResult,
-  BlockHeight,
+  {{/if}}
   gqlTotalQueryCount,
   gqlQueryCount,
-  jsonBigIntStringReplacer,
   getResultState,
-  setGQLCacheHints,
   IndexerInterface,
+  {{#if (subgraphPath)}}
+  BlockHeight,
+  jsonBigIntStringReplacer,
+  {{/if}}
   EventWatcher
+  // setGQLCacheHints
 } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
@@ -33,7 +40,7 @@ const log = debug('vulcanize:resolver');
 export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
   const indexer = indexerArg as Indexer;
 
-  const gqlCacheConfig = indexer.serverConfig.gqlCache;
+  // const gqlCacheConfig = indexer.serverConfig.gqlCache;
 
   return {
     BigInt: new BigInt('bigInt'),
@@ -80,9 +87,9 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         _: any,
         { blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
-        {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} },
-        __: any,
-        info: GraphQLResolveInfo
+        {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} }
+        // __: any,
+        // info: GraphQLResolveInfo
       ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
@@ -101,9 +108,9 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       {{~#each subgraphQueries}}
       {{this.queryName}}: async (
         _: any,
-        { id, block = {} }: { id: string, block: BlockHeight },
-        __: any,
-        info: GraphQLResolveInfo
+        { id, block = {} }: { id: string, block: BlockHeight }
+        // __: any,
+        // info: GraphQLResolveInfo
       ) => {
         log('{{this.queryName}}', id, JSON.stringify(block, jsonBigIntStringReplacer));
         gqlTotalQueryCount.inc(1);
