@@ -264,6 +264,14 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, '.gitignore'), outStream);
 
+  const huskyDir = path.join(outputDir, '.husky');
+  if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, '.husky/pre-commit'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, 'pre-commit'), outStream);
+
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
     : process.stdout;

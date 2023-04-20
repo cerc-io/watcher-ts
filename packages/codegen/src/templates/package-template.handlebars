@@ -8,6 +8,7 @@
     "lint": "eslint --max-warnings=0 .",
     "build": "yarn clean && tsc && yarn copy-assets",
     "clean": "rm -rf ./dist",
+    "prepare": "husky install",
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/",
     "server": "DEBUG=vulcanize:*  YARN_CHILD_PROCESS=true node --enable-source-maps dist/server.js",
     "server:dev": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true ts-node src/server.ts",
@@ -72,6 +73,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
+    "husky": "^7.0.2",
     "ts-node": "^10.2.1",
     "typescript": "^5.0.2",
     "copyfiles": "^2.4.1"
