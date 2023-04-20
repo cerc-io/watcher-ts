@@ -258,6 +258,8 @@ export class Schema {
           proof: () => this._composer.getOTC('Proof')
         });
       });
+
+    this._composer.addSchemaMustHaveType(typeComposer);
     return typeComposer;
   }
 
