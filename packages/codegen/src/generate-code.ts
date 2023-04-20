@@ -264,6 +264,11 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, '.gitignore'), outStream);
 
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, '.npmrc'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, '.npmrc'), outStream);
+
   const huskyDir = path.join(outputDir, '.husky');
   if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir);
 
