@@ -5,6 +5,7 @@
 import { Writable } from 'stream';
 import assert from 'assert';
 import { utils } from 'ethers';
+import { FunctionDefinition } from '@solidity-parser/parser/dist/src/ast-types';
 
 import { Database } from './database';
 import { Entity } from './entity';
@@ -51,51 +52,58 @@ export class Visitor {
    * Visitor function for function definitions.
    * @param node ASTNode for a function definition.
    */
-  functionDefinitionVisitor (node: any): void {
-    if (node.stateMutability === 'view' && (node.visibility === 'external' || node.visibility === 'public')) {
-      const name = node.name;
-      const params = node.parameters.map((item: any) => {
-        return { name: item.name, type: item.typeName.name };
-      });
+  functionDefinitionVisitor (node: FunctionDefinition): void {
+    if (node.stateMutability !== 'view' || !(node.visibility === 'external' || node.visibility === 'public')) {
+      return;
+    }
 
-      let errorMessage = '';
+    // If function doesn't return anything skip creating watcher query
+    if (!node.returnParameters) {
+      return;
+    }
 
-      if (node.returnParameters.length > 1) {
-        errorMessage = `No support in codegen for multiple returned values from method ${node.name}`;
-      } else {
-        const typeName = node.returnParameters[0].typeName;
-        switch (typeName.type) {
-          case 'ElementaryTypeName':
-            this._entity.addQuery(name, params, typeName);
-            this._database.addQuery(name, params, typeName);
-            this._client.addQuery(name, params, typeName);
-            // falls through
+    const name = node.name;
+    assert(name);
 
-          case 'ArrayTypeName':
-            this._schema.addQuery(name, params, typeName);
-            this._resolvers.addQuery(name, params, typeName);
+    const params = node.parameters.map((item: any) => {
+      return { name: item.name, type: item.typeName.name };
+    });
 
-            assert(this._contract);
-            this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);
-            break;
+    let errorMessage = '';
 
-          case 'UserDefinedTypeName':
-            errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
-            break;
+    const typeName = node.returnParameters[0].typeName;
+    assert(typeName);
 
-          default:
-            errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
-        }
+    switch (typeName.type) {
+      case 'ElementaryTypeName':
+        this._entity.addQuery(name, params, typeName);
+        this._database.addQuery(name, params, typeName);
+        this._client.addQuery(name, params, typeName);
+        // falls through
+
+      case 'ArrayTypeName':
+        this._schema.addQuery(name, params, node.returnParameters);
+        this._resolvers.addQuery(name, params, typeName);
+
+        assert(this._contract);
+        this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);
+        break;
+
+      case 'UserDefinedTypeName':
+        errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
+        break;
+
+      default:
+        errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
+    }
+
+    if (errorMessage !== '') {
+      if (this._continueOnError) {
+        console.log(errorMessage);
+        return;
       }
 
-      if (errorMessage !== '') {
-        if (this._continueOnError) {
-          console.log(errorMessage);
-          return;
-        }
-
-        throw new Error(errorMessage);
-      }
+      throw new Error(errorMessage);
     }
   }
 
