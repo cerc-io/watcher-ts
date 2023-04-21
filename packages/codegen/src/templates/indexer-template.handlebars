@@ -4,8 +4,8 @@
 
 import assert from 'assert';
 import { DeepPartial, FindConditions, FindManyOptions{{#if (subgraphPath)}}, ObjectLiteral{{/if}} } from 'typeorm';
-{{#if queries}}
 import debug from 'debug';
+{{#if queries}}
 import JSONbig from 'json-bigint';
 {{/if}}
 import { ethers } from 'ethers';
@@ -59,15 +59,19 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
+{{#if (subgraphPath)}}
+/* eslint-disable @typescript-eslint/no-unused-vars */
 {{#each subgraphEntities as | subgraphEntity |}}
 import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
 {{/each}}
-{{#if (subgraphPath)}}
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
 import { FrothyEntity } from './entity/FrothyEntity';
 {{/if}}
-{{~#if queries}}
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const log = debug('vulcanize:indexer');
+{{#if queries}}
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 {{/if}}
 
