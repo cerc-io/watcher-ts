@@ -10,7 +10,7 @@
     "clean": "rm -rf ./dist",
     "prepare": "husky install",
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/",
-    "server": "DEBUG=vulcanize:*  YARN_CHILD_PROCESS=true node --enable-source-maps dist/server.js",
+    "server": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true node --enable-source-maps dist/server.js",
     "server:dev": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true ts-node src/server.ts",
     "job-runner": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true node --enable-source-maps dist/job-runner.js",
     "job-runner:dev": "DEBUG=vulcanize:* YARN_CHILD_PROCESS=true ts-node src/job-runner.ts",
