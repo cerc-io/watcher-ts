@@ -4,7 +4,13 @@
 
 import assert from 'assert';
 
-import { updateStateForMappingType, updateStateForElementaryType, ResultEvent } from '@cerc-io/util';
+import {
+  ResultEvent,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  updateStateForMappingType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  updateStateForElementaryType
+} from '@cerc-io/util';
 
 import { Indexer } from './indexer';
 

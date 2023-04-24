@@ -3,9 +3,11 @@
 //
 
 import assert from 'assert';
+import { DeepPartial, FindConditions, FindManyOptions{{#if (subgraphPath)}}, ObjectLiteral{{/if}} } from 'typeorm';
 import debug from 'debug';
-import { DeepPartial, FindConditions, FindManyOptions, ObjectLiteral } from 'typeorm';
+{{#if queries}}
 import JSONbig from 'json-bigint';
+{{/if}}
 import { ethers } from 'ethers';
 {{#if (subgraphPath)}}
 import { SelectionNode } from 'graphql';
@@ -23,8 +25,12 @@ import {
   JobQueue,
   Where,
   QueryOptions,
+  {{#if hasStateVariableElementaryType}}
   updateStateForElementaryType,
+  {{/if}}
+  {{#if hasStateVariableMappingType}}
   updateStateForMappingType,
+  {{/if}}
   {{#if (subgraphPath)}}
   BlockHeight,
   updateSubgraphState,
@@ -53,15 +59,21 @@ import { SyncStatus } from './entity/SyncStatus';
 import { StateSyncStatus } from './entity/StateSyncStatus';
 import { BlockProgress } from './entity/BlockProgress';
 import { State } from './entity/State';
+{{#if (subgraphPath)}}
+/* eslint-disable @typescript-eslint/no-unused-vars */
 {{#each subgraphEntities as | subgraphEntity |}}
 import { {{subgraphEntity.className}} } from './entity/{{subgraphEntity.className}}';
 {{/each}}
-{{#if (subgraphPath)}}
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
 import { FrothyEntity } from './entity/FrothyEntity';
 {{/if}}
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const log = debug('vulcanize:indexer');
+{{#if queries}}
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
+{{/if}}
 
 {{#each contracts as | contract |}}
 const KIND_{{capitalize contract.contractName}} = '{{contract.contractKind}}';
@@ -178,11 +190,11 @@ export class Indexer implements IndexerInterface {
       };
     }
 
-    {{/unless}}
-    log('{{query.name}}: db miss, fetching from upstream server');
-
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
+
+    {{/unless}}
+    log('{{query.name}}: db miss, fetching from upstream server');
 
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
     const abi = this._abiMap.get(KIND_{{capitalize query.contract}});
@@ -279,7 +291,7 @@ export class Indexer implements IndexerInterface {
     return createStateCheckpoint(this, contractAddress, blockHash);
   }
 
-  async processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void> {
+  async processCanonicalBlock (blockHash: string{{~#if (subgraphPath)}}, blockNumber: number{{/if}}): Promise<void> {
     console.time('time:indexer#processCanonicalBlock-finalize_auto_diffs');
     // Finalize staged diff blocks if any.
     await this._baseIndexer.finalizeDiffStaged(blockHash);

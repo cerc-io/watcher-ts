@@ -57,6 +57,13 @@ const main = async (): Promise<void> => {
       describe: 'Continue generating watcher if unhandled types encountered',
       type: 'boolean'
     })
+    .option('overwrite', {
+      alias: 'o',
+      demandOption: false,
+      default: false,
+      describe: 'Overwrite previously generated watcher',
+      type: 'boolean'
+    })
     .argv;
 
   const config = getConfig(path.resolve(argv['config-file']));
@@ -108,11 +115,13 @@ const main = async (): Promise<void> => {
   }
 
   const continueOnError = argv['continue-on-error'];
+  const overwriteExisting = argv.overwrite;
+
   const visitor = new Visitor(continueOnError);
 
   parseAndVisit(visitor, contracts, config.mode);
 
-  generateWatcher(visitor, contracts, config);
+  generateWatcher(visitor, contracts, config, overwriteExisting);
 };
 
 function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
@@ -148,12 +157,23 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
   }
 }
 
-function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
+function generateWatcher (visitor: Visitor, contracts: any[], config: any, overWriteExisting = false) {
   // Prepare directory structure for the watcher.
   let outputDir = '';
+
   if (config.outputFolder) {
     outputDir = path.resolve(config.outputFolder);
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    if (fs.existsSync(outputDir)) {
+      if (!overWriteExisting) {
+        throw new Error('Watcher already exists in output folder. Run with --overwrite flag to overwrite');
+      }
+    } else {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const huskyDir = path.join(outputDir, '.husky');
+    if (!fs.existsSync(huskyDir)) fs.mkdirSync(huskyDir);
 
     const environmentsFolder = path.join(outputDir, 'environments');
     if (!fs.existsSync(environmentsFolder)) fs.mkdirSync(environmentsFolder);
@@ -246,6 +266,23 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any) {
     ? fs.createWriteStream(path.join(outputDir, '.gitignore'))
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, '.gitignore'), outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, '.npmrc'))
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, '.npmrc'), outStream);
+
+  const huskyPreCommitFilePath = path.join(outputDir, '.husky/pre-commit');
+
+  outStream = outputDir
+    ? fs.createWriteStream(huskyPreCommitFilePath)
+    : process.stdout;
+  writeFileToStream(path.join(ASSET_DIR, 'pre-commit'), outStream);
+
+  if (fs.existsSync(huskyPreCommitFilePath)) {
+    // Set file permission to executable
+    fs.chmodSync(huskyPreCommitFilePath, '775');
+  }
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))

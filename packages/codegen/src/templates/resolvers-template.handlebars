@@ -6,18 +6,26 @@ import assert from 'assert';
 import BigInt from 'apollo-type-bigint';
 import debug from 'debug';
 import Decimal from 'decimal.js';
-import { GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
+import {
+  GraphQLScalarType,
+  GraphQLResolveInfo
+} from 'graphql';
 
 import {
+  {{#if queries}}
   ValueResult,
-  BlockHeight,
+  {{/if}}
   gqlTotalQueryCount,
   gqlQueryCount,
-  jsonBigIntStringReplacer,
   getResultState,
-  setGQLCacheHints,
   IndexerInterface,
-  EventWatcher
+  {{#if (subgraphPath)}}
+  BlockHeight,
+  jsonBigIntStringReplacer,
+  {{/if}}
+  EventWatcher,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  setGQLCacheHints
 } from '@cerc-io/util';
 
 import { Indexer } from './indexer';
@@ -33,6 +41,7 @@ const log = debug('vulcanize:resolver');
 export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
   const indexer = indexerArg as Indexer;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const gqlCacheConfig = indexer.serverConfig.gqlCache;
 
   return {
@@ -81,7 +90,9 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         { blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
         {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         __: any,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         info: GraphQLResolveInfo
       ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
