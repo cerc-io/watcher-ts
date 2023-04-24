@@ -272,10 +272,17 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, '.npmrc'), outStream);
 
+  const huskyPreCommitFilePath = path.join(outputDir, '.husky/pre-commit');
+
   outStream = outputDir
-    ? fs.createWriteStream(path.join(outputDir, '.husky/pre-commit'))
+    ? fs.createWriteStream(huskyPreCommitFilePath)
     : process.stdout;
   writeFileToStream(path.join(ASSET_DIR, 'pre-commit'), outStream);
+
+  if (fs.existsSync(huskyPreCommitFilePath)) {
+    // Set file permission to executable
+    fs.chmodSync(huskyPreCommitFilePath, '775');
+  }
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/job-runner.ts'))
