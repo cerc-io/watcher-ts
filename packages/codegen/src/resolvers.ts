@@ -11,7 +11,6 @@ import _ from 'lodash';
 
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/resolvers-template.handlebars';
 
@@ -30,20 +29,16 @@ export class Resolvers {
    * Stores the query to be passed to the template.
    * @param name Name of the query.
    * @param params Parameters to the query.
-   * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: any): void {
+  addQuery (name: string, params: Array<Param>): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
-    const returnType = getBaseType(typeName);
-    assert(returnType);
 
     const queryObject = {
       name,
-      params: _.cloneDeep(params),
-      returnType
+      params: _.cloneDeep(params)
     };
 
     queryObject.params = queryObject.params.map((param) => {

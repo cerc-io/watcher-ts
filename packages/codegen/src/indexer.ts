@@ -9,6 +9,8 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
 
+import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
+
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { MODE_ETH_CALL, MODE_STORAGE } from './utils/constants';
@@ -42,23 +44,46 @@ export class Indexer {
    * @param returnType Return type for the query.
    * @param stateVariableType Type of the state variable in case of state variable query.
    */
-  addQuery (contract: string, mode: string, name: string, params: Array<Param>, typeName: any, stateVariableType?: string): void {
+  addQuery (
+    contract: string,
+    mode: string,
+    name: string,
+    params: Array<Param>,
+    returnParameters: VariableDeclaration[],
+    stateVariableType?: string
+  ): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
 
-    const baseType = getBaseType(typeName);
-    assert(baseType);
-    const gqlReturnType = getGqlForSol(baseType);
-    assert(gqlReturnType);
-    let tsReturnType = getTsForGql(gqlReturnType);
-    assert(tsReturnType);
+    // Disable DB caching if more than 1 return params.
+    let disableCaching = returnParameters.length > 1;
 
-    const isArray = isArrayType(typeName);
-    if (isArray) {
-      tsReturnType = tsReturnType.concat('[]');
-    }
+    const returnTypes = returnParameters.map(returnParameter => {
+      let typeName = returnParameter.typeName;
+      assert(typeName);
+
+      // Handle Mapping type for state variable queries
+      while (typeName.type === 'Mapping') {
+        typeName = typeName.valueType;
+      }
+
+      const baseType = getBaseType(typeName);
+      assert(baseType);
+      const gqlReturnType = getGqlForSol(baseType);
+      assert(gqlReturnType);
+      let tsReturnType = getTsForGql(gqlReturnType);
+      assert(tsReturnType);
+
+      const isArray = isArrayType(typeName);
+      if (isArray) {
+        disableCaching = true;
+        tsReturnType = tsReturnType.concat('[]');
+      }
+
+      return tsReturnType;
+    });
 
     const queryObject = {
       name,
@@ -66,11 +91,11 @@ export class Indexer {
       getQueryName: '',
       saveQueryName: '',
       params: _.cloneDeep(params),
-      returnType: tsReturnType,
+      returnTypes,
       mode,
       stateVariableType,
       contract,
-      disableCaching: isArray
+      disableCaching
     };
 
     if (name.charAt(0) === '_') {

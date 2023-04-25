@@ -7,6 +7,7 @@ import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt,
 import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
+import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
 
 import { getGqlForTs, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -30,21 +31,13 @@ export class Schema {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: any): void {
+  addQuery (name: string, params: Array<Param>, returnParameters: VariableDeclaration[]): void {
     // Check if the query is already added.
     if (this._composer.Query.hasField(name)) {
       return;
     }
 
-    // TODO: Handle cases where returnType/params type is an array.
-    const isReturnTypeArray = isArrayType(typeName);
-    const baseTypeName = getBaseType(typeName);
-    assert(baseTypeName);
-
-    const gqlReturnType = getGqlForSol(baseTypeName);
-    assert(gqlReturnType, `gql type for sol type ${baseTypeName} for ${name} not found`);
-
-    const objectTC = this._getOrCreateResultType(gqlReturnType, isReturnTypeArray);
+    const objectTC = this._getOrCreateResultType(name, returnParameters);
 
     const queryObject: { [key: string]: any; } = {};
     queryObject[name] = {
@@ -57,6 +50,7 @@ export class Schema {
     };
 
     if (params.length > 0) {
+      // TODO: Handle cases where params type is an array.
       queryObject[name].args = params.reduce((acc, curr) => {
         acc[curr.name] = `${getGqlForSol(curr.type)}!`;
         return acc;
@@ -242,19 +236,65 @@ export class Schema {
   /**
    * Adds Result types to the schema and typemapping.
    */
-  _getOrCreateResultType (typeName: string, isArray = false): ObjectTypeComposer<any, any> {
-    const value = `${typeName}!`;
+  _getOrCreateResultType (functionName: string, returnParameters: VariableDeclaration[]): ObjectTypeComposer<any, any> {
+    const returnValueTypes = returnParameters.map((returnParameter) => {
+      let typeName = returnParameter.typeName;
+      assert(typeName);
 
-    let objectTCName = `Result${typeName}`;
-    if (isArray) {
-      objectTCName = objectTCName.concat('Array');
+      // Handle Mapping type for state variable queries
+      while (typeName.type === 'Mapping') {
+        typeName = typeName.valueType;
+      }
+
+      const isReturnTypeArray = isArrayType(typeName);
+      const baseTypeName = getBaseType(typeName);
+      assert(baseTypeName);
+
+      const gqlReturnType = getGqlForSol(baseTypeName);
+      assert(gqlReturnType, `gql type for sol type ${baseTypeName} for ${functionName} not found`);
+
+      return {
+        type: gqlReturnType,
+        isArray: isReturnTypeArray
+      };
+    });
+
+    let objectTCName = 'Result';
+    let value = '';
+
+    if (returnParameters.length > 1) {
+      const returnValueTypesMap = returnParameters.reduce((acc: {[key: string]: string}, _, index) => {
+        const { type, isArray } = returnValueTypes[index];
+        acc[`value${index}`] = (isArray) ? `[${type}!]!` : `${type}!`;
+        return acc;
+      }, {});
+
+      const capitalizedFunctionName = `${functionName.charAt(0).toUpperCase()}${functionName.slice(1)}`;
+
+      this._composer.getOrCreateOTC(
+        `${capitalizedFunctionName}Type`,
+        (tc) => {
+          tc.addFields(returnValueTypesMap);
+        }
+      );
+
+      objectTCName = objectTCName.concat(`${capitalizedFunctionName}Type`);
+      value = `${capitalizedFunctionName}Type!`;
+    } else {
+      const { type, isArray } = returnValueTypes[0];
+      value = (isArray) ? `[${type}!]!` : `${type}!`;
+      objectTCName = objectTCName.concat(type);
+
+      if (isArray) {
+        objectTCName = objectTCName.concat('Array');
+      }
     }
 
     const typeComposer = this._composer.getOrCreateOTC(
       objectTCName,
       (tc) => {
         tc.addFields({
-          value: (isArray) ? `[${value}]!` : value,
+          value,
           proof: () => this._composer.getOTC('Proof')
         });
       }

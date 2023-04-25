@@ -4,14 +4,14 @@
 
 import fs from 'fs';
 import { Writable } from 'stream';
+import { TypeName } from '@solidity-parser/parser/dist/src/ast-types';
 
-const isElementaryType = (typeName: any): boolean => (typeName.type === 'ElementaryTypeName');
-export const isArrayType = (typeName: any): boolean => (typeName.type === 'ArrayTypeName');
+export const isArrayType = (typeName: TypeName): boolean => (typeName.type === 'ArrayTypeName');
 
-export const getBaseType = (typeName: any): string | undefined => {
-  if (isElementaryType(typeName)) {
+export const getBaseType = (typeName: TypeName): string | undefined => {
+  if (typeName.type === 'ElementaryTypeName') {
     return typeName.name;
-  } else if (isArrayType(typeName)) {
+  } else if (typeName.type === 'ArrayTypeName') {
     return getBaseType(typeName.baseTypeName);
   } else {
     return undefined;
