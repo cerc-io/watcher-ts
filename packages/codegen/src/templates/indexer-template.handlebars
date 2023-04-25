@@ -201,20 +201,28 @@ export class Indexer implements IndexerInterface {
     assert(abi);
 
     const contract = new ethers.Contract(contractAddress, abi, this._ethProvider);
-    {{#if (compare query.returnType 'bigint')}}
-    let value = await contract.{{query.name}}(
+    const contractResult = await contract.{{query.name}}(
     {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
-    value = value.toString();
-    value = BigInt(value);
+
+    {{#if (compare query.returnTypes.length 1 operator=">")}}
+    const value = {
+    {{~#each query.returnTypes as | returnType |}}
+      {{#if (compare returnType 'bigint')}}
+      value{{@index}}: ethers.BigNumber.from(contractResult[{{@index}}]).toBigInt(),
+      {{else if (compare returnType 'bigint[]')}}
+      value{{@index}}: contractResult[{{@index}}].map((val: ethers.BigNumber | number) => ethers.BigNumber.from(val).toBigInt()),
+      {{else}}
+      value{{@index}}: contractResult[{{@index}}],
+      {{/if}}
+    {{/each}}
+    }
     {{else}}
-    {{!-- Using nested if-else to avoid indentation issue --}}
-    {{#if (compare query.returnType 'bigint[]')}}
-    let value = await contract.{{query.name}}(
-    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
-    value = value.map((val: ethers.BigNumber) => ethers.BigNumber.from(val).toBigInt());
+    {{#if (compare query.returnTypes.[0] 'bigint')}}
+    const value = ethers.BigNumber.from(contractResult).toBigInt();
+    {{else if (compare query.returnTypes.[0] 'bigint[]')}}
+    const value = contractResult.map((val: ethers.BigNumber | number) => ethers.BigNumber.from(val).toBigInt());
     {{else}}
-    const value = await contract.{{query.name}}(
-    {{~#each query.params}}{{this.name}}, {{/each}}{ blockTag: blockHash });
+    const value = contractResult;
     {{/if}}
     {{/if}}
 

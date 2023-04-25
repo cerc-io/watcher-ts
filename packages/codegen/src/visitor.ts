@@ -83,10 +83,10 @@ export class Visitor {
 
       case 'ArrayTypeName':
         this._schema.addQuery(name, params, node.returnParameters);
-        this._resolvers.addQuery(name, params, typeName);
+        this._resolvers.addQuery(name, params);
 
         assert(this._contract);
-        this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, typeName);
+        this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, node.returnParameters);
         break;
 
       case 'UserDefinedTypeName':
@@ -141,7 +141,7 @@ export class Visitor {
     switch (typeName.type) {
       case 'ElementaryTypeName': {
         this._schema.addQuery(name, params, typeName);
-        this._resolvers.addQuery(name, params, typeName);
+        this._resolvers.addQuery(name, params);
         this._entity.addQuery(name, params, typeName);
         this._database.addQuery(name, params, typeName);
         this._client.addQuery(name, params, typeName);
