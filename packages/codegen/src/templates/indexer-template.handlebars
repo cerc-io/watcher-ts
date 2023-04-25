@@ -206,16 +206,20 @@ export class Indexer implements IndexerInterface {
 
     {{#if (compare query.returnTypes.length 1 operator=">")}}
     const value = {
-    {{~#each query.returnTypes as | returnType |}}
+    {{#each query.returnTypes as |returnType index|}}
       {{#if (compare returnType 'bigint')}}
-      value{{@index}}: ethers.BigNumber.from(contractResult[{{@index}}]).toBigInt(),
-      {{else if (compare returnType 'bigint[]')}}
-      value{{@index}}: contractResult[{{@index}}].map((val: ethers.BigNumber | number) => ethers.BigNumber.from(val).toBigInt()),
-      {{else}}
-      value{{@index}}: contractResult[{{@index}}],
+      value{{index}}: ethers.BigNumber.from(contractResult[{{index}}]).toBigInt()
+      {{~else}}
+      {{!-- https://github.com/handlebars-lang/handlebars.js/issues/1716 --}}
+      {{#if (compare returnType 'bigint[]')}}
+      value{{index}}: contractResult[{{index}}].map((val: ethers.BigNumber | number) => ethers.BigNumber.from(val).toBigInt())
+      {{~else}}
+      value{{index}}: contractResult[{{index}}]
+      {{~/if}}
       {{/if}}
+      {{~#unless @last}},{{/unless}}
     {{/each}}
-    }
+    };
     {{else}}
     {{#if (compare query.returnTypes.[0] 'bigint')}}
     const value = ethers.BigNumber.from(contractResult).toBigInt();
@@ -223,8 +227,8 @@ export class Indexer implements IndexerInterface {
     const value = contractResult.map((val: ethers.BigNumber | number) => ethers.BigNumber.from(val).toBigInt());
     {{else}}
     const value = contractResult;
-    {{/if}}
-    {{/if}}
+    {{~/if}}
+    {{~/if}}
 
     const result: ValueResult = { value };
     {{/if}}
