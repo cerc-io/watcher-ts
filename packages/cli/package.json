@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cli",
-  "version": "0.2.39",
+  "version": "0.2.40",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "scripts": {
@@ -11,8 +11,8 @@
     "chat": "DEBUG='vulcanize:*, laconic:*' node dist/chat.js"
   },
   "dependencies": {
-    "@cerc-io/peer": "^0.2.39",
-    "@cerc-io/util": "^0.2.39",
+    "@cerc-io/peer": "^0.2.40",
+    "@cerc-io/util": "^0.2.40",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
     "@ipld/dag-cbor": "^8.0.0",
