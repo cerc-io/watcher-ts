@@ -5,7 +5,7 @@
 import { Writable } from 'stream';
 import assert from 'assert';
 import { utils } from 'ethers';
-import { FunctionDefinition } from '@solidity-parser/parser/dist/src/ast-types';
+import { FunctionDefinition, StateVariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
 
 import { Database } from './database';
 import { Entity } from './entity';
@@ -111,12 +111,14 @@ export class Visitor {
    * Visitor function for state variable declarations.
    * @param node ASTNode for a state variable declaration.
    */
-  stateVariableDeclarationVisitor (node: any): void {
+  stateVariableDeclarationVisitor (node: StateVariableDeclaration): void {
     // TODO Handle multiples variables in a single line.
     // TODO Handle array types.
     // TODO Handle user defined type .
     const variable = node.variables[0];
+    assert(variable.name);
     const name: string = variable.name;
+    assert(variable.typeName);
     const stateVariableType: string = variable.typeName.type;
     const params: Param[] = [];
 
@@ -126,38 +128,43 @@ export class Visitor {
     }
 
     let typeName = variable.typeName;
-    let numParams = 0;
-
-    // If the variable type is mapping, extract key as a param:
-    // Eg. mapping(address => mapping(address => uint256)) private _allowances;
-    while (typeName.type === 'Mapping') {
-      params.push({ name: `key${numParams.toString()}`, type: typeName.keyType.name });
-      typeName = typeName.valueType;
-      numParams++;
-    }
-
     let errorMessage = '';
 
     switch (typeName.type) {
+      case 'Mapping': {
+        let numParams = 0;
+
+        // If the variable type is mapping, extract key as a param:
+        // Eg. mapping(address => mapping(address => uint256)) private _allowances;
+        while (typeName.type === 'Mapping') {
+          assert(typeName.keyType.type === 'ElementaryTypeName', 'UserDefinedTypeName map keys like enum type not handled');
+          params.push({ name: `key${numParams.toString()}`, type: typeName.keyType.name });
+          typeName = typeName.valueType;
+          numParams++;
+        }
+
+        // falls through
+      }
+
       case 'ElementaryTypeName': {
-        this._schema.addQuery(name, params, typeName);
+        this._schema.addQuery(name, params, [variable]);
         this._resolvers.addQuery(name, params);
         this._entity.addQuery(name, params, typeName);
         this._database.addQuery(name, params, typeName);
         this._client.addQuery(name, params, typeName);
 
         assert(this._contract);
-        this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, typeName, stateVariableType);
+        this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, [variable], stateVariableType);
 
         break;
       }
 
       case 'UserDefinedTypeName':
-        errorMessage = `No support in codegen for user defined return type from method "${name}"`;
+        errorMessage = `No support in codegen for user defined type state variable "${name}"`;
         break;
 
       case 'ArrayTypeName':
-        errorMessage = `No support in codegen for return type "${typeName.baseTypeName.name}[]" from method "${name}"`;
+        errorMessage = `No support in codegen for array type state variable "${name}"`;
         break;
 
       default:

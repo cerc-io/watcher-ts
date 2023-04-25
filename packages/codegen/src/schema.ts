@@ -238,8 +238,14 @@ export class Schema {
    */
   _getOrCreateResultType (functionName: string, returnParameters: VariableDeclaration[]): ObjectTypeComposer<any, any> {
     const returnValueTypes = returnParameters.map((returnParameter) => {
-      const typeName = returnParameter.typeName;
+      let typeName = returnParameter.typeName;
       assert(typeName);
+
+      // Handle Mapping type for state variable queries
+      while (typeName.type === 'Mapping') {
+        typeName = typeName.valueType;
+      }
+
       const isReturnTypeArray = isArrayType(typeName);
       const baseTypeName = getBaseType(typeName);
       assert(baseTypeName);

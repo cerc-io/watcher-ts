@@ -61,8 +61,14 @@ export class Indexer {
     let disableCaching = returnParameters.length > 1;
 
     const returnTypes = returnParameters.map(returnParameter => {
-      const typeName = returnParameter.typeName;
+      let typeName = returnParameter.typeName;
       assert(typeName);
+
+      // Handle Mapping type for state variable queries
+      while (typeName.type === 'Mapping') {
+        typeName = typeName.valueType;
+      }
+
       const baseType = getBaseType(typeName);
       assert(baseType);
       const gqlReturnType = getGqlForSol(baseType);
