@@ -14,6 +14,7 @@ import os from 'os';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
+import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 import { KIND_ACTIVE, KIND_LAZY } from '@cerc-io/util';
 
 import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
@@ -39,7 +40,6 @@ import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
 import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
-import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 
 const ASSET_DIR = path.resolve(__dirname, 'assets');
 
@@ -151,11 +151,9 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
         node.type === 'ContractDefinition' &&
         node.name === contract.contractName
       );
+
       assert(contractNode);
-
-      const nodes: Set<ASTNode> = new Set();
-      filterInheritedContractNodes(ast, [contractNode], nodes);
-
+      const nodes = filterInheritedContractNodes(ast, [contractNode]);
       ast.children = Array.from(nodes);
 
       visit(ast, {
