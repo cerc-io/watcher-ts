@@ -154,7 +154,7 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
 
       assert(contractNode);
       const nodes = filterInheritedContractNodes(ast, [contractNode]);
-      ast.children = Array.from(nodes);
+      ast.children = Array.from(nodes).concat(contractNode);
 
       visit(ast, {
         StateVariableDeclaration: stateVariableDeclarationVisitor,

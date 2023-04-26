@@ -24,23 +24,36 @@ export function writeFileToStream (pathToFile: string, outStream: Writable): voi
   fileStream.pipe(outStream);
 }
 
+/**
+ * Get inherited contracts for array of contractNodes
+ * @param ast
+ * @param contractNodes
+ */
 export function filterInheritedContractNodes (ast: SourceUnit, contractNodes: ASTNode[]): Set<ASTNode> {
   const resultSet: Set<ASTNode> = new Set();
 
   contractNodes.forEach((node: ASTNode) => {
-    if (node.type !== 'ContractDefinition') return;
-    resultSet.add(node);
+    if (node.type !== 'ContractDefinition') {
+      return;
+    }
+
+    // Filter out library nodes
+    if (node.kind === 'library') {
+      return;
+    }
 
     const inheritedContracts = ast.children.filter((childNode: ASTNode) =>
-      childNode.type === 'ContractDefinition' &&
-      childNode.kind !== 'library' &&
       node.baseContracts.some((baseContract: InheritanceSpecifier) =>
-        baseContract.baseName.namePath === childNode.name
+        childNode.type === 'ContractDefinition' && baseContract.baseName.namePath === childNode.name
       )
     );
 
-    const childInheritedNodes = filterInheritedContractNodes(ast, inheritedContracts);
-    childInheritedNodes.forEach((node: ASTNode) => resultSet.add(node));
+    // Add inherited contracts to result set
+    inheritedContracts.forEach((node: ASTNode) => resultSet.add(node));
+    // Get parent inherited contracts
+    const parentInheritedNodes = filterInheritedContractNodes(ast, inheritedContracts);
+    // Add parent inherited contract nodes in result set
+    parentInheritedNodes.forEach((node: ASTNode) => resultSet.add(node));
   });
 
   return resultSet;
