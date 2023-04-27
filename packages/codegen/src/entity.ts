@@ -154,14 +154,17 @@ export class Entity {
         assert(baseType);
         const gqlReturnType = getGqlForSol(baseType);
         assert(gqlReturnType);
-        const tsReturnType = getTsForGql(gqlReturnType);
+        let tsReturnType = getTsForGql(gqlReturnType);
         assert(tsReturnType);
         const pgReturnType = getPgForTs(tsReturnType);
         assert(pgReturnType);
 
         const columnOptions = [];
+        const isArray = isArrayType(typeName);
 
-        if (isArrayType(typeName)) {
+        if (isArray) {
+          tsReturnType = tsReturnType.concat('[]');
+
           columnOptions.push({
             option: 'array',
             value: true
