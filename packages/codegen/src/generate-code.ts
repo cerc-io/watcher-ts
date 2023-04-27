@@ -14,6 +14,7 @@ import os from 'os';
 
 import { flatten } from '@poanet/solidity-flattener';
 import { parse, visit } from '@solidity-parser/parser';
+import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 import { KIND_ACTIVE, KIND_LAZY } from '@cerc-io/util';
 
 import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
@@ -38,7 +39,7 @@ import { getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
-import { writeFileToStream } from './utils/helpers';
+import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
 
 const ASSET_DIR = path.resolve(__dirname, 'assets');
 
@@ -146,8 +147,14 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
       // Get the abstract syntax tree for the flattened contract.
       const ast = parse(contract.contractString);
 
-      // Filter out library nodes.
-      ast.children = ast.children.filter(child => !(child.type === 'ContractDefinition' && child.kind === 'library'));
+      const contractNode = ast.children.find((node: ASTNode) =>
+        node.type === 'ContractDefinition' &&
+        node.name === contract.contractName
+      );
+
+      assert(contractNode);
+      const nodes = filterInheritedContractNodes(ast, [contractNode]);
+      ast.children = Array.from(nodes).concat(contractNode);
 
       visit(ast, {
         StateVariableDeclaration: stateVariableDeclarationVisitor,
