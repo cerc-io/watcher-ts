@@ -9,9 +9,10 @@ import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 import _ from 'lodash';
 
+import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
+
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/database-template.handlebars';
 
@@ -32,14 +33,11 @@ export class Database {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: any): void {
+  addQuery (name: string, params: Array<Param>, returnParameters: VariableDeclaration[]): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
-
-    const returnType = getBaseType(typeName);
-    assert(returnType);
 
     const queryObject = {
       name,
@@ -47,7 +45,7 @@ export class Database {
       getQueryName: '',
       saveQueryName: '',
       params: _.cloneDeep(params),
-      returnType
+      returnParameters
     };
 
     // eth_call mode: Capitalize first letter of entity name (balanceOf -> BalanceOf, getBalanceOf, saveBalanceOf).
@@ -73,12 +71,6 @@ export class Database {
       return param;
     });
 
-    const gqlReturnType = getGqlForSol(returnType);
-    assert(gqlReturnType);
-    const tsReturnType = getTsForGql(gqlReturnType);
-    assert(tsReturnType);
-
-    queryObject.returnType = tsReturnType;
     this._queries.push(queryObject);
   }
 

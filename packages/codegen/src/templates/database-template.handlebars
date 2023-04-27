@@ -105,11 +105,35 @@ export class Database implements DatabaseInterface {
   {{#if (reservedNameCheck query.entityName) }}
   // eslint-disable-next-line @typescript-eslint/ban-types
   {{/if}}
-  async {{query.saveQueryName}} ({ blockHash, blockNumber, contractAddress
-  {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof }: DeepPartial<{{query.entityName}}>): Promise<{{query.entityName}}> {
+  async {{query.saveQueryName}} ({
+    blockHash,
+    blockNumber,
+    contractAddress,
+    {{~#each query.params}}{{this.name~}},{{/each}}
+    {{#each query.returnParameters}}
+    {{~#if (compare query.returnParameters.length 1 operator=">")}}
+    value{{@index}},
+    {{else}}
+    value,
+    {{/if}}
+    {{/each}}
+    proof
+  }: DeepPartial<{{query.entityName}}>): Promise<{{query.entityName}}> {
     const repo = this._conn.getRepository({{query.entityName}});
-    const entity = repo.create({ blockHash, blockNumber, contractAddress
-    {{~#each query.params}}, {{this.name~}} {{/each}}, value, proof });
+    const entity = repo.create({
+      blockHash,
+      blockNumber,
+      contractAddress,
+      {{~#each query.params}}{{this.name~}},{{/each}}
+      {{#each query.returnParameters}}
+      {{~#if (compare query.returnParameters.length 1 operator=">")}}
+      value{{@index}},
+      {{else}}
+      value,
+      {{/if}}
+      {{/each}}
+      proof
+    });
     return repo.save(entity);
   }
 
