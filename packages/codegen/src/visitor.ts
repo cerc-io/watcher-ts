@@ -78,7 +78,6 @@ export class Visitor {
 
     switch (typeName.type) {
       case 'ElementaryTypeName':
-        this._entity.addQuery(name, params, node.returnParameters);
         this._database.addQuery(name, params, node.returnParameters);
         this._client.addQuery(name, params);
         // falls through
@@ -88,6 +87,7 @@ export class Visitor {
         this._resolvers.addQuery(name, params);
         assert(this._contract);
         this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, node.returnParameters);
+        this._entity.addQuery(name, params, node.returnParameters);
         break;
 
       case 'UserDefinedTypeName':

@@ -178,7 +178,6 @@ export class Indexer implements IndexerInterface {
     {{else~}}
     ): Promise<ValueResult> {
     {{/if}}
-    {{#unless query.disableCaching}}
     const entity = await this._db.{{query.getQueryName}}({ blockHash, contractAddress
     {{~#each query.params}}, {{this.name~}} {{~/each}} });
     if (entity) {
@@ -201,7 +200,6 @@ export class Indexer implements IndexerInterface {
     const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
-    {{/unless}}
     log('{{query.name}}: db miss, fetching from upstream server');
 
     {{#if (compare query.mode @root.constants.MODE_ETH_CALL)}}
@@ -256,10 +254,8 @@ export class Indexer implements IndexerInterface {
     );
     {{/if}}
 
-    {{#unless disableCaching}}
     await this._db.{{query.saveQueryName}}({ blockHash, blockNumber, contractAddress,{{~#each query.params}} {{this.name~}},{{/each}}{{#each query.returnTypes}}{{~#if (compare query.returnTypes.length 1 operator=">")}} value{{@index}}: value.value{{@index}},{{else}} value: result.value,{{/if}}{{/each}} proof: JSONbigNative.stringify(result.proof) });
 
-    {{/unless}}
     {{#if query.stateVariableType}}
     {{#if (compare query.stateVariableType 'Mapping')}}
     if (diff) {

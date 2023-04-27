@@ -14,7 +14,7 @@ import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types'
 import { getPgForTs, getTsForGql, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getFieldType } from './utils/subgraph';
-import { getBaseType } from './utils/helpers';
+import { getBaseType, isArrayType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -159,12 +159,21 @@ export class Entity {
         const pgReturnType = getPgForTs(tsReturnType);
         assert(pgReturnType);
 
+        const columnOptions = [];
+
+        if (isArrayType(typeName)) {
+          columnOptions.push({
+            option: 'array',
+            value: true
+          });
+        }
+
         return {
           name: returnParameters.length > 1 ? `value${index}` : 'value',
           pgType: pgReturnType,
           tsType: tsReturnType,
           columnType: 'Column',
-          columnOptions: []
+          columnOptions
         };
       })
     );
