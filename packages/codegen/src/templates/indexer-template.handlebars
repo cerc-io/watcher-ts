@@ -185,7 +185,15 @@ export class Indexer implements IndexerInterface {
       log('{{query.name}}: db hit.');
 
       return {
+        {{~#if (compare query.returnTypes.length 1 operator=">")}}
+        value: {
+          {{#each query.returnTypes}}
+          value{{@index}}: entity.value{{@index}}{{#unless @last}},{{/unless}}
+          {{/each}}
+        },
+        {{else}}
         value: entity.value,
+        {{/if}}
         proof: JSON.parse(entity.proof)
       };
     }
@@ -249,8 +257,20 @@ export class Indexer implements IndexerInterface {
     {{/if}}
 
     {{#unless disableCaching}}
-    await this._db.{{query.saveQueryName}}({ blockHash, blockNumber, contractAddress
-    {{~#each query.params}}, {{this.name~}} {{/each}}, value: result.value, proof: JSONbigNative.stringify(result.proof) });
+    await this._db.{{query.saveQueryName}}({
+      blockHash,
+      blockNumber,
+      contractAddress,
+      {{~#each query.params}}{{this.name~}},{{/each}}
+      {{#each query.returnTypes}}
+      {{~#if (compare query.returnTypes.length 1 operator=">")}}
+      value{{@index}}: result.value.value{{@index}},
+      {{else}}
+      value: result.value,
+      {{/if}}
+      {{/each}}
+      proof: JSONbigNative.stringify(result.proof)
+    });
 
     {{/unless}}
     {{#if query.stateVariableType}}

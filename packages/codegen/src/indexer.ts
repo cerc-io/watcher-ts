@@ -57,8 +57,7 @@ export class Indexer {
       return;
     }
 
-    // Disable DB caching if more than 1 return params.
-    let disableCaching = returnParameters.length > 1;
+    let disableCaching = false;
 
     const returnTypes = returnParameters.map(returnParameter => {
       let typeName = returnParameter.typeName;

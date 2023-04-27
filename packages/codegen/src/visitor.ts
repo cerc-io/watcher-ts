@@ -74,19 +74,20 @@ export class Visitor {
     const typeName = node.returnParameters[0].typeName;
     assert(typeName);
 
+    // TODO: Check for unhandled return type params
+
     switch (typeName.type) {
       case 'ElementaryTypeName':
-        this._entity.addQuery(name, params, typeName);
-        this._database.addQuery(name, params, typeName);
-        this._client.addQuery(name, params, typeName);
         // falls through
 
       case 'ArrayTypeName':
         this._schema.addQuery(name, params, node.returnParameters);
         this._resolvers.addQuery(name, params);
-
         assert(this._contract);
         this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, node.returnParameters);
+        this._entity.addQuery(name, params, node.returnParameters);
+        this._database.addQuery(name, params, typeName);
+        this._client.addQuery(name, params, typeName);
         break;
 
       case 'UserDefinedTypeName':
@@ -149,12 +150,11 @@ export class Visitor {
       case 'ElementaryTypeName': {
         this._schema.addQuery(name, params, [variable]);
         this._resolvers.addQuery(name, params);
-        this._entity.addQuery(name, params, typeName);
-        this._database.addQuery(name, params, typeName);
-        this._client.addQuery(name, params, typeName);
-
         assert(this._contract);
         this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, [variable], stateVariableType);
+        this._entity.addQuery(name, params, [variable]);
+        this._database.addQuery(name, params, typeName);
+        this._client.addQuery(name, params, typeName);
 
         break;
       }
