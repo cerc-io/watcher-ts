@@ -12,7 +12,6 @@ import { gqlGenerate } from 'gql-generator';
 
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { getBaseType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/client-template.handlebars';
 
@@ -29,22 +28,17 @@ export class Client {
    * Stores the query to be passed to the template.
    * @param name Name of the query.
    * @param params Parameters to the query.
-   * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: any): void {
+  addQuery (name: string, params: Array<Param>): void {
     // Check if the query is already added.
     if (this._queries.some(query => query.name === name)) {
       return;
     }
 
-    const returnType = getBaseType(typeName);
-    assert(returnType);
-
     const queryObject = {
       name,
       getQueryName: '',
-      params: _.cloneDeep(params),
-      returnType
+      params: _.cloneDeep(params)
     };
 
     queryObject.getQueryName = (name.charAt(0) === '_')
@@ -59,12 +53,6 @@ export class Client {
       param.type = tsParamType;
       return param;
     });
-
-    const gqlReturnType = getGqlForSol(returnType);
-    assert(gqlReturnType);
-    const tsReturnType = getTsForGql(gqlReturnType);
-    assert(tsReturnType);
-    queryObject.returnType = tsReturnType;
 
     this._queries.push(queryObject);
   }

@@ -80,7 +80,7 @@ export class Visitor {
       case 'ElementaryTypeName':
         this._entity.addQuery(name, params, node.returnParameters);
         this._database.addQuery(name, params, node.returnParameters);
-        this._client.addQuery(name, params, typeName);
+        this._client.addQuery(name, params);
         // falls through
 
       case 'ArrayTypeName':
@@ -154,7 +154,7 @@ export class Visitor {
         this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, [variable], stateVariableType);
         this._entity.addQuery(name, params, [variable]);
         this._database.addQuery(name, params, [variable]);
-        this._client.addQuery(name, params, typeName);
+        this._client.addQuery(name, params);
 
         break;
       }
