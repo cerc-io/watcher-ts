@@ -9,10 +9,12 @@ import yaml from 'js-yaml';
 import Handlebars from 'handlebars';
 import { Writable } from 'stream';
 
+import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
+
 import { getPgForTs, getTsForGql, getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getFieldType } from './utils/subgraph';
-import { getBaseType } from './utils/helpers';
+import { getBaseType, isArrayType } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/entity-template.handlebars';
 const TABLES_DIR = './data/entities';
@@ -32,7 +34,7 @@ export class Entity {
    * @param params Parameters to the query.
    * @param returnType Return type for the query.
    */
-  addQuery (name: string, params: Array<Param>, typeName: any): void {
+  addQuery (name: string, params: Array<Param>, returnParameters: VariableDeclaration[]): void {
     // Check if the query is already added.
     if (this._entities.some(entity => entity.className.toLowerCase() === name.toLowerCase())) {
       return;
@@ -138,23 +140,46 @@ export class Entity {
       })
     );
 
-    const baseType = getBaseType(typeName);
-    assert(baseType);
+    entityObject.columns = entityObject.columns.concat(
+      returnParameters.map((returnParameter, index) => {
+        let typeName = returnParameter.typeName;
+        assert(typeName);
 
-    const gqlReturnType = getGqlForSol(baseType);
-    assert(gqlReturnType);
-    const tsReturnType = getTsForGql(gqlReturnType);
-    assert(tsReturnType);
-    const pgReturnType = getPgForTs(tsReturnType);
-    assert(pgReturnType);
+        // Handle Mapping type for state variable queries
+        while (typeName.type === 'Mapping') {
+          typeName = typeName.valueType;
+        }
 
-    entityObject.columns.push({
-      name: 'value',
-      pgType: pgReturnType,
-      tsType: tsReturnType,
-      columnType: 'Column',
-      columnOptions: []
-    });
+        const baseType = getBaseType(typeName);
+        assert(baseType);
+        const gqlReturnType = getGqlForSol(baseType);
+        assert(gqlReturnType);
+        let tsReturnType = getTsForGql(gqlReturnType);
+        assert(tsReturnType);
+        const pgReturnType = getPgForTs(tsReturnType);
+        assert(pgReturnType);
+
+        const columnOptions = [];
+        const isArray = isArrayType(typeName);
+
+        if (isArray) {
+          tsReturnType = tsReturnType.concat('[]');
+
+          columnOptions.push({
+            option: 'array',
+            value: true
+          });
+        }
+
+        return {
+          name: returnParameters.length > 1 ? `value${index}` : 'value',
+          pgType: pgReturnType,
+          tsType: tsReturnType,
+          columnType: 'Column',
+          columnOptions
+        };
+      })
+    );
 
     entityObject.columns.push({
       name: 'proof',

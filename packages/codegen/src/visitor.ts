@@ -69,42 +69,30 @@ export class Visitor {
       return { name: item.name, type: item.typeName.name };
     });
 
-    let errorMessage = '';
+    // Check for unhandled return type params
+    node.returnParameters.forEach(returnParameter => {
+      assert(returnParameter.typeName);
+      const isTypeHandled = ['ElementaryTypeName', 'ArrayTypeName'].includes(returnParameter.typeName.type);
 
-    const typeName = node.returnParameters[0].typeName;
-    assert(typeName);
+      if (!isTypeHandled) {
+        const errorMessage = `No support in codegen for type ${returnParameter.typeName.type} from method "${node.name}"`;
 
-    switch (typeName.type) {
-      case 'ElementaryTypeName':
-        this._entity.addQuery(name, params, typeName);
-        this._database.addQuery(name, params, typeName);
-        this._client.addQuery(name, params, typeName);
-        // falls through
+        if (this._continueOnError) {
+          console.log(errorMessage);
+          return;
+        }
 
-      case 'ArrayTypeName':
-        this._schema.addQuery(name, params, node.returnParameters);
-        this._resolvers.addQuery(name, params);
-
-        assert(this._contract);
-        this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, node.returnParameters);
-        break;
-
-      case 'UserDefinedTypeName':
-        errorMessage = `No support in codegen for user defined return type from method "${node.name}"`;
-        break;
-
-      default:
-        errorMessage = `No support in codegen for return type "${typeName.type}" from method "${node.name}"`;
-    }
-
-    if (errorMessage !== '') {
-      if (this._continueOnError) {
-        console.log(errorMessage);
-        return;
+        throw new Error(errorMessage);
       }
+    });
 
-      throw new Error(errorMessage);
-    }
+    this._schema.addQuery(name, params, node.returnParameters);
+    this._resolvers.addQuery(name, params);
+    assert(this._contract);
+    this._indexer.addQuery(this._contract.name, MODE_ETH_CALL, name, params, node.returnParameters);
+    this._entity.addQuery(name, params, node.returnParameters);
+    this._database.addQuery(name, params, node.returnParameters);
+    this._client.addQuery(name, params);
   }
 
   /**
@@ -149,12 +137,11 @@ export class Visitor {
       case 'ElementaryTypeName': {
         this._schema.addQuery(name, params, [variable]);
         this._resolvers.addQuery(name, params);
-        this._entity.addQuery(name, params, typeName);
-        this._database.addQuery(name, params, typeName);
-        this._client.addQuery(name, params, typeName);
-
         assert(this._contract);
         this._indexer.addQuery(this._contract.name, MODE_STORAGE, name, params, [variable], stateVariableType);
+        this._entity.addQuery(name, params, [variable]);
+        this._database.addQuery(name, params, [variable]);
+        this._client.addQuery(name, params);
 
         break;
       }

@@ -57,9 +57,6 @@ export class Indexer {
       return;
     }
 
-    // Disable DB caching if more than 1 return params.
-    let disableCaching = returnParameters.length > 1;
-
     const returnTypes = returnParameters.map(returnParameter => {
       let typeName = returnParameter.typeName;
       assert(typeName);
@@ -78,7 +75,6 @@ export class Indexer {
 
       const isArray = isArrayType(typeName);
       if (isArray) {
-        disableCaching = true;
         tsReturnType = tsReturnType.concat('[]');
       }
 
@@ -94,8 +90,7 @@ export class Indexer {
       returnTypes,
       mode,
       stateVariableType,
-      contract,
-      disableCaching
+      contract
     };
 
     if (name.charAt(0) === '_') {
