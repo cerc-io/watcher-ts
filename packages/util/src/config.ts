@@ -53,6 +53,9 @@ export interface RelayConfig {
   // Relay peer multiaddr(s) list
   relayPeers?: string[];
 
+  // Blacklisted multiaddr(s) list
+  denyMultiaddrs?: string[];
+
   // Timeout (ms) for dial to relay peers
   dialTimeout?: number;
 

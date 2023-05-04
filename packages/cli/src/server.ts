@@ -173,6 +173,7 @@ export class ServerCmd {
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
         relayPeers: relayConfig.relayPeers ?? [],
+        denyMultiaddrs: relayConfig.denyMultiaddrs ?? [],
         dialTimeout: relayConfig.dialTimeout ?? DIAL_TIMEOUT,
         pingInterval: relayConfig.pingInterval ?? DEFAULT_PING_INTERVAL,
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,

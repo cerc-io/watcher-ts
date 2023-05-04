@@ -40,6 +40,7 @@ export interface RelayNodeInitConfig {
   peerIdObj?: PeerIdObj;
   announceDomain?: string;
   relayPeers: string[];
+  denyMultiaddrs: string[];
   dialTimeout: number;
   pingInterval: number;
   pingTimeout?: number;
@@ -94,7 +95,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     connectionManager: {
       maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
       autoDial: false,
-      dialTimeout: init.dialTimeout
+      dialTimeout: init.dialTimeout,
+      deny: init.denyMultiaddrs
     },
     ping: {
       timeout: pingTimeout
