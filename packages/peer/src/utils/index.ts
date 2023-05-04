@@ -85,6 +85,17 @@ export const getPseudonymForPeerId = (peerId: string): string => {
 };
 
 /**
+ * Method to check if the given multiaddr is part of a blacklist
+ * @param blacklist
+ * @param multiaddr
+ */
+export const isMultiaddrBlacklisted = (blacklist: string[], multiaddr: Multiaddr): boolean => {
+  return blacklist.some(maString => {
+    return multiaddr.toString().startsWith(maString);
+  });
+};
+
+/**
  * Handler for pubsub debug info request
  * @param peerId
  * @param msg
