@@ -173,6 +173,7 @@ export class ServerCmd {
         port: relayConfig.port ?? RELAY_DEFAULT_PORT,
         announceDomain: relayConfig.announce,
         relayPeers: relayConfig.relayPeers ?? [],
+        denyMultiaddrs: relayConfig.denyMultiaddrs ?? [],
         dialTimeout: relayConfig.dialTimeout ?? DIAL_TIMEOUT,
         pingInterval: relayConfig.pingInterval ?? DEFAULT_PING_INTERVAL,
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
@@ -198,6 +199,7 @@ export class ServerCmd {
       const peerNodeInit: PeerInitConfig = {
         pingInterval: peerConfig.pingInterval,
         pingTimeout: peerConfig.pingTimeout,
+        denyMultiaddrs: peerConfig.denyMultiaddrs,
         maxRelayConnections: peerConfig.maxRelayConnections,
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,

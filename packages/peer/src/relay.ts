@@ -28,7 +28,7 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, isMultiaddrBlacklisted } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
 import { SelfInfo, ConnectionInfo } from './types/debug-info.js';
 
@@ -40,6 +40,7 @@ export interface RelayNodeInitConfig {
   peerIdObj?: PeerIdObj;
   announceDomain?: string;
   relayPeers: string[];
+  denyMultiaddrs: string[];
   dialTimeout: number;
   pingInterval: number;
   pingTimeout?: number;
@@ -94,7 +95,8 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     connectionManager: {
       maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
       autoDial: false,
-      dialTimeout: init.dialTimeout
+      dialTimeout: init.dialTimeout,
+      deny: init.denyMultiaddrs
     },
     ping: {
       timeout: pingTimeout
@@ -157,7 +159,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
 
   if (init.relayPeers.length) {
     log('Dialling relay peers');
-    await _dialRelayPeers(node, init.relayPeers, init.maxDialRetry, init.redialInterval);
+    await _dialRelayPeers(node, init.relayPeers, init.denyMultiaddrs, init.maxDialRetry, init.redialInterval);
   }
 
   if (init.enableDebugInfo) {
@@ -168,9 +170,14 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
   return node;
 }
 
-async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], maxDialRetry: number, redialInterval: number): Promise<void> {
+async function _dialRelayPeers (node: Libp2p, relayPeersList: string[], denyMultiaddrs: string[], maxDialRetry: number, redialInterval: number): Promise<void> {
   relayPeersList.forEach(async (relayPeer) => {
     const relayMultiaddr = multiaddr(relayPeer);
+    if (isMultiaddrBlacklisted(denyMultiaddrs, relayMultiaddr)) {
+      log(`Ignoring blacklisted node with multiaddr ${relayMultiaddr.toString()}`);
+      return;
+    }
+
     await dialWithRetry(
       node,
       relayMultiaddr,

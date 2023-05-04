@@ -53,6 +53,9 @@ export interface RelayConfig {
   // Relay peer multiaddr(s) list
   relayPeers?: string[];
 
+  // Blacklisted multiaddr(s) list
+  denyMultiaddrs?: string[];
+
   // Timeout (ms) for dial to relay peers
   dialTimeout?: number;
 
@@ -100,6 +103,9 @@ export interface PeerConfig {
 
   // Redial interval (ms) to relay node on connection failure
   relayRedialInterval?: number;
+
+  // Blacklisted multiaddr(s) list
+  denyMultiaddrs?: string[];
 
   // Max number of connections for a peer
   maxConnections?: number;

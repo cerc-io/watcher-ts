@@ -20,6 +20,7 @@ interface Arguments {
   announce?: string;
   peerIdFile?: string;
   relayPeers?: string;
+  denyMultiaddrs?: string;
   dialTimeout: number;
   pingInterval: number;
   redialInterval: number;
@@ -31,6 +32,7 @@ async function main (): Promise<void> {
   const argv: Arguments = _getArgv();
   let peerIdObj: PeerIdObj | undefined;
   let relayPeersList: string[] = [];
+  let denyMultiaddrsList: string[] = [];
 
   if (argv.peerIdFile) {
     const peerIdFilePath = path.resolve(argv.peerIdFile);
@@ -55,12 +57,26 @@ async function main (): Promise<void> {
     relayPeersList = JSON.parse(relayPeersListObj);
   }
 
+  if (argv.denyMultiaddrs) {
+    const denyMultiaddrsFilePath = path.resolve(argv.denyMultiaddrs);
+
+    if (!fs.existsSync(denyMultiaddrsFilePath)) {
+      console.log(`File at given path ${denyMultiaddrsFilePath} not found, exiting`);
+      process.exit();
+    }
+
+    console.log(`Reading blacklisted multiaddr(s) from file ${denyMultiaddrsFilePath}`);
+    const denyMultiaddrsListObj = fs.readFileSync(denyMultiaddrsFilePath, 'utf-8');
+    denyMultiaddrsList = JSON.parse(denyMultiaddrsListObj);
+  }
+
   const relayNodeInit: RelayNodeInitConfig = {
     host: argv.host,
     port: argv.port,
     peerIdObj,
     announceDomain: argv.announce,
     relayPeers: relayPeersList,
+    denyMultiaddrs: denyMultiaddrsList,
     dialTimeout: argv.dialTimeout,
     pingInterval: argv.pingInterval,
     redialInterval: argv.redialInterval,
@@ -100,6 +116,10 @@ function _getArgv (): Arguments {
       type: 'string',
       alias: 'r',
       describe: 'Relay peer multiaddr(s) list file path (json)'
+    },
+    denyMultiaddrs: {
+      type: 'string',
+      describe: 'Blacklisted multiaddr(s) list file path (json)'
     },
     pingInterval: {
       type: 'number',

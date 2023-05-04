@@ -43,7 +43,7 @@ import {
   P2P_WEBRTC_STAR_ID
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, wsPeerFilter } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, isMultiaddrBlacklisted, wsPeerFilter } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const log = debug('laconic:peer');
@@ -62,6 +62,7 @@ export interface PeerInitConfig {
   pingTimeout?: number;
   maxRelayConnections?: number;
   relayRedialInterval?: number;
+  denyMultiaddrs?: string[];
   maxConnections?: number;
   minConnections?: number;
   dialTimeout?: number;
@@ -78,6 +79,7 @@ export class Peer {
 
   _relayRedialInterval?: number;
   _maxRelayConnections?: number;
+  _denyMultiaddrs?: string[];
 
   _debugInfoEnabled?: boolean;
 
@@ -114,6 +116,7 @@ export class Peer {
 
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
     this._relayRedialInterval = initOptions.relayRedialInterval;
+    this._denyMultiaddrs = initOptions.denyMultiaddrs;
     this._maxRelayConnections = initOptions.maxRelayConnections;
     this._debugInfoEnabled = initOptions.enableDebugInfo;
     const pingTimeout = initOptions.pingTimeout ?? DEFAULT_PING_TIMEOUT;
@@ -164,6 +167,7 @@ export class Peer {
         connectionManager: {
           maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
           autoDial: false,
+          deny: initOptions.denyMultiaddrs,
           maxConnections: initOptions.maxConnections ?? MAX_CONNECTIONS,
           minConnections: initOptions.minConnections ?? MIN_CONNECTIONS,
           dialTimeout: initOptions.dialTimeout ?? DIAL_TIMEOUT,
@@ -467,6 +471,11 @@ export class Peer {
 
     let isRelayPeer = false;
     for (const multiaddr of peer.multiaddrs) {
+      if (isMultiaddrBlacklisted(this._denyMultiaddrs ?? [], multiaddr)) {
+        log(`Ignoring blacklisted node with multiaddr ${multiaddr.toString()}`);
+        return;
+      }
+
       if (this.isRelayPeerMultiaddr(multiaddr.toString())) {
         isRelayPeer = true;
         break;
