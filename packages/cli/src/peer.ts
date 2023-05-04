@@ -6,6 +6,8 @@
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 import debug from 'debug';
+import fs from 'fs';
+import path from 'path';
 
 import {
   PeerInitConfig,
@@ -19,6 +21,7 @@ const log = debug('vulcanize:peer');
 
 interface Arguments {
   relayMultiaddr: string;
+  denyMultiaddrs?: string;
   maxConnections: number;
   dialTimeout: number;
   maxRelayConnections: number;
@@ -38,7 +41,22 @@ export class PeerCmd {
       peerIdObj = readPeerId(argv.peerIdFile);
     }
 
+    let denyMultiaddrsList: string[] = [];
+    if (argv.denyMultiaddrs) {
+      const denyMultiaddrsFilePath = path.resolve(argv.denyMultiaddrs);
+
+      if (!fs.existsSync(denyMultiaddrsFilePath)) {
+        console.log(`File at given path ${denyMultiaddrsFilePath} not found, exiting`);
+        process.exit();
+      }
+
+      console.log(`Reading blacklisted multiaddr(s) from file ${denyMultiaddrsFilePath}`);
+      const denyMultiaddrsListObj = fs.readFileSync(denyMultiaddrsFilePath, 'utf-8');
+      denyMultiaddrsList = JSON.parse(denyMultiaddrsListObj);
+    }
+
     const peerNodeInit: PeerInitConfig = {
+      denyMultiaddrs: denyMultiaddrsList,
       maxConnections: argv.maxConnections,
       dialTimeout: argv.dialTimeout,
       maxRelayConnections: argv.maxRelayConnections,
@@ -72,6 +90,10 @@ function _getArgv (): any {
       alias: 'r',
       describe: 'Multiaddr of the primary relay node for this peer',
       demandOption: true
+    },
+    denyMultiaddrs: {
+      type: 'string',
+      describe: 'Blacklisted multiaddr(s) list file path (json)'
     },
     maxConnections: {
       type: 'number',

@@ -104,6 +104,9 @@ export interface PeerConfig {
   // Redial interval (ms) to relay node on connection failure
   relayRedialInterval?: number;
 
+  // Blacklisted multiaddr(s) list
+  denyMultiaddrs?: string[];
+
   // Max number of connections for a peer
   maxConnections?: number;
 

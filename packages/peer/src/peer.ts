@@ -62,6 +62,7 @@ export interface PeerInitConfig {
   pingTimeout?: number;
   maxRelayConnections?: number;
   relayRedialInterval?: number;
+  denyMultiaddrs?: string[];
   maxConnections?: number;
   minConnections?: number;
   dialTimeout?: number;
@@ -164,6 +165,7 @@ export class Peer {
         connectionManager: {
           maxDialsPerPeer: MAX_CONCURRENT_DIALS_PER_PEER,
           autoDial: false,
+          deny: initOptions.denyMultiaddrs,
           maxConnections: initOptions.maxConnections ?? MAX_CONNECTIONS,
           minConnections: initOptions.minConnections ?? MIN_CONNECTIONS,
           dialTimeout: initOptions.dialTimeout ?? DIAL_TIMEOUT,

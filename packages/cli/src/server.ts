@@ -199,6 +199,7 @@ export class ServerCmd {
       const peerNodeInit: PeerInitConfig = {
         pingInterval: peerConfig.pingInterval,
         pingTimeout: peerConfig.pingTimeout,
+        denyMultiaddrs: peerConfig.denyMultiaddrs,
         maxRelayConnections: peerConfig.maxRelayConnections,
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
