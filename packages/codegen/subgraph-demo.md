@@ -43,7 +43,7 @@
     - name: Example
       # Contract file path or an url.
       path: ../graph-node/test/contracts/Example.sol
-      # Contract kind (should match that in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+      # Contract kind (should match name of dataSource in {subgraphPath}/subgraph.yaml if subgraphPath provided)
       kind: Example1
 
   # Output folder path (logs output using `stdout` if not provided).
@@ -213,5 +213,5 @@
     * A `checkpoint` state should be created at the latest canonical block hash.
 
     * Run the `getState` query again at the endpoint with the output `blockHash` and kind `checkpoint`.
-  
+
 * All the `State` entries can be seen in `pg-admin` in table `state`.

@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean } from 'graphql';
-import { ObjectTypeComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
+import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
@@ -519,7 +519,7 @@ export class Schema {
   }
 
   /**
-   * Create GraphQL schmea object type.
+   * Create GraphQL schema object type.
    * @param name
    * @param params
    */
@@ -547,15 +547,19 @@ export class Schema {
      * Get type of field in GraphQL schema for object types.
      * @param param
      */
-  _getObjectTypeField (param: utils.ParamType): ObjectTypeComposer | string | any[] {
+  _getObjectTypeField (param: utils.ParamType): NonNullComposer<ObjectTypeComposer> | string | any[] {
     if (param.indexed && ['string', 'bytes', 'tuple', 'array'].includes(param.baseType)) {
       // Check for indexed reference type event params.
       param = utils.ParamType.fromObject({ type: 'bytes32', name: param.name });
     }
 
+    // TODO: Get type name for tuple base types
+    // ethers.utils gives both param.type and param.baseType as 'tuple', but doesn't give the actual type name
+    // represented by 'internalType' field in the ABI
+    // eg. "internalType": "struct Provider" or "internalType": "struct Task[]"
     if (param.baseType === 'tuple') {
       const typeName = param.name.charAt(0).toUpperCase() + param.name.slice(1);
-      return this._createObjectType(typeName, param.components);
+      return this._createObjectType(typeName, param.components).NonNull;
     }
 
     if (param.baseType === 'array') {

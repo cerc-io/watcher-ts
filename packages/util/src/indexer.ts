@@ -515,13 +515,14 @@ export class Indexer {
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
     assert(this._db.saveContract);
-    this.updateStateStatusMap(address, {});
-    const dbTx = await this._db.createTransactionRunner();
 
     // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
     // If a contract identifier is passed as address instead, no need to convert to checksum address.
     // Customize: use the kind input to filter out non-contract-address input to address.
     const contractAddress = (kind === '__protocol__') ? address : ethers.utils.getAddress(address);
+
+    this.updateStateStatusMap(contractAddress, {});
+    const dbTx = await this._db.createTransactionRunner();
 
     try {
       const contract = await this._db.saveContract(dbTx, contractAddress, kind, checkpoint, startingBlock);
