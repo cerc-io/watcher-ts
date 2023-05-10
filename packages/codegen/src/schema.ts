@@ -553,6 +553,10 @@ export class Schema {
       param = utils.ParamType.fromObject({ type: 'bytes32', name: param.name });
     }
 
+    // TODO: Get type name for tuple base types
+    // ethers.utils gives both param.type and param.baseType as 'tuple', but doesn't give the actual type name
+    // represented by 'internalType' field in the ABI
+    // eg. "internalType": "struct Provider" or "internalType": "struct Task[]"
     if (param.baseType === 'tuple') {
       const typeName = param.name.charAt(0).toUpperCase() + param.name.slice(1);
       return this._createObjectType(typeName, param.components);
