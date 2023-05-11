@@ -55,6 +55,42 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   return diffData;
 };
 
+export const prepareGQLEntityState = (entity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
+  // Prepare the diff data.
+  const diffData: any = { state: {} };
+
+  const result = Array.from(relationsMap.entries())
+    .find(([key]) => key.name === entityName);
+
+  if (result) {
+    // Update entity data if relations exist.
+    const [, relations] = result;
+
+    // Update relation fields for diff data to be similar to GQL query entities.
+    Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
+      if (isDerived || !entity[relation]) {
+        // Field is not present in dbData for derived relations
+        return;
+      }
+
+      if (isArray) {
+        entity[relation] = entity[relation].map(({ id }: { id: string }) => ({ id }));
+      } else {
+        entity[relation] = { id: entity[relation].id };
+      }
+    });
+  }
+
+  // Remove typename field included in GQL response
+  delete entity.__typename;
+
+  diffData.state[entityName] = {
+    [entity.id]: entity
+  };
+
+  return diffData;
+};
+
 export const updateEntitiesFromState = async (database: GraphDatabase, indexer: IndexerInterface, state: StateInterface): Promise<void> => {
   const data = indexer.getStateData(state);
 
