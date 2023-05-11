@@ -37,14 +37,14 @@ export const wait = async (time: number): Promise<void> => new Promise(resolve =
  */
 export const graphDecimalTransformer: ValueTransformer = {
   to: (value?: GraphDecimal) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return value.toFixed();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return new GraphDecimal(value);
     }
 
@@ -57,14 +57,14 @@ export const graphDecimalTransformer: ValueTransformer = {
  */
 export const decimalTransformer: ValueTransformer = {
   to: (value?: Decimal) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return value.toString();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return new Decimal(value);
     }
 
@@ -77,14 +77,14 @@ export const decimalTransformer: ValueTransformer = {
  */
 export const bigintTransformer: ValueTransformer = {
   to: (value?: bigint) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return value.toString();
     }
 
     return value;
   },
   from: (value?: string) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return BigInt(value);
     }
 

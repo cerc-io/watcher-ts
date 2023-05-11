@@ -6,6 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import _ from 'lodash';
 import { Between, ValueTransformer } from 'typeorm';
+import { ethers } from 'ethers';
 
 import { jsonBigIntStringReplacer } from '../misc';
 import { IndexerInterface, StateInterface } from '../types';
@@ -150,7 +151,7 @@ export const getContractEntitiesMap = (dataSources: any[]): Map<string, string[]
   // Populate contractEntitiesMap using data sources from subgraph
   dataSources.forEach((dataSource: any) => {
     const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
-    contractEntitiesMap.set(contractAddress, entities as string[]);
+    contractEntitiesMap.set(ethers.utils.getAddress(contractAddress), entities as string[]);
   });
 
   return contractEntitiesMap;
