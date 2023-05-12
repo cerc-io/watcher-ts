@@ -114,8 +114,14 @@ export class ImportStateCmd {
     const codec = await import('@ipld/dag-cbor');
     const importData = codec.decode(Buffer.from(encodedImportData)) as any;
 
-    // TODO: Check if block already present in DB
-    // Quit if already exists and isComplete set to true
+    let block = await indexer.getBlockProgress(importData.snapshotBlock.blockHash);
+
+    // Check if block already present in DB
+    if (block) {
+      // Exit CLI if it already exists
+      log(`block ${block.blockHash} is already indexed. Exiting import-state CLI.`);
+      return;
+    }
 
     // Fill the snapshot block.
     await fillBlocks(
@@ -136,7 +142,7 @@ export class ImportStateCmd {
     }
 
     // Get the snapshot block.
-    const block = await indexer.getBlockProgress(importData.snapshotBlock.blockHash);
+    block = await indexer.getBlockProgress(importData.snapshotBlock.blockHash);
     assert(block);
 
     // Fill the States.
