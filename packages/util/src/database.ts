@@ -442,7 +442,7 @@ export class Database {
         FROM
           block_progress b
           LEFT JOIN
-            ${repo.metadata.tableName} e
+            "${repo.metadata.tableName}" e
             ON e.block_hash = b.block_hash
             AND e.id = $2
         WHERE
@@ -457,7 +457,7 @@ export class Database {
           FROM
             block_progress b
             LEFT JOIN
-              ${repo.metadata.tableName} e
+              "${repo.metadata.tableName}" e
               ON e.block_hash = b.block_hash
               AND e.id = $2
             INNER JOIN
