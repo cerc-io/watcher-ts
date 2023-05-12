@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/test",
-  "version": "0.2.41",
+  "version": "0.2.42",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "private": true,
