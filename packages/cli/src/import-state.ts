@@ -114,6 +114,9 @@ export class ImportStateCmd {
     const codec = await import('@ipld/dag-cbor');
     const importData = codec.decode(Buffer.from(encodedImportData)) as any;
 
+    // TODO: Check if block already present in DB
+    // Quit if already exists and isComplete set to true
+
     // Fill the snapshot block.
     await fillBlocks(
       jobQueue,
