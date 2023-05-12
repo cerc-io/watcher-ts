@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import debug from 'debug';
-import assert from 'assert';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { CID } from 'multiformats/cid';
 
@@ -12,20 +11,22 @@ import { ResultState } from './indexer';
 
 const log = debug('vulcanize:state-helper');
 
-interface StateData {
-  meta?: {
-    id: string
-    kind: StateKind
-    parent: {
-      '/': string | null
+export interface StateDataMeta {
+  id: string
+  kind: StateKind
+  parent: {
+    '/': string | null
+  },
+  ethBlock: {
+    cid: {
+      '/': string
     },
-    ethBlock: {
-      cid: {
-        '/': string
-      },
-      num: number
-    }
-  };
+    num: number
+  }
+}
+
+interface StateData {
+  meta?: StateDataMeta;
   state: any
 }
 
@@ -114,28 +115,10 @@ export const getResultState = (state: StateInterface): ResultState => {
 
 export const createOrUpdateStateData = async (
   data: StateData,
-  contractAddress: string,
-  block: Partial<BlockProgressInterface>,
-  kind: StateKind,
-  parentState?: StateInterface
+  meta?: StateDataMeta
 ): Promise<{ cid: CID, data: StateData, bytes: codec.ByteView<StateData> }> => {
-  if (!data.meta) {
-    assert(block.cid);
-    assert(block.blockNumber);
-    // Setting the meta-data for a State entry (done only once per State entry).
-    data.meta = {
-      id: contractAddress,
-      kind,
-      parent: {
-        '/': parentState ? parentState.cid : null
-      },
-      ethBlock: {
-        cid: {
-          '/': block.cid
-        },
-        num: block.blockNumber
-      }
-    };
+  if (meta) {
+    data.meta = meta;
   }
 
   // Encoding the data using dag-cbor codec.

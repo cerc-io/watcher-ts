@@ -27,7 +27,7 @@ import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MER
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
 import { ServerConfig } from './config';
-import { createOrUpdateStateData } from './state-helper';
+import { createOrUpdateStateData, StateDataMeta } from './state-helper';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -872,7 +872,7 @@ export class Indexer {
       currentState = currentStates[0];
     }
 
-    let parentState: StateInterface | undefined;
+    let stateDataMeta: StateDataMeta | undefined;
 
     if (currentState) {
       // Update current State of same kind if it exists.
@@ -886,15 +886,27 @@ export class Indexer {
       stateEntry = this._db.getNewState();
 
       // Fetch the parent State entry.
-      parentState = await this._db.getLatestState(contractAddress, null, block.blockNumber);
+      const parentState = await this._db.getLatestState(contractAddress, null, block.blockNumber);
+
+      // Setting the meta-data for a State entry (done only once per State entry).
+      stateDataMeta = {
+        id: contractAddress,
+        kind,
+        parent: {
+          '/': parentState ? parentState.cid : null
+        },
+        ethBlock: {
+          cid: {
+            '/': block.cid
+          },
+          num: block.blockNumber
+        }
+      };
     }
 
     const { cid, data: { meta }, bytes } = await createOrUpdateStateData(
       data,
-      contractAddress,
-      block,
-      kind,
-      parentState
+      stateDataMeta
     );
 
     assert(meta);
