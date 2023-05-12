@@ -274,10 +274,10 @@ export const toEthereumValue = async (instanceExports: any, output: utils.ParamT
     // Get values for struct elements.
     const ethereumValuePromises = output.components
       .map(
-        async (component: utils.ParamType, index) => toEthereumValue(
+        async (component: utils.ParamType) => toEthereumValue(
           instanceExports,
           component,
-          value[index]
+          value[component.name]
         )
       );
 
