@@ -31,7 +31,7 @@
     "pg-boss": "^6.1.0",
     "prom-client": "^14.0.1",
     "toml": "^3.0.0",
-    "typeorm": "^0.2.32",
+    "typeorm": "0.2.37",
     "typeorm-naming-strategies": "^2.0.0",
     "ws": "^8.11.0",
     "yargs": "^17.0.1"

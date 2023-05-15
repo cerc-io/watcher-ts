@@ -8307,9 +8307,9 @@ fetch-ponyfill@^4.0.0:
     node-fetch "~1.7.1"
 
 figlet@^1.1.1:
-  version "1.5.2"
-  resolved "https://registry.npmjs.org/figlet/-/figlet-1.5.2.tgz"
-  integrity sha512-WOn21V8AhyE1QqVfPIVxe3tupJacq1xGkPTB4iagT6o+P2cAgEOOwIxMftr4+ZCTI6d551ij9j61DFr0nsP2uQ==
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/figlet/-/figlet-1.6.0.tgz#812050fa9f01043b4d44ddeb11f20fb268fa4b93"
+  integrity sha512-31EQGhCEITv6+hi2ORRPyn3bulaV9Fl4xOdR169cBzH/n1UqcxsiSB/noo6SJdD7Kfb1Ljit+IgR1USvF/XbdA==
 
 figures@^3.0.0:
   version "3.2.0"
@@ -12856,8 +12856,8 @@ parent-module@^1.0.0:
 
 parent-require@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmjs.org/parent-require/-/parent-require-1.0.0.tgz"
-  integrity sha1-dGoWdjgIOoYLDu9nMssn7UbDKXc=
+  resolved "https://registry.yarnpkg.com/parent-require/-/parent-require-1.0.0.tgz#746a167638083a860b0eef6732cb27ed46c32977"
+  integrity sha512-2MXDNZC4aXdkkap+rBBMv0lUsfJqvX5/2FiYYnfCnorZt3Pk06/IOR5KeaoghgS2w07MLWgjbsnyaq6PdHn2LQ==
 
 parse-asn1@^5.0.0, parse-asn1@^5.1.5:
   version "5.1.6"
@@ -15612,12 +15612,12 @@ typedarray@^0.0.6:
 
 typeorm-naming-strategies@^2.0.0:
   version "2.0.0"
-  resolved "https://registry.npmjs.org/typeorm-naming-strategies/-/typeorm-naming-strategies-2.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/typeorm-naming-strategies/-/typeorm-naming-strategies-2.0.0.tgz#c7c10bc768ddce2592ef9ad4d2dca55fd5fa6ad6"
   integrity sha512-nsJ5jDjhBBEG6olFmxojkO4yrW7hEv38sH7ZXWWx9wnDoo9uaoH/mo2mBYAh/VKgwoFHBLu+CYxGmzXz2GUMcA==
 
-typeorm@^0.2.32:
+typeorm@0.2.37:
   version "0.2.37"
-  resolved "https://registry.npmjs.org/typeorm/-/typeorm-0.2.37.tgz"
+  resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.37.tgz#1a5e59216077640694d27c04c99ed3f968d15dc8"
   integrity sha512-7rkW0yCgFC24I5T0f3S/twmLSuccPh1SQmxET/oDWn2sSDVzbyWdnItSdKy27CdJGTlKHYtUVeOcMYw5LRsXVw==
   dependencies:
     "@sqltools/formatter" "^1.2.2"
@@ -16671,7 +16671,7 @@ yaml@^1.10.0:
 
 yargonaut@^1.1.4:
   version "1.1.4"
-  resolved "https://registry.npmjs.org/yargonaut/-/yargonaut-1.1.4.tgz"
+  resolved "https://registry.yarnpkg.com/yargonaut/-/yargonaut-1.1.4.tgz#c64f56432c7465271221f53f5cc517890c3d6e0c"
   integrity sha512-rHgFmbgXAAzl+1nngqOcwEljqHGG9uUZoPjsdZEs1w5JW9RXYzrSvH/u70C1JE5qFi0qjsdhnUX/dJRpWqitSA==
   dependencies:
     chalk "^1.1.1"
