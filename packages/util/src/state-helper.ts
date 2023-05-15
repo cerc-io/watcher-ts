@@ -1,12 +1,34 @@
 import _ from 'lodash';
 import debug from 'debug';
+import { sha256 } from 'multiformats/hashes/sha2';
+import { CID } from 'multiformats/cid';
+
 import * as codec from '@ipld/dag-cbor';
 
-import { BlockProgressInterface, GraphDatabaseInterface, StateInterface } from './types';
+import { BlockProgressInterface, GraphDatabaseInterface, StateInterface, StateKind } from './types';
 import { jsonBigIntStringReplacer } from './misc';
 import { ResultState } from './indexer';
 
 const log = debug('vulcanize:state-helper');
+
+export interface StateDataMeta {
+  id: string
+  kind: StateKind
+  parent: {
+    '/': string | null
+  },
+  ethBlock: {
+    cid: {
+      '/': string
+    },
+    num: number
+  }
+}
+
+interface StateData {
+  meta?: StateDataMeta;
+  state: any
+}
 
 export const updateStateForElementaryType = (initialObject: any, stateVariable: string, value: any): any => {
   const object = _.cloneDeep(initialObject);
@@ -89,4 +111,24 @@ export const getResultState = (state: StateInterface): ResultState => {
     kind: state.kind,
     data: JSON.stringify(data)
   };
+};
+
+export const createOrUpdateStateData = async (
+  data: StateData,
+  meta?: StateDataMeta
+): Promise<{ cid: CID, data: StateData, bytes: codec.ByteView<StateData> }> => {
+  if (meta) {
+    data.meta = meta;
+  }
+
+  // Encoding the data using dag-cbor codec.
+  const bytes = codec.encode(data);
+
+  // Calculating sha256 (multi)hash of the encoded data.
+  const hash = await sha256.digest(bytes);
+
+  // Calculating the CID: v1, code: dag-cbor, hash.
+  const cid = CID.create(1, codec.code, hash);
+
+  return { cid, data, bytes };
 };

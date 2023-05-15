@@ -8,8 +8,6 @@ import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
-import { sha256 } from 'multiformats/hashes/sha2';
-import { CID } from 'multiformats/cid';
 
 import * as codec from '@ipld/dag-cbor';
 import { EthClient } from '@cerc-io/ipld-eth-client';
@@ -29,6 +27,7 @@ import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MER
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
 import { ServerConfig } from './config';
+import { createOrUpdateStateData, StateDataMeta } from './state-helper';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -873,6 +872,8 @@ export class Indexer {
       currentState = currentStates[0];
     }
 
+    let stateDataMeta: StateDataMeta | undefined;
+
     if (currentState) {
       // Update current State of same kind if it exists.
       stateEntry = currentState;
@@ -888,7 +889,7 @@ export class Indexer {
       const parentState = await this._db.getLatestState(contractAddress, null, block.blockNumber);
 
       // Setting the meta-data for a State entry (done only once per State entry).
-      data.meta = {
+      stateDataMeta = {
         id: contractAddress,
         kind,
         parent: {
@@ -903,21 +904,19 @@ export class Indexer {
       };
     }
 
-    // Encoding the data using dag-cbor codec.
-    const bytes = codec.encode(data);
+    const { cid, data: { meta }, bytes } = await createOrUpdateStateData(
+      data,
+      stateDataMeta
+    );
 
-    // Calculating sha256 (multi)hash of the encoded data.
-    const hash = await sha256.digest(bytes);
-
-    // Calculating the CID: v1, code: dag-cbor, hash.
-    const cid = CID.create(1, codec.code, hash);
+    assert(meta);
 
     // Update stateEntry with new data.
     stateEntry = Object.assign(stateEntry, {
       block,
       contractAddress,
       cid: cid.toString(),
-      kind: data.meta.kind,
+      kind: meta.kind,
       data: Buffer.from(bytes)
     });
 

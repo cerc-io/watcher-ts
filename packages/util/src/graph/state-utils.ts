@@ -6,6 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import _ from 'lodash';
 import { Between, ValueTransformer } from 'typeorm';
+import { ethers } from 'ethers';
 
 import { jsonBigIntStringReplacer } from '../misc';
 import { IndexerInterface, StateInterface } from '../types';
@@ -50,6 +51,42 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
     // TODO: Parse and store as native bigint by using Type encoders in IPLD dag-cbor encode.
     // https://github.com/rvagg/cborg#type-encoders
     [updatedEntity.id]: JSON.parse(JSON.stringify(updatedEntity, jsonBigIntStringReplacer))
+  };
+
+  return diffData;
+};
+
+export const prepareEntityStateFromGQLResponse = (entity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
+  // Prepare the diff data.
+  const diffData: any = { state: {} };
+
+  const result = Array.from(relationsMap.entries())
+    .find(([key]) => key.name === entityName);
+
+  if (result) {
+    // Update entity data if relations exist.
+    const [, relations] = result;
+
+    // Update relation fields for diff data to be similar to GQL query entities.
+    Object.entries(relations).forEach(([relation, { isArray, isDerived }]) => {
+      if (isDerived || !entity[relation]) {
+        // Field is not present in dbData for derived relations
+        return;
+      }
+
+      if (isArray) {
+        entity[relation] = entity[relation].map(({ id }: { id: string }) => ({ id }));
+      } else {
+        entity[relation] = { id: entity[relation].id };
+      }
+    });
+  }
+
+  // Remove typename field included in GQL response
+  delete entity.__typename;
+
+  diffData.state[entityName] = {
+    [entity.id]: entity
   };
 
   return diffData;
@@ -114,7 +151,7 @@ export const getContractEntitiesMap = (dataSources: any[]): Map<string, string[]
   // Populate contractEntitiesMap using data sources from subgraph
   dataSources.forEach((dataSource: any) => {
     const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
-    contractEntitiesMap.set(contractAddress, entities as string[]);
+    contractEntitiesMap.set(ethers.utils.getAddress(contractAddress), entities as string[]);
   });
 
   return contractEntitiesMap;

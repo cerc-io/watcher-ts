@@ -274,10 +274,14 @@ export const toEthereumValue = async (instanceExports: any, output: utils.ParamT
     // Get values for struct elements.
     const ethereumValuePromises = output.components
       .map(
-        async (component: utils.ParamType, index) => toEthereumValue(
+        async (component: utils.ParamType, index: number) => toEthereumValue(
           instanceExports,
           component,
-          value[index]
+          // Event data passed from watcher is not an array
+          // When method is used for ethereum.decode component.name can be null
+          // TODO: Pass event data as ethers.js Result interface
+          // https://docs.ethers.org/v5/api/utils/abi/interface/#Result
+          value[component.name] ?? value[index]
         )
       );
 
