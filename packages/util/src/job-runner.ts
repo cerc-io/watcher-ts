@@ -226,7 +226,7 @@ export class JobRunner {
     const blockProgress = await this._indexer.getBlockProgress(syncStatus.latestIndexedBlockHash);
     assert(blockProgress);
 
-    // Dont reset to previous block if block is complete (all events processed)
+    // Don't reset to previous block if block is complete (all events processed)
     if (blockProgress.isComplete) {
       return;
     }

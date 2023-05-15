@@ -56,7 +56,7 @@ export const prepareEntityState = (updatedEntity: any, entityName: string, relat
   return diffData;
 };
 
-export const prepareGQLEntityState = (entity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
+export const prepareEntityStateFromGQLResponse = (entity: any, entityName: string, relationsMap: Map<any, { [key: string]: any }>): any => {
   // Prepare the diff data.
   const diffData: any = { state: {} };
 

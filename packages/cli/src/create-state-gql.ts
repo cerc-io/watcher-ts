@@ -27,13 +27,13 @@ import {
   StateKind,
   createOrUpdateStateData,
   getContractEntitiesMap,
-  prepareGQLEntityState
+  prepareEntityStateFromGQLResponse
 } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
 import { BaseCmd } from './base';
 
-const log = debug('vulcanize:create-gql-state');
+const log = debug('vulcanize:create-state-gql');
 
 const ENTITIES_QUERY_LIMIT = 1000;
 
@@ -44,7 +44,7 @@ interface Arguments {
   gqlEndpoint: string;
 }
 
-export class CreateGQLStateCmd {
+export class CreateStateFromGQLCmd {
   _argv?: Arguments;
   _gqlClient?: GraphQLClient;
   _baseCmd: BaseCmd;
@@ -159,26 +159,26 @@ export class CreateGQLStateCmd {
     const contractStatePromises = Array.from(contractEntitiesMap.entries())
       .map(async ([contractAddress, entities]): Promise<void> => {
         // Get all the updated entities at this block
-        const updatedEntitiesListPromises = entities.map(async (entity): Promise<Array<{[key: string]: any}>> => {
+        const updatedGQLEntitiesListPromises = entities.map(async (entity): Promise<Array<{[key: string]: any}>> => {
           assert(this._argv);
 
           // Get entities for block from GQL query
           return this._getGQLEntitiesForSnapshotBlock(entity);
         });
 
-        const updatedEntitiesList = await Promise.all(updatedEntitiesListPromises);
+        const updatedGQLEntitiesList = await Promise.all(updatedGQLEntitiesListPromises);
 
         let checkpointData = { state: {} };
 
         // Populate checkpoint state with all the updated entities of each entity type
-        updatedEntitiesList.forEach((updatedEntities, index) => {
+        updatedGQLEntitiesList.forEach((updatedEntities, index) => {
           const entityName = entities[index];
 
           updatedEntities.forEach((updatedEntity) => {
             assert(indexer.getRelationsMap);
 
             // Prepare diff data for the entity update
-            const diffData = prepareGQLEntityState(updatedEntity, entityName, indexer.getRelationsMap());
+            const diffData = prepareEntityStateFromGQLResponse(updatedEntity, entityName, indexer.getRelationsMap());
 
             // Merge diffData for each entity
             checkpointData = merge(checkpointData, diffData);
@@ -250,6 +250,7 @@ export class CreateGQLStateCmd {
 
     const { gql } = await import('@apollo/client/core/index.js');
 
+    // TODO: Get all entity data using pagination as query limit is 1000 entities
     const data = await this._gqlClient.query(
       gql(gqlQuery),
       {
