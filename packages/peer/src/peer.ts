@@ -12,7 +12,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import debug from 'debug';
 
-import { createLibp2p, Libp2p } from '@cerc-io/libp2p';
+import { createLibp2p, Libp2p, Libp2pInit } from '@cerc-io/libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -67,6 +67,9 @@ export interface PeerInitConfig {
   minConnections?: number;
   dialTimeout?: number;
   enableDebugInfo?: boolean;
+  transports?: Libp2pInit['transports'];
+  listenMultiaddrs?: string[];
+  peerDiscovery?: Libp2pInit['peerDiscovery'];
 }
 
 export class Peer {
@@ -144,17 +147,25 @@ export class Peer {
 
       this._node = await createLibp2p({
         peerId,
-        transports: [webSockets({
-          filter: wsPeerFilter
-        })],
+        transports: [
+          webSockets({
+            filter: wsPeerFilter
+          }),
+          ...(initOptions.transports ?? [])
+        ],
+        addresses: {
+          listen: initOptions.listenMultiaddrs ?? []
+        },
         connectionEncryption: [noise()],
+        // TODO: Add yamux
         streamMuxers: [mplex()],
         pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
         peerDiscovery: [
           // Use pubsub based discovery; relay server acts as a peer discovery source
           pubsubPeerDiscovery({
             interval: PUBSUB_DISCOVERY_INTERVAL
-          })
+          }),
+          ...(initOptions.peerDiscovery ?? [])
         ],
         relay: {
           enabled: true,
