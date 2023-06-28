@@ -37,4 +37,3 @@ jobs:
       - name: lerna publish
         run: |
           yarn lerna publish from-package --no-git-tag-version --yes
-
