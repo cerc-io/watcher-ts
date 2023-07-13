@@ -126,6 +126,13 @@ export interface PeerConfig {
   l2TxsConfig?: L2TxsConfig;
 }
 
+// ts-nitro config
+export interface NitroConfig {
+  store: string
+  privateKey: string
+  chainPrivateKey: string
+}
+
 // P2P config
 export interface P2PConfig {
   // Enable relay node
@@ -135,6 +142,8 @@ export interface P2PConfig {
   // Enable peer node
   enablePeer: boolean;
   peer: PeerConfig;
+
+  nitro: NitroConfig
 }
 
 export interface ServerConfig {

@@ -31,7 +31,8 @@ import { TypeSource } from '@graphql-tools/utils';
 import {
   RelayNodeInitConfig,
   PeerInitConfig,
-  PeerIdObj
+  PeerIdObj,
+  Peer
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
@@ -47,6 +48,7 @@ interface Arguments {
 export class ServerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
+  _peer?: Peer;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -66,6 +68,10 @@ export class ServerCmd {
 
   get database (): DatabaseInterface {
     return this._baseCmd.database;
+  }
+
+  get peer (): Peer | undefined {
+    return this._peer;
   }
 
   async initConfig<ConfigType> (): Promise<ConfigType> {
@@ -194,7 +200,7 @@ export class ServerCmd {
         peerIdObj = readPeerId(peerConfig.peerIdFile);
       }
 
-      const peer = new Peer(peerConfig.relayMultiaddr, true);
+      this._peer = new Peer(peerConfig.relayMultiaddr, true);
 
       const peerNodeInit: PeerInitConfig = {
         pingInterval: peerConfig.pingInterval,
@@ -206,15 +212,15 @@ export class ServerCmd {
         dialTimeout: peerConfig.dialTimeout,
         enableDebugInfo: peerConfig.enableDebugInfo
       };
-      await peer.init(peerNodeInit, peerIdObj);
+      await this._peer.init(peerNodeInit, peerIdObj);
 
-      peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
+      this._peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
         if (parseLibp2pMessage) {
           parseLibp2pMessage(peerId.toString(), data);
         }
       });
 
-      log(`Peer ID: ${peer.peerId?.toString()}`);
+      log(`Peer ID: ${this._peer.peerId?.toString()}`);
     }
   }
 
