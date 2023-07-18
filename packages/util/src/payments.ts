@@ -10,7 +10,7 @@ const IntrospectionQuery = 'IntrospectionQuery';
 
 // TODO: Configure
 const LRU_CACHE_MAX_COUNT = 1000;
-const LRU_CACHE_TTL = 10 * 1000; // 10s
+const LRU_CACHE_TTL = 300 * 1000; // 5mins
 
 const FREE_QUERY_LIMIT = 10;
 
@@ -34,7 +34,7 @@ export class Payments {
     this.stopSubscriptionLoop = Channel();
   }
 
-  async subscribeVouchers (client: Client): Promise<void> {
+  async subscribeToVouchers (client: Client): Promise<void> {
     const receivedVouchersChannel = client.receivedVouchers();
 
     while (true) {
@@ -43,7 +43,7 @@ export class Payments {
         this.stopSubscriptionLoop.shift()
       ])) {
         case receivedVouchersChannel: {
-          const voucher = await receivedVouchersChannel.shift();
+          const voucher = await receivedVouchersChannel.value();
           if (voucher === undefined) {
             return;
           }
@@ -113,7 +113,7 @@ export const paymentsPlugin = (payments?: Payments): ApolloServerPlugin => {
           }
 
           // requestContext.request.http.url gives '/?na=naAddress'
-          const urlString = `localhost${requestContext.request.http?.url}`;
+          const urlString = `http://localhost${requestContext.request.http?.url}`;
           const url = new URL(urlString);
           const naAddress = url.searchParams.get('na');
 
@@ -125,16 +125,12 @@ export const paymentsPlugin = (payments?: Payments): ApolloServerPlugin => {
           const querySelections = requestContext.operation?.selectionSet.selections
             .map((selection) => (selection as FieldNode).name.value);
 
-          // console.log('querySelections', querySelections);
-
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
             // TODO: Charge according to the querySelection
 
-            // console.log('querySelection', querySelection);
             // Wait for approval
             await payments.allowRequest(naAddress);
-            // console.log('request allowed');
           }
 
           return null;
