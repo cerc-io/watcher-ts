@@ -14,6 +14,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import { DEFAULT_MAX_GQL_CACHE_SIZE } from './constants';
 import { ServerConfig } from './config';
+import { Payments, paymentsPlugin } from './payments';
 
 const log = debug('vulcanize:server');
 
@@ -21,7 +22,8 @@ export const createAndStartServer = async (
   app: Application,
   typeDefs: TypeSource,
   resolvers: any,
-  serverConfig: ServerConfig
+  serverConfig: ServerConfig,
+  payments?: Payments
 ): Promise<ApolloServer> => {
   const { host, port, gqlCache: gqlCacheConfig, maxSimultaneousRequests, maxRequestQueueLimit } = serverConfig;
 
@@ -64,6 +66,8 @@ export const createAndStartServer = async (
           };
         }
       },
+      // Custom payments plugin
+      paymentsPlugin(payments),
       // GQL response cache plugin
       responseCachePlugin(),
       ApolloServerPluginLandingPageLocalDefault({ embed: true })

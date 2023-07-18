@@ -350,6 +350,43 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
+"@cerc-io/nitro-client@^0.1.1":
+  version "0.1.1"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client/-/0.1.1/nitro-client-0.1.1.tgz#e0b99f11695750d3306c0e6e7806a686d7a7d14b"
+  integrity sha512-SVzOO+qAC2faNvpFjiK6HdGhg4SLIgVQoj/3NEuzMQSgHie4AQPwiNvZwAIMQJqATJkRLQ6VpA4CLOt5L4Xb9A==
+  dependencies:
+    "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
+    "@cerc-io/nitro-util" "^0.1.1"
+    "@cerc-io/peer" "^0.2.46"
+    "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
+    "@libp2p/crypto" "^1.0.4"
+    "@libp2p/mdns" "^6.0.0"
+    "@libp2p/tcp" "^6.0.0"
+    "@multiformats/multiaddr" "^11.1.4"
+    "@statechannels/exit-format" "^0.2.0"
+    "@statechannels/nitro-protocol" "^2.0.0-alpha.4"
+    assert "^2.0.0"
+    debug "^4.3.4"
+    ethers "^5.7.2"
+    it-pipe "^2.0.5"
+    level "^8.0.0"
+    lodash "^4.17.21"
+    promjs "^0.4.2"
+    uint8arrays "^4.0.3"
+
+"@cerc-io/nitro-util@^0.1.1":
+  version "0.1.1"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.1/nitro-util-0.1.1.tgz#54c8e7c46986a628e6b33505eecf88e2f278c2be"
+  integrity sha512-Wxlqu09kc5FtShWgoTL1ZDDZ1EsOegaEzJa06qSfQtkt9HsxkesnZnAvaQWqHZGBJU00NmSCQOcYXKeGDzKB+g==
+  dependencies:
+    assert "^2.0.0"
+    debug "^4.3.4"
+    ethers "^5.7.2"
+    it-pipe "^3.0.1"
+    json-bigint "^1.0.0"
+    lodash "^4.17.21"
+    uint8arrays "^4.0.3"
+
 "@cerc-io/prometheus-metrics@1.1.4":
   version "1.1.4"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fprometheus-metrics/-/1.1.4/prometheus-metrics-1.1.4.tgz#51006b0b5bf6168394390c78072a1c0bb2b02f28"
@@ -361,6 +398,11 @@
     it-foreach "^1.0.0"
     it-stream-types "^1.0.4"
     promjs "^0.4.2"
+
+"@cerc-io/ts-channel@1.0.3-ts-nitro-0.1.1":
+  version "1.0.3-ts-nitro-0.1.1"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fts-channel/-/1.0.3-ts-nitro-0.1.1/ts-channel-1.0.3-ts-nitro-0.1.1.tgz#0768781313a167295c0bf21307f47e02dc17e936"
+  integrity sha512-2jFICUSyffuZ+8+qRhXuLSJq4GJ6Y02wxiXoubH0Kzv2lIKkJtWICY1ZQQhtXAvP0ncAQB85WJHqtqwH8l7J3Q==
 
 "@chainsafe/is-ip@^2.0.1":
   version "2.0.1"
@@ -1591,6 +1633,11 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
+"@leichtgewicht/ip-codec@^2.0.1":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.4.tgz#b2ac626d6cb9c8718ab459166d4bb405b8ffa78b"
+  integrity sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==
+
 "@lerna/add@4.0.0":
   version "4.0.0"
   resolved "https://registry.npmjs.org/@lerna/add/-/add-4.0.0.tgz"
@@ -2353,6 +2400,17 @@
     it-stream-types "^1.0.4"
     uint8arraylist "^2.1.2"
 
+"@libp2p/interface-connection@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@libp2p/interface-connection/-/interface-connection-4.0.0.tgz#fcc830ca891820fac89a4c6bd4fcc2df4874f49b"
+  integrity sha512-6xx/NmEc84HX7QmsjSC3hHredQYjHv4Dkf4G27adAPf+qN+vnPxmQ7gaTnk243a0++DOFTbZ2gKX/15G2B6SRg==
+  dependencies:
+    "@libp2p/interface-peer-id" "^2.0.0"
+    "@libp2p/interfaces" "^3.0.0"
+    "@multiformats/multiaddr" "^12.0.0"
+    it-stream-types "^1.0.4"
+    uint8arraylist "^2.1.2"
+
 "@libp2p/interface-connection@^5.0.0", "@libp2p/interface-connection@^5.1.0":
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/@libp2p/interface-connection/-/interface-connection-5.1.1.tgz#da0572c76da43629d52b8bec6cd092143fae421d"
@@ -2625,6 +2683,22 @@
     interface-datastore "^8.2.0"
     multiformats "^11.0.2"
 
+"@libp2p/mdns@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@libp2p/mdns/-/mdns-6.0.0.tgz#dc68881a58c0ce5e4cc3490c0c9d74d1e1b88936"
+  integrity sha512-k5Gi0IrPi3roPHF71xlq9x69TxqjMNZ+JiM7hFV0kjRYmaLqYQ+dOTLJLUd5ZfnrxIe8KkapFw3zwKne4Dw4rA==
+  dependencies:
+    "@libp2p/interface-peer-discovery" "^1.0.1"
+    "@libp2p/interface-peer-id" "^2.0.0"
+    "@libp2p/interface-peer-info" "^1.0.3"
+    "@libp2p/interfaces" "^3.0.3"
+    "@libp2p/logger" "^2.0.1"
+    "@libp2p/peer-id" "^2.0.0"
+    "@multiformats/multiaddr" "^11.0.0"
+    "@types/multicast-dns" "^7.2.1"
+    multicast-dns "^7.2.0"
+    multiformats "^11.0.0"
+
 "@libp2p/mplex@^7.1.1":
   version "7.1.2"
   resolved "https://registry.yarnpkg.com/@libp2p/mplex/-/mplex-7.1.2.tgz#7bc4be3ff28848b51e07ce06dbd9737c108c7a13"
@@ -2789,6 +2863,21 @@
     p-queue "^7.2.0"
     uint8arraylist "^2.0.0"
     uint8arrays "^4.0.2"
+
+"@libp2p/tcp@^6.0.0":
+  version "6.2.2"
+  resolved "https://registry.yarnpkg.com/@libp2p/tcp/-/tcp-6.2.2.tgz#9262e284037f0951aca22f0fb3d488e3515ff6fd"
+  integrity sha512-5pLQDSUI+6qtAvh7pYgjqXFuFqzZ/AGL3BSX4C2oa+vWGIbooTZK3Mizp+iO0yHomVJ1y3V8AXXH8ddWdFqDpQ==
+  dependencies:
+    "@libp2p/interface-connection" "^4.0.0"
+    "@libp2p/interface-metrics" "^4.0.0"
+    "@libp2p/interface-transport" "^2.0.0"
+    "@libp2p/interfaces" "^3.2.0"
+    "@libp2p/logger" "^2.0.0"
+    "@libp2p/utils" "^3.0.2"
+    "@multiformats/mafmt" "^12.0.0"
+    "@multiformats/multiaddr" "^12.0.0"
+    stream-to-it "^0.2.2"
 
 "@libp2p/topology@^4.0.0":
   version "4.0.1"
@@ -3337,10 +3426,20 @@
   dependencies:
     "@octokit/openapi-types" "^7.2.3"
 
+"@openzeppelin/contracts@4.6.0":
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.6.0.tgz#c91cf64bc27f573836dba4122758b4743418c1b3"
+  integrity sha512-8vi4d50NNya/bQqCmaVzvHNmwHvS0OBKb7HNtuNwEE3scXWrP31fKQoGxNMT+KbzmrNZzatE3QK5p2gFONI/hg==
+
 "@openzeppelin/contracts@^4.3.2":
   version "4.8.2"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.2.tgz#d815ade0027b50beb9bcca67143c6bcc3e3923d6"
   integrity sha512-kEUOgPQszC0fSYWpbh2kT94ltOJwj1qfT2DWo+zVttmGmf97JZ99LspePNaeeaLhCImaHVeBbjaQFZQn7+Zc5g==
+
+"@openzeppelin/contracts@^4.7.3":
+  version "4.9.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.9.2.tgz#1cb2d5e4d3360141a17dbc45094a8cad6aac16c1"
+  integrity sha512-mO+y6JaqXjWeMh9glYVzVu8HYPGknAAnWyxTRhGeckOruyXQMNnlcW6w/Dx9ftLeIQk6N+ZJFuVmTwF7lEIFrg==
 
 "@poanet/solidity-flattener@https://github.com/vulcanize/solidity-flattener.git":
   version "3.0.6"
@@ -3664,6 +3763,24 @@
     "@stablelib/random" "^1.0.2"
     "@stablelib/wipe" "^1.0.1"
 
+"@statechannels/exit-format@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@statechannels/exit-format/-/exit-format-0.2.0.tgz#b9362816c2a23d59e429b86b310021de1031a387"
+  integrity sha512-i+HIPy2P6ddwT/uP0O6AiTmBRTQ9+vLmLnfJtvXmtpTsB8OT1R9Jjj5iVKowGcWk+cg8koEtQuQDMxfrHq7LaQ==
+  dependencies:
+    "@openzeppelin/contracts" "4.6.0"
+    ethers "^5.1.4"
+    lodash "^4.17.21"
+
+"@statechannels/nitro-protocol@^2.0.0-alpha.4":
+  version "2.0.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/@statechannels/nitro-protocol/-/nitro-protocol-2.0.0-alpha.4.tgz#ff252e5cd7e73740ad25a35b2af7953b499db63d"
+  integrity sha512-Nmiyu0h7VjzoYPmzUOVWb7KzzdRRTjnF1YYVqsiHiCEVkjZVBtSK/J8RDL4Ozzn2MwyOIiA90Wlrl4KB+tB43g==
+  dependencies:
+    "@openzeppelin/contracts" "^4.7.3"
+    "@statechannels/exit-format" "^0.2.0"
+    "@typechain/ethers-v5" "^9.0.0"
+
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@szmarczak/http-timer/-/http-timer-1.1.2.tgz#b1665e2c461a2cd92f4c1bbf50d5454de0d4b421"
@@ -3702,6 +3819,14 @@
   integrity sha512-0xdCkyGOzdqh4h5JSf+zoWx85IusEjDcPIwNEHP8mrWSnCae4rvrqB+/gtpdNfX7zjlFlZiMeePn2r63EI3Lrw==
   dependencies:
     ethers "^5.0.2"
+
+"@typechain/ethers-v5@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-9.0.0.tgz#6aa93bea7425c0463bd8a61eea3643540ef851bd"
+  integrity sha512-bAanuPl1L2itaUdMvor/QvwnIH+TM/CmG00q17Ilv3ZZMeJ2j8HcarhgJUZ9pBY1teBb85P8cC03dz3mSSx+tQ==
+  dependencies:
+    lodash "^4.17.15"
+    ts-essentials "^7.0.1"
 
 "@types/abstract-leveldown@*":
   version "7.2.1"
@@ -3772,6 +3897,13 @@
   integrity sha512-9AonUzyTjXXhEOa0DnqpzZi6VHlqKMswga9EXjpXnnqxwLtdvPPtlO8evrI5D9S6asFRCQ6v+wpiUKbw+vKqyg==
   dependencies:
     "@types/ms" "*"
+
+"@types/dns-packet@*":
+  version "5.2.4"
+  resolved "https://registry.yarnpkg.com/@types/dns-packet/-/dns-packet-5.2.4.tgz#0de4ee48f900a62b014ce61a3c9ab5d33dc06b0d"
+  integrity sha512-OAruArypdNxR/tzbmrtoyEuXeNTLaZCpO19BXaNC10T5ACIbvjmvhmV2RDEy2eLc3w8IjK7SY3cvUCcAW+sfoQ==
+  dependencies:
+    "@types/node" "*"
 
 "@types/encoding-down@*":
   version "5.0.1"
@@ -3938,6 +4070,14 @@
   version "0.7.31"
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-0.7.31.tgz#31b7ca6407128a3d2bbc27fe2d21b345397f6197"
   integrity sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==
+
+"@types/multicast-dns@^7.2.1":
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/@types/multicast-dns/-/multicast-dns-7.2.1.tgz#6527b28ce62bcdc08a38f6a329a3d23145c99d95"
+  integrity sha512-A2PmB8MRcNVEkw6wzGT5rtBHqyHOVjiRMkJH+zpJKXipSi+GGkHg6JjNFApDiYK9WefJqkVG0taln1VMl4TGfw==
+  dependencies:
+    "@types/dns-packet" "*"
+    "@types/node" "*"
 
 "@types/node-fetch@^2.5.5":
   version "2.5.10"
@@ -7102,6 +7242,13 @@ dns-over-http-resolver@^2.1.0:
     receptacle "^1.3.2"
     undici "^5.12.0"
 
+dns-packet@^5.2.2:
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/dns-packet/-/dns-packet-5.6.0.tgz#2202c947845c7a63c23ece58f2f70ff6ab4c2f7d"
+  integrity sha512-rza3UH1LwdHh9qyPXp8lkwpjSNk/AMD3dPytUoRoqnypDUhY0xvbdmVhWOfxO68frEfV9BU8V12Ez7ZsHGZpCQ==
+  dependencies:
+    "@leichtgewicht/ip-codec" "^2.0.1"
+
 doctrine@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz"
@@ -8088,7 +8235,7 @@ ethers@^5.0.1, ethers@^5.0.2, ethers@^5.5.2:
     "@ethersproject/web" "5.6.1"
     "@ethersproject/wordlists" "5.6.1"
 
-ethers@^5.4.4:
+ethers@^5.1.4, ethers@^5.4.4, ethers@^5.7.2:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
   integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==
@@ -11393,6 +11540,11 @@ lru-cache@5.1.1, lru-cache@^5.1.1:
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.13.1.tgz#267a81fbd0881327c46a81c5922606a2cfe336c4"
   integrity sha512-CHqbAq7NFlW3RSnoWXLJBxCWaZVBrfa9UEHId2M3AW8iEBurbqduNexEUCGc3SHc6iCYXNJCDi903LajSVAEPQ==
 
+lru-cache@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-10.0.0.tgz#b9e2a6a72a129d81ab317202d93c7691df727e61"
+  integrity sha512-svTf/fzsKHffP42sujkO/Rjs37BCIsQVRCeNYIm9WN8rgT7ffoUnRtZCqU+6BqcSBdv8gwJeTz8knJpgACeQMw==
+
 lru-cache@^3.2.0:
   version "3.2.0"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-3.2.0.tgz"
@@ -12068,6 +12220,14 @@ multibase@~0.6.0:
   dependencies:
     base-x "^3.0.8"
     buffer "^5.5.0"
+
+multicast-dns@^7.2.0:
+  version "7.2.5"
+  resolved "https://registry.yarnpkg.com/multicast-dns/-/multicast-dns-7.2.5.tgz#77eb46057f4d7adbd16d9290fa7299f6fa64cced"
+  integrity sha512-2eznPJP8z2BFLX50tf0LuODrpINqP1RVIm/CObbTcBRITQgmC/TjcREF1NeTBzIcR5XO/ukWo+YHOjBbFwIupg==
+  dependencies:
+    dns-packet "^5.2.2"
+    thunky "^1.0.2"
 
 multicodec@^0.5.5:
   version "0.5.7"
@@ -15395,6 +15555,11 @@ through@2, "through@>=2.2.7 <3", through@^2.3.4, through@^2.3.6, through@~2.3.4,
   resolved "https://registry.npmjs.org/through/-/through-2.3.8.tgz"
   integrity sha1-DdTJ/6q8NXlgsbckEV1+Doai4fU=
 
+thunky@^1.0.2:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/thunky/-/thunky-1.1.0.tgz#5abaf714a9405db0504732bbccd2cedd9ef9537d"
+  integrity sha512-eHY7nBftgThBqOyHGVN+l8gF0BucP09fMo0oO/Lb0w1OF80dJv+lDVpXG60WMQvkcxAkNybKsrEIE3ZtKGmPrA==
+
 timed-out@^4.0.0, timed-out@^4.0.1:
   version "4.0.1"
   resolved "https://registry.npmjs.org/timed-out/-/timed-out-4.0.1.tgz"
@@ -15546,6 +15711,11 @@ ts-essentials@^6.0.3:
   version "6.0.7"
   resolved "https://registry.npmjs.org/ts-essentials/-/ts-essentials-6.0.7.tgz"
   integrity sha512-2E4HIIj4tQJlIHuATRHayv0EfMGK3ris/GRk1E3CFnsZzeNV+hUmelbaTZHLtXaZppM5oLhHRtO04gINC4Jusw==
+
+ts-essentials@^7.0.1:
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/ts-essentials/-/ts-essentials-7.0.3.tgz#686fd155a02133eedcc5362dc8b5056cde3e5a38"
+  integrity sha512-8+gr5+lqO3G84KdiTSMRLtuyJ+nTBVRKuCrK4lidMPdVeEp0uqC875uE5NMcaA7YYMN7XsNiFQuMvasF8HT/xQ==
 
 ts-generator@^0.1.1:
   version "0.1.1"
