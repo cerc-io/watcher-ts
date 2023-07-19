@@ -23,28 +23,27 @@ const HTTP_CODE_HEADER_MISSING = 400; // Bad request
 const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
 // TODO: Configure
-const LRU_CACHE_MAX_COUNT = 1000;
-const LRU_CACHE_TTL = 300 * 1000; // 5mins
+const LRU_CACHE_MAX_ACCOUNT_COUNT = 1000;
+const LRU_CACHE_ACCOUNT_TTL = 30 * 60 * 1000; // 30mins
+const LRU_CACHE_MAX_VOUCHER_COUNT = 1000;
+const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
 
-// const FREE_QUERY_LIMIT = 10;
-const FREE_QUERY_LIMIT = 0;
-
-const PAYMENT_TIMEOUT_DURATION = 20 * 1000; // 20s
+const FREE_QUERY_LIMIT = 10;
 
 export class PaymentsManager {
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
-  private voucherChannels: LRUCache<string, ReadWriteChannel<Voucher>>;
+  private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
   private stopSubscriptionLoop: ReadWriteChannel<void>;
 
   // TODO: Read query rate map from config
   // TODO: Add a method to get rate for a query
 
   constructor () {
-    this.voucherChannels = new LRUCache<string, ReadWriteChannel<Voucher>>({
-      max: LRU_CACHE_MAX_COUNT,
-      ttl: LRU_CACHE_TTL
+    this.receivedVouchers = new LRUCache<string, LRUCache<string, Voucher>>({
+      max: LRU_CACHE_MAX_ACCOUNT_COUNT,
+      ttl: LRU_CACHE_ACCOUNT_TTL
     });
     this.stopSubscriptionLoop = Channel();
   }
@@ -66,15 +65,17 @@ export class PaymentsManager {
           const associatedPaymentChannel = await client.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
 
-          let voucherChannel = this.voucherChannels.get(payer);
-          if (!voucherChannel) {
-            // Same buffer size as that of receivedVouchers channel
-            voucherChannel = Channel<Voucher>(1000);
-            this.voucherChannels.set(payer, voucherChannel);
+          let vouchersMap = this.receivedVouchers.get(payer);
+          if (!vouchersMap) {
+            vouchersMap = new LRUCache<string, Voucher>({
+              max: LRU_CACHE_MAX_VOUCHER_COUNT,
+              ttl: LRU_CACHE_VOUCHER_TTL
+            });
+
+            this.receivedVouchers.set(payer, vouchersMap);
           }
 
-          // Perform a nonblocking send in case no one is listening
-          voucherChannel.push(voucher);
+          vouchersMap.set(voucher.hash(), voucher);
           break;
         }
 
@@ -88,7 +89,7 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string): Promise<void> {
+  async allowRequest (voucherHash: string, voucherSig: string): Promise<boolean> {
     const senderAddress = getSenderAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
@@ -100,29 +101,27 @@ export class PaymentsManager {
       // Check if user has exhausted their free query limit
       if (remainingFreeQueries > 0) {
         this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
-        return;
+        return true;
       }
     }
 
     // Wait for a payment voucher to be received from the Nitro account
-    // TODO Store payments in a hash map
-    await this.authenticateVoucherForSender(voucherHash, senderAddress);
+    return this.authenticateVoucherForSender(voucherHash, senderAddress);
   }
 
-  private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<void> {
-    let voucherChannel = this.voucherChannels.get(senderAddress);
-    if (!voucherChannel) {
-      // Same buffer size as that of receivedVouchers channel
-      voucherChannel = Channel<Voucher>(1000);
-      this.voucherChannels.set(senderAddress, voucherChannel);
+  private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+    const vouchersMap = this.receivedVouchers.get(senderAddress);
+    if (!vouchersMap) {
+      return false;
     }
 
-    while (true) {
-      const receivedVoucher = await voucherChannel.shift();
-      if (receivedVoucher.hash() === voucherHash) {
-        return;
-      }
+    const receivedVoucher = vouchersMap.get(voucherHash);
+    if (receivedVoucher) {
+      vouchersMap.delete(voucherHash);
+      return true;
     }
+
+    return false;
   }
 }
 
@@ -157,24 +156,17 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           for await (const querySelection of querySelections ?? []) {
             // TODO: Charge according to the querySelection
 
-            // Wait for approval
-            const timeoutPromise = new Promise<GraphQLResponse>(resolve => {
-              setTimeout(() => {
-                const response: GraphQLResponse = {
-                  errors: [{ message: ERR_PAYMENT_NOT_RECEIVED }],
-                  http: new HTTPResponse(undefined, {
-                    headers: requestContext.response?.http?.headers,
-                    status: HTTP_CODE_PAYMENT_NOT_RECEIVED
-                  })
-                };
+            const failResponse: GraphQLResponse = {
+              errors: [{ message: ERR_PAYMENT_NOT_RECEIVED }],
+              http: new HTTPResponse(undefined, {
+                headers: requestContext.response?.http?.headers,
+                status: HTTP_CODE_PAYMENT_NOT_RECEIVED
+              })
+            };
 
-                resolve(response);
-              }, PAYMENT_TIMEOUT_DURATION);
-            });
-
-            const response = await Promise.race([paymentsManager.allowRequest(hash, sig), timeoutPromise]);
-            if (response) {
-              return response;
+            const allowRequest = await paymentsManager.allowRequest(hash, sig);
+            if (!allowRequest) {
+              return failResponse;
             }
           }
 
