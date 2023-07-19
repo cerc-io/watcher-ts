@@ -26,7 +26,7 @@ import {
   GraphWatcherInterface,
   Config,
   P2PConfig,
-  Payments
+  PaymentsManager
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import {
@@ -113,7 +113,7 @@ export class ServerCmd {
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
     typeDefs: TypeSource,
     parseLibp2pMessage?: (peerId: string, data: any) => void,
-    nitroPayments?: Payments
+    paymentsManager?: PaymentsManager
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -138,7 +138,7 @@ export class ServerCmd {
 
     // Create an Express app
     const app: Application = express();
-    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, nitroPayments);
+    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, paymentsManager);
 
     await startGQLMetricsServer(config);
 
