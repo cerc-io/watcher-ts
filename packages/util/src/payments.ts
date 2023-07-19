@@ -105,7 +105,7 @@ export class PaymentsManager {
       }
     }
 
-    // Wait for a payment voucher to be received from the Nitro account
+    // Check for payment voucher received from the Nitro account
     return this.authenticateVoucherForSender(voucherHash, senderAddress);
   }
 

@@ -5,8 +5,8 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/utils.keyvaluecache": "^1.0.1",
-    "@cerc-io/nitro-client": "^0.1.1",
-    "@cerc-io/nitro-util": "^0.1.1",
+    "@cerc-io/nitro-client": "^0.1.2",
+    "@cerc-io/nitro-util": "^0.1.2",
     "@cerc-io/solidity-mapper": "^0.2.46",
     "@cerc-io/ts-channel": "1.0.3-ts-nitro-0.1.1",
     "@ethersproject/providers": "^5.4.4",
