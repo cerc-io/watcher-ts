@@ -33,6 +33,7 @@ const LRU_CACHE_MAX_VOUCHER_COUNT = 1000;
 const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
 
 const FREE_QUERY_LIMIT = 10;
+const FREE_QUERIES = ['latestBlock'];
 
 export class PaymentsManager {
   // TODO: Persist data
@@ -176,6 +177,9 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
             // TODO: Charge according to the querySelection
+            if (FREE_QUERIES.includes(querySelection)) {
+              continue;
+            }
 
             const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(hash, sig);
             if (!allowRequest) {
