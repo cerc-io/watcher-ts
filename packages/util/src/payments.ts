@@ -1,3 +1,4 @@
+import debug from 'debug';
 import { ethers } from 'ethers';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
@@ -10,10 +11,13 @@ import type { Client, Signature, Voucher } from '@cerc-io/nitro-client';
 import { recoverEthereumMessageSigner, getSignatureFromEthersSignature } from '@cerc-io/nitro-client';
 import { hex2Bytes } from '@cerc-io/nitro-util';
 
+const log = debug('laconic:payments');
+
 const IntrospectionQuery = 'IntrospectionQuery';
 const HASH_HEADER_KEY = 'hash';
 const SIG_HEADER_KEY = 'sig';
 
+const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
 const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
 const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
 
@@ -50,6 +54,7 @@ export class PaymentsManager {
 
   async subscribeToVouchers (client: Client): Promise<void> {
     const receivedVouchersChannel = client.receivedVouchers();
+    log('Starting voucher subscription...');
 
     while (true) {
       switch (await Channel.select([
@@ -59,11 +64,13 @@ export class PaymentsManager {
         case receivedVouchersChannel: {
           const voucher = receivedVouchersChannel.value();
           if (voucher === undefined) {
+            log('Voucher channel closed, stopping voucher subscription');
             return;
           }
 
           const associatedPaymentChannel = await client.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
+          log(`Received a payment voucher from ${payer}`);
 
           let vouchersMap = this.receivedVouchers.get(payer);
           if (!vouchersMap) {
@@ -80,6 +87,7 @@ export class PaymentsManager {
         }
 
         case this.stopSubscriptionLoop:
+          log('Stop signal received, stopping voucher subscription');
           return;
       }
     }
@@ -89,7 +97,7 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string): Promise<boolean> {
+  async allowRequest (voucherHash: string, voucherSig: string): Promise<[boolean, string]> {
     const senderAddress = getSenderAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
@@ -100,13 +108,26 @@ export class PaymentsManager {
 
       // Check if user has exhausted their free query limit
       if (remainingFreeQueries > 0) {
+        log(`Serving a free query for ${senderAddress}`);
         this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
-        return true;
+
+        return [true, ''];
       }
+
+      log(`Rejecting query from ${senderAddress}, user has exhausted their free quota`);
+      return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
     // Check for payment voucher received from the Nitro account
-    return this.authenticateVoucherForSender(voucherHash, senderAddress);
+    const paymentVoucherRecived = await this.authenticateVoucherForSender(voucherHash, senderAddress);
+
+    if (paymentVoucherRecived) {
+      log(`Serving a paid query for ${senderAddress}`);
+      return [true, ''];
+    } else {
+      log(`Rejecting query from ${senderAddress}, payment voucher not received`);
+      return [false, ERR_PAYMENT_NOT_RECEIVED];
+    }
   }
 
   private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
@@ -156,16 +177,16 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           for await (const querySelection of querySelections ?? []) {
             // TODO: Charge according to the querySelection
 
-            const failResponse: GraphQLResponse = {
-              errors: [{ message: ERR_PAYMENT_NOT_RECEIVED }],
-              http: new HTTPResponse(undefined, {
-                headers: requestContext.response?.http?.headers,
-                status: HTTP_CODE_PAYMENT_NOT_RECEIVED
-              })
-            };
-
-            const allowRequest = await paymentsManager.allowRequest(hash, sig);
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(hash, sig);
             if (!allowRequest) {
+              const failResponse: GraphQLResponse = {
+                errors: [{ message: rejectionMessage }],
+                http: new HTTPResponse(undefined, {
+                  headers: requestContext.response?.http?.headers,
+                  status: HTTP_CODE_PAYMENT_NOT_RECEIVED
+                })
+              };
+
               return failResponse;
             }
           }
