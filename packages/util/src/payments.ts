@@ -41,6 +41,7 @@ export class PaymentsManager {
 
   private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
   private stopSubscriptionLoop: ReadWriteChannel<void>;
+  private payerListeners: ReadWriteChannel<string>[] = [];
 
   // TODO: Read query rate map from config
   // TODO: Add a method to get rate for a query
@@ -84,6 +85,11 @@ export class PaymentsManager {
           }
 
           vouchersMap.set(voucher.hash(), voucher);
+
+          for await (const [, listener] of this.payerListeners.entries()) {
+            await listener.push(payer);
+          }
+
           break;
         }
 
@@ -132,18 +138,45 @@ export class PaymentsManager {
   }
 
   private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+    if (this.checkReceivedVouchers(voucherHash, senderAddress)) {
+      return true;
+    }
+
+    // Wait for payment voucher from sender
+    const payerListener = Channel<string>();
+    this.payerListeners.push(payerListener);
+
+    while (true) {
+      // TODO: Set timeout
+      const payer = await payerListener.shift();
+
+      if (payer === senderAddress) {
+        break;
+      }
+    }
+
+    // Close and remove listener
+    payerListener.close();
+    this.payerListeners = this.payerListeners.filter(listener => listener !== payerListener);
+
+    return this.checkReceivedVouchers(voucherHash, senderAddress);
+  }
+
+  private checkReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
     const vouchersMap = this.receivedVouchers.get(senderAddress);
+
     if (!vouchersMap) {
       return false;
     }
 
     const receivedVoucher = vouchersMap.get(voucherHash);
-    if (receivedVoucher) {
-      vouchersMap.delete(voucherHash);
-      return true;
+
+    if (!receivedVoucher) {
+      return false;
     }
 
-    return false;
+    vouchersMap.delete(voucherHash);
+    return true;
   }
 }
 
