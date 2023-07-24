@@ -176,6 +176,10 @@ export interface ServerConfig {
   gqlCache: GQLCacheConfig;
 
   p2p: P2PConfig;
+
+  // Flag to specify whether RPC endpoint supports block hash as block tag parameter
+  // https://ethereum.org/en/developers/docs/apis/json-rpc/#default-block
+  rpcSupportsBlockHashParam: boolean
 }
 
 export interface UpstreamConfig {

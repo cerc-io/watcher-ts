@@ -35,12 +35,15 @@ const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
 const FREE_QUERY_LIMIT = 10;
 const FREE_QUERIES = ['latestBlock'];
 
+const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
+
 export class PaymentsManager {
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
   private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
   private stopSubscriptionLoop: ReadWriteChannel<void>;
+  private paymentListeners: ReadWriteChannel<string>[] = [];
 
   // TODO: Read query rate map from config
   // TODO: Add a method to get rate for a query
@@ -84,6 +87,11 @@ export class PaymentsManager {
           }
 
           vouchersMap.set(voucher.hash(), voucher);
+
+          for await (const [, listener] of this.paymentListeners.entries()) {
+            await listener.push(payer);
+          }
+
           break;
         }
 
@@ -132,18 +140,65 @@ export class PaymentsManager {
   }
 
   private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+    if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
+      return true;
+    }
+
+    // Wait for payment voucher from sender
+    const paymentListener = Channel<string>();
+    this.paymentListeners.push(paymentListener);
+    let requestTimeout;
+
+    const timeoutPromise = new Promise(resolve => {
+      requestTimeout = setTimeout(resolve, REQUEST_TIMEOUT);
+    });
+
+    try {
+      while (true) {
+        const payer = await Promise.race([
+          paymentListener.shift(),
+          timeoutPromise
+        ]);
+
+        // payer is undefined if timeout completes or channel is closed externally
+        if (!payer) {
+          return false;
+        }
+
+        if (payer === senderAddress) {
+          if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
+            return true;
+          }
+        }
+      }
+    } finally {
+      // Close and remove listener
+      await paymentListener.close();
+      this.paymentListeners = this.paymentListeners.filter(listener => listener !== paymentListener);
+
+      // Clear timeout
+      clearTimeout(requestTimeout);
+    }
+  }
+
+  // Check vouchers in LRU cache map and remove them
+  // Returns false if not found
+  // Returns true after being found and removed
+  private acceptReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
     const vouchersMap = this.receivedVouchers.get(senderAddress);
+
     if (!vouchersMap) {
       return false;
     }
 
     const receivedVoucher = vouchersMap.get(voucherHash);
-    if (receivedVoucher) {
-      vouchersMap.delete(voucherHash);
-      return true;
+
+    if (!receivedVoucher) {
+      return false;
     }
 
-    return false;
+    vouchersMap.delete(voucherHash);
+    return true;
   }
 }
 
