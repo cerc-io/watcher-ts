@@ -43,7 +43,7 @@ export class PaymentsManager {
 
   private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
   private stopSubscriptionLoop: ReadWriteChannel<void>;
-  private payerListeners: ReadWriteChannel<string>[] = [];
+  private paymentListeners: ReadWriteChannel<string>[] = [];
 
   // TODO: Read query rate map from config
   // TODO: Add a method to get rate for a query
@@ -88,7 +88,7 @@ export class PaymentsManager {
 
           vouchersMap.set(voucher.hash(), voucher);
 
-          for await (const [, listener] of this.payerListeners.entries()) {
+          for await (const [, listener] of this.paymentListeners.entries()) {
             await listener.push(payer);
           }
 
@@ -146,11 +146,14 @@ export class PaymentsManager {
 
     // Wait for payment voucher from sender
     const payerListener = Channel<string>();
-    this.payerListeners.push(payerListener);
+    this.paymentListeners.push(payerListener);
+    let requestTimeout;
+
+    const timeoutPromise = new Promise(resolve => {
+      requestTimeout = setTimeout(resolve, REQUEST_TIMEOUT);
+    });
 
     try {
-      const timeoutPromise = new Promise(resolve => setTimeout(resolve, REQUEST_TIMEOUT));
-
       while (true) {
         const payer = await Promise.race([
           payerListener.shift(),
@@ -170,8 +173,11 @@ export class PaymentsManager {
       }
     } finally {
       // Close and remove listener
-      payerListener.close();
-      this.payerListeners = this.payerListeners.filter(listener => listener !== payerListener);
+      await payerListener.close();
+      this.paymentListeners = this.paymentListeners.filter(listener => listener !== payerListener);
+
+      // Clear timeout
+      clearTimeout(requestTimeout);
     }
   }
 
