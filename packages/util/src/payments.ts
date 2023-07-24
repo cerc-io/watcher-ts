@@ -145,8 +145,8 @@ export class PaymentsManager {
     }
 
     // Wait for payment voucher from sender
-    const payerListener = Channel<string>();
-    this.paymentListeners.push(payerListener);
+    const paymentListener = Channel<string>();
+    this.paymentListeners.push(paymentListener);
     let requestTimeout;
 
     const timeoutPromise = new Promise(resolve => {
@@ -156,7 +156,7 @@ export class PaymentsManager {
     try {
       while (true) {
         const payer = await Promise.race([
-          payerListener.shift(),
+          paymentListener.shift(),
           timeoutPromise
         ]);
 
@@ -173,8 +173,8 @@ export class PaymentsManager {
       }
     } finally {
       // Close and remove listener
-      await payerListener.close();
-      this.paymentListeners = this.paymentListeners.filter(listener => listener !== payerListener);
+      await paymentListener.close();
+      this.paymentListeners = this.paymentListeners.filter(listener => listener !== paymentListener);
 
       // Clear timeout
       clearTimeout(requestTimeout);
