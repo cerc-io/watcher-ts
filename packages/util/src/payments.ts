@@ -38,6 +38,8 @@ const FREE_QUERIES = ['latestBlock'];
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
 
 export class PaymentsManager {
+  clientAddress?: string;
+
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
@@ -57,6 +59,8 @@ export class PaymentsManager {
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
+    this.clientAddress = client.address;
+
     const receivedVouchersChannel = client.receivedVouchers();
     log('Starting voucher subscription...');
 
@@ -139,7 +143,7 @@ export class PaymentsManager {
     }
   }
 
-  private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+  async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
     if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
       return true;
     }
@@ -257,7 +261,8 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
   };
 };
 
-const getSenderAddress = (hash: string, sig: string): string => {
+// TODO: Move to @cerc-io/nitro-client utils
+export const getSenderAddress = (hash: string, sig: string): string => {
   const splitSig = ethers.utils.splitSignature(sig);
   const signature: Signature = getSignatureFromEthersSignature(splitSig);
 
