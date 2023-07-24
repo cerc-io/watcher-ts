@@ -14,15 +14,16 @@ import { hex2Bytes } from '@cerc-io/nitro-util';
 const log = debug('laconic:payments');
 
 const IntrospectionQuery = 'IntrospectionQuery';
-const HASH_HEADER_KEY = 'hash';
-const SIG_HEADER_KEY = 'sig';
+const PAYMENT_HEADER_KEY = 'x-payment';
+const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
 const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
 const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
 
-const ERR_HEADER_MISSING = 'Header for hash or sig not set';
-const HTTP_CODE_HEADER_MISSING = 400; // Bad request
+const ERR_HEADER_MISSING = 'Payment header x-payment not set';
+const ERR_INVALID_PAYMENT_HEADER = 'Invalid payment header format';
+const HTTP_CODE_BAD_REQUEST = 400; // Bad request
 
 const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
@@ -217,15 +218,28 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
             return null;
           }
 
-          const hash = requestContext.request.http?.headers.get(HASH_HEADER_KEY);
-          const sig = requestContext.request.http?.headers.get(SIG_HEADER_KEY);
-
-          if (hash == null || sig == null) {
+          const paymentHeader = requestContext.request.http?.headers.get(PAYMENT_HEADER_KEY);
+          if (paymentHeader == null) {
             return {
               errors: [{ message: ERR_HEADER_MISSING }],
               http: new HTTPResponse(undefined, {
                 headers: requestContext.response?.http?.headers,
-                status: HTTP_CODE_HEADER_MISSING
+                status: HTTP_CODE_BAD_REQUEST
+              })
+            };
+          }
+
+          let vhash: string, vsig: string;
+          const match = paymentHeader.match(PAYMENT_HEADER_REGEX);
+
+          if (match) {
+            [, vhash, vsig] = match;
+          } else {
+            return {
+              errors: [{ message: ERR_INVALID_PAYMENT_HEADER }],
+              http: new HTTPResponse(undefined, {
+                headers: requestContext.response?.http?.headers,
+                status: HTTP_CODE_BAD_REQUEST
               })
             };
           }
@@ -240,7 +254,7 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
               continue;
             }
 
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(hash, sig);
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig);
             if (!allowRequest) {
               const failResponse: GraphQLResponse = {
                 errors: [{ message: rejectionMessage }],
