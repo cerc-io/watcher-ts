@@ -35,6 +35,8 @@ const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
 const FREE_QUERY_LIMIT = 10;
 const FREE_QUERIES = ['latestBlock'];
 
+const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
+
 export class PaymentsManager {
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
@@ -138,7 +140,7 @@ export class PaymentsManager {
   }
 
   private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
-    if (this.checkReceivedVouchers(voucherHash, senderAddress)) {
+    if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
       return true;
     }
 
@@ -146,23 +148,37 @@ export class PaymentsManager {
     const payerListener = Channel<string>();
     this.payerListeners.push(payerListener);
 
-    while (true) {
-      // TODO: Set timeout
-      const payer = await payerListener.shift();
+    try {
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, REQUEST_TIMEOUT));
 
-      if (payer === senderAddress) {
-        break;
+      while (true) {
+        const payer = await Promise.race([
+          payerListener.shift(),
+          timeoutPromise
+        ]);
+
+        // payer is undefined if timeout completes or channel is closed externally
+        if (!payer) {
+          return false;
+        }
+
+        if (payer === senderAddress) {
+          if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
+            return true;
+          }
+        }
       }
+    } finally {
+      // Close and remove listener
+      payerListener.close();
+      this.payerListeners = this.payerListeners.filter(listener => listener !== payerListener);
     }
-
-    // Close and remove listener
-    payerListener.close();
-    this.payerListeners = this.payerListeners.filter(listener => listener !== payerListener);
-
-    return this.checkReceivedVouchers(voucherHash, senderAddress);
   }
 
-  private checkReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
+  // Check vouchers in LRU cache map and remove them
+  // Returns false if not found
+  // Returns true after being found and removed
+  private acceptReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
     const vouchersMap = this.receivedVouchers.get(senderAddress);
 
     if (!vouchersMap) {
