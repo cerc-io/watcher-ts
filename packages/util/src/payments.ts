@@ -1,5 +1,4 @@
 import debug from 'debug';
-import { ethers } from 'ethers';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
 import { ApolloServerPlugin, GraphQLResponse, GraphQLRequestContext } from 'apollo-server-plugin-base';
@@ -7,22 +6,22 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
-import type { Client, Signature, Voucher } from '@cerc-io/nitro-client';
-import { recoverEthereumMessageSigner, getSignatureFromEthersSignature } from '@cerc-io/nitro-client';
-import { hex2Bytes } from '@cerc-io/nitro-util';
+import type { Client, Voucher } from '@cerc-io/nitro-client';
+import { utils as nitroUtils } from '@cerc-io/nitro-client';
 
 const log = debug('laconic:payments');
 
 const IntrospectionQuery = 'IntrospectionQuery';
-const HASH_HEADER_KEY = 'hash';
-const SIG_HEADER_KEY = 'sig';
+const PAYMENT_HEADER_KEY = 'x-payment';
+const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
 const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
 const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
 
-const ERR_HEADER_MISSING = 'Header for hash or sig not set';
-const HTTP_CODE_HEADER_MISSING = 400; // Bad request
+const ERR_HEADER_MISSING = 'Payment header x-payment not set';
+const ERR_INVALID_PAYMENT_HEADER = 'Invalid payment header format';
+const HTTP_CODE_BAD_REQUEST = 400; // Bad request
 
 const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
@@ -38,6 +37,8 @@ const FREE_QUERIES = ['latestBlock'];
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
 
 export class PaymentsManager {
+  clientAddress?: string;
+
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
@@ -57,6 +58,8 @@ export class PaymentsManager {
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
+    this.clientAddress = client.address;
+
     const receivedVouchersChannel = client.receivedVouchers();
     log('Starting voucher subscription...');
 
@@ -107,7 +110,7 @@ export class PaymentsManager {
   }
 
   async allowRequest (voucherHash: string, voucherSig: string): Promise<[boolean, string]> {
-    const senderAddress = getSenderAddress(voucherHash, voucherSig);
+    const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
@@ -128,7 +131,7 @@ export class PaymentsManager {
     }
 
     // Check for payment voucher received from the Nitro account
-    const paymentVoucherRecived = await this.authenticateVoucherForSender(voucherHash, senderAddress);
+    const paymentVoucherRecived = await this.authenticateVoucher(voucherHash, senderAddress);
 
     if (paymentVoucherRecived) {
       log(`Serving a paid query for ${senderAddress}`);
@@ -139,7 +142,7 @@ export class PaymentsManager {
     }
   }
 
-  private async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+  async authenticateVoucher (voucherHash:string, senderAddress: string): Promise<boolean> {
     if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
       return true;
     }
@@ -213,15 +216,28 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
             return null;
           }
 
-          const hash = requestContext.request.http?.headers.get(HASH_HEADER_KEY);
-          const sig = requestContext.request.http?.headers.get(SIG_HEADER_KEY);
-
-          if (hash == null || sig == null) {
+          const paymentHeader = requestContext.request.http?.headers.get(PAYMENT_HEADER_KEY);
+          if (paymentHeader == null) {
             return {
               errors: [{ message: ERR_HEADER_MISSING }],
               http: new HTTPResponse(undefined, {
                 headers: requestContext.response?.http?.headers,
-                status: HTTP_CODE_HEADER_MISSING
+                status: HTTP_CODE_BAD_REQUEST
+              })
+            };
+          }
+
+          let vhash: string, vsig: string;
+          const match = paymentHeader.match(PAYMENT_HEADER_REGEX);
+
+          if (match) {
+            [, vhash, vsig] = match;
+          } else {
+            return {
+              errors: [{ message: ERR_INVALID_PAYMENT_HEADER }],
+              http: new HTTPResponse(undefined, {
+                headers: requestContext.response?.http?.headers,
+                status: HTTP_CODE_BAD_REQUEST
               })
             };
           }
@@ -236,7 +252,7 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
               continue;
             }
 
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(hash, sig);
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig);
             if (!allowRequest) {
               const failResponse: GraphQLResponse = {
                 errors: [{ message: rejectionMessage }],
@@ -255,11 +271,4 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
       };
     }
   };
-};
-
-const getSenderAddress = (hash: string, sig: string): string => {
-  const splitSig = ethers.utils.splitSignature(sig);
-  const signature: Signature = getSignatureFromEthersSignature(splitSig);
-
-  return recoverEthereumMessageSigner(hex2Bytes(hash), signature);
 };

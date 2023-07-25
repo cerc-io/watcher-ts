@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cache",
-  "version": "0.2.48",
+  "version": "0.2.49",
   "description": "Generic object cache",
   "main": "dist/index.js",
   "scripts": {
