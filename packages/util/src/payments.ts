@@ -1,5 +1,4 @@
 import debug from 'debug';
-import { ethers } from 'ethers';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
 import { ApolloServerPlugin, GraphQLResponse, GraphQLRequestContext } from 'apollo-server-plugin-base';
@@ -7,9 +6,8 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
-import type { Client, Signature, Voucher } from '@cerc-io/nitro-client';
-import { recoverEthereumMessageSigner, getSignatureFromEthersSignature } from '@cerc-io/nitro-client';
-import { hex2Bytes } from '@cerc-io/nitro-util';
+import type { Client, Voucher } from '@cerc-io/nitro-client';
+import { utils as nitroUtils } from '@cerc-io/nitro-client';
 
 const log = debug('laconic:payments');
 
@@ -112,7 +110,7 @@ export class PaymentsManager {
   }
 
   async allowRequest (voucherHash: string, voucherSig: string): Promise<[boolean, string]> {
-    const senderAddress = getSenderAddress(voucherHash, voucherSig);
+    const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
@@ -273,12 +271,4 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
       };
     }
   };
-};
-
-// TODO: Move to @cerc-io/nitro-client utils
-export const getSenderAddress = (hash: string, sig: string): string => {
-  const splitSig = ethers.utils.splitSignature(sig);
-  const signature: Signature = getSignatureFromEthersSignature(splitSig);
-
-  return recoverEthereumMessageSigner(hex2Bytes(hash), signature);
 };
