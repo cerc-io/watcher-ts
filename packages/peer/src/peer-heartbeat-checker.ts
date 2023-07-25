@@ -11,6 +11,8 @@ import { getPseudonymForPeerId } from './utils/index.js';
 
 const log = debug('laconic:peer-heartbeat-checker');
 
+export const MUXER_CLOSED_ERR = 'Muxer already closed';
+
 interface PeerData {
   intervalId: NodeJS.Timer;
   latencyValues: Array<number>;
@@ -141,8 +143,20 @@ export class PeerHearbeatChecker {
         // On error i.e. no pong
         log(err?.message);
 
-        // Retry after a delay of pingTimeout in case ping fails immediately
-        await retryDelayPromise;
+        const conns = this._node.getConnections(peerId);
+
+        // If there are multiple connections to the peer and ping was being attempted on a dead connection,
+        // forcefully close/cleanup that connection (always the first one)
+        if (conns.length > 1 && err?.message.includes(MUXER_CLOSED_ERR)) {
+          log(`Closing a dead connection ${conns[0].id} to peer ${peerId.toString()}`);
+          await conns[0].close();
+
+          // Don't count this attempt and do the next ping attempt immediately
+          i--;
+        } else {
+          // Retry after a delay of pingTimeout in case ping fails
+          await retryDelayPromise;
+        }
       }
     }
 
