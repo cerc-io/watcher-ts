@@ -131,7 +131,7 @@ export class PaymentsManager {
     }
 
     // Check for payment voucher received from the Nitro account
-    const paymentVoucherRecived = await this.authenticateVoucherForSender(voucherHash, senderAddress);
+    const paymentVoucherRecived = await this.authenticateVoucher(voucherHash, senderAddress);
 
     if (paymentVoucherRecived) {
       log(`Serving a paid query for ${senderAddress}`);
@@ -142,7 +142,7 @@ export class PaymentsManager {
     }
   }
 
-  async authenticateVoucherForSender (voucherHash:string, senderAddress: string): Promise<boolean> {
+  async authenticateVoucher (voucherHash:string, senderAddress: string): Promise<boolean> {
     if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
       return true;
     }
