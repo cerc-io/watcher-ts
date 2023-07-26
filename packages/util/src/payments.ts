@@ -16,7 +16,7 @@ const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
-const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
+const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received or amount insufficient';
 const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
 
 const ERR_HEADER_MISSING = 'Payment header x-payment not set';
@@ -30,11 +30,20 @@ const LRU_CACHE_MAX_ACCOUNT_COUNT = 1000;
 const LRU_CACHE_ACCOUNT_TTL = 30 * 60 * 1000; // 30mins
 const LRU_CACHE_MAX_VOUCHER_COUNT = 1000;
 const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
+const LRU_CACHE_MAX_CHANNEL_COUNT = 10000;
+const LRU_CACHE_MAX_CHANNEL_TTL = LRU_CACHE_ACCOUNT_TTL;
 
 const FREE_QUERY_LIMIT = 10;
 const FREE_QUERIES = ['latestBlock'];
 
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
+
+const QUERY_COST = BigInt(10);
+
+interface Payment {
+  voucher: Voucher;
+  amount: bigint;
+}
 
 export class PaymentsManager {
   clientAddress?: string;
@@ -42,7 +51,10 @@ export class PaymentsManager {
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
-  private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
+  // TODO: Persist data
+  private receivedPayments: LRUCache<string, LRUCache<string, Payment>>;
+  private paidSoFarOnChannel: LRUCache<string, bigint>;
+
   private stopSubscriptionLoop: ReadWriteChannel<void>;
   private paymentListeners: ReadWriteChannel<string>[] = [];
 
@@ -50,10 +62,16 @@ export class PaymentsManager {
   // TODO: Add a method to get rate for a query
 
   constructor () {
-    this.receivedVouchers = new LRUCache<string, LRUCache<string, Voucher>>({
+    this.receivedPayments = new LRUCache<string, LRUCache<string, Payment>>({
       max: LRU_CACHE_MAX_ACCOUNT_COUNT,
       ttl: LRU_CACHE_ACCOUNT_TTL
     });
+
+    this.paidSoFarOnChannel = new LRUCache<string, bigint>({
+      max: LRU_CACHE_MAX_CHANNEL_COUNT,
+      ttl: LRU_CACHE_MAX_CHANNEL_TTL
+    });
+
     this.stopSubscriptionLoop = Channel();
   }
 
@@ -77,19 +95,27 @@ export class PaymentsManager {
 
           const associatedPaymentChannel = await client.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
-          log(`Received a payment voucher from ${payer}`);
 
-          let vouchersMap = this.receivedVouchers.get(payer);
-          if (!vouchersMap) {
-            vouchersMap = new LRUCache<string, Voucher>({
+          if (!voucher.amount) {
+            log(`Amount not set in received voucher on payment channel ${voucher.channelId}`);
+            continue;
+          }
+
+          const paymentAmount = voucher.amount - (this.paidSoFarOnChannel.get(voucher.channelId.string()) ?? BigInt(0));
+          this.paidSoFarOnChannel.set(voucher.channelId.string(), voucher.amount);
+          log(`Received a payment voucher of ${paymentAmount} from ${payer}`);
+
+          let paymentsMap = this.receivedPayments.get(payer);
+          if (!paymentsMap) {
+            paymentsMap = new LRUCache<string, Payment>({
               max: LRU_CACHE_MAX_VOUCHER_COUNT,
               ttl: LRU_CACHE_VOUCHER_TTL
             });
 
-            this.receivedVouchers.set(payer, vouchersMap);
+            this.receivedPayments.set(payer, paymentsMap);
           }
 
-          vouchersMap.set(voucher.hash(), voucher);
+          paymentsMap.set(voucher.hash(), { voucher, amount: paymentAmount });
 
           for await (const [, listener] of this.paymentListeners.entries()) {
             await listener.push(payer);
@@ -130,21 +156,26 @@ export class PaymentsManager {
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
-    // Check for payment voucher received from the Nitro account
-    const paymentVoucherRecived = await this.authenticateVoucher(voucherHash, senderAddress);
+    // Check if required payment received from the Nitro account
+    const paymentReceived = await this.authenticatePayment(voucherHash, senderAddress, QUERY_COST);
 
-    if (paymentVoucherRecived) {
+    if (paymentReceived) {
       log(`Serving a paid query for ${senderAddress}`);
       return [true, ''];
     } else {
-      log(`Rejecting query from ${senderAddress}, payment voucher not received`);
+      log(`Rejecting query from ${senderAddress}, payment voucher not received or amount insufficient`);
       return [false, ERR_PAYMENT_NOT_RECEIVED];
     }
   }
 
-  async authenticateVoucher (voucherHash:string, senderAddress: string): Promise<boolean> {
-    if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
-      return true;
+  async authenticatePayment (voucherHash:string, senderAddress: string, value = BigInt(0)): Promise<boolean> {
+    const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
+    if (isPaymentReceived) {
+      if (isOfSufficientValue) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
     // Wait for payment voucher from sender
@@ -169,7 +200,7 @@ export class PaymentsManager {
         }
 
         if (payer === senderAddress) {
-          if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
+          if (this.acceptReceivedPayment(voucherHash, senderAddress, value)) {
             return true;
           }
         }
@@ -184,24 +215,27 @@ export class PaymentsManager {
     }
   }
 
-  // Check vouchers in LRU cache map and remove them
-  // Returns false if not found
-  // Returns true after being found and removed
-  private acceptReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
-    const vouchersMap = this.receivedVouchers.get(senderAddress);
+  // Check for a given payment voucher in LRU cache map
+  // Returns whether the voucher was found, whether it was of sufficient value
+  private acceptReceivedPayment (voucherHash:string, senderAddress: string, minRequiredValue: bigint): [boolean, boolean] {
+    const paymentsMap = this.receivedPayments.get(senderAddress);
 
-    if (!vouchersMap) {
-      return false;
+    if (!paymentsMap) {
+      return [false, false];
     }
 
-    const receivedVoucher = vouchersMap.get(voucherHash);
+    const receivedPayment = paymentsMap.get(voucherHash);
 
-    if (!receivedVoucher) {
-      return false;
+    if (!receivedPayment) {
+      return [false, false];
     }
 
-    vouchersMap.delete(voucherHash);
-    return true;
+    if (receivedPayment.amount < minRequiredValue) {
+      return [true, false];
+    }
+
+    paymentsMap.delete(voucherHash);
+    return [true, true];
   }
 }
 
