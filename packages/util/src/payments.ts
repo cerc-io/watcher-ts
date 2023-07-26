@@ -7,7 +7,7 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Client, Voucher } from '@cerc-io/nitro-client';
-import { utils as nitroUtils } from '@cerc-io/nitro-client';
+import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-client';
 
 import { BaseRatesConfig, PaymentsConfig } from './config';
 
@@ -84,6 +84,9 @@ export class PaymentsManager {
 
   async subscribeToVouchers (client: Client): Promise<void> {
     this.clientAddress = client.address;
+
+    // Load existing open payment channels with amount paid so far from the stored state
+    await this.loadPaymentChannels(client);
 
     const receivedVouchersChannel = client.receivedVouchers();
     log('Starting voucher subscription...');
@@ -167,7 +170,7 @@ export class PaymentsManager {
     // Serve a query for free if rate is not configured
     const configuredQueryCost = this.ratesConfig.gqlQueries[querySelection];
     if (configuredQueryCost === undefined) {
-      log(`Query rate not configured for ${querySelection}, serving a free query to ${senderAddress}`);
+      log(`Query rate not configured for "${querySelection}", serving a free query to ${senderAddress}`);
       return [true, null];
     }
 
@@ -248,6 +251,22 @@ export class PaymentsManager {
 
     paymentsMap.delete(voucherHash);
     return [true, true];
+  }
+
+  private async loadPaymentChannels (client: Client): Promise<void> {
+    const ledgerChannels = await client.getAllLedgerChannels();
+
+    for await (const ledgerChannel of ledgerChannels) {
+      if (ledgerChannel.status === ChannelStatus.Open) {
+        const paymentChannels = await client.getPaymentChannelsByLedger(ledgerChannel.iD);
+
+        for (const paymentChannel of paymentChannels) {
+          if (paymentChannel.status === ChannelStatus.Open) {
+            this.paidSoFarOnChannel.set(paymentChannel.iD.string(), paymentChannel.balance.paidSoFar);
+          }
+        }
+      }
+    }
   }
 }
 
