@@ -180,11 +180,7 @@ export class PaymentsManager {
   async authenticatePayment (voucherHash:string, senderAddress: string, value = BigInt(0)): Promise<boolean> {
     const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
     if (isPaymentReceived) {
-      if (isOfSufficientValue) {
-        return true;
-      } else {
-        return false;
-      }
+      return isOfSufficientValue;
     }
 
     // Wait for payment voucher from sender
@@ -209,8 +205,9 @@ export class PaymentsManager {
         }
 
         if (payer === senderAddress) {
-          if (this.acceptReceivedPayment(voucherHash, senderAddress, value)) {
-            return true;
+          const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
+          if (isPaymentReceived) {
+            return isOfSufficientValue;
           }
         }
       }
