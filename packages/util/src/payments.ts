@@ -9,6 +9,8 @@ import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Client, Voucher } from '@cerc-io/nitro-client';
 import { utils as nitroUtils } from '@cerc-io/nitro-client';
 
+import { BaseRatesConfig, PaymentsConfig } from './config';
+
 const log = debug('laconic:payments');
 
 const IntrospectionQuery = 'IntrospectionQuery';
@@ -33,12 +35,12 @@ const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
 const LRU_CACHE_MAX_CHANNEL_COUNT = 10000;
 const LRU_CACHE_MAX_CHANNEL_TTL = LRU_CACHE_ACCOUNT_TTL;
 
-const FREE_QUERY_LIMIT = 10;
+const DEFAULT_FREE_QUERY_LIMIT = 10;
 const FREE_QUERIES = ['latestBlock'];
 
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
 
-const QUERY_COST = BigInt(10);
+const DEFAULT_QUERY_COST = 50;
 
 interface Payment {
   voucher: Voucher;
@@ -47,6 +49,9 @@ interface Payment {
 
 export class PaymentsManager {
   clientAddress?: string;
+
+  private config: PaymentsConfig;
+  private ratesConfig: BaseRatesConfig;
 
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
@@ -61,7 +66,10 @@ export class PaymentsManager {
   // TODO: Read query rate map from config
   // TODO: Add a method to get rate for a query
 
-  constructor () {
+  constructor (config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
+    this.config = config;
+    this.ratesConfig = baseRatesConfig;
+
     this.receivedPayments = new LRUCache<string, LRUCache<string, Payment>>({
       max: LRU_CACHE_MAX_ACCOUNT_COUNT,
       ttl: LRU_CACHE_ACCOUNT_TTL
@@ -135,13 +143,13 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string): Promise<[boolean, string]> {
+  async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[boolean, string]> {
     const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
       if (remainingFreeQueries === undefined) {
-        remainingFreeQueries = FREE_QUERY_LIMIT;
+        remainingFreeQueries = this.ratesConfig.freeGQLQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
       }
 
       // Check if user has exhausted their free query limit
@@ -157,7 +165,8 @@ export class PaymentsManager {
     }
 
     // Check if required payment received from the Nitro account
-    const paymentReceived = await this.authenticatePayment(voucherHash, senderAddress, QUERY_COST);
+    const queryCost = BigInt(this.ratesConfig.gqlQueries[querySelection] ?? DEFAULT_QUERY_COST);
+    const paymentReceived = await this.authenticatePayment(voucherHash, senderAddress, queryCost);
 
     if (paymentReceived) {
       log(`Serving a paid query for ${senderAddress}`);
@@ -286,7 +295,7 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
               continue;
             }
 
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig);
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig, querySelection);
             if (!allowRequest) {
               const failResponse: GraphQLResponse = {
                 errors: [{ message: rejectionMessage }],
