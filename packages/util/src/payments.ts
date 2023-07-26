@@ -145,6 +145,7 @@ export class PaymentsManager {
   async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[false, string] | [true, null]> {
     const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
+    // Use free quota if EMPTY_VOUCHER_HASH passed
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
       if (remainingFreeQueries === undefined) {
@@ -153,7 +154,7 @@ export class PaymentsManager {
 
       // Check if user has exhausted their free query limit
       if (remainingFreeQueries > 0) {
-        log(`Serving a free query for ${senderAddress}`);
+        log(`Serving a free query to ${senderAddress}`);
         this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
 
         return [true, null];
@@ -163,9 +164,15 @@ export class PaymentsManager {
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
+    // Serve a query for free if rate is not configured
+    const configuredQueryCost = this.ratesConfig.gqlQueries[querySelection];
+    if (configuredQueryCost === undefined) {
+      log(`Query rate not configured for ${querySelection}, serving a free query to ${senderAddress}`);
+      return [true, null];
+    }
+
     // Check if required payment received from the Nitro account
-    const queryCost = BigInt(this.ratesConfig.gqlQueries[querySelection] ?? 0);
-    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, senderAddress, queryCost);
+    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, senderAddress, BigInt(configuredQueryCost));
 
     if (paymentReceived) {
       log(`Serving a paid query for ${senderAddress}`);
