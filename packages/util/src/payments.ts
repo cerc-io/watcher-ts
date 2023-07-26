@@ -18,7 +18,8 @@ const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
-const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received or amount insufficient';
+const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
+const ERR_AMOUNT_INSUFFICIENT = 'Payment amount insufficient';
 const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
 
 const ERR_HEADER_MISSING = 'Payment header x-payment not set';
@@ -39,8 +40,6 @@ const DEFAULT_FREE_QUERY_LIMIT = 10;
 const FREE_QUERIES = ['latestBlock'];
 
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
-
-const DEFAULT_QUERY_COST = 50;
 
 interface Payment {
   voucher: Voucher;
@@ -143,7 +142,7 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[boolean, string]> {
+  async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[false, string] | [true, null]> {
     const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
     if (voucherHash === EMPTY_VOUCHER_HASH) {
@@ -157,30 +156,30 @@ export class PaymentsManager {
         log(`Serving a free query for ${senderAddress}`);
         this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
 
-        return [true, ''];
+        return [true, null];
       }
 
-      log(`Rejecting query from ${senderAddress}, user has exhausted their free quota`);
+      log(`Rejecting query from ${senderAddress}: ${ERR_FREE_QUOTA_EXHUASTED}`);
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
     // Check if required payment received from the Nitro account
-    const queryCost = BigInt(this.ratesConfig.gqlQueries[querySelection] ?? DEFAULT_QUERY_COST);
-    const paymentReceived = await this.authenticatePayment(voucherHash, senderAddress, queryCost);
+    const queryCost = BigInt(this.ratesConfig.gqlQueries[querySelection] ?? 0);
+    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, senderAddress, queryCost);
 
     if (paymentReceived) {
       log(`Serving a paid query for ${senderAddress}`);
-      return [true, ''];
+      return [true, null];
     } else {
-      log(`Rejecting query from ${senderAddress}, payment voucher not received or amount insufficient`);
-      return [false, ERR_PAYMENT_NOT_RECEIVED];
+      log(`Rejecting query from ${senderAddress}: ${paymentError}`);
+      return [false, paymentError];
     }
   }
 
-  async authenticatePayment (voucherHash:string, senderAddress: string, value = BigInt(0)): Promise<boolean> {
+  async authenticatePayment (voucherHash:string, senderAddress: string, value = BigInt(0)): Promise<[false, string] | [true, null]> {
     const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
     if (isPaymentReceived) {
-      return isOfSufficientValue;
+      return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
     }
 
     // Wait for payment voucher from sender
@@ -201,13 +200,13 @@ export class PaymentsManager {
 
         // payer is undefined if timeout completes or channel is closed externally
         if (!payer) {
-          return false;
+          return [false, ERR_PAYMENT_NOT_RECEIVED];
         }
 
         if (payer === senderAddress) {
           const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
           if (isPaymentReceived) {
-            return isOfSufficientValue;
+            return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
           }
         }
       }
