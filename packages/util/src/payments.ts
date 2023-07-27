@@ -7,7 +7,9 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Client, Voucher } from '@cerc-io/nitro-client';
-import { utils as nitroUtils } from '@cerc-io/nitro-client';
+import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-client';
+
+import { BaseRatesConfig, PaymentsConfig } from './config';
 
 const log = debug('laconic:payments');
 
@@ -17,7 +19,8 @@ const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
 const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
-const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
+const ERR_AMOUNT_INSUFFICIENT = 'Payment amount insufficient';
+const HTTP_CODE_PAYMENT_REQUIRED = 402; // Payment required
 
 const ERR_HEADER_MISSING = 'Payment header x-payment not set';
 const ERR_INVALID_PAYMENT_HEADER = 'Invalid payment header format';
@@ -25,40 +28,71 @@ const HTTP_CODE_BAD_REQUEST = 400; // Bad request
 
 const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
-// TODO: Configure
-const LRU_CACHE_MAX_ACCOUNT_COUNT = 1000;
-const LRU_CACHE_ACCOUNT_TTL = 30 * 60 * 1000; // 30mins
-const LRU_CACHE_MAX_VOUCHER_COUNT = 1000;
-const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
+// Config Defaults
+const DEFAULT_REQUEST_TIMEOUT = 10; // 10 seconds
 
-const FREE_QUERY_LIMIT = 10;
-const FREE_QUERIES = ['latestBlock'];
+const DEFAULT_FREE_QUERIES_LIMIT = 10;
 
-const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
+const DEFAULT_FREE_QUERIES_LIST = ['latestBlock'];
+
+const DEFAULT_LRU_CACHE_MAX_ACCOUNTS = 1000;
+const DEFAULT_LRU_CACHE_ACCOUNT_TTL = 30 * 60; // 30mins
+const DEFAULT_LRU_CACHE_MAX_VOUCHERS_PER_ACCOUNT = 1000;
+const DEFAULT_LRU_CACHE_VOUCHER_TTL = 5 * 60; // 5mins
+const DEFAULT_LRU_CACHE_MAX_PAYMENT_CHANNELS = 10000;
+const DEFAULT_LRU_CACHE_PAYMENT_CHANNEL_TTL = DEFAULT_LRU_CACHE_ACCOUNT_TTL;
+
+interface Payment {
+  voucher: Voucher;
+  amount: bigint;
+}
 
 export class PaymentsManager {
   clientAddress?: string;
 
+  private config: PaymentsConfig;
+  private ratesConfig: BaseRatesConfig;
+
   // TODO: Persist data
   private remainingFreeQueriesMap: Map<string, number> = new Map();
 
-  private receivedVouchers: LRUCache<string, LRUCache<string, Voucher>>;
+  // TODO: Persist data
+  private receivedPayments: LRUCache<string, LRUCache<string, Payment>>;
+  private paidSoFarOnChannel: LRUCache<string, bigint>;
+
   private stopSubscriptionLoop: ReadWriteChannel<void>;
   private paymentListeners: ReadWriteChannel<string>[] = [];
 
-  // TODO: Read query rate map from config
-  // TODO: Add a method to get rate for a query
+  constructor (config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
+    this.config = config;
+    this.ratesConfig = baseRatesConfig;
 
-  constructor () {
-    this.receivedVouchers = new LRUCache<string, LRUCache<string, Voucher>>({
-      max: LRU_CACHE_MAX_ACCOUNT_COUNT,
-      ttl: LRU_CACHE_ACCOUNT_TTL
+    this.receivedPayments = new LRUCache<string, LRUCache<string, Payment>>({
+      max: this.config.cache.maxAccounts ?? DEFAULT_LRU_CACHE_MAX_ACCOUNTS,
+      ttl: (this.config.cache.accountTTLInSecs ?? DEFAULT_LRU_CACHE_ACCOUNT_TTL) * 1000
     });
+
+    this.paidSoFarOnChannel = new LRUCache<string, bigint>({
+      max: this.config.cache.maxPaymentChannels ?? DEFAULT_LRU_CACHE_MAX_PAYMENT_CHANNELS,
+      ttl: (this.config.cache.paymentChannelTTLInSecs ?? DEFAULT_LRU_CACHE_PAYMENT_CHANNEL_TTL) * 1000
+    });
+
     this.stopSubscriptionLoop = Channel();
+  }
+
+  get freeQueriesList (): string[] {
+    return this.ratesConfig.freeQueriesList ?? DEFAULT_FREE_QUERIES_LIST;
+  }
+
+  get mutationRates (): { [key: string]: string } {
+    return this.ratesConfig.mutations;
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
     this.clientAddress = client.address;
+
+    // Load existing open payment channels with amount paid so far from the stored state
+    await this.loadPaymentChannels(client);
 
     const receivedVouchersChannel = client.receivedVouchers();
     log('Starting voucher subscription...');
@@ -77,19 +111,27 @@ export class PaymentsManager {
 
           const associatedPaymentChannel = await client.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
-          log(`Received a payment voucher from ${payer}`);
 
-          let vouchersMap = this.receivedVouchers.get(payer);
-          if (!vouchersMap) {
-            vouchersMap = new LRUCache<string, Voucher>({
-              max: LRU_CACHE_MAX_VOUCHER_COUNT,
-              ttl: LRU_CACHE_VOUCHER_TTL
-            });
-
-            this.receivedVouchers.set(payer, vouchersMap);
+          if (!voucher.amount) {
+            log(`Amount not set in received voucher on payment channel ${voucher.channelId.string()}`);
+            continue;
           }
 
-          vouchersMap.set(voucher.hash(), voucher);
+          const paymentAmount = voucher.amount - (this.paidSoFarOnChannel.get(voucher.channelId.string()) ?? BigInt(0));
+          this.paidSoFarOnChannel.set(voucher.channelId.string(), voucher.amount);
+          log(`Received a payment voucher of ${paymentAmount} from ${payer}`);
+
+          let paymentsMap = this.receivedPayments.get(payer);
+          if (!paymentsMap) {
+            paymentsMap = new LRUCache<string, Payment>({
+              max: this.config.cache.maxVouchersPerAccount ?? DEFAULT_LRU_CACHE_MAX_VOUCHERS_PER_ACCOUNT,
+              ttl: (this.config.cache.voucherTTLInSecs ?? DEFAULT_LRU_CACHE_VOUCHER_TTL) * 1000
+            });
+
+            this.receivedPayments.set(payer, paymentsMap);
+          }
+
+          paymentsMap.set(voucher.hash(), { voucher, amount: paymentAmount });
 
           for await (const [, listener] of this.paymentListeners.entries()) {
             await listener.push(payer);
@@ -109,42 +151,51 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string): Promise<[boolean, string]> {
-    const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
+  async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[false, string] | [true, null]> {
+    const signerAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
+    // Use free quota if EMPTY_VOUCHER_HASH passed
     if (voucherHash === EMPTY_VOUCHER_HASH) {
-      let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
+      let remainingFreeQueries = this.remainingFreeQueriesMap.get(signerAddress);
       if (remainingFreeQueries === undefined) {
-        remainingFreeQueries = FREE_QUERY_LIMIT;
+        remainingFreeQueries = this.ratesConfig.freeQueriesLimit ?? DEFAULT_FREE_QUERIES_LIMIT;
       }
 
       // Check if user has exhausted their free query limit
       if (remainingFreeQueries > 0) {
-        log(`Serving a free query for ${senderAddress}`);
-        this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
+        log(`Serving a free query to ${signerAddress}`);
+        this.remainingFreeQueriesMap.set(signerAddress, remainingFreeQueries - 1);
 
-        return [true, ''];
+        return [true, null];
       }
 
-      log(`Rejecting query from ${senderAddress}, user has exhausted their free quota`);
+      log(`Rejecting query from ${signerAddress}: ${ERR_FREE_QUOTA_EXHUASTED}`);
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
-    // Check for payment voucher received from the Nitro account
-    const paymentVoucherRecived = await this.authenticateVoucher(voucherHash, senderAddress);
+    // Serve a query for free if rate is not configured
+    const configuredQueryCost = this.ratesConfig.queries[querySelection];
+    if (configuredQueryCost === undefined) {
+      log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
+      return [true, null];
+    }
 
-    if (paymentVoucherRecived) {
-      log(`Serving a paid query for ${senderAddress}`);
-      return [true, ''];
+    // Check if required payment received from the Nitro account
+    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, signerAddress, BigInt(configuredQueryCost));
+
+    if (paymentReceived) {
+      log(`Serving a paid query for ${signerAddress}`);
+      return [true, null];
     } else {
-      log(`Rejecting query from ${senderAddress}, payment voucher not received`);
-      return [false, ERR_PAYMENT_NOT_RECEIVED];
+      log(`Rejecting query from ${signerAddress}: ${paymentError}`);
+      return [false, paymentError];
     }
   }
 
-  async authenticateVoucher (voucherHash:string, senderAddress: string): Promise<boolean> {
-    if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
-      return true;
+  async authenticatePayment (voucherHash:string, signerAddress: string, value: bigint): Promise<[false, string] | [true, null]> {
+    const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, signerAddress, value);
+    if (isPaymentReceived) {
+      return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
     }
 
     // Wait for payment voucher from sender
@@ -153,7 +204,7 @@ export class PaymentsManager {
     let requestTimeout;
 
     const timeoutPromise = new Promise(resolve => {
-      requestTimeout = setTimeout(resolve, REQUEST_TIMEOUT);
+      requestTimeout = setTimeout(resolve, (this.config.requestTimeoutInSecs ?? DEFAULT_REQUEST_TIMEOUT) * 1000);
     });
 
     try {
@@ -165,12 +216,13 @@ export class PaymentsManager {
 
         // payer is undefined if timeout completes or channel is closed externally
         if (!payer) {
-          return false;
+          return [false, ERR_PAYMENT_NOT_RECEIVED];
         }
 
-        if (payer === senderAddress) {
-          if (this.acceptReceivedVouchers(voucherHash, senderAddress)) {
-            return true;
+        if (payer === signerAddress) {
+          const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, signerAddress, value);
+          if (isPaymentReceived) {
+            return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
           }
         }
       }
@@ -184,24 +236,43 @@ export class PaymentsManager {
     }
   }
 
-  // Check vouchers in LRU cache map and remove them
-  // Returns false if not found
-  // Returns true after being found and removed
-  private acceptReceivedVouchers (voucherHash:string, senderAddress: string): boolean {
-    const vouchersMap = this.receivedVouchers.get(senderAddress);
+  // Check for a given payment voucher in LRU cache map
+  // Returns whether the voucher was found, whether it was of sufficient value
+  private acceptReceivedPayment (voucherHash:string, signerAddress: string, minRequiredValue: bigint): [boolean, boolean] {
+    const paymentsMap = this.receivedPayments.get(signerAddress);
 
-    if (!vouchersMap) {
-      return false;
+    if (!paymentsMap) {
+      return [false, false];
     }
 
-    const receivedVoucher = vouchersMap.get(voucherHash);
+    const receivedPayment = paymentsMap.get(voucherHash);
 
-    if (!receivedVoucher) {
-      return false;
+    if (!receivedPayment) {
+      return [false, false];
     }
 
-    vouchersMap.delete(voucherHash);
-    return true;
+    if (receivedPayment.amount < minRequiredValue) {
+      return [true, false];
+    }
+
+    paymentsMap.delete(voucherHash);
+    return [true, true];
+  }
+
+  private async loadPaymentChannels (client: Client): Promise<void> {
+    const ledgerChannels = await client.getAllLedgerChannels();
+
+    for await (const ledgerChannel of ledgerChannels) {
+      if (ledgerChannel.status === ChannelStatus.Open) {
+        const paymentChannels = await client.getPaymentChannelsByLedger(ledgerChannel.iD);
+
+        for (const paymentChannel of paymentChannels) {
+          if (paymentChannel.status === ChannelStatus.Open) {
+            this.paidSoFarOnChannel.set(paymentChannel.iD.string(), paymentChannel.balance.paidSoFar);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -243,22 +314,21 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           }
 
           const querySelections = requestContext.operation?.selectionSet.selections
-            .map((selection) => (selection as FieldNode).name.value);
+            .map((selection: any) => (selection as FieldNode).name.value);
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
-            // TODO: Charge according to the querySelection
-            if (FREE_QUERIES.includes(querySelection)) {
+            if (paymentsManager.freeQueriesList.includes(querySelection)) {
               continue;
             }
 
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig);
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig, querySelection);
             if (!allowRequest) {
               const failResponse: GraphQLResponse = {
                 errors: [{ message: rejectionMessage }],
                 http: new HTTPResponse(undefined, {
                   headers: requestContext.response?.http?.headers,
-                  status: HTTP_CODE_PAYMENT_NOT_RECEIVED
+                  status: HTTP_CODE_PAYMENT_REQUIRED
                 })
               };
 

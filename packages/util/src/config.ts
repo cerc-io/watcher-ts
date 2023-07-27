@@ -81,7 +81,7 @@ interface L2TxsConfig {
   privateKey: string;
 
   // Gas limit for tx
-  gasLimit?: number
+  gasLimit?: number;
 }
 
 // Peer config
@@ -126,11 +126,37 @@ export interface PeerConfig {
   l2TxsConfig?: L2TxsConfig;
 }
 
+export interface BaseRatesConfig {
+  freeQueriesLimit: number;
+  freeQueriesList: string[];
+  queries: { [key: string]: string };
+  mutations: { [key: string]: string };
+}
+
+export interface PaymentsCacheConfig {
+  maxAccounts: number;
+  accountTTLInSecs: number;
+  maxVouchersPerAccount: number;
+  voucherTTLInSecs: number;
+  maxPaymentChannels: number;
+  paymentChannelTTLInSecs: number;
+}
+
+// Payments manager config
+export interface PaymentsConfig {
+  ratesFile: string;
+  requestTimeoutInSecs: number;
+  cache: PaymentsCacheConfig;
+}
+
 // ts-nitro config
 export interface NitroConfig {
-  store: string
-  privateKey: string
-  chainPrivateKey: string
+  store: string;
+
+  privateKey: string;
+  chainPrivateKey: string;
+
+  payments: PaymentsConfig;
 }
 
 // P2P config
@@ -179,7 +205,7 @@ export interface ServerConfig {
 
   // Flag to specify whether RPC endpoint supports block hash as block tag parameter
   // https://ethereum.org/en/developers/docs/apis/json-rpc/#default-block
-  rpcSupportsBlockHashParam: boolean
+  rpcSupportsBlockHashParam: boolean;
 }
 
 export interface UpstreamConfig {
