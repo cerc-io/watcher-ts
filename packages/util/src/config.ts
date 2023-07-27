@@ -127,9 +127,9 @@ export interface PeerConfig {
 }
 
 export interface BaseRatesConfig {
-  freeGqlQueriesLimit: number;
-  freeGqlQueries: string[];
-  gqlQueries: { [key: string]: string };
+  freeQueriesLimit: number;
+  freeQueriesList: string[];
+  queries: { [key: string]: string };
   mutations: { [key: string]: string };
 }
 

@@ -79,7 +79,7 @@ export class PaymentsManager {
   }
 
   get freeQueriesList (): string[] {
-    return this.ratesConfig.freeGqlQueries ?? [];
+    return this.ratesConfig.freeQueriesList ?? [];
   }
 
   get mutationRates (): { [key: string]: string } {
@@ -156,7 +156,7 @@ export class PaymentsManager {
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(signerAddress);
       if (remainingFreeQueries === undefined) {
-        remainingFreeQueries = this.ratesConfig.freeGqlQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
+        remainingFreeQueries = this.ratesConfig.freeQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
       }
 
       // Check if user has exhausted their free query limit
@@ -172,7 +172,7 @@ export class PaymentsManager {
     }
 
     // Serve a query for free if rate is not configured
-    const configuredQueryCost = this.ratesConfig.gqlQueries[querySelection];
+    const configuredQueryCost = this.ratesConfig.queries[querySelection];
     if (configuredQueryCost === undefined) {
       log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
       return [true, null];
@@ -316,7 +316,6 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
-            // TODO: Charge according to the querySelection
             if (paymentsManager.freeQueriesList.includes(querySelection)) {
               continue;
             }
