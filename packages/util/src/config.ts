@@ -133,9 +133,20 @@ export interface BaseRatesConfig {
   mutations: { [key: string]: string };
 }
 
+export interface PaymentsCacheConfig {
+  maxAccounts: number;
+  accountTTLInSecs: number;
+  maxVouchersPerAccount: number;
+  voucherTTLInSecs: number;
+  maxPaymentChannels: number;
+  paymentChannelTTLInSecs: number;
+}
+
 // Payments manager config
 export interface PaymentsConfig {
   ratesFile: string;
+  requestTimeoutInSecs: number;
+  cache: PaymentsCacheConfig;
 }
 
 // ts-nitro config

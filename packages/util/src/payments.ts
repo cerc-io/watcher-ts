@@ -28,17 +28,19 @@ const HTTP_CODE_BAD_REQUEST = 400; // Bad request
 
 const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
-// TODO: Configure
-const LRU_CACHE_MAX_ACCOUNT_COUNT = 1000;
-const LRU_CACHE_ACCOUNT_TTL = 30 * 60 * 1000; // 30mins
-const LRU_CACHE_MAX_VOUCHER_COUNT = 1000;
-const LRU_CACHE_VOUCHER_TTL = 5 * 60 * 1000; // 5mins
-const LRU_CACHE_MAX_CHANNEL_COUNT = 10000;
-const LRU_CACHE_MAX_CHANNEL_TTL = LRU_CACHE_ACCOUNT_TTL;
+// Config Defaults
+const DEFAULT_REQUEST_TIMEOUT = 10; // 10 seconds
 
-const DEFAULT_FREE_QUERY_LIMIT = 10;
+const DEFAULT_FREE_QUERIES_LIMIT = 10;
 
-const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
+const DEFAULT_FREE_QUERIES_LIST = ['latestBlock'];
+
+const DEFAULT_LRU_CACHE_MAX_ACCOUNTS = 1000;
+const DEFAULT_LRU_CACHE_ACCOUNT_TTL = 30 * 60; // 30mins
+const DEFAULT_LRU_CACHE_MAX_VOUCHERS_PER_ACCOUNT = 1000;
+const DEFAULT_LRU_CACHE_VOUCHER_TTL = 5 * 60; // 5mins
+const DEFAULT_LRU_CACHE_MAX_PAYMENT_CHANNELS = 10000;
+const DEFAULT_LRU_CACHE_PAYMENT_CHANNEL_TTL = DEFAULT_LRU_CACHE_ACCOUNT_TTL;
 
 interface Payment {
   voucher: Voucher;
@@ -66,20 +68,20 @@ export class PaymentsManager {
     this.ratesConfig = baseRatesConfig;
 
     this.receivedPayments = new LRUCache<string, LRUCache<string, Payment>>({
-      max: LRU_CACHE_MAX_ACCOUNT_COUNT,
-      ttl: LRU_CACHE_ACCOUNT_TTL
+      max: this.config.cache.maxAccounts ?? DEFAULT_LRU_CACHE_MAX_ACCOUNTS,
+      ttl: (this.config.cache.accountTTLInSecs ?? DEFAULT_LRU_CACHE_ACCOUNT_TTL) * 1000
     });
 
     this.paidSoFarOnChannel = new LRUCache<string, bigint>({
-      max: LRU_CACHE_MAX_CHANNEL_COUNT,
-      ttl: LRU_CACHE_MAX_CHANNEL_TTL
+      max: this.config.cache.maxPaymentChannels ?? DEFAULT_LRU_CACHE_MAX_PAYMENT_CHANNELS,
+      ttl: (this.config.cache.paymentChannelTTLInSecs ?? DEFAULT_LRU_CACHE_PAYMENT_CHANNEL_TTL) * 1000
     });
 
     this.stopSubscriptionLoop = Channel();
   }
 
   get freeQueriesList (): string[] {
-    return this.ratesConfig.freeQueriesList ?? [];
+    return this.ratesConfig.freeQueriesList ?? DEFAULT_FREE_QUERIES_LIST;
   }
 
   get mutationRates (): { [key: string]: string } {
@@ -115,6 +117,7 @@ export class PaymentsManager {
             continue;
           }
 
+          // TODO: Load channel from client if not found in cache
           const paymentAmount = voucher.amount - (this.paidSoFarOnChannel.get(voucher.channelId.string()) ?? BigInt(0));
           this.paidSoFarOnChannel.set(voucher.channelId.string(), voucher.amount);
           log(`Received a payment voucher of ${paymentAmount} from ${payer}`);
@@ -122,8 +125,8 @@ export class PaymentsManager {
           let paymentsMap = this.receivedPayments.get(payer);
           if (!paymentsMap) {
             paymentsMap = new LRUCache<string, Payment>({
-              max: LRU_CACHE_MAX_VOUCHER_COUNT,
-              ttl: LRU_CACHE_VOUCHER_TTL
+              max: this.config.cache.maxVouchersPerAccount ?? DEFAULT_LRU_CACHE_MAX_VOUCHERS_PER_ACCOUNT,
+              ttl: (this.config.cache.voucherTTLInSecs ?? DEFAULT_LRU_CACHE_VOUCHER_TTL) * 1000
             });
 
             this.receivedPayments.set(payer, paymentsMap);
@@ -156,7 +159,7 @@ export class PaymentsManager {
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(signerAddress);
       if (remainingFreeQueries === undefined) {
-        remainingFreeQueries = this.ratesConfig.freeQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
+        remainingFreeQueries = this.ratesConfig.freeQueriesLimit ?? DEFAULT_FREE_QUERIES_LIMIT;
       }
 
       // Check if user has exhausted their free query limit
@@ -190,7 +193,7 @@ export class PaymentsManager {
     }
   }
 
-  async authenticatePayment (voucherHash:string, signerAddress: string, value = BigInt(0)): Promise<[false, string] | [true, null]> {
+  async authenticatePayment (voucherHash:string, signerAddress: string, value: bigint): Promise<[false, string] | [true, null]> {
     const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, signerAddress, value);
     if (isPaymentReceived) {
       return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
@@ -202,7 +205,7 @@ export class PaymentsManager {
     let requestTimeout;
 
     const timeoutPromise = new Promise(resolve => {
-      requestTimeout = setTimeout(resolve, REQUEST_TIMEOUT);
+      requestTimeout = setTimeout(resolve, (this.config.requestTimeoutInSecs ?? DEFAULT_REQUEST_TIMEOUT) * 1000);
     });
 
     try {
