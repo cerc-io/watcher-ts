@@ -127,7 +127,8 @@ export interface PeerConfig {
 }
 
 export interface BaseRatesConfig {
-  freeGQLQueriesLimit: number;
+  freeGqlQueriesLimit: number;
+  freeGqlQueries: string[];
   gqlQueries: { [key: string]: string };
 }
 

@@ -37,7 +37,6 @@ const LRU_CACHE_MAX_CHANNEL_COUNT = 10000;
 const LRU_CACHE_MAX_CHANNEL_TTL = LRU_CACHE_ACCOUNT_TTL;
 
 const DEFAULT_FREE_QUERY_LIMIT = 10;
-const FREE_QUERIES = ['latestBlock'];
 
 const REQUEST_TIMEOUT = 10 * 1000; // 10 seconds
 
@@ -80,6 +79,10 @@ export class PaymentsManager {
     });
 
     this.stopSubscriptionLoop = Channel();
+  }
+
+  get freeQueriesList (): string[] {
+    return this.ratesConfig.freeGqlQueries ?? [];
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
@@ -146,48 +149,48 @@ export class PaymentsManager {
   }
 
   async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[false, string] | [true, null]> {
-    const senderAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
+    const signerAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
 
     // Use free quota if EMPTY_VOUCHER_HASH passed
     if (voucherHash === EMPTY_VOUCHER_HASH) {
-      let remainingFreeQueries = this.remainingFreeQueriesMap.get(senderAddress);
+      let remainingFreeQueries = this.remainingFreeQueriesMap.get(signerAddress);
       if (remainingFreeQueries === undefined) {
-        remainingFreeQueries = this.ratesConfig.freeGQLQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
+        remainingFreeQueries = this.ratesConfig.freeGqlQueriesLimit ?? DEFAULT_FREE_QUERY_LIMIT;
       }
 
       // Check if user has exhausted their free query limit
       if (remainingFreeQueries > 0) {
-        log(`Serving a free query to ${senderAddress}`);
-        this.remainingFreeQueriesMap.set(senderAddress, remainingFreeQueries - 1);
+        log(`Serving a free query to ${signerAddress}`);
+        this.remainingFreeQueriesMap.set(signerAddress, remainingFreeQueries - 1);
 
         return [true, null];
       }
 
-      log(`Rejecting query from ${senderAddress}: ${ERR_FREE_QUOTA_EXHUASTED}`);
+      log(`Rejecting query from ${signerAddress}: ${ERR_FREE_QUOTA_EXHUASTED}`);
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
     // Serve a query for free if rate is not configured
     const configuredQueryCost = this.ratesConfig.gqlQueries[querySelection];
     if (configuredQueryCost === undefined) {
-      log(`Query rate not configured for "${querySelection}", serving a free query to ${senderAddress}`);
+      log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
       return [true, null];
     }
 
     // Check if required payment received from the Nitro account
-    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, senderAddress, BigInt(configuredQueryCost));
+    const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, signerAddress, BigInt(configuredQueryCost));
 
     if (paymentReceived) {
-      log(`Serving a paid query for ${senderAddress}`);
+      log(`Serving a paid query for ${signerAddress}`);
       return [true, null];
     } else {
-      log(`Rejecting query from ${senderAddress}: ${paymentError}`);
+      log(`Rejecting query from ${signerAddress}: ${paymentError}`);
       return [false, paymentError];
     }
   }
 
-  async authenticatePayment (voucherHash:string, senderAddress: string, value = BigInt(0)): Promise<[false, string] | [true, null]> {
-    const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
+  async authenticatePayment (voucherHash:string, signerAddress: string, value = BigInt(0)): Promise<[false, string] | [true, null]> {
+    const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, signerAddress, value);
     if (isPaymentReceived) {
       return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
     }
@@ -213,8 +216,8 @@ export class PaymentsManager {
           return [false, ERR_PAYMENT_NOT_RECEIVED];
         }
 
-        if (payer === senderAddress) {
-          const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, senderAddress, value);
+        if (payer === signerAddress) {
+          const [isPaymentReceived, isOfSufficientValue] = this.acceptReceivedPayment(voucherHash, signerAddress, value);
           if (isPaymentReceived) {
             return isOfSufficientValue ? [true, null] : [false, ERR_AMOUNT_INSUFFICIENT];
           }
@@ -232,8 +235,8 @@ export class PaymentsManager {
 
   // Check for a given payment voucher in LRU cache map
   // Returns whether the voucher was found, whether it was of sufficient value
-  private acceptReceivedPayment (voucherHash:string, senderAddress: string, minRequiredValue: bigint): [boolean, boolean] {
-    const paymentsMap = this.receivedPayments.get(senderAddress);
+  private acceptReceivedPayment (voucherHash:string, signerAddress: string, minRequiredValue: bigint): [boolean, boolean] {
+    const paymentsMap = this.receivedPayments.get(signerAddress);
 
     if (!paymentsMap) {
       return [false, false];
@@ -308,12 +311,12 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           }
 
           const querySelections = requestContext.operation?.selectionSet.selections
-            .map((selection) => (selection as FieldNode).name.value);
+            .map((selection: any) => (selection as FieldNode).name.value);
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
             // TODO: Charge according to the querySelection
-            if (FREE_QUERIES.includes(querySelection)) {
+            if (paymentsManager.freeQueriesList.includes(querySelection)) {
               continue;
             }
 
