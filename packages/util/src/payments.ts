@@ -20,7 +20,7 @@ const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
 const ERR_PAYMENT_NOT_RECEIVED = 'Payment not received';
 const ERR_AMOUNT_INSUFFICIENT = 'Payment amount insufficient';
-const HTTP_CODE_PAYMENT_NOT_RECEIVED = 402; // Payment required
+const HTTP_CODE_PAYMENT_REQUIRED = 402; // Payment required
 
 const ERR_HEADER_MISSING = 'Payment header x-payment not set';
 const ERR_INVALID_PAYMENT_HEADER = 'Invalid payment header format';
@@ -113,11 +113,10 @@ export class PaymentsManager {
           const payer = associatedPaymentChannel.balance.payer;
 
           if (!voucher.amount) {
-            log(`Amount not set in received voucher on payment channel ${voucher.channelId}`);
+            log(`Amount not set in received voucher on payment channel ${voucher.channelId.string()}`);
             continue;
           }
 
-          // TODO: Load channel from client if not found in cache
           const paymentAmount = voucher.amount - (this.paidSoFarOnChannel.get(voucher.channelId.string()) ?? BigInt(0));
           this.paidSoFarOnChannel.set(voucher.channelId.string(), voucher.amount);
           log(`Received a payment voucher of ${paymentAmount} from ${payer}`);
@@ -329,7 +328,7 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
                 errors: [{ message: rejectionMessage }],
                 http: new HTTPResponse(undefined, {
                   headers: requestContext.response?.http?.headers,
-                  status: HTTP_CODE_PAYMENT_NOT_RECEIVED
+                  status: HTTP_CODE_PAYMENT_REQUIRED
                 })
               };
 

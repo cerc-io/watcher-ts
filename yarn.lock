@@ -350,14 +350,14 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-client@^0.1.4":
-  version "0.1.4"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client/-/0.1.4/nitro-client-0.1.4.tgz#7f69fa5fa66beb7eedd6dddc81a29d2589e6d60d"
-  integrity sha512-2onCl2wygbXXhtjdMotRdeOXovFeiCegenE/y4uFKxOX83LpslTx/iK+d6HqcQHW4Kkc2pExu6PBntaPoKVpLA==
+"@cerc-io/nitro-client@^0.1.5":
+  version "0.1.5"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client/-/0.1.5/nitro-client-0.1.5.tgz#43152a8482b53431c35018064cc70031b759895b"
+  integrity sha512-px/7IgOv1m+DWskJPQ4DUyX84MZHOYMEPN3iNK9uPf+TjyQQm0w2eTPcdQEQN20xzfFFx3k+Dzys3Ko06pXPDQ==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
-    "@cerc-io/nitro-util" "^0.1.4"
-    "@cerc-io/peer" "^0.2.46"
+    "@cerc-io/nitro-util" "^0.1.5"
+    "@cerc-io/peer" "^0.2.49"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@libp2p/crypto" "^1.0.4"
     "@libp2p/tcp" "^6.0.0"
@@ -373,11 +373,12 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.4":
-  version "0.1.4"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.4/nitro-util-0.1.4.tgz#101f61692050f0ae850b0a0a12e56252f3ddc5a8"
-  integrity sha512-dqzFA5czCxo/yyAhHMplzRzTyzf52WpU8U+ntZ9zFIfrWPHvHHyDY4YyjA2yVQEWfcyyIZ0GTzf6wDb/kP8dKg==
+"@cerc-io/nitro-util@^0.1.5":
+  version "0.1.5"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.5/nitro-util-0.1.5.tgz#829d7cb56c436fcf29184d1d87ed47ac57a2a32f"
+  integrity sha512-1nNXfoHVOV2QSnnQSiW/dgTuMGJYEcN2M12e5rMXAb4KrJIScT1lWTp+P5dja/F6jN8ZuNlu5REQTdOjdhMNwQ==
   dependencies:
+    "@statechannels/nitro-protocol" "^2.0.0-alpha.4"
     assert "^2.0.0"
     debug "^4.3.4"
     ethers "^5.7.2"
