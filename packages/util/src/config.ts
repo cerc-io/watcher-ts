@@ -130,6 +130,7 @@ export interface BaseRatesConfig {
   freeGqlQueriesLimit: number;
   freeGqlQueries: string[];
   gqlQueries: { [key: string]: string };
+  mutations: { [key: string]: string };
 }
 
 // Payments manager config

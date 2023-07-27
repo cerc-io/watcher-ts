@@ -61,9 +61,6 @@ export class PaymentsManager {
   private stopSubscriptionLoop: ReadWriteChannel<void>;
   private paymentListeners: ReadWriteChannel<string>[] = [];
 
-  // TODO: Read query rate map from config
-  // TODO: Add a method to get rate for a query
-
   constructor (config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
     this.config = config;
     this.ratesConfig = baseRatesConfig;
@@ -83,6 +80,10 @@ export class PaymentsManager {
 
   get freeQueriesList (): string[] {
     return this.ratesConfig.freeGqlQueries ?? [];
+  }
+
+  get mutationRates (): { [key: string]: string } {
+    return this.ratesConfig.mutations;
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
