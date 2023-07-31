@@ -14,6 +14,8 @@ import { BaseRatesConfig, PaymentsConfig } from './config';
 const log = debug('laconic:payments');
 
 const IntrospectionQuery = 'IntrospectionQuery';
+const IntrospectionQuerySelection = '__schema';
+
 const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
@@ -278,8 +280,20 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
     async requestDidStart (requestContext: GraphQLRequestContext) {
       return {
         async responseForOperation (requestContext: GraphQLRequestContext): Promise<GraphQLResponse | null> {
-          // Continue if payments is not setup or it's an introspection query
-          if (!paymentsManager || requestContext.operationName === IntrospectionQuery) {
+          // Continue if payments is not setup
+          if (!paymentsManager) {
+            return null;
+          }
+
+          const querySelections = requestContext.operation?.selectionSet.selections
+            .map((selection: any) => (selection as FieldNode).name.value);
+
+          // Continue if it's an introspection query
+          if (
+            requestContext.operationName === IntrospectionQuery &&
+            querySelections && querySelections.length === 1 &&
+            querySelections[0] === IntrospectionQuerySelection
+          ) {
             return null;
           }
 
@@ -310,8 +324,6 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           }
 
           const signerAddress = nitroUtils.getSignerAddress(vhash, vsig);
-          const querySelections = requestContext.operation?.selectionSet.selections
-            .map((selection: any) => (selection as FieldNode).name.value);
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
