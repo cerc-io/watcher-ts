@@ -14,6 +14,8 @@ import { BaseRatesConfig, PaymentsConfig } from './config';
 const log = debug('laconic:payments');
 
 const IntrospectionQuery = 'IntrospectionQuery';
+const IntrospectionQuerySelection = '__schema';
+
 const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
@@ -84,8 +86,12 @@ export class PaymentsManager {
     return this.ratesConfig.freeQueriesList ?? DEFAULT_FREE_QUERIES_LIST;
   }
 
+  get queryRates (): { [key: string]: string } {
+    return this.ratesConfig.queries ?? {};
+  }
+
   get mutationRates (): { [key: string]: string } {
-    return this.ratesConfig.mutations;
+    return this.ratesConfig.mutations ?? {};
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
@@ -151,9 +157,7 @@ export class PaymentsManager {
     await this.stopSubscriptionLoop.close();
   }
 
-  async allowRequest (voucherHash: string, voucherSig: string, querySelection: string): Promise<[false, string] | [true, null]> {
-    const signerAddress = nitroUtils.getSignerAddress(voucherHash, voucherSig);
-
+  async allowRequest (voucherHash: string, signerAddress: string, querySelection: string): Promise<[false, string] | [true, null]> {
     // Use free quota if EMPTY_VOUCHER_HASH passed
     if (voucherHash === EMPTY_VOUCHER_HASH) {
       let remainingFreeQueries = this.remainingFreeQueriesMap.get(signerAddress);
@@ -173,14 +177,8 @@ export class PaymentsManager {
       return [false, ERR_FREE_QUOTA_EXHUASTED];
     }
 
-    // Serve a query for free if rate is not configured
-    const configuredQueryCost = this.ratesConfig.queries[querySelection];
-    if (configuredQueryCost === undefined) {
-      log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
-      return [true, null];
-    }
-
     // Check if required payment received from the Nitro account
+    const configuredQueryCost = this.ratesConfig.queries[querySelection];
     const [paymentReceived, paymentError] = await this.authenticatePayment(voucherHash, signerAddress, BigInt(configuredQueryCost));
 
     if (paymentReceived) {
@@ -282,8 +280,21 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
     async requestDidStart (requestContext: GraphQLRequestContext) {
       return {
         async responseForOperation (requestContext: GraphQLRequestContext): Promise<GraphQLResponse | null> {
-          // Continue if payments is not setup or it's an introspection query
-          if (!paymentsManager || requestContext.operationName === IntrospectionQuery) {
+          // Continue if payments is not setup
+          if (!paymentsManager) {
+            return null;
+          }
+
+          const querySelections = requestContext.operation?.selectionSet.selections
+            .map((selection: any) => (selection as FieldNode).name.value);
+
+          // Continue if it's an introspection query for schema
+          // (made by ApolloServer playground / default landing page)
+          if (
+            requestContext.operationName === IntrospectionQuery &&
+            querySelections && querySelections.length === 1 &&
+            querySelections[0] === IntrospectionQuerySelection
+          ) {
             return null;
           }
 
@@ -313,8 +324,7 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
             };
           }
 
-          const querySelections = requestContext.operation?.selectionSet.selections
-            .map((selection: any) => (selection as FieldNode).name.value);
+          const signerAddress = nitroUtils.getSignerAddress(vhash, vsig);
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           for await (const querySelection of querySelections ?? []) {
@@ -322,7 +332,14 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
               continue;
             }
 
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, vsig, querySelection);
+            // Serve a query for free if rate is not configured
+            const configuredQueryCost = paymentsManager.queryRates[querySelection];
+            if (configuredQueryCost === undefined) {
+              log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
+              continue;
+            }
+
+            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, signerAddress, querySelection);
             if (!allowRequest) {
               const failResponse: GraphQLResponse = {
                 errors: [{ message: rejectionMessage }],
