@@ -288,7 +288,8 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           const querySelections = requestContext.operation?.selectionSet.selections
             .map((selection: any) => (selection as FieldNode).name.value);
 
-          // Continue if it's an introspection query
+          // Continue if it's an introspection query for schema
+          // (made by ApolloServer playground / default landing page)
           if (
             requestContext.operationName === IntrospectionQuery &&
             querySelections && querySelections.length === 1 &&
