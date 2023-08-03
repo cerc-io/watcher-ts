@@ -3,7 +3,8 @@
 //
 
 import assert from 'assert';
-import { providers } from 'ethers';
+import { providers, utils } from 'ethers';
+import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
 
@@ -23,7 +24,7 @@ interface Vars {
 }
 
 export class EthClient {
-  _provider: providers.Provider;
+  _provider: providers.JsonRpcProvider;
   _cache: Cache | undefined;
 
   constructor (config: Config) {
@@ -55,33 +56,66 @@ export class EthClient {
   }
 
   async getBlockWithTransactions ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    assert(blockHashOrBlockNumber);
     console.time(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
-    // const result = await this._graphqlClient.query(
-    //   ethQueries.getBlockWithTransactions,
-    //   {
-    //     blockNumber: blockNumber?.toString(),
-    //     blockHash
-    //   }
-    // );
+    const result = await this._provider.getBlockWithTransactions(blockHashOrBlockNumber);
     console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    return {};
+    const allEthHeaderCids = {
+      nodes: [
+        {
+          blockNumber: result.number.toString(),
+          blockHash: result.hash,
+          parentHash: result.parentHash,
+          timestamp: result.timestamp.toString(),
+          ethTransactionCidsByHeaderId: {
+            nodes: result.transactions.map((transaction) => ({
+              txHash: transaction.hash,
+              // Transactions with block should be of type TransactionReceipt
+              index: (transaction as unknown as TransactionReceipt).transactionIndex,
+              src: transaction.from,
+              dst: transaction.to
+            }))
+          }
+        }
+      ]
+    };
+
+    return { allEthHeaderCids };
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    assert(blockHashOrBlockNumber);
     console.time(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
-    // const result = await this._graphqlClient.query(
-    //   ethQueries.getBlocks,
-    //   {
-    //     blockNumber: blockNumber?.toString(),
-    //     blockHash
-    //   }
-    // );
+    const rawBlock = await this._provider.send(
+      blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
+      [utils.hexValue(blockHashOrBlockNumber), false]
+    );
     console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    return {};
+    const block = this._provider.formatter.block(rawBlock);
+
+    const allEthHeaderCids = {
+      nodes: [
+        {
+          blockNumber: block.number.toString(),
+          blockHash: block.hash,
+          parentHash: block.parentHash,
+          timestamp: block.timestamp.toString(),
+          stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
+          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+          txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
+          receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
+        }
+      ]
+    };
+
+    return { allEthHeaderCids };
   }
 
+  // Used in uniswap
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
     // const result = await this._graphqlClient.query(
@@ -96,6 +130,7 @@ export class EthClient {
     return {};
   }
 
+  // Used in uniswap
   async getFullTransaction (txHash: string, blockNumber?: number): Promise<any> {
     console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
     // const result = this._graphqlClient.query(
@@ -110,6 +145,7 @@ export class EthClient {
     return {};
   }
 
+  // Used in uniswap
   async getBlockByHash (blockHash?: string): Promise<any> {
     console.time(`time:eth-client#getBlockByHash-${blockHash}`);
     // const result = await this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
@@ -124,6 +160,7 @@ export class EthClient {
     };
   }
 
+  // Used in uniswap
   async getLogs (vars: Vars): Promise<any> {
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     // const result = await this._getCachedOrFetch('getLogs', vars);
