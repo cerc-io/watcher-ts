@@ -19,7 +19,7 @@ export const getMappingSlot = (mappingSlot: string, key: string): string => {
 
 export const getStorageLeafKey = (slot: string): string => ethers.utils.keccak256(slot);
 
-export const topictoAddress = (topic: string): string => {
+export const topicToAddress = (topic: string): string => {
   return ethers.utils.getAddress(
     ethers.utils.hexZeroPad(
       ethers.utils.hexStripZeros(topic), 20
