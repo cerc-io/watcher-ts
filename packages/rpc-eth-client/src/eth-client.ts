@@ -7,7 +7,7 @@ import { providers, utils } from 'ethers';
 import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, getRawTransaction } from '@cerc-io/util';
 
 import { padKey } from './utils';
 
@@ -116,7 +116,6 @@ export class EthClient {
     return { allEthHeaderCids };
   }
 
-  // Used in uniswap
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
     const blockHashOrBlockNumber = blockHash ?? blockNumber;
     assert(blockHashOrBlockNumber);
@@ -174,19 +173,23 @@ export class EthClient {
     return { allEthHeaderCids };
   }
 
-  // Used in uniswap
-  async getFullTransaction (txHash: string, blockNumber?: number): Promise<any> {
-    console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
-    // const result = this._graphqlClient.query(
-    //   ethQueries.getFullTransaction,
-    //   {
-    //     txHash,
-    //     blockNumber: blockNumber?.toString()
-    //   }
-    // );
-    console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
+  async getFullTransaction (txHash: string): Promise<any> {
+    console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
+    const tx = await this._provider.getTransaction(txHash);
+    console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
+    const txReceipt = await tx.wait();
 
-    return {};
+    return {
+      ethTransactionCidByTxHash: {
+        txHash: tx.hash,
+        index: txReceipt.transactionIndex,
+        src: tx.from,
+        dst: tx.to,
+        blockByMhKey: {
+          data: escapeHexString(getRawTransaction(tx))
+        }
+      }
+    };
   }
 
   // Used in uniswap
