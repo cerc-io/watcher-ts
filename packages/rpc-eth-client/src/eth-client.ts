@@ -7,6 +7,7 @@ import { providers, utils } from 'ethers';
 import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
+import { encodeHeader, escapeHexString } from '@cerc-io/util';
 
 import { padKey } from './utils';
 
@@ -117,17 +118,60 @@ export class EthClient {
 
   // Used in uniswap
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    assert(blockHashOrBlockNumber);
+
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
-    // const result = await this._graphqlClient.query(
-    //   ethQueries.getFullBlocks,
-    //   {
-    //     blockNumber: blockNumber?.toString(),
-    //     blockHash
-    //   }
-    // );
+    const rawBlock = await this._provider.send(
+      blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
+      [utils.hexValue(blockHashOrBlockNumber), false]
+    );
     console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    return {};
+    // Create block header
+    // https://github.com/cerc-io/go-ethereum/blob/v1.11.6-statediff-5.0.8/core/types/block.go#L64
+    const header = {
+      Parent: rawBlock.parentHash,
+      UnclesDigest: rawBlock.sha3Uncles,
+      Beneficiary: rawBlock.miner,
+      StateRoot: rawBlock.stateRoot,
+      TxRoot: rawBlock.transactionsRoot,
+      RctRoot: rawBlock.receiptsRoot,
+      Bloom: rawBlock.logsBloom,
+      Difficulty: BigInt(rawBlock.difficulty),
+      Number: BigInt(rawBlock.number),
+      GasLimit: BigInt(rawBlock.gasLimit),
+      GasUsed: BigInt(rawBlock.gasUsed),
+      Time: Number(rawBlock.timestamp),
+      Extra: rawBlock.extraData,
+      MixDigest: rawBlock.mixHash,
+      Nonce: BigInt(rawBlock.nonce),
+      BaseFee: rawBlock.baseFeePerGas
+    };
+
+    const rlpData = encodeHeader(header);
+
+    const allEthHeaderCids = {
+      nodes: [
+        {
+          blockNumber: this._provider.formatter.number(rawBlock.number).toString(),
+          blockHash: this._provider.formatter.hash(rawBlock.hash),
+          parentHash: this._provider.formatter.hash(rawBlock.parentHash),
+          timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
+          stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
+          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+          txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
+          receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
+          uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
+          bloom: escapeHexString(this._provider.formatter.hex(rawBlock.logsBloom)),
+          blockByMhKey: {
+            data: escapeHexString(rlpData)
+          }
+        }
+      ]
+    };
+
+    return { allEthHeaderCids };
   }
 
   // Used in uniswap

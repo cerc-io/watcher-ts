@@ -91,4 +91,33 @@ describe('compare methods', () => {
     const { __typename, cid, ...expectedNode } = gqlResult.allEthHeaderCids.nodes[0];
     expect(rpcResult.allEthHeaderCids.nodes[0]).to.deep.equal(expectedNode);
   });
+
+  it('Compare getFullBlocks method with blockHash', async () => {
+    const blockHash = '0xef53edd41f1aca301d6dd285656366da7e29f0da96366fde04f6d90ad750c973';
+
+    const gqlResult = await gqlEthClient.getFullBlocks({ blockHash });
+    const rpcResult = await rpcEthClient.getFullBlocks({ blockHash });
+
+    const {
+      __typename,
+      cid,
+      blockByMhKey: expectedBlockByMhKey,
+      // blockByMhKey: {
+      //   data: expectedData
+      // },
+      ...expectedNode
+    } = gqlResult.allEthHeaderCids.nodes[0];
+    const {
+      blockByMhKey,
+      // blockByMhKey: {
+      //   data
+      // },
+      ...node
+    } = rpcResult.allEthHeaderCids.nodes[0];
+    expect(node).to.deep.equal(expectedNode);
+
+    // TODO: Match RLP encoded data
+    // TODO: Compare decoded data
+    // expect(data).to.equal(expectedData);
+  });
 });
