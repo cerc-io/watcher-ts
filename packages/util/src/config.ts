@@ -2,18 +2,13 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
-import assert from 'assert';
 import fs from 'fs-extra';
 import path from 'path';
 import toml from 'toml';
 import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
 
-import { Config as CacheConfig, getCache } from '@cerc-io/cache';
-import { EthClient } from '@cerc-io/ipld-eth-client';
-import { JsonRpcProvider } from '@ethersproject/providers';
-
-import { getCustomProvider } from './misc';
+import { Config as CacheConfig } from '@cerc-io/cache';
 
 const log = debug('vulcanize:config');
 
@@ -213,6 +208,7 @@ export interface UpstreamConfig {
   ethServer: {
     gqlApiEndpoint: string;
     rpcProviderEndpoint: string;
+    rpcClient: boolean;
   }
   traceProviderEndpoint: string;
 }
@@ -246,34 +242,4 @@ export const getConfig = async<ConfigType> (configFile: string): Promise<ConfigT
   log('config', JSON.stringify(config, null, 2));
 
   return config;
-};
-
-export const initClients = async (config: Config): Promise<{
-  ethClient: EthClient,
-  ethProvider: JsonRpcProvider
-}> => {
-  const { database: dbConfig, upstream: upstreamConfig, server: serverConfig } = config;
-
-  assert(serverConfig, 'Missing server config');
-  assert(dbConfig, 'Missing database config');
-  assert(upstreamConfig, 'Missing upstream config');
-
-  const { ethServer: { gqlApiEndpoint, rpcProviderEndpoint }, cache: cacheConfig } = upstreamConfig;
-
-  assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
-  assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint');
-
-  const cache = await getCache(cacheConfig);
-
-  const ethClient = new EthClient({
-    gqlEndpoint: gqlApiEndpoint,
-    cache
-  });
-
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
-
-  return {
-    ethClient,
-    ethProvider
-  };
 };

@@ -36,7 +36,7 @@ export class EthClient {
     this._cache = cache;
   }
 
-  async getStorageAt ({ blockHash, contract, slot }: { blockHash: string, contract: string, slot: string }): Promise<{ value: string }> {
+  async getStorageAt ({ blockHash, contract, slot }: { blockHash: string, contract: string, slot: string }): Promise<{ value: string, proof: { data: string } }> {
     slot = `0x${padKey(slot)}`;
 
     console.time(`time:eth-client#getStorageAt-${JSON.stringify({ blockHash, contract, slot })}`);
@@ -50,9 +50,13 @@ export class EthClient {
     );
     console.timeEnd(`time:eth-client#getStorageAt-${JSON.stringify({ blockHash, contract, slot })}`);
 
-    // TODO: Return proof with cid and ipldBlock
     return {
-      value
+      value,
+      proof: {
+        // TODO: Return proof with cid and ipldBlock
+        // To match getStorageAt method of ipld-eth-client which returns proof along with value.
+        data: JSON.stringify(null)
+      }
     };
   }
 

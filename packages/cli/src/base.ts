@@ -11,7 +11,6 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import {
   Config,
   getConfig,
-  initClients,
   JobQueue,
   DatabaseInterface,
   IndexerInterface,
@@ -20,6 +19,8 @@ import {
   EventWatcher,
   GraphWatcherInterface
 } from '@cerc-io/util';
+
+import { initClients } from './utils/index';
 
 export class BaseCmd {
   _config?: Config;

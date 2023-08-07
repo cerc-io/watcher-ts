@@ -23,13 +23,10 @@ interface Vars {
 }
 
 export class EthClient {
-  _config: Config;
   _graphqlClient: GraphQLClient;
   _cache: Cache | undefined;
 
   constructor (config: Config) {
-    this._config = config;
-
     const { gqlEndpoint, gqlSubscriptionEndpoint, cache } = config;
 
     assert(gqlEndpoint, 'Missing gql endpoint');

@@ -10,7 +10,6 @@ import { ethers } from 'ethers';
 import _ from 'lodash';
 
 import * as codec from '@ipld/dag-cbor';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import { GetStorageAt, getStorageValue, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import {
@@ -21,7 +20,8 @@ import {
   ContractInterface,
   SyncStatusInterface,
   StateInterface,
-  StateKind
+  StateKind,
+  EthClient
 } from './types';
 import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';

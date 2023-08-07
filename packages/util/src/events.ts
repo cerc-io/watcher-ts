@@ -6,10 +6,8 @@ import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'graphql-subscriptions';
 
-import { EthClient } from '@cerc-io/ipld-eth-client';
-
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
+import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } from './types';
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';

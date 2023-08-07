@@ -12,8 +12,6 @@ import Decimal from 'decimal.js';
 import { GraphQLResolveInfo } from 'graphql';
 import _ from 'lodash';
 
-import { EthClient } from '@cerc-io/ipld-eth-client';
-
 import { DEFAULT_CONFIG_PATH } from './constants';
 import { GQLCacheConfig, Config } from './config';
 import { JobQueue } from './job-queue';
@@ -21,7 +19,7 @@ import { GraphDecimal } from './graph/graph-decimal';
 import * as EthDecoder from './eth';
 import { getCachedBlockSize } from './block-size-cache';
 import { ResultEvent } from './indexer';
-import { EventInterface } from './types';
+import { EventInterface, EthClient } from './types';
 import { BlockHeight } from './database';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
