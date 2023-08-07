@@ -145,7 +145,7 @@ describe('compare methods', () => {
     });
   });
 
-  it('Compare getFullBlocks method', async () => {
+  it('Compare getFullTransaction method', async () => {
     const txHash = '0xd459a61a7058dbc1a1ce3bd06aad551f75bbb088006d953c2f373e108c5e52fb';
     const gqlResult = await gqlEthClient.getFullTransaction(txHash);
     const rpcResult = await rpcEthClient.getFullTransaction(txHash);
@@ -154,5 +154,77 @@ describe('compare methods', () => {
     const { ethTransactionCidByTxHash: { blockByMhKey: { data: rawTx }, ...tx } } = rpcResult;
     expect(tx).to.deep.equal(expectedTx);
     expect(rawTx).to.deep.equal(expectedRawTx);
+  });
+
+  describe('Compare getBlockByHash method', async () => {
+    const compareBlock = (result: any, expected: any) => {
+      const {
+        __typename,
+        parent: expectedParent,
+        blockByMhKey: expectedBlockByMhKey,
+        ...expectedBlock
+      } = expected.block;
+
+      const { parent, ...block } = result.block;
+      expect(block).to.deep.equal(expectedBlock);
+      expect(parent.hash).to.equal(expectedParent.hash);
+    };
+
+    it('With blockHash', async () => {
+      const gqlResult = await gqlEthClient.getBlockByHash(BLOCK_HASH);
+      const rpcResult = await rpcEthClient.getBlockByHash(BLOCK_HASH);
+
+      compareBlock(rpcResult, gqlResult);
+    });
+
+    it('Without blockHash', async () => {
+      const gqlResult = await gqlEthClient.getBlockByHash();
+      const rpcResult = await rpcEthClient.getBlockByHash();
+
+      compareBlock(rpcResult, gqlResult);
+    });
+  });
+
+  describe('Compare getBlockByHash method', () => {
+    const compareLogs = (result: any, expected: any) => {
+      result.logs.forEach((log: any, index: number) => {
+        const {
+          __typename,
+          account: expectedAccount,
+          cid,
+          ipldBlock,
+          receiptCID,
+          transaction: expectedTransaction,
+          ...expectedLog
+        } = expected.logs[index];
+
+        const { account, transaction, ...rpcLog } = log;
+        expect(rpcLog).to.deep.equal(expectedLog);
+        expect(account.address).to.equal(expectedAccount.address);
+        expect(transaction.hash).to.equal(expectedTransaction.hash);
+      });
+    };
+
+    it('Without addresses', async () => {
+      const blockHash = BLOCK_HASH;
+
+      const gqlResult = await gqlEthClient.getLogs({ blockHash });
+      const rpcResult = await rpcEthClient.getLogs({ blockHash });
+
+      compareLogs(rpcResult, gqlResult);
+    });
+
+    it('With addresses', async () => {
+      const addresses = [
+        '0x36cefe5321b015ea74b1a08efd6d785360071d5d',
+        '0x24cfbe2986e09ab7b7a5e4f8a6bf629b81840ef1'
+      ];
+      const blockHash = BLOCK_HASH;
+
+      const gqlResult = await gqlEthClient.getLogs({ blockHash, addresses });
+      const rpcResult = await rpcEthClient.getLogs({ blockHash, addresses });
+
+      compareLogs(rpcResult, gqlResult);
+    });
   });
 });

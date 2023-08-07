@@ -192,36 +192,83 @@ export class EthClient {
     };
   }
 
-  // Used in uniswap
   async getBlockByHash (blockHash?: string): Promise<any> {
+    let blockTag: providers.BlockTag | undefined = blockHash;
+
     console.time(`time:eth-client#getBlockByHash-${blockHash}`);
-    // const result = await this._graphqlClient.query(ethQueries.getBlockByHash, { blockHash });
+    if (!blockHash) {
+      blockTag = await this._provider.getBlockNumber();
+    }
+    assert(blockTag);
+    const block = await this._provider.getBlock(blockTag);
     console.timeEnd(`time:eth-client#getBlockByHash-${blockHash}`);
 
     return {
       block: {
-        // ...result.block,
-        // number: parseInt(result.block.number, 16),
-        // timestamp: parseInt(result.block.timestamp, 16)
+        number: block.number,
+        hash: block.hash,
+        parent: {
+          hash: block.parentHash
+        },
+        timestamp: block.timestamp
       }
     };
   }
 
-  // Used in uniswap
   async getLogs (vars: Vars): Promise<any> {
+    const { blockHash, addresses = [] } = vars;
+
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
-    // const result = await this._getCachedOrFetch('getLogs', vars);
+    const result = await this._getCachedOrFetch(
+      'getLogs',
+      vars,
+      async () => {
+        const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({ blockHash, address }));
+        const logsByAddress = await Promise.all(logsByAddressPromises);
+        let logs = logsByAddress.flat();
+
+        // If no addresses provided to filter
+        if (!logs.length) {
+          logs = await this._provider.getLogs({ blockHash });
+        }
+
+        return logs.map(log => {
+          log.address = log.address.toLowerCase();
+          return log;
+        });
+      }
+    );
+
+    const txHashesSet = result.reduce((acc, log) => {
+      acc.add(log.transactionHash);
+      return acc;
+    }, new Set<string>());
+
+    const txReceipts = await Promise.all(Array.from(txHashesSet).map(txHash => this._provider.getTransactionReceipt(txHash)));
+
+    const txReceiptMap = txReceipts.reduce((acc, txReceipt) => {
+      acc.set(txReceipt.transactionHash, txReceipt);
+      return acc;
+    }, new Map<string, providers.TransactionReceipt>());
     console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
-    // const {
-    //   getLogs
-    // } = result;
 
     return {
-      // logs: getLogs
+      logs: result.map((log) => ({
+        account: {
+          address: log.address
+        },
+        transaction: {
+          hash: log.transactionHash
+        },
+        topics: log.topics,
+        data: log.data,
+        index: log.logIndex,
+        status: txReceiptMap.get(log.transactionHash)?.status
+      }))
     };
   }
 
-  async _getCachedOrFetch (queryName: string, vars: Vars, fetch: () => Promise<any>): Promise<any> {
+  async _getCachedOrFetch<Result> (queryName: string, vars: Vars, fetch: () => Promise<Result>): Promise<Result> {
     const keyObj = {
       queryName,
       vars
