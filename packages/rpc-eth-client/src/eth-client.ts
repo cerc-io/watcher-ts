@@ -100,24 +100,31 @@ export class EthClient {
     );
     console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
+    if (!rawBlock) {
+      return {
+        allEthHeaderCids: {
+          nodes: []
+        }
+      };
+    }
     const block = this._provider.formatter.block(rawBlock);
 
-    const allEthHeaderCids = {
-      nodes: [
-        {
-          blockNumber: block.number.toString(),
-          blockHash: block.hash,
-          parentHash: block.parentHash,
-          timestamp: block.timestamp.toString(),
-          stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
-          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
-          txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
-          receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
-        }
-      ]
+    return {
+      allEthHeaderCids: {
+        nodes: [
+          {
+            blockNumber: block.number.toString(),
+            blockHash: block.hash,
+            parentHash: block.parentHash,
+            timestamp: block.timestamp.toString(),
+            stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
+            td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+            txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
+            receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
+          }
+        ]
+      }
     };
-
-    return { allEthHeaderCids };
   }
 
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
