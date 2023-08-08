@@ -8,8 +8,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
 import { encodeHeader, escapeHexString, getRawTransaction } from '@cerc-io/util';
-
-import { padKey } from './utils';
+import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
   cache: Cache | undefined;
