@@ -17,7 +17,7 @@ export interface Config {
 }
 
 interface Vars {
-  blockHash: string;
+  blockHash?: string;
   blockNumber?: string;
   contract?: string;
   slot?: string;
@@ -93,25 +93,19 @@ export class EthClient {
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
     const blockHashOrBlockNumber = blockHash ?? blockNumber;
     assert(blockHashOrBlockNumber);
+    let nodes: any[] = [];
     console.time(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
-    const rawBlock = await this._provider.send(
-      blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-      [utils.hexValue(blockHashOrBlockNumber), false]
-    );
-    console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    if (!rawBlock) {
-      return {
-        allEthHeaderCids: {
-          nodes: []
-        }
-      };
-    }
-    const block = this._provider.formatter.block(rawBlock);
+    try {
+      const rawBlock = await this._provider.send(
+        blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
+        [utils.hexValue(blockHashOrBlockNumber), false]
+      );
 
-    return {
-      allEthHeaderCids: {
-        nodes: [
+      if (rawBlock) {
+        const block = this._provider.formatter.block(rawBlock);
+
+        nodes = [
           {
             blockNumber: block.number.toString(),
             blockHash: block.hash,
@@ -122,7 +116,15 @@ export class EthClient {
             txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
             receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
           }
-        ]
+        ];
+      }
+    } finally {
+      console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+    }
+
+    return {
+      allEthHeaderCids: {
+        nodes
       }
     };
   }
@@ -204,13 +206,9 @@ export class EthClient {
   }
 
   async getBlockByHash (blockHash?: string): Promise<any> {
-    let blockTag: providers.BlockTag | undefined = blockHash;
+    const blockTag: providers.BlockTag = blockHash ?? 'latest';
 
     console.time(`time:eth-client#getBlockByHash-${blockHash}`);
-    if (!blockHash) {
-      blockTag = await this._provider.getBlockNumber();
-    }
-    assert(blockTag);
     const block = await this._provider.getBlock(blockTag);
     console.timeEnd(`time:eth-client#getBlockByHash-${blockHash}`);
 
@@ -226,21 +224,28 @@ export class EthClient {
     };
   }
 
-  async getLogs (vars: Vars): Promise<any> {
-    const { blockHash, addresses = [] } = vars;
+  async getLogs (vars: { blockHash: string, blockNumber: string, addresses?: string[] }): Promise<any> {
+    const { blockNumber, addresses = [] } = vars;
 
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     const result = await this._getCachedOrFetch(
       'getLogs',
       vars,
       async () => {
-        const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({ blockHash, address }));
+        const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({
+          fromBlock: Number(blockNumber),
+          toBlock: Number(blockNumber),
+          address
+        }));
         const logsByAddress = await Promise.all(logsByAddressPromises);
         let logs = logsByAddress.flat();
 
         // If no addresses provided to filter
         if (!logs.length) {
-          logs = await this._provider.getLogs({ blockHash });
+          logs = await this._provider.getLogs({
+            fromBlock: Number(blockNumber),
+            toBlock: Number(blockNumber)
+          });
         }
 
         return logs.map(log => {

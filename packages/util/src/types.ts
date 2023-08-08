@@ -216,7 +216,7 @@ export interface EthClient {
   getBlockByHash(blockHash?: string): Promise<any>;
   getLogs(vars: {
     blockHash: string,
-    blockNumber?: string,
+    blockNumber: string,
     addresses?: string[]
   }): Promise<any>;
 }
