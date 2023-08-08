@@ -207,9 +207,10 @@ describe('compare methods', () => {
 
     it('Without addresses', async () => {
       const blockHash = BLOCK_HASH;
+      const blockNumber = BLOCK_NUMBER.toString();
 
-      const gqlResult = await gqlEthClient.getLogs({ blockHash });
-      const rpcResult = await rpcEthClient.getLogs({ blockHash });
+      const gqlResult = await gqlEthClient.getLogs({ blockHash, blockNumber });
+      const rpcResult = await rpcEthClient.getLogs({ blockHash, blockNumber });
 
       compareLogs(rpcResult, gqlResult);
     });
@@ -220,9 +221,10 @@ describe('compare methods', () => {
         '0x24cfbe2986e09ab7b7a5e4f8a6bf629b81840ef1'
       ];
       const blockHash = BLOCK_HASH;
+      const blockNumber = BLOCK_NUMBER.toString();
 
-      const gqlResult = await gqlEthClient.getLogs({ blockHash, addresses });
-      const rpcResult = await rpcEthClient.getLogs({ blockHash, addresses });
+      const gqlResult = await gqlEthClient.getLogs({ blockHash, blockNumber, addresses });
+      const rpcResult = await rpcEthClient.getLogs({ blockHash, blockNumber, addresses });
 
       compareLogs(rpcResult, gqlResult);
     });

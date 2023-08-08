@@ -113,7 +113,7 @@ export function getRawTransaction (tx: TransactionResponse): string {
     key: string
   ) {
     const txKey = key as keyof TransactionResponse;
-    if (tx[txKey]) { accum[key] = tx[txKey]; }
+    if (txKey in tx) { accum[key] = tx[txKey]; }
     return accum;
   }
 

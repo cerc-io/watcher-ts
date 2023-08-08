@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { providers, utils } from 'ethers';
+import { errors, providers, utils } from 'ethers';
 import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
@@ -117,6 +117,11 @@ export class EthClient {
             receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
           }
         ];
+      }
+    } catch (err: any) {
+      // Check and ignore future block error
+      if (!(err.code === errors.SERVER_ERROR && err.error.message === "requested a future epoch (beyond 'latest')")) {
+        throw err;
       }
     } finally {
       console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
