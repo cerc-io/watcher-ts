@@ -162,7 +162,7 @@ export class EthClient {
       Extra: rawBlock.extraData,
       MixDigest: rawBlock.mixHash,
       Nonce: BigInt(rawBlock.nonce),
-      BaseFee: rawBlock.baseFeePerGas
+      BaseFee: BigInt(rawBlock.baseFeePerGas)
     };
 
     const rlpData = encodeHeader(header);
