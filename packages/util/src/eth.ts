@@ -118,7 +118,7 @@ export function getRawTransaction (tx: TransactionResponse): string {
   }
 
   // Extract the relevant parts of the transaction and signature
-  const txFields = 'accessList chainId data gasPrice gasLimit maxFeePerGas maxPriorityFeePerGas nonce to type value'.split(' ');
+  const txFields = 'accessList chainId data gasLimit maxFeePerGas maxPriorityFeePerGas nonce to type value'.split(' ');
   const sigFields = 'v r s'.split(' ');
 
   // Seriailze the signed transaction
