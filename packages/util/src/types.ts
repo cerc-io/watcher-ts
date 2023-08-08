@@ -5,7 +5,6 @@
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 
 import { ServerConfig } from './config';
 import { Where, QueryOptions, Database } from './database';
@@ -188,6 +187,38 @@ export interface GraphDatabaseInterface {
 export interface GraphWatcherInterface {
   init (): Promise<void>;
   setIndexer (indexer: IndexerInterface): void;
+}
+
+export interface EthClient {
+  getStorageAt({ blockHash, contract, slot }: {
+    blockHash: string;
+    contract: string;
+    slot: string;
+  }): Promise<{
+    value: string;
+    proof: {
+        data: string;
+    };
+  }>;
+  getBlockWithTransactions({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<any>;
+  getBlocks({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<any>;
+  getFullBlocks({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<any>;
+  getFullTransaction(txHash: string, blockNumber?: number): Promise<any>;
+  getBlockByHash(blockHash?: string): Promise<any>;
+  getLogs(vars: {
+    blockHash: string,
+    blockNumber: string,
+    addresses?: string[]
+  }): Promise<any>;
 }
 
 export type Clients = {

@@ -1,7 +1,29 @@
 import debug from 'debug';
-import { utils } from 'ethers';
+import { UnsignedTransaction, utils } from 'ethers';
+
+import { TransactionResponse } from '@ethersproject/providers';
+import { SignatureLike } from '@ethersproject/bytes';
 
 const log = debug('vulcanize:eth');
+
+interface Header {
+  Parent: string;
+  UnclesDigest: string;
+  Beneficiary: string;
+  StateRoot: string;
+  TxRoot: string;
+  RctRoot: string;
+  Bloom: string;
+  Difficulty: bigint;
+  Number: bigint;
+  GasLimit: bigint;
+  GasUsed: bigint;
+  Time: number,
+  Extra: string;
+  MixDigest: string;
+  Nonce: bigint;
+  BaseFee?: bigint;
+}
 
 function decodeInteger(value : string, defaultValue: bigint): bigint
 function decodeInteger(value : string) : bigint | undefined
@@ -19,7 +41,7 @@ function decodeNumber (value : string, defaultValue?: number): number | undefine
   return Number(value);
 }
 
-export function decodeHeader (rlp : Uint8Array): any {
+export function decodeHeader (rlp : Uint8Array): Header | undefined {
   try {
     const data = utils.RLP.decode(rlp);
 
@@ -52,6 +74,58 @@ export function decodeHeader (rlp : Uint8Array): any {
   }
 }
 
+export function encodeHeader (header: Header): string {
+  return utils.RLP.encode([
+    header.Parent,
+    header.UnclesDigest,
+    header.Beneficiary,
+    header.StateRoot,
+    header.TxRoot,
+    header.RctRoot,
+    header.Bloom,
+    utils.hexlify(header.Difficulty),
+    utils.hexlify(header.Number),
+    utils.hexlify(header.GasLimit),
+    utils.hexlify(header.GasUsed),
+    utils.hexlify(header.Time),
+    header.Extra,
+    header.MixDigest,
+    utils.hexlify(header.Nonce),
+    ...(header.BaseFee ? [utils.hexlify(header.BaseFee)] : [])
+  ]);
+}
+
 export function decodeData (hexLiteral: string): Uint8Array {
   return Uint8Array.from(Buffer.from(hexLiteral.slice(2), 'hex'));
+}
+
+// Method to escape hex string as stored in ipld-eth-db
+// https://github.com/cerc-io/go-ethereum/blob/v1.11.6-statediff-5.0.8/statediff/indexer/database/file/sql_writer.go#L140
+export function escapeHexString (hex: string): string {
+  const value = hex.slice(2);
+  return `\\x${value}`;
+}
+
+// https://docs.ethers.org/v5/cookbook/transactions/#cookbook--compute-raw-transaction
+export function getRawTransaction (tx: TransactionResponse): string {
+  function addKey (
+    accum: {[key: string]: any},
+    key: string
+  ) {
+    const txKey = key as keyof TransactionResponse;
+    if (txKey in tx) { accum[key] = tx[txKey]; }
+    return accum;
+  }
+
+  // Extract the relevant parts of the transaction and signature
+  const txFields = 'accessList chainId data gasPrice gasLimit maxFeePerGas maxPriorityFeePerGas nonce to type value'.split(' ');
+  const sigFields = 'v r s'.split(' ');
+
+  // Seriailze the signed transaction
+  const raw = utils.serializeTransaction(txFields.reduce(addKey, {}) as UnsignedTransaction, sigFields.reduce(addKey, {}) as SignatureLike);
+
+  // Double check things went well
+  if (utils.keccak256(raw) !== tx.hash) { throw new Error('serializing failed!'); }
+
+  return raw;
 }

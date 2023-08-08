@@ -24,3 +24,4 @@ export * from './graph/utils';
 export * from './graph/state-utils';
 export * from './graph/types';
 export * from './payments';
+export * from './eth';
