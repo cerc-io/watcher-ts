@@ -1,6 +1,7 @@
 import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
+import { errors } from 'ethers';
 
 import {
   QUEUE_BLOCK_PROCESSING,
@@ -93,13 +94,24 @@ export const fetchBlocksAtHeight = async (
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
-    console.time('time:common#_fetchBlocks-eth-server');
-    blocks = await indexer.getBlocks({ blockNumber });
-    console.timeEnd('time:common#_fetchBlocks-eth-server');
+    try {
+      console.time('time:common#_fetchBlocks-eth-server');
+      blocks = await indexer.getBlocks({ blockNumber });
 
-    if (!blocks.length) {
-      log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-      await wait(jobQueueConfig.blockDelayInMilliSecs);
+      if (!blocks.length) {
+        log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
+        await wait(jobQueueConfig.blockDelayInMilliSecs);
+      }
+    } catch (err: any) {
+      // Handle null block error in case of Lotus EVM
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+        throw err;
+      }
+
+      log(`Block ${blockNumber} requested was null (FEVM); Fetching next block`);
+      blockNumber++;
+    } finally {
+      console.timeEnd('time:common#_fetchBlocks-eth-server');
     }
   }
 

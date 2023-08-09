@@ -90,7 +90,8 @@ export class EthClient {
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
+    const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
     let nodes: any[] = [];
     console.time(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
@@ -98,7 +99,7 @@ export class EthClient {
     try {
       const rawBlock = await this._provider.send(
         blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-        [utils.hexValue(blockHashOrBlockNumber), false]
+        [blockHashOrBlockNumber, false]
       );
 
       if (rawBlock) {
@@ -119,7 +120,7 @@ export class EthClient {
       }
     } catch (err: any) {
       // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error.message === "requested a future epoch (beyond 'latest')")) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === "requested a future epoch (beyond 'latest')")) {
         throw err;
       }
     } finally {
@@ -134,13 +135,14 @@ export class EthClient {
   }
 
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
+    const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
 
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
     const rawBlock = await this._provider.send(
       blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-      [utils.hexValue(blockHashOrBlockNumber), false]
+      [blockHashOrBlockNumber, false]
     );
     console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
@@ -162,7 +164,7 @@ export class EthClient {
       Extra: rawBlock.extraData,
       MixDigest: rawBlock.mixHash,
       Nonce: BigInt(rawBlock.nonce),
-      BaseFee: rawBlock.baseFeePerGas
+      BaseFee: BigInt(rawBlock.baseFeePerGas)
     };
 
     const rlpData = encodeHeader(header);
