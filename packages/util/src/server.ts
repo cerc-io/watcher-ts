@@ -1,3 +1,4 @@
+import path from 'path';
 import { Application } from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
@@ -6,11 +7,13 @@ import { useServer } from 'graphql-ws/lib/use/ws';
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
-import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
 import queue from 'express-queue';
 
+import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
 import { TypeSource } from '@graphql-tools/utils';
-import { makeExecutableSchema } from '@graphql-tools/schema';
+import { makeExecutableSchema, addResolversToSchema, mergeSchemas } from '@graphql-tools/schema';
+import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
+import { loadSchema } from '@graphql-tools/load';
 
 import { DEFAULT_MAX_GQL_CACHE_SIZE } from './constants';
 import { ServerConfig } from './config';
@@ -33,7 +36,19 @@ export const createAndStartServer = async (
   const httpServer = createServer(app);
 
   // Create the schema
-  const schema = makeExecutableSchema({ typeDefs, resolvers });
+  let schema = makeExecutableSchema({ typeDefs, resolvers });
+
+  if (paymentsManager) {
+    let paymentsSchema = await loadSchema(path.join(__dirname, 'payments-schema.gql'), {
+      loaders: [new GraphQLFileLoader()]
+    });
+
+    const resolvers = paymentsManager.getResolvers();
+    paymentsSchema = addResolversToSchema({ schema: paymentsSchema, resolvers });
+    schema = mergeSchemas({
+      schemas: [schema, paymentsSchema]
+    });
+  }
 
   // Create our WebSocket server using the HTTP server we just set up.
   const wsServer = new WebSocketServer({

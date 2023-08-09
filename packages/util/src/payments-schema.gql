@@ -1,0 +1,16 @@
+scalar BigInt
+
+enum RateType {
+  QUERY
+  MUTATION
+}
+
+type RateInfo {
+  type: RateType!
+  name: String!
+  amount: BigInt!
+}
+
+type Query {
+  _rates_: [RateInfo!]!
+}

@@ -3,18 +3,22 @@ import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
 import { ApolloServerPlugin, GraphQLResponse, GraphQLRequestContext } from 'apollo-server-plugin-base';
 import { Response as HTTPResponse } from 'apollo-server-env';
+import ApolloBigInt from 'apollo-type-bigint';
 
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Client, Voucher } from '@cerc-io/nitro-client';
 import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-client';
+import { IResolvers } from '@graphql-tools/utils';
 
 import { BaseRatesConfig, PaymentsConfig } from './config';
+import { gqlQueryCount, gqlTotalQueryCount } from './gql-metrics';
 
 const log = debug('laconic:payments');
 
-const IntrospectionQuery = 'IntrospectionQuery';
-const IntrospectionQuerySelection = '__schema';
+const INTROSPECTION_QUERY = 'IntrospectionQuery';
+const INTROSPECTION_QUERY_SELECTION = '__schema';
+const RATES_QUERY_SELECTION = '_rates_';
 
 const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
@@ -46,6 +50,17 @@ const DEFAULT_LRU_CACHE_PAYMENT_CHANNEL_TTL = DEFAULT_LRU_CACHE_ACCOUNT_TTL;
 
 interface Payment {
   voucher: Voucher;
+  amount: bigint;
+}
+
+enum RateType {
+  Query = 'QUERY',
+  Mutation = 'MUTATION'
+}
+
+interface RateInfo {
+  type: RateType;
+  name: string;
   amount: bigint;
 }
 
@@ -83,7 +98,7 @@ export class PaymentsManager {
   }
 
   get freeQueriesList (): string[] {
-    return this.ratesConfig.freeQueriesList ?? DEFAULT_FREE_QUERIES_LIST;
+    return [RATES_QUERY_SELECTION, ...(this.ratesConfig.freeQueriesList ?? DEFAULT_FREE_QUERIES_LIST)];
   }
 
   get queryRates (): { [key: string]: string } {
@@ -92,6 +107,35 @@ export class PaymentsManager {
 
   get mutationRates (): { [key: string]: string } {
     return this.ratesConfig.mutations ?? {};
+  }
+
+  getResolvers (): IResolvers {
+    return {
+      BigInt: new ApolloBigInt('bigInt'),
+      Query: {
+        _rates_: async (): Promise<RateInfo[]> => {
+          log('_rates_');
+          gqlTotalQueryCount.inc(1);
+          gqlQueryCount.labels('_rates_').inc(1);
+
+          const queryRates = this.queryRates;
+          const rateInfos = Object.entries(queryRates).map(([name, amount]) => ({
+            type: RateType.Query,
+            name,
+            amount: BigInt(amount)
+          }));
+
+          const mutationRates = this.mutationRates;
+          Object.entries(mutationRates).forEach(([name, amount]) => rateInfos.push({
+            type: RateType.Mutation,
+            name,
+            amount: BigInt(amount)
+          }));
+
+          return rateInfos;
+        }
+      }
+    };
   }
 
   async subscribeToVouchers (client: Client): Promise<void> {
@@ -291,15 +335,16 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           // Continue if it's an introspection query for schema
           // (made by ApolloServer playground / default landing page)
           if (
-            requestContext.operationName === IntrospectionQuery &&
+            requestContext.operationName === INTROSPECTION_QUERY &&
             querySelections && querySelections.length === 1 &&
-            querySelections[0] === IntrospectionQuerySelection
+            querySelections[0] === INTROSPECTION_QUERY_SELECTION
           ) {
             return null;
           }
 
           const paymentHeader = requestContext.request.http?.headers.get(PAYMENT_HEADER_KEY);
           if (paymentHeader == null) {
+            // TODO: Make payment header optional and check only for rate configured queries in loop below
             return {
               errors: [{ message: ERR_HEADER_MISSING }],
               http: new HTTPResponse(undefined, {
