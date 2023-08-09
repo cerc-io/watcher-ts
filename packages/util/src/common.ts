@@ -1,6 +1,7 @@
 import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
+import { errors } from 'ethers';
 
 import {
   QUEUE_BLOCK_PROCESSING,
@@ -15,7 +16,6 @@ import { BlockProgressInterface, IndexerInterface, EventInterface } from './type
 import { wait } from './misc';
 import { OrderDirection } from './database';
 import { JobQueueConfig } from './config';
-import { errors } from 'ethers';
 
 const DEFAULT_EVENTS_IN_BATCH = 50;
 
