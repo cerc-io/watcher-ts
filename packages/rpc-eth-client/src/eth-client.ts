@@ -120,7 +120,7 @@ export class EthClient {
       }
     } catch (err: any) {
       // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error.message === "requested a future epoch (beyond 'latest')")) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === "requested a future epoch (beyond 'latest')")) {
         throw err;
       }
     } finally {
