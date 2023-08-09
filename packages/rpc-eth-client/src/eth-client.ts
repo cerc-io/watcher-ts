@@ -90,7 +90,8 @@ export class EthClient {
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
+    const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
     let nodes: any[] = [];
     console.time(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
@@ -98,7 +99,7 @@ export class EthClient {
     try {
       const rawBlock = await this._provider.send(
         blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-        [utils.hexValue(blockHashOrBlockNumber), false]
+        [blockHashOrBlockNumber, false]
       );
 
       if (rawBlock) {
@@ -134,13 +135,14 @@ export class EthClient {
   }
 
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
-    const blockHashOrBlockNumber = blockHash ?? blockNumber;
+    const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
+    const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
 
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
     const rawBlock = await this._provider.send(
       blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-      [utils.hexValue(blockHashOrBlockNumber), false]
+      [blockHashOrBlockNumber, false]
     );
     console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
