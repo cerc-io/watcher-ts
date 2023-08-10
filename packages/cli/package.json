@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cli",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "scripts": {
@@ -11,16 +11,22 @@
     "chat": "DEBUG='vulcanize:*, laconic:*' node dist/chat.js"
   },
   "dependencies": {
-    "@cerc-io/peer": "^0.2.51",
-    "@cerc-io/util": "^0.2.51",
+    "@apollo/client": "^3.7.1",
+    "@cerc-io/cache": "^0.2.52",
+    "@cerc-io/ipld-eth-client": "^0.2.52",
+    "@cerc-io/peer": "^0.2.52",
+    "@cerc-io/rpc-eth-client": "^0.2.52",
+    "@cerc-io/util": "^0.2.52",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
     "@ipld/dag-cbor": "^8.0.0",
     "@libp2p/interface-peer-id": "^2.0.0",
     "apollo-server-express": "^3.11.1",
     "debug": "^4.3.1",
+    "ethers": "^5.4.4",
     "express": "^4.18.2",
     "graphql-subscriptions": "^2.0.0",
+    "lodash": "^4.17.21",
     "pluralize": "^8.0.0",
     "reflect-metadata": "^0.1.13",
     "typeorm": "0.2.37",

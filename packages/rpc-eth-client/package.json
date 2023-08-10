@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/rpc-eth-client",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "description": "RPC ETH Client",
   "main": "dist/index.js",
   "scripts": {
@@ -19,18 +19,17 @@
   },
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
-    "@cerc-io/cache": "^0.2.51",
-    "@cerc-io/ipld-eth-client": "^0.2.51",
-    "@cerc-io/util": "^0.2.51",
-    "cross-fetch": "^3.1.4",
-    "debug": "^4.3.1",
+    "@cerc-io/cache": "^0.2.52",
+    "@cerc-io/ipld-eth-client": "^0.2.52",
+    "@cerc-io/util": "^0.2.52",
+    "chai": "^4.3.4",
     "ethers": "^5.4.4",
     "left-pad": "^1.3.0",
-    "ws": "^8.11.0",
-    "zen-observable-ts": "^1.1.0"
+    "mocha": "^8.4.0"
   },
   "devDependencies": {
-    "@types/ws": "^8.5.3",
+    "@types/chai": "^4.2.19",
+    "@types/mocha": "^8.2.2",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",
     "eslint": "^8.35.0",
