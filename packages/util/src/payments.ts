@@ -6,8 +6,8 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
-import type { Client, Voucher } from '@cerc-io/nitro-client';
-import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-client';
+import type { Node, Voucher } from '@cerc-io/nitro-node';
+import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-node';
 
 import { BaseRatesConfig, PaymentsConfig } from './config';
 
@@ -94,13 +94,13 @@ export class PaymentsManager {
     return this.ratesConfig.mutations ?? {};
   }
 
-  async subscribeToVouchers (client: Client): Promise<void> {
-    this.clientAddress = client.address;
+  async subscribeToVouchers (node: Node): Promise<void> {
+    this.clientAddress = node.address;
 
     // Load existing open payment channels with amount paid so far from the stored state
-    await this.loadPaymentChannels(client);
+    await this.loadPaymentChannels(node);
 
-    const receivedVouchersChannel = client.receivedVouchers();
+    const receivedVouchersChannel = node.receivedVouchers();
     log('Starting voucher subscription...');
 
     while (true) {
@@ -115,7 +115,7 @@ export class PaymentsManager {
             return;
           }
 
-          const associatedPaymentChannel = await client.getPaymentChannel(voucher.channelId);
+          const associatedPaymentChannel = await node.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
 
           if (!voucher.amount) {
@@ -257,12 +257,12 @@ export class PaymentsManager {
     return [true, true];
   }
 
-  private async loadPaymentChannels (client: Client): Promise<void> {
-    const ledgerChannels = await client.getAllLedgerChannels();
+  private async loadPaymentChannels (node: Node): Promise<void> {
+    const ledgerChannels = await node.getAllLedgerChannels();
 
     for await (const ledgerChannel of ledgerChannels) {
       if (ledgerChannel.status === ChannelStatus.Open) {
-        const paymentChannels = await client.getPaymentChannelsByLedger(ledgerChannel.iD);
+        const paymentChannels = await node.getPaymentChannelsByLedger(ledgerChannel.iD);
 
         for (const paymentChannel of paymentChannels) {
           if (paymentChannel.status === ChannelStatus.Open) {
