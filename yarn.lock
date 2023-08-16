@@ -350,15 +350,16 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-client@^0.1.5":
-  version "0.1.5"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client/-/0.1.5/nitro-client-0.1.5.tgz#43152a8482b53431c35018064cc70031b759895b"
-  integrity sha512-px/7IgOv1m+DWskJPQ4DUyX84MZHOYMEPN3iNK9uPf+TjyQQm0w2eTPcdQEQN20xzfFFx3k+Dzys3Ko06pXPDQ==
+"@cerc-io/nitro-node@^0.1.8":
+  version "0.1.8"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.8/nitro-node-0.1.8.tgz#d2e90f4464645f3dab1ded8aa14e912c3f31ddcf"
+  integrity sha512-NAZ0miZkA+fBjlUg+7bjj8CWT4y0U7fgmkRFQ0JjyuP5o+bXvac+FtsH5ICeazGmG7Q5BQTQ6bUMiDfz2IuaDw==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
-    "@cerc-io/nitro-util" "^0.1.5"
-    "@cerc-io/peer" "^0.2.49"
+    "@cerc-io/nitro-util" "^0.1.8"
+    "@cerc-io/peer" "^0.2.52"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
+    "@jpwilliams/waitgroup" "^2.1.0"
     "@libp2p/crypto" "^1.0.4"
     "@libp2p/tcp" "^6.0.0"
     "@multiformats/multiaddr" "^11.1.4"
@@ -373,11 +374,12 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.5":
-  version "0.1.5"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.5/nitro-util-0.1.5.tgz#829d7cb56c436fcf29184d1d87ed47ac57a2a32f"
-  integrity sha512-1nNXfoHVOV2QSnnQSiW/dgTuMGJYEcN2M12e5rMXAb4KrJIScT1lWTp+P5dja/F6jN8ZuNlu5REQTdOjdhMNwQ==
+"@cerc-io/nitro-util@^0.1.8":
+  version "0.1.8"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.8/nitro-util-0.1.8.tgz#bdbfd9568a5878aeb1480c3145262ef7beab390c"
+  integrity sha512-v3wW0rHLkpigp4PiQDixxokTeegx9sPfBzEfZJoEl+/90N8mTweXVNgQFy5IlwbhPBfKUZ8L1kWICMiPjrnI2Q==
   dependencies:
+    "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@statechannels/nitro-protocol" "^2.0.0-alpha.4"
     assert "^2.0.0"
     debug "^4.3.4"
@@ -1570,6 +1572,11 @@
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
+
+"@jpwilliams/waitgroup@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@jpwilliams/waitgroup/-/waitgroup-2.1.0.tgz#82560f7cba25e2e295b2882126dea3ad3cf7af82"
+  integrity sha512-a+yeDd0LUJ5Z7oztrS6yZa6VjOGfywXK7mTlaHVE+eyoGT4YL25vMCyj8TRBArc1APoNXiR6eYhoTHnkS8Oucg==
 
 "@jridgewell/gen-mapping@^0.3.2":
   version "0.3.2"
