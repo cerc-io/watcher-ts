@@ -22,7 +22,7 @@ import type { Message } from '@libp2p/interface-pubsub';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
-import { floodsub } from '@libp2p/floodsub';
+import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { PrometheusMetrics } from '@cerc-io/prometheus-metrics';
 
@@ -158,7 +158,10 @@ export class Peer {
         },
         connectionEncryption: [noise()],
         streamMuxers: [mplex()],
-        pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
+        pubsub: gossipsub({
+          globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
+          allowPublishToZeroPeers: true
+        }),
         peerDiscovery: [
           // Use pubsub based discovery; relay server acts as a peer discovery source
           pubsubPeerDiscovery({

@@ -10,7 +10,7 @@ import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { webSockets } from '@libp2p/websockets';
-import { floodsub } from '@libp2p/floodsub';
+import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import type { Message } from '@libp2p/interface-pubsub';
 import type { Connection } from '@libp2p/interface-connection';
@@ -75,7 +75,10 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     transports: [webSockets()],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
-    pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
+    pubsub: gossipsub({
+      globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
+      allowPublishToZeroPeers: true
+    }),
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: PUBSUB_DISCOVERY_INTERVAL
