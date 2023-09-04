@@ -178,9 +178,9 @@ export const wsPeerFilter = (multiaddrs: Multiaddr[]): Multiaddr[] => {
   });
 };
 
-export const initPubsub = (pubsubType: PubsubType = DEFAULT_PUBSUB_TYPE): any => {
+export const initPubsub = (pubsubType?: PubsubType): any => {
   let pubsub: any;
-  switch (pubsubType) {
+  switch (pubsubType || DEFAULT_PUBSUB_TYPE) {
     case 'floodsub':
       pubsub = floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY });
       break;
