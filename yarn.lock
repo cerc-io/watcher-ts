@@ -2363,6 +2363,19 @@
     uint8arraylist "^2.4.3"
     uint8arrays "^4.0.2"
 
+"@libp2p/floodsub@^6.0.0":
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/@libp2p/floodsub/-/floodsub-6.0.3.tgz#38a5440449ea87bb9be90933a4bca0dbdddfb69c"
+  integrity sha512-ajbgcX5lgtILRWgXLvjbO6TRB3Dxo/JTGvzSpqmFOfcZ4PGubNkbDkOwz1TXVqFqtD/CI0rYrKiwBxlXmH/6tg==
+  dependencies:
+    "@libp2p/interface-peer-id" "^2.0.0"
+    "@libp2p/interface-pubsub" "^3.0.0"
+    "@libp2p/logger" "^2.0.0"
+    "@libp2p/pubsub" "^6.0.0"
+    protons-runtime "^5.0.0"
+    uint8arraylist "^2.1.1"
+    uint8arrays "^4.0.3"
+
 "@libp2p/interface-address-manager@^2.0.0":
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/@libp2p/interface-address-manager/-/interface-address-manager-2.0.5.tgz#913fceed38b7cfe12a1e546764e3428a1fbaffda"

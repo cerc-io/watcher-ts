@@ -51,6 +51,6 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   * `dial-timeout`: timeout for dial to peers (ms)
   * `max-relay-connections`: max number of relay node connections for this peer
   * `peer-id-file (f)`: file path for peer id to be used (json)
-  * `enable-debug-info`: Whether to broadcast node's info over floodsub on request
+  * `enable-debug-info`: Whether to broadcast node's info over pubsub on request
 
 * The process starts reading from `stdin` and outputs messages from others peers over the `/chat/1.0.0` protocol to `stdout`.

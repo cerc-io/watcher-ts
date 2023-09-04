@@ -14,6 +14,7 @@ import {
   PeerIdObj
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
+import { PubsubType } from '@cerc-io/util';
 
 import { readPeerId } from './utils';
 
@@ -26,6 +27,7 @@ interface Arguments {
   dialTimeout: number;
   maxRelayConnections: number;
   peerIdFile: string;
+  pubsub?: PubsubType;
   enableDebugInfo: boolean;
 }
 
@@ -60,6 +62,7 @@ export class PeerCmd {
       maxConnections: argv.maxConnections,
       dialTimeout: argv.dialTimeout,
       maxRelayConnections: argv.maxRelayConnections,
+      pubsub: argv.pubsub,
       enableDebugInfo: argv.enableDebugInfo
     };
 
@@ -112,9 +115,13 @@ function _getArgv (): any {
       alias: 'f',
       describe: 'Peer id file path (json)'
     },
+    pubsub: {
+      type: 'string',
+      describe: "Pubsub to use ('floodsub' | 'gossipsub')"
+    },
     enableDebugInfo: {
       type: 'boolean',
-      describe: 'Whether to participate in exchanging debug info over floodsub',
+      describe: 'Whether to participate in exchanging debug info over pubsub',
       default: false
     }
   }).argv;

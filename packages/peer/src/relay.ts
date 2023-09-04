@@ -2,15 +2,15 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import debug from 'debug';
 import assert from 'assert';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
+import { PubsubType } from '@cerc-io/util';
+import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
 import { webSockets } from '@libp2p/websockets';
-import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import type { Message } from '@libp2p/interface-pubsub';
 import type { Connection } from '@libp2p/interface-connection';
@@ -23,12 +23,11 @@ import {
   HOP_TIMEOUT,
   DEFAULT_PING_TIMEOUT,
   PUBSUB_DISCOVERY_INTERVAL,
-  PUBSUB_SIGNATURE_POLICY,
   MAX_CONCURRENT_DIALS_PER_PEER,
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, isMultiaddrBlacklisted } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
 import { SelfInfo, ConnectionInfo } from './types/debug-info.js';
 
@@ -46,6 +45,7 @@ export interface RelayNodeInitConfig {
   pingTimeout?: number;
   redialInterval: number;
   maxDialRetry: number;
+  pubsub?: PubsubType;
   enableDebugInfo?: boolean;
 }
 
@@ -75,10 +75,7 @@ export async function createRelayNode (init: RelayNodeInitConfig): Promise<Libp2
     transports: [webSockets()],
     connectionEncryption: [noise()],
     streamMuxers: [mplex()],
-    pubsub: gossipsub({
-      globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
-      allowPublishToZeroPeers: true
-    }),
+    pubsub: initPubsub(init.pubsub),
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: PUBSUB_DISCOVERY_INTERVAL

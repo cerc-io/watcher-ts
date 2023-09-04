@@ -12,6 +12,8 @@ import { Config as CacheConfig } from '@cerc-io/cache';
 
 const log = debug('vulcanize:config');
 
+export type PubsubType = 'floodsub' | 'gossipsub';
+
 export interface JobQueueConfig {
   dbConnectionString: string;
   maxCompletionLagInSecs: number;
@@ -63,7 +65,10 @@ export interface RelayConfig {
   // Max number of dial retries to be attempted to a relay peer
   maxDialRetry?: number;
 
-  // Broadcast node's info over floodsub on requests
+  // Pubsub to use ('floodsub' | 'gossipsub')
+  pubsub?: PubsubType;
+
+  // Broadcast node's info over pubsub on requests
   enableDebugInfo?: boolean;
 }
 
@@ -111,7 +116,10 @@ export interface PeerConfig {
   // Peer id file path (json)
   peerIdFile?: string;
 
-  // Participate in exchange of debug info over floodsub
+  // Pubsub to use ('floodsub' | 'gossipsub')
+  pubsub?: PubsubType;
+
+  // Participate in exchange of debug info over pubsub
   enableDebugInfo?: boolean;
 
   // Enable sending txs to L2 chain for every message received in P2P network

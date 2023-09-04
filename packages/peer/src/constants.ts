@@ -7,6 +7,8 @@ export const P2P_CIRCUIT_ID = 'p2p-circuit';
 export const CHAT_PROTOCOL = '/chat/1.0.0';
 export const DEBUG_INFO_TOPIC = 'debug-info';
 
+export const DEFAULT_PUBSUB_TYPE = 'floodsub';
+
 // How often a peer should broadcast it's peer data over pubsub discovery topic
 // (interval at which other peers get corresponding discovery event)
 export const PUBSUB_DISCOVERY_INTERVAL = 10000; // 10 seconds
