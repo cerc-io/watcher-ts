@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/peer",
-  "version": "0.2.55",
+  "version": "0.2.56",
   "description": "libp2p module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
@@ -30,7 +30,7 @@
   "dependencies": {
     "@cerc-io/libp2p": "0.42.2-laconic-0.1.4",
     "@cerc-io/prometheus-metrics": "1.1.4",
-    "@cerc-io/util": "^0.2.55",
+    "@cerc-io/util": "^0.2.56",
     "@chainsafe/libp2p-gossipsub": "^6.0.0",
     "@chainsafe/libp2p-noise": "^11.0.0",
     "@libp2p/floodsub": "^6.0.0",
