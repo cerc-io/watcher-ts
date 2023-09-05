@@ -3,6 +3,8 @@ import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import path from 'path';
 
+import { PubsubType } from '@cerc-io/util';
+
 import { RelayNodeInitConfig, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
 import {
@@ -25,6 +27,7 @@ interface Arguments {
   pingInterval: number;
   redialInterval: number;
   maxDialRetry: number;
+  pubsub?: PubsubType;
   enableDebugInfo?: boolean;
 }
 
@@ -81,12 +84,13 @@ async function main (): Promise<void> {
     pingInterval: argv.pingInterval,
     redialInterval: argv.redialInterval,
     maxDialRetry: argv.maxDialRetry,
+    pubsub: argv.pubsub,
     enableDebugInfo: argv.enableDebugInfo
   };
   await createRelayNode(relayNodeInit);
 }
 
-function _getArgv (): Arguments {
+function _getArgv (): any {
   return yargs(hideBin(process.argv)).parserConfiguration({
     'parse-numbers': false
   }).options({
@@ -140,6 +144,10 @@ function _getArgv (): Arguments {
       type: 'number',
       describe: 'Maximum number of dial retries to be attempted to a relay peer',
       default: RELAY_DEFAULT_MAX_DIAL_RETRY
+    },
+    pubsub: {
+      type: 'string',
+      describe: "Pubsub to use ('floodsub' | 'gossipsub')"
     },
     enableDebugInfo: {
       type: 'boolean',

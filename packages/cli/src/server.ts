@@ -187,6 +187,7 @@ export class ServerCmd {
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
         peerIdObj,
+        pubsub: relayConfig.pubsub,
         enableDebugInfo: relayConfig.enableDebugInfo
       };
       await createRelayNode(relayNodeInit);
@@ -212,6 +213,7 @@ export class ServerCmd {
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout,
+        pubsub: peerConfig.pubsub,
         enableDebugInfo: peerConfig.enableDebugInfo
       };
       await this._peer.init(peerNodeInit, peerIdObj);

@@ -12,16 +12,21 @@ import { Libp2p } from '@cerc-io/libp2p';
 import { Multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import type { Connection } from '@libp2p/interface-connection';
+import { floodsub } from '@libp2p/floodsub';
+import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 
 import { ConnectionInfo, ConnectionType, DebugMsg, DebugPeerInfo, DebugResponse, SelfInfo } from '../types/debug-info.js';
-import { DEBUG_INFO_TOPIC, P2P_WEBRTC_STAR_ID } from '../constants.js';
+import { DEBUG_INFO_TOPIC, DEFAULT_PUBSUB_TYPE, P2P_WEBRTC_STAR_ID, PUBSUB_SIGNATURE_POLICY } from '../constants.js';
 import { PeerHearbeatChecker } from '../peer-heartbeat-checker.js';
+import { PubsubType } from '@cerc-io/util';
 
 const log = debug('laconic:utils');
 
 // p2p multi-address codes
 export const CODE_P2P = 421;
 export const CODE_CIRCUIT = 290;
+
+const ERR_INVALID_PUBSUB_TYPE = 'Invalid pubsub type';
 
 interface DialWithRetryOptions {
   redialInterval: number
@@ -171,4 +176,23 @@ export const wsPeerFilter = (multiaddrs: Multiaddr[]): Multiaddr[] => {
     return mafmt.WebSockets.matches(testMa) ||
       mafmt.WebSocketsSecure.matches(testMa);
   });
+};
+
+export const initPubsub = (pubsubType?: PubsubType): any => {
+  let pubsub: any;
+  switch (pubsubType || DEFAULT_PUBSUB_TYPE) {
+    case 'floodsub':
+      pubsub = floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY });
+      break;
+    case 'gossipsub':
+      pubsub = gossipsub({
+        globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
+        allowPublishToZeroPeers: true
+      });
+      break;
+    default:
+      throw new Error(`${ERR_INVALID_PUBSUB_TYPE}: ${pubsubType}`);
+  }
+
+  return pubsub;
 };

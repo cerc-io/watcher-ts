@@ -12,6 +12,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import debug from 'debug';
 
+import { PubsubType } from '@cerc-io/util';
 import { createLibp2p, Libp2p, Libp2pInit } from '@cerc-io/libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@chainsafe/libp2p-noise';
@@ -22,7 +23,6 @@ import type { Message } from '@libp2p/interface-pubsub';
 import type { PeerId } from '@libp2p/interface-peer-id';
 import { createFromJSON, createEd25519PeerId } from '@libp2p/peer-id-factory';
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
-import { floodsub } from '@libp2p/floodsub';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { PrometheusMetrics } from '@cerc-io/prometheus-metrics';
 
@@ -32,7 +32,6 @@ import {
   MIN_CONNECTIONS,
   DIAL_TIMEOUT,
   PUBSUB_DISCOVERY_INTERVAL,
-  PUBSUB_SIGNATURE_POLICY,
   RELAY_TAG,
   RELAY_REDIAL_INTERVAL,
   DEFAULT_MAX_RELAY_CONNECTIONS,
@@ -43,7 +42,7 @@ import {
   P2P_WEBRTC_STAR_ID
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, isMultiaddrBlacklisted, wsPeerFilter } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted, wsPeerFilter } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const log = debug('laconic:peer');
@@ -66,6 +65,7 @@ export interface PeerInitConfig {
   maxConnections?: number;
   minConnections?: number;
   dialTimeout?: number;
+  pubsub?: PubsubType;
   enableDebugInfo?: boolean;
   transports?: Libp2pInit['transports'];
   listenMultiaddrs?: string[];
@@ -158,7 +158,7 @@ export class Peer {
         },
         connectionEncryption: [noise()],
         streamMuxers: [mplex()],
-        pubsub: floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY }),
+        pubsub: initPubsub(initOptions.pubsub),
         peerDiscovery: [
           // Use pubsub based discovery; relay server acts as a peer discovery source
           pubsubPeerDiscovery({

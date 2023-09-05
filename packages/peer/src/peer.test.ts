@@ -61,6 +61,12 @@ describe('basic p2p tests', () => {
       const otherPeersId = peers[1 - index].node?.peerId.toString();
 
       return new Promise<void>((resolve, reject) => {
+        // Resolve if already connected to the other peer
+        const alreadyConnected = peer.node?.getPeers().some(peerId => peerId.toString() === otherPeersId);
+        if (alreadyConnected) {
+          resolve();
+        }
+
         peer.node?.addEventListener('peer:connect', async (event) => {
           const connection: Connection = event.detail;
 
