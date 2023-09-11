@@ -3,8 +3,6 @@ import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import path from 'path';
 
-import { PubsubType } from '@cerc-io/util';
-
 import { RelayNodeInitConfig, createRelayNode } from '../relay.js';
 import { PeerIdObj } from '../peer.js';
 import {
@@ -15,6 +13,7 @@ import {
   DEFAULT_PING_INTERVAL,
   DIAL_TIMEOUT
 } from '../constants.js';
+import { PubsubType } from '../utils/index.js';
 
 interface Arguments {
   host: string;

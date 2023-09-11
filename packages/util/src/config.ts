@@ -12,8 +12,6 @@ import { Config as CacheConfig } from '@cerc-io/cache';
 
 const log = debug('vulcanize:config');
 
-export type PubsubType = 'floodsub' | 'gossipsub';
-
 export interface JobQueueConfig {
   dbConnectionString: string;
   maxCompletionLagInSecs: number;
@@ -66,7 +64,7 @@ export interface RelayConfig {
   maxDialRetry?: number;
 
   // Pubsub to use ('floodsub' | 'gossipsub')
-  pubsub?: PubsubType;
+  pubsub?: string;
 
   // Broadcast node's info over pubsub on requests
   enableDebugInfo?: boolean;
@@ -117,7 +115,7 @@ export interface PeerConfig {
   peerIdFile?: string;
 
   // Pubsub to use ('floodsub' | 'gossipsub')
-  pubsub?: PubsubType;
+  pubsub?: string;
 
   // Participate in exchange of debug info over pubsub
   enableDebugInfo?: boolean;

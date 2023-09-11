@@ -11,10 +11,10 @@ import path from 'path';
 
 import {
   PeerInitConfig,
-  PeerIdObj
+  PeerIdObj,
+  PubsubType
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
-import { PubsubType } from '@cerc-io/util';
 
 import { readPeerId } from './utils';
 

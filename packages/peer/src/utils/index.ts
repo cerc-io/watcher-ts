@@ -18,7 +18,6 @@ import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { ConnectionInfo, ConnectionType, DebugMsg, DebugPeerInfo, DebugResponse, SelfInfo } from '../types/debug-info.js';
 import { DEBUG_INFO_TOPIC, DEFAULT_PUBSUB_TYPE, P2P_WEBRTC_STAR_ID, PUBSUB_SIGNATURE_POLICY } from '../constants.js';
 import { PeerHearbeatChecker } from '../peer-heartbeat-checker.js';
-import { PubsubType } from '@cerc-io/util';
 
 const log = debug('laconic:utils');
 
@@ -27,6 +26,8 @@ export const CODE_P2P = 421;
 export const CODE_CIRCUIT = 290;
 
 const ERR_INVALID_PUBSUB_TYPE = 'Invalid pubsub type';
+
+export type PubsubType = 'floodsub' | 'gossipsub';
 
 interface DialWithRetryOptions {
   redialInterval: number

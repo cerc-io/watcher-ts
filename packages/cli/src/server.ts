@@ -33,7 +33,8 @@ import {
   RelayNodeInitConfig,
   PeerInitConfig,
   PeerIdObj,
-  Peer
+  Peer,
+  PubsubType
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 
@@ -191,7 +192,7 @@ export class ServerCmd {
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
         peerIdObj,
-        pubsub: relayConfig.pubsub,
+        pubsub: (relayConfig.pubsub as PubsubType | undefined),
         enableDebugInfo: relayConfig.enableDebugInfo
       };
       await createRelayNode(relayNodeInit);
@@ -217,7 +218,7 @@ export class ServerCmd {
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout,
-        pubsub: peerConfig.pubsub,
+        pubsub: (peerConfig.pubsub as PubsubType | undefined),
         enableDebugInfo: peerConfig.enableDebugInfo
       };
       await this._peer.init(peerNodeInit, peerIdObj);
