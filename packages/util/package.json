@@ -29,6 +29,7 @@
     "json-bigint": "^1.0.0",
     "lodash": "^4.17.21",
     "lru-cache": "^10.0.0",
+    "mokka": "^1.4.2",
     "multiformats": "^9.4.8",
     "pg": "^8.5.1",
     "pg-boss": "^6.1.0",

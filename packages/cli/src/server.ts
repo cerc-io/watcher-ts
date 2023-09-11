@@ -149,6 +149,10 @@ export class ServerCmd {
       await this._startP2PNodes(p2pConfig, parseLibp2pMessage);
     }
 
+    if (p2pConfig.enablePeer && p2pConfig.consensus.enabled) {
+      // TODO: Initialize consensus engine
+    }
+
     return { app, server };
   }
 
