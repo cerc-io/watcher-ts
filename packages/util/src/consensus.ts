@@ -1,10 +1,15 @@
 import assert from 'assert';
-// import debug from 'debug';
+import debug from 'debug';
 import { Mokka } from 'mokka';
+import { pipe } from 'it-pipe';
+import * as lp from 'it-length-prefixed';
 
 import { Peer } from '@cerc-io/peer';
+import { peerIdFromString } from '@libp2p/peer-id';
 
-// const log = debug('laconic:consensus');
+const log = debug('laconic:consensus');
+
+const CONSENSUS_PROTOCOL = '/consensus/1.0.0';
 
 const DEFAULT_HEARTBEAT = 300;
 const DEFAULT_ELECTION_TIMEOUT = 1000;
@@ -33,6 +38,7 @@ export interface ConsensusOptions {
 
 export class Consensus extends Mokka {
   peer: Peer;
+  party: PartyPeer[];
 
   constructor (options: ConsensusOptions) {
     const heartbeat = options.heartbeat ?? DEFAULT_HEARTBEAT;
@@ -59,6 +65,7 @@ export class Consensus extends Mokka {
     });
 
     this.peer = options.peer;
+    this.party = options.party;
 
     // Add peer nodes in the party
     for (const partyPeer of options.party) {
@@ -68,9 +75,32 @@ export class Consensus extends Mokka {
   }
 
   initialize (): void {
-    // TODO: Register consensus protocol message handler
+    assert(this.peer.node);
 
-    // TODO: Dial over consensus protocol to peers
+    this.peer.node.handle(CONSENSUS_PROTOCOL, async ({ stream, connection }) => {
+      try {
+        // Handle message from stream
+        pipe(
+          // Read from the stream (the source)
+          stream.source,
+          // Decode length-prefixed data
+          lp.decode(),
+          // // Turn buffers into objects
+          // (source) => map(source, (buf) => {
+          //   return JSON.parse(uint8ArrayToString(buf.subarray()));
+          // }),
+          // Sink function
+          async (source) => {
+            // For each chunk of data
+            for await (const msg of source) {
+              await this.emitPacket(Buffer.from(msg.subarray()));
+            }
+          }
+        );
+      } catch (err) {
+        log(`Error on consensus message from ${connection.remotePeer}: ${err}`);
+      }
+    });
   }
 
   connect (): void {
@@ -78,16 +108,40 @@ export class Consensus extends Mokka {
     super.connect();
   }
 
-  async disconnect (): Promise<void> {
-    await super.disconnect();
+  async write (address: string, packet: Buffer): Promise<void> {
+    assert(this.peer.node);
 
-    // TODO: Close all consensus protocol streams
+    try {
+      // TODO: Check if resuses existing stream
+      const s = await this.peer.node.dialProtocol(peerIdFromString(address), CONSENSUS_PROTOCOL);
+
+      // Use await on pipe in place of writer.Flush()
+      await pipe(
+        [packet],
+        // Encode with length prefix (so receiving side knows how much data is coming)
+        lp.encode(),
+        // Write to the stream (the sink)
+        s.sink
+      );
+    } catch (err) {
+      // TODO: Implement retries?
+      log(`Could not send consensus message to ${address}: ${err}`);
+    }
   }
 
-  async write (address: string, packet: Buffer): Promise<void> {
-    assert(address);
-    assert(packet);
+  async disconnect (): Promise<void> {
+    assert(this.peer.node);
+    await super.disconnect();
 
-    // TODO: Send message to peer over consensus protocol
+    // Close all consensus protocol streams
+    for (const partyPeer of this.party) {
+      for (const conn of this.peer.node.getConnections(peerIdFromString(partyPeer.peerId))) {
+        conn.streams.forEach(stream => {
+          if (stream.stat.protocol === CONSENSUS_PROTOCOL) {
+            stream.close();
+          }
+        });
+      }
+    }
   }
 }
