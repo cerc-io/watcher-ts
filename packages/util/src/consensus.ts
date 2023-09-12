@@ -3,9 +3,11 @@ import debug from 'debug';
 import { Mokka } from 'mokka';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
+import { pushable, Pushable } from 'it-pushable';
 
 import type { Peer } from '@cerc-io/peer';
-import type { Stream } from '@libp2p/interface-connection';
+import type { Stream as P2PStream } from '@libp2p/interface-connection';
+import type { PeerId } from '@libp2p/interface-peer-id';
 import { peerIdFromString } from '@libp2p/peer-id';
 
 const log = debug('laconic:consensus');
@@ -40,6 +42,8 @@ export interface ConsensusOptions {
 export class Consensus extends Mokka {
   peer: Peer;
   party: PartyPeer[];
+
+  private messageStreamMap: Map<string, Pushable<any>> = new Map();
 
   constructor (options: ConsensusOptions) {
     const heartbeat = options.heartbeat ?? DEFAULT_HEARTBEAT;
@@ -79,28 +83,8 @@ export class Consensus extends Mokka {
     assert(this.peer.node);
 
     this.peer.node.handle(CONSENSUS_PROTOCOL, async ({ stream, connection }) => {
-      try {
-        // Handle message from stream
-        pipe(
-          // Read from the stream (the source)
-          stream.source,
-          // Decode length-prefixed data
-          lp.decode(),
-          // // Turn buffers into objects
-          // (source) => map(source, (buf) => {
-          //   return JSON.parse(uint8ArrayToString(buf.subarray()));
-          // }),
-          // Sink function
-          async (source) => {
-            // For each chunk of data
-            for await (const msg of source) {
-              await this.emitPacket(Buffer.from(msg.subarray()));
-            }
-          }
-        );
-      } catch (err) {
-        log(`Error on consensus message from ${connection.remotePeer}: ${err}`);
-      }
+      // Setup send and receive pipes
+      this.handleStream(connection.remotePeer, stream);
     });
   }
 
@@ -112,36 +96,18 @@ export class Consensus extends Mokka {
   async write (address: string, packet: Buffer): Promise<void> {
     assert(this.peer.node);
 
-    const peerId = peerIdFromString(address);
-    try {
-      let s: Stream | undefined;
+    let messageStream = this.messageStreamMap.get(address);
+    if (!messageStream) {
+      const peerId = peerIdFromString(address);
 
-      // Get an existing consensus stream with the peer
-      const connections = this.peer.node.getConnections(peerId);
-      for (const conn of connections) {
-        s = conn.streams.find(s => s.stat.protocol === CONSENSUS_PROTOCOL);
-        if (s) {
-          break;
-        }
-      }
+      // Dial to the peer over consensus protocol
+      const p2pStream = await this.peer.node.dialProtocol(peerId, CONSENSUS_PROTOCOL);
 
-      // Create a stream if it doesn't exist
-      if (!s) {
-        s = await this.peer.node.dialProtocol(peerIdFromString(address), CONSENSUS_PROTOCOL);
-      }
-
-      // Use await on pipe in place of writer.Flush()
-      await pipe(
-        [packet],
-        // Encode with length prefix (so receiving side knows how much data is coming)
-        lp.encode(),
-        // Write to the stream (the sink)
-        s.sink
-      );
-    } catch (err) {
-      // TODO: Implement retries?
-      log(`Could not send consensus message to ${address}: ${err}`);
+      // Setup send and receive pipes
+      messageStream = this.handleStream(peerId, p2pStream);
     }
+
+    messageStream.push(packet);
   }
 
   async disconnect (): Promise<void> {
@@ -158,5 +124,46 @@ export class Consensus extends Mokka {
         });
       }
     }
+  }
+
+  private handleStream (peerId: PeerId, stream: P2PStream): Pushable<any> {
+    const messageStream = pushable({});
+
+    try {
+      // Send message to stream
+      pipe(
+        // Read from messageStream (the source)
+        messageStream,
+        // Encode with length prefix (so receiving side knows how much data is coming)
+        lp.encode(),
+        // Write to the stream (the sink)
+        stream.sink
+      );
+    } catch (err) {
+      // TODO: Implement retries / handle breakage
+      log(`Could not send consensus message to ${peerId.toString()}: ${err}`);
+    }
+
+    try {
+      // Handle message from stream
+      pipe(
+        // Read from the stream (the source)
+        stream.source,
+        // Decode length-prefixed data
+        lp.decode(),
+        // Sink function
+        async (source) => {
+          // For each chunk of data
+          for await (const msg of source) {
+            await this.emitPacket(Buffer.from(msg.subarray()));
+          }
+        }
+      );
+    } catch (err) {
+      log(`Error on consensus message from ${peerId.toString()}: ${err}`);
+    }
+
+    this.messageStreamMap.set(peerId.toString(), messageStream);
+    return messageStream;
   }
 }
