@@ -1,3 +1,9 @@
+//
+// Copyright 2023 Vulcanize, Inc.
+//
+
+import fs from 'fs';
+import path from 'path';
 import assert from 'assert';
 import debug from 'debug';
 import { Mokka } from 'mokka';
@@ -167,3 +173,11 @@ export class Consensus extends Mokka {
     return messageStream;
   }
 }
+
+export const readParty = (filePath: string): PartyPeer[] => {
+  const partyFilePath = path.resolve(filePath);
+  log(`Reading party peers from file ${partyFilePath}`);
+
+  const partyJson = fs.readFileSync(partyFilePath, 'utf-8');
+  return JSON.parse(partyJson);
+};

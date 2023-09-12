@@ -163,6 +163,9 @@ export interface NitroConfig {
 // Consensus config
 export interface ConsensusConfig {
   enabled: boolean;
+  publicKey: string;
+  privateKey: string;
+  watcherPartyFile: string;
 }
 
 // P2P config
