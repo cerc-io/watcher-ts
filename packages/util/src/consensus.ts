@@ -4,7 +4,8 @@ import { Mokka } from 'mokka';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
 
-import { Peer } from '@cerc-io/peer';
+import type { Peer } from '@cerc-io/peer';
+import type { Stream } from '@libp2p/interface-connection';
 import { peerIdFromString } from '@libp2p/peer-id';
 
 const log = debug('laconic:consensus');
@@ -29,7 +30,7 @@ export interface ConsensusOptions {
 
   party: PartyPeer[];
 
-  // ISettingsInterface
+  // For Mokka options (ISettingsInterface)
   heartbeat?: number;
   electionTimeout?: number;
   proofExpiration?: number;
@@ -111,9 +112,23 @@ export class Consensus extends Mokka {
   async write (address: string, packet: Buffer): Promise<void> {
     assert(this.peer.node);
 
+    const peerId = peerIdFromString(address);
     try {
-      // TODO: Check if resuses existing stream
-      const s = await this.peer.node.dialProtocol(peerIdFromString(address), CONSENSUS_PROTOCOL);
+      let s: Stream | undefined;
+
+      // Get an existing consensus stream with the peer
+      const connections = this.peer.node.getConnections(peerId);
+      for (const conn of connections) {
+        s = conn.streams.find(s => s.stat.protocol === CONSENSUS_PROTOCOL);
+        if (s) {
+          break;
+        }
+      }
+
+      // Create a stream if it doesn't exist
+      if (!s) {
+        s = await this.peer.node.dialProtocol(peerIdFromString(address), CONSENSUS_PROTOCOL);
+      }
 
       // Use await on pipe in place of writer.Flush()
       await pipe(
