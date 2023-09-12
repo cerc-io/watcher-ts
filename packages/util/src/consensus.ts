@@ -6,10 +6,11 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import debug from 'debug';
-import { Mokka } from 'mokka';
 import { pipe } from 'it-pipe';
 import * as lp from 'it-length-prefixed';
 import { pushable, Pushable } from 'it-pushable';
+import { Mokka } from 'mokka';
+import * as MokkaStates from 'mokka/dist/consensus/constants/NodeStates';
 
 import type { Peer } from '@cerc-io/peer';
 import type { Stream as P2PStream } from '@libp2p/interface-connection';
@@ -83,6 +84,10 @@ export class Consensus extends Mokka {
       const address = `${partyPeer.peerId}/${partyPeer.publicKey}`;
       this.nodeApi.join(address);
     }
+  }
+
+  isLeader (): boolean {
+    return this.state === MokkaStates.default.LEADER;
   }
 
   initialize (): void {

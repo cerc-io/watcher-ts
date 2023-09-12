@@ -3,6 +3,7 @@
 //
 
 import debug from 'debug';
+import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
@@ -38,6 +39,7 @@ import {
   PubsubType
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
+import { Node as NitroNode, utils } from '@cerc-io/nitro-node';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
@@ -52,6 +54,7 @@ export class ServerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
   _peer?: Peer;
+  _nitro?: NitroNode;
   _consensus?: Consensus;
 
   constructor () {
@@ -76,6 +79,10 @@ export class ServerCmd {
 
   get peer (): Peer | undefined {
     return this._peer;
+  }
+
+  get nitro (): NitroNode | undefined {
+    return this._nitro;
   }
 
   get consensus (): Consensus | undefined {
@@ -212,6 +219,41 @@ export class ServerCmd {
 
     // Connect registers the required protocol handlers and starts the engine
     this._consensus.connect();
+  }
+
+  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<void> {
+    // Start a Nitro node
+    const {
+      server: {
+        p2p: {
+          enablePeer,
+          nitro: nitroConfig
+        }
+      },
+      upstream: {
+        ethServer: {
+          rpcProviderEndpoint
+        }
+      }
+    } = this._baseCmd.config;
+
+    // Nitro requires p2p peer to be enabled
+    if (!enablePeer) {
+      return;
+    }
+
+    assert(this.peer);
+    const nitro = await utils.Nitro.setupNode(
+      nitroConfig.privateKey,
+      rpcProviderEndpoint,
+      nitroConfig.chainPrivateKey,
+      nitroContractAddresses,
+      this.peer,
+      path.resolve(nitroConfig.store)
+    );
+
+    this._nitro = nitro.node;
+    log(`Nitro node started with address: ${this._nitro.address}`);
   }
 
   async exec (
