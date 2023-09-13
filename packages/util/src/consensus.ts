@@ -6,16 +6,13 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import debug from 'debug';
-import { pipe } from 'it-pipe';
-import * as lp from 'it-length-prefixed';
-import { pushable, Pushable } from 'it-pushable';
+import type { Pushable } from 'it-pushable';
 import { Mokka } from 'mokka';
 import * as MokkaStates from 'mokka/dist/consensus/constants/NodeStates';
 
 import type { Peer } from '@cerc-io/peer';
 import type { Stream as P2PStream } from '@libp2p/interface-connection';
 import type { PeerId } from '@libp2p/interface-peer-id';
-import { peerIdFromString } from '@libp2p/peer-id';
 
 const log = debug('laconic:consensus');
 
@@ -109,13 +106,14 @@ export class Consensus extends Mokka {
 
     let messageStream = this.messageStreamMap.get(address);
     if (!messageStream) {
+      const { peerIdFromString } = await import('@libp2p/peer-id');
       const peerId = peerIdFromString(address);
 
       // Dial to the peer over consensus protocol
       const p2pStream = await this.peer.node.dialProtocol(peerId, CONSENSUS_PROTOCOL);
 
       // Setup send and receive pipes
-      messageStream = this.handleStream(peerId, p2pStream);
+      messageStream = await this.handleStream(peerId, p2pStream);
     }
 
     messageStream.push(packet);
@@ -124,6 +122,8 @@ export class Consensus extends Mokka {
   async disconnect (): Promise<void> {
     assert(this.peer.node);
     await super.disconnect();
+
+    const { peerIdFromString } = await import('@libp2p/peer-id');
 
     // Close all consensus protocol streams
     for (const partyPeer of this.party) {
@@ -137,7 +137,11 @@ export class Consensus extends Mokka {
     }
   }
 
-  private handleStream (peerId: PeerId, stream: P2PStream): Pushable<any> {
+  private async handleStream (peerId: PeerId, stream: P2PStream): Promise<Pushable<any>> {
+    const { pushable } = await import('it-pushable');
+    const { pipe } = await import('it-pipe');
+    const lp = await import('it-length-prefixed');
+
     const messageStream = pushable({});
 
     try {
