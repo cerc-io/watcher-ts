@@ -844,7 +844,7 @@ export const afterEntityInsertOrUpdate = async<Entity> (
   }
 
   // Get latest entity's fields to be updated
-  const latestEntityRepo = event.manager.getRepository(entityTarget);
+  const latestEntityRepo = event.manager.getRepository<any>(entityTarget);
   const fieldsToUpdate = latestEntityRepo.metadata.columns.map(column => column.databaseName).filter(val => val !== 'id');
 
   // Create a latest entity instance and upsert in the db

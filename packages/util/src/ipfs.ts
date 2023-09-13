@@ -2,6 +2,7 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+// @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import { create, IPFSHTTPClient } from 'ipfs-http-client';
 
 export class IPFSClient {

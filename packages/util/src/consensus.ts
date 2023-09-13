@@ -6,12 +6,16 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import debug from 'debug';
-import type { Pushable } from 'it-pushable';
 import { Mokka } from 'mokka';
 import * as MokkaStates from 'mokka/dist/consensus/constants/NodeStates';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import type { Pushable } from 'it-pushable';
 
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import type { Peer } from '@cerc-io/peer';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import type { Stream as P2PStream } from '@libp2p/interface-connection';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import type { PeerId } from '@libp2p/interface-peer-id';
 
 const log = debug('laconic:consensus');
@@ -77,8 +81,10 @@ export class Consensus extends Mokka {
     this.party = options.party;
 
     // Add peer nodes in the party
+    console.log('party', options.party);
     for (const partyPeer of options.party) {
       const address = `${partyPeer.peerId}/${partyPeer.publicKey}`;
+      console.log('Doing nodeApi.join on all watcherparty peers');
       this.nodeApi.join(address);
     }
   }
@@ -106,6 +112,8 @@ export class Consensus extends Mokka {
 
     let messageStream = this.messageStreamMap.get(address);
     if (!messageStream) {
+      console.log('messageStream not found for peer', address, 'dialling');
+
       const { peerIdFromString } = await import('@libp2p/peer-id');
       const peerId = peerIdFromString(address);
 

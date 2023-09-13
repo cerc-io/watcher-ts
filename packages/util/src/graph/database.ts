@@ -222,7 +222,7 @@ export class GraphDatabase {
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
-    const repo = queryRunner.manager.getRepository(entityType);
+    const repo = queryRunner.manager.getRepository<Entity>(entityType);
     const whereOptions: any = { id };
 
     if (blockNumber) {
@@ -419,7 +419,7 @@ export class GraphDatabase {
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entityType);
+    const repo = queryRunner.manager.getRepository<Entity>(entityType);
     const { tableName } = repo.metadata;
 
     let subQuery = repo.createQueryBuilder('subTable')
@@ -483,7 +483,7 @@ export class GraphDatabase {
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entityType);
+    const repo = queryRunner.manager.getRepository<Entity>(entityType);
 
     let subQuery = repo.createQueryBuilder('subTable')
       .distinctOn(['subTable.id'])
@@ -546,7 +546,7 @@ export class GraphDatabase {
     block: BlockHeight,
     where: Where = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entityType);
+    const repo = queryRunner.manager.getRepository<Entity>(entityType);
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -582,7 +582,7 @@ export class GraphDatabase {
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entityType);
+    const repo = queryRunner.manager.getRepository<Entity>(entityType);
     const { tableName } = repo.metadata;
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -623,7 +623,7 @@ export class GraphDatabase {
     return entities as Entity[];
   }
 
-  async getEntitiesLatest<Entity> (
+  async getEntitiesLatest<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     latestEntity: new () => any,
@@ -631,8 +631,8 @@ export class GraphDatabase {
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity[]> {
-    const entityRepo = queryRunner.manager.getRepository(entityType);
-    const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
+    const entityRepo = queryRunner.manager.getRepository<Entity>(entityType);
+    const latestEntityRepo = queryRunner.manager.getRepository<any>(latestEntity);
     const latestEntityFields = latestEntityRepo.metadata.columns.map(column => column.propertyName);
 
     const selectionNotInLatestEntity = selections.filter(selection => selection.kind === 'Field' && selection.name.value !== '__typename')
@@ -685,8 +685,8 @@ export class GraphDatabase {
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
-    const entityRepo = queryRunner.manager.getRepository(entityType);
-    const latestEntityRepo = queryRunner.manager.getRepository(latestEntity);
+    const entityRepo = queryRunner.manager.getRepository<Entity>(entityType);
+    const latestEntityRepo = queryRunner.manager.getRepository<any>(latestEntity);
 
     let subQuery = entityRepo.createQueryBuilder('subTable')
       .where('latest.id = subTable.id')

@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import debug from 'debug';
-import { sha256 } from 'multiformats/hashes/sha2';
-import { CID } from 'multiformats/cid';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import type { CID as CIDType } from 'multiformats/cid';
 
+// @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import * as codec from '@ipld/dag-cbor';
 
 import { BlockProgressInterface, GraphDatabaseInterface, StateInterface, StateKind } from './types';
@@ -116,7 +117,7 @@ export const getResultState = (state: StateInterface): ResultState => {
 export const createOrUpdateStateData = async (
   data: StateData,
   meta?: StateDataMeta
-): Promise<{ cid: CID, data: StateData, bytes: codec.ByteView<StateData> }> => {
+): Promise<{ cid: CIDType, data: StateData, bytes: codec.ByteView<StateData> }> => {
   if (meta) {
     data.meta = meta;
   }
@@ -124,8 +125,12 @@ export const createOrUpdateStateData = async (
   // Encoding the data using dag-cbor codec.
   const bytes = codec.encode(data);
 
+  const { sha256 } = await import('multiformats/hashes/sha2');
+
   // Calculating sha256 (multi)hash of the encoded data.
   const hash = await sha256.digest(bytes);
+
+  const { CID } = await import('multiformats/cid');
 
   // Calculating the CID: v1, code: dag-cbor, hash.
   const cid = CID.create(1, codec.code, hash);
