@@ -31,7 +31,7 @@ import {
   readParty
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
-import {
+import type {
   RelayNodeInitConfig,
   PeerInitConfig,
   PeerIdObj,
@@ -40,6 +40,8 @@ import {
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 import { Node as NitroNode, utils } from '@cerc-io/nitro-node';
+// @ts-expect-error TODO: Resolve (Not able to find the type declarations)
+import type { Libp2p } from '@cerc-io/libp2p';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
@@ -123,11 +125,13 @@ export class ServerCmd {
     await this._baseCmd.initEventWatcher();
   }
 
-  async initP2P (): Promise<void> {
+  async initP2P (): Promise<[Libp2p | undefined, Peer | undefined]> {
+    let relayNode: Libp2p | undefined;
+
     // Start P2P nodes if config provided
     const p2pConfig = this._baseCmd.config.server.p2p;
     if (!p2pConfig) {
-      return;
+      return [relayNode, this._peer];
     }
 
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
@@ -164,7 +168,8 @@ export class ServerCmd {
         pubsub: (relayConfig.pubsub as PubsubType | undefined),
         enableDebugInfo: relayConfig.enableDebugInfo
       };
-      await createRelayNode(relayNodeInit);
+
+      relayNode = await createRelayNode(relayNodeInit);
     }
 
     // Run a peer node if enabled
@@ -194,9 +199,11 @@ export class ServerCmd {
 
       log(`Peer ID: ${this._peer.peerId?.toString()}`);
     }
+
+    return [relayNode, this._peer];
   }
 
-  async initConsensus (): Promise<void> {
+  async initConsensus (): Promise<Consensus | undefined> {
     const p2pConfig = this._baseCmd.config.server.p2p;
     const { consensus: consensusConfig } = p2pConfig;
 
@@ -219,9 +226,11 @@ export class ServerCmd {
 
     // Connect registers the required protocol handlers and starts the engine
     this._consensus.connect();
+
+    return this._consensus;
   }
 
-  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<void> {
+  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<NitroNode | undefined> {
     // Start a Nitro node
     const {
       server: {
@@ -254,6 +263,8 @@ export class ServerCmd {
 
     this._nitro = nitro.node;
     log(`Nitro node started with address: ${this._nitro.address}`);
+
+    return this._nitro;
   }
 
   async exec (

@@ -350,7 +350,7 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/libp2p@0.42.2-laconic-0.1.4":
+"@cerc-io/libp2p@^0.42.2-laconic-0.1.4":
   version "0.42.2-laconic-0.1.4"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Flibp2p/-/0.42.2-laconic-0.1.4/libp2p-0.42.2-laconic-0.1.4.tgz#ac9347e70d6d3cee040ad02074cae3070b91a8fb"
   integrity sha512-gTC62YvkK3P7cWlaH8gQ6lDbqusNiaYI1q7y/+vQ/1s35uStwRn7fvXHC0aY9s36L4S3p1S0sxDzGXM8rtg6+w==

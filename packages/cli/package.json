@@ -14,6 +14,7 @@
     "@apollo/client": "^3.7.1",
     "@cerc-io/cache": "^0.2.56",
     "@cerc-io/ipld-eth-client": "^0.2.56",
+    "@cerc-io/libp2p": "^0.42.2-laconic-0.1.4",
     "@cerc-io/nitro-node": "^0.1.8",
     "@cerc-io/peer": "^0.2.56",
     "@cerc-io/rpc-eth-client": "^0.2.56",
