@@ -94,11 +94,7 @@ export class Consensus extends Mokka {
 
     // Subscribe to state changes
     this.on('state', () => {
-      logger.info(`State ${this.state} (${consensusStates[this.state]}) with term ${this.term}`);
-
-      if (this.isLeader()) {
-        log('State changed to leader');
-      }
+      log(`State changed to ${this.state} (${consensusStates[this.state]}) with term ${this.term}`);
     });
 
     this.peer = options.peer;
