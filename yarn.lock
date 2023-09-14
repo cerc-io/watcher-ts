@@ -350,14 +350,14 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-node@^0.1.9":
-  version "0.1.9"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.9/nitro-node-0.1.9.tgz#bb46207825c2f1accb8c58f70746f61b381d918d"
-  integrity sha512-tSh/pAY6q6qkR04Z/VFcDvt2/llGr1p4oNF7ZuXUWa1DP0Gxo83eUM2us+hJZzuay0S9eXhLQaPxtRvYeKmHTA==
+"@cerc-io/nitro-node@^0.1.10":
+  version "0.1.10"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.10/nitro-node-0.1.10.tgz#6b37ca555e6ff4c111d68bf1cccc97c12c1905c8"
+  integrity sha512-kiP4ik5eCw/jM/+3ZOlXi7POMcabgJxup0AoOw2Gqz35lMfGL6QTzdAYU1lgDfq2zDOzKx0G3hcEnfIQ6lRMtA==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.4"
     "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
-    "@cerc-io/nitro-util" "^0.1.9"
+    "@cerc-io/nitro-util" "^0.1.10"
     "@cerc-io/peer" "^0.2.56"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@jpwilliams/waitgroup" "^2.1.0"
@@ -376,7 +376,7 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-protocol@^2.0.0-alpha.4-ts-port-0.1.2", "@cerc-io/nitro-protocol@^v2.0.0-alpha.4-ts-port-0.1.2":
+"@cerc-io/nitro-protocol@^2.0.0-alpha.4-ts-port-0.1.2":
   version "2.0.0-alpha.4-ts-port-0.1.2"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-protocol/-/2.0.0-alpha.4-ts-port-0.1.2/nitro-protocol-2.0.0-alpha.4-ts-port-0.1.2.tgz#6d2f893f5aa08dd5550447f04967b908f3f6d469"
   integrity sha512-Cyx2+S/6BlAzvl+LZxwLjK2Y0H01f/kvTYUktdsGHx1eTWXTzS6FQ0nTVwJkKEcO8V/Y50+dc2PwvFXvk8iG9w==
@@ -385,12 +385,12 @@
     "@statechannels/exit-format" "^0.2.0"
     "@typechain/ethers-v5" "^9.0.0"
 
-"@cerc-io/nitro-util@^0.1.9":
-  version "0.1.9"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.9/nitro-util-0.1.9.tgz#9c49b635a5b1e06a733fb737cff52bbfca2dcb8d"
-  integrity sha512-xAz3Dpr5sDZekxuQWJqJMulLUv7njaFXKEvCSV2AO7GzqSAXhdnqUON3PFFTx08zFU+4g6P/ok6xUQsGwzkmog==
+"@cerc-io/nitro-util@^0.1.10":
+  version "0.1.10"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.10/nitro-util-0.1.10.tgz#a185fe98ec12c9b7c67b7e882045bf358b803fc2"
+  integrity sha512-X7jRB8fp6EuUSb0HxReeHxYGWgUa7YgoDwpyHkTbWezlpkj8DmMs5hu/94b+oHmKZtxWxOEnhGfCPIc3soPhsg==
   dependencies:
-    "@cerc-io/nitro-protocol" "^v2.0.0-alpha.4-ts-port-0.1.2"
+    "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     assert "^2.0.0"
     debug "^4.3.4"
