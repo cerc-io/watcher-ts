@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import debug from 'debug';
+import * as bunyan from 'bunyan';
 import { Mokka } from 'mokka';
 import * as MokkaStates from 'mokka/dist/consensus/constants/NodeStates';
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
@@ -18,7 +19,9 @@ import type { Stream as P2PStream } from '@libp2p/interface-connection';
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import type { PeerId } from '@libp2p/interface-peer-id';
 
-const log = debug('laconic:consensus');
+const LOG_NAMESPACE = 'laconic:consensus';
+const CONSENSUS_LOG_LEVEL = 'debug';
+const log = debug(LOG_NAMESPACE);
 
 const CONSENSUS_PROTOCOL = '/consensus/1.0.0';
 
@@ -29,6 +32,13 @@ const DEFAULT_HEARTBEAT = 300;
 const DEFAULT_ELECTION_TIMEOUT = 1000;
 const DEFAULT_PROOF_EXPIRATION = 20000;
 const DEFAULT_CRASH_MODEL = 'BFT';
+
+const consensusStates: Record<number, string> = {
+  [MokkaStates.default.STOPPED]: 'STOPPED',
+  [MokkaStates.default.LEADER]: 'LEADER',
+  [MokkaStates.default.CANDIDATE]: 'CANDIDATE',
+  [MokkaStates.default.FOLLOWER]: 'FOLLOWER'
+};
 
 export interface PartyPeer {
   peerId: string;
@@ -69,6 +79,8 @@ export class Consensus extends Mokka {
     const peerId = options.peer.peerId;
     const address = `${peerId?.toString()}/${options.publicKey}`;
 
+    const logger = bunyan.createLogger({ name: LOG_NAMESPACE, level: CONSENSUS_LOG_LEVEL });
+
     super({
       address,
       privateKey: options.privateKey,
@@ -76,18 +88,25 @@ export class Consensus extends Mokka {
       electionTimeout,
       proofExpiration,
       crashModel,
-      // TODO: Implement logger using debug log / use bunyan
-      logger: console
+      // TODO: Improve logging
+      logger
+    });
+
+    // Subscribe to state changes
+    this.on('state', () => {
+      logger.info(`State ${this.state} (${consensusStates[this.state]}) with term ${this.term}`);
+
+      if (this.isLeader()) {
+        log('State changed to leader');
+      }
     });
 
     this.peer = options.peer;
     this.party = options.party;
 
     // Add peer nodes in the party
-    console.log('party', options.party);
     for (const partyPeer of options.party) {
       const address = `${partyPeer.peerId}/${partyPeer.publicKey}`;
-      console.log('Doing nodeApi.join on all watcherparty peers');
       this.nodeApi.join(address);
     }
   }
@@ -118,8 +137,6 @@ export class Consensus extends Mokka {
       try {
         let messageStream = this.messageStreamMap.get(address);
         if (!messageStream) {
-          console.log('messageStream not found for peer', address, 'dialling');
-
           const { peerIdFromString } = await import('@libp2p/peer-id');
           const peerId = peerIdFromString(address);
 
