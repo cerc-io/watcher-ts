@@ -22,6 +22,9 @@ const log = debug('laconic:consensus');
 
 const CONSENSUS_PROTOCOL = '/consensus/1.0.0';
 
+const NUM_WRITE_ATTEMPTS = 20;
+const RETRY_SLEEP_DURATION = 15 * 1000; // 15 seconds
+
 const DEFAULT_HEARTBEAT = 300;
 const DEFAULT_ELECTION_TIMEOUT = 1000;
 const DEFAULT_PROOF_EXPIRATION = 20000;
@@ -110,21 +113,35 @@ export class Consensus extends Mokka {
   async write (address: string, packet: Buffer): Promise<void> {
     assert(this.peer.node);
 
-    let messageStream = this.messageStreamMap.get(address);
-    if (!messageStream) {
-      console.log('messageStream not found for peer', address, 'dialling');
+    // TODO: Use a different strategy for retries?
+    for (let i = 0; i < NUM_WRITE_ATTEMPTS; i += 1) {
+      try {
+        let messageStream = this.messageStreamMap.get(address);
+        if (!messageStream) {
+          console.log('messageStream not found for peer', address, 'dialling');
 
-      const { peerIdFromString } = await import('@libp2p/peer-id');
-      const peerId = peerIdFromString(address);
+          const { peerIdFromString } = await import('@libp2p/peer-id');
+          const peerId = peerIdFromString(address);
 
-      // Dial to the peer over consensus protocol
-      const p2pStream = await this.peer.node.dialProtocol(peerId, CONSENSUS_PROTOCOL);
+          // Dial to the peer over consensus protocol
+          const p2pStream = await this.peer.node.dialProtocol(peerId, CONSENSUS_PROTOCOL);
 
-      // Setup send and receive pipes
-      messageStream = await this.handleStream(peerId, p2pStream);
+          // Setup send and receive pipes
+          messageStream = await this.handleStream(peerId, p2pStream);
+        }
+
+        messageStream.push(packet);
+        return;
+      } catch (err) {
+        log(`Attempt ${i} - Could not open consensus stream to ${address}: ${err}`);
+        if (i === NUM_WRITE_ATTEMPTS) {
+          log('Write attempts exhausted');
+        }
+
+        // Retry after a set interval
+        await new Promise((resolve) => { setTimeout(resolve, RETRY_SLEEP_DURATION); });
+      }
     }
-
-    messageStream.push(packet);
   }
 
   async disconnect (): Promise<void> {
