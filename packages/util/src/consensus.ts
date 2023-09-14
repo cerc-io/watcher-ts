@@ -101,6 +101,7 @@ export class Consensus extends Mokka {
     this.party = options.party;
 
     // Add peer nodes in the party
+    // TODO: Skip initialization if party not provided?
     for (const partyPeer of options.party) {
       const address = `${partyPeer.peerId}/${partyPeer.publicKey}`;
       this.nodeApi.join(address);
@@ -122,6 +123,8 @@ export class Consensus extends Mokka {
 
   connect (): void {
     this.initialize();
+
+    // TODO: Handle errors when peers don't join
     super.connect();
   }
 
@@ -222,6 +225,11 @@ export class Consensus extends Mokka {
 }
 
 export const readParty = (filePath: string): PartyPeer[] => {
+  if (!filePath || filePath === '') {
+    log('Party peers file path not provided');
+    return [];
+  }
+
   const partyFilePath = path.resolve(filePath);
   log(`Reading party peers from file ${partyFilePath}`);
 

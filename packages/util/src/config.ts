@@ -9,6 +9,8 @@ import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
 
 import { Config as CacheConfig } from '@cerc-io/cache';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import type { PubsubType } from '@cerc-io/peer';
 
 const log = debug('vulcanize:config');
 
@@ -64,7 +66,7 @@ export interface RelayConfig {
   maxDialRetry?: number;
 
   // Pubsub to use ('floodsub' | 'gossipsub')
-  pubsub?: string;
+  pubsub?: PubsubType;
 
   // Broadcast node's info over pubsub on requests
   enableDebugInfo?: boolean;
@@ -115,7 +117,7 @@ export interface PeerConfig {
   peerIdFile?: string;
 
   // Pubsub to use ('floodsub' | 'gossipsub')
-  pubsub?: string;
+  pubsub?: PubsubType;
 
   // Participate in exchange of debug info over pubsub
   enableDebugInfo?: boolean;

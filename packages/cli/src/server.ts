@@ -35,8 +35,7 @@ import type {
   RelayNodeInitConfig,
   PeerInitConfig,
   PeerIdObj,
-  Peer,
-  PubsubType
+  Peer
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 import { Node as NitroNode, utils } from '@cerc-io/nitro-node';
@@ -165,7 +164,7 @@ export class ServerCmd {
         redialInterval: relayConfig.redialInterval ?? RELAY_REDIAL_INTERVAL,
         maxDialRetry: relayConfig.maxDialRetry ?? RELAY_DEFAULT_MAX_DIAL_RETRY,
         peerIdObj,
-        pubsub: (relayConfig.pubsub as PubsubType | undefined),
+        pubsub: relayConfig.pubsub,
         enableDebugInfo: relayConfig.enableDebugInfo
       };
 
@@ -192,7 +191,7 @@ export class ServerCmd {
         relayRedialInterval: peerConfig.relayRedialInterval,
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout,
-        pubsub: (peerConfig.pubsub as PubsubType | undefined),
+        pubsub: peerConfig.pubsub,
         enableDebugInfo: peerConfig.enableDebugInfo
       };
       await this._peer.init(peerNodeInit, peerIdObj);
@@ -224,8 +223,9 @@ export class ServerCmd {
       party: watcherPartyPeers
     });
 
-    // Connect registers the required protocol handlers and starts the engine
+    // Connect registers the required p2p protocol handlers and starts the engine
     this._consensus.connect();
+    log('Consensus engine started');
 
     return this._consensus;
   }
