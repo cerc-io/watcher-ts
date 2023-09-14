@@ -3,6 +3,7 @@
 //
 
 import debug from 'debug';
+import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
@@ -25,17 +26,21 @@ import {
   EventWatcher,
   GraphWatcherInterface,
   Config,
-  P2PConfig,
-  PaymentsManager
+  PaymentsManager,
+  Consensus,
+  readParty
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
-import {
+import type {
   RelayNodeInitConfig,
   PeerInitConfig,
   PeerIdObj,
   Peer
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
+import { Node as NitroNode, utils } from '@cerc-io/nitro-node';
+// @ts-expect-error TODO: Resolve (Not able to find the type declarations)
+import type { Libp2p } from '@cerc-io/libp2p';
 
 import { BaseCmd } from './base';
 import { readPeerId } from './utils/index';
@@ -50,6 +55,8 @@ export class ServerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
   _peer?: Peer;
+  _nitro?: NitroNode;
+  _consensus?: Consensus;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -73,6 +80,14 @@ export class ServerCmd {
 
   get peer (): Peer | undefined {
     return this._peer;
+  }
+
+  get nitro (): NitroNode | undefined {
+    return this._nitro;
+  }
+
+  get consensus (): Consensus | undefined {
+    return this._consensus;
   }
 
   async initConfig<ConfigType> (): Promise<ConfigType> {
@@ -109,53 +124,15 @@ export class ServerCmd {
     await this._baseCmd.initEventWatcher();
   }
 
-  async exec (
-    createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
-    typeDefs: TypeSource,
-    parseLibp2pMessage?: (peerId: string, data: any) => void,
-    paymentsManager?: PaymentsManager
-  ): Promise<{
-    app: Application,
-    server: ApolloServer
-  }> {
-    const config = this._baseCmd.config;
-    const jobQueue = this._baseCmd.jobQueue;
-    const indexer = this._baseCmd.indexer;
-    const eventWatcher = this._baseCmd.eventWatcher;
-
-    assert(config);
-    assert(jobQueue);
-    assert(indexer);
-    assert(eventWatcher);
-
-    if (config.server.kind === KIND_ACTIVE) {
-      // Delete jobs to prevent creating jobs after completion of processing previous block.
-      await jobQueue.deleteAllJobs();
-      await eventWatcher.start();
-    }
-
-    const resolvers = await createResolvers(indexer, eventWatcher);
-
-    // Create an Express app
-    const app: Application = express();
-    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, paymentsManager);
-
-    await startGQLMetricsServer(config);
-
-    const p2pConfig = config.server.p2p;
+  async initP2P (): Promise<{ relayNode?: Libp2p, peer?: Peer }> {
+    let relayNode: Libp2p | undefined;
 
     // Start P2P nodes if config provided
-    if (p2pConfig) {
-      await this._startP2PNodes(p2pConfig, parseLibp2pMessage);
+    const p2pConfig = this._baseCmd.config.server.p2p;
+    if (!p2pConfig) {
+      return {};
     }
 
-    return { app, server };
-  }
-
-  async _startP2PNodes (
-    p2pConfig: P2PConfig,
-    parseLibp2pMessage?: (peerId: string, data: any) => void
-  ): Promise<void> {
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
     const {
       RELAY_DEFAULT_HOST,
@@ -190,7 +167,8 @@ export class ServerCmd {
         pubsub: relayConfig.pubsub,
         enableDebugInfo: relayConfig.enableDebugInfo
       };
-      await createRelayNode(relayNodeInit);
+
+      relayNode = await createRelayNode(relayNodeInit);
     }
 
     // Run a peer node if enabled
@@ -218,14 +196,110 @@ export class ServerCmd {
       };
       await this._peer.init(peerNodeInit, peerIdObj);
 
-      this._peer.subscribeTopic(peerConfig.pubSubTopic, (peerId, data) => {
-        if (parseLibp2pMessage) {
-          parseLibp2pMessage(peerId.toString(), data);
-        }
-      });
-
       log(`Peer ID: ${this._peer.peerId?.toString()}`);
     }
+
+    return { relayNode, peer: this._peer };
+  }
+
+  async initConsensus (): Promise<Consensus | undefined> {
+    const p2pConfig = this._baseCmd.config.server.p2p;
+    const { consensus: consensusConfig } = p2pConfig;
+
+    // Setup consensus engine if enabled
+    // Consensus requires p2p peer to be enabled
+    if (!p2pConfig.enablePeer || !consensusConfig.enabled) {
+      return;
+    }
+
+    assert(this.peer);
+    const watcherPartyPeers = readParty(consensusConfig.watcherPartyFile);
+
+    // Create and initialize the consensus engine
+    this._consensus = new Consensus({
+      peer: this.peer,
+      publicKey: consensusConfig.publicKey,
+      privateKey: consensusConfig.privateKey,
+      party: watcherPartyPeers
+    });
+
+    // Connect registers the required p2p protocol handlers and starts the engine
+    this._consensus.connect();
+    log('Consensus engine started');
+
+    return this._consensus;
+  }
+
+  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<NitroNode | undefined> {
+    // Start a Nitro node
+    const {
+      server: {
+        p2p: {
+          enablePeer,
+          nitro: nitroConfig
+        }
+      },
+      upstream: {
+        ethServer: {
+          rpcProviderEndpoint
+        }
+      }
+    } = this._baseCmd.config;
+
+    // Nitro requires p2p peer to be enabled
+    if (!enablePeer) {
+      return;
+    }
+
+    assert(this.peer);
+    const nitro = await utils.Nitro.setupNode(
+      nitroConfig.privateKey,
+      rpcProviderEndpoint,
+      nitroConfig.chainPrivateKey,
+      nitroContractAddresses,
+      this.peer,
+      path.resolve(nitroConfig.store)
+    );
+
+    this._nitro = nitro.node;
+    log(`Nitro node started with address: ${this._nitro.address}`);
+
+    return this._nitro;
+  }
+
+  async exec (
+    createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
+    typeDefs: TypeSource,
+    paymentsManager?: PaymentsManager
+  ): Promise<{
+    app: Application,
+    server: ApolloServer
+  }> {
+    const config = this._baseCmd.config;
+    const jobQueue = this._baseCmd.jobQueue;
+    const indexer = this._baseCmd.indexer;
+    const eventWatcher = this._baseCmd.eventWatcher;
+
+    assert(config);
+    assert(jobQueue);
+    assert(indexer);
+    assert(eventWatcher);
+
+    if (config.server.kind === KIND_ACTIVE) {
+      // Delete jobs to prevent creating jobs after completion of processing previous block.
+      await jobQueue.deleteAllJobs();
+      await eventWatcher.start();
+    }
+
+    const resolvers = await createResolvers(indexer, eventWatcher);
+
+    // Create an Express app
+    const app: Application = express();
+    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, paymentsManager);
+
+    await startGQLMetricsServer(config);
+
+    return { app, server };
   }
 
   _getArgv (): any {

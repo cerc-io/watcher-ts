@@ -278,79 +278,7 @@
     binaryen "101.0.0-nightly.20210723"
     long "^4.0.0"
 
-"@cerc-io/libp2p@0.42.2-laconic-0.1.3":
-  version "0.42.2-laconic-0.1.3"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Flibp2p/-/0.42.2-laconic-0.1.3/libp2p-0.42.2-laconic-0.1.3.tgz#482c88e135141788fdd201fc27fb4f1bdc954f53"
-  integrity sha512-D8nBtFVB2xUN/QRCSHQVSoJBAk2nH4caqROpWUipRxiDgeoBVpTqYEM9fBzOln6/Yl3BtBxR/fgyaZPTSJQdrg==
-  dependencies:
-    "@achingbrain/nat-port-mapper" "^1.0.3"
-    "@libp2p/crypto" "^1.0.4"
-    "@libp2p/interface-address-manager" "^2.0.0"
-    "@libp2p/interface-connection" "^3.0.2"
-    "@libp2p/interface-connection-encrypter" "^3.0.1"
-    "@libp2p/interface-connection-manager" "^1.1.1"
-    "@libp2p/interface-content-routing" "^2.0.0"
-    "@libp2p/interface-dht" "^2.0.0"
-    "@libp2p/interface-keychain" "^2.0.4"
-    "@libp2p/interface-libp2p" "^1.0.0"
-    "@libp2p/interface-metrics" "^4.0.0"
-    "@libp2p/interface-peer-discovery" "^1.0.1"
-    "@libp2p/interface-peer-id" "^2.0.0"
-    "@libp2p/interface-peer-info" "^1.0.3"
-    "@libp2p/interface-peer-routing" "^1.0.1"
-    "@libp2p/interface-peer-store" "^1.2.2"
-    "@libp2p/interface-pubsub" "^3.0.0"
-    "@libp2p/interface-registrar" "^2.0.3"
-    "@libp2p/interface-stream-muxer" "^3.0.0"
-    "@libp2p/interface-transport" "^2.1.0"
-    "@libp2p/interfaces" "^3.0.3"
-    "@libp2p/keychain" "^1.0.0"
-    "@libp2p/logger" "^2.0.1"
-    "@libp2p/multistream-select" "^3.0.0"
-    "@libp2p/peer-collections" "^3.0.0"
-    "@libp2p/peer-id" "^2.0.0"
-    "@libp2p/peer-id-factory" "^2.0.0"
-    "@libp2p/peer-record" "^5.0.0"
-    "@libp2p/peer-store" "^6.0.0"
-    "@libp2p/tracked-map" "^3.0.0"
-    "@libp2p/utils" "^3.0.2"
-    "@libp2p/webrtc-peer" "^2.0.2"
-    "@multiformats/mafmt" "^11.0.2"
-    "@multiformats/multiaddr" "^11.0.0"
-    abortable-iterator "^4.0.2"
-    any-signal "^3.0.0"
-    datastore-core "^8.0.1"
-    err-code "^3.0.1"
-    interface-datastore "^7.0.0"
-    it-all "^2.0.0"
-    it-drain "^2.0.0"
-    it-filter "^2.0.0"
-    it-first "^2.0.0"
-    it-handshake "^4.1.2"
-    it-length-prefixed "^8.0.2"
-    it-map "^2.0.0"
-    it-merge "^2.0.0"
-    it-pair "^2.0.2"
-    it-pipe "^2.0.3"
-    it-pushable "^3.1.2"
-    it-sort "^2.0.1"
-    it-stream-types "^1.0.4"
-    merge-options "^3.0.4"
-    multiformats "^11.0.0"
-    p-fifo "^1.0.0"
-    p-settle "^5.0.0"
-    private-ip "^3.0.0"
-    protons-runtime "^4.0.1"
-    rate-limiter-flexible "^2.3.11"
-    retimer "^3.0.0"
-    set-delayed-interval "^1.0.0"
-    timeout-abort-controller "^3.0.0"
-    uint8arraylist "^2.3.2"
-    uint8arrays "^4.0.2"
-    wherearewe "^2.0.0"
-    xsalsa20 "^1.1.0"
-
-"@cerc-io/libp2p@0.42.2-laconic-0.1.4":
+"@cerc-io/libp2p@0.42.2-laconic-0.1.4", "@cerc-io/libp2p@^0.42.2-laconic-0.1.4":
   version "0.42.2-laconic-0.1.4"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Flibp2p/-/0.42.2-laconic-0.1.4/libp2p-0.42.2-laconic-0.1.4.tgz#ac9347e70d6d3cee040ad02074cae3070b91a8fb"
   integrity sha512-gTC62YvkK3P7cWlaH8gQ6lDbqusNiaYI1q7y/+vQ/1s35uStwRn7fvXHC0aY9s36L4S3p1S0sxDzGXM8rtg6+w==
@@ -422,37 +350,48 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-node@^0.1.8":
-  version "0.1.8"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.8/nitro-node-0.1.8.tgz#d2e90f4464645f3dab1ded8aa14e912c3f31ddcf"
-  integrity sha512-NAZ0miZkA+fBjlUg+7bjj8CWT4y0U7fgmkRFQ0JjyuP5o+bXvac+FtsH5ICeazGmG7Q5BQTQ6bUMiDfz2IuaDw==
+"@cerc-io/nitro-node@^0.1.10":
+  version "0.1.10"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.10/nitro-node-0.1.10.tgz#6b37ca555e6ff4c111d68bf1cccc97c12c1905c8"
+  integrity sha512-kiP4ik5eCw/jM/+3ZOlXi7POMcabgJxup0AoOw2Gqz35lMfGL6QTzdAYU1lgDfq2zDOzKx0G3hcEnfIQ6lRMtA==
   dependencies:
-    "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
-    "@cerc-io/nitro-util" "^0.1.8"
-    "@cerc-io/peer" "^0.2.52"
+    "@cerc-io/libp2p" "0.42.2-laconic-0.1.4"
+    "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
+    "@cerc-io/nitro-util" "^0.1.10"
+    "@cerc-io/peer" "^0.2.56"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@jpwilliams/waitgroup" "^2.1.0"
     "@libp2p/crypto" "^1.0.4"
     "@libp2p/tcp" "^6.0.0"
     "@multiformats/multiaddr" "^11.1.4"
     "@statechannels/exit-format" "^0.2.0"
-    "@statechannels/nitro-protocol" "^2.0.0-alpha.4"
     assert "^2.0.0"
+    async-mutex "^0.4.0"
     debug "^4.3.4"
     ethers "^5.7.2"
+    heap "^0.2.7"
     it-pipe "^2.0.5"
     level "^8.0.0"
     lodash "^4.17.21"
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.8":
-  version "0.1.8"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.8/nitro-util-0.1.8.tgz#bdbfd9568a5878aeb1480c3145262ef7beab390c"
-  integrity sha512-v3wW0rHLkpigp4PiQDixxokTeegx9sPfBzEfZJoEl+/90N8mTweXVNgQFy5IlwbhPBfKUZ8L1kWICMiPjrnI2Q==
+"@cerc-io/nitro-protocol@^2.0.0-alpha.4-ts-port-0.1.2":
+  version "2.0.0-alpha.4-ts-port-0.1.2"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-protocol/-/2.0.0-alpha.4-ts-port-0.1.2/nitro-protocol-2.0.0-alpha.4-ts-port-0.1.2.tgz#6d2f893f5aa08dd5550447f04967b908f3f6d469"
+  integrity sha512-Cyx2+S/6BlAzvl+LZxwLjK2Y0H01f/kvTYUktdsGHx1eTWXTzS6FQ0nTVwJkKEcO8V/Y50+dc2PwvFXvk8iG9w==
   dependencies:
+    "@openzeppelin/contracts" "^4.7.3"
+    "@statechannels/exit-format" "^0.2.0"
+    "@typechain/ethers-v5" "^9.0.0"
+
+"@cerc-io/nitro-util@^0.1.10":
+  version "0.1.10"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.10/nitro-util-0.1.10.tgz#a185fe98ec12c9b7c67b7e882045bf358b803fc2"
+  integrity sha512-X7jRB8fp6EuUSb0HxReeHxYGWgUa7YgoDwpyHkTbWezlpkj8DmMs5hu/94b+oHmKZtxWxOEnhGfCPIc3soPhsg==
+  dependencies:
+    "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
-    "@statechannels/nitro-protocol" "^2.0.0-alpha.4"
     assert "^2.0.0"
     debug "^4.3.4"
     ethers "^5.7.2"
@@ -3807,15 +3746,6 @@
     ethers "^5.1.4"
     lodash "^4.17.21"
 
-"@statechannels/nitro-protocol@^2.0.0-alpha.4":
-  version "2.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@statechannels/nitro-protocol/-/nitro-protocol-2.0.0-alpha.4.tgz#ff252e5cd7e73740ad25a35b2af7953b499db63d"
-  integrity sha512-Nmiyu0h7VjzoYPmzUOVWb7KzzdRRTjnF1YYVqsiHiCEVkjZVBtSK/J8RDL4Ozzn2MwyOIiA90Wlrl4KB+tB43g==
-  dependencies:
-    "@openzeppelin/contracts" "^4.7.3"
-    "@statechannels/exit-format" "^0.2.0"
-    "@typechain/ethers-v5" "^9.0.0"
-
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@szmarczak/http-timer/-/http-timer-1.1.2.tgz#b1665e2c461a2cd92f4c1bbf50d5454de0d4b421"
@@ -3900,6 +3830,13 @@
   integrity sha512-ALYone6pm6QmwZoAgeyNksccT9Q4AWZQ6PvfwR37GT6r6FWUPguq6sUmNGSMV2Wr761oQoBxwGGa6DR5o1DC9g==
   dependencies:
     "@types/connect" "*"
+    "@types/node" "*"
+
+"@types/bunyan@^1.8.8":
+  version "1.8.8"
+  resolved "https://registry.yarnpkg.com/@types/bunyan/-/bunyan-1.8.8.tgz#8d6d33f090f37c07e2a80af30ae728450a101008"
+  integrity sha512-Cblq+Yydg3u+sGiz2mjHjC5MPmdjY+No4qvHrF+BUhblsmSfMvsHLbOG62tPbonsqBj6sbWv1LHcsoe5Jw+/Ow==
+  dependencies:
     "@types/node" "*"
 
 "@types/chai-spies@^1.0.3":
@@ -4970,6 +4907,13 @@ async-limiter@~1.0.0:
   resolved "https://registry.npmjs.org/async-limiter/-/async-limiter-1.0.1.tgz"
   integrity sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==
 
+async-mutex@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.4.0.tgz#ae8048cd4d04ace94347507504b3cf15e631c25f"
+  integrity sha512-eJFZ1YhRR8UN8eBLoNzcDPcy/jqjsg6I1AP+KvWQX80BqOSW1oJPJXDylPUEeMr2ZQvHgnQ//Lp6f3RQ1zI7HA==
+  dependencies:
+    tslib "^2.4.0"
+
 async-retry@^1.2.1:
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/async-retry/-/async-retry-1.3.3.tgz#0e7f36c04d8478e7a58bdbed80cedf977785f280"
@@ -5954,9 +5898,9 @@ builtins@^1.0.3:
   resolved "https://registry.npmjs.org/builtins/-/builtins-1.0.3.tgz"
   integrity sha1-y5T662HIaWRR2zZTThQi+U8K7og=
 
-bunyan@^1.8.12:
+bunyan@^1.8.12, bunyan@^1.8.15:
   version "1.8.15"
-  resolved "https://registry.npmjs.org/bunyan/-/bunyan-1.8.15.tgz"
+  resolved "https://registry.yarnpkg.com/bunyan/-/bunyan-1.8.15.tgz#8ce34ca908a17d0776576ca1b2f6cbd916e93b46"
   integrity sha512-0tECWShh6wUysgucJcBAoYegf3JJoZWibxdqhTm7OHPeT42qdjkZ29QCMcKwbgU1kiH+auSIasNRXMLWXafXig==
   optionalDependencies:
     dtrace-provider "~0.8"
@@ -9569,7 +9513,7 @@ heap@0.2.6:
   resolved "https://registry.npmjs.org/heap/-/heap-0.2.6.tgz"
   integrity sha1-CH4fELBGky/IWU3Z5tN4r8nR5aw=
 
-"heap@>= 0.2.0":
+"heap@>= 0.2.0", heap@^0.2.7:
   version "0.2.7"
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.7.tgz#1e6adf711d3f27ce35a81fe3b7bd576c2260a8fc"
   integrity sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==
@@ -12144,6 +12088,14 @@ module-error@^1.0.1, module-error@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/module-error/-/module-error-1.0.2.tgz#8d1a48897ca883f47a45816d4fb3e3c6ba404d86"
   integrity sha512-0yuvsqSCv8LbaOKhnsQ/T5JhyFlCYLPXK3U2sgV10zoKQwzs/MyfuQUOZQ1V/6OCOJsK/TRgNVrPuPDqtdMFtA==
+
+mokka@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/mokka/-/mokka-1.4.2.tgz#b0d7117e216672ff2deda6ef2212bcfa0edb8114"
+  integrity sha512-Vgki/Fr9fqUMZzChGC1yH64AQg+qkMdZZe3xKrTwYBVGEuq8j2GdnDg8voYXwWl+MLfNzWBnNiejq2xZ8PmojA==
+  dependencies:
+    bn.js "^5.2.0"
+    elliptic "^6.5.4"
 
 moment@^2.19.3:
   version "2.29.1"

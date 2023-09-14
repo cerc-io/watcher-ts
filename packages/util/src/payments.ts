@@ -1,3 +1,7 @@
+//
+// Copyright 2023 Vulcanize, Inc.
+//
+
 import debug from 'debug';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';

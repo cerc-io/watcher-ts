@@ -9,6 +9,7 @@ import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
 import _ from 'lodash';
 
+// @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import * as codec from '@ipld/dag-cbor';
 import { GetStorageAt, getStorageValue, StorageLayout } from '@cerc-io/solidity-mapper';
 

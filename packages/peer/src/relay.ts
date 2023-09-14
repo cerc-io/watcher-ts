@@ -6,7 +6,6 @@ import debug from 'debug';
 import assert from 'assert';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 
-import { PubsubType } from '@cerc-io/util';
 import { Libp2p, createLibp2p } from '@cerc-io/libp2p';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
@@ -27,7 +26,7 @@ import {
   DEBUG_INFO_TOPIC
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted } from './utils/index.js';
+import { PubsubType, debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted } from './utils/index.js';
 import { PeerIdObj } from './peer.js';
 import { SelfInfo, ConnectionInfo } from './types/debug-info.js';
 

@@ -9,10 +9,10 @@ import debug from 'debug';
 import { ConnectionOptions } from 'typeorm';
 
 import { Config as CacheConfig } from '@cerc-io/cache';
+// @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
+import type { PubsubType } from '@cerc-io/peer';
 
 const log = debug('vulcanize:config');
-
-export type PubsubType = 'floodsub' | 'gossipsub';
 
 export interface JobQueueConfig {
   dbConnectionString: string;
@@ -162,6 +162,14 @@ export interface NitroConfig {
   payments: PaymentsConfig;
 }
 
+// Consensus config
+export interface ConsensusConfig {
+  enabled: boolean;
+  publicKey: string;
+  privateKey: string;
+  watcherPartyFile: string;
+}
+
 // P2P config
 export interface P2PConfig {
   // Enable relay node
@@ -172,7 +180,9 @@ export interface P2PConfig {
   enablePeer: boolean;
   peer: PeerConfig;
 
-  nitro: NitroConfig
+  nitro: NitroConfig;
+
+  consensus: ConsensusConfig;
 }
 
 export interface ServerConfig {

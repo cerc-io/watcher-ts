@@ -318,7 +318,7 @@ export class Database {
   }
 
   async getEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity>): Promise<Entity[]> {
-    const repo = queryRunner.manager.getRepository(entity);
+    const repo = queryRunner.manager.getRepository<Entity>(entity);
 
     const entities = await repo.find(findConditions);
     return entities;

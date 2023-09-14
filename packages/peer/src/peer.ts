@@ -12,7 +12,6 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import debug from 'debug';
 
-import { PubsubType } from '@cerc-io/util';
 import { createLibp2p, Libp2p, Libp2pInit } from '@cerc-io/libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@chainsafe/libp2p-noise';
@@ -42,7 +41,7 @@ import {
   P2P_WEBRTC_STAR_ID
 } from './constants.js';
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
-import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted, wsPeerFilter } from './utils/index.js';
+import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted, PubsubType, wsPeerFilter } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
 
 const log = debug('laconic:peer');
