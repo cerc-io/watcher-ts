@@ -124,13 +124,13 @@ export class ServerCmd {
     await this._baseCmd.initEventWatcher();
   }
 
-  async initP2P (): Promise<[Libp2p | undefined, Peer | undefined]> {
+  async initP2P (): Promise<{ relayNode?: Libp2p, peer?: Peer }> {
     let relayNode: Libp2p | undefined;
 
     // Start P2P nodes if config provided
     const p2pConfig = this._baseCmd.config.server.p2p;
     if (!p2pConfig) {
-      return [relayNode, this._peer];
+      return {};
     }
 
     const { createRelayNode, Peer } = await import('@cerc-io/peer');
@@ -199,7 +199,7 @@ export class ServerCmd {
       log(`Peer ID: ${this._peer.peerId?.toString()}`);
     }
 
-    return [relayNode, this._peer];
+    return { relayNode, peer: this._peer };
   }
 
   async initConsensus (): Promise<Consensus | undefined> {
