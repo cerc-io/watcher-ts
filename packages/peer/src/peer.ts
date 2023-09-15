@@ -16,6 +16,7 @@ import { createLibp2p, Libp2p, Libp2pInit } from '@cerc-io/libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@chainsafe/libp2p-noise';
 import { mplex } from '@libp2p/mplex';
+import { yamux } from '@chainsafe/libp2p-yamux';
 import type { Stream as P2PStream, Connection } from '@libp2p/interface-connection';
 import type { PeerInfo } from '@libp2p/interface-peer-info';
 import type { Message } from '@libp2p/interface-pubsub';
@@ -156,7 +157,7 @@ export class Peer {
           listen: initOptions.listenMultiaddrs ?? []
         },
         connectionEncryption: [noise()],
-        streamMuxers: [mplex()],
+        streamMuxers: [mplex(), yamux()],
         pubsub: initPubsub(initOptions.pubsub),
         peerDiscovery: [
           // Use pubsub based discovery; relay server acts as a peer discovery source
