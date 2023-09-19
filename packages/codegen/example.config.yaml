@@ -1,0 +1,32 @@
+contracts:
+    # Contract name:
+  - name: SimpleContract
+    # Contract file path or an url:
+    path: ./SimpleContract.sol
+    # Contract kind (should match name of dataSource in {subgraphPath}/subgraph.yaml if subgraphPath provided)
+    #kind: Example1
+
+# Output folder path (logs output using `stdout` if not provided).
+outputFolder: ../simple-contract-watcher
+
+# Code generation mode [eth_call | storage | all | none] (default: none).
+mode: none
+
+# Kind of watcher [lazy | active] (default: active).
+kind: lazy
+
+# Watcher server port (default: 3008).
+port: 3008
+
+# Solc version to use (optional)
+# If not defined, uses solc version listed in dependencies
+solc: v0.8.0+commit.c7dfd78e
+
+# Flatten the input contract file(s) [true | false] (default: true).
+flatten: true
+
+# Path to the subgraph build (optional).
+# Can set empty contracts array when using subgraphPath.
+# subgraphPath: ../graph-node/test/subgraph/example1/build
+
+# NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.
