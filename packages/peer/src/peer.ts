@@ -44,7 +44,6 @@ import {
 import { PeerHearbeatChecker } from './peer-heartbeat-checker.js';
 import { debugInfoRequestHandler, dialWithRetry, getConnectionsInfo, getPseudonymForPeerId, getSelfInfo, initPubsub, isMultiaddrBlacklisted, PubsubType, wsPeerFilter } from './utils/index.js';
 import { ConnectionType, DebugPeerInfo, DebugRequest, PeerConnectionInfo, PeerSelfInfo } from './types/debug-info.js';
-import { AddrInfo } from '@chainsafe/libp2p-gossipsub/types';
 
 const log = debug('laconic:peer');
 
@@ -67,11 +66,11 @@ export interface PeerInitConfig {
   minConnections?: number;
   dialTimeout?: number;
   pubsub?: PubsubType;
+  directPeers?: string[];
   enableDebugInfo?: boolean;
   transports?: Libp2pInit['transports'];
   listenMultiaddrs?: string[];
   peerDiscovery?: Libp2pInit['peerDiscovery'];
-  directPeers?:AddrInfo[];
 }
 
 export class Peer {
@@ -120,7 +119,6 @@ export class Peer {
   }
 
   async init (initOptions: PeerInitConfig, peerIdObj?: PeerIdObj): Promise<void> {
-    console.log('direct peers are ', initOptions.directPeers);
     this._relayRedialInterval = initOptions.relayRedialInterval;
     this._denyMultiaddrs = initOptions.denyMultiaddrs;
     this._maxRelayConnections = initOptions.maxRelayConnections;

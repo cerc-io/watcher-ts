@@ -192,10 +192,9 @@ export class ServerCmd {
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout,
         pubsub: peerConfig.pubsub,
-        enableDebugInfo: peerConfig.enableDebugInfo,
-        directPeers: peerConfig.directPeers ?? []
+        directPeers: peerConfig.directPeers,
+        enableDebugInfo: peerConfig.enableDebugInfo
       };
-      log('Direct Peers: ', peerNodeInit.directPeers);
       await this._peer.init(peerNodeInit, peerIdObj);
 
       log(`Peer ID: ${this._peer.peerId?.toString()}`);

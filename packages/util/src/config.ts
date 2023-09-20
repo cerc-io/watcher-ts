@@ -11,7 +11,6 @@ import { ConnectionOptions } from 'typeorm';
 import { Config as CacheConfig } from '@cerc-io/cache';
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import type { PubsubType } from '@cerc-io/peer';
-import { AddrInfo } from '@chainsafe/libp2p-gossipsub/types';
 
 const log = debug('vulcanize:config');
 
@@ -120,6 +119,9 @@ export interface PeerConfig {
   // Pubsub to use ('floodsub' | 'gossipsub')
   pubsub?: PubsubType;
 
+  // Direct peers list (only required with gossipsub)
+  directPeers?: string[];
+
   // Participate in exchange of debug info over pubsub
   enableDebugInfo?: boolean;
 
@@ -128,9 +130,6 @@ export interface PeerConfig {
 
   // Config for sending txs to L2
   l2TxsConfig?: L2TxsConfig;
-
-  // Config for getting direct Peers
-  directPeers?: AddrInfo[];
 }
 
 export interface BaseRatesConfig {

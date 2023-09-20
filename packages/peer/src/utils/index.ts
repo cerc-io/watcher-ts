@@ -11,14 +11,15 @@ import assert from 'assert';
 import { Libp2p } from '@cerc-io/libp2p';
 import { Multiaddr } from '@multiformats/multiaddr';
 import type { PeerId } from '@libp2p/interface-peer-id';
+import { peerIdFromString } from '@libp2p/peer-id';
 import type { Connection } from '@libp2p/interface-connection';
 import { floodsub } from '@libp2p/floodsub';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+import { AddrInfo } from '@chainsafe/libp2p-gossipsub/types';
 
 import { ConnectionInfo, ConnectionType, DebugMsg, DebugPeerInfo, DebugResponse, SelfInfo } from '../types/debug-info.js';
 import { DEBUG_INFO_TOPIC, DEFAULT_PUBSUB_TYPE, P2P_WEBRTC_STAR_ID, PUBSUB_SIGNATURE_POLICY } from '../constants.js';
 import { PeerHearbeatChecker } from '../peer-heartbeat-checker.js';
-import { AddrInfo } from '@chainsafe/libp2p-gossipsub/types';
 
 const log = debug('laconic:utils');
 
@@ -180,25 +181,21 @@ export const wsPeerFilter = (multiaddrs: Multiaddr[]): Multiaddr[] => {
   });
 };
 
-export const initPubsub = (pubsubType?: PubsubType, directPeers?: AddrInfo[]): any => {
+export const initPubsub = (pubsubType?: PubsubType, directPeers?: string[]): any => {
   let pubsub: any;
   switch (pubsubType || DEFAULT_PUBSUB_TYPE) {
     case 'floodsub':
       pubsub = floodsub({ globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY });
       break;
     case 'gossipsub':
-      if (directPeers?.length) {
-        log('direct Peers Array', directPeers);
-        pubsub = gossipsub({
-          globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
-          allowPublishToZeroPeers: true,
-          directPeers: directPeers
-        });
-      }
       pubsub = gossipsub({
         globalSignaturePolicy: PUBSUB_SIGNATURE_POLICY,
-        allowPublishToZeroPeers: true
+        allowPublishToZeroPeers: true,
+        directPeers: directPeers?.map((directPeer: string): AddrInfo => {
+          return { id: peerIdFromString(directPeer), addrs: [] };
+        })
       });
+
       break;
     default:
       throw new Error(`${ERR_INVALID_PUBSUB_TYPE}: ${pubsubType}`);
