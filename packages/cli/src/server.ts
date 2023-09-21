@@ -218,14 +218,14 @@ export class ServerCmd {
     }
 
     assert(this.peer);
-    const watcherPartyPeers = readParty(consensusConfig.watcherPartyFile);
+    const watcherPartyPeers = readParty(consensusConfig.watcherPartyPeersFile);
 
     // Create and initialize the consensus engine
     this._consensus = new Consensus({
       peer: this.peer,
       publicKey: consensusConfig.publicKey,
       privateKey: consensusConfig.privateKey,
-      party: watcherPartyPeers
+      partyPeers: watcherPartyPeers
     });
 
     // Connect registers the required p2p protocol handlers and starts the engine

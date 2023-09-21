@@ -170,7 +170,7 @@ export interface ConsensusConfig {
   enabled: boolean;
   publicKey: string;
   privateKey: string;
-  watcherPartyFile: string;
+  watcherPartyPeersFile: string;
 }
 
 // P2P config
