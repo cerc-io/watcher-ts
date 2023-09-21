@@ -350,21 +350,20 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-node@^0.1.10":
-  version "0.1.10"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.10/nitro-node-0.1.10.tgz#6b37ca555e6ff4c111d68bf1cccc97c12c1905c8"
-  integrity sha512-kiP4ik5eCw/jM/+3ZOlXi7POMcabgJxup0AoOw2Gqz35lMfGL6QTzdAYU1lgDfq2zDOzKx0G3hcEnfIQ6lRMtA==
+"@cerc-io/nitro-node@^0.1.11":
+  version "0.1.11"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.11/nitro-node-0.1.11.tgz#8e1b8fbede4cb2ca79dcc3697a714228a0852bcd"
+  integrity sha512-1SaieVkcSlkhSQqJqxgr1rlR9FA+FIzFOuAbr1Afx9E4N2EtUoG2XAsYxi9LIYBEwEcBUIelpvXe4TZLDhFVjg==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.4"
     "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
-    "@cerc-io/nitro-util" "^0.1.10"
-    "@cerc-io/peer" "^0.2.56"
+    "@cerc-io/nitro-util" "^0.1.11"
+    "@cerc-io/peer" "^0.2.58"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@jpwilliams/waitgroup" "^2.1.0"
     "@libp2p/crypto" "^1.0.4"
     "@libp2p/tcp" "^6.0.0"
     "@multiformats/multiaddr" "^11.1.4"
-    "@statechannels/exit-format" "^0.2.0"
     assert "^2.0.0"
     async-mutex "^0.4.0"
     debug "^4.3.4"
@@ -373,6 +372,7 @@
     it-pipe "^2.0.5"
     level "^8.0.0"
     lodash "^4.17.21"
+    path-browserify "^1.0.1"
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
@@ -385,10 +385,10 @@
     "@statechannels/exit-format" "^0.2.0"
     "@typechain/ethers-v5" "^9.0.0"
 
-"@cerc-io/nitro-util@^0.1.10":
-  version "0.1.10"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.10/nitro-util-0.1.10.tgz#a185fe98ec12c9b7c67b7e882045bf358b803fc2"
-  integrity sha512-X7jRB8fp6EuUSb0HxReeHxYGWgUa7YgoDwpyHkTbWezlpkj8DmMs5hu/94b+oHmKZtxWxOEnhGfCPIc3soPhsg==
+"@cerc-io/nitro-util@^0.1.11":
+  version "0.1.11"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.11/nitro-util-0.1.11.tgz#73471c4366f2da8e4d0a1d222d9bb36f44cbb670"
+  integrity sha512-DG+mm8ergHuvAcWHy5PSZVsIcDCSQV5/ni2m2NfOLpR3Rz4la5oouYniEoN6z0vJKsQvb7cQ3Wxfeerk8OwcNw==
   dependencies:
     "@cerc-io/nitro-protocol" "^2.0.0-alpha.4-ts-port-0.1.2"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
@@ -13238,7 +13238,7 @@ patch-package@^6.2.2:
     slash "^2.0.0"
     tmp "^0.0.33"
 
-path-browserify@^1.0.0:
+path-browserify@^1.0.0, path-browserify@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/path-browserify/-/path-browserify-1.0.1.tgz"
   integrity sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==
