@@ -205,6 +205,10 @@ export class ServerCmd {
 
   async initConsensus (): Promise<Consensus | undefined> {
     const p2pConfig = this._baseCmd.config.server.p2p;
+    if (!p2pConfig || !p2pConfig.consensus) {
+      return;
+    }
+
     const { consensus: consensusConfig } = p2pConfig;
 
     // Setup consensus engine if enabled
@@ -248,7 +252,7 @@ export class ServerCmd {
     } = this._baseCmd.config;
 
     // Nitro requires p2p peer to be enabled
-    if (!enablePeer) {
+    if (!enablePeer || !nitroConfig) {
       return;
     }
 
