@@ -25,7 +25,7 @@ const log = debug(LOG_NAMESPACE);
 
 const CONSENSUS_PROTOCOL = '/consensus/1.0.0';
 
-const NUM_WRITE_ATTEMPTS = 20;
+const NUM_WRITE_ATTEMPTS = 25;
 const RETRY_SLEEP_DURATION = 15 * 1000; // 15 seconds
 
 const DEFAULT_HEARTBEAT = 300;
@@ -51,7 +51,7 @@ export interface ConsensusOptions {
   publicKey: string;
   privateKey: string;
 
-  party: PartyPeer[];
+  partyPeers: PartyPeer[];
 
   // For Mokka options (ISettingsInterface)
   heartbeat?: number;
@@ -62,7 +62,7 @@ export interface ConsensusOptions {
 
 export class Consensus extends Mokka {
   peer: Peer;
-  party: PartyPeer[];
+  partyPeers: PartyPeer[];
 
   private messageStreamMap: Map<string, Pushable<any>> = new Map();
 
@@ -98,11 +98,11 @@ export class Consensus extends Mokka {
     });
 
     this.peer = options.peer;
-    this.party = options.party;
+    this.partyPeers = options.partyPeers;
 
     // Add peer nodes in the party
     // TODO: Skip initialization if party not provided?
-    for (const partyPeer of options.party) {
+    for (const partyPeer of options.partyPeers) {
       const address = `${partyPeer.peerId}/${partyPeer.publicKey}`;
       this.nodeApi.join(address);
     }
@@ -167,7 +167,7 @@ export class Consensus extends Mokka {
     const { peerIdFromString } = await import('@libp2p/peer-id');
 
     // Close all consensus protocol streams
-    for (const partyPeer of this.party) {
+    for (const partyPeer of this.partyPeers) {
       for (const conn of this.peer.node.getConnections(peerIdFromString(partyPeer.peerId))) {
         conn.streams.forEach(stream => {
           if (stream.stat.protocol === CONSENSUS_PROTOCOL) {
