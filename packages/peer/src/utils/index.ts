@@ -193,7 +193,7 @@ export const initPubsub = (pubsubType?: PubsubType, directPeers?: string[]): any
         allowPublishToZeroPeers: true,
         directPeers: directPeers?.map((directPeer: string): AddrInfo => {
           return { id: peerIdFromString(directPeer), addrs: [] };
-        })
+        }) || []
       });
 
       break;
