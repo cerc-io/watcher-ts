@@ -66,6 +66,7 @@ export interface PeerInitConfig {
   minConnections?: number;
   dialTimeout?: number;
   pubsub?: PubsubType;
+  directPeers?: string[];
   enableDebugInfo?: boolean;
   transports?: Libp2pInit['transports'];
   listenMultiaddrs?: string[];
@@ -158,7 +159,7 @@ export class Peer {
         },
         connectionEncryption: [noise()],
         streamMuxers: [mplex(), yamux()],
-        pubsub: initPubsub(initOptions.pubsub),
+        pubsub: initPubsub(initOptions.pubsub, initOptions.directPeers),
         peerDiscovery: [
           // Use pubsub based discovery; relay server acts as a peer discovery source
           pubsubPeerDiscovery({

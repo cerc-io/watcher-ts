@@ -192,6 +192,7 @@ export class ServerCmd {
         maxConnections: peerConfig.maxConnections,
         dialTimeout: peerConfig.dialTimeout,
         pubsub: peerConfig.pubsub,
+        directPeers: peerConfig.directPeers,
         enableDebugInfo: peerConfig.enableDebugInfo
       };
       await this._peer.init(peerNodeInit, peerIdObj);
@@ -204,6 +205,10 @@ export class ServerCmd {
 
   async initConsensus (): Promise<Consensus | undefined> {
     const p2pConfig = this._baseCmd.config.server.p2p;
+    if (!p2pConfig || !p2pConfig.consensus) {
+      return;
+    }
+
     const { consensus: consensusConfig } = p2pConfig;
 
     // Setup consensus engine if enabled
@@ -213,14 +218,14 @@ export class ServerCmd {
     }
 
     assert(this.peer);
-    const watcherPartyPeers = readParty(consensusConfig.watcherPartyFile);
+    const watcherPartyPeers = readParty(consensusConfig.watcherPartyPeersFile);
 
     // Create and initialize the consensus engine
     this._consensus = new Consensus({
       peer: this.peer,
       publicKey: consensusConfig.publicKey,
       privateKey: consensusConfig.privateKey,
-      party: watcherPartyPeers
+      partyPeers: watcherPartyPeers
     });
 
     // Connect registers the required p2p protocol handlers and starts the engine
@@ -247,7 +252,7 @@ export class ServerCmd {
     } = this._baseCmd.config;
 
     // Nitro requires p2p peer to be enabled
-    if (!enablePeer) {
+    if (!enablePeer || !nitroConfig) {
       return;
     }
 

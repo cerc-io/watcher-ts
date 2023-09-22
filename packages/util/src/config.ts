@@ -119,6 +119,9 @@ export interface PeerConfig {
   // Pubsub to use ('floodsub' | 'gossipsub')
   pubsub?: PubsubType;
 
+  // Direct peers list (only required with gossipsub)
+  directPeers?: string[];
+
   // Participate in exchange of debug info over pubsub
   enableDebugInfo?: boolean;
 
@@ -167,7 +170,7 @@ export interface ConsensusConfig {
   enabled: boolean;
   publicKey: string;
   privateKey: string;
-  watcherPartyFile: string;
+  watcherPartyPeersFile: string;
 }
 
 // P2P config
