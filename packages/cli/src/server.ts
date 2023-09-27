@@ -246,7 +246,8 @@ export class ServerCmd {
       },
       upstream: {
         ethServer: {
-          rpcProviderEndpoint
+          rpcProviderEndpoint,
+          rpcProviderMutationEndpoint
         }
       }
     } = this._baseCmd.config;
@@ -257,9 +258,19 @@ export class ServerCmd {
     }
 
     assert(this.peer);
+
+    let chainUrl: string;
+    if (rpcProviderMutationEndpoint) {
+      log('Using rpcProviderMutationEndpoint as chain URL for Nitro node');
+      chainUrl = rpcProviderMutationEndpoint;
+    } else {
+      log('Using rpcProviderEndpoint as chain URL for Nitro node');
+      chainUrl = rpcProviderEndpoint;
+    }
+
     const nitro = await utils.Nitro.setupNode(
       nitroConfig.privateKey,
-      rpcProviderEndpoint,
+      chainUrl,
       nitroConfig.chainPrivateKey,
       nitroContractAddresses,
       this.peer,
