@@ -10,10 +10,10 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
-import type { Node, Voucher } from '@cerc-io/nitro-node';
+import type { Voucher } from '@cerc-io/nitro-node';
 import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-node';
 
-import { BaseRatesConfig, PaymentsConfig } from './config';
+import { BaseRatesConfig, NitroPeerConfig, PaymentsConfig } from './config';
 
 const log = debug('laconic:payments');
 
@@ -54,7 +54,7 @@ interface Payment {
 }
 
 export class PaymentsManager {
-  clientAddress?: string;
+  nitro: nitroUtils.Nitro;
 
   private config: PaymentsConfig;
   private ratesConfig: BaseRatesConfig;
@@ -69,7 +69,10 @@ export class PaymentsManager {
   private stopSubscriptionLoop: ReadWriteChannel<void>;
   private paymentListeners: ReadWriteChannel<string>[] = [];
 
-  constructor (config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
+  private upstreamNodePaymentChannel?: string;
+
+  constructor (nitro: nitroUtils.Nitro, config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
+    this.nitro = nitro;
     this.config = config;
     this.ratesConfig = baseRatesConfig;
 
@@ -98,13 +101,11 @@ export class PaymentsManager {
     return this.ratesConfig.mutations ?? {};
   }
 
-  async subscribeToVouchers (node: Node): Promise<void> {
-    this.clientAddress = node.address;
-
+  async subscribeToVouchers (): Promise<void> {
     // Load existing open payment channels with amount paid so far from the stored state
-    await this.loadPaymentChannels(node);
+    await this.loadPaymentChannels();
 
-    const receivedVouchersChannel = node.receivedVouchers();
+    const receivedVouchersChannel = this.nitro.node.receivedVouchers();
     log('Starting voucher subscription...');
 
     while (true) {
@@ -119,7 +120,7 @@ export class PaymentsManager {
             return;
           }
 
-          const associatedPaymentChannel = await node.getPaymentChannel(voucher.channelId);
+          const associatedPaymentChannel = await this.nitro.node.getPaymentChannel(voucher.channelId);
           const payer = associatedPaymentChannel.balance.payer;
 
           if (!voucher.amount) {
@@ -158,7 +159,7 @@ export class PaymentsManager {
   }
 
   async unSubscribeVouchers (): Promise<void> {
-    await this.stopSubscriptionLoop.close();
+    this.stopSubscriptionLoop.close();
   }
 
   async allowRequest (voucherHash: string, signerAddress: string, querySelection: string): Promise<[false, string] | [true, null]> {
@@ -238,6 +239,35 @@ export class PaymentsManager {
     }
   }
 
+  async setupUpstreamPaymentChannel (rpcProviderNitroNode: NitroPeerConfig): Promise<void> {
+    log(`Adding upstream Nitro node: ${rpcProviderNitroNode.address}`);
+    await this.nitro.addPeerByMultiaddr(rpcProviderNitroNode.address, rpcProviderNitroNode.multiAddr);
+
+    // Create a payment channel with upstream Nitro node
+    // if it doesn't already exist
+    const existingPaymentChannel = await this.getPaymentChannelWithPeer(rpcProviderNitroNode.address);
+    if (existingPaymentChannel) {
+      this.upstreamNodePaymentChannel = existingPaymentChannel;
+      log(`Using existing payment channel ${existingPaymentChannel} with upstream Nitro node`);
+
+      return;
+    }
+
+    await this.nitro.directFund(
+      rpcProviderNitroNode.address,
+      // TODO: Configure amount
+      1_000_000_000_000
+    );
+
+    this.upstreamNodePaymentChannel = await this.nitro.virtualFund(
+      rpcProviderNitroNode.address,
+      // TODO: Configure amount
+      1_000_000_000
+    );
+
+    // TODO: Handle closures
+  }
+
   // Check for a given payment voucher in LRU cache map
   // Returns whether the voucher was found, whether it was of sufficient value
   private acceptReceivedPayment (voucherHash:string, signerAddress: string, minRequiredValue: bigint): [boolean, boolean] {
@@ -261,17 +291,36 @@ export class PaymentsManager {
     return [true, true];
   }
 
-  private async loadPaymentChannels (node: Node): Promise<void> {
-    const ledgerChannels = await node.getAllLedgerChannels();
+  private async loadPaymentChannels (): Promise<void> {
+    const ledgerChannels = await this.nitro.node.getAllLedgerChannels();
 
     for await (const ledgerChannel of ledgerChannels) {
       if (ledgerChannel.status === ChannelStatus.Open) {
-        const paymentChannels = await node.getPaymentChannelsByLedger(ledgerChannel.iD);
+        const paymentChannels = await this.nitro.node.getPaymentChannelsByLedger(ledgerChannel.iD);
 
         for (const paymentChannel of paymentChannels) {
           if (paymentChannel.status === ChannelStatus.Open) {
             this.paidSoFarOnChannel.set(paymentChannel.iD.string(), paymentChannel.balance.paidSoFar);
           }
+        }
+      }
+    }
+  }
+
+  private async getPaymentChannelWithPeer (nitroPeer: string): Promise<string | undefined> {
+    const ledgerChannels = await this.nitro.node.getAllLedgerChannels();
+    for await (const ledgerChannel of ledgerChannels) {
+      if (
+        ledgerChannel.balance.them !== nitroPeer ||
+        ledgerChannel.status !== ChannelStatus.Open
+      ) {
+        continue;
+      }
+
+      const paymentChannels = await this.nitro.node.getPaymentChannelsByLedger(ledgerChannel.iD);
+      for (const paymentChannel of paymentChannels) {
+        if (paymentChannel.status === ChannelStatus.Open) {
+          return paymentChannel.iD.string();
         }
       }
     }

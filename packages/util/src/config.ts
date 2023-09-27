@@ -224,6 +224,11 @@ export interface ServerConfig {
   rpcSupportsBlockHashParam: boolean;
 }
 
+export interface NitroPeerConfig {
+  address: string;
+  multiAddr: string;
+}
+
 export interface UpstreamConfig {
   cache: CacheConfig;
   ethServer: {
@@ -231,6 +236,7 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
+    rpcProviderNitroNode: NitroPeerConfig;
   }
   traceProviderEndpoint: string;
 }
