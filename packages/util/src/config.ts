@@ -229,6 +229,7 @@ export interface UpstreamConfig {
   ethServer: {
     gqlApiEndpoint: string;
     rpcProviderEndpoint: string;
+    rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
   }
   traceProviderEndpoint: string;
