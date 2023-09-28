@@ -3,6 +3,7 @@
 //
 
 import debug from 'debug';
+import assert from 'assert';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
 import { ApolloServerPlugin, GraphQLResponse, GraphQLRequestContext } from 'apollo-server-plugin-base';
@@ -11,7 +12,7 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Voucher } from '@cerc-io/nitro-node';
-import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-node';
+import { utils as nitroUtils, ChannelStatus, Destination } from '@cerc-io/nitro-node';
 
 import { BaseRatesConfig, NitroPeerConfig, PaymentsConfig } from './config';
 
@@ -266,6 +267,24 @@ export class PaymentsManager {
     );
 
     // TODO: Handle closures
+  }
+
+  async sendUpstreamPayment (amount: string): Promise<{
+    channelId: string,
+    amount: string,
+    signature: string
+  }> {
+    assert(this.upstreamNodePaymentChannel);
+
+    const dest = new Destination(this.upstreamNodePaymentChannel);
+    const voucher = await this.nitro.node.createVoucher(dest, BigInt(amount ?? 0));
+    assert(voucher.amount);
+
+    return {
+      channelId: voucher.channelId.string(),
+      amount: voucher.amount.toString(),
+      signature: voucher.signature.toHexString()
+    };
   }
 
   // Check for a given payment voucher in LRU cache map

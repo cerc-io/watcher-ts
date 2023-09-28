@@ -227,6 +227,7 @@ export interface ServerConfig {
 export interface NitroPeerConfig {
   address: string;
   multiAddr: string;
+  amount: string;
 }
 
 export interface UpstreamConfig {
