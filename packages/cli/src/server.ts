@@ -38,7 +38,7 @@ import type {
   Peer
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
-import { Node as NitroNode, utils } from '@cerc-io/nitro-node';
+import { utils } from '@cerc-io/nitro-node';
 // @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import type { Libp2p } from '@cerc-io/libp2p';
 
@@ -55,7 +55,7 @@ export class ServerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
   _peer?: Peer;
-  _nitro?: NitroNode;
+  _nitro?: utils.Nitro;
   _consensus?: Consensus;
 
   constructor () {
@@ -82,7 +82,7 @@ export class ServerCmd {
     return this._peer;
   }
 
-  get nitro (): NitroNode | undefined {
+  get nitro (): utils.Nitro | undefined {
     return this._nitro;
   }
 
@@ -235,7 +235,7 @@ export class ServerCmd {
     return this._consensus;
   }
 
-  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<NitroNode | undefined> {
+  async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<utils.Nitro | undefined> {
     // Start a Nitro node
     const {
       server: {
@@ -246,7 +246,8 @@ export class ServerCmd {
       },
       upstream: {
         ethServer: {
-          rpcProviderEndpoint
+          rpcProviderEndpoint,
+          rpcProviderMutationEndpoint
         }
       }
     } = this._baseCmd.config;
@@ -257,17 +258,26 @@ export class ServerCmd {
     }
 
     assert(this.peer);
-    const nitro = await utils.Nitro.setupNode(
+
+    let chainUrl: string;
+    if (rpcProviderMutationEndpoint) {
+      log('Using rpcProviderMutationEndpoint as chain URL for Nitro node');
+      chainUrl = rpcProviderMutationEndpoint;
+    } else {
+      log('Using rpcProviderEndpoint as chain URL for Nitro node');
+      chainUrl = rpcProviderEndpoint;
+    }
+
+    this._nitro = await utils.Nitro.setupNode(
       nitroConfig.privateKey,
-      rpcProviderEndpoint,
+      chainUrl,
       nitroConfig.chainPrivateKey,
       nitroContractAddresses,
       this.peer,
       path.resolve(nitroConfig.store)
     );
 
-    this._nitro = nitro.node;
-    log(`Nitro node started with address: ${this._nitro.address}`);
+    log(`Nitro node started with address: ${this._nitro.node.address}`);
 
     return this._nitro;
   }
