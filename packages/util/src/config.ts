@@ -237,6 +237,7 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
+    paidRPCMethods: string[];
     rpcProviderNitroNode: NitroPeerConfig;
   }
   traceProviderEndpoint: string;
