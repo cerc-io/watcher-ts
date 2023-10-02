@@ -32,7 +32,7 @@
     "js-yaml": "^4.0.0",
     "lodash": "^4.17.21",
     "node-fetch": "^2",
-    "solc": "0.8.13",
+    "solc": "0.8.21",
     "ts-node": "^10.2.1",
     "typescript": "^5.0.2",
     "yargs": "^17.1.1"
