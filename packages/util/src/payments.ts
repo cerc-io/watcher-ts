@@ -256,14 +256,12 @@ export class PaymentsManager {
 
     await this.nitro.directFund(
       nitro.address,
-      // TODO: Configure amount
-      1_000_000_000_000
+      Number(nitro.fundingAmounts.directFund)
     );
 
     this.upstreamNodePaymentChannel = await this.nitro.virtualFund(
       nitro.address,
-      // TODO: Configure amount
-      1_000_000_000
+      Number(nitro.fundingAmounts.virtualFund)
     );
 
     // TODO: Handle closures

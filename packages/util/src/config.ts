@@ -224,10 +224,15 @@ export interface ServerConfig {
   rpcSupportsBlockHashParam: boolean;
 }
 
+export interface FundingAmountsConfig {
+  directFund: string
+  virtualFund: string
+}
 export interface NitroPeerConfig {
   address: string;
   multiAddr: string;
   amount: string;
+  fundingAmounts: FundingAmountsConfig
 }
 
 export interface UpstreamConfig {
