@@ -224,9 +224,19 @@ export interface ServerConfig {
   rpcSupportsBlockHashParam: boolean;
 }
 
+export interface FundingAmountsConfig {
+  directFund: string;
+  virtualFund: string;
+}
 export interface NitroPeerConfig {
   address: string;
   multiAddr: string;
+  fundingAmounts: FundingAmountsConfig;
+}
+
+export interface EthServerPaymentsConfig {
+  nitro: NitroPeerConfig;
+  paidRPCMethods: string[];
   amount: string;
 }
 
@@ -237,7 +247,7 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
-    rpcProviderNitroNode: NitroPeerConfig;
+    payments: EthServerPaymentsConfig;
   }
   traceProviderEndpoint: string;
 }
