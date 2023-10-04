@@ -232,6 +232,7 @@ export interface NitroPeerConfig {
   address: string;
   multiAddr: string;
   amount: string;
+  paidRPCMethods: string[];
   fundingAmounts: FundingAmountsConfig
 }
 
@@ -242,7 +243,6 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
-    paidRPCMethods: string[];
     nitro: NitroPeerConfig;
   }
   traceProviderEndpoint: string;
