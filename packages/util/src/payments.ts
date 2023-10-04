@@ -4,6 +4,7 @@
 
 import debug from 'debug';
 import assert from 'assert';
+import { providers } from 'ethers';
 import { LRUCache } from 'lru-cache';
 import { FieldNode } from 'graphql';
 import { ApolloServerPlugin, GraphQLResponse, GraphQLRequestContext } from 'apollo-server-plugin-base';
@@ -13,6 +14,8 @@ import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Voucher } from '@cerc-io/nitro-node';
 import { utils as nitroUtils, ChannelStatus, Destination } from '@cerc-io/nitro-node';
+import { deepCopy } from '@ethersproject/properties';
+import { fetchJson } from '@ethersproject/web';
 
 import { BaseRatesConfig, NitroPeerConfig, PaymentsConfig } from './config';
 
@@ -69,8 +72,6 @@ export class PaymentsManager {
 
   private stopSubscriptionLoop: ReadWriteChannel<void>;
   private paymentListeners: ReadWriteChannel<string>[] = [];
-
-  private upstreamNodePaymentChannel?: string;
 
   constructor (nitro: nitroUtils.Nitro, config: PaymentsConfig, baseRatesConfig: BaseRatesConfig) {
     this.nitro = nitro;
@@ -240,41 +241,37 @@ export class PaymentsManager {
     }
   }
 
-  async setupUpstreamPaymentChannel (nitro: NitroPeerConfig): Promise<void> {
-    log(`Adding upstream Nitro node: ${nitro.address}`);
-    await this.nitro.addPeerByMultiaddr(nitro.address, nitro.multiAddr);
+  async setupPaymentChannel (nodeConfig: NitroPeerConfig): Promise<string> {
+    log(`Adding Nitro node: ${nodeConfig.address}`);
+    await this.nitro.addPeerByMultiaddr(nodeConfig.address, nodeConfig.multiAddr);
 
-    // Create a payment channel with upstream Nitro node
+    // Create a payment channel with the given Nitro node
     // if it doesn't already exist
-    const existingPaymentChannel = await this.getPaymentChannelWithPeer(nitro.address);
+    const existingPaymentChannel = await this.getPaymentChannelWithPeer(nodeConfig.address);
     if (existingPaymentChannel) {
-      this.upstreamNodePaymentChannel = existingPaymentChannel;
-      log(`Using existing payment channel ${existingPaymentChannel} with upstream Nitro node`);
-
-      return;
+      log(`Using existing payment channel ${existingPaymentChannel} with Nitro node ${nodeConfig.address}`);
+      return existingPaymentChannel;
     }
 
     await this.nitro.directFund(
-      nitro.address,
-      Number(nitro.fundingAmounts.directFund)
+      nodeConfig.address,
+      Number(nodeConfig.fundingAmounts?.directFund || 0)
     );
 
-    this.upstreamNodePaymentChannel = await this.nitro.virtualFund(
-      nitro.address,
-      Number(nitro.fundingAmounts.virtualFund)
+    return this.nitro.virtualFund(
+      nodeConfig.address,
+      Number(nodeConfig.fundingAmounts?.virtualFund || 0)
     );
 
     // TODO: Handle closures
   }
 
-  async sendUpstreamPayment (amount: string): Promise<{
+  async sendPayment (destChannelId: string, amount: string): Promise<{
     channelId: string,
     amount: string,
     signature: string
   }> {
-    assert(this.upstreamNodePaymentChannel);
-
-    const dest = new Destination(this.upstreamNodePaymentChannel);
+    const dest = new Destination(destChannelId);
     const voucher = await this.nitro.node.createVoucher(dest, BigInt(amount ?? 0));
     assert(voucher.amount);
 
@@ -429,3 +426,90 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
     }
   };
 };
+
+// Helper method to modify a given JsonRpcProvider to make payment for required methods
+// and attach the voucher details in reqeust URL
+export const setupProviderWithPayments = (
+  provider: providers.JsonRpcProvider,
+  paymentsManager: PaymentsManager,
+  paymentChannelId: string,
+  paidRPCMethods: string[],
+  paymentAmount: string
+): void => {
+  // https://github.com/ethers-io/ethers.js/blob/v5.7.2/packages/providers/src.ts/json-rpc-provider.ts#L502
+  provider.send = async (method: string, params: Array<any>): Promise<any> => {
+    log(`Making RPC call: ${method}`);
+
+    const request = {
+      method: method,
+      params: params,
+      id: (provider._nextId++),
+      jsonrpc: '2.0'
+    };
+
+    provider.emit('debug', {
+      action: 'request',
+      request: deepCopy(request),
+      provider: provider
+    });
+
+    // We can expand this in the future to any call, but for now these
+    // are the biggest wins and do not require any serializing parameters.
+    const cache = (['eth_chainId', 'eth_blockNumber'].indexOf(method) >= 0);
+    // @ts-expect-error copied code
+    if (cache && provider._cache[method]) {
+      return provider._cache[method];
+    }
+
+    // Send a payment to upstream Nitro node and add details to the request URL
+    let updatedURL = `${provider.connection.url}?method=${method}`;
+    if (paidRPCMethods.includes(method)) {
+      const voucher = await paymentsManager.sendPayment(paymentChannelId, paymentAmount);
+      updatedURL = `${updatedURL}&channelId=${voucher.channelId}&amount=${voucher.amount}&signature=${voucher.signature}`;
+    }
+
+    const result = fetchJson({ ...provider.connection, url: updatedURL }, JSON.stringify(request), getResult).then((result) => {
+      provider.emit('debug', {
+        action: 'response',
+        request: request,
+        response: result,
+        provider: provider
+      });
+
+      return result;
+    }, (error) => {
+      provider.emit('debug', {
+        action: 'response',
+        error: error,
+        request: request,
+        provider: provider
+      });
+
+      throw error;
+    });
+
+    // Cache the fetch, but clear it on the next event loop
+    if (cache) {
+      provider._cache[method] = result;
+      setTimeout(() => {
+        // @ts-expect-error copied code
+        provider._cache[method] = null;
+      }, 0);
+    }
+
+    return result;
+  };
+};
+
+// https://github.com/ethers-io/ethers.js/blob/v5.7.2/packages/providers/src.ts/json-rpc-provider.ts#L139
+function getResult (payload: { error?: { code?: number, data?: any, message?: string }, result?: any }): any {
+  if (payload.error) {
+    // @TODO: not any
+    const error: any = new Error(payload.error.message);
+    error.code = payload.error.code;
+    error.data = payload.error.data;
+    throw error;
+  }
+
+  return payload.result;
+}

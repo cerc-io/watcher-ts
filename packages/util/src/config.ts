@@ -225,15 +225,19 @@ export interface ServerConfig {
 }
 
 export interface FundingAmountsConfig {
-  directFund: string
-  virtualFund: string
+  directFund: string;
+  virtualFund: string;
 }
 export interface NitroPeerConfig {
   address: string;
   multiAddr: string;
-  amount: string;
+  fundingAmounts: FundingAmountsConfig;
+}
+
+export interface EthServerPaymentsConfig {
+  nitro: NitroPeerConfig;
   paidRPCMethods: string[];
-  fundingAmounts: FundingAmountsConfig
+  amount: string;
 }
 
 export interface UpstreamConfig {
@@ -243,7 +247,7 @@ export interface UpstreamConfig {
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
     rpcClient: boolean;
-    nitro: NitroPeerConfig;
+    payments: EthServerPaymentsConfig;
   }
   traceProviderEndpoint: string;
 }
