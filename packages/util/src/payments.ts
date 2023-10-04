@@ -240,13 +240,13 @@ export class PaymentsManager {
     }
   }
 
-  async setupUpstreamPaymentChannel (rpcProviderNitroNode: NitroPeerConfig): Promise<void> {
-    log(`Adding upstream Nitro node: ${rpcProviderNitroNode.address}`);
-    await this.nitro.addPeerByMultiaddr(rpcProviderNitroNode.address, rpcProviderNitroNode.multiAddr);
+  async setupUpstreamPaymentChannel (nitro: NitroPeerConfig): Promise<void> {
+    log(`Adding upstream Nitro node: ${nitro.address}`);
+    await this.nitro.addPeerByMultiaddr(nitro.address, nitro.multiAddr);
 
     // Create a payment channel with upstream Nitro node
     // if it doesn't already exist
-    const existingPaymentChannel = await this.getPaymentChannelWithPeer(rpcProviderNitroNode.address);
+    const existingPaymentChannel = await this.getPaymentChannelWithPeer(nitro.address);
     if (existingPaymentChannel) {
       this.upstreamNodePaymentChannel = existingPaymentChannel;
       log(`Using existing payment channel ${existingPaymentChannel} with upstream Nitro node`);
@@ -255,13 +255,13 @@ export class PaymentsManager {
     }
 
     await this.nitro.directFund(
-      rpcProviderNitroNode.address,
+      nitro.address,
       // TODO: Configure amount
       1_000_000_000_000
     );
 
     this.upstreamNodePaymentChannel = await this.nitro.virtualFund(
-      rpcProviderNitroNode.address,
+      nitro.address,
       // TODO: Configure amount
       1_000_000_000
     );
