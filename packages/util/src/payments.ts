@@ -462,10 +462,10 @@ export const setupProviderWithPayments = (
     }
 
     // Send a payment to upstream Nitro node and add details to the request URL
-    let updatedURL = `${provider.connection.url}?method=${method}`;
+    let updatedURL = provider.connection.url;
     if (paidRPCMethods.includes(method)) {
       const voucher = await paymentsManager.sendPayment(paymentChannelId, paymentAmount);
-      updatedURL = `${updatedURL}&channelId=${voucher.channelId}&amount=${voucher.amount}&signature=${voucher.signature}`;
+      updatedURL = `${updatedURL}?channelId=${voucher.channelId}&amount=${voucher.amount}&signature=${voucher.signature}`;
     }
 
     const result = fetchJson({ ...provider.connection, url: updatedURL }, JSON.stringify(request), getResult).then((result) => {
