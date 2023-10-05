@@ -237,20 +237,7 @@ export class ServerCmd {
 
   async initNitro (nitroContractAddresses: { [key: string]: string }): Promise<utils.Nitro | undefined> {
     // Start a Nitro node
-    const {
-      server: {
-        p2p: {
-          enablePeer,
-          nitro: nitroConfig
-        }
-      },
-      upstream: {
-        ethServer: {
-          rpcProviderEndpoint,
-          rpcProviderMutationEndpoint
-        }
-      }
-    } = this._baseCmd.config;
+    const { server: { p2p: { enablePeer, nitro: nitroConfig } } } = this._baseCmd.config;
 
     // Nitro requires p2p peer to be enabled
     if (!enablePeer || !nitroConfig) {
@@ -259,18 +246,10 @@ export class ServerCmd {
 
     assert(this.peer);
 
-    let chainUrl: string;
-    if (rpcProviderMutationEndpoint) {
-      log('Using rpcProviderMutationEndpoint as chain URL for Nitro node');
-      chainUrl = rpcProviderMutationEndpoint;
-    } else {
-      log('Using rpcProviderEndpoint as chain URL for Nitro node');
-      chainUrl = rpcProviderEndpoint;
-    }
-
+    log(`Using chain URL ${nitroConfig.chainUrl} for Nitro node`);
     this._nitro = await utils.Nitro.setupNode(
       nitroConfig.privateKey,
-      chainUrl,
+      nitroConfig.chainUrl,
       nitroConfig.chainPrivateKey,
       nitroContractAddresses,
       this.peer,

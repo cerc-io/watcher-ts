@@ -157,6 +157,7 @@ export interface PaymentsConfig {
 
 // ts-nitro config
 export interface NitroConfig {
+  chainUrl: string;
   store: string;
 
   privateKey: string;
