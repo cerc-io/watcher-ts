@@ -412,6 +412,26 @@ export const validateGQLRequest = async (
     return true;
   }
 
+  const paidQuerySelections = (querySelections ?? []).filter(querySelection => {
+    if (paymentsManager.freeQueriesList.includes(querySelection)) {
+      return false;
+    }
+
+    // Serve a query for free if rate is not configured
+    const configuredQueryCost = paymentsManager.queryRates[querySelection];
+    if (configuredQueryCost === undefined) {
+      log(`Query rate not configured for "${querySelection}", serving free query`);
+      return false;
+    }
+
+    return true;
+  });
+
+  // Return true if no paid queries exist
+  if (!paidQuerySelections.length) {
+    return true;
+  }
+
   if (!paymentHeader) {
     throw new GQLPaymentError(ERR_HEADER_MISSING, HTTP_CODE_BAD_REQUEST);
   }
@@ -427,19 +447,7 @@ export const validateGQLRequest = async (
 
   const signerAddress = nitroUtils.getSignerAddress(vhash, vsig);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for await (const querySelection of querySelections ?? []) {
-    if (paymentsManager.freeQueriesList.includes(querySelection)) {
-      continue;
-    }
-
-    // Serve a query for free if rate is not configured
-    const configuredQueryCost = paymentsManager.queryRates[querySelection];
-    if (configuredQueryCost === undefined) {
-      log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
-      continue;
-    }
-
+  for await (const querySelection of paidQuerySelections) {
     const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, signerAddress, querySelection);
     if (!allowRequest) {
       throw new GQLPaymentError(rejectionMessage, HTTP_CODE_PAYMENT_REQUIRED);
