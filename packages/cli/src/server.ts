@@ -253,6 +253,7 @@ export class ServerCmd {
       nitroConfig.chainPrivateKey,
       nitroContractAddresses,
       this.peer,
+      true,
       path.resolve(nitroConfig.store)
     );
 
