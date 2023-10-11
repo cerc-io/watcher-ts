@@ -24,7 +24,7 @@ const log = debug('laconic:payments');
 const IntrospectionQuery = 'IntrospectionQuery';
 const IntrospectionQuerySelection = '__schema';
 
-const PAYMENT_HEADER_KEY = 'x-payment';
+export const PAYMENT_HEADER_KEY = 'x-payment';
 const PAYMENT_HEADER_REGEX = /vhash:(.*),vsig:(.*)/;
 
 const ERR_FREE_QUOTA_EXHUASTED = 'Free quota exhausted';
