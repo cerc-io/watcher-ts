@@ -355,76 +355,98 @@ export const paymentsPlugin = (paymentsManager?: PaymentsManager): ApolloServerP
           const querySelections = requestContext.operation?.selectionSet.selections
             .map((selection: any) => (selection as FieldNode).name.value);
 
-          // Continue if it's an introspection query for schema
-          // (made by ApolloServer playground / default landing page)
-          if (
-            requestContext.operationName === IntrospectionQuery &&
-            querySelections && querySelections.length === 1 &&
-            querySelections[0] === IntrospectionQuerySelection
-          ) {
+          try {
+            await validateGQLRequest(
+              paymentsManager,
+              {
+                querySelections,
+                operationName: requestContext.operationName,
+                paymentHeader: requestContext.request.http?.headers.get(PAYMENT_HEADER_KEY)
+              }
+            );
+
             return null;
-          }
-
-          const paymentHeader = requestContext.request.http?.headers.get(PAYMENT_HEADER_KEY);
-          if (paymentHeader == null) {
-            return {
-              errors: [{ message: ERR_HEADER_MISSING }],
-              http: new HTTPResponse(undefined, {
-                headers: requestContext.response?.http?.headers,
-                status: HTTP_CODE_BAD_REQUEST
-              })
-            };
-          }
-
-          let vhash: string, vsig: string;
-          const match = paymentHeader.match(PAYMENT_HEADER_REGEX);
-
-          if (match) {
-            [, vhash, vsig] = match;
-          } else {
-            return {
-              errors: [{ message: ERR_INVALID_PAYMENT_HEADER }],
-              http: new HTTPResponse(undefined, {
-                headers: requestContext.response?.http?.headers,
-                status: HTTP_CODE_BAD_REQUEST
-              })
-            };
-          }
-
-          const signerAddress = nitroUtils.getSignerAddress(vhash, vsig);
-
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          for await (const querySelection of querySelections ?? []) {
-            if (paymentsManager.freeQueriesList.includes(querySelection)) {
-              continue;
-            }
-
-            // Serve a query for free if rate is not configured
-            const configuredQueryCost = paymentsManager.queryRates[querySelection];
-            if (configuredQueryCost === undefined) {
-              log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
-              continue;
-            }
-
-            const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, signerAddress, querySelection);
-            if (!allowRequest) {
-              const failResponse: GraphQLResponse = {
-                errors: [{ message: rejectionMessage }],
+          } catch (error) {
+            if (error instanceof GQLPaymentError) {
+              return {
+                errors: [{ message: error.message }],
                 http: new HTTPResponse(undefined, {
                   headers: requestContext.response?.http?.headers,
-                  status: HTTP_CODE_PAYMENT_REQUIRED
+                  status: error.status
                 })
               };
-
-              return failResponse;
             }
-          }
 
-          return null;
+            throw error;
+          }
         }
       };
     }
   };
+};
+
+class GQLPaymentError extends Error {
+  status: number;
+
+  constructor (message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export const validateGQLRequest = async (
+  paymentsManager: PaymentsManager,
+  { operationName, querySelections, paymentHeader }: {
+    operationName?: string | null;
+    querySelections?: string[];
+    paymentHeader?: string | null;
+  }
+): Promise<boolean> => {
+  // Return true if it's an introspection query for schema
+  // (made by ApolloServer playground / default landing page)
+  if (
+    operationName === IntrospectionQuery &&
+    querySelections && querySelections.length === 1 &&
+    querySelections[0] === IntrospectionQuerySelection
+  ) {
+    return true;
+  }
+
+  if (!paymentHeader) {
+    throw new GQLPaymentError(ERR_HEADER_MISSING, HTTP_CODE_BAD_REQUEST);
+  }
+
+  let vhash: string, vsig: string;
+  const match = paymentHeader.match(PAYMENT_HEADER_REGEX);
+
+  if (match) {
+    [, vhash, vsig] = match;
+  } else {
+    throw new GQLPaymentError(ERR_INVALID_PAYMENT_HEADER, HTTP_CODE_BAD_REQUEST);
+  }
+
+  const signerAddress = nitroUtils.getSignerAddress(vhash, vsig);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for await (const querySelection of querySelections ?? []) {
+    if (paymentsManager.freeQueriesList.includes(querySelection)) {
+      continue;
+    }
+
+    // Serve a query for free if rate is not configured
+    const configuredQueryCost = paymentsManager.queryRates[querySelection];
+    if (configuredQueryCost === undefined) {
+      log(`Query rate not configured for "${querySelection}", serving a free query to ${signerAddress}`);
+      continue;
+    }
+
+    const [allowRequest, rejectionMessage] = await paymentsManager.allowRequest(vhash, signerAddress, querySelection);
+    if (!allowRequest) {
+      throw new GQLPaymentError(rejectionMessage, HTTP_CODE_PAYMENT_REQUIRED);
+    }
+  }
+
+  return true;
 };
 
 // Helper method to modify a given JsonRpcProvider to make payment for required methods
