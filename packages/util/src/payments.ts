@@ -489,16 +489,14 @@ export const setupProviderWithPayments = (
     }
 
     // Send a payment to upstream Nitro node and add details to the request URL
-    let headers;
+    let headers = {};
 
     if (paidRPCMethods.includes(method)) {
       const voucher = await paymentsManager.sendPayment(paymentChannelId, paymentAmount);
-      headers = {
-        'X-Payment': `vhash:${voucher.vhash},vsig:${voucher.vsig}`
-      };
+      headers = { 'X-Payment': `vhash:${voucher.vhash},vsig:${voucher.vsig}` };
     }
 
-    const result = fetchJson({ ...provider.connection, url: provider.connection.url, headers }, JSON.stringify(request), getResult).then((result) => {
+    const result = fetchJson({ ...provider.connection, headers }, JSON.stringify(request), getResult).then((result) => {
       provider.emit('debug', {
         action: 'response',
         request: request,
