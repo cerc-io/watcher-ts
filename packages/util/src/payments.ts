@@ -13,7 +13,7 @@ import { Response as HTTPResponse } from 'apollo-server-env';
 import Channel from '@cerc-io/ts-channel';
 import type { ReadWriteChannel } from '@cerc-io/ts-channel';
 import type { Voucher } from '@cerc-io/nitro-node';
-import { utils as nitroUtils, ChannelStatus, Destination } from '@cerc-io/nitro-node';
+import { utils as nitroUtils, ChannelStatus } from '@cerc-io/nitro-node';
 import { deepCopy } from '@ethersproject/properties';
 import { fetchJson } from '@ethersproject/web';
 
@@ -267,18 +267,15 @@ export class PaymentsManager {
   }
 
   async sendPayment (destChannelId: string, amount: string): Promise<{
-    channelId: string,
-    amount: string,
-    signature: string
+    vhash:string,
+    vsig:string
   }> {
-    const dest = new Destination(destChannelId);
-    const voucher = await this.nitro.node.createVoucher(dest, BigInt(amount ?? 0));
+    const voucher = await this.nitro.pay(destChannelId, Number(amount));
     assert(voucher.amount);
 
     return {
-      channelId: voucher.channelId.string(),
-      amount: voucher.amount.toString(),
-      signature: voucher.signature.toHexString()
+      vhash: voucher.hash(),
+      vsig: voucher.signature.toHexString()
     };
   }
 
@@ -492,13 +489,14 @@ export const setupProviderWithPayments = (
     }
 
     // Send a payment to upstream Nitro node and add details to the request URL
-    let updatedURL = provider.connection.url;
+    let headers = {};
+
     if (paidRPCMethods.includes(method)) {
       const voucher = await paymentsManager.sendPayment(paymentChannelId, paymentAmount);
-      updatedURL = `${updatedURL}?channelId=${voucher.channelId}&amount=${voucher.amount}&signature=${voucher.signature}`;
+      headers = { 'X-Payment': `vhash:${voucher.vhash},vsig:${voucher.vsig}` };
     }
 
-    const result = fetchJson({ ...provider.connection, url: updatedURL }, JSON.stringify(request), getResult).then((result) => {
+    const result = fetchJson({ ...provider.connection, headers }, JSON.stringify(request), getResult).then((result) => {
       provider.emit('debug', {
         action: 'response',
         request: request,
