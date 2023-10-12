@@ -36,11 +36,11 @@ jobs:
           yarn build
           yarn test:init
           yarn test
-  build:
-    name: Run docker build
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run docker build
-        run: make docker-build
+  # build:
+  #   name: Run docker build
+  #   runs-on: ubuntu-latest
+  #   needs: test
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Run docker build
+  #       run: make docker-build

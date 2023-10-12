@@ -39,21 +39,21 @@ jobs:
           yarn build
           yarn test:init
           yarn test
-  build:
-    name: Run docker build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get the version
-        id: vars
-        run: |
-            echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
-            echo ::set-output name=repo::$(echo ${{ github.repository }})
-      - name: Run docker build
-        run: make docker-build
-      - name: Tag docker image
-        run: docker tag ${{steps.vars.outputs.repo}} ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
-      - name: Docker Login
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u cerc-io --password-stdin
-      - name: Docker Push
-        run: docker push ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
+  # build:
+  #   name: Run docker build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Get the version
+  #       id: vars
+  #       run: |
+  #           echo ::set-output name=sha::$(echo ${GITHUB_SHA:0:7})
+  #           echo ::set-output name=repo::$(echo ${{ github.repository }})
+  #     - name: Run docker build
+  #       run: make docker-build
+  #     - name: Tag docker image
+  #       run: docker tag ${{steps.vars.outputs.repo}} ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
+  #     - name: Docker Login
+  #       run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u cerc-io --password-stdin
+  #     - name: Docker Push
+  #       run: docker push ghcr.io/${{steps.vars.outputs.repo}}:${{steps.vars.outputs.sha}}
