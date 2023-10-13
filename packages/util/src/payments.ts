@@ -255,12 +255,12 @@ export class PaymentsManager {
 
     await this.nitro.directFund(
       nodeConfig.address,
-      Number(nodeConfig.fundingAmounts?.directFund || 0)
+      nodeConfig.fundingAmounts?.directFund ?? '0'
     );
 
     return this.nitro.virtualFund(
       nodeConfig.address,
-      Number(nodeConfig.fundingAmounts?.virtualFund || 0)
+      nodeConfig.fundingAmounts?.virtualFund ?? '0'
     );
 
     // TODO: Handle closures
@@ -270,7 +270,7 @@ export class PaymentsManager {
     vhash:string,
     vsig:string
   }> {
-    const voucher = await this.nitro.pay(destChannelId, Number(amount));
+    const voucher = await this.nitro.pay(destChannelId, amount);
     assert(voucher.amount);
 
     return {

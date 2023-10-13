@@ -350,13 +350,13 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-node@^0.1.13":
-  version "0.1.13"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.13/nitro-node-0.1.13.tgz#3a4661e5019802fdb4ec06ac6698bf772eaf5d8e"
-  integrity sha512-U64qUUjla/sRyfnPC/12qNqDa+5R+1GlVZE1CO50vIhf2wTA2Sr7xwhqbGo277YhjD9xfalyZPZ0BiIvaAXBCQ==
+"@cerc-io/nitro-node@^0.1.14":
+  version "0.1.14"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.14/nitro-node-0.1.14.tgz#9439f56aab562ea8809b923302c6b8f0be472f4e"
+  integrity sha512-eZuG4+tuWul+UkxiQ+sOYmaYS7M8LmuxKLn5tWRuURXo9l1ynxkoovPDTte3obuuGDITGJTdOvVFZtOs6ryKtw==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.4"
-    "@cerc-io/nitro-util" "^0.1.13"
+    "@cerc-io/nitro-util" "^0.1.14"
     "@cerc-io/peer" "^0.2.60"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@jpwilliams/waitgroup" "^2.1.0"
@@ -376,10 +376,10 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.13":
-  version "0.1.13"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.13/nitro-util-0.1.13.tgz#72ad7bdbce952577f052b0f7dee5d4b2019f414f"
-  integrity sha512-jlGGaGx6YGbiNDSqQvoAFt7GcYTH2rQT2iAnnb33IglnzQvcjyczJws+jMoPPauvcw1bhG5VxKvL529otm0Nbw==
+"@cerc-io/nitro-util@^0.1.14":
+  version "0.1.14"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.14/nitro-util-0.1.14.tgz#6ee1b2f95c3fc64bf73f8be0a2bd4f9ede823085"
+  integrity sha512-LnrTWzSaWwH4SBY1KtsKIdDpIkH8jhR9rr3VX5w9UWbXO8vgw+SmJFiVY+xRglVE/YRJvfofyUDKuCXBGsKrgw==
   dependencies:
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@statechannels/nitro-protocol" "^2.0.0-alpha.5"
