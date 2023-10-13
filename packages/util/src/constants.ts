@@ -28,4 +28,4 @@ export const DEFAULT_PREFETCH_BATCH_SIZE = 10;
 
 export const DEFAULT_MAX_GQL_CACHE_SIZE = Math.pow(2, 20) * 8; // 8 MB
 
-export const VALID_ETH_RPC_METHODS = ['eth_getBlockByHash', 'eth_getStorageAt', 'eth_getBlockByNumber'];
+export const SUPPORTED_PAID_RPC_METHODS = ['eth_getBlockByHash', 'eth_getStorageAt', 'eth_getBlockByNumber'];

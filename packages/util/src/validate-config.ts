@@ -3,45 +3,52 @@ import { Client } from 'pg';
 import debug from 'debug';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import WebSocket from 'ws';
+import path from 'path';
+import fs from 'fs-extra';
 
-import { VALID_ETH_RPC_METHODS } from './constants';
+import { SUPPORTED_PAID_RPC_METHODS } from './constants';
 
 const log = debug('vulcanize:server');
 
-async function validateContractDeployment (rpcEndpoint: string, contractAddress: string): Promise<void> {
+async function validateContractDeployment (rpcEndpoint: string, contractInfo: {address:string, name?:string}, isWs: boolean): Promise<void> {
   try {
-    const provider = await new ethers.providers.JsonRpcProvider(rpcEndpoint);
-    const code = await provider.getCode(contractAddress);
-    if (code === '0x') {
-      log(`WARNING: Contract is not deployed at address ${contractAddress}`);
+    let provider;
+    if (isWs) {
+      provider = new ethers.providers.WebSocketProvider(rpcEndpoint);
     } else {
-      log(`SUCCESS: Contract is deployed at address ${contractAddress}`);
+      provider = new ethers.providers.JsonRpcProvider(rpcEndpoint);
+    }
+    const code = await provider.getCode(contractInfo.address);
+    if (code === '0x') {
+      log(`WARNING: Contract ${contractInfo.name ? contractInfo.name : ''} is not deployed at ${contractInfo.address}`);
+    } else {
+      log(`SUCCESS: Contract ${contractInfo.name ? contractInfo.name : ''} is deployed at ${contractInfo.address}`);
     }
   } catch (error) {
     log(error);
   }
 }
 
-function validateContractAddressFormat (contractAddress: string): void {
-  if (ethers.utils.isAddress(contractAddress)) {
-    log(`SUCCESS: Given contract address ${contractAddress} is in a valid format`);
+function validateContractAddressFormat (contractInfo: {address:string, name?:string}): void {
+  if (ethers.utils.isAddress(contractInfo.address)) {
+    log(`SUCCESS: The ${contractInfo.name ? contractInfo.name : 'contract'} ${contractInfo.address} is in a valid format`);
   } else {
-    log(`WARNING: Given contract address ${contractAddress} is not in a valid format`);
+    log(`WARNING: The ${contractInfo.name ? contractInfo.name : 'contract'} ${contractInfo.address} is not in a valid format`);
   }
 }
 
-export async function validateContracts (contractsArr: string[], rpcProviderMutationEndpoint: string): Promise<void> {
-  contractsArr.forEach((contractAddr: string) => {
-    validateContractAddressFormat(contractAddr);
-    validateContractDeployment(rpcProviderMutationEndpoint, contractAddr);
+export async function validateContracts (contractsArr: {address:string, name?:string}[], rpcProviderMutationEndpoint: string, isWs: boolean): Promise<void> {
+  contractsArr.forEach((contract) => {
+    validateContractAddressFormat(contract);
+    validateContractDeployment(rpcProviderMutationEndpoint, contract, isWs);
   });
 }
 
-export async function validateEndpoint (endPoint: string, kind: string): Promise<void> {
+export async function validateHttpEndpoint (endPoint: string, kind: string): Promise<void> {
   try {
     const response = await fetch(endPoint);
     if (!response.ok) {
-      log(`WARNING: HTTP error! Status: ${response.status}`);
+      log(`WARNING: HTTP error! for endpoint ${endPoint} Status: ${response.status}`);
     } else {
       log(`SUCCESS: The ${endPoint} is up`);
     }
@@ -90,7 +97,7 @@ async function checkWebSocket (wsEndpoint: string) {
   });
 }
 
-export async function validateNitroChainUrl (wsEndpoint: string): Promise<void> {
+export async function validateWebSocketEndpoint (wsEndpoint: string): Promise<void> {
   try {
     await checkWebSocket(wsEndpoint);
     log(`The WebSocket endpoint ${wsEndpoint} is running.`);
@@ -99,12 +106,22 @@ export async function validateNitroChainUrl (wsEndpoint: string): Promise<void> 
   }
 }
 
-export async function validateEthRPCMethods (paidRPCMethods: string[]): Promise<void> {
+export async function validatePaidRPCMethods (paidRPCMethods: string[]): Promise<void> {
   paidRPCMethods.forEach((method) => {
-    if (VALID_ETH_RPC_METHODS.includes(method)) {
+    if (SUPPORTED_PAID_RPC_METHODS.includes(method)) {
       log(`SUCESS: ${method} is a valid JsonRpcMethod`);
     } else {
       log(`WARNING: ${method} is not a valid JsonRpcMethod`);
     }
   });
+}
+
+export async function validateFilePath (configFile: string): Promise<void> {
+  const configFilePath = path.resolve(configFile);
+  const fileExists = await fs.pathExists(configFilePath);
+  if (!fileExists) {
+    log(`WARNING: Config file not found: ${configFilePath}`);
+  } else {
+    log(`SUCCESS: Config file found: ${configFilePath}`);
+  }
 }
