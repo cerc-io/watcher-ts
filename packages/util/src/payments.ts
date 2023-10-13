@@ -270,7 +270,7 @@ export class PaymentsManager {
     vhash:string,
     vsig:string
   }> {
-    const voucher = await this.nitro.pay(destChannelId, Number(amount));
+    const voucher = await this.nitro.pay(destChannelId, amount);
     assert(voucher.amount);
 
     return {
