@@ -52,11 +52,7 @@ export async function validateContracts (contractsArr: {address:string, name?:st
 export async function validateHttpEndpoint (endPoint: string, kind: string): Promise<void> {
   try {
     const response = await fetch(endPoint);
-    if (!response.ok) {
-      log(`WARNING: HTTP error! for endpoint ${endPoint} Status: ${response.status}`);
-    } else {
-      log(`SUCCESS: The ${endPoint} is up`);
-    }
+    log(`SUCCESS: The ${endPoint} is up. Status ${response.status}`);
   } catch (error:any) {
     log(`WARNING: could not connect to ${endPoint}. Please check if the ${kind} is correct and up.`);
     log(error);
