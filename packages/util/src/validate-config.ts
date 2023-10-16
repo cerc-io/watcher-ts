@@ -29,18 +29,23 @@ async function validateContractDeployment (rpcEndpoint: string, contractInfo: {a
   }
 }
 
-function validateContractAddressFormat (contractInfo: {address:string, name?:string}): void {
+function validateContractAddressFormat (contractInfo: {address:string, name?:string}): boolean {
   if (ethers.utils.isAddress(contractInfo.address)) {
     log(`SUCCESS: Address ${contractInfo.address} ${contractInfo.name ? `for ${contractInfo.name}` : ''} is in a valid format`);
+    return true;
   } else {
     log(`WARNING: Address ${contractInfo.address} ${contractInfo.name ? `for ${contractInfo.name}` : ''} is not in a valid format`);
+    return false;
   }
 }
 
 export async function validateContracts (contractsArr: {address:string, name?:string}[], rpcProviderMutationEndpoint: string, isWs: boolean): Promise<void> {
   contractsArr.forEach((contract) => {
-    validateContractAddressFormat(contract);
-    validateContractDeployment(rpcProviderMutationEndpoint, contract, isWs);
+    const isValidFormat = validateContractAddressFormat(contract);
+
+    if (isValidFormat) {
+      validateContractDeployment(rpcProviderMutationEndpoint, contract, isWs);
+    }
   });
 }
 
