@@ -31,9 +31,9 @@ async function validateContractDeployment (rpcEndpoint: string, contractInfo: {a
 
 function validateContractAddressFormat (contractInfo: {address:string, name?:string}): void {
   if (ethers.utils.isAddress(contractInfo.address)) {
-    log(`SUCCESS: The ${contractInfo.name ? contractInfo.name : 'contract'} ${contractInfo.address} is in a valid format`);
+    log(`SUCCESS: Address ${contractInfo.address} ${contractInfo.name ? `for ${contractInfo.name}` : ''} is in a valid format`);
   } else {
-    log(`WARNING: The ${contractInfo.name ? contractInfo.name : 'contract'} ${contractInfo.address} is not in a valid format`);
+    log(`WARNING: Address ${contractInfo.address} ${contractInfo.name ? `for ${contractInfo.name}` : ''} is not in a valid format`);
   }
 }
 
