@@ -68,7 +68,7 @@ async function checkDBEndpoint (connectionString: string, dbKind: string): Promi
     await client.connect();
     log(`SUCCESS: ${dbKind} endpoint is up!`);
   } catch (error) {
-    log('WARNING: Error connecting to job queue database. Please check if job queue config is setup and database is running \n', error);
+    log(`WARNING: Error connecting to ${dbKind} database. Please check if job queue config is setup and database is running \n`, error);
   } finally {
     await client.end();
   }
@@ -101,7 +101,7 @@ async function checkWebSocket (wsEndpoint: string) {
 export async function validateWebSocketEndpoint (wsEndpoint: string): Promise<void> {
   try {
     await checkWebSocket(wsEndpoint);
-    log(`The WebSocket endpoint ${wsEndpoint} is running.`);
+    log(`SUCCESS: The WebSocket endpoint ${wsEndpoint} is running.`);
   } catch (error) {
     log(`WARNING: Error connecting to websocket endpoint ${wsEndpoint}. Please check if server.p2p.nitro.chainUrl is correct.`, error);
   }
@@ -110,7 +110,7 @@ export async function validateWebSocketEndpoint (wsEndpoint: string): Promise<vo
 export async function validatePaidRPCMethods (paidRPCMethods: string[]): Promise<void> {
   paidRPCMethods.forEach((method) => {
     if (SUPPORTED_PAID_RPC_METHODS.includes(method)) {
-      log(`SUCESS: ${method} is a supported paid RPC method`);
+      log(`SUCCESS: ${method} is a supported paid RPC method`);
     } else {
       log(`WARNING: ${method} is not a supported paid RPC method`);
     }
