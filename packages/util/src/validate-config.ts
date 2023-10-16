@@ -66,7 +66,7 @@ async function checkDBEndpoint (connectionString: string, dbKind: string): Promi
 
   try {
     await client.connect();
-    log(`SUCCESS: ${dbKind} endpoint is up!`);
+    log(`SUCCESS: ${dbKind} endpoint is up.`);
   } catch (error) {
     log(`WARNING: Error connecting to ${dbKind} database. Please check if job queue config is setup and database is running \n`, error);
   } finally {
@@ -101,7 +101,7 @@ async function checkWebSocket (wsEndpoint: string) {
 export async function validateWebSocketEndpoint (wsEndpoint: string): Promise<void> {
   try {
     await checkWebSocket(wsEndpoint);
-    log(`SUCCESS: The WebSocket endpoint ${wsEndpoint} is running.`);
+    log(`SUCCESS: The WebSocket endpoint ${wsEndpoint} is up.`);
   } catch (error) {
     log(`WARNING: Error connecting to websocket endpoint ${wsEndpoint}. Please check if server.p2p.nitro.chainUrl is correct.`, error);
   }
