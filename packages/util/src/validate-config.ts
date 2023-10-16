@@ -109,9 +109,9 @@ export async function validateWebSocketEndpoint (wsEndpoint: string): Promise<vo
 export async function validatePaidRPCMethods (paidRPCMethods: string[]): Promise<void> {
   paidRPCMethods.forEach((method) => {
     if (SUPPORTED_PAID_RPC_METHODS.includes(method)) {
-      log(`SUCESS: ${method} is a valid JsonRpcMethod`);
+      log(`SUCESS: ${method} is a supported paid RPC method`);
     } else {
-      log(`WARNING: ${method} is not a valid JsonRpcMethod`);
+      log(`WARNING: ${method} is not a supported paid RPC method`);
     }
   });
 }
