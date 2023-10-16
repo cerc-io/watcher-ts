@@ -194,6 +194,7 @@ export interface ServerConfig {
   port: number;
   mode: string;
   kind: string;
+  enableConfigValidation: boolean;
   checkpointing: boolean;
   checkpointInterval: number;
   subgraphPath: string;
