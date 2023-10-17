@@ -254,7 +254,7 @@ export class ServerCmd {
       nitroContractAddresses,
       this.peer,
       true,
-      path.resolve(nitroConfig.store)
+      path.resolve(nitroConfig.store || './out/nitro-data')
     );
 
     log(`Nitro node started with address: ${this._nitro.node.address}`);
