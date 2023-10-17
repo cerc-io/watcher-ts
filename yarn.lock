@@ -350,20 +350,20 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-node@^0.1.14":
-  version "0.1.14"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.14/nitro-node-0.1.14.tgz#9439f56aab562ea8809b923302c6b8f0be472f4e"
-  integrity sha512-eZuG4+tuWul+UkxiQ+sOYmaYS7M8LmuxKLn5tWRuURXo9l1ynxkoovPDTte3obuuGDITGJTdOvVFZtOs6ryKtw==
+"@cerc-io/nitro-node@^0.1.15":
+  version "0.1.15"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-node/-/0.1.15/nitro-node-0.1.15.tgz#c36c48591fd5615768cf31eb17510b86f232bd49"
+  integrity sha512-wE8tWD7m8lZ3TEMnaI19YOiJLA8Sm9UOHsPKzzjCE2xIJ0X5HmSW4qi6BJEGd8VnlFGbBDXzG+O2DBYUWRpi2g==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.4"
-    "@cerc-io/nitro-util" "^0.1.14"
-    "@cerc-io/peer" "^0.2.60"
+    "@cerc-io/nitro-util" "^0.1.15"
+    "@cerc-io/peer" "^0.2.65"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@jpwilliams/waitgroup" "^2.1.0"
     "@libp2p/crypto" "^1.0.4"
     "@libp2p/tcp" "^6.0.0"
     "@multiformats/multiaddr" "^11.1.4"
-    "@statechannels/nitro-protocol" "^2.0.0-alpha.5"
+    "@statechannels/nitro-protocol" "^2.0.1-alpha.5"
     assert "^2.0.0"
     async-mutex "^0.4.0"
     debug "^4.3.4"
@@ -376,13 +376,13 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.14":
-  version "0.1.14"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.14/nitro-util-0.1.14.tgz#6ee1b2f95c3fc64bf73f8be0a2bd4f9ede823085"
-  integrity sha512-LnrTWzSaWwH4SBY1KtsKIdDpIkH8jhR9rr3VX5w9UWbXO8vgw+SmJFiVY+xRglVE/YRJvfofyUDKuCXBGsKrgw==
+"@cerc-io/nitro-util@^0.1.15":
+  version "0.1.15"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.15/nitro-util-0.1.15.tgz#693dcb9642ebab490f9c2088fbe490fb6ecfb438"
+  integrity sha512-ByFq+Ne8dUp2omvm2Wui19r22CvXmdIJeAnN+8BhCU/B0e01zHgPhoaoQ3FX5F/NFG7+eiuFHpVdmBRq+cbnUA==
   dependencies:
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
-    "@statechannels/nitro-protocol" "^2.0.0-alpha.5"
+    "@statechannels/nitro-protocol" "^2.0.1-alpha.5"
     assert "^2.0.0"
     debug "^4.3.4"
     ethers "^5.7.2"
@@ -3752,10 +3752,10 @@
     ethers "^5.1.4"
     lodash "^4.17.21"
 
-"@statechannels/nitro-protocol@^2.0.0-alpha.5":
-  version "2.0.0-alpha.5"
-  resolved "https://registry.yarnpkg.com/@statechannels/nitro-protocol/-/nitro-protocol-2.0.0-alpha.5.tgz#9b51ee8170de9f51816144c06f568199ccab3237"
-  integrity sha512-b4rlq0D97MidlKL3MxOsn1Rtl5VzH26xyvVSe8iZXapUdpYfsIH8Nj5PqVki7drFJWVYjVTjwDwc5pvRW8jNbg==
+"@statechannels/nitro-protocol@^2.0.1-alpha.5":
+  version "2.0.1-alpha.5"
+  resolved "https://registry.yarnpkg.com/@statechannels/nitro-protocol/-/nitro-protocol-2.0.1-alpha.5.tgz#3aa09dacf6780a47ff415de23123f9aafe2534ec"
+  integrity sha512-CT32i5ZlZ0Jz8mAOmywALCnS/+Cl7ntrRlJr2r3jGBkkzNBWxHWR4qXg6HTUh7xxm5tY/g/TSmsGH8/z54K/Sw==
   dependencies:
     "@openzeppelin/contracts" "^4.7.3"
     "@statechannels/exit-format" "^0.2.0"
