@@ -5,6 +5,7 @@
 import assert from 'assert';
 
 import { Cache } from '@cerc-io/cache';
+import { EthClient as EthClientInterface } from '@cerc-io/util';
 
 import ethQueries from './eth-queries';
 import { padKey } from './utils';
@@ -22,7 +23,7 @@ interface Vars {
   addresses?: string[];
 }
 
-export class EthClient {
+export class EthClient implements EthClientInterface {
   _graphqlClient: GraphQLClient;
   _cache: Cache | undefined;
 
