@@ -218,6 +218,10 @@ export interface EthClient {
     blockHash: string,
     blockNumber: string,
     addresses?: string[]
+  } | {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[]
   }): Promise<any>;
 }
 

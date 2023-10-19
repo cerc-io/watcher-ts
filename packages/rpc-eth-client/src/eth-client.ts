@@ -7,7 +7,7 @@ import { errors, providers, utils } from 'ethers';
 import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, getRawTransaction } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, getRawTransaction, EthClient as EthClientInterface } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
@@ -21,9 +21,11 @@ interface Vars {
   contract?: string;
   slot?: string;
   addresses?: string[];
+  fromBlock?: number;
+  toBlock?: number;
 }
 
-export class EthClient {
+export class EthClient implements EthClientInterface {
   _provider: providers.JsonRpcProvider;
   _cache: Cache | undefined;
 
@@ -230,17 +232,36 @@ export class EthClient {
     };
   }
 
-  async getLogs (vars: { blockHash: string, blockNumber: string, addresses?: string[] }): Promise<any> {
-    const { blockNumber, addresses = [] } = vars;
-
+  async getLogs (vars: {
+    blockHash: string,
+    blockNumber: string,
+    addresses?: string[]
+  } | {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[]
+  }): Promise<any> {
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+
+    let fromBlock: number | undefined;
+    let toBlock: number | undefined;
+    if ('blockNumber' in vars) {
+      fromBlock = Number(vars.blockNumber);
+      toBlock = Number(vars.blockNumber);
+    } else {
+      fromBlock = vars.fromBlock;
+      toBlock = vars.toBlock;
+    }
+
+    const { addresses = [] } = vars;
+
     const result = await this._getCachedOrFetch(
       'getLogs',
       vars,
       async () => {
         const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({
-          fromBlock: Number(blockNumber),
-          toBlock: Number(blockNumber),
+          fromBlock,
+          toBlock,
           address
         }));
         const logsByAddress = await Promise.all(logsByAddressPromises);
@@ -249,8 +270,8 @@ export class EthClient {
         // If no addresses provided to filter
         if (!logs.length) {
           logs = await this._provider.getLogs({
-            fromBlock: Number(blockNumber),
-            toBlock: Number(blockNumber)
+            fromBlock,
+            toBlock
           });
         }
 
