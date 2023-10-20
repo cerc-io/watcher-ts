@@ -276,11 +276,22 @@ export class Indexer {
       const blockHash = block.blockHash;
       assert(blockHash);
 
+      const blockToSave = {
+        cid: block.cid,
+        blockHash: block.blockHash,
+        blockNumber: block.blockNumber,
+        blockTimestamp: block.blockTimestamp,
+        parentHash: block.parentHash
+      };
+
       const dbEvents = dbEventsMap.get(blockHash) || [];
-      const [blockProgress, events] = await this.saveBlockWithEvents(block, dbEvents);
+      const [blockProgress] = await this.saveBlockWithEvents(blockToSave, dbEvents);
       log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
 
-      return { blockProgress, events };
+      return { blockProgress, events: [] };
+
+      // TODO: Return events?
+      // return { blockProgress, events };
     });
 
     return Promise.all(blocksWithEventsPromises);
@@ -318,11 +329,23 @@ export class Indexer {
     const transactionPromises = blocks.map(async (block) => {
       assert(block.blockHash);
 
-      const transactions = await this._ethClient.getBlockWithTransactions({ blockHash: block.blockHash, blockNumber: block.blockNumber });
+      const blockWithTransactions = await this._ethClient.getBlockWithTransactions({ blockHash: block.blockHash, blockNumber: block.blockNumber });
+      const {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
+            }
+          ]
+        }
+      } = blockWithTransactions;
+
       transactionsMap.set(block.blockHash, transactions);
     });
 
-    const [logs] = await Promise.all([logsPromise, ...transactionPromises]);
+    const [{ logs }] = await Promise.all([logsPromise, ...transactionPromises]);
 
     // Sort logs according to blockhash
     // TODO: type?
@@ -344,8 +367,8 @@ export class Indexer {
       const blockHash = block.blockHash;
       assert(blockHash);
 
-      const logs = logsMap.get(blockHash);
-      const transactions = logsMap.get(blockHash);
+      const logs = logsMap.get(blockHash) || [];
+      const transactions = transactionsMap.get(blockHash);
 
       const dbEvents = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
       dbEventsMap.set(blockHash, dbEvents);

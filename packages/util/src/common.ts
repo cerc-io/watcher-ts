@@ -204,6 +204,10 @@ export const _fetchBatchBlocks = async (
     await wait(jobQueueConfig.jobDelayInMilliSecs);
   }
 
+  blocks.forEach(block => {
+    block.blockTimestamp = block.timestamp;
+  });
+
   console.time('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
   const blockAndEventsList = await indexer.fetchEventsAndSaveBlocks(blocks);
   console.timeEnd('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
