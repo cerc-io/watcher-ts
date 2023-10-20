@@ -204,31 +204,11 @@ export const _fetchBatchBlocks = async (
     await wait(jobQueueConfig.jobDelayInMilliSecs);
   }
 
-  console.time('time:common#fetchBatchBlocks-saveBlockAndFetchEvents');
+  console.time('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
+  const blockAndEventsList = await indexer.fetchEventsAndSaveBlocks(blocks);
+  console.timeEnd('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
 
-  // TODO: Fetch events for all blocks, mapped according to blockhash
-  // TODO: Concurrently save all the blocks with their events
-  const blockAndEventsPromises = blocks.map(async block => {
-    block.blockTimestamp = block.timestamp;
-
-    try {
-      log(`_fetchBatchBlocks#saveBlockAndFetchEvents: fetching from upstream server ${block.blockHash}`);
-      const [blockProgress, events] = await indexer.saveBlockAndFetchEvents(block);
-      log(`_fetchBatchBlocks#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
-      return { blockProgress, events };
-    } catch (error) {
-      log(error);
-      return null;
-    }
-  });
-
-  const blockAndEventsList = await Promise.all(blockAndEventsPromises);
-  console.timeEnd('time:common#fetchBatchBlocks-saveBlockAndFetchEvents');
-
-  return blockAndEventsList.filter(blockAndEvent => blockAndEvent !== null) as {
-    blockProgress: BlockProgressInterface,
-    events: DeepPartial<EventInterface>[]
-  }[];
+  return blockAndEventsList;
 };
 
 /**

@@ -263,6 +263,29 @@ export class Indexer {
     return this._db.getEvent(id);
   }
 
+  // For each of the given blocks, fetches events and saves them along with the block to db
+  // Returns an array with [block, events] for all the given blocks
+  async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    const fromBlock = blocks[0].blockNumber;
+    const toBlock = blocks[blocks.length - 1].blockNumber;
+    log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetching from upstream server for range [${fromBlock}, ${toBlock}]`);
+
+    const dbEventsMap = await this.fetchEventsForBlocks(blocks, parseEventNameAndArgs);
+
+    const blocksWithEventsPromises = blocks.map(async block => {
+      const blockHash = block.blockHash;
+      assert(blockHash);
+
+      const dbEvents = dbEventsMap.get(blockHash) || [];
+      const [blockProgress, events] = await this.saveBlockWithEvents(block, dbEvents);
+      log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
+
+      return { blockProgress, events };
+    });
+
+    return Promise.all(blocksWithEventsPromises);
+  }
+
   // Fetch events (to be saved to db) for a block range
   async fetchEventsForBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<Map<string, DeepPartial<EventInterface>[]>> {
     if (!blocks.length) {
@@ -437,6 +460,23 @@ export class Indexer {
     }
 
     return dbEvents;
+  }
+
+  async saveBlockWithEvents (block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
+    const dbTx = await this._db.createTransactionRunner();
+    try {
+      console.time(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, events);
+      await dbTx.commitTransaction();
+      console.timeEnd(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+
+      return [blockProgress, []];
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async saveBlockProgress (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {
