@@ -64,7 +64,6 @@ export class Database {
 
     queryObject.params = queryObject.params.map((param) => {
       const gqlParamType = getGqlForSol(param.type);
-      assert(gqlParamType);
       const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
       param.type = tsParamType;
