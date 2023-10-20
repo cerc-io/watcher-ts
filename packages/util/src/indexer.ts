@@ -263,6 +263,75 @@ export class Indexer {
     return this._db.getEvent(id);
   }
 
+  // Fetch events (to be saved to db) for a block range
+  async fetchEventsForBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<Map<string, DeepPartial<EventInterface>[]>> {
+    if (!blocks.length) {
+      return new Map();
+    }
+
+    // Fetch logs for block range of given blocks
+    let logsPromise: Promise<any>;
+    const fromBlock = blocks[0].blockNumber;
+    const toBlock = blocks[blocks.length - 1].blockNumber;
+
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this.getWatchedContracts();
+      const addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
+
+      logsPromise = this._ethClient.getLogs({
+        fromBlock,
+        toBlock,
+        addresses
+      });
+    } else {
+      logsPromise = this._ethClient.getLogs({ fromBlock, toBlock });
+    }
+
+    // Fetch transactions for given blocks
+    // TODO: type?
+    const transactionsMap: Map<string, any> = new Map();
+    const transactionPromises = blocks.map(async (block) => {
+      assert(block.blockHash);
+
+      const transactions = await this._ethClient.getBlockWithTransactions({ blockHash: block.blockHash, blockNumber: block.blockNumber });
+      transactionsMap.set(block.blockHash, transactions);
+    });
+
+    const [logs] = await Promise.all([logsPromise, ...transactionPromises]);
+
+    // Sort logs according to blockhash
+    // TODO: type?
+    const logsMap: Map<string, any> = new Map();
+    logs.forEach((log: any) => {
+      const { blockHash: logBlockHash } = log;
+      assert(typeof logBlockHash === 'string');
+
+      if (!logsMap.has(logBlockHash)) {
+        logsMap.set(logBlockHash, []);
+      }
+
+      logsMap.get(logBlockHash).push(log);
+    });
+
+    // Map db ready events according to blockhash
+    const dbEventsMap: Map<string, DeepPartial<EventInterface>[]> = new Map();
+    blocks.forEach(block => {
+      const blockHash = block.blockHash;
+      assert(blockHash);
+
+      const logs = logsMap.get(blockHash);
+      const transactions = logsMap.get(blockHash);
+
+      const dbEvents = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+      dbEventsMap.set(blockHash, dbEvents);
+    });
+
+    return dbEventsMap;
+  }
+
+  // Fetch events (to be saved to db) for a particular block
   async fetchEvents (blockHash: string, blockNumber: number, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     let logsPromise: Promise<any>;
 
@@ -298,6 +367,11 @@ export class Indexer {
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
 
+    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+  }
+
+  // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
+  createDbEventsFromLogsAndTxs (blockHash: string, logs: any, transactions: any, parseEventNameAndArgs: (kind: string, logObj: any) => any): DeepPartial<EventInterface>[] {
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
       return acc;

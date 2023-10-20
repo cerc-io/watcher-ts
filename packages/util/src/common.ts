@@ -178,6 +178,7 @@ export const _fetchBatchBlocks = async (
   // Fetch blocks again if there are missing blocks.
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
+    // TODO: Investigate: fetch txs for the blocks here itself instead of doing it along with logs
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const res = await Promise.all(blockPromises);
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
@@ -196,6 +197,7 @@ export const _fetchBatchBlocks = async (
     await wait(jobQueueConfig.blockDelayInMilliSecs);
   }
 
+  // Flatten array as there can be multiple blocks at the same height
   blocks = blocks.flat();
 
   if (jobQueueConfig.jobDelayInMilliSecs) {
@@ -203,6 +205,9 @@ export const _fetchBatchBlocks = async (
   }
 
   console.time('time:common#fetchBatchBlocks-saveBlockAndFetchEvents');
+
+  // TODO: Fetch events for all blocks, mapped according to blockhash
+  // TODO: Concurrently save all the blocks with their events
   const blockAndEventsPromises = blocks.map(async block => {
     block.blockTimestamp = block.timestamp;
 

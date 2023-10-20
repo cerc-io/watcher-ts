@@ -243,6 +243,8 @@ export class EthClient implements EthClientInterface {
   }): Promise<any> {
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
 
+    // TODO: Implement a separate method getLogsForBlockRange
+    // as we may want to make blockNumber an optional param as present in ipld-eth-client
     let fromBlock: number | undefined;
     let toBlock: number | undefined;
     if ('blockNumber' in vars) {
@@ -297,6 +299,8 @@ export class EthClient implements EthClientInterface {
 
     return {
       logs: result.map((log) => ({
+        // blockHash required for sorting logs fetched in a block range
+        blockHash: log.blockHash,
         account: {
           address: log.address
         },
