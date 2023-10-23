@@ -133,6 +133,7 @@ export class EthClient implements EthClientInterface {
     };
   }
 
+  // TODO: Support fetching logs for block range in a single call
   async getLogs (vars: Vars): Promise<any> {
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     const result = await this._getCachedOrFetch('getLogs', vars);

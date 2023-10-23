@@ -232,6 +232,7 @@ export class EthClient implements EthClientInterface {
     };
   }
 
+  // TODO: Implement return type
   async getLogs (vars: {
     blockHash: string,
     blockNumber: string,
@@ -251,8 +252,8 @@ export class EthClient implements EthClientInterface {
       fromBlock = Number(vars.blockNumber);
       toBlock = Number(vars.blockNumber);
     } else {
-      fromBlock = vars.fromBlock;
-      toBlock = vars.toBlock;
+      fromBlock = Number(vars.fromBlock);
+      toBlock = Number(vars.toBlock);
     }
 
     const { addresses = [] } = vars;

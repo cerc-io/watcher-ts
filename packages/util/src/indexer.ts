@@ -324,7 +324,6 @@ export class Indexer {
     }
 
     // Fetch transactions for given blocks
-    // TODO: type?
     const transactionsMap: Map<string, any> = new Map();
     const transactionPromises = blocks.map(async (block) => {
       assert(block.blockHash);
@@ -348,7 +347,6 @@ export class Indexer {
     const [{ logs }] = await Promise.all([logsPromise, ...transactionPromises]);
 
     // Sort logs according to blockhash
-    // TODO: type?
     const logsMap: Map<string, any> = new Map();
     logs.forEach((log: any) => {
       const { blockHash: logBlockHash } = log;
