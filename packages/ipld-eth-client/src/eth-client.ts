@@ -144,6 +144,9 @@ export class EthClient implements EthClientInterface {
     return { logs: getLogs };
   }
 
+  // TODO: Implement
+  // async getLogsForBlockRange(): Promise<any> {}
+
   async _getCachedOrFetch (queryName: keyof typeof ethQueries, vars: Vars): Promise<any> {
     const keyObj = {
       queryName,

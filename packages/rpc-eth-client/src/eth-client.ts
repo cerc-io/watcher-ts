@@ -21,6 +21,8 @@ interface Vars {
   contract?: string;
   slot?: string;
   addresses?: string[];
+  fromBlock?: number;
+  toBlock?: number;
 }
 
 export class EthClient implements EthClientInterface {
@@ -230,17 +232,47 @@ export class EthClient implements EthClientInterface {
     };
   }
 
-  async getLogs (vars: { blockHash: string, blockNumber: string, addresses?: string[] }): Promise<any> {
-    const { blockNumber, addresses = [] } = vars;
+  async getLogs (vars: {
+    blockHash: string,
+    blockNumber: string,
+    addresses?: string[]
+  }): Promise<any> {
+    const blockNumber = Number(vars.blockNumber);
 
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+    const result = await this._getLogs({ fromBlock: blockNumber, toBlock: blockNumber, addresses: vars.addresses });
+    console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+
+    return result;
+  }
+
+  async getLogsForBlockRange (vars: {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[]
+  }): Promise<any> {
+    console.time(`time:eth-client#getLogsForBlockRange-${JSON.stringify(vars)}`);
+    const result = await this._getLogs({ fromBlock: Number(vars.fromBlock), toBlock: Number(vars.toBlock), addresses: vars.addresses });
+    console.timeEnd(`time:eth-client#getLogsForBlockRange-${JSON.stringify(vars)}`);
+
+    return result;
+  }
+
+  // TODO: Implement return type
+  async _getLogs (vars: {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[]
+  }): Promise<any> {
+    const { fromBlock, toBlock, addresses = [] } = vars;
+
     const result = await this._getCachedOrFetch(
       'getLogs',
       vars,
       async () => {
         const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({
-          fromBlock: Number(blockNumber),
-          toBlock: Number(blockNumber),
+          fromBlock,
+          toBlock,
           address
         }));
         const logsByAddress = await Promise.all(logsByAddressPromises);
@@ -249,8 +281,8 @@ export class EthClient implements EthClientInterface {
         // If no addresses provided to filter
         if (!logs.length) {
           logs = await this._provider.getLogs({
-            fromBlock: Number(blockNumber),
-            toBlock: Number(blockNumber)
+            fromBlock,
+            toBlock
           });
         }
 
@@ -272,10 +304,11 @@ export class EthClient implements EthClientInterface {
       acc.set(txReceipt.transactionHash, txReceipt);
       return acc;
     }, new Map<string, providers.TransactionReceipt>());
-    console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
 
     return {
       logs: result.map((log) => ({
+        // blockHash required for sorting logs fetched in a block range
+        blockHash: log.blockHash,
         account: {
           address: log.address
         },

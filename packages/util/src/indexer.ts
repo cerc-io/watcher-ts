@@ -263,6 +263,117 @@ export class Indexer {
     return this._db.getEvent(id);
   }
 
+  // For each of the given blocks, fetches events and saves them along with the block to db
+  // Returns an array with [block, events] for all the given blocks
+  async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    const fromBlock = blocks[0].blockNumber;
+    const toBlock = blocks[blocks.length - 1].blockNumber;
+    log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetching from upstream server for range [${fromBlock}, ${toBlock}]`);
+
+    const dbEventsMap = await this.fetchEventsForBlocks(blocks, parseEventNameAndArgs);
+
+    const blocksWithEventsPromises = blocks.map(async block => {
+      const blockHash = block.blockHash;
+      assert(blockHash);
+
+      const blockToSave = {
+        cid: block.cid,
+        blockHash: block.blockHash,
+        blockNumber: block.blockNumber,
+        blockTimestamp: block.blockTimestamp,
+        parentHash: block.parentHash
+      };
+
+      const dbEvents = dbEventsMap.get(blockHash) || [];
+      const [blockProgress] = await this.saveBlockWithEvents(blockToSave, dbEvents);
+      log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
+
+      return { blockProgress, events: [] };
+    });
+
+    return Promise.all(blocksWithEventsPromises);
+  }
+
+  // Fetch events (to be saved to db) for a block range
+  async fetchEventsForBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<Map<string, DeepPartial<EventInterface>[]>> {
+    if (!blocks.length) {
+      return new Map();
+    }
+
+    // Fetch logs for block range of given blocks
+    let logsPromise: Promise<any>;
+    const fromBlock = blocks[0].blockNumber;
+    const toBlock = blocks[blocks.length - 1].blockNumber;
+
+    assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
+    if (this._serverConfig.filterLogs) {
+      const watchedContracts = this.getWatchedContracts();
+      const addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
+
+      logsPromise = this._ethClient.getLogsForBlockRange({
+        fromBlock,
+        toBlock,
+        addresses
+      });
+    } else {
+      logsPromise = this._ethClient.getLogsForBlockRange({ fromBlock, toBlock });
+    }
+
+    // Fetch transactions for given blocks
+    const transactionsMap: Map<string, any> = new Map();
+    const transactionPromises = blocks.map(async (block) => {
+      assert(block.blockHash);
+
+      const blockWithTransactions = await this._ethClient.getBlockWithTransactions({ blockHash: block.blockHash, blockNumber: block.blockNumber });
+      const {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              }
+            }
+          ]
+        }
+      } = blockWithTransactions;
+
+      transactionsMap.set(block.blockHash, transactions);
+    });
+
+    const [{ logs }] = await Promise.all([logsPromise, ...transactionPromises]);
+
+    // Sort logs according to blockhash
+    const logsMap: Map<string, any> = new Map();
+    logs.forEach((log: any) => {
+      const { blockHash: logBlockHash } = log;
+      assert(typeof logBlockHash === 'string');
+
+      if (!logsMap.has(logBlockHash)) {
+        logsMap.set(logBlockHash, []);
+      }
+
+      logsMap.get(logBlockHash).push(log);
+    });
+
+    // Map db ready events according to blockhash
+    const dbEventsMap: Map<string, DeepPartial<EventInterface>[]> = new Map();
+    blocks.forEach(block => {
+      const blockHash = block.blockHash;
+      assert(blockHash);
+
+      const logs = logsMap.get(blockHash) || [];
+      const transactions = transactionsMap.get(blockHash);
+
+      const dbEvents = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+      dbEventsMap.set(blockHash, dbEvents);
+    });
+
+    return dbEventsMap;
+  }
+
+  // Fetch events (to be saved to db) for a particular block
   async fetchEvents (blockHash: string, blockNumber: number, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     let logsPromise: Promise<any>;
 
@@ -298,6 +409,11 @@ export class Indexer {
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
 
+    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+  }
+
+  // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
+  createDbEventsFromLogsAndTxs (blockHash: string, logs: any, transactions: any, parseEventNameAndArgs: (kind: string, logObj: any) => any): DeepPartial<EventInterface>[] {
     const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
       return acc;
@@ -363,6 +479,23 @@ export class Indexer {
     }
 
     return dbEvents;
+  }
+
+  async saveBlockWithEvents (block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
+    const dbTx = await this._db.createTransactionRunner();
+    try {
+      console.time(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, events);
+      await dbTx.commitTransaction();
+      console.timeEnd(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+
+      return [blockProgress, []];
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
   }
 
   async saveBlockProgress (block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {

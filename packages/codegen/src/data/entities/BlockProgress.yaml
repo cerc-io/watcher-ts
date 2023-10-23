@@ -16,6 +16,9 @@ columns:
     pgType: varchar
     tsType: string
     columnType: Column
+    columnOptions:
+      - option: nullable
+        value: true
   - name: blockHash
     pgType: varchar
     tsType: string
