@@ -14,6 +14,12 @@
       * GQL: http://127.0.0.1:8082/graphql
       * RPC: http://127.0.0.1:8081
 
+* For this demo, an [example subgraph](../graph-node/test/subgraph/example1) will be used
+
+  * In [package.json](../graph-node/test/subgraph/example1/package.json), the graph-ts and graph-cli dependencies are replaced by their respective cerc-io forked dependencies
+
+  * This needs to be done for running any subgraph project with watcher-ts
+
 * In watcher-ts [packages/graph-node](../graph-node/), deploy an `Example` contract:
 
   ```bash
@@ -32,19 +38,15 @@
   yarn build:example
   ```
 
+  * This will run `yarn && yarn codegen && yarn build` script in the example subgraph directory
+
 * In [packages/codegen](./), create a `config.yaml` file:
 
   ```yaml
   # Example config.yaml
   # Contracts to watch (required).
   # Can pass empty array ([]) when using subgraphPath.
-  contracts:
-      # Contract name.
-    - name: Example
-      # Contract file path or an url.
-      path: ../graph-node/test/contracts/Example.sol
-      # Contract kind (should match name of dataSource in {subgraphPath}/subgraph.yaml if subgraphPath provided)
-      kind: Example1
+  contracts: []
 
   # Output folder path (logs output using `stdout` if not provided).
   outputFolder: ../test-watcher
@@ -63,6 +65,7 @@
 
   # Path to the subgraph build (optional).
   # Can set empty contracts array when using subgraphPath.
+  # Subgraph WASM files should be compiled using @cerc-io/graph-cli
   subgraphPath: ../graph-node/test/subgraph/example1/build
   ```
 

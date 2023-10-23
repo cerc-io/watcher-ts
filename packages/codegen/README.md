@@ -62,6 +62,8 @@ Steps:
 
   # Path to the subgraph build (optional).
   # Can set empty contracts array when using subgraphPath.
+  # Subgraph WASM files should be compiled using @cerc-io/graph-cli
+  # graph-cli and graph-ts dependencies in the target subgraph repo can be replaced with forked cerc-io packages
   subgraphPath: ../graph-node/test/subgraph/example1/build
 
   # NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.

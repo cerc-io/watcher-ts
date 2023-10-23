@@ -271,7 +271,7 @@
 
 "@cerc-io/assemblyscript@0.19.10-watcher-ts-0.1.2":
   version "0.19.10-watcher-ts-0.1.2"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fassemblyscript/-/0.19.10-watcher-ts-0.1.2/assemblyscript-0.19.10-watcher-ts-0.1.2.tgz"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fassemblyscript/-/0.19.10-watcher-ts-0.1.2/assemblyscript-0.19.10-watcher-ts-0.1.2.tgz#c6a20eeddca44ddb08994831845c0b172433566b"
   integrity sha512-iovY7xoH5ZMGQZgsK/Wy8175AN2z6I0WUnzEWaxykkAFQUvnErgiw/Y4crkcOb/fDp8gslRfTeEFtR90m1AyPA==
   dependencies:
     asyncify-wasm "^1.2.1"
@@ -4964,7 +4964,7 @@ async@^2.4.0:
 
 asyncify-wasm@^1.2.1:
   version "1.2.1"
-  resolved "https://registry.npmjs.org/asyncify-wasm/-/asyncify-wasm-1.2.1.tgz"
+  resolved "https://registry.yarnpkg.com/asyncify-wasm/-/asyncify-wasm-1.2.1.tgz#a15c0480e858619a4f971e44e6fc05c49015d9e8"
   integrity sha512-ZS7tZ8H8EVbUxAZnkKHvMt9UkYoALue2jwrVl7cnLByjq+1MRrbq7rL5TS+EHQduwkfXD/cNZNa+I0ZyLEBBRQ==
 
 asynckit@^0.4.0:
