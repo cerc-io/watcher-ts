@@ -279,7 +279,7 @@ export class EthClient implements EthClientInterface {
         let logs = logsByAddress.flat();
 
         // If no addresses provided to filter
-        if (!logs.length) {
+        if (!addresses.length) {
           logs = await this._provider.getLogs({
             fromBlock,
             toBlock
