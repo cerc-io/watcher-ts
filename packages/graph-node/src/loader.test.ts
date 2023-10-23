@@ -35,7 +35,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       filePath,
       dummyGraphData
     );
@@ -113,7 +113,7 @@ describe('wasm loader tests', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       module,
       dummyGraphData
     );

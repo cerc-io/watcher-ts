@@ -33,7 +33,7 @@ describe('ethereum ABI encode decode', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       filePath,
       dummyGraphData
     );

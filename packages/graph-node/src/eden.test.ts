@@ -90,6 +90,7 @@ xdescribe('eden wasm loader tests', async () => {
         indexer,
         provider,
         {
+          rpcSupportsBlockHashParam: true,
           block: dummyEventData.block,
           contractAddress
         },
@@ -210,6 +211,7 @@ xdescribe('eden wasm loader tests', async () => {
         indexer,
         provider,
         {
+          rpcSupportsBlockHashParam: true,
           block: dummyEventData.block,
           contractAddress
         },
@@ -328,6 +330,7 @@ xdescribe('eden wasm loader tests', async () => {
         indexer,
         provider,
         {
+          rpcSupportsBlockHashParam: true,
           block: dummyEventData.block,
           contractAddress
         },

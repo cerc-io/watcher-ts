@@ -71,6 +71,7 @@ xdescribe('call handler in mapping code', () => {
       indexer,
       provider,
       {
+        rpcSupportsBlockHashParam: true,
         block: dummyEventData.block,
         contractAddress: dummyGraphData.dataSource.address
       },

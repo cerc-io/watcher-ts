@@ -31,7 +31,7 @@ describe('json host api', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       filePath,
       dummyGraphData
     );
