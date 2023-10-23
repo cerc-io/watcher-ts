@@ -113,7 +113,6 @@ export class Entity {
         const name = param.name;
 
         const gqlType = getGqlForSol(param.type);
-        assert(gqlType);
         const tsType = getTsForGql(gqlType);
         assert(tsType);
         const pgType = getPgForTs(tsType);
@@ -153,7 +152,6 @@ export class Entity {
         const baseType = getBaseType(typeName);
         assert(baseType);
         const gqlReturnType = getGqlForSol(baseType);
-        assert(gqlReturnType);
         let tsReturnType = getTsForGql(gqlReturnType);
         assert(tsReturnType);
         const pgReturnType = getPgForTs(tsReturnType);

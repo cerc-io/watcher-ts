@@ -53,6 +53,7 @@ Steps:
   port: 3008
 
   # Solc version to use (optional)
+  # Use longVersion prefixed with v from the release list https://binaries.soliditylang.org/bin/list.json
   # If not defined, uses solc version listed in dependencies
   solc: v0.8.0+commit.c7dfd78e
 

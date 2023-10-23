@@ -7,7 +7,7 @@ import { errors, providers, utils } from 'ethers';
 import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, getRawTransaction } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, getRawTransaction, EthClient as EthClientInterface } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
@@ -23,7 +23,7 @@ interface Vars {
   addresses?: string[];
 }
 
-export class EthClient {
+export class EthClient implements EthClientInterface {
   _provider: providers.JsonRpcProvider;
   _cache: Cache | undefined;
 

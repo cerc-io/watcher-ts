@@ -2,6 +2,8 @@
 // Copyright 2021 Vulcanize, Inc.
 //
 
+import assert from 'assert';
+
 import { solToGql } from './solToGql';
 
 const _tsToGql: Map<string, string> = new Map();
@@ -29,8 +31,11 @@ _gqlToTs.set('Boolean', 'boolean');
 _gqlToTs.set('BigDecimal', 'Decimal');
 _gqlToTs.set('Bytes', 'string');
 
-function getGqlForSol (solType: string): string | undefined {
-  return solToGql.get(solType);
+function getGqlForSol (solType: string): string {
+  const gqlType = solToGql.get(solType);
+  assert(gqlType, `GQL type for SOL type ${solType} not found`);
+
+  return gqlType;
 }
 
 function getGqlForTs (tsType: string): string | undefined {

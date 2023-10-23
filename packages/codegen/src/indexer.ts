@@ -69,7 +69,6 @@ export class Indexer {
       const baseType = getBaseType(typeName);
       assert(baseType);
       const gqlReturnType = getGqlForSol(baseType);
-      assert(gqlReturnType);
       let tsReturnType = getTsForGql(gqlReturnType);
       assert(tsReturnType);
 
@@ -107,7 +106,6 @@ export class Indexer {
 
     queryObject.params = queryObject.params.map((param) => {
       const gqlParamType = getGqlForSol(param.type);
-      assert(gqlParamType);
       const tsParamType = getTsForGql(gqlParamType);
       assert(tsParamType);
       param.type = tsParamType;

@@ -15,7 +15,6 @@ import { SelectionNode } from 'graphql';
 
 import { JsonFragment } from '@ethersproject/abi';
 import { BaseProvider } from '@ethersproject/providers';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
   Indexer as BaseIndexer,
@@ -42,7 +41,8 @@ import {
   ResultEvent,
   getResultEvent,
   DatabaseInterface,
-  Clients
+  Clients,
+  EthClient
 } from '@cerc-io/util';
 {{#if (subgraphPath)}}
 import { GraphWatcher } from '@cerc-io/graph-node';

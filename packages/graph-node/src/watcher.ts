@@ -11,7 +11,6 @@ import { ContractInterface, utils, providers } from 'ethers';
 import { SelectionNode } from 'graphql';
 
 import { ResultObject } from '@cerc-io/assemblyscript/lib/loader';
-import { EthClient } from '@cerc-io/ipld-eth-client';
 import {
   getFullBlock,
   BlockHeight,
@@ -27,6 +26,7 @@ import {
   createEvent,
   getSubgraphConfig,
   Transaction,
+  EthClient,
   DEFAULT_LIMIT
 } from '@cerc-io/util';
 

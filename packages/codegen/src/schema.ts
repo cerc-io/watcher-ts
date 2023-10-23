@@ -9,7 +9,7 @@ import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
 
-import { getGqlForTs, getGqlForSol } from './utils/type-mappings';
+import { getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getBaseType, isArrayType } from './utils/helpers';
 
@@ -251,7 +251,6 @@ export class Schema {
       assert(baseTypeName);
 
       const gqlReturnType = getGqlForSol(baseTypeName);
-      assert(gqlReturnType, `gql type for sol type ${baseTypeName} for ${functionName} not found`);
 
       return {
         type: gqlReturnType,
@@ -510,7 +509,7 @@ export class Schema {
     const newFields: any = {};
     params.forEach((param: Param) => {
       if (!commonFields.includes(param.name)) {
-        newFields[param.name] = `${getGqlForTs(param.type)}`;
+        newFields[param.name] = `${getGqlForSol(param.type)}`;
       }
     });
 
