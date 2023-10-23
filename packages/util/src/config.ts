@@ -221,6 +221,7 @@ export interface ServerConfig {
 
   p2p: P2PConfig;
 
+  // TODO: Move flag to config upstream.ethServer
   // Flag to specify whether RPC endpoint supports block hash as block tag parameter
   // https://ethereum.org/en/developers/docs/apis/json-rpc/#default-block
   rpcSupportsBlockHashParam: boolean;

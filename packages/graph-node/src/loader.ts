@@ -47,8 +47,9 @@ export interface GraphData {
 }
 
 export interface Context {
-  block?: Block
-  contractAddress?: string
+  rpcSupportsBlockHashParam: boolean;
+  block?: Block;
+  contractAddress?: string;
 }
 
 const log = debug('vulcanize:graph-node');
@@ -173,10 +174,21 @@ export const instantiate = async (
           functionParams = await Promise.all(functionParamsPromise);
 
           assert(context.block);
+          let result: any;
 
           // TODO: Check for function overloading.
           console.time(`time:loader#ethereum.call-${functionName}`);
-          let result = await contract[functionName](...functionParams, { blockTag: context.block.blockHash });
+          if (context.rpcSupportsBlockHashParam) {
+            result = await contract[functionName](
+              ...functionParams,
+              { blockTag: context.block.blockHash }
+            );
+          } else {
+            result = await contract[functionName](
+              ...functionParams,
+              { blockTag: BigNumber.from(context.block.blockNumber).toHexString() }
+            );
+          }
           console.timeEnd(`time:loader#ethereum.call-${functionName}`);
 
           // Using function signature does not work.

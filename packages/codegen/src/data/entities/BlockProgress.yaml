@@ -14,7 +14,7 @@ columns:
     columnType: PrimaryGeneratedColumn
   - name: cid
     pgType: varchar
-    tsType: string
+    tsType: string | null
     columnType: Column
     columnOptions:
       - option: nullable

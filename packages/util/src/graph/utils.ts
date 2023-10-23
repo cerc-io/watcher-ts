@@ -550,7 +550,7 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
   // Check if the entity property is nullable.
   // No need to set the property if the value is null as well.
   if (isNullable && value === null) {
-    return;
+    return value;
   }
 
   const entityValue = await formatEntityValue(instanceExports, subgraphValue, type, value, isArray);
