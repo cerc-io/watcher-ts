@@ -20,7 +20,7 @@ export interface StateDataMeta {
   },
   ethBlock: {
     cid: {
-      '/': string
+      '/': string | null
     },
     num: number
   }

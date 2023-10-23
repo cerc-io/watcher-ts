@@ -19,7 +19,7 @@ export enum StateKind {
 
 export interface BlockProgressInterface {
   id: number;
-  cid: string;
+  cid: string | null;
   blockHash: string;
   parentHash: string;
   blockNumber: number;
