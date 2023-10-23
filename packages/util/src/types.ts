@@ -219,11 +219,12 @@ export interface EthClient {
     blockHash: string,
     blockNumber: string,
     addresses?: string[]
-  } | {
+  }): Promise<any>;
+  getLogsForBlockRange?: (vars: {
     fromBlock?: number,
     toBlock?: number,
     addresses?: string[]
-  }): Promise<any>;
+  }) => Promise<any>;
 }
 
 export type Clients = {

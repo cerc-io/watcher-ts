@@ -178,7 +178,6 @@ export const _fetchBatchBlocks = async (
   // Fetch blocks again if there are missing blocks.
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
-    // TODO: Investigate: fetch txs for the blocks here itself instead of doing it along with logs
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const res = await Promise.all(blockPromises);
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');

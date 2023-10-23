@@ -232,31 +232,39 @@ export class EthClient implements EthClientInterface {
     };
   }
 
-  // TODO: Implement return type
   async getLogs (vars: {
     blockHash: string,
     blockNumber: string,
     addresses?: string[]
-  } | {
+  }): Promise<any> {
+    const blockNumber = Number(vars.blockNumber);
+
+    console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+    const result = await this._getLogs({ fromBlock: blockNumber, toBlock: blockNumber, addresses: vars.addresses });
+    console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+
+    return result;
+  }
+
+  async getLogsForBlockRange (vars: {
     fromBlock?: number,
     toBlock?: number,
     addresses?: string[]
   }): Promise<any> {
-    console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
+    console.time(`time:eth-client#getLogsForBlockRange-${JSON.stringify(vars)}`);
+    const result = await this._getLogs({ fromBlock: Number(vars.fromBlock), toBlock: Number(vars.toBlock), addresses: vars.addresses });
+    console.timeEnd(`time:eth-client#getLogsForBlockRange-${JSON.stringify(vars)}`);
 
-    // TODO: Implement a separate method getLogsForBlockRange
-    // as we may want to make blockNumber an optional param as present in ipld-eth-client
-    let fromBlock: number | undefined;
-    let toBlock: number | undefined;
-    if ('blockNumber' in vars) {
-      fromBlock = Number(vars.blockNumber);
-      toBlock = Number(vars.blockNumber);
-    } else {
-      fromBlock = Number(vars.fromBlock);
-      toBlock = Number(vars.toBlock);
-    }
+    return result;
+  }
 
-    const { addresses = [] } = vars;
+  // TODO: Implement return type
+  async _getLogs (vars: {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[]
+  }): Promise<any> {
+    const { fromBlock, toBlock, addresses = [] } = vars;
 
     const result = await this._getCachedOrFetch(
       'getLogs',
@@ -296,7 +304,6 @@ export class EthClient implements EthClientInterface {
       acc.set(txReceipt.transactionHash, txReceipt);
       return acc;
     }, new Map<string, providers.TransactionReceipt>());
-    console.timeEnd(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
 
     return {
       logs: result.map((log) => ({

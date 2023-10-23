@@ -289,9 +289,6 @@ export class Indexer {
       log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
 
       return { blockProgress, events: [] };
-
-      // TODO: Return events?
-      // return { blockProgress, events };
     });
 
     return Promise.all(blocksWithEventsPromises);
@@ -308,19 +305,20 @@ export class Indexer {
     const fromBlock = blocks[0].blockNumber;
     const toBlock = blocks[blocks.length - 1].blockNumber;
 
+    assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
     if (this._serverConfig.filterLogs) {
       const watchedContracts = this.getWatchedContracts();
       const addresses = watchedContracts.map((watchedContract): string => {
         return watchedContract.address;
       });
 
-      logsPromise = this._ethClient.getLogs({
+      logsPromise = this._ethClient.getLogsForBlockRange({
         fromBlock,
         toBlock,
         addresses
       });
     } else {
-      logsPromise = this._ethClient.getLogs({ fromBlock, toBlock });
+      logsPromise = this._ethClient.getLogsForBlockRange({ fromBlock, toBlock });
     }
 
     // Fetch transactions for given blocks
