@@ -301,7 +301,7 @@ export class Indexer {
     }
 
     // Fetch logs for block range of given blocks
-    let logsPromise: Promise<any>;
+    let logs: any;
     const fromBlock = blocks[0].blockNumber;
     const toBlock = blocks[blocks.length - 1].blockNumber;
 
@@ -312,19 +312,42 @@ export class Indexer {
         return watchedContract.address;
       });
 
-      logsPromise = this._ethClient.getLogsForBlockRange({
+      ({ logs } = await this._ethClient.getLogsForBlockRange({
         fromBlock,
         toBlock,
         addresses
-      });
+      }));
     } else {
-      logsPromise = this._ethClient.getLogsForBlockRange({ fromBlock, toBlock });
+      ({ logs } = await this._ethClient.getLogsForBlockRange({ fromBlock, toBlock }));
     }
+
+    // Skip further processing if no relevant logs found in the entire block range
+    if (!logs.length) {
+      return new Map();
+    }
+
+    // Sort logs according to blockhash
+    const logsMap: Map<string, any> = new Map();
+    logs.forEach((log: any) => {
+      const { blockHash: logBlockHash } = log;
+      assert(typeof logBlockHash === 'string');
+
+      if (!logsMap.has(logBlockHash)) {
+        logsMap.set(logBlockHash, []);
+      }
+
+      logsMap.get(logBlockHash).push(log);
+    });
 
     // Fetch transactions for given blocks
     const transactionsMap: Map<string, any> = new Map();
     const transactionPromises = blocks.map(async (block) => {
       assert(block.blockHash);
+
+      // Skip fetching txs if no relevant logs found in this block
+      if (!logsMap.has(block.blockHash)) {
+        return;
+      }
 
       const blockWithTransactions = await this._ethClient.getBlockWithTransactions({ blockHash: block.blockHash, blockNumber: block.blockNumber });
       const {
@@ -342,20 +365,7 @@ export class Indexer {
       transactionsMap.set(block.blockHash, transactions);
     });
 
-    const [{ logs }] = await Promise.all([logsPromise, ...transactionPromises]);
-
-    // Sort logs according to blockhash
-    const logsMap: Map<string, any> = new Map();
-    logs.forEach((log: any) => {
-      const { blockHash: logBlockHash } = log;
-      assert(typeof logBlockHash === 'string');
-
-      if (!logsMap.has(logBlockHash)) {
-        logsMap.set(logBlockHash, []);
-      }
-
-      logsMap.get(logBlockHash).push(log);
-    });
+    await Promise.all(transactionPromises);
 
     // Map db ready events according to blockhash
     const dbEventsMap: Map<string, DeepPartial<EventInterface>[]> = new Map();
@@ -364,7 +374,7 @@ export class Indexer {
       assert(blockHash);
 
       const logs = logsMap.get(blockHash) || [];
-      const transactions = transactionsMap.get(blockHash);
+      const transactions = transactionsMap.get(blockHash) || [];
 
       const dbEvents = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
       dbEventsMap.set(blockHash, dbEvents);
