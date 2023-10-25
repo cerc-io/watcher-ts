@@ -52,6 +52,7 @@ xdescribe('storage-call wasm tests', () => {
       indexer,
       provider,
       {
+        rpcSupportsBlockHashParam: true,
         block: dummyEventData.block,
         contractAddress
       },

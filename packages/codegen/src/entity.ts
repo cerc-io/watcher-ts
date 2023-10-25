@@ -538,6 +538,8 @@ export class Entity {
           option: 'nullable',
           value: 'true'
         });
+
+        columnObject.tsType = `${tsType} | null`;
       }
 
       entityObject.columns.push(columnObject);

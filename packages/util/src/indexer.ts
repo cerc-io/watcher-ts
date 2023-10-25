@@ -52,7 +52,7 @@ export interface StateStatus {
 
 export type ResultState = {
   block: {
-    cid: string;
+    cid: string | null;
     hash: string;
     number: number;
     timestamp: number;
@@ -66,7 +66,7 @@ export type ResultState = {
 
 export type ResultEvent = {
   block: {
-    cid: string;
+    cid: string | null;
     hash: string;
     number: number;
     timestamp: number;

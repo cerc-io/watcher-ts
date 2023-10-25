@@ -44,7 +44,7 @@ describe('numbers wasm tests', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       filePath,
       dummyGraphData
     );

@@ -52,7 +52,7 @@ export class GraphWatcher {
   _dataSourceMap: { [key: string]: DataSource } = {};
   _transactionsMap: Map<string, Transaction> = new Map();
 
-  _context: Context = {};
+  _context: Context;
 
   constructor (database: GraphDatabase, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
@@ -60,6 +60,10 @@ export class GraphWatcher {
     this._ethProvider = ethProvider;
     this._subgraphPath = serverConfig.subgraphPath;
     this._wasmRestartBlocksInterval = serverConfig.wasmRestartBlocksInterval;
+
+    this._context = {
+      rpcSupportsBlockHashParam: Boolean(serverConfig.rpcSupportsBlockHashParam)
+    };
   }
 
   async init () {

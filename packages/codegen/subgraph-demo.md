@@ -116,7 +116,15 @@
   yarn && yarn build
   ```
 
-* In `packages/test-watcher`, run the job-runner:
+* In `packages/test-watcher`, run fill for the subgraph start block:
+
+  ```bash
+  yarn fill --start-block 10 --end-block 10
+  ```
+
+  * Subgraph start block is the lowest `startBlock` in example [subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml)
+
+* Run the job-runner:
 
   ```bash
   yarn job-runner

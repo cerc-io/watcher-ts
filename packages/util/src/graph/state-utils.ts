@@ -151,7 +151,12 @@ export const getContractEntitiesMap = (dataSources: any[]): Map<string, string[]
   // Populate contractEntitiesMap using data sources from subgraph
   dataSources.forEach((dataSource: any) => {
     const { source: { address: contractAddress }, mapping: { entities } } = dataSource;
-    contractEntitiesMap.set(ethers.utils.getAddress(contractAddress), entities as string[]);
+
+    // TODO: Handle template data source
+    // TODO: Avoid mapping subgraph entities to contract address in watcher state
+    if (contractAddress) {
+      contractEntitiesMap.set(ethers.utils.getAddress(contractAddress), entities as string[]);
+    }
   });
 
   return contractEntitiesMap;

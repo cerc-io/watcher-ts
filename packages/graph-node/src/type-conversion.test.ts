@@ -33,7 +33,7 @@ describe('typeConversion wasm tests', () => {
       db,
       indexer,
       provider,
-      {},
+      { rpcSupportsBlockHashParam: true },
       filePath,
       dummyGraphData
     );
