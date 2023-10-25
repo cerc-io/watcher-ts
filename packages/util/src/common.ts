@@ -253,6 +253,8 @@ export const _fetchBatchBlocks = async (
  * @param eventsInBatch
  */
 export const processBatchEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<void> => {
+  let page = 0;
+
   // Check if block processing is complete.
   while (block.numProcessedEvents < block.numEvents) {
     console.time('time:common#processBacthEvents-fetching_events_batch');
@@ -260,12 +262,9 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
     // Fetch events in batches
     const events = await indexer.getBlockEvents(
       block.blockHash,
+      {},
       {
-        index: [
-          { value: block.lastProcessedEventIndex + 1, operator: 'gte', not: false }
-        ]
-      },
-      {
+        skip: (page++) * (eventsInBatch || DEFAULT_EVENTS_IN_BATCH),
         limit: eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
         orderBy: 'index',
         orderDirection: OrderDirection.asc
@@ -282,23 +281,11 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
     // Process events in loop
     for (let event of events) {
-      const eventIndex = event.index;
-
-      // Check that events are processed in order.
-      if (eventIndex <= block.lastProcessedEventIndex) {
-        throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-      }
-
-      // Check if previous event in block has been processed exactly before this and abort if not.
-      // Skip check if logs fetched are filtered by contract address.
-      if (!indexer.serverConfig.filterLogs) {
-        const prevIndex = eventIndex - 1;
-
-        if (prevIndex !== block.lastProcessedEventIndex) {
-          throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash},` +
-          ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-        }
-      }
+      // Skipping check for order of events processing since logIndex in FEVM is not index of log in block
+      // Check was introduced to avoid reprocessing block events incase of restarts. But currently on restarts, unprocessed block is removed and reprocessed from first event log
+      // if (event.index <= block.lastProcessedEventIndex) {
+      //   throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
+      // }
 
       const watchedContract = indexer.isWatchedContract(event.contract);
 
