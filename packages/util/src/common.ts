@@ -299,10 +299,14 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
           assert(indexer.parseEventNameAndArgs);
           assert(typeof watchedContract !== 'boolean');
-          const { eventName, eventInfo } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
+          const { eventName, eventInfo, eventSignature } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
 
           event.eventName = eventName;
           event.eventInfo = JSONbigNative.stringify(eventInfo);
+          event.extraInfo = JSONbigNative.stringify({
+            ...logObj,
+            eventSignature
+          });
           event = await indexer.saveEventEntity(event);
         }
 
