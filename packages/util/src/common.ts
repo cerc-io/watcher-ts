@@ -2,6 +2,7 @@ import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
 import { errors } from 'ethers';
+import JSONbig from 'json-bigint';
 
 import {
   QUEUE_BLOCK_PROCESSING,
@@ -20,6 +21,7 @@ import { JobQueueConfig } from './config';
 const DEFAULT_EVENTS_IN_BATCH = 50;
 
 const log = debug('vulcanize:common');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export interface PrefetchedBlock {
   block: BlockProgressInterface;
@@ -300,7 +302,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
           const { eventName, eventInfo } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
 
           event.eventName = eventName;
-          event.eventInfo = JSON.stringify(eventInfo);
+          event.eventInfo = JSONbigNative.stringify(eventInfo);
           event = await indexer.saveEventEntity(event);
         }
 
