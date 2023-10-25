@@ -166,7 +166,7 @@ export class EthClient implements EthClientInterface {
       Extra: rawBlock.extraData,
       MixDigest: rawBlock.mixHash,
       Nonce: BigInt(rawBlock.nonce),
-      BaseFee: rawBlock.baseFeePerGas ?? BigInt(rawBlock.baseFeePerGas)
+      BaseFee: rawBlock.baseFeePerGas && BigInt(rawBlock.baseFeePerGas)
     };
 
     const rlpData = encodeHeader(header);
