@@ -182,27 +182,34 @@ export const _fetchBatchBlocks = async (
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const settledResults = await Promise.allSettled(blockPromises);
 
-    const res = settledResults.reduce((acc: any[], result: PromiseSettledResult<any>, index: number) => {
+    const res: any[] = [];
+    for (let index = 0; index < settledResults.length; index++) {
+      const result = settledResults[index];
       // If fulfilled, return value
       if (result.status === 'fulfilled') {
-        acc.push(result.value);
-      } else {
-        // If rejected, check error
-        //  Handle null block error in case of Lotus EVM
-        //  Otherwise, rethrow error
-        const err = result.reason;
-        if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
-          throw err;
-        }
-
-        log(`Block ${blockNumbers[index]} requested was null (FEVM), skipping`);
-
-        // Remove the corresponding block number from the blockNumbers to avoid retrying for the same
-        blockNumbers = blockNumbers.splice(index, 1);
+        res.push(result.value);
+        continue;
       }
 
-      return acc;
-    }, []);
+      // If rejected, check error
+      //  Handle null block error in case of Lotus EVM
+      //  Otherwise, rethrow error
+      const err = result.reason;
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+        throw err;
+      }
+
+      log(`Block ${blockNumbers[index]} requested was null (FEVM), skipping`);
+
+      // Remove the corresponding block number from the blockNumbers to avoid retrying for the same
+      blockNumbers = blockNumbers.splice(index, 1);
+
+      // Stop the iteration at the first null block found
+      // To avoid saving blocks after the null block
+      // so that they don't conflict with blocks fetched when processBlockByNumber gets called for the null block
+      // TODO: Optimize
+      break;
+    }
 
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
 
