@@ -172,14 +172,45 @@ export const _fetchBatchBlocks = async (
   blockProgress: BlockProgressInterface,
   events: DeepPartial<EventInterface>[]
 }[]> => {
-  const blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
+  let blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
   let blocks = [];
 
   // Fetch blocks again if there are missing blocks.
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
+
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
-    const res = await Promise.all(blockPromises);
+    const settledResults = await Promise.allSettled(blockPromises);
+
+    const res: any[] = [];
+    for (let index = 0; index < settledResults.length; index++) {
+      const result = settledResults[index];
+      // If fulfilled, return value
+      if (result.status === 'fulfilled') {
+        res.push(result.value);
+        continue;
+      }
+
+      // If rejected, check error
+      //  Handle null block error in case of Lotus EVM
+      //  Otherwise, rethrow error
+      const err = result.reason;
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+        throw err;
+      }
+
+      log(`Block ${blockNumbers[index]} requested was null (FEVM), skipping`);
+
+      // Remove the corresponding block number from the blockNumbers to avoid retrying for the same
+      blockNumbers = blockNumbers.splice(index, 1);
+
+      // Stop the iteration at the first null block found
+      // To avoid saving blocks after the null block
+      // so that they don't conflict with blocks fetched when processBlockByNumber gets called for the null block
+      // TODO: Optimize
+      break;
+    }
+
     console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
 
     const firstMissingBlockIndex = res.findIndex(blocks => blocks.length === 0);
@@ -205,6 +236,7 @@ export const _fetchBatchBlocks = async (
 
   blocks.forEach(block => {
     block.blockTimestamp = block.timestamp;
+    block.blockNumber = Number(block.blockNumber);
   });
 
   console.time('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');

@@ -4,6 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
+import { ethers } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
 
 import { JobQueueConfig } from './config';
@@ -273,27 +274,29 @@ export class JobRunner {
       // Check how many branches there are at the given height/block number.
       const blocksAtHeight = await this._indexer.getBlocksAtHeight(pruneBlockHeight, false);
 
-      // Should be at least 1.
-      assert(blocksAtHeight.length);
+      let newCanonicalBlockHash = ethers.constants.HashZero;
 
-      let newCanonicalBlockHash;
-      // We have more than one node at this height, so prune all nodes not reachable from indexed block at max reorg depth from prune height.
-      // This will lead to orphaned nodes, which will get pruned at the next height.
-      if (blocksAtHeight.length > 1) {
-        const [indexedBlock] = await this._indexer.getBlocksAtHeight(pruneBlockHeight + MAX_REORG_DEPTH, false);
+      // Prune only if blocks exist at pruneBlockHeight
+      // There might be missing null block in FEVM; only update the sync status in such case
+      if (blocksAtHeight.length !== 0) {
+        // We have more than one node at this height, so prune all nodes not reachable from indexed block at max reorg depth from prune height.
+        // This will lead to orphaned nodes, which will get pruned at the next height.
+        if (blocksAtHeight.length > 1) {
+          const [indexedBlock] = await this._indexer.getBlocksAtHeight(pruneBlockHeight + MAX_REORG_DEPTH, false);
 
-        // Get ancestor blockHash from indexed block at prune height.
-        const ancestorBlockHash = await this._indexer.getAncestorAtDepth(indexedBlock.blockHash, MAX_REORG_DEPTH);
-        newCanonicalBlockHash = ancestorBlockHash;
+          // Get ancestor blockHash from indexed block at prune height.
+          const ancestorBlockHash = await this._indexer.getAncestorAtDepth(indexedBlock.blockHash, MAX_REORG_DEPTH);
+          newCanonicalBlockHash = ancestorBlockHash;
 
-        const blocksToBePruned = blocksAtHeight.filter(block => ancestorBlockHash !== block.blockHash);
+          const blocksToBePruned = blocksAtHeight.filter(block => ancestorBlockHash !== block.blockHash);
 
-        if (blocksToBePruned.length) {
-          // Mark blocks pruned which are not the ancestor block.
-          await this._indexer.markBlocksAsPruned(blocksToBePruned);
+          if (blocksToBePruned.length) {
+            // Mark blocks pruned which are not the ancestor block.
+            await this._indexer.markBlocksAsPruned(blocksToBePruned);
+          }
+        } else {
+          newCanonicalBlockHash = blocksAtHeight[0].blockHash;
         }
-      } else {
-        newCanonicalBlockHash = blocksAtHeight[0].blockHash;
       }
 
       // Update the canonical block in the SyncStatus.

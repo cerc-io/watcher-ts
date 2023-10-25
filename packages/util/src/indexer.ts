@@ -266,6 +266,10 @@ export class Indexer {
   // For each of the given blocks, fetches events and saves them along with the block to db
   // Returns an array with [block, events] for all the given blocks
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    if (!blocks.length) {
+      return [];
+    }
+
     const fromBlock = blocks[0].blockNumber;
     const toBlock = blocks[blocks.length - 1].blockNumber;
     log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetching from upstream server for range [${fromBlock}, ${toBlock}]`);
@@ -276,16 +280,8 @@ export class Indexer {
       const blockHash = block.blockHash;
       assert(blockHash);
 
-      const blockToSave = {
-        cid: block.cid,
-        blockHash: block.blockHash,
-        blockNumber: block.blockNumber,
-        blockTimestamp: block.blockTimestamp,
-        parentHash: block.parentHash
-      };
-
       const dbEvents = dbEventsMap.get(blockHash) || [];
-      const [blockProgress] = await this.saveBlockWithEvents(blockToSave, dbEvents);
+      const [blockProgress] = await this.saveBlockWithEvents(block, dbEvents);
       log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
 
       return { blockProgress, events: [] };
@@ -494,10 +490,10 @@ export class Indexer {
   async saveBlockWithEvents (block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
     const dbTx = await this._db.createTransactionRunner();
     try {
-      console.time(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      console.time(`time:indexer#saveBlockWithEvents-db-save-${block.blockNumber}`);
       const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, events);
       await dbTx.commitTransaction();
-      console.timeEnd(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      console.timeEnd(`time:indexer#saveBlockWithEvents-db-save-${block.blockNumber}`);
 
       return [blockProgress, []];
     } catch (error) {
