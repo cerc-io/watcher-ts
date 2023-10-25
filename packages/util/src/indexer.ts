@@ -280,16 +280,8 @@ export class Indexer {
       const blockHash = block.blockHash;
       assert(blockHash);
 
-      const blockToSave = {
-        cid: block.cid,
-        blockHash: block.blockHash,
-        blockNumber: block.blockNumber,
-        blockTimestamp: block.blockTimestamp,
-        parentHash: block.parentHash
-      };
-
       const dbEvents = dbEventsMap.get(blockHash) || [];
-      const [blockProgress] = await this.saveBlockWithEvents(blockToSave, dbEvents);
+      const [blockProgress] = await this.saveBlockWithEvents(block, dbEvents);
       log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetched for block: ${blockHash} num events: ${blockProgress.numEvents}`);
 
       return { blockProgress, events: [] };
@@ -498,10 +490,10 @@ export class Indexer {
   async saveBlockWithEvents (block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
     const dbTx = await this._db.createTransactionRunner();
     try {
-      console.time(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      console.time(`time:indexer#saveBlockWithEvents-db-save-${block.blockNumber}`);
       const blockProgress = await this._db.saveBlockWithEvents(dbTx, block, events);
       await dbTx.commitTransaction();
-      console.timeEnd(`time:indexer#_saveBlockWithEvents-db-save-${block.blockNumber}`);
+      console.timeEnd(`time:indexer#saveBlockWithEvents-db-save-${block.blockNumber}`);
 
       return [blockProgress, []];
     } catch (error) {

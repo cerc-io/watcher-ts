@@ -229,6 +229,7 @@ export const _fetchBatchBlocks = async (
 
   blocks.forEach(block => {
     block.blockTimestamp = block.timestamp;
+    block.blockNumber = Number(block.blockNumber);
   });
 
   console.time('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
