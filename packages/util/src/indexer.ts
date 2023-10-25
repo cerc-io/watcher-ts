@@ -266,6 +266,10 @@ export class Indexer {
   // For each of the given blocks, fetches events and saves them along with the block to db
   // Returns an array with [block, events] for all the given blocks
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    if (!blocks.length) {
+      return [];
+    }
+
     const fromBlock = blocks[0].blockNumber;
     const toBlock = blocks[blocks.length - 1].blockNumber;
     log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetching from upstream server for range [${fromBlock}, ${toBlock}]`);
