@@ -177,6 +177,10 @@ export class Indexer implements IndexerInterface {
     return dbEvent;
   }
 
+  async saveEvents (dbEvents: EventInterface[]): Promise<void> {
+    assert(dbEvents);
+  }
+
   async processEvent (event: EventInterface): Promise<void> {
     assert(event);
   }
@@ -199,6 +203,10 @@ export class Indexer implements IndexerInterface {
 
   isWatchedContract (address : string): ContractInterface | undefined {
     return undefined;
+  }
+
+  getWatchedContracts (): ContractInterface[] {
+    return [];
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {

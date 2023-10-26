@@ -461,7 +461,7 @@ export class JobRunner {
     const { block } = prefetchedBlock;
 
     console.time('time:job-runner#_processEvents-events');
-    await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch);
+    await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
     console.timeEnd('time:job-runner#_processEvents-events');
 
     // Update metrics

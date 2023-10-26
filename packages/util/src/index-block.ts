@@ -10,6 +10,7 @@ import { processBatchEvents } from './common';
 export const indexBlock = async (
   indexer: IndexerInterface,
   eventsInBatch: number,
+  subgraphEventsOrder: boolean,
   argv: {
     block: number,
   }
@@ -44,6 +45,6 @@ export const indexBlock = async (
     assert(indexer.processBlock);
     await indexer.processBlock(blockProgress);
 
-    await processBatchEvents(indexer, blockProgress, eventsInBatch);
+    await processBatchEvents(indexer, blockProgress, eventsInBatch, subgraphEventsOrder);
   }
 };

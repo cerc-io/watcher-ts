@@ -95,7 +95,7 @@ export class IndexBlockCmd {
     assert(indexer);
     assert(database);
 
-    await indexBlock(indexer, config.jobQueue.eventsInBatch, this._argv);
+    await indexBlock(indexer, config.jobQueue.eventsInBatch, config.jobQueue.subgraphEventsOrder, this._argv);
 
     await database.close();
   }
