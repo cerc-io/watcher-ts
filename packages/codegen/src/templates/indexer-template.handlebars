@@ -96,6 +96,7 @@ export class Indexer implements IndexerInterface {
   _abiMap: Map<string, JsonFragment[]>;
   _storageLayoutMap: Map<string, StorageLayout>;
   _contractMap: Map<string, ethers.utils.Interface>;
+  _eventSignaturesMap: Map<string, string[]>;
 
   {{#if (subgraphPath)}}
   _entityTypesMap: Map<string, { [key: string]: string }>;
@@ -121,6 +122,9 @@ export class Indexer implements IndexerInterface {
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();
     this._contractMap = new Map();
+    this._eventSignaturesMap = new Map();
+    let contractInterface: ethers.utils.Interface;
+    let eventSignatures: string[];
     {{#each contracts as | contract |}}
 
     const { abi: {{contract.contractName}}ABI{{#if contract.contractStorageLayout}}, storageLayout: {{contract.contractName}}StorageLayout{{/if}} } = {{contract.contractName}}Artifacts;
@@ -129,11 +133,19 @@ export class Indexer implements IndexerInterface {
 
     assert({{contract.contractName}}ABI);
     this._abiMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}ABI);
+
+    contractInterface = new ethers.utils.Interface({{contract.contractName}}ABI);
+    this._contractMap.set(KIND_{{capitalize contract.contractName}}, contractInterface);
+
+    eventSignatures = Object.values(contractInterface.events).map(value => {
+      return contractInterface.getEventTopic(value);
+    });
+    this._eventSignaturesMap.set(KIND_{{capitalize contract.contractName}}, eventSignatures);
     {{#if contract.contractStorageLayout}}
+
     assert({{contract.contractName}}StorageLayout);
     this._storageLayoutMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}StorageLayout);
     {{/if}}
-    this._contractMap.set(KIND_{{capitalize contract.contractName}}, new ethers.utils.Interface({{contract.contractName}}ABI));
     {{/each}}
     {{#if (subgraphPath)}}
 
@@ -642,7 +654,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgress>[]): Promise<{ blockProgress: BlockProgress, events: DeepPartial<Event>[] }[]> {
-    return this._baseIndexer.fetchEventsAndSaveBlocks(blocks, this.parseEventNameAndArgs.bind(this));
+    return this._baseIndexer.fetchEventsAndSaveBlocks(blocks, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
   }
 
   async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[BlockProgress, DeepPartial<Event>[]]> {
@@ -762,7 +774,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(blockNumber);
 
-    const dbEvents = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this.parseEventNameAndArgs.bind(this));
+    const dbEvents = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
 
     const dbTx = await this._db.createTransactionRunner();
     try {

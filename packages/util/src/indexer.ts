@@ -265,7 +265,7 @@ export class Indexer {
 
   // For each of the given blocks, fetches events and saves them along with the block to db
   // Returns an array with [block, events] for all the given blocks
-  async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+  async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[], eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
     if (!blocks.length) {
       return [];
     }
@@ -274,7 +274,7 @@ export class Indexer {
     const toBlock = blocks[blocks.length - 1].blockNumber;
     log(`fetchEventsAndSaveBlocks#fetchEventsForBlocks: fetching from upstream server for range [${fromBlock}, ${toBlock}]`);
 
-    const dbEventsMap = await this.fetchEventsForBlocks(blocks, parseEventNameAndArgs);
+    const dbEventsMap = await this.fetchEventsForBlocks(blocks, eventSignaturesMap, parseEventNameAndArgs);
 
     const blocksWithEventsPromises = blocks.map(async block => {
       const blockHash = block.blockHash;
@@ -291,31 +291,25 @@ export class Indexer {
   }
 
   // Fetch events (to be saved to db) for a block range
-  async fetchEventsForBlocks (blocks: DeepPartial<BlockProgressInterface>[], parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<Map<string, DeepPartial<EventInterface>[]>> {
+  async fetchEventsForBlocks (blocks: DeepPartial<BlockProgressInterface>[], eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<Map<string, DeepPartial<EventInterface>[]>> {
     if (!blocks.length) {
       return new Map();
     }
 
     // Fetch logs for block range of given blocks
-    let logs: any;
     const fromBlock = blocks[0].blockNumber;
     const toBlock = blocks[blocks.length - 1].blockNumber;
 
     assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
-    if (this._serverConfig.filterLogs) {
-      const watchedContracts = this.getWatchedContracts();
-      const addresses = watchedContracts.map((watchedContract): string => {
-        return watchedContract.address;
-      });
 
-      ({ logs } = await this._ethClient.getLogsForBlockRange({
-        fromBlock,
-        toBlock,
-        addresses
-      }));
-    } else {
-      ({ logs } = await this._ethClient.getLogsForBlockRange({ fromBlock, toBlock }));
-    }
+    const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
+
+    const { logs } = await this._ethClient.getLogsForBlockRange({
+      fromBlock,
+      toBlock,
+      addresses,
+      topics
+    });
 
     // Skip further processing if no relevant logs found in the entire block range
     if (!logs.length) {
@@ -380,23 +374,15 @@ export class Indexer {
   }
 
   // Fetch events (to be saved to db) for a particular block
-  async fetchEvents (blockHash: string, blockNumber: number, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
-    let logsPromise: Promise<any>;
+  async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+    const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
 
-    if (this._serverConfig.filterLogs) {
-      const watchedContracts = this.getWatchedContracts();
-      const addresses = watchedContracts.map((watchedContract): string => {
-        return watchedContract.address;
-      });
-
-      logsPromise = this._ethClient.getLogs({
-        blockHash,
-        blockNumber: blockNumber.toString(),
-        addresses
-      });
-    } else {
-      logsPromise = this._ethClient.getLogs({ blockHash, blockNumber: blockNumber.toString() });
-    }
+    const logsPromise = await this._ethClient.getLogs({
+      blockHash,
+      blockNumber: blockNumber.toString(),
+      addresses,
+      topics
+    });
 
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash, blockNumber });
 
@@ -1196,6 +1182,29 @@ export class Indexer {
     // Get and update State status for the contract.
     const oldStateStatus = this._stateStatusMap[address];
     this._stateStatusMap[address] = _.merge(oldStateStatus, stateStatus);
+  }
+
+  _createLogsFilters (eventSignaturesMap: Map<string, string[]>): { addresses: string[] | undefined, topics: string[][] | undefined } {
+    let addresses: string[] | undefined;
+    let eventSignatures: string[] | undefined;
+
+    if (this._serverConfig.filterLogsByAddresses) {
+      const watchedContracts = this.getWatchedContracts();
+      addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
+    }
+
+    if (this._serverConfig.filterLogsByTopics) {
+      const eventSignaturesSet = new Set<string>();
+      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
+        eventSignaturesSet.add(sig);
+      }));
+
+      eventSignatures = Array.from(eventSignaturesSet);
+    }
+
+    return { addresses, topics: eventSignatures && [eventSignatures] };
   }
 
   parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any, eventSignature: string } {

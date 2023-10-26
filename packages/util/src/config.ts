@@ -200,7 +200,8 @@ export interface ServerConfig {
   subgraphPath: string;
   enableState: boolean;
   wasmRestartBlocksInterval: number;
-  filterLogs: boolean;
+  filterLogsByAddresses: boolean;
+  filterLogsByTopics: boolean;
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
 

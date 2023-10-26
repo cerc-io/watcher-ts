@@ -220,12 +220,14 @@ export interface EthClient {
   getLogs(vars: {
     blockHash: string,
     blockNumber: string,
-    addresses?: string[]
+    addresses?: string[],
+    topics?: string[][]
   }): Promise<any>;
   getLogsForBlockRange?: (vars: {
     fromBlock?: number,
     toBlock?: number,
-    addresses?: string[]
+    addresses?: string[],
+    topics?: string[][]
   }) => Promise<any>;
 }
 
