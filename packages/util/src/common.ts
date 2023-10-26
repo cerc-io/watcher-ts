@@ -321,7 +321,7 @@ export const processEvents = async (indexer: IndexerInterface, block: BlockProgr
         // We might not have parsed this event yet. This can happen if the contract was added
         // as a result of a previous event in the same block.
         if (event.eventName === UNKNOWN_EVENT_NAME) {
-          const logObj = JSON.parse(event.extraInfo);
+          const logObj = JSONbigNative.parse(event.extraInfo);
 
           assert(indexer.parseEventNameAndArgs);
           assert(typeof watchedContract !== 'boolean');
@@ -422,7 +422,7 @@ export const processEventsInSubgraphOrder = async (indexer: IndexerInterface, bl
       // We might not have parsed this event yet. This can happen if the contract was added
       // as a result of a previous event in the same block.
       if (event.eventName === UNKNOWN_EVENT_NAME) {
-        const logObj = JSON.parse(event.extraInfo);
+        const logObj = JSONbigNative.parse(event.extraInfo);
 
         assert(indexer.parseEventNameAndArgs);
         assert(typeof watchedContract !== 'boolean');
@@ -481,12 +481,11 @@ export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockN
  * @param blockHash
  * @param blockNumber
  */
-export const createHooksJob = async (jobQueue: JobQueue, blockHash: string, blockNumber: number): Promise<void> => {
+export const createHooksJob = async (jobQueue: JobQueue, blockHash: string): Promise<void> => {
   await jobQueue.pushJob(
     QUEUE_HOOKS,
     {
-      blockHash,
-      blockNumber
+      blockHash
     }
   );
 };

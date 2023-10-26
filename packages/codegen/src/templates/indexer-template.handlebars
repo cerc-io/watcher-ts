@@ -8,7 +8,7 @@ import debug from 'debug';
 {{#if queries}}
 import JSONbig from 'json-bigint';
 {{/if}}
-import { ethers } from 'ethers';
+import { ethers, constants } from 'ethers';
 {{#if (subgraphPath)}}
 import { SelectionNode } from 'graphql';
 {{/if}}
@@ -493,7 +493,11 @@ export class Indexer implements IndexerInterface {
     return this._db.getStateSyncStatus();
   }
 
-  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus | undefined> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+    
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
@@ -527,9 +531,13 @@ export class Indexer implements IndexerInterface {
     return res;
   }
 
-  async getLatestCanonicalBlock (): Promise<BlockProgress> {
+  async getLatestCanonicalBlock (): Promise<BlockProgress | undefined> {
     const syncStatus = await this.getSyncStatus();
     assert(syncStatus);
+
+    if (syncStatus.latestCanonicalBlockHash === constants.HashZero) {
+      return;
+    }
 
     const latestCanonicalBlock = await this.getBlockProgress(syncStatus.latestCanonicalBlockHash);
     assert(latestCanonicalBlock);
