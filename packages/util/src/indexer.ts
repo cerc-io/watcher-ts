@@ -302,30 +302,13 @@ export class Indexer {
 
     assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
 
-    let addresses: string[] | undefined;
-    let eventSignatures: string[] = [];
-
-    if (this._serverConfig.filterLogsByAddresses) {
-      const watchedContracts = this.getWatchedContracts();
-      addresses = watchedContracts.map((watchedContract): string => {
-        return watchedContract.address;
-      });
-    }
-
-    if (this._serverConfig.filterLogsByTopics) {
-      const eventSignaturesSet = new Set<string>();
-      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
-        eventSignaturesSet.add(sig);
-      }));
-
-      eventSignatures = Array.from(eventSignaturesSet);
-    }
+    const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
 
     const { logs } = await this._ethClient.getLogsForBlockRange({
       fromBlock,
       toBlock,
       addresses,
-      topics: [eventSignatures]
+      topics
     });
 
     // Skip further processing if no relevant logs found in the entire block range
@@ -392,30 +375,13 @@ export class Indexer {
 
   // Fetch events (to be saved to db) for a particular block
   async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
-    let addresses: string[] | undefined;
-    let eventSignatures: string[] = [];
-
-    if (this._serverConfig.filterLogsByAddresses) {
-      const watchedContracts = this.getWatchedContracts();
-      addresses = watchedContracts.map((watchedContract): string => {
-        return watchedContract.address;
-      });
-    }
-
-    if (this._serverConfig.filterLogsByTopics) {
-      const eventSignaturesSet = new Set<string>();
-      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
-        eventSignaturesSet.add(sig);
-      }));
-
-      eventSignatures = Array.from(eventSignaturesSet);
-    }
+    const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
 
     const logsPromise = await this._ethClient.getLogs({
       blockHash,
       blockNumber: blockNumber.toString(),
       addresses,
-      topics: [eventSignatures]
+      topics
     });
 
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash, blockNumber });
@@ -1216,6 +1182,29 @@ export class Indexer {
     // Get and update State status for the contract.
     const oldStateStatus = this._stateStatusMap[address];
     this._stateStatusMap[address] = _.merge(oldStateStatus, stateStatus);
+  }
+
+  _createLogsFilters (eventSignaturesMap: Map<string, string[]>): { addresses: string[] | undefined, topics: string[][] | undefined } {
+    let addresses: string[] | undefined;
+    let eventSignatures: string[] | undefined;
+
+    if (this._serverConfig.filterLogsByAddresses) {
+      const watchedContracts = this.getWatchedContracts();
+      addresses = watchedContracts.map((watchedContract): string => {
+        return watchedContract.address;
+      });
+    }
+
+    if (this._serverConfig.filterLogsByTopics) {
+      const eventSignaturesSet = new Set<string>();
+      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
+        eventSignaturesSet.add(sig);
+      }));
+
+      eventSignatures = Array.from(eventSignaturesSet);
+    }
+
+    return { addresses, topics: eventSignatures && [eventSignatures] };
   }
 
   parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any, eventSignature: string } {
