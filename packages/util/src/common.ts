@@ -321,7 +321,7 @@ export const processEvents = async (indexer: IndexerInterface, block: BlockProgr
         // We might not have parsed this event yet. This can happen if the contract was added
         // as a result of a previous event in the same block.
         if (event.eventName === UNKNOWN_EVENT_NAME) {
-          const logObj = JSON.parse(event.extraInfo);
+          const logObj = JSONbigNative.parse(event.extraInfo);
 
           assert(indexer.parseEventNameAndArgs);
           assert(typeof watchedContract !== 'boolean');
