@@ -10,7 +10,8 @@ import {
   QUEUE_BLOCK_CHECKPOINT,
   JOB_KIND_PRUNE,
   JOB_KIND_INDEX,
-  UNKNOWN_EVENT_NAME
+  UNKNOWN_EVENT_NAME,
+  NULL_BLOCK_ERROR
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, IndexerInterface, EventInterface } from './types';
@@ -106,7 +107,7 @@ export const fetchBlocksAtHeight = async (
       }
     } catch (err: any) {
       // Handle null block error in case of Lotus EVM
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
         throw err;
       }
 
@@ -197,7 +198,7 @@ export const _fetchBatchBlocks = async (
       //  Handle null block error in case of Lotus EVM
       //  Otherwise, rethrow error
       const err = result.reason;
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
         throw err;
       }
 
