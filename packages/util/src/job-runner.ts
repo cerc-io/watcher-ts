@@ -112,7 +112,12 @@ export class JobRunner {
 
         // Create a hooks job for parent block of latestCanonicalBlock pruning for first block is skipped as it is assumed to be a canonical block.
         const latestCanonicalBlock = await this._indexer.getLatestCanonicalBlock();
-        await createHooksJob(this.jobQueue, latestCanonicalBlock.parentHash, latestCanonicalBlock.blockNumber - 1);
+
+        // Check if latestCanonicalBlock is undefined incase of null block in FEVM
+        if (latestCanonicalBlock) {
+          await createHooksJob(this.jobQueue, latestCanonicalBlock.parentHash);
+        }
+
         break;
       }
 
@@ -145,16 +150,19 @@ export class JobRunner {
   }
 
   async processHooks (job: any): Promise<void> {
-    const { data: { blockHash, blockNumber } } = job;
+    // Get the block and current stateSyncStatus.
+    const [blockProgress, stateSyncStatus] = await Promise.all([
+      this._indexer.getBlockProgress(job.data.blockHash),
+      this._indexer.getStateSyncStatus()
+    ]);
 
-    // Get the current stateSyncStatus.
-    const stateSyncStatus = await this._indexer.getStateSyncStatus();
+    assert(blockProgress);
+    const { blockHash, blockNumber, parentHash } = blockProgress;
 
     if (stateSyncStatus) {
       if (stateSyncStatus.latestIndexedBlockNumber < (blockNumber - 1)) {
         // Create hooks job for parent block.
-        const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
-        await createHooksJob(this.jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
+        await createHooksJob(this.jobQueue, parentHash);
 
         const message = `State for blockNumber ${blockNumber - 1} not indexed yet, aborting`;
         log(message);

@@ -481,12 +481,11 @@ export const createPruningJob = async (jobQueue: JobQueue, latestCanonicalBlockN
  * @param blockHash
  * @param blockNumber
  */
-export const createHooksJob = async (jobQueue: JobQueue, blockHash: string, blockNumber: number): Promise<void> => {
+export const createHooksJob = async (jobQueue: JobQueue, blockHash: string): Promise<void> => {
   await jobQueue.pushJob(
     QUEUE_HOOKS,
     {
-      blockHash,
-      blockNumber
+      blockHash
     }
   );
 };

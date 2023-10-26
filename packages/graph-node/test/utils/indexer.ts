@@ -197,8 +197,8 @@ export class Indexer implements IndexerInterface {
     return {} as StateSyncStatusInterface;
   }
 
-  async getLatestCanonicalBlock (): Promise<BlockProgressInterface> {
-    return {} as BlockProgressInterface;
+  async getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined> {
+    return undefined;
   }
 
   isWatchedContract (address : string): ContractInterface | undefined {
