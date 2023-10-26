@@ -304,9 +304,9 @@ export class Indexer {
 
     let addresses: string[] | undefined;
     let eventSignatures: string[] = [];
-    const watchedContracts = this.getWatchedContracts();
 
     if (this._serverConfig.filterLogsByAddresses) {
+      const watchedContracts = this.getWatchedContracts();
       addresses = watchedContracts.map((watchedContract): string => {
         return watchedContract.address;
       });
@@ -314,11 +314,9 @@ export class Indexer {
 
     if (this._serverConfig.filterLogsByTopics) {
       const eventSignaturesSet = new Set<string>();
-      watchedContracts.forEach(watchedContract => {
-        (eventSignaturesMap.get(watchedContract.kind) || []).forEach(sig => {
-          eventSignaturesSet.add(sig);
-        });
-      });
+      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
+        eventSignaturesSet.add(sig);
+      }));
 
       eventSignatures = Array.from(eventSignaturesSet);
     }
@@ -396,9 +394,9 @@ export class Indexer {
   async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     let addresses: string[] | undefined;
     let eventSignatures: string[] = [];
-    const watchedContracts = this.getWatchedContracts();
 
     if (this._serverConfig.filterLogsByAddresses) {
+      const watchedContracts = this.getWatchedContracts();
       addresses = watchedContracts.map((watchedContract): string => {
         return watchedContract.address;
       });
@@ -406,11 +404,9 @@ export class Indexer {
 
     if (this._serverConfig.filterLogsByTopics) {
       const eventSignaturesSet = new Set<string>();
-      watchedContracts.forEach(watchedContract => {
-        (eventSignaturesMap.get(watchedContract.kind) || []).forEach(sig => {
-          eventSignaturesSet.add(sig);
-        });
-      });
+      eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
+        eventSignaturesSet.add(sig);
+      }));
 
       eventSignatures = Array.from(eventSignaturesSet);
     }
