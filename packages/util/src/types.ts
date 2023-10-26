@@ -106,9 +106,11 @@ export interface IndexerInterface {
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
+  saveEvents (dbEvents: EventInterface[]): Promise<void>
   processEvent (event: EventInterface): Promise<void>
   parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;
+  getWatchedContracts: () => ContractInterface[]
   getContractsByKind?: (kind: string) => ContractInterface[]
   addContracts?: () => Promise<void>
   cacheContract: (contract: ContractInterface) => void;

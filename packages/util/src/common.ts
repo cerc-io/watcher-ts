@@ -255,12 +255,37 @@ export const _fetchBatchBlocks = async (
  * @param block
  * @param eventsInBatch
  */
-export const processBatchEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<void> => {
+export const processBatchEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number, subgraphEventsOrder: boolean): Promise<void> => {
+  let dbBlock: BlockProgressInterface, dbEvents: EventInterface[];
+  if (subgraphEventsOrder) {
+    ({ dbBlock, dbEvents } = await processEventsInSubgraphOrder(indexer, block, eventsInBatch));
+  } else {
+    ({ dbBlock, dbEvents } = await processEvents(indexer, block, eventsInBatch));
+  }
+
+  if (indexer.processBlockAfterEvents) {
+    if (!dbBlock.isComplete) {
+      await indexer.processBlockAfterEvents(block.blockHash, block.blockNumber);
+    }
+  }
+
+  dbBlock.isComplete = true;
+
+  console.time('time:common#processBatchEvents-updateBlockProgress-saveEvents');
+  await Promise.all([
+    indexer.updateBlockProgress(dbBlock, dbBlock.lastProcessedEventIndex),
+    indexer.saveEvents(dbEvents)
+  ]);
+  console.timeEnd('time:common#processBatchEvents-updateBlockProgress-saveEvents');
+};
+
+export const processEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<{ dbBlock: BlockProgressInterface, dbEvents: EventInterface[] }> => {
+  const dbEvents: EventInterface[] = [];
   let page = 0;
 
   // Check if block processing is complete.
   while (block.numProcessedEvents < block.numEvents) {
-    console.time('time:common#processBacthEvents-fetching_events_batch');
+    console.time('time:common#processEvents-fetching_events_batch');
 
     // Fetch events in batches
     const events = await indexer.getBlockEvents(
@@ -274,16 +299,16 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
       }
     );
 
-    console.timeEnd('time:common#processBacthEvents-fetching_events_batch');
+    console.timeEnd('time:common#processEvents-fetching_events_batch');
 
     if (events.length) {
       log(`Processing events batch from index ${events[0].index} to ${events[0].index + events.length - 1}`);
     }
 
-    console.time('time:common#processBatchEvents-processing_events_batch');
+    console.time('time:common#processEvents-processing_events_batch');
 
     // Process events in loop
-    for (let event of events) {
+    for (const event of events) {
       // Skipping check for order of events processing since logIndex in FEVM is not index of log in block
       // Check was introduced to avoid reprocessing block events incase of restarts. But currently on restarts, unprocessed block is removed and reprocessed from first event log
       // if (event.index <= block.lastProcessedEventIndex) {
@@ -308,28 +333,122 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
             ...logObj,
             eventSignature
           });
-          event = await indexer.saveEventEntity(event);
+
+          // Save updated event to the db
+          dbEvents.push(event);
         }
 
         await indexer.processEvent(event);
       }
 
-      block = await indexer.updateBlockProgress(block, event.index);
+      block.lastProcessedEventIndex = event.index;
+      block.numProcessedEvents++;
     }
 
-    console.timeEnd('time:common#processBatchEvents-processing_events_batch');
+    console.timeEnd('time:common#processEvents-processing_events_batch');
   }
 
-  if (indexer.processBlockAfterEvents) {
-    if (!block.isComplete) {
-      await indexer.processBlockAfterEvents(block.blockHash, block.blockNumber);
+  return { dbBlock: block, dbEvents };
+};
+
+export const processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<{ dbBlock: BlockProgressInterface, dbEvents: EventInterface[] }> => {
+  // Create list of initially watched contracts
+  const initiallyWatchedContracts: string[] = indexer.getWatchedContracts().map(contract => contract.address);
+  const unwatchedContractEvents: EventInterface[] = [];
+
+  const dbEvents: EventInterface[] = [];
+  let page = 0;
+
+  // Check if we are out of events.
+  let numFetchedEvents = 0;
+  while (numFetchedEvents < block.numEvents) {
+    console.time('time:common#processEventsInSubgraphOrder-fetching_events_batch');
+
+    // Fetch events in batches
+    const events = await indexer.getBlockEvents(
+      block.blockHash,
+      {},
+      {
+        skip: (page++) * (eventsInBatch || DEFAULT_EVENTS_IN_BATCH),
+        limit: eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
+        orderBy: 'index',
+        orderDirection: OrderDirection.asc
+      }
+    );
+    numFetchedEvents += events.length;
+
+    console.timeEnd('time:common#processEventsInSubgraphOrder-fetching_events_batch');
+
+    if (events.length) {
+      log(`Processing events batch from index ${events[0].index} to ${events[0].index + events.length - 1}`);
     }
+
+    console.time('time:common#processEventsInSubgraphOrder-processing_events_batch');
+
+    // First process events for initially watched contracts
+    const watchedContractEvents: EventInterface[] = [];
+    events.forEach(event => {
+      if (initiallyWatchedContracts.includes(event.contract)) {
+        watchedContractEvents.push(event);
+      } else {
+        unwatchedContractEvents.push(event);
+      }
+    });
+
+    // Process known events in a loop
+    for (const event of watchedContractEvents) {
+      // Skipping check for order of events processing since logIndex in FEVM is not index of log in block
+      // Check was introduced to avoid reprocessing block events incase of restarts. But currently on restarts, unprocessed block is removed and reprocessed from first event log
+      // if (event.index <= block.lastProcessedEventIndex) {
+      //   throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
+      // }
+
+      await indexer.processEvent(event);
+
+      block.lastProcessedEventIndex = event.index;
+      block.numProcessedEvents++;
+    }
+
+    console.timeEnd('time:common#processEventsInSubgraphOrder-processing_events_batch');
   }
 
-  block.isComplete = true;
-  console.time('time:common#processBatchEvents-updateBlockProgress');
-  await indexer.updateBlockProgress(block, block.lastProcessedEventIndex);
-  console.timeEnd('time:common#processBatchEvents-updateBlockProgress');
+  console.time('time:common#processEventsInSubgraphOrder-processing_unwatched_events');
+
+  // At last, process all the events of newly watched contracts
+  for (const event of unwatchedContractEvents) {
+    const watchedContract = indexer.isWatchedContract(event.contract);
+
+    if (watchedContract) {
+      // We might not have parsed this event yet. This can happen if the contract was added
+      // as a result of a previous event in the same block.
+      if (event.eventName === UNKNOWN_EVENT_NAME) {
+        const logObj = JSON.parse(event.extraInfo);
+
+        assert(indexer.parseEventNameAndArgs);
+        assert(typeof watchedContract !== 'boolean');
+        const { eventName, eventInfo, eventSignature } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
+
+        event.eventName = eventName;
+        event.eventInfo = JSONbigNative.stringify(eventInfo);
+        event.extraInfo = JSONbigNative.stringify({
+          ...logObj,
+          eventSignature
+        });
+
+        // Save updated event to the db
+        dbEvents.push(event);
+      }
+
+      await indexer.processEvent(event);
+    }
+
+    block.lastProcessedEventIndex = Math.max(block.lastProcessedEventIndex + 1, event.index);
+    block.numProcessedEvents++;
+  }
+
+  console.timeEnd('time:common#processEventsInSubgraphOrder-processing_unwatched_events');
+
+  return { dbBlock: block, dbEvents };
 };
 
 /**

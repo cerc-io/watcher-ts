@@ -564,12 +564,20 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.saveEventEntity(dbEvent);
   }
 
+  async saveEvents (dbEvents: Event[]): Promise<void> {
+    return this._baseIndexer.saveEvents(dbEvents);
+  }
+
   async getEventsByFilter (blockHash: string, contract?: string, name?: string): Promise<Array<Event>> {
     return this._baseIndexer.getEventsByFilter(blockHash, contract, name);
   }
 
   isWatchedContract (address : string): Contract | undefined {
     return this._baseIndexer.isWatchedContract(address);
+  }
+
+  getWatchedContracts (): Contract[] {
+    return this._baseIndexer.getWatchedContracts();
   }
 
   getContractsByKind (kind: string): Contract[] {
