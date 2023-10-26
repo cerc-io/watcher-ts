@@ -2,8 +2,10 @@
 // Copyright 2022 Vulcanize, Inc.
 //
 
-import { utils, providers } from 'ethers';
+import { utils, providers, errors } from 'ethers';
 import debug from 'debug';
+
+import { NULL_BLOCK_ERROR } from './constants';
 
 const log = debug('vulcanize:block-size-cache');
 
@@ -44,16 +46,26 @@ const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNu
 
     // Start prefetching blocks after latest height in blockSizeMap.
     for (let i = startBlockHeight; i <= endBlockHeight; i++) {
-      console.time(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
-      const block = await provider.send('eth_getBlockByNumber', [utils.hexStripZeros(utils.hexlify(i)), false]);
+      try {
+        console.time(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
+        const block = await provider.send('eth_getBlockByNumber', [utils.hexStripZeros(utils.hexlify(i)), false]);
 
-      if (block) {
-        const { size, hash } = block;
-        blockSizeMap.set(hash, { size, blockNumber: i });
-      } else {
-        log(`No block found at height ${i}`);
+        if (block) {
+          const { size, hash } = block;
+          blockSizeMap.set(hash, { size, blockNumber: i });
+        } else {
+          log(`No block found at height ${i}`);
+        }
+      } catch (err: any) {
+        // Handle null block error in case of Lotus EVM
+        if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
+          throw err;
+        }
+
+        log(`Block ${i} requested was null (FEVM); Fetching next block`);
+      } finally {
+        console.timeEnd(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
       }
-      console.timeEnd(`time:misc#cacheBlockSizesAsync-eth_getBlockByNumber-${i}`);
     }
   }
 

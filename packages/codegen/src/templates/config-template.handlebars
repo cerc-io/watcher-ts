@@ -67,6 +67,9 @@
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
     rpcProviderEndpoint = "http://127.0.0.1:8081"
 
+    # Flag to specify if rpc-eth-client should be used from RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
+    rpcClient = false
+
   [upstream.cache]
     name = "requests"
     enabled = false

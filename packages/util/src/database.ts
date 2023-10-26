@@ -190,10 +190,6 @@ export class Database {
 
   async updateBlockProgress (repo: Repository<BlockProgressInterface>, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface> {
     if (!block.isComplete) {
-      if (lastProcessedEventIndex <= block.lastProcessedEventIndex) {
-        throw new Error(`Events processed out of order ${block.blockHash}, was ${block.lastProcessedEventIndex}, got ${lastProcessedEventIndex}`);
-      }
-
       block.lastProcessedEventIndex = lastProcessedEventIndex;
       block.numProcessedEvents++;
     }

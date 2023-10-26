@@ -2,6 +2,7 @@ import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
 import { errors } from 'ethers';
+import JSONbig from 'json-bigint';
 
 import {
   QUEUE_BLOCK_PROCESSING,
@@ -9,7 +10,8 @@ import {
   QUEUE_BLOCK_CHECKPOINT,
   JOB_KIND_PRUNE,
   JOB_KIND_INDEX,
-  UNKNOWN_EVENT_NAME
+  UNKNOWN_EVENT_NAME,
+  NULL_BLOCK_ERROR
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, IndexerInterface, EventInterface } from './types';
@@ -20,6 +22,7 @@ import { JobQueueConfig } from './config';
 const DEFAULT_EVENTS_IN_BATCH = 50;
 
 const log = debug('vulcanize:common');
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export interface PrefetchedBlock {
   block: BlockProgressInterface;
@@ -104,7 +107,7 @@ export const fetchBlocksAtHeight = async (
       }
     } catch (err: any) {
       // Handle null block error in case of Lotus EVM
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
         throw err;
       }
 
@@ -195,7 +198,7 @@ export const _fetchBatchBlocks = async (
       //  Handle null block error in case of Lotus EVM
       //  Otherwise, rethrow error
       const err = result.reason;
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === 'requested epoch was a null round')) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
         throw err;
       }
 
@@ -253,6 +256,8 @@ export const _fetchBatchBlocks = async (
  * @param eventsInBatch
  */
 export const processBatchEvents = async (indexer: IndexerInterface, block: BlockProgressInterface, eventsInBatch: number): Promise<void> => {
+  let page = 0;
+
   // Check if block processing is complete.
   while (block.numProcessedEvents < block.numEvents) {
     console.time('time:common#processBacthEvents-fetching_events_batch');
@@ -260,12 +265,9 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
     // Fetch events in batches
     const events = await indexer.getBlockEvents(
       block.blockHash,
+      {},
       {
-        index: [
-          { value: block.lastProcessedEventIndex + 1, operator: 'gte', not: false }
-        ]
-      },
-      {
+        skip: (page++) * (eventsInBatch || DEFAULT_EVENTS_IN_BATCH),
         limit: eventsInBatch || DEFAULT_EVENTS_IN_BATCH,
         orderBy: 'index',
         orderDirection: OrderDirection.asc
@@ -282,23 +284,11 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
     // Process events in loop
     for (let event of events) {
-      const eventIndex = event.index;
-
-      // Check that events are processed in order.
-      if (eventIndex <= block.lastProcessedEventIndex) {
-        throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-      }
-
-      // Check if previous event in block has been processed exactly before this and abort if not.
-      // Skip check if logs fetched are filtered by contract address.
-      if (!indexer.serverConfig.filterLogs) {
-        const prevIndex = eventIndex - 1;
-
-        if (prevIndex !== block.lastProcessedEventIndex) {
-          throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash},` +
-          ` prev event index ${prevIndex}, got event index ${event.index} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
-        }
-      }
+      // Skipping check for order of events processing since logIndex in FEVM is not index of log in block
+      // Check was introduced to avoid reprocessing block events incase of restarts. But currently on restarts, unprocessed block is removed and reprocessed from first event log
+      // if (event.index <= block.lastProcessedEventIndex) {
+      //   throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
+      // }
 
       const watchedContract = indexer.isWatchedContract(event.contract);
 
@@ -310,10 +300,14 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
           assert(indexer.parseEventNameAndArgs);
           assert(typeof watchedContract !== 'boolean');
-          const { eventName, eventInfo } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
+          const { eventName, eventInfo, eventSignature } = indexer.parseEventNameAndArgs(watchedContract.kind, logObj);
 
           event.eventName = eventName;
-          event.eventInfo = JSON.stringify(eventInfo);
+          event.eventInfo = JSONbigNative.stringify(eventInfo);
+          event.extraInfo = JSONbigNative.stringify({
+            ...logObj,
+            eventSignature
+          });
           event = await indexer.saveEventEntity(event);
         }
 
