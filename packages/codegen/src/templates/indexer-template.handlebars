@@ -493,7 +493,11 @@ export class Indexer implements IndexerInterface {
     return this._db.getStateSyncStatus();
   }
 
-  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus> {
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatus | undefined> {
+    if (!this._serverConfig.enableState) {
+      return;
+    }
+    
     const dbTx = await this._db.createTransactionRunner();
     let res;
 

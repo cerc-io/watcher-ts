@@ -194,32 +194,33 @@ export class JobRunner {
 
     // Get the current stateSyncStatus.
     const stateSyncStatus = await this._indexer.getStateSyncStatus();
-    assert(stateSyncStatus);
 
-    if (stateSyncStatus.latestCheckpointBlockNumber >= 0) {
-      if (stateSyncStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
-        // Create a checkpoint job for parent block.
-        const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
-        await createCheckpointJob(this.jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
+    if (stateSyncStatus) {
+      if (stateSyncStatus.latestCheckpointBlockNumber >= 0) {
+        if (stateSyncStatus.latestCheckpointBlockNumber < (blockNumber - 1)) {
+          // Create a checkpoint job for parent block.
+          const [parentBlock] = await this._indexer.getBlocksAtHeight(blockNumber - 1, false);
+          await createCheckpointJob(this.jobQueue, parentBlock.blockHash, parentBlock.blockNumber);
 
-        const message = `Checkpoints for blockNumber ${blockNumber - 1} not processed yet, aborting`;
-        log(message);
+          const message = `Checkpoints for blockNumber ${blockNumber - 1} not processed yet, aborting`;
+          log(message);
 
-        throw new Error(message);
+          throw new Error(message);
+        }
+
+        if (stateSyncStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
+          log(`Checkpoints for blockNumber ${blockNumber} already processed`);
+
+          return;
+        }
       }
 
-      if (stateSyncStatus.latestCheckpointBlockNumber > (blockNumber - 1)) {
-        log(`Checkpoints for blockNumber ${blockNumber} already processed`);
+      // Process checkpoints for the given block.
+      await this._indexer.processCheckpoint(blockHash);
 
-        return;
-      }
+      // Update the stateSyncStatus.
+      await this._indexer.updateStateSyncStatusCheckpointBlock(blockNumber);
     }
-
-    // Process checkpoints for the given block.
-    await this._indexer.processCheckpoint(blockHash);
-
-    // Update the stateSyncStatus.
-    await this._indexer.updateStateSyncStatusCheckpointBlock(blockNumber);
 
     await this.jobQueue.markComplete(job);
   }

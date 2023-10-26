@@ -189,8 +189,8 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
-    return {} as StateSyncStatusInterface;
+  async updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface | undefined> {
+    return undefined;
   }
 
   async updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface> {
