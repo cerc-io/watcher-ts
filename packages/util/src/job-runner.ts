@@ -17,7 +17,8 @@ import {
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   QUEUE_BLOCK_CHECKPOINT,
-  QUEUE_HOOKS
+  QUEUE_HOOKS,
+  QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
@@ -31,8 +32,16 @@ import {
   fetchBlocksAtHeight
 } from './common';
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
+import PgBoss from 'pg-boss';
 
 const log = debug('vulcanize:job-runner');
+
+// Wait time for retrying events processing on error (in ms)
+const EVENTS_PROCESSING_RETRY_WAIT = 2000;
+
+interface HistoricalJobData {
+  blockNumber: number;
+}
 
 export class JobRunner {
   jobQueue: JobQueue;
@@ -57,6 +66,12 @@ export class JobRunner {
     });
   }
 
+  async subscribeHistoricalProcessingQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_HISTORICAL_PROCESSING, async (job) => {
+      await this.processHistoricalBlocks(job);
+    });
+  }
+
   async subscribeEventProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
       await this.processEvent(job);
@@ -74,9 +89,6 @@ export class JobRunner {
       await this.processCheckpoint(job);
     });
   }
-
-  // TODO: Add a new JOB QUEUE for processing historical blocks
-  // TODO: New job will fetch filtered logs and blocks in batches
 
   async processBlock (job: any): Promise<void> {
     const { data: { kind } } = job;
@@ -129,6 +141,26 @@ export class JobRunner {
         break;
     }
 
+    await this.jobQueue.markComplete(job);
+  }
+
+  async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
+    // const { data: { blockNumber } } = job;
+
+    // TODO: Use method from common.ts to fetch and save filtered logs and blocks
+    const blocks: BlockProgressInterface[] = [];
+
+    // Push event processing job for each block
+    const pushJobForBlockPromises = blocks.map(async block => this.jobQueue.pushJob(
+      QUEUE_EVENT_PROCESSING,
+      {
+        kind: JOB_KIND_EVENTS,
+        blockHash: block.blockHash,
+        publish: true
+      }
+    ));
+
+    await Promise.all(pushJobForBlockPromises);
     await this.jobQueue.markComplete(job);
   }
 
@@ -458,35 +490,57 @@ export class JobRunner {
   async _processEvents (job: any): Promise<void> {
     const { blockHash } = job.data;
 
-    if (!this._blockAndEventsMap.has(blockHash)) {
-      console.time('time:job-runner#_processEvents-get-block-progress');
-      const block = await this._indexer.getBlockProgress(blockHash);
-      console.timeEnd('time:job-runner#_processEvents-get-block-progress');
+    try {
+      if (!this._blockAndEventsMap.has(blockHash)) {
+        console.time('time:job-runner#_processEvents-get-block-progress');
+        const block = await this._indexer.getBlockProgress(blockHash);
+        console.timeEnd('time:job-runner#_processEvents-get-block-progress');
 
-      assert(block);
-      this._blockAndEventsMap.set(blockHash, { block, events: [] });
+        assert(block);
+        this._blockAndEventsMap.set(blockHash, { block, events: [] });
+      }
+
+      const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
+      assert(prefetchedBlock);
+
+      const { block } = prefetchedBlock;
+
+      console.time('time:job-runner#_processEvents-events');
+      await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
+      console.timeEnd('time:job-runner#_processEvents-events');
+
+      // Update metrics
+      lastProcessedBlockNumber.set(block.blockNumber);
+      lastBlockNumEvents.set(block.numEvents);
+
+      this._blockAndEventsMap.delete(block.blockHash);
+
+      if (this._endBlockProcessTimer) {
+        this._endBlockProcessTimer();
+      }
+
+      this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
+    } catch (error) {
+      log(`Error in processing events for block ${blockHash}`);
+      log(error);
+
+      // TODO: Remove processed entities for current block to avoid reprocessing of events
+
+      // Catch event processing error and push to job queue after some time with higher priority
+      log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
+      await wait(EVENTS_PROCESSING_RETRY_WAIT);
+      await this.jobQueue.pushJob(
+        QUEUE_EVENT_PROCESSING,
+        {
+          kind: JOB_KIND_EVENTS,
+          blockHash: blockHash,
+          publish: true
+        },
+        {
+          priority: 1
+        }
+      );
     }
-
-    const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
-    assert(prefetchedBlock);
-
-    const { block } = prefetchedBlock;
-
-    console.time('time:job-runner#_processEvents-events');
-    await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
-    console.timeEnd('time:job-runner#_processEvents-events');
-
-    // Update metrics
-    lastProcessedBlockNumber.set(block.blockNumber);
-    lastBlockNumEvents.set(block.numEvents);
-
-    this._blockAndEventsMap.delete(block.blockHash);
-
-    if (this._endBlockProcessTimer) {
-      this._endBlockProcessTimer();
-    }
-
-    this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
 
     if (this._shutDown) {
       log(`Graceful shutdown after processing block ${block.blockNumber}`);

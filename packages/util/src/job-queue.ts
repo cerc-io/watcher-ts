@@ -13,7 +13,7 @@ interface Config {
   maxCompletionLag: number
 }
 
-type JobCallback = (job: any) => Promise<void>;
+type JobCallback = (job: PgBoss.JobWithDoneCallback<any, any>) => Promise<void>;
 
 const JOBS_PER_INTERVAL = 5;
 
@@ -93,7 +93,7 @@ export class JobQueue {
         teamSize: JOBS_PER_INTERVAL,
         teamConcurrency: 1
       },
-      async (job: any) => {
+      async (job) => {
         try {
           log(`Processing queue ${queue} job ${job.id}...`);
           await callback(job);
@@ -128,7 +128,7 @@ export class JobQueue {
     );
   }
 
-  async markComplete (job: any): Promise<void> {
+  async markComplete (job: PgBoss.Job): Promise<void> {
     this._boss.complete(job.id);
   }
 
