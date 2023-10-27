@@ -8,11 +8,14 @@ import { PubSub } from 'graphql-subscriptions';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
+import PgBoss from 'pg-boss';
+import { HistoricalJobData } from './job-runner';
 
 const EVENT = 'event';
+const HISTORICAL_BLOCKS_BATCH_SIZE = 100;
 
 const log = debug('vulcanize:events');
 
@@ -44,9 +47,8 @@ export class EventWatcher {
 
   async start (): Promise<void> {
     await this.initBlockProcessingOnCompleteHandler();
+    await this.initHistoricalProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
-    // TODO: Add JOB QUEUE complete handler for new historical processing job
-    // TODO: Start realtime processing once historical processing end block is reached
 
     this.startBlockProcessing();
 
@@ -56,6 +58,12 @@ export class EventWatcher {
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
     this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this.blockProcessingCompleteHandler(job);
+    });
+  }
+
+  async initHistoricalProcessingOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_HISTORICAL_PROCESSING, async (job) => {
+      await this.historicalProcessingCompleteHandler(job);
     });
   }
 
@@ -141,6 +149,27 @@ export class EventWatcher {
       default:
         throw new Error(`Invalid Job kind ${kind} in complete handler of QUEUE_BLOCK_PROCESSING.`);
     }
+  }
+
+  async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
+    const { id, data: { failed, request: { data } } } = job;
+    const { blockNumber }: HistoricalJobData = data;
+
+    if (failed) {
+      log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
+      return;
+    }
+
+    // TODO: Check if historical processing endBlock is reached
+    // TODO: Start realtime processing once historical processing end block is reached
+
+    // Push job for next batch of blocks
+    await this._jobQueue.pushJob(
+      QUEUE_HISTORICAL_PROCESSING,
+      {
+        blockNumber: blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE + 1
+      }
+    );
   }
 
   async eventProcessingCompleteHandler (job: any): Promise<void> {

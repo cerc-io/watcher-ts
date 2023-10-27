@@ -114,7 +114,7 @@ export class JobQueue {
         teamSize: JOBS_PER_INTERVAL,
         teamConcurrency: 1
       },
-      async (job: any) => {
+      async (job: PgBoss.JobWithDoneCallback<any, any>) => {
         try {
           const { id, data: { failed, createdOn } } = job;
           log(`Job onComplete for queue ${queue} job ${id} created ${createdOn} success ${!failed}`);

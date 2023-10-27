@@ -39,7 +39,7 @@ const log = debug('vulcanize:job-runner');
 // Wait time for retrying events processing on error (in ms)
 const EVENTS_PROCESSING_RETRY_WAIT = 2000;
 
-interface HistoricalJobData {
+export interface HistoricalJobData {
   blockNumber: number;
 }
 
