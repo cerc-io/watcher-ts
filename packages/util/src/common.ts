@@ -182,6 +182,9 @@ export const _fetchBatchBlocks = async (
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
 
+    // TODO: Fetch logs by filter before fetching blocks
+    // TODO: Fetch only blocks needed for returned logs
+    // TODO: Save blocks and logs to DB
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const settledResults = await Promise.allSettled(blockPromises);
 

@@ -45,6 +45,8 @@ export class EventWatcher {
   async start (): Promise<void> {
     await this.initBlockProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
+    // TODO: Add JOB QUEUE complete handler for new historical processing job
+    // TODO: Start realtime processing once historical processing end block is reached
 
     this.startBlockProcessing();
 
@@ -75,6 +77,8 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
+    // TODO: Check if processing is for historical or latest block by fetching latest block first
+    // TODO: For historical processing push to a new job queue instead of starting realtime sync
     await processBlockByNumber(this._jobQueue, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.

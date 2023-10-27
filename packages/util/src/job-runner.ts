@@ -75,6 +75,9 @@ export class JobRunner {
     });
   }
 
+  // TODO: Add a new JOB QUEUE for processing historical blocks
+  // TODO: New job will fetch filtered logs and blocks in batches
+
   async processBlock (job: any): Promise<void> {
     const { data: { kind } } = job;
 
