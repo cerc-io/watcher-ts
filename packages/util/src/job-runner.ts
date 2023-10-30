@@ -6,6 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { ethers } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
+import PgBoss from 'pg-boss';
 
 import { JobQueueConfig } from './config';
 import {
@@ -32,7 +33,6 @@ import {
   fetchBlocksAtHeight
 } from './common';
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
-import PgBoss from 'pg-boss';
 
 const log = debug('vulcanize:job-runner');
 
@@ -145,8 +145,9 @@ export class JobRunner {
   }
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
-    // const { data: { blockNumber } } = job;
+    const { data: { blockNumber } } = job;
 
+    log(`Processing historical blocks after block ${blockNumber}`);
     // TODO: Use method from common.ts to fetch and save filtered logs and blocks
     const blocks: BlockProgressInterface[] = [];
 
@@ -453,8 +454,6 @@ export class JobRunner {
         await this._indexer.removeUnknownEvents(parentBlock);
         console.timeEnd('time:job-runner#_indexBlock-remove-unknown-events');
       }
-    } else {
-      blockProgress = parentBlock;
     }
 
     if (!blockProgress) {
@@ -477,7 +476,9 @@ export class JobRunner {
       }
     }
 
-    await this._indexer.processBlock(blockProgress);
+    if (!blockProgress.isComplete) {
+      await this._indexer.processBlock(blockProgress);
+    }
 
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
@@ -520,6 +521,12 @@ export class JobRunner {
       }
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
+
+      if (this._shutDown) {
+        log(`Graceful shutdown after processing block ${block.blockNumber}`);
+        this.jobQueue.stop();
+        process.exit(0);
+      }
     } catch (error) {
       log(`Error in processing events for block ${blockHash}`);
       log(error);
@@ -540,12 +547,6 @@ export class JobRunner {
           priority: 1
         }
       );
-    }
-
-    if (this._shutDown) {
-      log(`Graceful shutdown after processing block ${block.blockNumber}`);
-      this.jobQueue.stop();
-      process.exit(0);
     }
   }
 

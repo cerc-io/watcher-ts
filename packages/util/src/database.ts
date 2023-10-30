@@ -166,6 +166,26 @@ export class Database {
     return await repo.save(entity);
   }
 
+  async forceUpdateSyncStatus (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    let entity = await repo.findOne();
+
+    if (!entity) {
+      entity = repo.create({
+        initialIndexedBlockHash: blockHash,
+        initialIndexedBlockNumber: blockNumber
+      });
+    }
+
+    entity.chainHeadBlockHash = blockHash;
+    entity.chainHeadBlockNumber = blockNumber;
+    entity.latestCanonicalBlockHash = blockHash;
+    entity.latestCanonicalBlockNumber = blockNumber;
+    entity.latestIndexedBlockHash = blockHash;
+    entity.latestIndexedBlockNumber = blockNumber;
+
+    return await repo.save(entity);
+  }
+
   async getBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string): Promise<BlockProgressInterface | undefined> {
     return repo.findOne({ where: { blockHash } });
   }
@@ -180,6 +200,14 @@ export class Database {
     return repo.createQueryBuilder('block_progress')
       .where('block_number = :height AND is_pruned = :isPruned', { height, isPruned })
       .getMany();
+  }
+
+  async getLatestProcessedBlockProgress (repo: Repository<BlockProgressInterface>, isPruned: boolean): Promise<BlockProgressInterface | undefined> {
+    return repo.createQueryBuilder('block_progress')
+      .where('is_pruned = :isPruned AND is_complete = :isComplete', { isPruned, isComplete: true })
+      .orderBy('block_number', 'DESC')
+      .limit(1)
+      .getOne();
   }
 
   async saveBlockProgress (repo: Repository<BlockProgressInterface>, block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {

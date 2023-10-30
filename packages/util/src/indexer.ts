@@ -194,6 +194,23 @@ export class Indexer {
     return res;
   }
 
+  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.forceUpdateSyncStatus(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
   async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
     assert(blockFilter.blockHash || blockFilter.blockNumber);
     const result = await this._ethClient.getBlocks(blockFilter);

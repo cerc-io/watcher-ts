@@ -91,6 +91,7 @@ export interface IndexerInterface {
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
+  getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgressInterface | undefined>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
@@ -102,6 +103,7 @@ export interface IndexerInterface {
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
+  forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface>
   updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
@@ -164,6 +166,7 @@ export interface DatabaseInterface {
   updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
+  forceUpdateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;
   saveEvents (queryRunner: QueryRunner, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
