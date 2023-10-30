@@ -253,6 +253,12 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber, force);
   }
 
+  async forceUpdateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.forceUpdateSyncStatus(repo, blockHash, blockNumber);
+  }
+
   async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
@@ -269,6 +275,12 @@ export class Database implements DatabaseInterface {
     const repo = this._conn.getRepository(BlockProgress);
 
     return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
+  }
+
+  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgress | undefined> {
+    const repo = this._conn.getRepository(BlockProgress);
+
+    return this._baseDatabase.getLatestProcessedBlockProgress(repo, isPruned);
   }
 
   async markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgress[]): Promise<void> {
