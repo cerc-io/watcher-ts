@@ -197,7 +197,6 @@ export class Schema {
         }
       };
 
-      // TODO: Add query type filter (subgraphType_filter) (input)
       // Add plural query
 
       // Create the subgraphType_orderBy enum type
@@ -219,8 +218,9 @@ export class Schema {
         // Get type composer object for return type from the schema composer.
         type: this._composer.getAnyTC(subgraphType).NonNull.List.NonNull,
         args: {
-          // where: Staker_filter,
           block: BlockHeight,
+          // TODO: Create input type for where clause
+          // where: subgraphType_filter,
           orderBy: subgraphTypeOrderByEnum,
           orderDirection: OrderDirection,
           first: { type: GraphQLInt, defaultValue: 100 },
