@@ -8,6 +8,7 @@ import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, Obje
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
+import pluralize from 'pluralize';
 
 import { getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -197,6 +198,7 @@ export class Schema {
       };
 
       // TODO: Add query type filter (subgraphType_filter) (input)
+      // Add plural query
 
       // Create the subgraphType_orderBy enum type
       const subgraphTypeOrderByEnum = new GraphQLEnumType({
@@ -208,14 +210,14 @@ export class Schema {
       });
       this._composer.addSchemaMustHaveType(subgraphTypeOrderByEnum);
 
-      // Add plural query
-      // TODO: Use pluralize
-      const pluralQueryName = `${queryName}s`;
+      // Create plural query name
+      // Append suffix 's' if pluralized name is the same as singular name (eg. PoolDayData)
+      let pluralQueryName = pluralize(queryName);
+      pluralQueryName = (pluralQueryName === queryName) ? `${pluralQueryName}s` : pluralQueryName;
 
       queryObject[pluralQueryName] = {
         // Get type composer object for return type from the schema composer.
-        // TODO: make non null
-        type: [this._composer.getAnyTC(subgraphType).NonNull],
+        type: this._composer.getAnyTC(subgraphType).NonNull.List.NonNull,
         args: {
           // where: Staker_filter,
           block: BlockHeight,
@@ -414,7 +416,7 @@ export class Schema {
   _addEventsQuery (): void {
     this._composer.Query.addFields({
       events: {
-        type: [this._composer.getOTC('ResultEvent').NonNull],
+        type: this._composer.getOTC('ResultEvent').NonNull.List,
         args: {
           blockHash: 'String!',
           contractAddress: 'String!',
@@ -425,7 +427,7 @@ export class Schema {
 
     this._composer.Query.addFields({
       eventsInRange: {
-        type: [this._composer.getOTC('ResultEvent').NonNull],
+        type: this._composer.getOTC('ResultEvent').NonNull.List,
         args: {
           fromBlockNumber: 'Int!',
           toBlockNumber: 'Int!'
