@@ -31,7 +31,6 @@ export class EventWatcher {
   _shutDown = false;
   _signalCount = 0;
   _latestCanonicalBlockNumber = 0;
-  _latestCanonicalBlockHash = constants.HashZero;
 
   constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
@@ -187,10 +186,10 @@ export class EventWatcher {
     if (nextBatchStartBlockNumber > this._latestCanonicalBlockNumber) {
       log('Historical block processing completed');
 
-      const newSyncStatusBlock = {
-        blockNumber: this._latestCanonicalBlockNumber,
-        blockHash: this._latestCanonicalBlockHash
-      };
+      let newSyncStatusBlock: {
+        blockNumber: number;
+        blockHash: string;
+      } | undefined;
 
       // Fetch latest processed block from DB
       const latestProcessedBlock = await this._indexer.getLatestProcessedBlockProgress(false);
@@ -198,9 +197,21 @@ export class EventWatcher {
       if (latestProcessedBlock) {
         if (latestProcessedBlock.blockNumber > this._latestCanonicalBlockNumber) {
           // Set new sync status to latest processed block
-          newSyncStatusBlock.blockHash = latestProcessedBlock.blockHash;
-          newSyncStatusBlock.blockNumber = latestProcessedBlock.blockNumber;
+          newSyncStatusBlock = {
+            blockHash: latestProcessedBlock.blockHash,
+            blockNumber: latestProcessedBlock.blockNumber
+          };
         }
+      }
+
+      if (!newSyncStatusBlock) {
+        const [block] = await this._indexer.getBlocks({ blockNumber: this._latestCanonicalBlockNumber });
+
+        newSyncStatusBlock = {
+          // At latestCanonicalBlockNumber height null block might be returned in case of FEVM
+          blockHash: block ? block.blockHash : constants.AddressZero,
+          blockNumber: this._latestCanonicalBlockNumber
+        };
       }
 
       // Update sync status to max of latest processed block or latest canonical block

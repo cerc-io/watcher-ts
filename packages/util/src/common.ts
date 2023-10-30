@@ -129,7 +129,7 @@ export const fetchBlocksAtHeight = async (
       cid,
       blockHash,
       parentHash,
-      blockTimestamp: timestamp
+      blockTimestamp: Number(timestamp)
     });
   }
 
@@ -241,7 +241,7 @@ export const _fetchBatchBlocks = async (
   }
 
   blocks.forEach(block => {
-    block.blockTimestamp = block.timestamp;
+    block.blockTimestamp = Number(block.timestamp);
     block.blockNumber = Number(block.blockNumber);
   });
 
@@ -268,7 +268,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
   if (indexer.processBlockAfterEvents) {
     if (!dbBlock.isComplete) {
-      await indexer.processBlockAfterEvents(block.blockHash, block.blockNumber);
+      await indexer.processBlockAfterEvents(dbBlock.blockHash, dbBlock.blockNumber);
     }
   }
 

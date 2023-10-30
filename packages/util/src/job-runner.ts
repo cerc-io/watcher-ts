@@ -396,8 +396,9 @@ export class JobRunner {
     console.timeEnd('time:job-runner#_indexBlock-get-block-progress-entities');
 
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
-    // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
-    if (blockHash !== syncStatus.latestCanonicalBlockHash) {
+    // However, don't go beyond the `latestCanonicalBlockNumber` from SyncStatus as we have to assume the reorg can't be that deep.
+    // latestCanonicalBlockNumber is used to handle null blocks in case of FEVM.
+    if (blockNumber > syncStatus.latestCanonicalBlockNumber) {
       // Create a higher priority job to index parent block and then abort.
       // We don't have to worry about aborting as this job will get retried later.
       const newPriority = (priority || 0) + 1;
@@ -418,9 +419,9 @@ export class JobRunner {
           kind: JOB_KIND_INDEX,
           cid: parentCid,
           blockHash: parentHash,
-          blockNumber: parentBlockNumber,
+          blockNumber: Number(parentBlockNumber),
           parentHash: grandparentHash,
-          timestamp: parentTimestamp,
+          timestamp: Number(parentTimestamp),
           priority: newPriority
         }, { priority: newPriority });
 
