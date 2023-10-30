@@ -41,7 +41,7 @@ const cacheBlockSizesAsync = async (provider: providers.JsonRpcProvider, blockNu
   }
 
   if (endBlockHeight > blockSizeMapLatestHeight) {
-    const startBlockHeight = blockSizeMapLatestHeight + 1;
+    const startBlockHeight = Math.max(blockNumber, blockSizeMapLatestHeight + 1);
     blockSizeMapLatestHeight = endBlockHeight;
 
     // Start prefetching blocks after latest height in blockSizeMap.
