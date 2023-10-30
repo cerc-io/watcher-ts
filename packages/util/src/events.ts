@@ -13,10 +13,9 @@ import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } f
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
-import { HistoricalJobData } from './job-runner';
+import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
 
 const EVENT = 'event';
-const HISTORICAL_BLOCKS_BATCH_SIZE = 100;
 
 const log = debug('vulcanize:events');
 
@@ -30,7 +29,7 @@ export class EventWatcher {
 
   _shutDown = false;
   _signalCount = 0;
-  _latestCanonicalBlockNumber = 0;
+  _historicalProcessingEndBlockNumber = 0;
 
   constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
@@ -82,7 +81,7 @@ export class EventWatcher {
       this._indexer.getSyncStatus()
     ]);
 
-    this._latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
+    const latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
     let startBlockNumber = latestBlock.number;
 
     if (syncStatus) {
@@ -90,22 +89,30 @@ export class EventWatcher {
     }
 
     // Check if starting block for watcher is before latest canonical block
-    if (startBlockNumber < this._latestCanonicalBlockNumber) {
-      log(`Starting historical block processing up to latest canonical block ${this._latestCanonicalBlockNumber}`);
-
-      // Start historical processing
-      await this._jobQueue.pushJob(
-        QUEUE_HISTORICAL_PROCESSING,
-        {
-          blockNumber: startBlockNumber
-        }
-      );
+    if (startBlockNumber < latestCanonicalBlockNumber) {
+      await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;
     }
 
-    log(`Starting realtime block processing from block ${startBlockNumber}`);
+    await this.startRealtimeBlockProcessing(startBlockNumber);
+  }
 
+  async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
+    this._historicalProcessingEndBlockNumber = endBlockNumber;
+    log(`Starting historical block processing up to block ${this._historicalProcessingEndBlockNumber}`);
+
+    // Push job for historical block processing
+    await this._jobQueue.pushJob(
+      QUEUE_HISTORICAL_PROCESSING,
+      {
+        blockNumber: startBlockNumber
+      }
+    );
+  }
+
+  async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
+    log(`Starting realtime block processing from block ${startBlockNumber}`);
     await processBlockByNumber(this._jobQueue, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
@@ -181,11 +188,10 @@ export class EventWatcher {
 
     // TODO: Get batch size from config
     const nextBatchStartBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE + 1;
+    log(`Historical block processing completed for block range: ${blockNumber} to ${nextBatchStartBlockNumber}`);
 
     // Check if historical processing endBlock / latest canonical block is reached
-    if (nextBatchStartBlockNumber > this._latestCanonicalBlockNumber) {
-      log('Historical block processing completed');
-
+    if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
       let newSyncStatusBlock: {
         blockNumber: number;
         blockHash: string;
@@ -195,7 +201,7 @@ export class EventWatcher {
       const latestProcessedBlock = await this._indexer.getLatestProcessedBlockProgress(false);
 
       if (latestProcessedBlock) {
-        if (latestProcessedBlock.blockNumber > this._latestCanonicalBlockNumber) {
+        if (latestProcessedBlock.blockNumber > this._historicalProcessingEndBlockNumber) {
           // Set new sync status to latest processed block
           newSyncStatusBlock = {
             blockHash: latestProcessedBlock.blockHash,
@@ -205,12 +211,12 @@ export class EventWatcher {
       }
 
       if (!newSyncStatusBlock) {
-        const [block] = await this._indexer.getBlocks({ blockNumber: this._latestCanonicalBlockNumber });
+        const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
 
         newSyncStatusBlock = {
           // At latestCanonicalBlockNumber height null block might be returned in case of FEVM
           blockHash: block ? block.blockHash : constants.AddressZero,
-          blockNumber: this._latestCanonicalBlockNumber
+          blockNumber: this._historicalProcessingEndBlockNumber
         };
       }
 

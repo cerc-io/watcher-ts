@@ -39,6 +39,9 @@ const log = debug('vulcanize:job-runner');
 // Wait time for retrying events processing on error (in ms)
 const EVENTS_PROCESSING_RETRY_WAIT = 2000;
 
+// TODO: Get batch size from config
+export const HISTORICAL_BLOCKS_BATCH_SIZE = 100;
+
 export interface HistoricalJobData {
   blockNumber: number;
 }
@@ -145,9 +148,10 @@ export class JobRunner {
   }
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
-    const { data: { blockNumber } } = job;
+    const { data: { blockNumber: startBlock } } = job;
+    const endBlock = startBlock + HISTORICAL_BLOCKS_BATCH_SIZE;
 
-    log(`Processing historical blocks after block ${blockNumber}`);
+    log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
     // TODO: Use method from common.ts to fetch and save filtered logs and blocks
     const blocks: BlockProgressInterface[] = [];
 
