@@ -345,6 +345,11 @@ export class GraphWatcher {
           filter.operator = operator;
         }
 
+        // If filter field ends with "nocase", use case insensitive version of the operator
+        if (suffix[suffix.length - 1] === 'nocase') {
+          filter.operator = `${operator}_nocase`;
+        }
+
         acc[field].push(filter);
 
         return acc;
