@@ -31,6 +31,8 @@ import { fromStateEntityValues } from './state-utils';
 
 const log = debug('vulcanize:graph-database');
 
+export const FILTER_CHANGE_BLOCK = '_change_block';
+
 export const DEFAULT_LIMIT = 100;
 const DEFAULT_CLEAR_ENTITIES_CACHE_INTERVAL = 1000;
 
@@ -431,6 +433,11 @@ export class GraphDatabase {
     if (where.id) {
       subQuery = this._baseDatabase.buildQuery(repo, subQuery, { id: where.id });
       delete where.id;
+    }
+
+    if (where[FILTER_CHANGE_BLOCK]) {
+      subQuery = subQuery.andWhere('subTable.block_number >= :changeBlockNumber', { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
     }
 
     if (block.hash) {

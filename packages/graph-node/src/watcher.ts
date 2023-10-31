@@ -27,7 +27,8 @@ import {
   getSubgraphConfig,
   Transaction,
   EthClient,
-  DEFAULT_LIMIT
+  DEFAULT_LIMIT,
+  FILTER_CHANGE_BLOCK
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
@@ -322,6 +323,17 @@ export class GraphWatcher {
 
     try {
       where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
+        if (fieldWithSuffix === FILTER_CHANGE_BLOCK) {
+          assert(value.number_gte && typeof value.number_gte === 'number');
+
+          // Maintain util.Where type
+          acc[FILTER_CHANGE_BLOCK] = [{
+            value: value.number_gte
+          }];
+
+          return acc;
+        }
+
         const [field, ...suffix] = fieldWithSuffix.split('_');
 
         if (!acc[field]) {
