@@ -899,19 +899,22 @@ export class Database {
     eventCount.set(res);
   }
 
+  // TODO: Transform in the GQL type BigInt parsing itself
   _transformBigIntValues (value: any): any {
+    // Handle array of bigints
     if (Array.isArray(value)) {
       if (value.length > 0 && typeof value[0] === 'bigint') {
         return value.map(val => {
           return val.toString();
         });
       }
-
-      return value;
     }
 
+    // Handle bigint
     if (typeof value === 'bigint') {
       return value.toString();
     }
+
+    return value;
   }
 }
