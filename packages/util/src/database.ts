@@ -847,11 +847,11 @@ export class Database {
           }
         }
 
-        if (['contains', 'starts'].some(el => el === operator)) {
+        if (['contains', 'ends'].some(el => el === operator)) {
           value = `%${value}`;
         }
 
-        if (['contains', 'ends'].some(el => el === operator)) {
+        if (['contains', 'starts'].some(el => el === operator)) {
           value += '%';
         }
 
