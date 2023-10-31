@@ -503,6 +503,11 @@ export class GraphDatabase {
       delete where.id;
     }
 
+    if (where[FILTER_CHANGE_BLOCK]) {
+      subQuery = subQuery.andWhere('subTable.block_number >= :changeBlockNumber', { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
+    }
+
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
 
@@ -561,6 +566,11 @@ export class GraphDatabase {
       .addOrderBy(`${tableName}.block_number`, 'DESC')
       .limit(1);
 
+    if (where[FILTER_CHANGE_BLOCK]) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number >= :changeBlockNumber`, { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
+    }
+
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
 
@@ -594,6 +604,11 @@ export class GraphDatabase {
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
       .where('is_pruned = :isPruned', { isPruned: false });
+
+    if (where[FILTER_CHANGE_BLOCK]) {
+      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number >= :changeBlockNumber`, { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
+    }
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
@@ -665,6 +680,11 @@ export class GraphDatabase {
         );
     }
 
+    if (where[FILTER_CHANGE_BLOCK]) {
+      selectQueryBuilder = selectQueryBuilder.andWhere('latest.block_number >= :changeBlockNumber', { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
+    }
+
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, 'latest');
 
     if (queryOptions.orderBy) {
@@ -700,6 +720,11 @@ export class GraphDatabase {
       .andWhere('subTable.is_pruned = :isPruned', { isPruned: false })
       .orderBy('subTable.block_number', 'DESC')
       .limit(1);
+
+    if (where[FILTER_CHANGE_BLOCK]) {
+      subQuery = subQuery.andWhere('subTable.block_number >= :changeBlockNumber', { changeBlockNumber: where[FILTER_CHANGE_BLOCK][0].value });
+      delete where[FILTER_CHANGE_BLOCK];
+    }
 
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
