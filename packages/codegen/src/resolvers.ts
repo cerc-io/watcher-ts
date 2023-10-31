@@ -68,6 +68,7 @@ export class Resolvers {
         queryName
       };
 
+      // TODO: Generate plural query resolvers
       this._subgraphQueries.push(queryObject);
     }
   }

@@ -3,15 +3,19 @@
 //
 
 import assert from 'assert';
-import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode } from 'graphql';
 import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
+import pluralize from 'pluralize';
 
 import { getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
 import { getBaseType, isArrayType } from './utils/helpers';
+
+const OrderDirection = 'OrderDirection';
+const BlockHeight = 'Block_height';
 
 export class Schema {
   _composer: SchemaComposer;
@@ -147,8 +151,8 @@ export class Schema {
     this._composer.addTypeDefs(subgraphTypeDefsString);
 
     // Create the Block_height input needed in subgraph queries.
-    const typeComposer = this._composer.createInputTC({
-      name: 'Block_height',
+    let typeComposer: any = this._composer.createInputTC({
+      name: BlockHeight,
       fields: {
         hash: 'Bytes',
         number: 'Int'
@@ -156,11 +160,22 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(typeComposer);
 
+    // Add the OrderDirection enum needed in subgraph plural queries.
+    const orderDirectionEnum = new GraphQLEnumType({
+      name: OrderDirection,
+      values: {
+        asc: {},
+        desc: {}
+      }
+    });
+    typeComposer = this._composer.createEnumTC(orderDirectionEnum);
+    this._composer.addSchemaMustHaveType(typeComposer);
+
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
   }
 
-  _addSubgraphSchemaQueries (subgraphTypeDefs: any): void {
+  _addSubgraphSchemaQueries (subgraphTypeDefs: ReadonlyArray<DefinitionNode>): void {
     for (const subgraphTypeDef of subgraphTypeDefs) {
       // Filtering out enums.
       if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
@@ -178,7 +193,38 @@ export class Schema {
         type: this._composer.getAnyTC(subgraphType).NonNull,
         args: {
           id: 'ID!',
-          block: 'Block_height'
+          block: BlockHeight
+        }
+      };
+
+      // Add plural query
+
+      // Create the subgraphType_orderBy enum type
+      const subgraphTypeOrderByEnum = new GraphQLEnumType({
+        name: `${subgraphType}_orderBy`,
+        values: (subgraphTypeDef.fields || []).reduce((acc: any, field) => {
+          acc[field.name.value] = {};
+          return acc;
+        }, {})
+      });
+      this._composer.addSchemaMustHaveType(subgraphTypeOrderByEnum);
+
+      // Create plural query name
+      // Append suffix 's' if pluralized name is the same as singular name (eg. PoolDayData)
+      let pluralQueryName = pluralize(queryName);
+      pluralQueryName = (pluralQueryName === queryName) ? `${pluralQueryName}s` : pluralQueryName;
+
+      queryObject[pluralQueryName] = {
+        // Get type composer object for return type from the schema composer.
+        type: this._composer.getAnyTC(subgraphType).NonNull.List.NonNull,
+        args: {
+          block: BlockHeight,
+          // TODO: Create input type for where clause
+          // where: subgraphType_filter,
+          orderBy: subgraphTypeOrderByEnum,
+          orderDirection: OrderDirection,
+          first: { type: GraphQLInt, defaultValue: 100 },
+          skip: { type: GraphQLInt, defaultValue: 0 }
         }
       };
 
@@ -370,7 +416,7 @@ export class Schema {
   _addEventsQuery (): void {
     this._composer.Query.addFields({
       events: {
-        type: [this._composer.getOTC('ResultEvent').NonNull],
+        type: this._composer.getOTC('ResultEvent').NonNull.List,
         args: {
           blockHash: 'String!',
           contractAddress: 'String!',
@@ -381,7 +427,7 @@ export class Schema {
 
     this._composer.Query.addFields({
       eventsInRange: {
-        type: [this._composer.getOTC('ResultEvent').NonNull],
+        type: this._composer.getOTC('ResultEvent').NonNull.List,
         args: {
           fromBlockNumber: 'Int!',
           toBlockNumber: 'Int!'

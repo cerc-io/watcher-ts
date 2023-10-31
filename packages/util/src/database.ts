@@ -829,12 +829,10 @@ export class Database {
 
         whereClause += `${OPERATOR_MAP[operator]} `;
 
+        value = this._transformBigIntValues(value);
         if (operator === 'in') {
           whereClause += '(:...';
         } else {
-          // Convert to string type value as bigint type throws error in query.
-          value = value.toString();
-
           whereClause += ':';
         }
 
@@ -899,5 +897,21 @@ export class Database {
       .count();
 
     eventCount.set(res);
+  }
+
+  _transformBigIntValues (value: any): any {
+    if (Array.isArray(value)) {
+      if (value.length > 0 && typeof value[0] === 'bigint') {
+        return value.map(val => {
+          return val.toString();
+        });
+      }
+
+      return value;
+    }
+
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
   }
 }

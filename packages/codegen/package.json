@@ -28,6 +28,7 @@
     "gql-generator": "https://github.com/vulcanize/gql-generator.git",
     "graphql": "^15.5.0",
     "graphql-compose": "^9.0.3",
+    "pluralize": "^8.0.0",
     "handlebars": "^4.7.7",
     "js-yaml": "^4.0.0",
     "lodash": "^4.17.21",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@openzeppelin/contracts": "^4.3.2",
     "@types/js-yaml": "^4.0.3",
+    "@types/pluralize": "^0.0.29",
     "@types/lodash": "^4.14.168",
     "@types/node": "^16.9.0",
     "@types/yargs": "^17.0.0",
