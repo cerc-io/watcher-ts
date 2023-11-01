@@ -35,7 +35,10 @@ export const OPERATOR_MAP = {
   in: 'IN',
   contains: 'LIKE',
   starts: 'LIKE',
-  ends: 'LIKE'
+  ends: 'LIKE',
+  contains_nocase: 'ILIKE',
+  starts_nocase: 'ILIKE',
+  ends_nocase: 'ILIKE'
 };
 
 const INSERT_EVENTS_BATCH = 100;
@@ -875,11 +878,11 @@ export class Database {
           }
         }
 
-        if (['contains', 'starts'].some(el => el === operator)) {
+        if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
           value = `%${value}`;
         }
 
-        if (['contains', 'ends'].some(el => el === operator)) {
+        if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
           value += '%';
         }
 
@@ -927,19 +930,22 @@ export class Database {
     eventCount.set(res);
   }
 
+  // TODO: Transform in the GQL type BigInt parsing itself
   _transformBigIntValues (value: any): any {
+    // Handle array of bigints
     if (Array.isArray(value)) {
       if (value.length > 0 && typeof value[0] === 'bigint') {
         return value.map(val => {
           return val.toString();
         });
       }
-
-      return value;
     }
 
+    // Handle bigint
     if (typeof value === 'bigint') {
       return value.toString();
     }
+
+    return value;
   }
 }
