@@ -66,11 +66,11 @@ export interface Filter {
   // eslint-disable-next-line no-use-before-define
   value: any | Where;
   not: boolean;
-  operator: keyof typeof OPERATOR_MAP;
+  operator?: keyof typeof OPERATOR_MAP;
 }
 
 export interface Where {
-  [key: string]: [Filter];
+  [key: string]: Filter[];
 }
 
 export type Relation = string | { property: string, alias: string }
@@ -853,22 +853,22 @@ export class Database {
         // Handle nested relation filter
         const relation = relations[field];
         if (operator === 'nested' && relation) {
-          const relationRepo = this.conn.getRepository<Entity>(relation.entity);
+          const relationRepo = this.conn.getRepository<any>(relation.entity);
           const relationTableName = relationRepo.metadata.tableName;
-          let relationSubQuery = repo.createQueryBuilder(relationTableName)
+          let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
             .select('1')
             .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
 
           if (blockCondition.blockHashes) {
+            // If blockHashes populated, use blockHashes and blockNumber as canonicalBlockNumber
             relationSubQuery = relationSubQuery
               .andWhere(new Brackets(qb => {
                 qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: blockCondition.blockHashes })
-                  .orWhere('subTable.block_number <= :relationCanonicalBlockNumber', { relationCanonicalBlockNumber: blockCondition.blockNumber });
+                  .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: blockCondition.blockNumber });
               }));
-          }
-
-          if (blockCondition.blockNumber) {
-            relationSubQuery = relationSubQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: blockCondition.blockNumber });
+          } else if (blockCondition.blockNumber) {
+            // Only use blockNumber if blockHashes not populated
+            relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: blockCondition.blockNumber });
           }
 
           relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value);
@@ -897,6 +897,7 @@ export class Database {
           }
         }
 
+        assert(operator);
         whereClause += `${OPERATOR_MAP[operator]} `;
 
         value = this._transformBigIntValues(value);

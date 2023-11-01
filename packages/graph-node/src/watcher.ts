@@ -28,7 +28,10 @@ import {
   Transaction,
   EthClient,
   DEFAULT_LIMIT,
-  FILTER_CHANGE_BLOCK
+  FILTER_CHANGE_BLOCK,
+  Where,
+  Filter,
+  OPERATOR_MAP
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
@@ -322,51 +325,7 @@ export class GraphWatcher {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
-      where = Object.entries(where).reduce((acc: { [key: string]: any }, [fieldWithSuffix, value]) => {
-        if (fieldWithSuffix === FILTER_CHANGE_BLOCK) {
-          assert(value.number_gte && typeof value.number_gte === 'number');
-
-          // Maintain util.Where type
-          acc[FILTER_CHANGE_BLOCK] = [{
-            value: value.number_gte
-          }];
-
-          return acc;
-        }
-
-        const [field, ...suffix] = fieldWithSuffix.split('_');
-
-        if (!acc[field]) {
-          acc[field] = [];
-        }
-
-        const filter = {
-          value,
-          not: false,
-          operator: 'equals'
-        };
-
-        let operator = suffix.shift();
-
-        if (operator === 'not') {
-          filter.not = true;
-          operator = suffix.shift();
-        }
-
-        // TODO: Parse nested filters
-        if (operator) {
-          filter.operator = operator;
-        }
-
-        // If filter field ends with "nocase", use case insensitive version of the operator
-        if (suffix[suffix.length - 1] === 'nocase') {
-          filter.operator = `${operator}_nocase`;
-        }
-
-        acc[field].push(filter);
-
-        return acc;
-      }, {});
+      where = this._buildFilter(where);
 
       if (!queryOptions.limit) {
         queryOptions.limit = DEFAULT_LIMIT;
@@ -498,6 +457,65 @@ export class GraphWatcher {
     this._transactionsMap.set(txHash, transaction);
 
     return transaction;
+  }
+
+  _buildFilter (where: { [key: string]: any } = {}): Where {
+    return Object.entries(where).reduce((acc: Where, [fieldWithSuffix, value]) => {
+      if (fieldWithSuffix === FILTER_CHANGE_BLOCK) {
+        assert(value.number_gte && typeof value.number_gte === 'number');
+
+        acc[FILTER_CHANGE_BLOCK] = [{
+          value: value.number_gte,
+          not: false
+        }];
+
+        return acc;
+      }
+
+      const [field, ...suffix] = fieldWithSuffix.split('_');
+
+      if (!acc[field]) {
+        acc[field] = [];
+      }
+
+      const filter: Filter = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      let operator = suffix.shift();
+
+      // If the operator is "" (different from undefined), it means it's a nested filter on a relation field
+      if (operator === '') {
+        acc[field].push({
+          // Parse nested filter value
+          value: this._buildFilter(value),
+          not: false,
+          operator: 'nested'
+        });
+
+        return acc;
+      }
+
+      if (operator === 'not') {
+        filter.not = true;
+        operator = suffix.shift();
+      }
+
+      if (operator) {
+        filter.operator = operator as keyof typeof OPERATOR_MAP;
+      }
+
+      // If filter field ends with "nocase", use case insensitive version of the operator
+      if (suffix[suffix.length - 1] === 'nocase') {
+        filter.operator = `${operator}_nocase` as keyof typeof OPERATOR_MAP;
+      }
+
+      acc[field].push(filter);
+
+      return acc;
+    }, {});
   }
 }
 
