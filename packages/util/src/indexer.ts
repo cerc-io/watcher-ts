@@ -334,17 +334,7 @@ export class Indexer {
     }
 
     // Sort logs according to blockhash
-    const logsMap: Map<string, any> = new Map();
-    logs.forEach((log: any) => {
-      const { blockHash: logBlockHash } = log;
-      assert(typeof logBlockHash === 'string');
-
-      if (!logsMap.has(logBlockHash)) {
-        logsMap.set(logBlockHash, []);
-      }
-
-      logsMap.get(logBlockHash).push(log);
-    });
+    const blockLogsMap = this._reduceLogsToblockLogsMap(logs);
 
     // Fetch transactions for given blocks
     const transactionsMap: Map<string, any> = new Map();
@@ -352,7 +342,7 @@ export class Indexer {
       assert(block.blockHash);
 
       // Skip fetching txs if no relevant logs found in this block
-      if (!logsMap.has(block.blockHash)) {
+      if (!blockLogsMap.has(block.blockHash)) {
         return;
       }
 
@@ -380,7 +370,7 @@ export class Indexer {
       const blockHash = block.blockHash;
       assert(blockHash);
 
-      const logs = logsMap.get(blockHash) || [];
+      const logs = blockLogsMap.get(blockHash) || [];
       const transactions = transactionsMap.get(blockHash) || [];
 
       const dbEvents = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
@@ -388,6 +378,88 @@ export class Indexer {
     });
 
     return dbEventsMap;
+  }
+
+  async fetchAndSaveFilteredEventsAndBlocks (
+    fromBlock: number,
+    toBlock: number,
+    eventSignaturesMap: Map<string, string[]>,
+    parseEventNameAndArgs: (
+      kind: string,
+      logObj: { topics: string[]; data: string }
+    ) => { eventName: string; eventInfo: {[key: string]: any}; eventSignature: string }
+  ): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
+
+    const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
+
+    const { logs } = await this._ethClient.getLogsForBlockRange({
+      fromBlock,
+      toBlock,
+      addresses,
+      topics
+    });
+
+    const blockLogsMap = this._reduceLogsToblockLogsMap(logs);
+
+    // Fetch blocks with transactions for the logs returned
+    console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
+    const blocksWithTxPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
+      const result = await this._ethClient.getBlockWithTransactions({ blockHash });
+
+      const {
+        allEthHeaderCids: {
+          nodes: [
+            {
+              ethTransactionCidsByHeaderId: {
+                nodes: transactions
+              },
+              ...block
+            }
+          ]
+        }
+      } = result;
+
+      block.blockTimestamp = Number(block.timestamp);
+      block.blockNumber = Number(block.blockNumber);
+
+      return { block, transactions } as { block: DeepPartial<BlockProgressInterface>; transactions: any[] };
+    });
+
+    const blockWithTxs = await Promise.all(blocksWithTxPromises);
+    console.timeEnd(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
+
+    // Map db ready events according to blockhash
+    console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-db-save-blocks-events-${fromBlock}-${toBlock}`);
+    const blockWithDbEventsPromises = blockWithTxs.map(async ({ block, transactions }) => {
+      const blockHash = block.blockHash;
+      assert(blockHash);
+      const logs = blockLogsMap.get(blockHash) || [];
+
+      const events = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+      const [blockProgress] = await this.saveBlockWithEvents(block, events);
+
+      return { blockProgress, events: [] };
+    });
+
+    const blocksWithDbEvents = await Promise.all(blockWithDbEventsPromises);
+    console.timeEnd(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-db-save-blocks-events-${fromBlock}-${toBlock}`);
+
+    return blocksWithDbEvents;
+  }
+
+  _reduceLogsToblockLogsMap (logs: any[]): Map<string, any> {
+    return logs.reduce((acc: Map<string, any>, log: any) => {
+      const { blockHash: logBlockHash } = log;
+      assert(typeof logBlockHash === 'string');
+
+      if (!acc.has(logBlockHash)) {
+        acc.set(logBlockHash, []);
+      }
+
+      acc.get(logBlockHash).push(log);
+      return acc;
+    }, new Map());
   }
 
   // Fetch events (to be saved to db) for a particular block
@@ -1224,8 +1296,8 @@ export class Indexer {
     return { addresses, topics: eventSignatures && [eventSignatures] };
   }
 
-  parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: any, eventSignature: string } {
-    const eventInfo = logDescription.eventFragment.inputs.reduce((acc: any, input, index) => {
+  parseEvent (logDescription: ethers.utils.LogDescription): { eventName: string, eventInfo: {[key: string]: any}, eventSignature: string } {
+    const eventInfo = logDescription.eventFragment.inputs.reduce((acc: {[key: string]: any}, input, index) => {
       acc[input.name] = this._parseLogArg(input, logDescription.args[index]);
 
       return acc;

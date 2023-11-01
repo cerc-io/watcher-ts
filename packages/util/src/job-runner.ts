@@ -30,7 +30,8 @@ import {
   createCheckpointJob,
   processBatchEvents,
   PrefetchedBlock,
-  fetchBlocksAtHeight
+  fetchBlocksAtHeight,
+  fetchAndSaveFilteredLogsAndBlocks
 } from './common';
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
@@ -52,6 +53,7 @@ export class JobRunner {
   _jobQueueConfig: JobQueueConfig;
   _blockProcessStartTime?: Date;
   _endBlockProcessTimer?: () => void;
+  // TODO: Check and remove events (always set to empty list as fetched from DB) from map structure
   _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map();
 
   _shutDown = false;
@@ -150,10 +152,14 @@ export class JobRunner {
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
     const { data: { blockNumber: startBlock } } = job;
     const endBlock = startBlock + HISTORICAL_BLOCKS_BATCH_SIZE;
-
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
-    // TODO: Use method from common.ts to fetch and save filtered logs and blocks
-    const blocks: BlockProgressInterface[] = [];
+
+    const blocks = await fetchAndSaveFilteredLogsAndBlocks(
+      this._indexer,
+      this._blockAndEventsMap,
+      startBlock,
+      endBlock
+    );
 
     // Push event processing job for each block
     const pushJobForBlockPromises = blocks.map(async block => this.jobQueue.pushJob(
