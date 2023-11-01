@@ -22,7 +22,8 @@ export const indexBlock = async (
     const blocks = await indexer.getBlocks({ blockNumber: argv.block });
 
     blockProgressEntities = blocks.map((block: any): Partial<BlockProgressInterface> => {
-      block.blockTimestamp = block.timestamp;
+      block.blockTimestamp = Number(block.timestamp);
+      block.blockNumber = Number(block.blockNumber);
 
       return block;
     });

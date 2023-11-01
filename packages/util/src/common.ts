@@ -129,7 +129,7 @@ export const fetchBlocksAtHeight = async (
       cid,
       blockHash,
       parentHash,
-      blockTimestamp: timestamp
+      blockTimestamp: Number(timestamp)
     });
   }
 
@@ -182,6 +182,9 @@ export const _fetchBatchBlocks = async (
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
 
+    // TODO: Fetch logs by filter before fetching blocks
+    // TODO: Fetch only blocks needed for returned logs
+    // TODO: Save blocks and logs to DB
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const settledResults = await Promise.allSettled(blockPromises);
 
@@ -238,7 +241,7 @@ export const _fetchBatchBlocks = async (
   }
 
   blocks.forEach(block => {
-    block.blockTimestamp = block.timestamp;
+    block.blockTimestamp = Number(block.timestamp);
     block.blockNumber = Number(block.blockNumber);
   });
 
@@ -265,7 +268,7 @@ export const processBatchEvents = async (indexer: IndexerInterface, block: Block
 
   if (indexer.processBlockAfterEvents) {
     if (!dbBlock.isComplete) {
-      await indexer.processBlockAfterEvents(block.blockHash, block.blockNumber);
+      await indexer.processBlockAfterEvents(dbBlock.blockHash, dbBlock.blockNumber);
     }
   }
 

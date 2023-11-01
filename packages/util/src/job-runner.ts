@@ -6,6 +6,7 @@ import assert from 'assert';
 import debug from 'debug';
 import { ethers } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
+import PgBoss from 'pg-boss';
 
 import { JobQueueConfig } from './config';
 import {
@@ -17,7 +18,8 @@ import {
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
   QUEUE_BLOCK_CHECKPOINT,
-  QUEUE_HOOKS
+  QUEUE_HOOKS,
+  QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
@@ -33,6 +35,16 @@ import {
 import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
+
+// Wait time for retrying events processing on error (in ms)
+const EVENTS_PROCESSING_RETRY_WAIT = 2000;
+
+// TODO: Get batch size from config
+export const HISTORICAL_BLOCKS_BATCH_SIZE = 100;
+
+export interface HistoricalJobData {
+  blockNumber: number;
+}
 
 export class JobRunner {
   jobQueue: JobQueue;
@@ -54,6 +66,12 @@ export class JobRunner {
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
       await this.processBlock(job);
+    });
+  }
+
+  async subscribeHistoricalProcessingQueue (): Promise<void> {
+    await this.jobQueue.subscribe(QUEUE_HISTORICAL_PROCESSING, async (job) => {
+      await this.processHistoricalBlocks(job);
     });
   }
 
@@ -126,6 +144,28 @@ export class JobRunner {
         break;
     }
 
+    await this.jobQueue.markComplete(job);
+  }
+
+  async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
+    const { data: { blockNumber: startBlock } } = job;
+    const endBlock = startBlock + HISTORICAL_BLOCKS_BATCH_SIZE;
+
+    log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
+    // TODO: Use method from common.ts to fetch and save filtered logs and blocks
+    const blocks: BlockProgressInterface[] = [];
+
+    // Push event processing job for each block
+    const pushJobForBlockPromises = blocks.map(async block => this.jobQueue.pushJob(
+      QUEUE_EVENT_PROCESSING,
+      {
+        kind: JOB_KIND_EVENTS,
+        blockHash: block.blockHash,
+        publish: true
+      }
+    ));
+
+    await Promise.all(pushJobForBlockPromises);
     await this.jobQueue.markComplete(job);
   }
 
@@ -360,8 +400,9 @@ export class JobRunner {
     console.timeEnd('time:job-runner#_indexBlock-get-block-progress-entities');
 
     // Check if parent block has been processed yet, if not, push a high priority job to process that first and abort.
-    // However, don't go beyond the `latestCanonicalBlockHash` from SyncStatus as we have to assume the reorg can't be that deep.
-    if (blockHash !== syncStatus.latestCanonicalBlockHash) {
+    // However, don't go beyond the `latestCanonicalBlockNumber` from SyncStatus as we have to assume the reorg can't be that deep.
+    // latestCanonicalBlockNumber is used to handle null blocks in case of FEVM.
+    if (blockNumber > syncStatus.latestCanonicalBlockNumber) {
       // Create a higher priority job to index parent block and then abort.
       // We don't have to worry about aborting as this job will get retried later.
       const newPriority = (priority || 0) + 1;
@@ -382,9 +423,9 @@ export class JobRunner {
           kind: JOB_KIND_INDEX,
           cid: parentCid,
           blockHash: parentHash,
-          blockNumber: parentBlockNumber,
+          blockNumber: Number(parentBlockNumber),
           parentHash: grandparentHash,
-          timestamp: parentTimestamp,
+          timestamp: Number(parentTimestamp),
           priority: newPriority
         }, { priority: newPriority });
 
@@ -418,8 +459,6 @@ export class JobRunner {
         await this._indexer.removeUnknownEvents(parentBlock);
         console.timeEnd('time:job-runner#_indexBlock-remove-unknown-events');
       }
-    } else {
-      blockProgress = parentBlock;
     }
 
     if (!blockProgress) {
@@ -442,7 +481,9 @@ export class JobRunner {
       }
     }
 
-    await this._indexer.processBlock(blockProgress);
+    if (!blockProgress.isComplete) {
+      await this._indexer.processBlock(blockProgress);
+    }
 
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
@@ -455,40 +496,62 @@ export class JobRunner {
   async _processEvents (job: any): Promise<void> {
     const { blockHash } = job.data;
 
-    if (!this._blockAndEventsMap.has(blockHash)) {
-      console.time('time:job-runner#_processEvents-get-block-progress');
-      const block = await this._indexer.getBlockProgress(blockHash);
-      console.timeEnd('time:job-runner#_processEvents-get-block-progress');
+    try {
+      if (!this._blockAndEventsMap.has(blockHash)) {
+        console.time('time:job-runner#_processEvents-get-block-progress');
+        const block = await this._indexer.getBlockProgress(blockHash);
+        console.timeEnd('time:job-runner#_processEvents-get-block-progress');
 
-      assert(block);
-      this._blockAndEventsMap.set(blockHash, { block, events: [] });
-    }
+        assert(block);
+        this._blockAndEventsMap.set(blockHash, { block, events: [] });
+      }
 
-    const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
-    assert(prefetchedBlock);
+      const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
+      assert(prefetchedBlock);
 
-    const { block } = prefetchedBlock;
+      const { block } = prefetchedBlock;
 
-    console.time('time:job-runner#_processEvents-events');
-    await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
-    console.timeEnd('time:job-runner#_processEvents-events');
+      console.time('time:job-runner#_processEvents-events');
+      await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
+      console.timeEnd('time:job-runner#_processEvents-events');
 
-    // Update metrics
-    lastProcessedBlockNumber.set(block.blockNumber);
-    lastBlockNumEvents.set(block.numEvents);
+      // Update metrics
+      lastProcessedBlockNumber.set(block.blockNumber);
+      lastBlockNumEvents.set(block.numEvents);
 
-    this._blockAndEventsMap.delete(block.blockHash);
+      this._blockAndEventsMap.delete(block.blockHash);
 
-    if (this._endBlockProcessTimer) {
-      this._endBlockProcessTimer();
-    }
+      if (this._endBlockProcessTimer) {
+        this._endBlockProcessTimer();
+      }
 
-    this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
+      this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
 
-    if (this._shutDown) {
-      log(`Graceful shutdown after processing block ${block.blockNumber}`);
-      this.jobQueue.stop();
-      process.exit(0);
+      if (this._shutDown) {
+        log(`Graceful shutdown after processing block ${block.blockNumber}`);
+        this.jobQueue.stop();
+        process.exit(0);
+      }
+    } catch (error) {
+      log(`Error in processing events for block ${blockHash}`);
+      log(error);
+
+      // TODO: Remove processed entities for current block to avoid reprocessing of events
+
+      // Catch event processing error and push to job queue after some time with higher priority
+      log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
+      await wait(EVENTS_PROCESSING_RETRY_WAIT);
+      await this.jobQueue.pushJob(
+        QUEUE_EVENT_PROCESSING,
+        {
+          kind: JOB_KIND_EVENTS,
+          blockHash: blockHash,
+          publish: true
+        },
+        {
+          priority: 1
+        }
+      );
     }
   }
 

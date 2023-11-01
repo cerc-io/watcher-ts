@@ -5,12 +5,15 @@
 import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'graphql-subscriptions';
+import PgBoss from 'pg-boss';
+import { constants } from 'ethers';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING } from './constants';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
+import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
 
 const EVENT = 'event';
 
@@ -26,6 +29,7 @@ export class EventWatcher {
 
   _shutDown = false;
   _signalCount = 0;
+  _historicalProcessingEndBlockNumber = 0;
 
   constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
     this._ethClient = ethClient;
@@ -44,6 +48,7 @@ export class EventWatcher {
 
   async start (): Promise<void> {
     await this.initBlockProcessingOnCompleteHandler();
+    await this.initHistoricalProcessingOnCompleteHandler();
     await this.initEventProcessingOnCompleteHandler();
 
     this.startBlockProcessing();
@@ -57,6 +62,12 @@ export class EventWatcher {
     });
   }
 
+  async initHistoricalProcessingOnCompleteHandler (): Promise<void> {
+    this._jobQueue.onComplete(QUEUE_HISTORICAL_PROCESSING, async (job) => {
+      await this.historicalProcessingCompleteHandler(job);
+    });
+  }
+
   async initEventProcessingOnCompleteHandler (): Promise<void> {
     await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
       await this.eventProcessingCompleteHandler(job);
@@ -64,17 +75,44 @@ export class EventWatcher {
   }
 
   async startBlockProcessing (): Promise<void> {
-    const syncStatus = await this._indexer.getSyncStatus();
-    let startBlockNumber: number;
+    // Get latest block in chain and sync status from DB.
+    const [{ block: latestBlock }, syncStatus] = await Promise.all([
+      this._ethClient.getBlockByHash(),
+      this._indexer.getSyncStatus()
+    ]);
 
-    if (!syncStatus) {
-      // Get latest block in chain.
-      const { block: currentBlock } = await this._ethClient.getBlockByHash();
-      startBlockNumber = currentBlock.number;
-    } else {
+    const latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
+    let startBlockNumber = latestBlock.number;
+
+    if (syncStatus) {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
+    // Check if starting block for watcher is before latest canonical block
+    if (startBlockNumber < latestCanonicalBlockNumber) {
+      await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
+
+      return;
+    }
+
+    await this.startRealtimeBlockProcessing(startBlockNumber);
+  }
+
+  async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
+    this._historicalProcessingEndBlockNumber = endBlockNumber;
+    log(`Starting historical block processing up to block ${this._historicalProcessingEndBlockNumber}`);
+
+    // Push job for historical block processing
+    await this._jobQueue.pushJob(
+      QUEUE_HISTORICAL_PROCESSING,
+      {
+        blockNumber: startBlockNumber
+      }
+    );
+  }
+
+  async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
+    log(`Starting realtime block processing from block ${startBlockNumber}`);
     await processBlockByNumber(this._jobQueue, startBlockNumber);
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
@@ -137,6 +175,67 @@ export class EventWatcher {
       default:
         throw new Error(`Invalid Job kind ${kind} in complete handler of QUEUE_BLOCK_PROCESSING.`);
     }
+  }
+
+  async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
+    const { id, data: { failed, request: { data } } } = job;
+    const { blockNumber }: HistoricalJobData = data;
+
+    if (failed) {
+      log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
+      return;
+    }
+
+    // TODO: Get batch size from config
+    const nextBatchStartBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE + 1;
+    log(`Historical block processing completed for block range: ${blockNumber} to ${nextBatchStartBlockNumber}`);
+
+    // Check if historical processing endBlock / latest canonical block is reached
+    if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
+      let newSyncStatusBlock: {
+        blockNumber: number;
+        blockHash: string;
+      } | undefined;
+
+      // Fetch latest processed block from DB
+      const latestProcessedBlock = await this._indexer.getLatestProcessedBlockProgress(false);
+
+      if (latestProcessedBlock) {
+        if (latestProcessedBlock.blockNumber > this._historicalProcessingEndBlockNumber) {
+          // Set new sync status to latest processed block
+          newSyncStatusBlock = {
+            blockHash: latestProcessedBlock.blockHash,
+            blockNumber: latestProcessedBlock.blockNumber
+          };
+        }
+      }
+
+      if (!newSyncStatusBlock) {
+        const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
+
+        newSyncStatusBlock = {
+          // At latestCanonicalBlockNumber height null block might be returned in case of FEVM
+          blockHash: block ? block.blockHash : constants.AddressZero,
+          blockNumber: this._historicalProcessingEndBlockNumber
+        };
+      }
+
+      // Update sync status to max of latest processed block or latest canonical block
+      const syncStatus = await this._indexer.forceUpdateSyncStatus(newSyncStatusBlock.blockHash, newSyncStatusBlock.blockNumber);
+      log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
+      // Start realtime processing
+      this.startBlockProcessing();
+
+      return;
+    }
+
+    // Push job for next batch of blocks
+    await this._jobQueue.pushJob(
+      QUEUE_HISTORICAL_PROCESSING,
+      {
+        blockNumber: nextBatchStartBlockNumber
+      }
+    );
   }
 
   async eventProcessingCompleteHandler (job: any): Promise<void> {

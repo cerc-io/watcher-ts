@@ -509,7 +509,7 @@ export class Indexer implements IndexerInterface {
     if (!this._serverConfig.enableState) {
       return;
     }
-    
+
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
@@ -637,6 +637,10 @@ export class Indexer implements IndexerInterface {
     return syncStatus;
   }
 
+  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
+    return this._baseIndexer.forceUpdateSyncStatus(blockHash, blockNumber);
+  }
+
   async getEvent (id: string): Promise<Event | undefined> {
     return this._baseIndexer.getEvent(id);
   }
@@ -651,6 +655,10 @@ export class Indexer implements IndexerInterface {
 
   async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgress[]> {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
+  }
+
+  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgress | undefined> {
+    return this._db.getLatestProcessedBlockProgress(isPruned);
   }
 
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgress>[]): Promise<{ blockProgress: BlockProgress, events: DeepPartial<Event>[] }[]> {

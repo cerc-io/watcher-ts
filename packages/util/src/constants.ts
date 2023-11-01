@@ -6,6 +6,7 @@ export const MAX_REORG_DEPTH = 16;
 export const DIFF_MERGE_BATCH_SIZE = 10000;
 
 export const QUEUE_BLOCK_PROCESSING = 'block-processing';
+export const QUEUE_HISTORICAL_PROCESSING = 'historical-processing';
 export const QUEUE_EVENT_PROCESSING = 'event-processing';
 export const QUEUE_CHAIN_PRUNING = 'chain-pruning';
 export const QUEUE_BLOCK_CHECKPOINT = 'block-checkpoint';

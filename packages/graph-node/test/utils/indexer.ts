@@ -93,6 +93,12 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
+  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgressInterface | undefined> {
+    assert(isPruned);
+
+    return undefined;
+  }
+
   async getBlockEvents (blockHash: string): Promise<Array<EventInterface>> {
     assert(blockHash);
 
@@ -146,6 +152,13 @@ export class Indexer implements IndexerInterface {
     assert(blockNumber);
     assert(blockHash);
     assert(force);
+
+    return {} as SyncStatusInterface;
+  }
+
+  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+    assert(blockNumber);
+    assert(blockHash);
 
     return {} as SyncStatusInterface;
   }
