@@ -334,7 +334,7 @@ export class Indexer {
     }
 
     // Sort logs according to blockhash
-    const blockLogsMap = this._reduceLogsToblockLogsMap(logs);
+    const blockLogsMap = this._reduceLogsToBlockLogsMap(logs);
 
     // Fetch transactions for given blocks
     const transactionsMap: Map<string, any> = new Map();
@@ -400,7 +400,7 @@ export class Indexer {
       topics
     });
 
-    const blockLogsMap = this._reduceLogsToblockLogsMap(logs);
+    const blockLogsMap = this._reduceLogsToBlockLogsMap(logs);
 
     // Fetch blocks with transactions for the logs returned
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
@@ -448,7 +448,7 @@ export class Indexer {
     return blocksWithDbEvents;
   }
 
-  _reduceLogsToblockLogsMap (logs: any[]): Map<string, any> {
+  _reduceLogsToBlockLogsMap (logs: any[]): Map<string, any> {
     return logs.reduce((acc: Map<string, any>, log: any) => {
       const { blockHash: logBlockHash } = log;
       assert(typeof logBlockHash === 'string');

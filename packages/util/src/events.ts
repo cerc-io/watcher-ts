@@ -93,7 +93,7 @@ export class EventWatcher {
 
     // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
-    if ((this._serverConfig.filterLogsByAddresses || this._serverConfig.filterLogsByTopics) && startBlockNumber < latestCanonicalBlockNumber) {
+    if (this._serverConfig.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
       await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;
@@ -237,6 +237,7 @@ export class EventWatcher {
 
     // Check if publish is set to true
     // Events and blocks are not published in historical processing
+    // GQL subscription events will not be triggered if publish is set to false
     if (publish) {
       assert(blockHash);
 

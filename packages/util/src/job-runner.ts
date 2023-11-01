@@ -168,6 +168,8 @@ export class JobRunner {
       {
         kind: JOB_KIND_EVENTS,
         blockHash: block.blockHash,
+        // Avoid publishing GQL subscription event in historical processing
+        // Publishing when realtime processing is listening to events will cause problems
         publish: false
       }
     ));

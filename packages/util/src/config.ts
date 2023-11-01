@@ -205,6 +205,11 @@ export interface ServerConfig {
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
 
+  // Boolean to switch between modes of processing events when starting the server.
+  // Setting to true will fetch filtered events and required blocks in a range of blocks and then process them
+  // Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head)
+  useBlockRanges: boolean;
+
   // Boolean to skip updating entity fields required in state creation and not required in the frontend.
   skipStateFieldsUpdate: boolean;
 
