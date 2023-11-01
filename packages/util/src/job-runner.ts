@@ -45,6 +45,7 @@ export const HISTORICAL_BLOCKS_BATCH_SIZE = 100;
 
 export interface HistoricalJobData {
   blockNumber: number;
+  processingEndBlockNumber: number;
 }
 
 export class JobRunner {
@@ -150,8 +151,8 @@ export class JobRunner {
   }
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
-    const { data: { blockNumber: startBlock } } = job;
-    const endBlock = startBlock + HISTORICAL_BLOCKS_BATCH_SIZE;
+    const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
+    const endBlock = Math.min(startBlock + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
 
     const blocks = await fetchAndSaveFilteredLogsAndBlocks(

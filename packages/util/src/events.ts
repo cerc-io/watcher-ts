@@ -110,7 +110,8 @@ export class EventWatcher {
     await this._jobQueue.pushJob(
       QUEUE_HISTORICAL_PROCESSING,
       {
-        blockNumber: startBlockNumber
+        blockNumber: startBlockNumber,
+        processingEndBlockNumber: this._historicalProcessingEndBlockNumber
       }
     );
   }
@@ -183,7 +184,7 @@ export class EventWatcher {
 
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
     const { id, data: { failed, request: { data } } } = job;
-    const { blockNumber }: HistoricalJobData = data;
+    const { blockNumber, processingEndBlockNumber }: HistoricalJobData = data;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
@@ -191,42 +192,17 @@ export class EventWatcher {
     }
 
     // TODO: Get batch size from config
-    const batchEndBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE;
-    const nextBatchStartBlockNumber = blockNumber + batchEndBlockNumber + 1;
+    const batchEndBlockNumber = Math.min(blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
+    const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
     log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
     // Check if historical processing endBlock / latest canonical block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
-      let newSyncStatusBlock: {
-        blockNumber: number;
-        blockHash: string;
-      } | undefined;
-
-      // Fetch latest processed block from DB
-      const latestProcessedBlock = await this._indexer.getLatestProcessedBlockProgress(false);
-
-      if (latestProcessedBlock) {
-        if (latestProcessedBlock.blockNumber > this._historicalProcessingEndBlockNumber) {
-          // Set new sync status to latest processed block
-          newSyncStatusBlock = {
-            blockHash: latestProcessedBlock.blockHash,
-            blockNumber: latestProcessedBlock.blockNumber
-          };
-        }
-      }
-
-      if (!newSyncStatusBlock) {
-        const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
-
-        newSyncStatusBlock = {
-          // At latestCanonicalBlockNumber height null block might be returned in case of FEVM
-          blockHash: block ? block.blockHash : constants.AddressZero,
-          blockNumber: this._historicalProcessingEndBlockNumber
-        };
-      }
+      const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
+      const historicalProcessingEndBlockHash = block ? block.blockHash : constants.AddressZero;
 
       // Update sync status to max of latest processed block or latest canonical block
-      const syncStatus = await this._indexer.forceUpdateSyncStatus(newSyncStatusBlock.blockHash, newSyncStatusBlock.blockNumber);
+      const syncStatus = await this._indexer.forceUpdateSyncStatus(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber);
       log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
       // Start realtime processing
       this.startBlockProcessing();
@@ -238,7 +214,8 @@ export class EventWatcher {
     await this._jobQueue.pushJob(
       QUEUE_HISTORICAL_PROCESSING,
       {
-        blockNumber: nextBatchStartBlockNumber
+        blockNumber: nextBatchStartBlockNumber,
+        processingEndBlockNumber
       }
     );
   }

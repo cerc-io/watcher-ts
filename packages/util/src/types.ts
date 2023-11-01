@@ -91,7 +91,6 @@ export interface IndexerInterface {
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
-  getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgressInterface | undefined>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>

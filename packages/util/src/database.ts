@@ -205,14 +205,6 @@ export class Database {
       .getMany();
   }
 
-  async getLatestProcessedBlockProgress (repo: Repository<BlockProgressInterface>, isPruned: boolean): Promise<BlockProgressInterface | undefined> {
-    return repo.createQueryBuilder('block_progress')
-      .where('is_pruned = :isPruned AND is_complete = :isComplete', { isPruned, isComplete: true })
-      .orderBy('block_number', 'DESC')
-      .limit(1)
-      .getOne();
-  }
-
   async saveBlockProgress (repo: Repository<BlockProgressInterface>, block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface> {
     blockProgressCount.inc(1);
 
