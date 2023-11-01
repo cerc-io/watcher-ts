@@ -22,7 +22,7 @@ import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
-import { BlockHeight, Database as BaseDatabase, QueryOptions, Where } from '../database';
+import { BlockHeight, Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
@@ -350,7 +350,7 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight = {},
+    block: CanonicalBlockHeight = {},
     where: Where = {},
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
@@ -418,7 +418,7 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
@@ -441,26 +441,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    // TOOD: Include in where itself?
-    const relationBlockCondition: any = {};
-
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-
-      relationBlockCondition.blockNumber = canonicalBlockNumber;
-      relationBlockCondition.blockHashes = blockHashes;
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-      relationBlockCondition.blockNumber = block.number;
-    }
+    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
       .innerJoin(
@@ -470,7 +451,7 @@ export class GraphDatabase {
       )
       .setParameters(subQuery.getParameters());
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), relationBlockCondition);
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
@@ -494,7 +475,7 @@ export class GraphDatabase {
   async getEntitiesDistinctOn<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
@@ -516,19 +497,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-    }
+    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     subQuery = this._baseDatabase.buildQuery(repo, subQuery, where);
 
@@ -579,19 +548,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .andWhere(new Brackets(qb => {
-          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
-            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
-    }
+    selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
 
@@ -618,19 +575,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      selectQueryBuilder = selectQueryBuilder
-        .andWhere(new Brackets(qb => {
-          qb.where(`${tableName}.block_hash IN (:...blockHashes)`, { blockHashes })
-            .orWhere(`${tableName}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      selectQueryBuilder = selectQueryBuilder.andWhere(`${tableName}.block_number <= :blockNumber`, { blockNumber: block.number });
-    }
+    selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
 
@@ -734,19 +679,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    if (block.hash) {
-      const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-      subQuery = subQuery
-        .andWhere(new Brackets(qb => {
-          qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
-            .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
-        }));
-    }
-
-    if (block.number) {
-      subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
-    }
+    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     let selectQueryBuilder = latestEntityRepo.createQueryBuilder('latest')
       .select('*')
@@ -1289,6 +1222,35 @@ export class GraphDatabase {
         await this.canonicalizeLatestEntity(queryRunner, entityType, latestEntityType, entitiesToReset, blockNumber);
       })
     );
+  }
+
+  async _applyBlockHeightFilter<Entity> (
+    queryRunner: QueryRunner,
+    queryBuilder: SelectQueryBuilder<Entity>,
+    block: CanonicalBlockHeight,
+    alias: string
+  ): Promise<SelectQueryBuilder<Entity>> {
+    if (block.hash) {
+      if (!block.canonicalBlockHashes) {
+        const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
+
+        // Update the block field to avoid firing the same query further
+        block.number = canonicalBlockNumber;
+        block.canonicalBlockHashes = blockHashes;
+      }
+
+      queryBuilder = queryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${alias}.block_hash IN (:...blockHashes)`, { blockHashes: block.canonicalBlockHashes })
+            .orWhere(`${alias}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber: block.number });
+        }));
+    }
+
+    if (block.number) {
+      queryBuilder = queryBuilder.andWhere(`${alias}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    return queryBuilder;
   }
 
   _measureCachedPrunedEntities (): void {

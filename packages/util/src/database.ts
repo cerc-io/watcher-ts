@@ -50,6 +50,10 @@ export interface BlockHeight {
   hash?: string;
 }
 
+export interface CanonicalBlockHeight extends BlockHeight {
+  canonicalBlockHashes?: string[];
+}
+
 export enum OrderDirection {
   asc = 'asc',
   desc = 'desc'
@@ -833,9 +837,9 @@ export class Database {
   buildQuery<Entity extends ObjectLiteral> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
-    where: Where = {},
-    relations: { [key: string]: any } = {},
-    blockCondition: { blockNumber?: number, blockHashes?: string[] } = {},
+    where: Readonly<Where> = {},
+    relations: Readonly<{ [key: string]: any }> = {},
+    block: Readonly<CanonicalBlockHeight> = {},
     alias?: string
   ): SelectQueryBuilder<Entity> {
     if (!alias) {
@@ -859,16 +863,15 @@ export class Database {
             .select('1')
             .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
 
-          if (blockCondition.blockHashes) {
-            // If blockHashes populated, use blockHashes and blockNumber as canonicalBlockNumber
+          // canonicalBlockHashes take precedence over block number if provided
+          if (block.canonicalBlockHashes) {
             relationSubQuery = relationSubQuery
               .andWhere(new Brackets(qb => {
-                qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: blockCondition.blockHashes })
-                  .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: blockCondition.blockNumber });
+                qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: block.canonicalBlockHashes })
+                  .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: block.number });
               }));
-          } else if (blockCondition.blockNumber) {
-            // Only use blockNumber if blockHashes not populated
-            relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: blockCondition.blockNumber });
+          } else if (block.number) {
+            relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: block.number });
           }
 
           relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value);
