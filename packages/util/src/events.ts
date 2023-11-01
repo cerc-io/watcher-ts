@@ -228,47 +228,51 @@ export class EventWatcher {
       return;
     }
 
-    const { data: { kind, blockHash } } = request;
+    const { data: { kind, blockHash, publish } } = request;
 
     // Ignore jobs other than JOB_KIND_EVENTS
     if (kind !== JOB_KIND_EVENTS) {
       return;
     }
 
-    assert(blockHash);
+    // Check if publish is set to true
+    // Events and blocks are not published in historical processing
+    if (publish) {
+      assert(blockHash);
 
-    const blockProgress = await this._indexer.getBlockProgress(blockHash);
-    assert(blockProgress);
+      const blockProgress = await this._indexer.getBlockProgress(blockHash);
+      assert(blockProgress);
 
-    await this.publishBlockProgressToSubscribers(blockProgress);
+      await this.publishBlockProgressToSubscribers(blockProgress);
 
-    const dbEvents = await this._indexer.getBlockEvents(
-      blockProgress.blockHash,
-      {
-        eventName: [
-          { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
-        ]
-      },
-      {
-        orderBy: 'index',
-        orderDirection: OrderDirection.asc
-      }
-    );
+      const dbEvents = await this._indexer.getBlockEvents(
+        blockProgress.blockHash,
+        {
+          eventName: [
+            { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
+          ]
+        },
+        {
+          orderBy: 'index',
+          orderDirection: OrderDirection.asc
+        }
+      );
 
-    const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
+      const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
 
-    // Cannot publish individual event as they are processed together in a single job.
-    // TODO: Use a different pubsub to publish event from job-runner.
-    // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-    for (const dbEvent of dbEvents) {
-      log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
+      // Cannot publish individual event as they are processed together in a single job.
+      // TODO: Use a different pubsub to publish event from job-runner.
+      // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+      for (const dbEvent of dbEvents) {
+        log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
 
-      if (!failed && state === 'completed' && request.data.publish) {
-        // Check for max acceptable lag time between request and sending results to live subscribers.
-        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
-          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
-        } else {
-          log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+        if (!failed && state === 'completed') {
+          // Check for max acceptable lag time between request and sending results to live subscribers.
+          if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+            await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+          } else {
+            log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+          }
         }
       }
     }

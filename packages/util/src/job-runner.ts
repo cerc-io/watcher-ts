@@ -168,7 +168,7 @@ export class JobRunner {
       {
         kind: JOB_KIND_EVENTS,
         blockHash: block.blockHash,
-        publish: true
+        publish: false
       }
     ));
 
@@ -550,11 +550,7 @@ export class JobRunner {
       await wait(EVENTS_PROCESSING_RETRY_WAIT);
       await this.jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
-        {
-          kind: JOB_KIND_EVENTS,
-          blockHash: blockHash,
-          publish: true
-        },
+        job.data,
         {
           priority: 1
         }
