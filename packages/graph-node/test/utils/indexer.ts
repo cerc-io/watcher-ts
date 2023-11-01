@@ -112,6 +112,13 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
+  async fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    assert(startBlock);
+    assert(endBlock);
+
+    return [];
+  }
+
   async saveBlockAndFetchEvents (block: BlockProgressInterface): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
     return [block, []];
   }
