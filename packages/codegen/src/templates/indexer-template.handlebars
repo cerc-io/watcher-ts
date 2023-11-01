@@ -657,10 +657,6 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.getBlocksAtHeight(height, isPruned);
   }
 
-  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgress | undefined> {
-    return this._db.getLatestProcessedBlockProgress(isPruned);
-  }
-
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgress>[]): Promise<{ blockProgress: BlockProgress, events: DeepPartial<Event>[] }[]> {
     return this._baseIndexer.fetchEventsAndSaveBlocks(blocks, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
   }

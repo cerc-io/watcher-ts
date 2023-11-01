@@ -93,12 +93,6 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgressInterface | undefined> {
-    assert(isPruned);
-
-    return undefined;
-  }
-
   async getBlockEvents (blockHash: string): Promise<Array<EventInterface>> {
     assert(blockHash);
 
@@ -114,6 +108,13 @@ export class Indexer implements IndexerInterface {
 
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
     assert(blocks);
+
+    return [];
+  }
+
+  async fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+    assert(startBlock);
+    assert(endBlock);
 
     return [];
   }

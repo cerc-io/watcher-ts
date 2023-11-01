@@ -277,12 +277,6 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getBlocksAtHeight(repo, height, isPruned);
   }
 
-  async getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgress | undefined> {
-    const repo = this._conn.getRepository(BlockProgress);
-
-    return this._baseDatabase.getLatestProcessedBlockProgress(repo, isPruned);
-  }
-
   async markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgress[]): Promise<void> {
     const repo = queryRunner.manager.getRepository(BlockProgress);
 

@@ -91,13 +91,13 @@ export interface IndexerInterface {
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
-  getLatestProcessedBlockProgress (isPruned: boolean): Promise<BlockProgressInterface | undefined>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
+  fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>

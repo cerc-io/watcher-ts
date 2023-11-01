@@ -215,21 +215,13 @@ export class GraphWatcher {
   }
 
   async handleBlock (blockHash: string, blockNumber: number) {
-    // Check if block data is already fetched in handleEvent method for the same block.
-    if (!this._context.block || this._context.block.blockHash !== blockHash) {
-      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
-    }
-
-    const blockData = this._context.block;
-    assert(blockData);
-
     // Clear transactions map on handling new block.
     this._transactionsMap.clear();
 
     // Call block handler(s) for each contract.
     for (const dataSource of this._dataSources) {
       // Reinstantiate WASM after every N blocks.
-      if (Number(blockData.blockNumber) % this._wasmRestartBlocksInterval === 0) {
+      if (Number(blockNumber) % this._wasmRestartBlocksInterval === 0) {
         // The WASM instance allocates memory as required and the limit is 4GB.
         // https://stackoverflow.com/a/40453962
         // https://github.com/AssemblyScript/assemblyscript/pull/1268#issue-618411291
@@ -241,6 +233,14 @@ export class GraphWatcher {
       if (!dataSource.mapping.blockHandlers) {
         continue;
       }
+
+      // Check if block data is already fetched in handleEvent method for the same block.
+      if (!this._context.block || this._context.block.blockHash !== blockHash) {
+        this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
+      }
+
+      const blockData = this._context.block;
+      assert(blockData);
 
       const { instance } = this._dataSourceMap[dataSource.name];
       assert(instance);

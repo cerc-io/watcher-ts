@@ -29,6 +29,11 @@
   # Boolean to filter logs by topics.
   filterLogsByTopics = false
 
+  # Boolean to switch between modes of processing events when starting the server.
+  # Setting to true will fetch filtered events and required blocks in a range of blocks and then process them
+  # Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head)
+  useBlockRanges = true
+
   # Max block range for which to return events in eventsInRange GQL query.
   # Use -1 for skipping check on block range.
   maxEventsBlockRange = 1000

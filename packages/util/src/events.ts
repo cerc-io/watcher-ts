@@ -14,6 +14,7 @@ import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JO
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
+import { ServerConfig } from './config';
 
 const EVENT = 'event';
 
@@ -22,6 +23,7 @@ const log = debug('vulcanize:events');
 export const BlockProgressEvent = 'block-progress-event';
 
 export class EventWatcher {
+  _serverConfig: ServerConfig;
   _ethClient: EthClient;
   _indexer: IndexerInterface;
   _pubsub: PubSub;
@@ -31,7 +33,8 @@ export class EventWatcher {
   _signalCount = 0;
   _historicalProcessingEndBlockNumber = 0;
 
-  constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+    this._serverConfig = serverConfig;
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
@@ -88,8 +91,9 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
+    // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
-    if (startBlockNumber < latestCanonicalBlockNumber) {
+    if (this._serverConfig.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
       await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;
@@ -106,7 +110,8 @@ export class EventWatcher {
     await this._jobQueue.pushJob(
       QUEUE_HISTORICAL_PROCESSING,
       {
-        blockNumber: startBlockNumber
+        blockNumber: startBlockNumber,
+        processingEndBlockNumber: this._historicalProcessingEndBlockNumber
       }
     );
   }
@@ -179,7 +184,7 @@ export class EventWatcher {
 
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
     const { id, data: { failed, request: { data } } } = job;
-    const { blockNumber }: HistoricalJobData = data;
+    const { blockNumber, processingEndBlockNumber }: HistoricalJobData = data;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
@@ -187,41 +192,17 @@ export class EventWatcher {
     }
 
     // TODO: Get batch size from config
-    const nextBatchStartBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE + 1;
-    log(`Historical block processing completed for block range: ${blockNumber} to ${nextBatchStartBlockNumber}`);
+    const batchEndBlockNumber = Math.min(blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
+    const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
+    log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
     // Check if historical processing endBlock / latest canonical block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
-      let newSyncStatusBlock: {
-        blockNumber: number;
-        blockHash: string;
-      } | undefined;
-
-      // Fetch latest processed block from DB
-      const latestProcessedBlock = await this._indexer.getLatestProcessedBlockProgress(false);
-
-      if (latestProcessedBlock) {
-        if (latestProcessedBlock.blockNumber > this._historicalProcessingEndBlockNumber) {
-          // Set new sync status to latest processed block
-          newSyncStatusBlock = {
-            blockHash: latestProcessedBlock.blockHash,
-            blockNumber: latestProcessedBlock.blockNumber
-          };
-        }
-      }
-
-      if (!newSyncStatusBlock) {
-        const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
-
-        newSyncStatusBlock = {
-          // At latestCanonicalBlockNumber height null block might be returned in case of FEVM
-          blockHash: block ? block.blockHash : constants.AddressZero,
-          blockNumber: this._historicalProcessingEndBlockNumber
-        };
-      }
+      const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
+      const historicalProcessingEndBlockHash = block ? block.blockHash : constants.AddressZero;
 
       // Update sync status to max of latest processed block or latest canonical block
-      const syncStatus = await this._indexer.forceUpdateSyncStatus(newSyncStatusBlock.blockHash, newSyncStatusBlock.blockNumber);
+      const syncStatus = await this._indexer.forceUpdateSyncStatus(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber);
       log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
       // Start realtime processing
       this.startBlockProcessing();
@@ -233,7 +214,8 @@ export class EventWatcher {
     await this._jobQueue.pushJob(
       QUEUE_HISTORICAL_PROCESSING,
       {
-        blockNumber: nextBatchStartBlockNumber
+        blockNumber: nextBatchStartBlockNumber,
+        processingEndBlockNumber
       }
     );
   }
@@ -246,47 +228,52 @@ export class EventWatcher {
       return;
     }
 
-    const { data: { kind, blockHash } } = request;
+    const { data: { kind, blockHash, publish } } = request;
 
     // Ignore jobs other than JOB_KIND_EVENTS
     if (kind !== JOB_KIND_EVENTS) {
       return;
     }
 
-    assert(blockHash);
+    // Check if publish is set to true
+    // Events and blocks are not published in historical processing
+    // GQL subscription events will not be triggered if publish is set to false
+    if (publish) {
+      assert(blockHash);
 
-    const blockProgress = await this._indexer.getBlockProgress(blockHash);
-    assert(blockProgress);
+      const blockProgress = await this._indexer.getBlockProgress(blockHash);
+      assert(blockProgress);
 
-    await this.publishBlockProgressToSubscribers(blockProgress);
+      await this.publishBlockProgressToSubscribers(blockProgress);
 
-    const dbEvents = await this._indexer.getBlockEvents(
-      blockProgress.blockHash,
-      {
-        eventName: [
-          { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
-        ]
-      },
-      {
-        orderBy: 'index',
-        orderDirection: OrderDirection.asc
-      }
-    );
+      const dbEvents = await this._indexer.getBlockEvents(
+        blockProgress.blockHash,
+        {
+          eventName: [
+            { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
+          ]
+        },
+        {
+          orderBy: 'index',
+          orderDirection: OrderDirection.asc
+        }
+      );
 
-    const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
+      const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
 
-    // Cannot publish individual event as they are processed together in a single job.
-    // TODO: Use a different pubsub to publish event from job-runner.
-    // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-    for (const dbEvent of dbEvents) {
-      log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
+      // Cannot publish individual event as they are processed together in a single job.
+      // TODO: Use a different pubsub to publish event from job-runner.
+      // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+      for (const dbEvent of dbEvents) {
+        log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
 
-      if (!failed && state === 'completed' && request.data.publish) {
-        // Check for max acceptable lag time between request and sending results to live subscribers.
-        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
-          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
-        } else {
-          log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+        if (!failed && state === 'completed') {
+          // Check for max acceptable lag time between request and sending results to live subscribers.
+          if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+            await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+          } else {
+            log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
+          }
         }
       }
     }

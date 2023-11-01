@@ -138,6 +138,32 @@ export const fetchBlocksAtHeight = async (
   return blocksToBeIndexed;
 };
 
+/**
+ * Method to fetch and save filtered logs and blocks in a given range.
+ * @param indexer
+ * @param blockAndEventsMap
+ * @param startBlock
+ * @param endBlock
+ */
+export const fetchAndSaveFilteredLogsAndBlocks = async (
+  indexer: IndexerInterface,
+  blockAndEventsMap: Map<string, PrefetchedBlock>,
+  startBlock: number,
+  endBlock: number
+): Promise<BlockProgressInterface[]> => {
+  // Fetch filtered logs and required blocks
+  console.time('time:common#fetchAndSaveFilteredLogsAndBlocks-fetchAndSaveFilteredEventsAndBlocks');
+  const blocksWithEvents = await indexer.fetchAndSaveFilteredEventsAndBlocks(startBlock, endBlock);
+  console.timeEnd('time:common#fetchAndSaveFilteredLogsAndBlocks-fetchAndSaveFilteredEventsAndBlocks');
+
+  // Set blocks with events in blockAndEventsMap cache
+  blocksWithEvents.forEach(({ blockProgress, events }) => {
+    blockAndEventsMap.set(blockProgress.blockHash, { block: blockProgress, events });
+  });
+
+  return blocksWithEvents.map(({ blockProgress }) => blockProgress);
+};
+
 export const _prefetchBlocks = async (
   blockNumber: number,
   indexer: IndexerInterface,
@@ -182,9 +208,6 @@ export const _fetchBatchBlocks = async (
   while (true) {
     console.time('time:common#fetchBatchBlocks-getBlocks');
 
-    // TODO: Fetch logs by filter before fetching blocks
-    // TODO: Fetch only blocks needed for returned logs
-    // TODO: Save blocks and logs to DB
     const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
     const settledResults = await Promise.allSettled(blockPromises);
 
