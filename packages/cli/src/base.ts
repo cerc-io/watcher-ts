@@ -128,12 +128,13 @@ export class BaseCmd {
 
   async initEventWatcher (): Promise<void> {
     assert(this._clients?.ethClient);
+    assert(this._config);
     assert(this._indexer);
     assert(this._jobQueue);
 
     // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
     // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
     const pubsub = new PubSub();
-    this._eventWatcher = new EventWatcher(this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
+    this._eventWatcher = new EventWatcher(this._config.server, this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
   }
 }

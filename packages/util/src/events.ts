@@ -14,6 +14,7 @@ import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JO
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
+import { ServerConfig } from './config';
 
 const EVENT = 'event';
 
@@ -22,6 +23,7 @@ const log = debug('vulcanize:events');
 export const BlockProgressEvent = 'block-progress-event';
 
 export class EventWatcher {
+  _serverConfig: ServerConfig;
   _ethClient: EthClient;
   _indexer: IndexerInterface;
   _pubsub: PubSub;
@@ -31,7 +33,8 @@ export class EventWatcher {
   _signalCount = 0;
   _historicalProcessingEndBlockNumber = 0;
 
-  constructor (ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+  constructor (serverConfig: ServerConfig, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+    this._serverConfig = serverConfig;
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
@@ -88,8 +91,9 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
+    // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
-    if (startBlockNumber < latestCanonicalBlockNumber) {
+    if ((this._serverConfig.filterLogsByAddresses || this._serverConfig.filterLogsByTopics) && startBlockNumber < latestCanonicalBlockNumber) {
       await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;
@@ -187,8 +191,9 @@ export class EventWatcher {
     }
 
     // TODO: Get batch size from config
-    const nextBatchStartBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE + 1;
-    log(`Historical block processing completed for block range: ${blockNumber} to ${nextBatchStartBlockNumber}`);
+    const batchEndBlockNumber = blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE;
+    const nextBatchStartBlockNumber = blockNumber + batchEndBlockNumber + 1;
+    log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
     // Check if historical processing endBlock / latest canonical block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
