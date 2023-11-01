@@ -398,7 +398,7 @@ export class GraphDatabase {
         case ENTITY_QUERY_TYPE.GROUP_BY:
         default:
           // Use group by query if entity query type is not specified in map.
-          entities = await this.getEntitiesGroupBy(queryRunner, entityType, block, where, queryOptions);
+          entities = await this.getEntitiesGroupBy(queryRunner, entityType, relationsMap, block, where, queryOptions);
           break;
       }
     }
@@ -417,6 +417,7 @@ export class GraphDatabase {
   async getEntitiesGroupBy<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
@@ -440,6 +441,9 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
+    // TOOD: Include in where itself?
+    const relationBlockCondition: any = {};
+
     if (block.hash) {
       const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
 
@@ -448,10 +452,14 @@ export class GraphDatabase {
           qb.where('subTable.block_hash IN (:...blockHashes)', { blockHashes })
             .orWhere('subTable.block_number <= :canonicalBlockNumber', { canonicalBlockNumber });
         }));
+
+      relationBlockCondition.blockNumber = canonicalBlockNumber;
+      relationBlockCondition.blockHashes = blockHashes;
     }
 
     if (block.number) {
       subQuery = subQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: block.number });
+      relationBlockCondition.blockNumber = block.number;
     }
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
@@ -462,7 +470,7 @@ export class GraphDatabase {
       )
       .setParameters(subQuery.getParameters());
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), relationBlockCondition);
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
@@ -685,7 +693,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, 'latest');
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, {}, {}, 'latest');
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
@@ -752,7 +760,7 @@ export class GraphDatabase {
         'result'
       ) as SelectQueryBuilder<Entity>;
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, 'latest');
+    selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, {}, {}, 'latest');
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, '', 'latest');

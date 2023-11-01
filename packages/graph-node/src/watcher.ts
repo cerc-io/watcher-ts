@@ -353,6 +353,7 @@ export class GraphWatcher {
           operator = suffix.shift();
         }
 
+        // TODO: Parse nested filters
         if (operator) {
           filter.operator = operator;
         }

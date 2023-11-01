@@ -5,6 +5,7 @@
 import assert from 'assert';
 import {
   Between,
+  Brackets,
   Connection,
   ConnectionOptions,
   createConnection,
@@ -38,7 +39,8 @@ export const OPERATOR_MAP = {
   ends: 'LIKE',
   contains_nocase: 'ILIKE',
   starts_nocase: 'ILIKE',
-  ends_nocase: 'ILIKE'
+  ends_nocase: 'ILIKE',
+  nested: ''
 };
 
 const INSERT_EVENTS_BATCH = 100;
@@ -60,12 +62,15 @@ export interface QueryOptions {
   orderDirection?: OrderDirection;
 }
 
+export interface Filter {
+  // eslint-disable-next-line no-use-before-define
+  value: any | Where;
+  not: boolean;
+  operator: keyof typeof OPERATOR_MAP;
+}
+
 export interface Where {
-  [key: string]: [{
-    value: any;
-    not: boolean;
-    operator: keyof typeof OPERATOR_MAP;
-  }]
+  [key: string]: [Filter];
 }
 
 export type Relation = string | { property: string, alias: string }
@@ -829,6 +834,8 @@ export class Database {
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     where: Where = {},
+    relations: { [key: string]: any } = {},
+    blockCondition: { blockNumber?: number, blockHashes?: string[] } = {},
     alias?: string
   ): SelectQueryBuilder<Entity> {
     if (!alias) {
@@ -836,11 +843,43 @@ export class Database {
     }
 
     Object.entries(where).forEach(([field, filters]) => {
+      // TODO: Handle nested filters on derived and array fields
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+      assert(columnMetadata);
+
       filters.forEach((filter, index) => {
-        // Form the where clause.
         let { not, operator, value } = filter;
-        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-        assert(columnMetadata);
+
+        // Handle nested relation filter
+        const relation = relations[field];
+        if (operator === 'nested' && relation) {
+          const relationRepo = this.conn.getRepository<Entity>(relation.entity);
+          const relationTableName = relationRepo.metadata.tableName;
+          let relationSubQuery = repo.createQueryBuilder(relationTableName)
+            .select('1')
+            .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+
+          if (blockCondition.blockHashes) {
+            relationSubQuery = relationSubQuery
+              .andWhere(new Brackets(qb => {
+                qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: blockCondition.blockHashes })
+                  .orWhere('subTable.block_number <= :relationCanonicalBlockNumber', { relationCanonicalBlockNumber: blockCondition.blockNumber });
+              }));
+          }
+
+          if (blockCondition.blockNumber) {
+            relationSubQuery = relationSubQuery.andWhere('subTable.block_number <= :blockNumber', { blockNumber: blockCondition.blockNumber });
+          }
+
+          relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value);
+          selectQueryBuilder = selectQueryBuilder
+            .andWhere(`EXISTS (${relationSubQuery.getQuery()})`)
+            .setParameters(relationSubQuery.getParameters());
+
+          return;
+        }
+
+        // Form the where clause.
         let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
 
         if (columnMetadata.relationMetadata) {
