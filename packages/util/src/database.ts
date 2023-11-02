@@ -5,6 +5,7 @@
 import assert from 'assert';
 import {
   Between,
+  Brackets,
   Connection,
   ConnectionOptions,
   createConnection,
@@ -38,7 +39,8 @@ export const OPERATOR_MAP = {
   ends: 'LIKE',
   contains_nocase: 'ILIKE',
   starts_nocase: 'ILIKE',
-  ends_nocase: 'ILIKE'
+  ends_nocase: 'ILIKE',
+  nested: ''
 };
 
 const INSERT_EVENTS_BATCH = 100;
@@ -46,6 +48,10 @@ const INSERT_EVENTS_BATCH = 100;
 export interface BlockHeight {
   number?: number;
   hash?: string;
+}
+
+export interface CanonicalBlockHeight extends BlockHeight {
+  canonicalBlockHashes?: string[];
 }
 
 export enum OrderDirection {
@@ -60,12 +66,15 @@ export interface QueryOptions {
   orderDirection?: OrderDirection;
 }
 
+export interface Filter {
+  // eslint-disable-next-line no-use-before-define
+  value: any | Where;
+  not: boolean;
+  operator?: keyof typeof OPERATOR_MAP;
+}
+
 export interface Where {
-  [key: string]: [{
-    value: any;
-    not: boolean;
-    operator: keyof typeof OPERATOR_MAP;
-  }]
+  [key: string]: Filter[];
 }
 
 export type Relation = string | { property: string, alias: string }
@@ -820,7 +829,9 @@ export class Database {
   buildQuery<Entity extends ObjectLiteral> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
-    where: Where = {},
+    where: Readonly<Where> = {},
+    relations: Readonly<{ [key: string]: any }> = {},
+    block: Readonly<CanonicalBlockHeight> = {},
     alias?: string
   ): SelectQueryBuilder<Entity> {
     if (!alias) {
@@ -828,11 +839,42 @@ export class Database {
     }
 
     Object.entries(where).forEach(([field, filters]) => {
+      // TODO: Handle nested filters on derived and array fields
+      const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+      assert(columnMetadata);
+
       filters.forEach((filter, index) => {
-        // Form the where clause.
         let { not, operator, value } = filter;
-        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-        assert(columnMetadata);
+
+        // Handle nested relation filter
+        const relation = relations[field];
+        if (operator === 'nested' && relation) {
+          const relationRepo = this.conn.getRepository<any>(relation.entity);
+          const relationTableName = relationRepo.metadata.tableName;
+          let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
+            .select('1')
+            .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+
+          // canonicalBlockHashes take precedence over block number if provided
+          if (block.canonicalBlockHashes) {
+            relationSubQuery = relationSubQuery
+              .andWhere(new Brackets(qb => {
+                qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: block.canonicalBlockHashes })
+                  .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: block.number });
+              }));
+          } else if (block.number) {
+            relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: block.number });
+          }
+
+          relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value);
+          selectQueryBuilder = selectQueryBuilder
+            .andWhere(`EXISTS (${relationSubQuery.getQuery()})`)
+            .setParameters(relationSubQuery.getParameters());
+
+          return;
+        }
+
+        // Form the where clause.
         let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
 
         if (columnMetadata.relationMetadata) {
@@ -850,6 +892,7 @@ export class Database {
           }
         }
 
+        assert(operator);
         whereClause += `${OPERATOR_MAP[operator]} `;
 
         value = this._transformBigIntValues(value);
