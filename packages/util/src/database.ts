@@ -852,8 +852,13 @@ export class Database {
           const relationRepo = this.conn.getRepository<any>(relation.entity);
           const relationTableName = relationRepo.metadata.tableName;
           let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
-            .select('1')
-            .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+            .select('1');
+
+          if (relation.isArray) {
+            relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY("${alias}"."${columnMetadata.databaseName}")`);
+          } else {
+            relationSubQuery = relationSubQuery.where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+          }
 
           // canonicalBlockHashes take precedence over block number if provided
           if (block.canonicalBlockHashes) {
