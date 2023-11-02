@@ -1235,6 +1235,7 @@ export class GraphDatabase {
     block: CanonicalBlockHeight,
     alias: string
   ): Promise<SelectQueryBuilder<Entity>> {
+    // Block hash takes precedence over number if provided
     if (block.hash) {
       if (!block.canonicalBlockHashes) {
         const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
@@ -1249,9 +1250,7 @@ export class GraphDatabase {
           qb.where(`${alias}.block_hash IN (:...blockHashes)`, { blockHashes: block.canonicalBlockHashes })
             .orWhere(`${alias}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber: block.number });
         }));
-    }
-
-    if (block.number) {
+    } else if (block.number) {
       queryBuilder = queryBuilder.andWhere(`${alias}.block_number <= :blockNumber`, { blockNumber: block.number });
     }
 
