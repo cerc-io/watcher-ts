@@ -56,6 +56,7 @@ export class JobRunner {
   _endBlockProcessTimer?: () => void;
   // TODO: Check and remove events (always set to empty list as fetched from DB) from map structure
   _blockAndEventsMap: Map<string, PrefetchedBlock> = new Map();
+  _lastHistoricalProcessingEndBlockNumber = 0;
 
   _shutDown = false;
   _signalCount = 0;
@@ -152,6 +153,7 @@ export class JobRunner {
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
     const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
+    this._lastHistoricalProcessingEndBlockNumber = processingEndBlockNumber;
     const endBlock = Math.min(startBlock + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
 
@@ -503,7 +505,7 @@ export class JobRunner {
   }
 
   async _processEvents (job: any): Promise<void> {
-    const { blockHash } = job.data;
+    const { blockHash, publish } = job.data;
 
     try {
       if (!this._blockAndEventsMap.has(blockHash)) {
@@ -521,7 +523,7 @@ export class JobRunner {
       const { block } = prefetchedBlock;
 
       console.time('time:job-runner#_processEvents-events');
-      await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
+      const isNewContractWatched = await processBatchEvents(this._indexer, block, this._jobQueueConfig.eventsInBatch, this._jobQueueConfig.subgraphEventsOrder);
       console.timeEnd('time:job-runner#_processEvents-events');
 
       // Update metrics
@@ -529,6 +531,31 @@ export class JobRunner {
       lastBlockNumEvents.set(block.numEvents);
 
       this._blockAndEventsMap.delete(block.blockHash);
+
+      if (isNewContractWatched && this._indexer.serverConfig.filterLogsByAddresses) {
+        // If new contract was added and filterLogsByAddresses is set to true
+        // Remove watched data after current block
+        await this._indexer.resetWatcherToBlock(block.blockNumber);
+        const nextBlockNumberToProcess = block.blockNumber + 1;
+
+        // Check if publish is set to false
+        // It is set to false if event processing was trigerred by historical blocks processing
+        if (!publish) {
+          // Delete all pending jobs
+          await this.jobQueue.deleteAllJobs();
+
+          // Push a new job to continue historical blocks processing
+          log('New contract added in historical processing when filterLogsByAddresses set to true');
+          log(`Restarting historical processing from block ${nextBlockNumberToProcess}`);
+          await this.jobQueue.pushJob(
+            QUEUE_HISTORICAL_PROCESSING,
+            {
+              blockNumber: nextBlockNumberToProcess,
+              processingEndBlockNumber: this._lastHistoricalProcessingEndBlockNumber
+            }
+          );
+        }
+      }
 
       if (this._endBlockProcessTimer) {
         this._endBlockProcessTimer();

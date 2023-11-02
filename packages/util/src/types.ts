@@ -98,6 +98,7 @@ export interface IndexerInterface {
   fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
   fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
+  fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[]): Promise<DeepPartial<EventInterface>[]>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
@@ -108,7 +109,7 @@ export interface IndexerInterface {
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
-  saveEvents (dbEvents: EventInterface[]): Promise<void>
+  saveEvents (dbEvents: DeepPartial<EventInterface>[]): Promise<void>
   processEvent (event: EventInterface): Promise<void>
   parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;

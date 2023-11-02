@@ -18,6 +18,9 @@ import { ServerConfig } from './config';
 
 const EVENT = 'event';
 
+// TODO: Make configurable
+const HISTORICAL_MAX_FETCH_AHEAD = 20_000;
+
 const log = debug('vulcanize:events');
 
 export const BlockProgressEvent = 'block-progress-event';
@@ -94,7 +97,13 @@ export class EventWatcher {
     // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
     if (this._serverConfig.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
-      await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
+      let endBlockNumber = latestCanonicalBlockNumber;
+
+      if (HISTORICAL_MAX_FETCH_AHEAD > 0) {
+        endBlockNumber = Math.min(startBlockNumber + HISTORICAL_MAX_FETCH_AHEAD, endBlockNumber);
+      }
+
+      await this.startHistoricalBlockProcessing(startBlockNumber, endBlockNumber);
 
       return;
     }
@@ -103,6 +112,8 @@ export class EventWatcher {
   }
 
   async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
+    // TODO: Wait for events job queue to be empty so that block processing does not move far ahead
+
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing up to block ${this._historicalProcessingEndBlockNumber}`);
 
@@ -184,7 +195,7 @@ export class EventWatcher {
 
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
     const { id, data: { failed, request: { data } } } = job;
-    const { blockNumber, processingEndBlockNumber }: HistoricalJobData = data;
+    const { blockNumber }: HistoricalJobData = data;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
@@ -192,7 +203,7 @@ export class EventWatcher {
     }
 
     // TODO: Get batch size from config
-    const batchEndBlockNumber = Math.min(blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
+    const batchEndBlockNumber = Math.min(blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE, this._historicalProcessingEndBlockNumber);
     const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
     log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
@@ -204,6 +215,7 @@ export class EventWatcher {
       // Update sync status to max of latest processed block or latest canonical block
       const syncStatus = await this._indexer.forceUpdateSyncStatus(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber);
       log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
+
       // Start realtime processing
       this.startBlockProcessing();
 
@@ -215,7 +227,7 @@ export class EventWatcher {
       QUEUE_HISTORICAL_PROCESSING,
       {
         blockNumber: nextBatchStartBlockNumber,
-        processingEndBlockNumber
+        processingEndBlockNumber: this._historicalProcessingEndBlockNumber
       }
     );
   }
