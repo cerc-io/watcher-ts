@@ -840,9 +840,7 @@ export class Database {
     }
 
     Object.entries(where).forEach(([field, filters]) => {
-      // TODO: Handle nested filters on derived and array fields
       const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-      assert(columnMetadata);
 
       filters.forEach((filter, index) => {
         let { not, operator, value } = filter;
@@ -855,10 +853,18 @@ export class Database {
           let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
             .select('1');
 
-          if (relation.isArray) {
-            relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY("${alias}"."${columnMetadata.databaseName}")`);
+          if (relation.isDerived) {
+            const derivationField = relation.field;
+            relationSubQuery = relationSubQuery.where(`${relationTableName}.${derivationField} = ${alias}.id`);
           } else {
-            relationSubQuery = relationSubQuery.where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+            // Column has to exist for non-derived fields
+            assert(columnMetadata);
+
+            if (relation.isArray) {
+              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
+            } else {
+              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+            }
           }
 
           // canonicalBlockHashes take precedence over block number if provided
@@ -879,6 +885,9 @@ export class Database {
 
           return;
         }
+
+        // Column has to exist if it's not a nested filter
+        assert(columnMetadata);
 
         // Form the where clause.
         let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
