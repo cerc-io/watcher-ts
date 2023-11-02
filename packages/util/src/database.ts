@@ -22,6 +22,7 @@ import {
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
 import { Pool } from 'pg';
+import Decimal from 'decimal.js';
 
 import { BlockProgressInterface, ContractInterface, EventInterface, StateInterface, StateSyncStatusInterface, StateKind, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
@@ -900,7 +901,7 @@ export class Database {
         assert(operator);
         whereClause += `${OPERATOR_MAP[operator]} `;
 
-        value = this._transformBigIntValues(value);
+        value = this._transformBigValues(value);
         if (operator === 'in') {
           whereClause += '(:...';
         } else {
@@ -971,10 +972,10 @@ export class Database {
   }
 
   // TODO: Transform in the GQL type BigInt parsing itself
-  _transformBigIntValues (value: any): any {
+  _transformBigValues (value: any): any {
     // Handle array of bigints
     if (Array.isArray(value)) {
-      if (value.length > 0 && typeof value[0] === 'bigint') {
+      if (value.length > 0 && (typeof value[0] === 'bigint' || Decimal.isDecimal(value[0]))) {
         return value.map(val => {
           return val.toString();
         });
@@ -982,7 +983,7 @@ export class Database {
     }
 
     // Handle bigint
-    if (typeof value === 'bigint') {
+    if (typeof value === 'bigint' || Decimal.isDecimal(value)) {
       return value.toString();
     }
 
