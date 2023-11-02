@@ -375,6 +375,7 @@ export class GraphDatabase {
           queryRunner,
           entityType,
           latestEntityType,
+          relationsMap,
           where,
           queryOptions,
           selections
@@ -384,15 +385,15 @@ export class GraphDatabase {
       // Use different suitable query patterns based on entities.
       switch (this._entityQueryTypeMap.get(entityType)) {
         case ENTITY_QUERY_TYPE.SINGULAR:
-          entities = await this.getEntitiesSingular(queryRunner, entityType, block, where);
+          entities = await this.getEntitiesSingular(queryRunner, entityType, relationsMap, block, where);
           break;
 
         case ENTITY_QUERY_TYPE.UNIQUE:
-          entities = await this.getEntitiesUnique(queryRunner, entityType, block, where, queryOptions);
+          entities = await this.getEntitiesUnique(queryRunner, entityType, relationsMap, block, where, queryOptions);
           break;
 
         case ENTITY_QUERY_TYPE.DISTINCT_ON:
-          entities = await this.getEntitiesDistinctOn(queryRunner, entityType, block, where, queryOptions);
+          entities = await this.getEntitiesDistinctOn(queryRunner, entityType, relationsMap, block, where, queryOptions);
           break;
 
         case ENTITY_QUERY_TYPE.GROUP_BY:
@@ -475,6 +476,7 @@ export class GraphDatabase {
   async getEntitiesDistinctOn<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
     block: CanonicalBlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
@@ -499,7 +501,7 @@ export class GraphDatabase {
 
     subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
-    subQuery = this._baseDatabase.buildQuery(repo, subQuery, where);
+    subQuery = this._baseDatabase.buildQuery(repo, subQuery, where, relationsMap.get(entityType), block);
 
     let selectQueryBuilder = queryRunner.manager.createQueryBuilder()
       .from(
@@ -532,6 +534,7 @@ export class GraphDatabase {
   async getEntitiesSingular<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight,
     where: Where = {}
   ): Promise<Entity[]> {
@@ -550,7 +553,7 @@ export class GraphDatabase {
 
     selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     const entities = await selectQueryBuilder.getMany();
 
@@ -560,6 +563,7 @@ export class GraphDatabase {
   async getEntitiesUnique<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
+    relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
@@ -577,7 +581,7 @@ export class GraphDatabase {
 
     selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where);
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
@@ -602,6 +606,7 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     latestEntity: new () => any,
+    relationsMap: Map<any, { [key: string]: any }>,
     where: Where = {},
     queryOptions: QueryOptions = {},
     selections: ReadonlyArray<SelectionNode> = []
@@ -638,7 +643,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, {}, {}, 'latest');
+    selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), {}, 'latest');
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
