@@ -844,9 +844,9 @@ export class Database {
 
       filters.forEach((filter, index) => {
         let { not, operator, value } = filter;
-
-        // Handle nested relation filter
         const relation = relations[field];
+
+        // Handle nested relation filter (only one level deep supported)
         if (operator === 'nested' && relation) {
           const relationRepo = this.conn.getRepository<any>(relation.entity);
           const relationTableName = relationRepo.metadata.tableName;
@@ -888,27 +888,36 @@ export class Database {
 
         // Column has to exist if it's not a nested filter
         assert(columnMetadata);
+        const columnIsArray = columnMetadata.isArray;
 
         // Form the where clause.
-        let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
-
-        if (columnMetadata.relationMetadata) {
-          // For relation fields, use the id column.
-          const idColumn = columnMetadata.relationMetadata.joinColumns.find(column => column.referencedColumn?.propertyName === 'id');
-          assert(idColumn);
-          whereClause = `"${alias}"."${idColumn.databaseName}" `;
-        }
-
-        if (not) {
-          if (operator === 'equals') {
-            whereClause += '!';
-          } else {
-            whereClause += 'NOT ';
-          }
-        }
-
         assert(operator);
-        whereClause += `${OPERATOR_MAP[operator]} `;
+        let whereClause = '';
+
+        // In case of array field having contains, NOT comes before the field name
+        // Disregards nocase
+        if (columnIsArray && operator.includes('contains')) {
+          if (not) {
+            whereClause += 'NOT ';
+            whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+            whereClause += '&& ';
+          } else {
+            whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+            whereClause += '@> ';
+          }
+        } else {
+          whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+
+          if (not) {
+            if (operator === 'equals') {
+              whereClause += '!';
+            } else {
+              whereClause += 'NOT ';
+            }
+          }
+
+          whereClause += `${OPERATOR_MAP[operator]} `;
+        }
 
         value = this._transformBigValues(value);
         if (operator === 'in') {
@@ -928,12 +937,14 @@ export class Database {
           }
         }
 
-        if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
-          value = `%${value}`;
-        }
+        if (!columnIsArray) {
+          if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
+            value = `%${value}`;
+          }
 
-        if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
-          value += '%';
+          if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
+            value += '%';
+          }
         }
 
         selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
