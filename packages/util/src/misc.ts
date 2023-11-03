@@ -132,7 +132,7 @@ export const resetJobs = async (config: Config): Promise<void> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
-  await jobQueue.deleteAllJobs();
+  await jobQueue.deleteAllJobs('completed');
 };
 
 export const getResetYargs = (): yargs.Argv => {

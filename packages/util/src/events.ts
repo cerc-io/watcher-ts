@@ -15,8 +15,12 @@ import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
 import { ServerConfig } from './config';
+import { wait } from './misc';
 
 const EVENT = 'event';
+
+// Time to wait for events queue to be empty
+const EMPTY_EVENTS_QUEUE_WAIT_TIME = 5000;
 
 // TODO: Make configurable
 const HISTORICAL_MAX_FETCH_AHEAD = 20_000;
@@ -112,10 +116,11 @@ export class EventWatcher {
   }
 
   async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
-    // TODO: Wait for events job queue to be empty so that historical processing does not move far ahead
+    // Wait for events job queue to be empty so that historical processing does not move far ahead
+    await this._waitForEmptyEventsQueue();
 
     this._historicalProcessingEndBlockNumber = endBlockNumber;
-    log(`Starting historical block processing up to block ${this._historicalProcessingEndBlockNumber}`);
+    log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
 
     // Push job for historical block processing
     await this._jobQueue.pushJob(
@@ -125,6 +130,19 @@ export class EventWatcher {
         processingEndBlockNumber: this._historicalProcessingEndBlockNumber
       }
     );
+  }
+
+  async _waitForEmptyEventsQueue (): Promise<void> {
+    while (true) {
+      // Get queue size for active and pending jobs
+      const queueSize = await this._jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING, 'completed');
+
+      if (queueSize === 0) {
+        break;
+      }
+
+      await wait(EMPTY_EVENTS_QUEUE_WAIT_TIME);
+    }
   }
 
   async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
@@ -194,10 +212,10 @@ export class EventWatcher {
   }
 
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
-    const { id, data: { failed, request: { data } } } = job;
-    const { blockNumber, isComplete }: HistoricalJobData = data;
+    const { id, data: { failed, request: { data }, response } } = job;
+    const { blockNumber }: HistoricalJobData = data;
 
-    if (failed || isComplete) {
+    if (failed || !response.isComplete) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
       return;
     }

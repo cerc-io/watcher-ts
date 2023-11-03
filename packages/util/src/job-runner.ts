@@ -46,7 +46,10 @@ export const HISTORICAL_BLOCKS_BATCH_SIZE = 2000;
 export interface HistoricalJobData {
   blockNumber: number;
   processingEndBlockNumber: number;
-  isComplete?: boolean;
+}
+
+export interface HistoricalJobResponseData {
+  isComplete: boolean;
 }
 
 export class JobRunner {
@@ -154,12 +157,12 @@ export class JobRunner {
     await this.jobQueue.markComplete(job);
   }
 
-  async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobData>): Promise<void> {
+  async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobResponseData>): Promise<void> {
     const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
 
     if (this._historicalProcessingCompletedUpto) {
       if (startBlock < this._historicalProcessingCompletedUpto) {
-        await this.jobQueue.deleteAllJobs();
+        await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
 
         // Remove all watcher blocks and events data if startBlock is less than this._historicalProcessingCompletedUpto
         // This occurs when new contract is added (with filterLogsByAddresses set to true) and historical processing is restarted from a previous block
@@ -168,10 +171,10 @@ export class JobRunner {
       } else {
         // Check that startBlock is one greater than previous batch end block
         if (startBlock - 1 !== this._historicalProcessingCompletedUpto) {
-          // TODO: Debug jobQueue deleteAllJobs not working
+          // TODO: Debug jobQueue deleteJobs for historical processing not working
           await this.jobQueue.markComplete(
             job,
-            { isComplete: true }
+            { isComplete: false }
           );
 
           return;
@@ -570,8 +573,8 @@ export class JobRunner {
 
       // Check if new contract was added and filterLogsByAddresses is set to true
       if (isNewContractWatched && this._indexer.serverConfig.filterLogsByAddresses) {
-        // Delete jobs for any pending events and blocks processing
-        await this.jobQueue.deleteAllJobs();
+        // Delete jobs for any pending events processing
+        await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
 
         // Check if historical processing is running and that current block is being processed was trigerred by historical processing
         if (this._historicalProcessingCompletedUpto && this._historicalProcessingCompletedUpto > block.blockNumber) {
@@ -610,6 +613,7 @@ export class JobRunner {
       // Catch event processing error and push to job queue after some time with higher priority
       log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
       await wait(EVENTS_PROCESSING_RETRY_WAIT);
+      // TODO: Stop next job in queue from processing next
       await this.jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
         job.data,
