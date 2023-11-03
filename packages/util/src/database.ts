@@ -835,127 +835,188 @@ export class Database {
     where: Readonly<Where> = {},
     relations: Readonly<{ [key: string]: any }> = {},
     block: Readonly<CanonicalBlockHeight> = {},
-    alias?: string
+    alias?: string,
+    variableSuffix = ''
   ): SelectQueryBuilder<Entity> {
     if (!alias) {
       alias = selectQueryBuilder.alias;
     }
 
-    Object.entries(where).forEach(([field, filters]) => {
-      // TODO: Handle and / or fields
+    return selectQueryBuilder.andWhere(this.buildWhereClause(
+      repo,
+      where,
+      relations,
+      block,
+      alias,
+      variableSuffix
+    ));
+  }
 
-      const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
+  buildWhereClause<Entity extends ObjectLiteral> (
+    repo: Repository<Entity>,
+    where: Readonly<Where> = {},
+    relations: Readonly<{ [key: string]: any }> = {},
+    block: Readonly<CanonicalBlockHeight> = {},
+    alias: string,
+    variableSuffix?: string
+  ): Brackets {
+    // Chain resulting where clauses in brackets
+    return new Brackets(whereBuilder => {
+      Object.entries(where).forEach(([field, filters], whereIndex) => {
+        // Handle and / or operators
+        if (['and', 'or'].includes(field)) {
+          switch (field) {
+            case 'and': {
+              whereBuilder.andWhere(new Brackets(andWhereBuilder => {
+                // Chain all where clauses using AND
+                (filters as Where[]).forEach(w => {
+                  andWhereBuilder.andWhere(this.buildWhereClause(
+                    repo,
+                    w,
+                    relations,
+                    block,
+                    alias,
+                    `${variableSuffix}_${whereIndex}`
+                  ));
+                });
+              }));
 
-      filters.forEach((filter, index) => {
-        let { not, operator, value } = filter as Filter;
-        const relation = relations[field];
+              break;
+            }
+            case 'or': {
+              whereBuilder.andWhere(new Brackets(orWhereBuilder => {
+                // Chain all where clauses using OR
+                (filters as Where[]).forEach(w => {
+                  orWhereBuilder.orWhere(this.buildWhereClause(
+                    repo,
+                    w,
+                    relations,
+                    block,
+                    alias,
+                    `${variableSuffix}_${whereIndex}`
+                  ));
+                });
+              }));
 
-        // Handle nested relation filter (only one level deep supported)
-        if (operator === 'nested' && relation) {
-          const relationRepo = this.conn.getRepository<any>(relation.entity);
-          const relationTableName = relationRepo.metadata.tableName;
-          let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
-            .select('1');
-
-          if (relation.isDerived) {
-            const derivationField = relation.field;
-            relationSubQuery = relationSubQuery.where(`${relationTableName}.${derivationField} = ${alias}.id`);
-          } else {
-            // Column has to exist for non-derived fields
-            assert(columnMetadata);
-
-            if (relation.isArray) {
-              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
-            } else {
-              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+              break;
             }
           }
-
-          // canonicalBlockHashes take precedence over block number if provided
-          if (block.canonicalBlockHashes) {
-            relationSubQuery = relationSubQuery
-              .andWhere(new Brackets(qb => {
-                qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: block.canonicalBlockHashes })
-                  .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: block.number });
-              }));
-          } else if (block.number) {
-            relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: block.number });
-          }
-
-          relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value);
-          selectQueryBuilder = selectQueryBuilder
-            .andWhere(`EXISTS (${relationSubQuery.getQuery()})`)
-            .setParameters(relationSubQuery.getParameters());
 
           return;
         }
 
-        // Column has to exist if it's not a nested filter
-        assert(columnMetadata);
-        const columnIsArray = columnMetadata.isArray;
+        // Get the column data if field is not a logical operator
+        const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
 
-        // Form the where clause.
-        assert(operator);
-        let whereClause = '';
+        filters.forEach((filter, fieldIndex) => {
+          let { not, operator, value } = filter as Filter;
+          const relation = relations[field];
 
-        // In case of array field having contains, NOT comes before the field name
-        // Disregards nocase
-        if (columnIsArray && operator.includes('contains')) {
-          if (not) {
-            whereClause += 'NOT ';
-            whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
-            whereClause += '&& ';
+          // Handle nested relation filter (only one level deep supported)
+          if (operator === 'nested' && relation) {
+            const relationRepo = this.conn.getRepository<any>(relation.entity);
+            const relationTableName = relationRepo.metadata.tableName;
+            let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
+              .select('1');
+
+            if (relation.isDerived) {
+              const derivationField = relation.field;
+              relationSubQuery = relationSubQuery.where(`${relationTableName}.${derivationField} = ${alias}.id`);
+            } else {
+              // Column has to exist for non-derived fields
+              assert(columnMetadata);
+
+              if (relation.isArray) {
+                relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
+              } else {
+                relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+              }
+            }
+
+            // canonicalBlockHashes take precedence over block number if provided
+            if (block.canonicalBlockHashes) {
+              relationSubQuery = relationSubQuery
+                .andWhere(new Brackets(qb => {
+                  qb.where(`${relationTableName}.block_hash IN (:...relationBlockHashes)`, { relationBlockHashes: block.canonicalBlockHashes })
+                    .orWhere(`${relationTableName}.block_number <= :relationCanonicalBlockNumber`, { relationCanonicalBlockNumber: block.number });
+                }));
+            } else if (block.number) {
+              relationSubQuery = relationSubQuery.andWhere(`${relationTableName}.block_number <= :blockNumber`, { blockNumber: block.number });
+            }
+
+            relationSubQuery = this.buildQuery(relationRepo, relationSubQuery, value, {}, block, undefined, `${variableSuffix}_${whereIndex}`);
+            whereBuilder.andWhere(`EXISTS (${relationSubQuery.getQuery()})`, relationSubQuery.getParameters());
+
+            return;
+          }
+
+          // Column has to exist if it's not a nested filter
+          assert(columnMetadata);
+          const columnIsArray = columnMetadata.isArray;
+
+          // Form the where clause.
+          assert(operator);
+          let whereClause = '';
+
+          // In case of array field having contains, NOT comes before the field name
+          // Disregards nocase
+          if (columnIsArray && operator.includes('contains')) {
+            if (not) {
+              whereClause += 'NOT ';
+              whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+              whereClause += '&& ';
+            } else {
+              whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+              whereClause += '@> ';
+            }
           } else {
             whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
-            whereClause += '@> ';
-          }
-        } else {
-          whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
 
-          if (not) {
-            if (operator === 'equals') {
-              whereClause += '!';
-            } else {
-              whereClause += 'NOT ';
+            if (not) {
+              if (operator === 'equals') {
+                whereClause += '!';
+              } else {
+                whereClause += 'NOT ';
+              }
+            }
+
+            whereClause += `${OPERATOR_MAP[operator]} `;
+          }
+
+          value = this._transformBigValues(value);
+          if (operator === 'in') {
+            whereClause += '(:...';
+          } else {
+            whereClause += ':';
+          }
+
+          const variableName = `${field}${variableSuffix}_${whereIndex}_${fieldIndex}`;
+          whereClause += variableName;
+
+          if (operator === 'in') {
+            whereClause += ')';
+
+            if (!value.length) {
+              whereClause = 'FALSE';
             }
           }
 
-          whereClause += `${OPERATOR_MAP[operator]} `;
-        }
+          if (!columnIsArray) {
+            if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
+              value = `%${value}`;
+            }
 
-        value = this._transformBigValues(value);
-        if (operator === 'in') {
-          whereClause += '(:...';
-        } else {
-          whereClause += ':';
-        }
-
-        const variableName = `${field}${index}`;
-        whereClause += variableName;
-
-        if (operator === 'in') {
-          whereClause += ')';
-
-          if (!value.length) {
-            whereClause = 'FALSE';
-          }
-        }
-
-        if (!columnIsArray) {
-          if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
-            value = `%${value}`;
+            if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
+              value += '%';
+            }
           }
 
-          if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
-            value += '%';
-          }
-        }
+          console.log('using value', value, typeof value);
 
-        selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
+          whereBuilder.andWhere(whereClause, { [variableName]: value });
+        });
       });
     });
-
-    return selectQueryBuilder;
   }
 
   orderQuery<Entity extends ObjectLiteral> (
