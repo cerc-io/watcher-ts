@@ -119,6 +119,14 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
+  async fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[]): Promise<DeepPartial<EventInterface>[]> {
+    assert(blockHash);
+    assert(blockNumber);
+    assert(addresses);
+
+    return [];
+  }
+
   async saveBlockAndFetchEvents (block: BlockProgressInterface): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
     return [block, []];
   }
