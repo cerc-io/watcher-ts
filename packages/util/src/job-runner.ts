@@ -40,8 +40,7 @@ const log = debug('vulcanize:job-runner');
 // Wait time for retrying events processing on error (in ms)
 const EVENTS_PROCESSING_RETRY_WAIT = 2000;
 
-// TODO: Get batch size from config
-export const HISTORICAL_BLOCKS_BATCH_SIZE = 2000;
+const DEFAULT_HISTORICAL_LOGS_BLOCK_RANGE = 2000;
 
 export interface HistoricalJobData {
   blockNumber: number;
@@ -50,6 +49,7 @@ export interface HistoricalJobData {
 
 export interface HistoricalJobResponseData {
   isComplete: boolean;
+  endBlock?: number;
 }
 
 export class JobRunner {
@@ -183,7 +183,8 @@ export class JobRunner {
     }
 
     this._lastHistoricalProcessingEndBlockNumber = processingEndBlockNumber;
-    const endBlock = Math.min(startBlock + HISTORICAL_BLOCKS_BATCH_SIZE, processingEndBlockNumber);
+    const logsBlockRange = this._jobQueueConfig.historicalLogsBlockRange ?? DEFAULT_HISTORICAL_LOGS_BLOCK_RANGE;
+    const endBlock = Math.min(startBlock + logsBlockRange, processingEndBlockNumber);
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
 
     const blocks = await fetchAndSaveFilteredLogsAndBlocks(
@@ -210,7 +211,7 @@ export class JobRunner {
 
     await this.jobQueue.markComplete(
       job,
-      { isComplete: true }
+      { isComplete: true, endBlock }
     );
   }
 

@@ -13,8 +13,8 @@ import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } f
 import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
-import { HISTORICAL_BLOCKS_BATCH_SIZE, HistoricalJobData } from './job-runner';
-import { ServerConfig } from './config';
+import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
+import { JobQueueConfig, ServerConfig } from './config';
 import { wait } from './misc';
 
 const EVENT = 'event';
@@ -22,15 +22,18 @@ const EVENT = 'event';
 // Time to wait for events queue to be empty
 const EMPTY_EVENTS_QUEUE_WAIT_TIME = 5000;
 
-// TODO: Make configurable
-const HISTORICAL_MAX_FETCH_AHEAD = 20_000;
+const DEFAULT_HISTORICAL_MAX_FETCH_AHEAD = 20_000;
 
 const log = debug('vulcanize:events');
 
 export const BlockProgressEvent = 'block-progress-event';
 
+interface Config {
+  server: ServerConfig;
+  jobQueue: JobQueueConfig;
+}
 export class EventWatcher {
-  _serverConfig: ServerConfig;
+  _config: Config;
   _ethClient: EthClient;
   _indexer: IndexerInterface;
   _pubsub: PubSub;
@@ -40,8 +43,8 @@ export class EventWatcher {
   _signalCount = 0;
   _historicalProcessingEndBlockNumber = 0;
 
-  constructor (serverConfig: ServerConfig, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
-    this._serverConfig = serverConfig;
+  constructor (config: Config, ethClient: EthClient, indexer: IndexerInterface, pubsub: PubSub, jobQueue: JobQueue) {
+    this._config = config;
     this._ethClient = ethClient;
     this._indexer = indexer;
     this._pubsub = pubsub;
@@ -100,11 +103,12 @@ export class EventWatcher {
 
     // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
-    if (this._serverConfig.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
+    if (this._config.server.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
       let endBlockNumber = latestCanonicalBlockNumber;
+      const historicalMaxFetchAhead = this._config.jobQueue.historicalMaxFetchAhead ?? DEFAULT_HISTORICAL_MAX_FETCH_AHEAD;
 
-      if (HISTORICAL_MAX_FETCH_AHEAD > 0) {
-        endBlockNumber = Math.min(startBlockNumber + HISTORICAL_MAX_FETCH_AHEAD, endBlockNumber);
+      if (historicalMaxFetchAhead > 0) {
+        endBlockNumber = Math.min(startBlockNumber + historicalMaxFetchAhead, endBlockNumber);
       }
 
       await this.startHistoricalBlockProcessing(startBlockNumber, endBlockNumber);
@@ -214,18 +218,20 @@ export class EventWatcher {
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
     const { id, data: { failed, request: { data }, response } } = job;
     const { blockNumber }: HistoricalJobData = data;
+    const { isComplete, endBlock: batchEndBlockNumber }: HistoricalJobResponseData = response;
 
-    if (failed || !response.isComplete) {
+    if (failed || !isComplete) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
       return;
     }
 
-    // TODO: Get batch size from config
-    const batchEndBlockNumber = Math.min(blockNumber + HISTORICAL_BLOCKS_BATCH_SIZE, this._historicalProcessingEndBlockNumber);
+    // endBlock exists if isComplete is true
+    assert(batchEndBlockNumber);
+
     const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
     log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
-    // Check if historical processing endBlock / latest canonical block is reached
+    // Check if historical processing end block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
       const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
       const historicalProcessingEndBlockHash = block ? block.blockHash : constants.AddressZero;
