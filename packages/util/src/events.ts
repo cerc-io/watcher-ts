@@ -112,7 +112,7 @@ export class EventWatcher {
   }
 
   async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
-    // TODO: Wait for events job queue to be empty so that block processing does not move far ahead
+    // TODO: Wait for events job queue to be empty so that historical processing does not move far ahead
 
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing up to block ${this._historicalProcessingEndBlockNumber}`);
@@ -195,9 +195,9 @@ export class EventWatcher {
 
   async historicalProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
     const { id, data: { failed, request: { data } } } = job;
-    const { blockNumber }: HistoricalJobData = data;
+    const { blockNumber, isComplete }: HistoricalJobData = data;
 
-    if (failed) {
+    if (failed || isComplete) {
       log(`Job ${id} for queue ${QUEUE_HISTORICAL_PROCESSING} failed`);
       return;
     }
@@ -212,13 +212,15 @@ export class EventWatcher {
       const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
       const historicalProcessingEndBlockHash = block ? block.blockHash : constants.AddressZero;
 
-      // Update sync status to max of latest processed block or latest canonical block
-      const syncStatus = await this._indexer.forceUpdateSyncStatus(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber);
+      // Update sync status chain head and canonical block to end block of historical processing
+      const [syncStatus] = await Promise.all([
+        this._indexer.updateSyncStatusCanonicalBlock(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber, true),
+        this._indexer.updateSyncStatusChainHead(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber, true)
+      ]);
       log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
 
       // Start realtime processing
       this.startBlockProcessing();
-
       return;
     }
 
