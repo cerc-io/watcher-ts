@@ -22,6 +22,7 @@ import {
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
 import { Pool } from 'pg';
+import Decimal from 'decimal.js';
 
 import { BlockProgressInterface, ContractInterface, EventInterface, StateInterface, StateSyncStatusInterface, StateKind, SyncStatusInterface } from './types';
 import { MAX_REORG_DEPTH, UNKNOWN_EVENT_NAME } from './constants';
@@ -839,21 +840,32 @@ export class Database {
     }
 
     Object.entries(where).forEach(([field, filters]) => {
-      // TODO: Handle nested filters on derived and array fields
       const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
-      assert(columnMetadata);
 
       filters.forEach((filter, index) => {
         let { not, operator, value } = filter;
-
-        // Handle nested relation filter
         const relation = relations[field];
+
+        // Handle nested relation filter (only one level deep supported)
         if (operator === 'nested' && relation) {
           const relationRepo = this.conn.getRepository<any>(relation.entity);
           const relationTableName = relationRepo.metadata.tableName;
           let relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, repo.queryRunner)
-            .select('1')
-            .where(`${relationTableName}.id = "${alias}"."${columnMetadata.databaseName}"`);
+            .select('1');
+
+          if (relation.isDerived) {
+            const derivationField = relation.field;
+            relationSubQuery = relationSubQuery.where(`${relationTableName}.${derivationField} = ${alias}.id`);
+          } else {
+            // Column has to exist for non-derived fields
+            assert(columnMetadata);
+
+            if (relation.isArray) {
+              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
+            } else {
+              relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+            }
+          }
 
           // canonicalBlockHashes take precedence over block number if provided
           if (block.canonicalBlockHashes) {
@@ -874,28 +886,40 @@ export class Database {
           return;
         }
 
+        // Column has to exist if it's not a nested filter
+        assert(columnMetadata);
+        const columnIsArray = columnMetadata.isArray;
+
         // Form the where clause.
-        let whereClause = `"${alias}"."${columnMetadata.databaseName}" `;
-
-        if (columnMetadata.relationMetadata) {
-          // For relation fields, use the id column.
-          const idColumn = columnMetadata.relationMetadata.joinColumns.find(column => column.referencedColumn?.propertyName === 'id');
-          assert(idColumn);
-          whereClause = `"${alias}"."${idColumn.databaseName}" `;
-        }
-
-        if (not) {
-          if (operator === 'equals') {
-            whereClause += '!';
-          } else {
-            whereClause += 'NOT ';
-          }
-        }
-
         assert(operator);
-        whereClause += `${OPERATOR_MAP[operator]} `;
+        let whereClause = '';
 
-        value = this._transformBigIntValues(value);
+        // In case of array field having contains, NOT comes before the field name
+        // Disregards nocase
+        if (columnIsArray && operator.includes('contains')) {
+          if (not) {
+            whereClause += 'NOT ';
+            whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+            whereClause += '&& ';
+          } else {
+            whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+            whereClause += '@> ';
+          }
+        } else {
+          whereClause += `"${alias}"."${columnMetadata.databaseName}" `;
+
+          if (not) {
+            if (operator === 'equals') {
+              whereClause += '!';
+            } else {
+              whereClause += 'NOT ';
+            }
+          }
+
+          whereClause += `${OPERATOR_MAP[operator]} `;
+        }
+
+        value = this._transformBigValues(value);
         if (operator === 'in') {
           whereClause += '(:...';
         } else {
@@ -913,12 +937,14 @@ export class Database {
           }
         }
 
-        if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
-          value = `%${value}`;
-        }
+        if (!columnIsArray) {
+          if (['contains', 'contains_nocase', 'ends', 'ends_nocase'].some(el => el === operator)) {
+            value = `%${value}`;
+          }
 
-        if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
-          value += '%';
+          if (['contains', 'contains_nocase', 'starts', 'starts_nocase'].some(el => el === operator)) {
+            value += '%';
+          }
         }
 
         selectQueryBuilder = selectQueryBuilder.andWhere(whereClause, { [variableName]: value });
@@ -966,10 +992,10 @@ export class Database {
   }
 
   // TODO: Transform in the GQL type BigInt parsing itself
-  _transformBigIntValues (value: any): any {
+  _transformBigValues (value: any): any {
     // Handle array of bigints
     if (Array.isArray(value)) {
-      if (value.length > 0 && typeof value[0] === 'bigint') {
+      if (value.length > 0 && (typeof value[0] === 'bigint' || Decimal.isDecimal(value[0]))) {
         return value.map(val => {
           return val.toString();
         });
@@ -977,7 +1003,7 @@ export class Database {
     }
 
     // Handle bigint
-    if (typeof value === 'bigint') {
+    if (typeof value === 'bigint' || Decimal.isDecimal(value)) {
       return value.toString();
     }
 
