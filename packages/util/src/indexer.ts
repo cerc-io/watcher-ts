@@ -465,7 +465,19 @@ export class Indexer {
   // Fetch events (to be saved to db) for a particular block
   async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
+    const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
 
+    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+  }
+
+  async fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[], eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+    const { topics } = this._createLogsFilters(eventSignaturesMap);
+    const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
+
+    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+  }
+
+  async _fetchLogsAndTransactions (blockHash: string, blockNumber: number, addresses?: string[], topics?: string[][]): Promise<{ logs: any[]; transactions: any[] }> {
     const logsPromise = await this._ethClient.getLogs({
       blockHash,
       blockNumber: blockNumber.toString(),
@@ -490,7 +502,7 @@ export class Indexer {
       }
     ] = await Promise.all([logsPromise, transactionsPromise]);
 
-    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+    return { logs, transactions };
   }
 
   // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
@@ -682,7 +694,7 @@ export class Indexer {
     return res;
   }
 
-  async saveEvents (dbEvents: EventInterface[]): Promise<void> {
+  async saveEvents (dbEvents: DeepPartial<EventInterface>[]): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
 
     try {

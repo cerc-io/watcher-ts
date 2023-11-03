@@ -128,8 +128,8 @@ export class JobQueue {
     );
   }
 
-  async markComplete (job: PgBoss.Job): Promise<void> {
-    this._boss.complete(job.id);
+  async markComplete (job: PgBoss.Job, data: object = {}): Promise<void> {
+    this._boss.complete(job.id, { ...job.data, ...data });
   }
 
   async pushJob (queue: string, job: any, options: PgBoss.PublishOptions = {}): Promise<void> {
