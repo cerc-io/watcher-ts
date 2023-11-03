@@ -75,7 +75,9 @@ export interface Filter {
 }
 
 export interface Where {
-  [key: string]: Filter[];
+  // Where[] in case of and / or operators
+  // Filter[] in others
+  [key: string]: Filter[] | Where[];
 }
 
 export type Relation = string | { property: string, alias: string }
@@ -840,10 +842,12 @@ export class Database {
     }
 
     Object.entries(where).forEach(([field, filters]) => {
+      // TODO: Handle and / or fields
+
       const columnMetadata = repo.metadata.findColumnWithPropertyName(field);
 
       filters.forEach((filter, index) => {
-        let { not, operator, value } = filter;
+        let { not, operator, value } = filter as Filter;
         const relation = relations[field];
 
         // Handle nested relation filter (only one level deep supported)
