@@ -24,6 +24,11 @@ export interface JobQueueConfig {
   blockDelayInMilliSecs: number;
   prefetchBlocksInMem: boolean;
   prefetchBlockCount: number;
+  // Block range in which logs are fetched during historical blocks processing
+  historicalLogsBlockRange?: number;
+  // Max block range of historical processing after which it waits for completion of events processing
+  // If set to -1 historical processing does not wait for events processing and completes till latest canonical block
+  historicalMaxFetchAhead?: number;
 }
 
 export interface GQLCacheConfig {

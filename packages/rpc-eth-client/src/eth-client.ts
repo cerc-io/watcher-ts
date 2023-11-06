@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
-import { TransactionReceipt } from '@ethersproject/abstract-provider';
 
 import { Cache } from '@cerc-io/cache';
 import { encodeHeader, escapeHexString, getRawTransaction, EthClient as EthClientInterface } from '@cerc-io/util';
@@ -80,7 +79,7 @@ export class EthClient implements EthClientInterface {
             nodes: result.transactions.map((transaction) => ({
               txHash: transaction.hash,
               // Transactions with block should be of type TransactionReceipt
-              index: (transaction as unknown as TransactionReceipt).transactionIndex,
+              index: (transaction as unknown as providers.TransactionReceipt).transactionIndex,
               src: transaction.from,
               dst: transaction.to
             }))
@@ -239,12 +238,9 @@ export class EthClient implements EthClientInterface {
     addresses?: string[],
     topics?: string[][]
   }): Promise<any> {
-    const blockNumber = Number(vars.blockNumber);
-
     console.time(`time:eth-client#getLogs-${JSON.stringify(vars)}`);
     const result = await this._getLogs({
-      fromBlock: blockNumber,
-      toBlock: blockNumber,
+      blockHash: vars.blockHash,
       addresses: vars.addresses,
       topics: vars.topics
     });
@@ -273,36 +269,35 @@ export class EthClient implements EthClientInterface {
 
   // TODO: Implement return type
   async _getLogs (vars: {
+    blockHash?: string,
     fromBlock?: number,
     toBlock?: number,
     addresses?: string[],
     topics?: string[][]
   }): Promise<any> {
-    const { fromBlock, toBlock, addresses = [], topics } = vars;
+    const { blockHash, fromBlock, toBlock, addresses = [], topics } = vars;
 
     const result = await this._getCachedOrFetch(
       'getLogs',
       vars,
       async () => {
-        const logsByAddressPromises = addresses?.map(address => this._provider.getLogs({
-          fromBlock,
-          toBlock,
-          address,
-          topics
-        }));
-        const logsByAddress = await Promise.all(logsByAddressPromises);
-        let logs = logsByAddress.flat();
-
-        // If no addresses provided to filter
-        if (!addresses.length) {
-          logs = await this._provider.getLogs({
-            fromBlock,
-            toBlock,
+        const ethLogs = await this._provider.send(
+          'eth_getLogs',
+          [{
+            address: addresses.map(address => address.toLowerCase()),
+            fromBlock: fromBlock && utils.hexlify(fromBlock),
+            toBlock: toBlock && utils.hexlify(toBlock),
+            blockHash,
             topics
-          });
-        }
+          }]
+        );
 
-        return logs.map(log => {
+        // Format raw eth_getLogs response
+        const logs: providers.Log[] = providers.Formatter.arrayOf(
+          this._provider.formatter.filterLog.bind(this._provider.formatter)
+        )(ethLogs);
+
+        return logs.map((log) => {
           log.address = log.address.toLowerCase();
           return log;
         });

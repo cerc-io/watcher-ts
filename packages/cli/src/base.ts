@@ -135,6 +135,12 @@ export class BaseCmd {
     // Note: In-memory pubsub works fine for now, as each watcher is a single process anyway.
     // Later: https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
     const pubsub = new PubSub();
-    this._eventWatcher = new EventWatcher(this._config.server, this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
+
+    const config = {
+      server: this._config.server,
+      jobQueue: this._config.jobQueue
+    };
+
+    this._eventWatcher = new EventWatcher(config, this._clients.ethClient, this._indexer, pubsub, this._jobQueue);
   }
 }

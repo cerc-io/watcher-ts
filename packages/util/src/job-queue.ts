@@ -129,7 +129,7 @@ export class JobQueue {
   }
 
   async markComplete (job: PgBoss.Job, data: object = {}): Promise<void> {
-    this._boss.complete(job.id, { ...job.data, ...data });
+    await this._boss.complete(job.id, data);
   }
 
   async pushJob (queue: string, job: any, options: PgBoss.PublishOptions = {}): Promise<void> {
@@ -139,7 +139,19 @@ export class JobQueue {
     log(`Created job in queue ${queue}: ${jobId}`);
   }
 
-  async deleteAllJobs (): Promise<void> {
-    await this._boss.deleteAllQueues();
+  async deleteAllJobs (before: PgBoss.Subscription['state'] = 'active'): Promise<void> {
+    // Workaround for incorrect type of pg-boss deleteAllQueues method
+    const deleteAllQueues = this._boss.deleteAllQueues.bind(this._boss) as (options: { before: PgBoss.Subscription['state'] }) => Promise<void>;
+    await deleteAllQueues({ before });
+  }
+
+  async deleteJobs (name: string, before: PgBoss.Subscription['state'] = 'active'): Promise<void> {
+    // Workaround for incorrect type of pg-boss deleteAllQueues method
+    const deleteQueue = this._boss.deleteQueue.bind(this._boss) as (name: string, options: { before: PgBoss.Subscription['state'] }) => Promise<void>;
+    await deleteQueue(name, { before });
+  }
+
+  async getQueueSize (name: string, before: PgBoss.Subscription['state'] = 'active'): Promise<number> {
+    return this._boss.getQueueSize(name, { before });
   }
 }

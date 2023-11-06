@@ -108,7 +108,7 @@ export class JobRunnerCmd {
 
     const jobRunner = new JobRunner(config.jobQueue, indexer, jobQueue);
 
-    await jobRunner.jobQueue.deleteAllJobs();
+    await jobRunner.jobQueue.deleteAllJobs('completed');
     await jobRunner.resetToPrevIndexedBlock();
 
     await startJobRunner(jobRunner);
