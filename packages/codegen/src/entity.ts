@@ -347,45 +347,46 @@ export class Entity {
     });
 
     entityObject.columns.forEach((column: any) => {
-      // Implement bigintTransformer for bigint type.
-      if (column.tsType === 'bigint') {
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'bigintTransformer'
+      if (column.tsType.includes('bigint')) {
+        // Check if it is of array type
+        if (column.tsType.includes('bigint[]')) {
+          // Implement bigintArrayTransformer for array of bigint type.
+          column.columnOptions.push(
+            {
+              option: 'transformer',
+              value: 'bigintArrayTransformer'
+            }
+          );
+
+          if (importObject) {
+            importObject.toImport.add('bigintArrayTransformer');
+          } else {
+            importObject = {
+              toImport: new Set(['bigintArrayTransformer']),
+              from: '@cerc-io/util'
+            };
+
+            entityObject.imports.push(importObject);
           }
-        );
-
-        if (importObject) {
-          importObject.toImport.add('bigintTransformer');
         } else {
-          importObject = {
-            toImport: new Set(['bigintTransformer']),
-            from: '@cerc-io/util'
-          };
+          // Implement bigintTransformer for bigint type.
+          column.columnOptions.push(
+            {
+              option: 'transformer',
+              value: 'bigintTransformer'
+            }
+          );
 
-          entityObject.imports.push(importObject);
-        }
-      }
+          if (importObject) {
+            importObject.toImport.add('bigintTransformer');
+          } else {
+            importObject = {
+              toImport: new Set(['bigintTransformer']),
+              from: '@cerc-io/util'
+            };
 
-      // Implement bigintArrayTransformer for array of bigint type.
-      if (column.tsType === 'bigint[]') {
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'bigintArrayTransformer'
+            entityObject.imports.push(importObject);
           }
-        );
-
-        if (importObject) {
-          importObject.toImport.add('bigintArrayTransformer');
-        } else {
-          importObject = {
-            toImport: new Set(['bigintArrayTransformer']),
-            from: '@cerc-io/util'
-          };
-
-          entityObject.imports.push(importObject);
         }
       }
     });
@@ -399,49 +400,48 @@ export class Entity {
     let isDecimalRequired = false;
 
     entityObject.columns.forEach((column: any) => {
-      // Implement decimalTransformer for Decimal type.
-      if (column.tsType === 'Decimal') {
+      if (column.tsType.includes('Decimal')) {
         isDecimalRequired = true;
 
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'decimalTransformer'
+        // Check if it is of array type
+        if (column.tsType.includes('Decimal[]')) {
+          // Implement decimalArrayTransformer for array of Decimal type.
+          column.columnOptions.push(
+            {
+              option: 'transformer',
+              value: 'decimalArrayTransformer'
+            }
+          );
+
+          if (importObject) {
+            importObject.toImport.add('decimalArrayTransformer');
+          } else {
+            importObject = {
+              toImport: new Set(['decimalArrayTransformer']),
+              from: '@cerc-io/util'
+            };
+
+            entityObject.imports.push(importObject);
           }
-        );
-
-        if (importObject) {
-          importObject.toImport.add('decimalTransformer');
         } else {
-          importObject = {
-            toImport: new Set(['decimalTransformer']),
-            from: '@cerc-io/util'
-          };
+          // Implement decimalTransformer for Decimal type.
+          column.columnOptions.push(
+            {
+              option: 'transformer',
+              value: 'decimalTransformer'
+            }
+          );
 
-          entityObject.imports.push(importObject);
-        }
-      }
+          if (importObject) {
+            importObject.toImport.add('decimalTransformer');
+          } else {
+            importObject = {
+              toImport: new Set(['decimalTransformer']),
+              from: '@cerc-io/util'
+            };
 
-      // Implement decimalArrayTransformer for array of Decimal type.
-      if (column.tsType === 'Decimal[]') {
-        isDecimalRequired = true;
-
-        column.columnOptions.push(
-          {
-            option: 'transformer',
-            value: 'decimalArrayTransformer'
+            entityObject.imports.push(importObject);
           }
-        );
-
-        if (importObject) {
-          importObject.toImport.add('decimalArrayTransformer');
-        } else {
-          importObject = {
-            toImport: new Set(['decimalArrayTransformer']),
-            from: '@cerc-io/util'
-          };
-
-          entityObject.imports.push(importObject);
         }
       }
     });

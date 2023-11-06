@@ -281,7 +281,7 @@ export class ServerCmd {
     assert(eventWatcher);
 
     if (config.server.kind === KIND_ACTIVE) {
-      // Delete jobs before completed state to prevent creating jobs after completion of processing previous block.
+      // Delete all active and pending (before completed) jobs to prevent creating jobs after completion of processing previous block
       await jobQueue.deleteAllJobs('completed');
       await eventWatcher.start();
     }
