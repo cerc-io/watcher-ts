@@ -26,7 +26,7 @@ import {
 } from './types';
 import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
-import { Where, QueryOptions } from './database';
+import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
 
@@ -88,6 +88,18 @@ export type ResultEvent = {
   proof: string;
 };
 
+export type ResultMeta = {
+  block: {
+    cid: string | null;
+    hash: string;
+    number: number;
+    timestamp: number;
+    parentHash: string;
+  };
+  deployment: string;
+  hasIndexingErrors: boolean;
+};
+
 export class Indexer {
   _serverConfig: ServerConfig;
   _upstreamConfig: UpstreamConfig;
@@ -129,6 +141,41 @@ export class Indexer {
 
       return acc;
     }, {});
+  }
+
+  async getMetaData (block: BlockHeight): Promise<ResultMeta | null> {
+    let resultBlock: BlockProgressInterface | undefined;
+
+    if (block.hash) {
+      resultBlock = await this.getBlockProgress(block.hash);
+    } else if (block.number) {
+      // Get all the blocks at the given height
+      const blocksAtHeight = await this.getBlocksAtHeight(block.number, false);
+
+      if (blocksAtHeight.length) {
+        resultBlock = blocksAtHeight[0];
+      }
+    } else {
+      const syncStatus = await this.getSyncStatus();
+      assert(syncStatus);
+
+      resultBlock = await this.getBlockProgress(syncStatus.latestIndexedBlockHash);
+      assert(resultBlock);
+    }
+
+    return resultBlock
+      ? {
+        block: {
+          cid: resultBlock.cid,
+          number: resultBlock.blockNumber,
+          hash: resultBlock.blockHash,
+          timestamp: resultBlock.blockTimestamp,
+          parentHash: resultBlock.parentHash
+        },
+        deployment: '',
+        hasIndexingErrors: false // TODO: Populate
+      }
+      : null;
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
