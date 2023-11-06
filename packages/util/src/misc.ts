@@ -9,7 +9,8 @@ import { hideBin } from 'yargs/helpers';
 import { utils, providers } from 'ethers';
 import JSONbig from 'json-bigint';
 import Decimal from 'decimal.js';
-import { GraphQLResolveInfo } from 'graphql';
+import ApolloBigInt from 'apollo-type-bigint';
+import { GraphQLResolveInfo, GraphQLScalarType, ValueNode } from 'graphql';
 import _ from 'lodash';
 
 import { DEFAULT_CONFIG_PATH } from './constants';
@@ -305,3 +306,55 @@ export const setGQLCacheHints = (info: GraphQLResolveInfo, block: BlockHeight, g
 
   info.cacheControl.setCacheHint({ maxAge });
 };
+
+class GraphQLBigIntType extends ApolloBigInt {
+  constructor () {
+    super('bigInt');
+  }
+
+  name = 'BigInt';
+  description = 'BigInt custom scalar type';
+
+  parseLiteral = function (ast: ValueNode) {
+    if (ast.kind === 'IntValue' || ast.kind === 'StringValue') {
+      return global.BigInt(ast.value);
+    } else {
+      throw new TypeError(`BigInt cannot represent value kind: ${ast.kind}`);
+    }
+  };
+
+  parseValue = function (value: any) {
+    if (value === '') {
+      throw new TypeError('The value cannot be converted from BigInt because it is empty string');
+    }
+
+    if (typeof value !== 'number' && typeof value !== 'bigint' && typeof value !== 'string') {
+      throw new TypeError(
+        `The value ${value} cannot be converted to a BigInt because it is not an integer`
+      );
+    }
+
+    try {
+      return global.BigInt(value);
+    } catch {
+      throw new TypeError(
+        `The value ${value} cannot be converted to a BigInt because it is not an integer`
+      );
+    }
+  };
+}
+
+export const GraphQLBigInt = new GraphQLBigIntType();
+
+export const GraphQLBigDecimal = new GraphQLScalarType({
+  name: 'BigDecimal',
+  description: 'BigDecimal custom scalar type',
+  parseValue (value) {
+    // value from the client
+    return new Decimal(value);
+  },
+  serialize (value: Decimal) {
+    // value sent to the client
+    return value.toFixed();
+  }
+});
