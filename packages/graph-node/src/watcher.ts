@@ -472,23 +472,28 @@ export class GraphWatcher {
         return acc;
       }
 
+      if (['and', 'or'].includes(fieldWithSuffix)) {
+        assert(Array.isArray(value));
+
+        // Parse all the comibations given in the array
+        acc[fieldWithSuffix] = value.map(w => {
+          return this._buildFilter(w);
+        });
+
+        return acc;
+      }
+
       const [field, ...suffix] = fieldWithSuffix.split('_');
 
       if (!acc[field]) {
         acc[field] = [];
       }
 
-      const filter: Filter = {
-        value,
-        not: false,
-        operator: 'equals'
-      };
+      let op = suffix.shift();
 
-      let operator = suffix.shift();
-
-      // If the operator is "" (different from undefined), it means it's a nested filter on a relation field
-      if (operator === '') {
-        acc[field].push({
+      // If op is "" (different from undefined), it means it's a nested filter on a relation field
+      if (op === '') {
+        (acc[field] as Filter[]).push({
           // Parse nested filter value
           value: this._buildFilter(value),
           not: false,
@@ -498,21 +503,27 @@ export class GraphWatcher {
         return acc;
       }
 
-      if (operator === 'not') {
+      const filter: Filter = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      if (op === 'not') {
         filter.not = true;
-        operator = suffix.shift();
+        op = suffix.shift();
       }
 
-      if (operator) {
-        filter.operator = operator as keyof typeof OPERATOR_MAP;
+      if (op) {
+        filter.operator = op as keyof typeof OPERATOR_MAP;
       }
 
       // If filter field ends with "nocase", use case insensitive version of the operator
       if (suffix[suffix.length - 1] === 'nocase') {
-        filter.operator = `${operator}_nocase` as keyof typeof OPERATOR_MAP;
+        filter.operator = `${op}_nocase` as keyof typeof OPERATOR_MAP;
       }
 
-      acc[field].push(filter);
+      (acc[field] as Filter[]).push(filter);
 
       return acc;
     }, {});
