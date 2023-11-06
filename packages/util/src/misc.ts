@@ -132,6 +132,7 @@ export const resetJobs = async (config: Config): Promise<void> => {
 
   const jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
   await jobQueue.start();
+  // Delete all active and pending (before completed) jobs
   await jobQueue.deleteAllJobs('completed');
 };
 

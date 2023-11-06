@@ -171,7 +171,6 @@ export class JobRunner {
       } else {
         // Check that startBlock is one greater than previous batch end block
         if (startBlock - 1 !== this._historicalProcessingCompletedUpto) {
-          // TODO: Debug jobQueue deleteJobs for historical processing not working
           await this.jobQueue.markComplete(
             job,
             { isComplete: false }
