@@ -202,6 +202,15 @@ export class Database {
     return await repo.save(entity);
   }
 
+  async updateSyncStatusIndexingError (repo: Repository<SyncStatusInterface>, hasIndexingError: boolean): Promise<SyncStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
+
+    entity.hasIndexingError = hasIndexingError;
+
+    return repo.save(entity);
+  }
+
   async getBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string): Promise<BlockProgressInterface | undefined> {
     return repo.findOne({ where: { blockHash } });
   }
@@ -1099,7 +1108,6 @@ export class Database {
     eventCount.set(res);
   }
 
-  // TODO: Transform in the GQL type BigInt parsing itself
   _transformBigValues (value: any): any {
     // Handle array of bigints
     if (Array.isArray(value)) {

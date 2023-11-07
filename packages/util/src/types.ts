@@ -9,6 +9,7 @@ import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import { ServerConfig, UpstreamConfig } from './config';
 import { Where, QueryOptions, Database } from './database';
 import { ValueResult, StateStatus } from './indexer';
+import { JOB_KIND_CONTRACT, JOB_KIND_EVENTS } from './constants';
 
 export enum StateKind {
   Diff = 'diff',
@@ -42,6 +43,7 @@ export interface SyncStatusInterface {
   latestCanonicalBlockNumber: number;
   initialIndexedBlockHash: string;
   initialIndexedBlockNumber: number;
+  hasIndexingError: boolean;
 }
 
 export interface StateSyncStatusInterface {
@@ -106,6 +108,7 @@ export interface IndexerInterface {
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface>
+  updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface>
   updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
@@ -169,6 +172,7 @@ export interface DatabaseInterface {
   updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   forceUpdateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;
+  updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatusInterface>;
   saveEvents (queryRunner: QueryRunner, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
@@ -239,4 +243,21 @@ export interface EthClient {
 export type Clients = {
   ethClient: EthClient;
   [key: string]: any;
+}
+
+export enum EventsQueueJobKind {
+  EVENTS = JOB_KIND_EVENTS,
+  CONTRACT = JOB_KIND_CONTRACT
+}
+
+export interface EventsJobData {
+  kind: EventsQueueJobKind.EVENTS;
+  blockHash: string;
+  isRetryAttempt: boolean;
+  publish: boolean;
+}
+
+export interface ContractJobData {
+  kind: EventsQueueJobKind.CONTRACT;
+  contract: ContractInterface;
 }

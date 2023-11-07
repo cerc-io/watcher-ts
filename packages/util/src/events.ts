@@ -9,8 +9,8 @@ import PgBoss from 'pg-boss';
 import { constants } from 'ethers';
 
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient } from './types';
-import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, JOB_KIND_EVENTS, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
+import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient, EventsJobData, EventsQueueJobKind } from './types';
+import { MAX_REORG_DEPTH, JOB_KIND_PRUNE, JOB_KIND_INDEX, UNKNOWN_EVENT_NAME, QUEUE_BLOCK_PROCESSING, QUEUE_EVENT_PROCESSING, QUEUE_HISTORICAL_PROCESSING } from './constants';
 import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
@@ -258,27 +258,26 @@ export class EventWatcher {
     );
   }
 
-  async eventProcessingCompleteHandler (job: any): Promise<void> {
-    const { id, data: { request, failed, state, createdOn } } = job;
+  async eventProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
+    const { id, data: { request: { data }, failed, state, createdOn } } = job;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_EVENT_PROCESSING} failed`);
       return;
     }
 
-    const { data: { kind, blockHash, publish } } = request;
-
-    // Ignore jobs other than JOB_KIND_EVENTS
-    if (kind !== JOB_KIND_EVENTS) {
+    // Ignore jobs other than event processsing
+    const { kind } = data;
+    if (kind !== EventsQueueJobKind.EVENTS) {
       return;
     }
+
+    const { blockHash, publish }: EventsJobData = data;
 
     // Check if publish is set to true
     // Events and blocks are not published in historical processing
     // GQL subscription events will not be triggered if publish is set to false
     if (publish) {
-      assert(blockHash);
-
       const blockProgress = await this._indexer.getBlockProgress(blockHash);
       assert(blockProgress);
 
@@ -303,7 +302,7 @@ export class EventWatcher {
       // TODO: Use a different pubsub to publish event from job-runner.
       // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
       for (const dbEvent of dbEvents) {
-        log(`Job onComplete event ${dbEvent.id} publish ${!!request.data.publish}`);
+        log(`Job onComplete event ${dbEvent.id} publish ${publish}`);
 
         if (!failed && state === 'completed') {
           // Check for max acceptable lag time between request and sending results to live subscribers.

@@ -22,9 +22,11 @@ import {
   SyncStatusInterface,
   StateInterface,
   StateKind,
-  EthClient
+  EthClient,
+  ContractJobData,
+  EventsQueueJobKind
 } from './types';
-import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
+import { UNKNOWN_EVENT_NAME, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
@@ -146,6 +148,9 @@ export class Indexer {
   async getMetaData (block: BlockHeight): Promise<ResultMeta | null> {
     let resultBlock: BlockProgressInterface | undefined;
 
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+
     if (block.hash) {
       resultBlock = await this.getBlockProgress(block.hash);
     } else if (block.number) {
@@ -156,9 +161,6 @@ export class Indexer {
         resultBlock = blocksAtHeight[0];
       }
     } else {
-      const syncStatus = await this.getSyncStatus();
-      assert(syncStatus);
-
       resultBlock = await this.getBlockProgress(syncStatus.latestIndexedBlockHash);
       assert(resultBlock);
     }
@@ -173,7 +175,7 @@ export class Indexer {
           parentHash: resultBlock.parentHash
         },
         deployment: '',
-        hasIndexingErrors: false // TODO: Populate
+        hasIndexingErrors: syncStatus.hasIndexingError
       }
       : null;
   }
@@ -252,6 +254,23 @@ export class Indexer {
 
     try {
       res = await this._db.forceUpdateSyncStatus(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatusIndexingError(dbTx, hasIndexingError);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -807,12 +826,10 @@ export class Indexer {
       this.cacheContract(contract);
       await dbTx.commitTransaction();
 
+      const contractJob: ContractJobData = { kind: EventsQueueJobKind.CONTRACT, contract };
       await this._jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
-        {
-          kind: JOB_KIND_CONTRACT,
-          contract
-        },
+        contractJob,
         { priority: 1 }
       );
     } catch (error) {
