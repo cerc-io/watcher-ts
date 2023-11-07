@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLInputObjectType, GraphQLInputType, GraphQLString, GraphQLNonNull } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLString, GraphQLNonNull } from 'graphql';
 import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
