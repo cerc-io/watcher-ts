@@ -259,7 +259,7 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.forceUpdateSyncStatus(repo, blockHash, blockNumber);
   }
 
-  async updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatus> {
+  async updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatus | undefined> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
     return this._baseDatabase.updateSyncStatusIndexingError(repo, hasIndexingError);

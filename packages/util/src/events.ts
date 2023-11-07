@@ -228,21 +228,22 @@ export class EventWatcher {
     // endBlock exists if isComplete is true
     assert(batchEndBlockNumber);
 
+    const [block] = await this._indexer.getBlocks({ blockNumber: batchEndBlockNumber });
+    const batchEndBlockHash = block ? block.blockHash : constants.AddressZero;
+
+    // Update sync status chain head and canonical block to end block of historical processing
+    const [syncStatus] = await Promise.all([
+      this._indexer.updateSyncStatusCanonicalBlock(batchEndBlockHash, batchEndBlockNumber, true),
+      this._indexer.updateSyncStatusIndexedBlock(batchEndBlockHash, batchEndBlockNumber, true),
+      this._indexer.updateSyncStatusChainHead(batchEndBlockHash, batchEndBlockNumber, true)
+    ]);
+    log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
+
     const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
     log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);
 
     // Check if historical processing end block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
-      const [block] = await this._indexer.getBlocks({ blockNumber: this._historicalProcessingEndBlockNumber });
-      const historicalProcessingEndBlockHash = block ? block.blockHash : constants.AddressZero;
-
-      // Update sync status chain head and canonical block to end block of historical processing
-      const [syncStatus] = await Promise.all([
-        this._indexer.updateSyncStatusCanonicalBlock(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber, true),
-        this._indexer.updateSyncStatusChainHead(historicalProcessingEndBlockHash, this._historicalProcessingEndBlockNumber, true)
-      ]);
-      log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
-
       // Start realtime processing
       this.startBlockProcessing();
       return;

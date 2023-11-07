@@ -169,6 +169,8 @@ export class Database {
         latestCanonicalBlockNumber: blockNumber,
         latestIndexedBlockHash: '',
         latestIndexedBlockNumber: -1,
+        latestProcessedBlockHash: '',
+        latestProcessedBlockNumber: -1,
         initialIndexedBlockHash: blockHash,
         initialIndexedBlockNumber: blockNumber
       });
@@ -182,29 +184,24 @@ export class Database {
     return await repo.save(entity);
   }
 
-  async forceUpdateSyncStatus (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
-    let entity = await repo.findOne();
+  async updateSyncStatusProcessedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
+    const entity = await repo.findOne();
+    assert(entity);
 
-    if (!entity) {
-      entity = repo.create({
-        initialIndexedBlockHash: blockHash,
-        initialIndexedBlockNumber: blockNumber
-      });
+    if (force || blockNumber >= entity.latestProcessedBlockNumber) {
+      entity.latestProcessedBlockHash = blockHash;
+      entity.latestProcessedBlockNumber = blockNumber;
     }
-
-    entity.chainHeadBlockHash = blockHash;
-    entity.chainHeadBlockNumber = blockNumber;
-    entity.latestCanonicalBlockHash = blockHash;
-    entity.latestCanonicalBlockNumber = blockNumber;
-    entity.latestIndexedBlockHash = blockHash;
-    entity.latestIndexedBlockNumber = blockNumber;
 
     return await repo.save(entity);
   }
 
-  async updateSyncStatusIndexingError (repo: Repository<SyncStatusInterface>, hasIndexingError: boolean): Promise<SyncStatusInterface> {
+  async updateSyncStatusIndexingError (repo: Repository<SyncStatusInterface>, hasIndexingError: boolean): Promise<SyncStatusInterface | undefined> {
     const entity = await repo.findOne();
-    assert(entity);
+
+    if (!entity) {
+      return;
+    }
 
     entity.hasIndexingError = hasIndexingError;
 

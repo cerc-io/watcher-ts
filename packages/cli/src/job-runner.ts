@@ -114,7 +114,8 @@ export class JobRunnerCmd {
 
     // Delete all active and pending (before completed) jobs to start job-runner without old queued jobs
     await jobRunner.jobQueue.deleteAllJobs('completed');
-    await jobRunner.resetToPrevIndexedBlock();
+
+    await jobRunner.resetToLatestProcessedBlock();
     await indexer.updateSyncStatusIndexingError(false);
 
     await startJobRunner(jobRunner);

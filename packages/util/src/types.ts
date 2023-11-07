@@ -39,6 +39,8 @@ export interface SyncStatusInterface {
   chainHeadBlockNumber: number;
   latestIndexedBlockHash: string;
   latestIndexedBlockNumber: number;
+  latestProcessedBlockHash: string;
+  latestProcessedBlockNumber: number;
   latestCanonicalBlockHash: string;
   latestCanonicalBlockNumber: number;
   initialIndexedBlockHash: string;
@@ -107,8 +109,8 @@ export interface IndexerInterface {
   updateSyncStatusChainHead (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateSyncStatusCanonicalBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
-  forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface>
-  updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface>
+  updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface | undefined>
+  updateSyncStatusProcessedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
@@ -171,8 +173,8 @@ export interface DatabaseInterface {
   updateSyncStatusIndexedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusChainHead (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
-  forceUpdateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatusInterface>;
-  updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatusInterface>;
+  updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatusInterface | undefined>;
+  updateSyncStatusProcessedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   saveEvents (queryRunner: QueryRunner, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;

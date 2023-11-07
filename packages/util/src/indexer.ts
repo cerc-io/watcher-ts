@@ -247,12 +247,12 @@ export class Indexer {
     return res;
   }
 
-  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusProcessedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
     try {
-      res = await this._db.forceUpdateSyncStatus(dbTx, blockHash, blockNumber);
+      res = await this._db.updateSyncStatusProcessedBlock(dbTx, blockHash, blockNumber, force);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -264,7 +264,7 @@ export class Indexer {
     return res;
   }
 
-  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface> {
+  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface | undefined> {
     const dbTx = await this._db.createTransactionRunner();
     let res;
 
@@ -1318,6 +1318,10 @@ export class Indexer {
 
       if (syncStatus.latestIndexedBlockNumber > blockProgress.blockNumber) {
         await this.updateSyncStatusIndexedBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
+      }
+
+      if (syncStatus.latestProcessedBlockNumber > blockProgress.blockNumber) {
+        await this.updateSyncStatusProcessedBlock(blockProgress.blockHash, blockProgress.blockNumber, true);
       }
 
       if (syncStatus.latestCanonicalBlockNumber > blockProgress.blockNumber) {
