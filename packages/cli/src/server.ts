@@ -28,7 +28,8 @@ import {
   Config,
   PaymentsManager,
   Consensus,
-  readParty
+  readParty,
+  UpstreamConfig
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -111,7 +112,10 @@ export class ServerCmd {
 
   async initIndexer (
     Indexer: new (
-      serverConfig: ServerConfig,
+      config: {
+        server: ServerConfig;
+        upstream: UpstreamConfig;
+      },
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,

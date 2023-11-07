@@ -27,7 +27,8 @@ import {
   StateKind,
   createOrUpdateStateData,
   getContractEntitiesMap,
-  prepareEntityStateFromGQLResponse
+  prepareEntityStateFromGQLResponse,
+  UpstreamConfig
 } from '@cerc-io/util';
 import { GraphQLClient } from '@cerc-io/ipld-eth-client';
 
@@ -97,7 +98,10 @@ export class CreateStateFromGQLCmd {
 
   async initIndexer (
     Indexer: new (
-      serverConfig: ServerConfig,
+      config: {
+        server: ServerConfig;
+        upstream: UpstreamConfig;
+      },
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,

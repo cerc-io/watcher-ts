@@ -17,7 +17,8 @@ import {
   ServerConfig,
   Clients,
   EventWatcher,
-  GraphWatcherInterface
+  GraphWatcherInterface,
+  UpstreamConfig
 } from '@cerc-io/util';
 
 import { initClients } from './utils/index';
@@ -102,7 +103,10 @@ export class BaseCmd {
 
   async initIndexer (
     Indexer: new (
-      serverConfig: ServerConfig,
+      config: {
+        server: ServerConfig;
+        upstream: UpstreamConfig;
+      },
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
@@ -117,7 +121,12 @@ export class BaseCmd {
     assert(this._ethProvider);
     assert(this._jobQueue);
 
-    this._indexer = new Indexer(this._config.server, this._database, this._clients, this._ethProvider, this._jobQueue, graphWatcher);
+    const config = {
+      server: this._config.server,
+      upstream: this._config.upstream
+    };
+
+    this._indexer = new Indexer(config, this._database, this._clients, this._ethProvider, this._jobQueue, graphWatcher);
     await this._indexer.init();
 
     if (graphWatcher) {

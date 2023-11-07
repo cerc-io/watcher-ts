@@ -16,7 +16,8 @@ import {
   ServerConfig,
   Clients,
   GraphWatcherInterface,
-  Config
+  Config,
+  UpstreamConfig
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
@@ -74,7 +75,10 @@ export class WatchContractCmd {
 
   async initIndexer (
     Indexer: new (
-      serverConfig: ServerConfig,
+      config: {
+        server: ServerConfig;
+        upstream: UpstreamConfig;
+      },
       db: DatabaseInterface,
       clients: Clients,
       ethProvider: JsonRpcProvider,
