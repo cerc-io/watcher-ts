@@ -153,16 +153,15 @@ export class Indexer {
 
     if (block.hash) {
       resultBlock = await this.getBlockProgress(block.hash);
-    } else if (block.number) {
-      // Get all the blocks at the given height
-      const blocksAtHeight = await this.getBlocksAtHeight(block.number, false);
+    } else {
+      const blockHeight = block.number ? block.number : syncStatus.latestIndexedBlockNumber - 1;
+
+      // Get all the blocks at a height
+      const blocksAtHeight = await this.getBlocksAtHeight(blockHeight, false);
 
       if (blocksAtHeight.length) {
         resultBlock = blocksAtHeight[0];
       }
-    } else {
-      resultBlock = await this.getBlockProgress(syncStatus.latestIndexedBlockHash);
-      assert(resultBlock);
     }
 
     return resultBlock

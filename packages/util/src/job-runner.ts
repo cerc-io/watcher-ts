@@ -624,12 +624,12 @@ export class JobRunner {
       log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
       await wait(EVENTS_PROCESSING_RETRY_WAIT);
 
-      // TODO: Stop next job in queue from processing next
+      // TODO: Stop job for next block in queue (in historical processing)
 
-      const eventsProcessingRetrytJob: EventsJobData = { ...jobData, isRetryAttempt: true };
+      const eventsProcessingRetryJob: EventsJobData = { ...jobData, isRetryAttempt: true };
       await this.jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
-        eventsProcessingRetrytJob,
+        eventsProcessingRetryJob,
         { priority: 1 }
       );
     }
