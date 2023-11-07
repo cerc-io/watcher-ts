@@ -17,7 +17,8 @@ import {
   getResultEvent,
   ResultEvent,
   StateKind,
-  EthClient
+  EthClient,
+  UpstreamConfig
 } from '@cerc-io/util';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -35,6 +36,10 @@ export class Indexer implements IndexerInterface {
 
   get serverConfig () {
     return {} as ServerConfig;
+  }
+
+  get upstreamConfig () {
+    return {} as UpstreamConfig;
   }
 
   get storageLayoutMap (): Map<string, StorageLayout> {
