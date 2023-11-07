@@ -12,8 +12,6 @@ import { JobQueueConfig } from './config';
 import {
   JOB_KIND_INDEX,
   JOB_KIND_PRUNE,
-  JOB_KIND_EVENTS,
-  JOB_KIND_CONTRACT,
   MAX_REORG_DEPTH,
   QUEUE_BLOCK_PROCESSING,
   QUEUE_EVENT_PROCESSING,
@@ -22,7 +20,7 @@ import {
   QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, EventInterface, IndexerInterface } from './types';
+import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
 import { wait } from './misc';
 import {
   createPruningJob,
@@ -194,16 +192,17 @@ export class JobRunner {
     );
 
     // Push event processing job for each block
-    const pushJobForBlockPromises = blocks.map(async block => this.jobQueue.pushJob(
-      QUEUE_EVENT_PROCESSING,
-      {
-        kind: JOB_KIND_EVENTS,
+    const pushJobForBlockPromises = blocks.map(async block => {
+      const eventsProcessingJob: EventsJobData = {
+        kind: EventsQueueJobKind.EVENTS,
         blockHash: block.blockHash,
+        isRetryAttempt: false,
         // Avoid publishing GQL subscription event in historical processing
         // Publishing when realtime processing is listening to events will cause problems
         publish: false
-      }
-    ));
+      };
+      this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
+    });
 
     await Promise.all(pushJobForBlockPromises);
     this._historicalProcessingCompletedUpto = endBlock;
@@ -214,20 +213,16 @@ export class JobRunner {
     );
   }
 
-  async processEvent (job: any): Promise<EventInterface | void> {
-    const { data: { kind } } = job;
+  async processEvent (job: PgBoss.JobWithDoneCallback<EventsJobData | ContractJobData, any>): Promise<EventInterface | void> {
+    const { data: jobData } = job;
 
-    switch (kind) {
-      case JOB_KIND_EVENTS:
-        await this._processEvents(job);
+    switch (jobData.kind) {
+      case EventsQueueJobKind.EVENTS:
+        await this._processEvents(jobData);
         break;
 
-      case JOB_KIND_CONTRACT:
+      case EventsQueueJobKind.CONTRACT:
         this._updateWatchedContracts(job);
-        break;
-
-      default:
-        log(`Invalid Job kind ${kind} in QUEUE_EVENT_PROCESSING.`);
         break;
     }
 
@@ -532,14 +527,20 @@ export class JobRunner {
 
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
-    await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, { kind: JOB_KIND_EVENTS, blockHash: blockProgress.blockHash, publish: true });
+    const eventsProcessingJob: EventsJobData = {
+      kind: EventsQueueJobKind.EVENTS,
+      blockHash: blockProgress.blockHash,
+      isRetryAttempt: false,
+      publish: true
+    };
+    await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
 
     const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();
     log(`time:job-runner#_indexBlock: ${indexBlockDuration}ms`);
   }
 
-  async _processEvents (job: any): Promise<void> {
-    const { blockHash } = job.data;
+  async _processEvents (jobData: EventsJobData): Promise<void> {
+    const { blockHash, isRetryAttempt } = jobData;
 
     try {
       if (!this._blockAndEventsMap.has(blockHash)) {
@@ -580,7 +581,7 @@ export class JobRunner {
         if (this._historicalProcessingCompletedUpto && this._historicalProcessingCompletedUpto > block.blockNumber) {
           const nextBlockNumberToProcess = block.blockNumber + 1;
 
-          // Push a new job to restart historical blocks processing afyre current block
+          // Push a new job to restart historical blocks processing after current block
           log('New contract added in historical processing with filterLogsByAddresses set to true');
           await this.jobQueue.pushJob(
             QUEUE_HISTORICAL_PROCESSING,
@@ -599,6 +600,12 @@ export class JobRunner {
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
 
+      // If this was a retry attempt, unset the indexing error flag in sync status
+      if (isRetryAttempt) {
+        await this._indexer.updateSyncStatusIndexingError(false);
+      }
+
+      // TODO: Shutdown after job gets marked as complete
       if (this._shutDown) {
         log(`Graceful shutdown after processing block ${block.blockNumber}`);
         this.jobQueue.stop();
@@ -608,18 +615,22 @@ export class JobRunner {
       log(`Error in processing events for block ${blockHash}`);
       log(error);
 
+      // Set the indexing error flag in sync status
+      await this._indexer.updateSyncStatusIndexingError(true);
+
       // TODO: Remove processed entities for current block to avoid reprocessing of events
 
       // Catch event processing error and push to job queue after some time with higher priority
       log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
       await wait(EVENTS_PROCESSING_RETRY_WAIT);
-      // TODO: Stop next job in queue from processing next
+
+      // TODO: Stop job for next block in queue (in historical processing)
+
+      const eventsProcessingRetryJob: EventsJobData = { ...jobData, isRetryAttempt: true };
       await this.jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
-        job.data,
-        {
-          priority: 1
-        }
+        eventsProcessingRetryJob,
+        { priority: 1 }
       );
     }
   }

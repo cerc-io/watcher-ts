@@ -22,11 +22,13 @@ import {
   SyncStatusInterface,
   StateInterface,
   StateKind,
-  EthClient
+  EthClient,
+  ContractJobData,
+  EventsQueueJobKind
 } from './types';
-import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
+import { UNKNOWN_EVENT_NAME, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
-import { Where, QueryOptions } from './database';
+import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
 
@@ -88,6 +90,18 @@ export type ResultEvent = {
   proof: string;
 };
 
+export type ResultMeta = {
+  block: {
+    cid: string | null;
+    hash: string;
+    number: number;
+    timestamp: number;
+    parentHash: string;
+  };
+  deployment: string;
+  hasIndexingErrors: boolean;
+};
+
 export class Indexer {
   _serverConfig: ServerConfig;
   _upstreamConfig: UpstreamConfig;
@@ -129,6 +143,40 @@ export class Indexer {
 
       return acc;
     }, {});
+  }
+
+  async getMetaData (block: BlockHeight): Promise<ResultMeta | null> {
+    let resultBlock: BlockProgressInterface | undefined;
+
+    const syncStatus = await this.getSyncStatus();
+    assert(syncStatus);
+
+    if (block.hash) {
+      resultBlock = await this.getBlockProgress(block.hash);
+    } else {
+      const blockHeight = block.number ? block.number : syncStatus.latestIndexedBlockNumber - 1;
+
+      // Get all the blocks at a height
+      const blocksAtHeight = await this.getBlocksAtHeight(blockHeight, false);
+
+      if (blocksAtHeight.length) {
+        resultBlock = blocksAtHeight[0];
+      }
+    }
+
+    return resultBlock
+      ? {
+        block: {
+          cid: resultBlock.cid,
+          number: resultBlock.blockNumber,
+          hash: resultBlock.blockHash,
+          timestamp: resultBlock.blockTimestamp,
+          parentHash: resultBlock.parentHash
+        },
+        deployment: '',
+        hasIndexingErrors: syncStatus.hasIndexingError
+      }
+      : null;
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
@@ -205,6 +253,23 @@ export class Indexer {
 
     try {
       res = await this._db.forceUpdateSyncStatus(dbTx, blockHash, blockNumber);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
+  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatusIndexingError(dbTx, hasIndexingError);
       await dbTx.commitTransaction();
     } catch (error) {
       await dbTx.rollbackTransaction();
@@ -760,12 +825,10 @@ export class Indexer {
       this.cacheContract(contract);
       await dbTx.commitTransaction();
 
+      const contractJob: ContractJobData = { kind: EventsQueueJobKind.CONTRACT, contract };
       await this._jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
-        {
-          kind: JOB_KIND_CONTRACT,
-          contract
-        },
+        contractJob,
         { priority: 1 }
       );
     } catch (error) {
