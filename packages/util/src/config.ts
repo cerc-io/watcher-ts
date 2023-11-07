@@ -29,6 +29,10 @@ export interface JobQueueConfig {
   // Max block range of historical processing after which it waits for completion of events processing
   // If set to -1 historical processing does not wait for events processing and completes till latest canonical block
   historicalMaxFetchAhead?: number;
+  // Boolean to switch between modes of processing events when starting the server
+  // Setting to true will fetch filtered events and required blocks in a range of blocks and then process them
+  // Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head)
+  useBlockRanges: boolean;
 }
 
 export interface GQLCacheConfig {
@@ -205,26 +209,19 @@ export interface ServerConfig {
   subgraphPath: string;
   enableState: boolean;
   wasmRestartBlocksInterval: number;
-  filterLogsByAddresses: boolean;
-  filterLogsByTopics: boolean;
   maxEventsBlockRange: number;
   clearEntitiesCacheInterval: number;
 
-  // Boolean to switch between modes of processing events when starting the server.
-  // Setting to true will fetch filtered events and required blocks in a range of blocks and then process them.
-  // Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head).
-  useBlockRanges: boolean;
-
-  // Boolean to skip updating entity fields required in state creation and not required in the frontend.
+  // Boolean to skip updating entity fields required in state creation and not required in the frontend
   skipStateFieldsUpdate: boolean;
 
-  // Max GQL API requests to process simultaneously (defaults to 1).
+  // Max GQL API requests to process simultaneously (defaults to 1)
   maxSimultaneousRequests?: number;
 
-  // Max GQL API requests in queue until reject (defaults to -1, means do not reject).
+  // Max GQL API requests in queue until reject (defaults to -1, means do not reject)
   maxRequestQueueLimit?: number;
 
-  // Boolean to load GQL query nested entity relations sequentially.
+  // Boolean to load GQL query nested entity relations sequentially
   loadRelationsSequential: boolean;
 
   // GQL cache-control max-age settings (in seconds)
@@ -260,7 +257,14 @@ export interface UpstreamConfig {
     gqlApiEndpoint: string;
     rpcProviderEndpoint: string;
     rpcProviderMutationEndpoint: string;
+    // Boolean flag to specify if rpc-eth-client should be used for RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
     rpcClient: boolean;
+    // Boolean flag to specify if rpcProviderEndpoint is an FEVM RPC endpoint
+    isFEVM: boolean;
+    // Boolean flag to filter event logs by contracts
+    filterLogsByAddresses: boolean;
+    // Boolean flag to filter event logs by topics
+    filterLogsByTopics: boolean;
     payments: EthServerPaymentsConfig;
   }
   traceProviderEndpoint: string;

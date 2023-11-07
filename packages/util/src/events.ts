@@ -103,7 +103,7 @@ export class EventWatcher {
 
     // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
-    if (this._config.server.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
+    if (this._config.jobQueue.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
       let endBlockNumber = latestCanonicalBlockNumber;
       const historicalMaxFetchAhead = this._config.jobQueue.historicalMaxFetchAhead ?? DEFAULT_HISTORICAL_MAX_FETCH_AHEAD;
 

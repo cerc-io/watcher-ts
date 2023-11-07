@@ -23,17 +23,6 @@
   clearEntitiesCacheInterval = 1000
 
   {{/if}}
-  # Boolean to filter logs by contracts.
-  filterLogsByAddresses = false
-
-  # Boolean to filter logs by topics.
-  filterLogsByTopics = false
-
-  # Boolean to switch between modes of processing events when starting the server.
-  # Setting to true will fetch filtered events and required blocks in a range of blocks and then process them.
-  # Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head).
-  useBlockRanges = true
-
   # Max block range for which to return events in eventsInRange GQL query.
   # Use -1 for skipping check on block range.
   maxEventsBlockRange = 1000
@@ -75,8 +64,16 @@
     gqlApiEndpoint = "http://127.0.0.1:8082/graphql"
     rpcProviderEndpoint = "http://127.0.0.1:8081"
 
-    # Flag to specify if rpc-eth-client should be used from RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
+    # Boolean flag to specify if rpc-eth-client should be used for RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
     rpcClient = false
+
+    # Boolean flag to specify if rpcProviderEndpoint is an FEVM RPC endpoint
+    isFEVM = false
+
+    # Boolean flag to filter event logs by contracts
+    filterLogsByAddresses = false
+    # Boolean flag to filter event logs by topics
+    filterLogsByTopics = false
 
   [upstream.cache]
     name = "requests"
@@ -92,6 +89,11 @@
   blockDelayInMilliSecs = 2000
   prefetchBlocksInMem = true
   prefetchBlockCount = 10
+
+  # Boolean to switch between modes of processing events when starting the server.
+  # Setting to true will fetch filtered events and required blocks in a range of blocks and then process them.
+  # Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head).
+  useBlockRanges = true
 
   # Block range in which logs are fetched during historical blocks processing
   historicalLogsBlockRange = 2000

@@ -427,7 +427,7 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
     isNewContractWatched = true;
 
     // Check if filterLogsByAddresses is set to true
-    if (indexer.serverConfig.filterLogsByAddresses) {
+    if (indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
       // Fetch and parse events for newly watched contracts
       const newContracts = watchedContracts.filter(contract => !initiallyWatchedContracts.includes(contract));
       const events = await indexer.fetchEventsForContracts(block.blockHash, block.blockNumber, newContracts);
