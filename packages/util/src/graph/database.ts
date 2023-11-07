@@ -454,10 +454,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -510,9 +510,10 @@ export class GraphDatabase {
       .setParameters(subQuery.getParameters()) as SelectQueryBuilder<Entity>;
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, {}, {}, 'subTable_');
       if (queryOptions.orderBy !== 'id') {
-        selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, 'subTable_');
+        // Order by id if ordered by some non-id column (for rows having same value for the ordered column)
+        selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, 'subTable_');
       }
     }
 
@@ -583,10 +584,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -645,10 +646,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), {}, 'latest');
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, {}, {}, '', 'latest');
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, '', 'latest');
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -700,10 +701,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, {}, {}, 'latest');
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, '', 'latest');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, {}, {}, '', 'latest');
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+    selectQueryBuilder = await this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, '', 'latest');
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
