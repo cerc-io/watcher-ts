@@ -49,6 +49,13 @@ columns:
     pgType: integer
     tsType: number
     columnType: Column
+  - name: hasIndexingError
+    pgType: boolean
+    tsType: boolean
+    columnType: Column
+    columnOptions:
+      - option: default
+        value: false
 imports:
   - toImport:
       - Entity

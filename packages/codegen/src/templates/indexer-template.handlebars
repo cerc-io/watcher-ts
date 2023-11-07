@@ -665,6 +665,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.forceUpdateSyncStatus(blockHash, blockNumber);
   }
 
+  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusIndexingError(hasIndexingError);
+  }
+
   async getEvent (id: string): Promise<Event | undefined> {
     return this._baseIndexer.getEvent(id);
   }

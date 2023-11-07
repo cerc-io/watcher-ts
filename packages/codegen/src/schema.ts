@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode } from 'graphql';
+import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLInputObjectType, GraphQLInputType, GraphQLString, GraphQLNonNull } from 'graphql';
 import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
@@ -98,12 +98,15 @@ export class Schema {
     // Add a mutation for watching a contract.
     this._addWatchContractMutation();
 
-    // Add type and query for SyncStatus.
-    this._addSyncStatus();
-
     // Add State type and queries.
     this._addStateType();
     this._addStateQuery();
+
+    // Add type and query for SyncStatus.
+    this._addSyncStatus();
+
+    // Add type and query for meta data
+    this._addMeta();
 
     // Build the schema.
     return this._composer.buildSchema();
@@ -452,6 +455,28 @@ export class Schema {
     this._composer.Query.addFields({
       getSyncStatus: {
         type: this._composer.getOTC('SyncStatus')
+      }
+    });
+  }
+
+  _addMeta (): void {
+    const typeComposer = this._composer.createObjectTC({
+      name: '_Meta_',
+      fields: {
+        block: this._composer.getOTC('_Block_').NonNull,
+        deployment: { type: new GraphQLNonNull(GraphQLString) },
+        hasIndexingErrors: { type: new GraphQLNonNull(GraphQLBoolean) }
+      }
+    });
+
+    this._composer.addSchemaMustHaveType(typeComposer);
+
+    this._composer.Query.addFields({
+      _meta: {
+        type: this._composer.getOTC('_Meta_'),
+        args: {
+          block: BlockHeight
+        }
       }
     });
   }
