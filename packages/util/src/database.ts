@@ -1050,9 +1050,9 @@ export class Database {
       assert(columnMetadata);
 
       if (relation.isArray) {
-        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
+        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY("${alias}".${columnMetadata.databaseName})`);
       } else {
-        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = "${alias}".${columnMetadata.databaseName}`);
       }
     }
 
@@ -1092,6 +1092,34 @@ export class Database {
       `"${alias}"."${columnPrefix}${columnMetadata.databaseName}"`,
       orderDirection === 'desc' ? 'DESC' : 'ASC'
     );
+  }
+
+  async applyBlockHeightFilter<Entity> (
+    queryRunner: QueryRunner,
+    queryBuilder: SelectQueryBuilder<Entity>,
+    block: CanonicalBlockHeight,
+    alias: string
+  ): Promise<SelectQueryBuilder<Entity>> {
+    // Block hash takes precedence over number if provided
+    if (block.hash) {
+      if (!block.canonicalBlockHashes) {
+        const { canonicalBlockNumber, blockHashes } = await this.getFrothyRegion(queryRunner, block.hash);
+
+        // Update the block field to avoid firing the same query further
+        block.number = canonicalBlockNumber;
+        block.canonicalBlockHashes = blockHashes;
+      }
+
+      queryBuilder = queryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${alias}.block_hash IN (:...blockHashes)`, { blockHashes: block.canonicalBlockHashes })
+            .orWhere(`${alias}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber: block.number });
+        }));
+    } else if (block.number) {
+      queryBuilder = queryBuilder.andWhere(`${alias}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    return queryBuilder;
   }
 
   async _fetchBlockCount (): Promise<void> {
