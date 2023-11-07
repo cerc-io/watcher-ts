@@ -6,7 +6,6 @@ import assert from 'assert';
 import debug from 'debug';
 import { PubSub } from 'graphql-subscriptions';
 import PgBoss from 'pg-boss';
-import { constants } from 'ethers';
 
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, EventInterface, IndexerInterface, EthClient, EventsJobData, EventsQueueJobKind } from './types';
@@ -227,17 +226,6 @@ export class EventWatcher {
 
     // endBlock exists if isComplete is true
     assert(batchEndBlockNumber);
-
-    const [block] = await this._indexer.getBlocks({ blockNumber: batchEndBlockNumber });
-    const batchEndBlockHash = block ? block.blockHash : constants.AddressZero;
-
-    // Update sync status chain head and canonical block to end block of historical processing
-    const [syncStatus] = await Promise.all([
-      this._indexer.updateSyncStatusCanonicalBlock(batchEndBlockHash, batchEndBlockNumber, true),
-      this._indexer.updateSyncStatusIndexedBlock(batchEndBlockHash, batchEndBlockNumber, true),
-      this._indexer.updateSyncStatusChainHead(batchEndBlockHash, batchEndBlockNumber, true)
-    ]);
-    log(`Sync status canonical block updated to ${syncStatus.latestCanonicalBlockNumber}`);
 
     const nextBatchStartBlockNumber = batchEndBlockNumber + 1;
     log(`Historical block processing completed for block range: ${blockNumber} to ${batchEndBlockNumber}`);

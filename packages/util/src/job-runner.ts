@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { ethers } from 'ethers';
+import { constants, ethers } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
 import PgBoss from 'pg-boss';
 
@@ -191,20 +191,46 @@ export class JobRunner {
       endBlock
     );
 
-    // Push event processing job for each block
-    const pushJobForBlockPromises = blocks.map(async block => {
-      const eventsProcessingJob: EventsJobData = {
-        kind: EventsQueueJobKind.EVENTS,
-        blockHash: block.blockHash,
-        isRetryAttempt: false,
-        // Avoid publishing GQL subscription event in historical processing
-        // Publishing when realtime processing is listening to events will cause problems
-        publish: false
-      };
-      this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
-    });
+    let batchEndBlockHash = constants.AddressZero;
+    const blocksLength = blocks.length;
 
-    await Promise.all(pushJobForBlockPromises);
+    if (blocksLength) {
+      // Push event processing job for each block
+      const pushJobForBlockPromises = blocks.map(async block => {
+        const eventsProcessingJob: EventsJobData = {
+          kind: EventsQueueJobKind.EVENTS,
+          blockHash: block.blockHash,
+          isRetryAttempt: false,
+          // Avoid publishing GQL subscription event in historical processing
+          // Publishing when realtime processing is listening to events will cause problems
+          publish: false
+        };
+        this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
+      });
+
+      if (blocks[blocksLength - 1].blockNumber === endBlock) {
+        // If in blocks returned end block is same as the batch end block, set batchEndBlockHash
+        batchEndBlockHash = blocks[blocksLength - 1].blockHash;
+      } else {
+        // Else fetch block hash from upstream for batch end block
+        const [block] = await this._indexer.getBlocks({ blockNumber: endBlock });
+
+        if (block) {
+          batchEndBlockHash = block.blockHash;
+        }
+      }
+
+      await Promise.all(pushJobForBlockPromises);
+    }
+
+    // Update sync status canonical, indexed and chain head block to end block
+    await Promise.all([
+      this._indexer.updateSyncStatusCanonicalBlock(batchEndBlockHash, endBlock, true),
+      this._indexer.updateSyncStatusIndexedBlock(batchEndBlockHash, endBlock, true),
+      this._indexer.updateSyncStatusChainHead(batchEndBlockHash, endBlock, true)
+    ]);
+    log(`Sync status canonical, indexed and chain head block updated to ${endBlock}`);
+
     this._historicalProcessingCompletedUpto = endBlock;
 
     await this.jobQueue.markComplete(
