@@ -92,11 +92,9 @@ export type ResultEvent = {
 
 export type ResultMeta = {
   block: {
-    cid: string | null;
-    hash: string;
+    hash: string | null;
     number: number;
-    timestamp: number;
-    parentHash: string;
+    timestamp: number | null;
   };
   deployment: string;
   hasIndexingErrors: boolean;
@@ -146,37 +144,42 @@ export class Indexer {
   }
 
   async getMetaData (block: BlockHeight): Promise<ResultMeta | null> {
-    let resultBlock: BlockProgressInterface | undefined;
+    const resultBlock: ResultMeta['block'] = {
+      hash: block.hash ?? null,
+      number: block.number ?? 0,
+      timestamp: null
+    };
 
     const syncStatus = await this.getSyncStatus();
     assert(syncStatus);
 
     if (block.hash) {
-      resultBlock = await this.getBlockProgress(block.hash);
+      const blockProgress = await this.getBlockProgress(block.hash);
+      assert(blockProgress, 'No block with hash found');
+      resultBlock.number = blockProgress.blockNumber;
+      resultBlock.timestamp = blockProgress.blockTimestamp;
     } else {
-      const blockHeight = block.number ? block.number : syncStatus.latestIndexedBlockNumber - 1;
+      let blockHeight = block.number;
+
+      if (!blockHeight) {
+        blockHeight = syncStatus.latestProcessedBlockNumber;
+      }
 
       // Get all the blocks at a height
-      const blocksAtHeight = await this.getBlocksAtHeight(blockHeight, false);
+      const [blockProgress] = await this.getBlocksAtHeight(blockHeight, false);
 
-      if (blocksAtHeight.length) {
-        resultBlock = blocksAtHeight[0];
+      if (blockProgress) {
+        resultBlock.hash = blockProgress.blockHash;
+        resultBlock.number = blockProgress.blockNumber;
+        resultBlock.timestamp = blockProgress.blockTimestamp;
       }
     }
 
-    return resultBlock
-      ? {
-        block: {
-          cid: resultBlock.cid,
-          number: resultBlock.blockNumber,
-          hash: resultBlock.blockHash,
-          timestamp: resultBlock.blockTimestamp,
-          parentHash: resultBlock.parentHash
-        },
-        deployment: '',
-        hasIndexingErrors: syncStatus.hasIndexingError
-      }
-      : null;
+    return {
+      block: resultBlock,
+      hasIndexingErrors: syncStatus.hasIndexingError,
+      deployment: ''
+    };
   }
 
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
