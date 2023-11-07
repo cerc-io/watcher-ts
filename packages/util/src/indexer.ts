@@ -27,7 +27,7 @@ import {
 import { UNKNOWN_EVENT_NAME, JOB_KIND_CONTRACT, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions } from './database';
-import { ServerConfig } from './config';
+import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
@@ -90,6 +90,7 @@ export type ResultEvent = {
 
 export class Indexer {
   _serverConfig: ServerConfig;
+  _upstreamConfig: UpstreamConfig;
   _db: DatabaseInterface;
   _ethClient: EthClient;
   _getStorageAt: GetStorageAt;
@@ -100,13 +101,17 @@ export class Indexer {
   _stateStatusMap: { [key: string]: StateStatus } = {};
 
   constructor (
-    serverConfig: ServerConfig,
+    config: {
+      server: ServerConfig;
+      upstream: UpstreamConfig;
+    },
     db: DatabaseInterface,
     ethClient: EthClient,
     ethProvider: ethers.providers.BaseProvider,
     jobQueue: JobQueue
   ) {
-    this._serverConfig = serverConfig;
+    this._serverConfig = config.server;
+    this._upstreamConfig = config.upstream;
     this._db = db;
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
@@ -1289,14 +1294,14 @@ export class Indexer {
     let addresses: string[] | undefined;
     let eventSignatures: string[] | undefined;
 
-    if (this._serverConfig.filterLogsByAddresses) {
+    if (this._upstreamConfig.ethServer.filterLogsByAddresses) {
       const watchedContracts = this.getWatchedContracts();
       addresses = watchedContracts.map((watchedContract): string => {
         return watchedContract.address;
       });
     }
 
-    if (this._serverConfig.filterLogsByTopics) {
+    if (this._upstreamConfig.ethServer.filterLogsByTopics && !this._upstreamConfig.ethServer.isFEVM) {
       const eventSignaturesSet = new Set<string>();
       eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
         eventSignaturesSet.add(sig);

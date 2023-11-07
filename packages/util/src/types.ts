@@ -6,7 +6,7 @@ import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions,
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
-import { ServerConfig } from './config';
+import { ServerConfig, UpstreamConfig } from './config';
 import { Where, QueryOptions, Database } from './database';
 import { ValueResult, StateStatus } from './indexer';
 
@@ -81,6 +81,7 @@ export interface StateInterface {
 
 export interface IndexerInterface {
   readonly serverConfig: ServerConfig
+  readonly upstreamConfig: UpstreamConfig
   readonly storageLayoutMap: Map<string, StorageLayout>
   init (): Promise<void>
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>

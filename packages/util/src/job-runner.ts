@@ -572,7 +572,7 @@ export class JobRunner {
       this._blockAndEventsMap.delete(block.blockHash);
 
       // Check if new contract was added and filterLogsByAddresses is set to true
-      if (isNewContractWatched && this._indexer.serverConfig.filterLogsByAddresses) {
+      if (isNewContractWatched && this._indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
         // Delete jobs for any pending events processing
         await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
 
