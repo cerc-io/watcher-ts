@@ -661,8 +661,8 @@ export class Indexer implements IndexerInterface {
     return syncStatus;
   }
 
-  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatus> {
-    return this._baseIndexer.forceUpdateSyncStatus(blockHash, blockNumber);
+  async updateSyncStatusProcessedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatusProcessedBlock(blockHash, blockNumber, force);
   }
 
   async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatus | undefined> {
