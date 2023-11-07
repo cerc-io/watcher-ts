@@ -84,9 +84,15 @@ export class JobRunner {
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_EVENT_PROCESSING, async (job) => {
-      await this.processEvent(job);
-    });
+    await this.jobQueue.subscribe(
+      QUEUE_EVENT_PROCESSING,
+      async (job) => {
+        await this.processEvent(job);
+      },
+      {
+        teamSize: 1
+      }
+    );
   }
 
   async subscribeHooksQueue (): Promise<void> {
@@ -576,17 +582,17 @@ export class JobRunner {
 
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
       assert(prefetchedBlock);
-
       const { block } = prefetchedBlock;
+      log(`Processing events for block ${block.blockNumber}`);
 
-      console.time('time:job-runner#_processEvents-events');
+      console.time(`time:job-runner#_processEvents-events-${block.blockNumber}`);
       const isNewContractWatched = await processBatchEvents(
         this._indexer,
         block,
         this._jobQueueConfig.eventsInBatch,
         this._jobQueueConfig.subgraphEventsOrder
       );
-      console.timeEnd('time:job-runner#_processEvents-events');
+      console.timeEnd(`time:job-runner#_processEvents-events-${block.blockNumber}`);
 
       // Update metrics
       lastProcessedBlockNumber.set(block.blockNumber);
@@ -643,18 +649,18 @@ export class JobRunner {
 
       // TODO: Remove processed entities for current block to avoid reprocessing of events
 
-      // Catch event processing error and push to job queue after some time with higher priority
+      // Catch event processing error and push job again to job queue with higher priority
       log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
-      await wait(EVENTS_PROCESSING_RETRY_WAIT);
-
-      // TODO: Stop job for next block in queue (in historical processing)
-
       const eventsProcessingRetryJob: EventsJobData = { ...jobData, isRetryAttempt: true };
+
       await this.jobQueue.pushJob(
         QUEUE_EVENT_PROCESSING,
         eventsProcessingRetryJob,
         { priority: 1 }
       );
+
+      // Wait for some time before retrying job
+      await wait(EVENTS_PROCESSING_RETRY_WAIT);
     }
   }
 

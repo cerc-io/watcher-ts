@@ -15,7 +15,7 @@ interface Config {
 
 type JobCallback = (job: PgBoss.JobWithDoneCallback<any, any>) => Promise<void>;
 
-const JOBS_PER_INTERVAL = 5;
+const DEFAULT_JOBS_PER_INTERVAL = 5;
 
 const log = debug('vulcanize:job-queue');
 
@@ -86,12 +86,13 @@ export class JobQueue {
     await this._boss.stop();
   }
 
-  async subscribe (queue: string, callback: JobCallback): Promise<string> {
+  async subscribe (queue: string, callback: JobCallback, subscribeOptions: PgBoss.SubscribeOptions = {}): Promise<string> {
     return await this._boss.subscribe(
       queue,
       {
-        teamSize: JOBS_PER_INTERVAL,
-        teamConcurrency: 1
+        teamSize: DEFAULT_JOBS_PER_INTERVAL,
+        teamConcurrency: 1,
+        ...subscribeOptions
       },
       async (job) => {
         try {
@@ -111,7 +112,7 @@ export class JobQueue {
     return await this._boss.onComplete(
       queue,
       {
-        teamSize: JOBS_PER_INTERVAL,
+        teamSize: DEFAULT_JOBS_PER_INTERVAL,
         teamConcurrency: 1
       },
       async (job: PgBoss.JobWithDoneCallback<any, any>) => {
