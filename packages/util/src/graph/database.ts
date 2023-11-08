@@ -503,16 +503,14 @@ export class GraphDatabase {
     subQuery = this._baseDatabase.buildQuery(repo, subQuery, where, relationsMap.get(entityType), block);
 
     let selectQueryBuilder = queryRunner.manager.createQueryBuilder()
-      .from(
-        `(${subQuery.getQuery()})`,
-        'latestEntities'
-      )
+      .select('"latestEntities".*')
+      .from(`(${subQuery.getQuery()})`, 'latestEntities')
       .setParameters(subQuery.getParameters()) as SelectQueryBuilder<Entity>;
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, {}, {}, 'subTable_');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block, 'subTable_');
       if (queryOptions.orderBy !== 'id') {
-        // Order by id if ordered by some non-id column (for rows having same value for the ordered column)
+        // Order by id if ordered by some non-id column (for rows having same value for the column ordered on)
         selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, 'subTable_');
       }
     }

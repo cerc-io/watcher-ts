@@ -1145,7 +1145,7 @@ export class Database {
 
     subQuery = await this.applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
-    // Join with self to select required columns
+    // Self join to select required columns
     const latestRelatedEntitiesAlias = `latest${relationField}Entities`;
     const relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, queryRunner)
       .select(`${relationTableName}.id`, 'id')
@@ -1157,7 +1157,7 @@ export class Database {
       )
       .setParameters(subQuery.getParameters());
 
-    // Join with related table to get the required fields
+    // Join with related table to get the required field to sort on
     const relatedEntitiesAlias = `related${relationField}`;
     selectQueryBuilder = selectQueryBuilder
       .innerJoin(
