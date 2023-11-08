@@ -6,7 +6,7 @@ import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, getRawTransaction, EthClient as EthClientInterface } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, EthClient as EthClientInterface, FullTransaction } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
@@ -194,7 +194,7 @@ export class EthClient implements EthClientInterface {
     return { allEthHeaderCids };
   }
 
-  async getFullTransaction (txHash: string): Promise<any> {
+  async getFullTransaction (txHash: string): Promise<FullTransaction> {
     console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
     const tx = await this._provider.getTransaction(txHash);
     console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
@@ -205,11 +205,9 @@ export class EthClient implements EthClientInterface {
         txHash: tx.hash,
         index: txReceipt.transactionIndex,
         src: tx.from,
-        dst: tx.to,
-        blockByMhKey: {
-          data: escapeHexString(getRawTransaction(tx))
-        }
-      }
+        dst: tx.to
+      },
+      data: tx
     };
   }
 

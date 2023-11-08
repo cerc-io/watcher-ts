@@ -175,6 +175,7 @@ export class JobRunner {
         await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
 
         // Wait for events queue to be empty
+        log(`Waiting for events queue to be empty before restarting watcher to block ${startBlock - 1}`);
         await this.jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
 
         // Remove all watcher blocks and events data if startBlock is less than this._historicalProcessingCompletedUpto

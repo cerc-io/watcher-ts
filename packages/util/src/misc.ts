@@ -224,15 +224,19 @@ export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.
 };
 
 export const getFullTransaction = async (ethClient: EthClient, txHash: string, blockNumber: number): Promise<any> => {
-  const {
-    ethTransactionCidByTxHash: fullTx
+  let {
+    ethTransactionCidByTxHash: fullTx,
+    data: txData
   } = await ethClient.getFullTransaction(txHash, blockNumber);
 
-  assert(fullTx.blockByMhKey);
+  // Check if txData does not exist when using ipld-eth-client
+  if (!txData) {
+    assert(fullTx.blockByMhKey);
 
-  // Decode the transaction data.
-  const txData = utils.parseTransaction(EthDecoder.decodeData(fullTx.blockByMhKey.data));
-  assert(txData);
+    // Decode the transaction data.
+    // TODO: Get required tx data directly from ipld-eth-server
+    txData = utils.parseTransaction(EthDecoder.decodeData(fullTx.blockByMhKey.data));
+  }
 
   return {
     hash: txHash,

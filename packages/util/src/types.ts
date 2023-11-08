@@ -3,6 +3,7 @@
 //
 
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
+import { Transaction } from 'ethers';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -203,6 +204,19 @@ export interface GraphWatcherInterface {
   setIndexer (indexer: IndexerInterface): void;
 }
 
+export interface FullTransaction {
+  ethTransactionCidByTxHash: {
+    txHash: string;
+    index: number;
+    src: string;
+    dst?: string;
+    blockByMhKey?: {
+      data: string;
+    }
+  },
+  data?: Transaction;
+}
+
 export interface EthClient {
   getStorageAt({ blockHash, contract, slot }: {
     blockHash: string;
@@ -226,7 +240,7 @@ export interface EthClient {
     blockNumber?: number;
     blockHash?: string;
   }): Promise<any>;
-  getFullTransaction(txHash: string, blockNumber?: number): Promise<any>;
+  getFullTransaction(txHash: string, blockNumber?: number): Promise<FullTransaction>;
   getBlockByHash(blockHash?: string): Promise<any>;
   getLogs(vars: {
     blockHash: string,
