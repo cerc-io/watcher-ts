@@ -78,9 +78,15 @@ export class JobRunner {
   }
 
   async subscribeHistoricalProcessingQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_HISTORICAL_PROCESSING, async (job) => {
-      await this.processHistoricalBlocks(job);
-    });
+    await this.jobQueue.subscribe(
+      QUEUE_HISTORICAL_PROCESSING,
+      async (job) => {
+        await this.processHistoricalBlocks(job);
+      },
+      {
+        teamSize: 1
+      }
+    );
   }
 
   async subscribeEventProcessingQueue (): Promise<void> {
@@ -168,6 +174,9 @@ export class JobRunner {
       if (startBlock < this._historicalProcessingCompletedUpto) {
         await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
 
+        // Wait for events queue to be empty
+        await this.jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
+
         // Remove all watcher blocks and events data if startBlock is less than this._historicalProcessingCompletedUpto
         // This occurs when new contract is added (with filterLogsByAddresses set to true) and historical processing is restarted from a previous block
         log(`Restarting historical processing from block ${startBlock}`);
@@ -202,17 +211,7 @@ export class JobRunner {
 
     if (blocksLength) {
       // Push event processing job for each block
-      const pushJobForBlockPromises = blocks.map(async block => {
-        const eventsProcessingJob: EventsJobData = {
-          kind: EventsQueueJobKind.EVENTS,
-          blockHash: block.blockHash,
-          isRetryAttempt: false,
-          // Avoid publishing GQL subscription event in historical processing
-          // Publishing when realtime processing is listening to events will cause problems
-          publish: false
-        };
-        this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
-      });
+      const pushEventProcessingJobsForBlocksPromise = this._pushEventProcessingJobsForBlocks(blocks);
 
       if (blocks[blocksLength - 1].blockNumber === endBlock) {
         // If in blocks returned end block is same as the batch end block, set batchEndBlockHash
@@ -226,7 +225,7 @@ export class JobRunner {
         }
       }
 
-      await Promise.all(pushJobForBlockPromises);
+      await pushEventProcessingJobsForBlocksPromise;
     }
 
     // Update sync status canonical, indexed and chain head block to end block
@@ -243,6 +242,23 @@ export class JobRunner {
       job,
       { isComplete: true, endBlock }
     );
+  }
+
+  async _pushEventProcessingJobsForBlocks (blocks: BlockProgressInterface[]): Promise<void> {
+    // Push event processing job for each block
+    // const pushJobForBlockPromises = blocks.map(async block => {
+    for (const block of blocks) {
+      const eventsProcessingJob: EventsJobData = {
+        kind: EventsQueueJobKind.EVENTS,
+        blockHash: block.blockHash,
+        isRetryAttempt: false,
+        // Avoid publishing GQL subscription event in historical processing
+        // Publishing when realtime processing is listening to events will cause problems
+        publish: false
+      };
+
+      await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
+    }
   }
 
   async processEvent (job: PgBoss.JobWithDoneCallback<EventsJobData | ContractJobData, any>): Promise<EventInterface | void> {
@@ -602,12 +618,12 @@ export class JobRunner {
 
       // Check if new contract was added and filterLogsByAddresses is set to true
       if (isNewContractWatched && this._indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
-        // Delete jobs for any pending events processing
-        await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
-
         // Check if historical processing is running and that current block is being processed was trigerred by historical processing
         if (this._historicalProcessingCompletedUpto && this._historicalProcessingCompletedUpto > block.blockNumber) {
           const nextBlockNumberToProcess = block.blockNumber + 1;
+
+          // Delete jobs for any pending historical processing
+          await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
 
           // Push a new job to restart historical blocks processing after current block
           log('New contract added in historical processing with filterLogsByAddresses set to true');
@@ -620,6 +636,9 @@ export class JobRunner {
             { priority: 1 }
           );
         }
+
+        // Delete jobs for any pending events processing
+        await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
       }
 
       if (this._endBlockProcessTimer) {

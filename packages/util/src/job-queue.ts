@@ -7,6 +7,7 @@ import debug from 'debug';
 import PgBoss from 'pg-boss';
 
 import { jobCount, lastJobCompletedOn } from './metrics';
+import { wait } from './misc';
 
 interface Config {
   dbConnectionString: string
@@ -15,7 +16,11 @@ interface Config {
 
 type JobCallback = (job: PgBoss.JobWithDoneCallback<any, any>) => Promise<void>;
 
+// Default number of jobs fetched from DB per polling interval (newJobCheckInterval)
 const DEFAULT_JOBS_PER_INTERVAL = 5;
+
+// Interval time to check for events queue to be empty
+const EMPTY_QUEUE_CHECK_INTERVAL = 5000;
 
 const log = debug('vulcanize:job-queue');
 
@@ -154,5 +159,18 @@ export class JobQueue {
 
   async getQueueSize (name: string, before: PgBoss.Subscription['state'] = 'active'): Promise<number> {
     return this._boss.getQueueSize(name, { before });
+  }
+
+  async waitForEmptyQueue (queue: string): Promise<void> {
+    while (true) {
+      // Get queue size for active and pending jobs
+      const queueSize = await this.getQueueSize(queue, 'completed');
+
+      if (queueSize === 0) {
+        break;
+      }
+
+      await wait(EMPTY_QUEUE_CHECK_INTERVAL);
+    }
   }
 }

@@ -14,12 +14,8 @@ import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
 import { JobQueueConfig, ServerConfig } from './config';
-import { wait } from './misc';
 
 const EVENT = 'event';
-
-// Time to wait for events queue to be empty
-const EMPTY_EVENTS_QUEUE_WAIT_TIME = 5000;
 
 const DEFAULT_HISTORICAL_MAX_FETCH_AHEAD = 20_000;
 
@@ -120,7 +116,7 @@ export class EventWatcher {
 
   async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
     // Wait for events job queue to be empty so that historical processing does not move far ahead
-    await this._waitForEmptyEventsQueue();
+    await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
 
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
@@ -133,19 +129,6 @@ export class EventWatcher {
         processingEndBlockNumber: this._historicalProcessingEndBlockNumber
       }
     );
-  }
-
-  async _waitForEmptyEventsQueue (): Promise<void> {
-    while (true) {
-      // Get queue size for active and pending jobs
-      const queueSize = await this._jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING, 'completed');
-
-      if (queueSize === 0) {
-        break;
-      }
-
-      await wait(EMPTY_EVENTS_QUEUE_WAIT_TIME);
-    }
   }
 
   async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
