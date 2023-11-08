@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import {
-  Brackets,
   Connection,
   FindOneOptions,
   In,
@@ -22,7 +21,7 @@ import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
-import { BlockHeight, Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
+import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
@@ -220,7 +219,7 @@ export class GraphDatabase {
     entityType: (new () => Entity),
     id: string,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight = {},
+    block: CanonicalBlockHeight = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity | undefined> {
     let { hash: blockHash, number: blockNumber } = block;
@@ -260,7 +259,7 @@ export class GraphDatabase {
 
   async loadEntityRelations<Entity> (
     queryRunner: QueryRunner,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     relationsMap: Map<any, { [key: string]: any }>,
     entityType: new () => Entity, entityData: any,
     selections: ReadonlyArray<SelectionNode> = []
@@ -365,6 +364,7 @@ export class GraphDatabase {
           queryRunner,
           entityType,
           latestEntityType,
+          relationsMap,
           block,
           where,
           queryOptions
@@ -442,7 +442,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
+    subQuery = await this._baseDatabase.applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     let selectQueryBuilder = repo.createQueryBuilder(tableName)
       .innerJoin(
@@ -455,10 +455,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -499,21 +499,20 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
+    subQuery = await this._baseDatabase.applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     subQuery = this._baseDatabase.buildQuery(repo, subQuery, where, relationsMap.get(entityType), block);
 
     let selectQueryBuilder = queryRunner.manager.createQueryBuilder()
-      .from(
-        `(${subQuery.getQuery()})`,
-        'latestEntities'
-      )
+      .select('"latestEntities".*')
+      .from(`(${subQuery.getQuery()})`, 'latestEntities')
       .setParameters(subQuery.getParameters()) as SelectQueryBuilder<Entity>;
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block, 'subTable_');
       if (queryOptions.orderBy !== 'id') {
-        selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, 'subTable_');
+        // Order by id if ordered by some non-id column (for rows having same value for the column ordered on)
+        selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, 'subTable_');
       }
     }
 
@@ -535,7 +534,7 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     where: Where = {}
   ): Promise<Entity[]> {
     const repo = queryRunner.manager.getRepository<Entity>(entityType);
@@ -551,7 +550,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
+    selectQueryBuilder = await this._baseDatabase.applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
@@ -564,7 +563,7 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     relationsMap: Map<any, { [key: string]: any }>,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
@@ -579,15 +578,15 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    selectQueryBuilder = await this._applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
+    selectQueryBuilder = await this._baseDatabase.applyBlockHeightFilter(queryRunner, selectQueryBuilder, block, tableName);
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions);
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' });
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -646,10 +645,10 @@ export class GraphDatabase {
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), {}, 'latest');
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), {}, '', 'latest');
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+    selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, '', 'latest');
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -666,7 +665,8 @@ export class GraphDatabase {
     queryRunner: QueryRunner,
     entityType: new () => Entity,
     latestEntity: new () => any,
-    block: BlockHeight,
+    relationsMap: Map<any, { [key: string]: any }>,
+    block: CanonicalBlockHeight,
     where: Where = {},
     queryOptions: QueryOptions = {}
   ): Promise<Entity[]> {
@@ -684,7 +684,7 @@ export class GraphDatabase {
       delete where[FILTER_CHANGE_BLOCK];
     }
 
-    subQuery = await this._applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
+    subQuery = await this._baseDatabase.applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
 
     let selectQueryBuilder = latestEntityRepo.createQueryBuilder('latest')
       .select('*')
@@ -698,13 +698,13 @@ export class GraphDatabase {
         'result'
       ) as SelectQueryBuilder<Entity>;
 
-    selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, {}, {}, 'latest');
+    selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, relationsMap.get(entityType), block, 'latest');
 
     if (queryOptions.orderBy) {
-      selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, '', 'latest');
+      selectQueryBuilder = await this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block, '', 'latest');
     }
 
-    selectQueryBuilder = this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, '', 'latest');
+    selectQueryBuilder = await this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, { ...queryOptions, orderBy: 'id' }, {}, {}, '', 'latest');
 
     if (queryOptions.skip) {
       selectQueryBuilder = selectQueryBuilder.offset(queryOptions.skip);
@@ -722,7 +722,7 @@ export class GraphDatabase {
 
   async loadEntitiesRelations<Entity> (
     queryRunner: QueryRunner,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     relationsMap: Map<any, { [key: string]: any }>,
     entity: new () => Entity,
     entities: Entity[],
@@ -752,7 +752,7 @@ export class GraphDatabase {
 
   async loadRelation<Entity> (
     queryRunner: QueryRunner,
-    block: BlockHeight,
+    block: CanonicalBlockHeight,
     relationsMap: Map<any, { [key: string]: any }>,
     relations: { [key: string]: any },
     entities: Entity[],
@@ -1227,34 +1227,6 @@ export class GraphDatabase {
         await this.canonicalizeLatestEntity(queryRunner, entityType, latestEntityType, entitiesToReset, blockNumber);
       })
     );
-  }
-
-  async _applyBlockHeightFilter<Entity> (
-    queryRunner: QueryRunner,
-    queryBuilder: SelectQueryBuilder<Entity>,
-    block: CanonicalBlockHeight,
-    alias: string
-  ): Promise<SelectQueryBuilder<Entity>> {
-    // Block hash takes precedence over number if provided
-    if (block.hash) {
-      if (!block.canonicalBlockHashes) {
-        const { canonicalBlockNumber, blockHashes } = await this._baseDatabase.getFrothyRegion(queryRunner, block.hash);
-
-        // Update the block field to avoid firing the same query further
-        block.number = canonicalBlockNumber;
-        block.canonicalBlockHashes = blockHashes;
-      }
-
-      queryBuilder = queryBuilder
-        .andWhere(new Brackets(qb => {
-          qb.where(`${alias}.block_hash IN (:...blockHashes)`, { blockHashes: block.canonicalBlockHashes })
-            .orWhere(`${alias}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber: block.number });
-        }));
-    } else if (block.number) {
-      queryBuilder = queryBuilder.andWhere(`${alias}.block_number <= :blockNumber`, { blockNumber: block.number });
-    }
-
-    return queryBuilder;
   }
 
   _measureCachedPrunedEntities (): void {

@@ -268,7 +268,7 @@ export class Database {
     queryBuilder = this.buildQuery(repo, queryBuilder, where);
 
     if (queryOptions.orderBy) {
-      queryBuilder = this.orderQuery(repo, queryBuilder, queryOptions);
+      queryBuilder = await this.orderQuery(repo, queryBuilder, queryOptions);
     }
 
     queryBuilder.addOrderBy('event.id', 'ASC');
@@ -1050,9 +1050,9 @@ export class Database {
       assert(columnMetadata);
 
       if (relation.isArray) {
-        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY(${alias}.${columnMetadata.databaseName})`);
+        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ANY("${alias}".${columnMetadata.databaseName})`);
       } else {
-        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = ${alias}.${columnMetadata.databaseName}`);
+        relationSubQuery = relationSubQuery.where(`${relationTableName}.id = "${alias}".${columnMetadata.databaseName}`);
       }
     }
 
@@ -1071,27 +1071,137 @@ export class Database {
     whereBuilder.andWhere(`EXISTS (${relationSubQuery.getQuery()})`, relationSubQuery.getParameters());
   }
 
-  orderQuery<Entity extends ObjectLiteral> (
+  async orderQuery<Entity extends ObjectLiteral> (
     repo: Repository<Entity>,
     selectQueryBuilder: SelectQueryBuilder<Entity>,
     orderOptions: { orderBy?: string, orderDirection?: string },
+    relations: Readonly<{ [key: string]: any }> = {},
+    block: Readonly<CanonicalBlockHeight> = {},
     columnPrefix = '',
     alias?: string
-  ): SelectQueryBuilder<Entity> {
+  ): Promise<SelectQueryBuilder<Entity>> {
     if (!alias) {
       alias = selectQueryBuilder.alias;
     }
 
-    const { orderBy, orderDirection } = orderOptions;
-    assert(orderBy);
+    const { orderBy: orderByWithSuffix, orderDirection } = orderOptions;
+    assert(orderByWithSuffix);
+
+    // Nested sort key of form relationField__relationColumn
+    const [orderBy, suffix] = orderByWithSuffix.split('__');
 
     const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
     assert(columnMetadata);
+
+    // Handle nested entity sort
+    const relation = relations[orderBy];
+    if (suffix && relation) {
+      return this.orderQueryNested(
+        repo,
+        selectQueryBuilder,
+        { relationField: orderBy, orderBy: suffix, orderDirection },
+        relation,
+        block,
+        columnPrefix,
+        alias
+      );
+    }
 
     return selectQueryBuilder.addOrderBy(
       `"${alias}"."${columnPrefix}${columnMetadata.databaseName}"`,
       orderDirection === 'desc' ? 'DESC' : 'ASC'
     );
+  }
+
+  async orderQueryNested<Entity extends ObjectLiteral> (
+    repo: Repository<Entity>,
+    selectQueryBuilder: SelectQueryBuilder<Entity>,
+    orderOptions: { relationField: string, orderBy: string, orderDirection?: string },
+    relation: Readonly<any> = {},
+    block: Readonly<CanonicalBlockHeight> = {},
+    columnPrefix = '',
+    alias: string
+  ): Promise<SelectQueryBuilder<Entity>> {
+    const { relationField, orderBy, orderDirection } = orderOptions;
+
+    const columnMetadata = repo.metadata.findColumnWithPropertyName(relationField);
+    assert(columnMetadata);
+
+    const relationRepo = this.conn.getRepository<any>(relation.entity);
+    const relationTableName = relationRepo.metadata.tableName;
+
+    const relationColumnMetaData = relationRepo.metadata.findColumnWithPropertyName(orderBy);
+    assert(relationColumnMetaData);
+
+    const queryRunner = repo.queryRunner;
+    assert(queryRunner);
+
+    // Perform a groupBy(id) and max(block number) to get the latest version of related entities
+    let subQuery = relationRepo.createQueryBuilder('subTable', queryRunner)
+      .select('subTable.id', 'id')
+      .addSelect('MAX(subTable.block_number)', 'block_number')
+      .where('subTable.is_pruned = :isPruned', { isPruned: false })
+      .groupBy('subTable.id');
+
+    subQuery = await this.applyBlockHeightFilter(queryRunner, subQuery, block, 'subTable');
+
+    // Self join to select required columns
+    const latestRelatedEntitiesAlias = `latest${relationField}Entities`;
+    const relationSubQuery: SelectQueryBuilder<any> = relationRepo.createQueryBuilder(relationTableName, queryRunner)
+      .select(`${relationTableName}.id`, 'id')
+      .addSelect(`${relationTableName}.${relationColumnMetaData.databaseName}`, `${relationColumnMetaData.databaseName}`)
+      .innerJoin(
+        `(${subQuery.getQuery()})`,
+        latestRelatedEntitiesAlias,
+        `${relationTableName}.id = "${latestRelatedEntitiesAlias}"."id" AND ${relationTableName}.block_number = "${latestRelatedEntitiesAlias}"."block_number"`
+      )
+      .setParameters(subQuery.getParameters());
+
+    // Join with related table to get the required field to sort on
+    const relatedEntitiesAlias = `related${relationField}`;
+    selectQueryBuilder = selectQueryBuilder
+      .innerJoin(
+        `(${relationSubQuery.getQuery()})`,
+        relatedEntitiesAlias,
+        `"${alias}"."${columnPrefix}${columnMetadata.databaseName}" = "${relatedEntitiesAlias}".id`
+      )
+      .setParameters(relationSubQuery.getParameters());
+
+    // Apply sort
+    return selectQueryBuilder
+      .addSelect(`"${relatedEntitiesAlias}"."${relationColumnMetaData.databaseName}"`)
+      .addOrderBy(
+        `"${relatedEntitiesAlias}"."${relationColumnMetaData.databaseName}"`,
+        orderDirection === 'desc' ? 'DESC' : 'ASC'
+      );
+  }
+
+  async applyBlockHeightFilter<Entity> (
+    queryRunner: QueryRunner,
+    queryBuilder: SelectQueryBuilder<Entity>,
+    block: CanonicalBlockHeight,
+    alias: string
+  ): Promise<SelectQueryBuilder<Entity>> {
+    // Block hash takes precedence over number if provided
+    if (block.hash) {
+      if (!block.canonicalBlockHashes) {
+        const { canonicalBlockNumber, blockHashes } = await this.getFrothyRegion(queryRunner, block.hash);
+
+        // Update the block field to avoid firing the same query further
+        block.number = canonicalBlockNumber;
+        block.canonicalBlockHashes = blockHashes;
+      }
+
+      queryBuilder = queryBuilder
+        .andWhere(new Brackets(qb => {
+          qb.where(`${alias}.block_hash IN (:...blockHashes)`, { blockHashes: block.canonicalBlockHashes })
+            .orWhere(`${alias}.block_number <= :canonicalBlockNumber`, { canonicalBlockNumber: block.number });
+        }));
+    } else if (block.number) {
+      queryBuilder = queryBuilder.andWhere(`${alias}.block_number <= :blockNumber`, { blockNumber: block.number });
+    }
+
+    return queryBuilder;
   }
 
   async _fetchBlockCount (): Promise<void> {
