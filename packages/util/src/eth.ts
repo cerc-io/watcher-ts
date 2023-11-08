@@ -1,8 +1,5 @@
 import debug from 'debug';
-import { UnsignedTransaction, utils } from 'ethers';
-
-import { TransactionResponse } from '@ethersproject/providers';
-import { SignatureLike } from '@ethersproject/bytes';
+import { utils } from 'ethers';
 
 const log = debug('vulcanize:eth');
 
@@ -104,28 +101,4 @@ export function decodeData (hexLiteral: string): Uint8Array {
 export function escapeHexString (hex: string): string {
   const value = hex.slice(2);
   return `\\x${value}`;
-}
-
-// https://docs.ethers.org/v5/cookbook/transactions/#cookbook--compute-raw-transaction
-export function getRawTransaction (tx: TransactionResponse): string {
-  function addKey (
-    accum: {[key: string]: any},
-    key: string
-  ) {
-    const txKey = key as keyof TransactionResponse;
-    if (txKey in tx) { accum[key] = tx[txKey]; }
-    return accum;
-  }
-
-  // Extract the relevant parts of the transaction and signature
-  const txFields = 'accessList chainId data gasLimit maxFeePerGas maxPriorityFeePerGas nonce to type value'.split(' ');
-  const sigFields = 'v r s'.split(' ');
-
-  // Seriailze the signed transaction
-  const raw = utils.serializeTransaction(txFields.reduce(addKey, {}) as UnsignedTransaction, sigFields.reduce(addKey, {}) as SignatureLike);
-
-  // Double check things went well
-  if (utils.keccak256(raw) !== tx.hash) { throw new Error('serializing failed!'); }
-
-  return raw;
 }

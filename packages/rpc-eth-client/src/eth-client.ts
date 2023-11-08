@@ -4,9 +4,10 @@
 
 import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
+import { Signature, Transaction } from 'ethers-v6';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, getRawTransaction, EthClient as EthClientInterface } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, EthClient as EthClientInterface } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
@@ -207,10 +208,35 @@ export class EthClient implements EthClientInterface {
         src: tx.from,
         dst: tx.to,
         blockByMhKey: {
-          data: escapeHexString(getRawTransaction(tx))
+          data: escapeHexString(this._serializeTx(tx))
         }
       }
     };
+  }
+
+  _serializeTx (tx: providers.TransactionResponse): string {
+    // Transaction r, s, v values should be present
+    // https://docs.ethers.org/v5/api/utils/transactions/#Transaction
+    assert(tx.r);
+    assert(tx.s);
+    assert(tx.v);
+
+    // Transform ethers v5 tx to v6 tx
+    const v6Tx = {
+      ...tx,
+      signature: Signature.from({
+        r: tx.r,
+        s: tx.s,
+        v: tx.v
+      }),
+      gasLimit: tx.gasLimit.toBigInt(),
+      gasPrice: tx.gasPrice && tx.gasPrice.toBigInt(),
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas && tx.maxPriorityFeePerGas.toBigInt(),
+      maxFeePerGas: tx.maxFeePerGas && tx.maxFeePerGas.toBigInt(),
+      value: tx.value.toBigInt()
+    };
+
+    return Transaction.from(v6Tx).unsignedSerialized;
   }
 
   async getBlockByHash (blockHash?: string): Promise<any> {
