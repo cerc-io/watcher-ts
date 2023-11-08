@@ -170,17 +170,18 @@ export class Indexer implements IndexerInterface {
     return {} as SyncStatusInterface;
   }
 
-  async forceUpdateSyncStatus (blockHash: string, blockNumber: number): Promise<SyncStatusInterface> {
+  async updateSyncStatusProcessedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface> {
     assert(blockNumber);
     assert(blockHash);
+    assert(force);
 
     return {} as SyncStatusInterface;
   }
 
-  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface> {
+  async updateSyncStatusIndexingError (hasIndexingError: boolean): Promise<SyncStatusInterface | undefined> {
     assert(hasIndexingError);
 
-    return {} as SyncStatusInterface;
+    return undefined;
   }
 
   async markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void> {

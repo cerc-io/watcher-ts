@@ -384,20 +384,20 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
 
   // Check if we are out of events.
   while (numFetchedEvents < block.numEvents) {
-    console.time('time:common#processEventsInSubgraphOrder-fetching_events_batch');
+    console.time(`time:common#processEventsInSubgraphOrder-fetching_events_batch-${block.blockNumber}`);
 
     // Fetch events in batches
     const events = await _getEventsBatch(indexer, block.blockHash, eventsInBatch, page);
     page++;
     numFetchedEvents += events.length;
 
-    console.timeEnd('time:common#processEventsInSubgraphOrder-fetching_events_batch');
+    console.timeEnd(`time:common#processEventsInSubgraphOrder-fetching_events_batch-${block.blockNumber}`);
 
     if (events.length) {
       log(`Processing events batch from index ${events[0].index} to ${events[0].index + events.length - 1}`);
     }
 
-    console.time('time:common#processEventsInSubgraphOrder-processing_events_batch');
+    console.time(`time:common#processEventsInSubgraphOrder-processing_events_batch-${block.blockNumber}`);
 
     // First process events for initially watched contracts
     const watchedContractEvents: EventInterface[] = [];
@@ -417,7 +417,7 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
       block.numProcessedEvents++;
     }
 
-    console.timeEnd('time:common#processEventsInSubgraphOrder-processing_events_batch');
+    console.timeEnd(`time:common#processEventsInSubgraphOrder-processing_events_batch-${block.blockNumber}`);
   }
 
   const watchedContracts = indexer.getWatchedContracts().map(contract => contract.address);

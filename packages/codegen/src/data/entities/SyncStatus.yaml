@@ -27,6 +27,17 @@ columns:
     pgType: integer
     tsType: number
     columnType: Column
+  - name: latestProcessedBlockHash
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 66
+  - name: latestProcessedBlockNumber
+    pgType: integer
+    tsType: number
+    columnType: Column
   - name: latestCanonicalBlockHash
     pgType: varchar
     tsType: string

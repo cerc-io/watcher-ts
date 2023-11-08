@@ -253,13 +253,13 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.updateSyncStatusChainHead(repo, blockHash, blockNumber, force);
   }
 
-  async forceUpdateSyncStatus (queryRunner: QueryRunner, blockHash: string, blockNumber: number): Promise<SyncStatus> {
+  async updateSyncStatusProcessedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
-    return this._baseDatabase.forceUpdateSyncStatus(repo, blockHash, blockNumber);
+    return this._baseDatabase.updateSyncStatusProcessedBlock(repo, blockHash, blockNumber, force);
   }
 
-  async updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatus> {
+  async updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatus | undefined> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 
     return this._baseDatabase.updateSyncStatusIndexingError(repo, hasIndexingError);

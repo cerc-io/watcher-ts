@@ -285,8 +285,8 @@ export class EthClient implements EthClientInterface {
           'eth_getLogs',
           [{
             address: addresses.map(address => address.toLowerCase()),
-            fromBlock: fromBlock && utils.hexlify(fromBlock),
-            toBlock: toBlock && utils.hexlify(toBlock),
+            fromBlock: fromBlock && utils.hexValue(fromBlock),
+            toBlock: toBlock && utils.hexValue(toBlock),
             blockHash,
             topics
           }]

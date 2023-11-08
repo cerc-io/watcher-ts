@@ -460,16 +460,28 @@ export class Schema {
   }
 
   _addMeta (): void {
-    const typeComposer = this._composer.createObjectTC({
+    // Create the Block type.
+    const metaBlocktypeComposer = this._composer.createObjectTC({
+      name: '_MetaBlock_',
+      fields: {
+        hash: 'Bytes',
+        number: 'Int!',
+        timestamp: 'Int'
+      }
+    });
+
+    this._composer.addSchemaMustHaveType(metaBlocktypeComposer);
+
+    const metaTypeComposer = this._composer.createObjectTC({
       name: '_Meta_',
       fields: {
-        block: this._composer.getOTC('_Block_').NonNull,
+        block: metaBlocktypeComposer.NonNull,
         deployment: { type: new GraphQLNonNull(GraphQLString) },
         hasIndexingErrors: { type: new GraphQLNonNull(GraphQLBoolean) }
       }
     });
 
-    this._composer.addSchemaMustHaveType(typeComposer);
+    this._composer.addSchemaMustHaveType(metaTypeComposer);
 
     this._composer.Query.addFields({
       _meta: {
