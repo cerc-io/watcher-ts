@@ -42,7 +42,8 @@ export const OPERATOR_MAP = {
   contains_nocase: 'ILIKE',
   starts_nocase: 'ILIKE',
   ends_nocase: 'ILIKE',
-  nested: ''
+  nested: '',
+  match: '@@'
 };
 
 const INSERT_EVENTS_BATCH = 100;
@@ -66,6 +67,8 @@ export interface QueryOptions {
   skip?: number;
   orderBy?: string;
   orderDirection?: OrderDirection;
+  tsRankBy?: string;
+  tsRankValue?: string;
 }
 
 export interface Filter {
@@ -943,6 +946,8 @@ export class Database {
           value = this._transformBigValues(value);
           if (operator === 'in') {
             whereClause += '(:...';
+          } else if (columnMetadata.type === 'tsvector' && operator === 'match') {
+            whereClause += 'to_tsquery(:';
           } else {
             whereClause += ':';
           }
@@ -956,6 +961,10 @@ export class Database {
             if (!value.length) {
               whereClause = 'FALSE';
             }
+          }
+
+          if (operator === 'match') {
+            whereClause += ')';
           }
 
           if (!columnIsArray) {
@@ -1171,6 +1180,31 @@ export class Database {
         `"${relatedEntitiesAlias}"."${relationColumnMetaData.databaseName}"`,
         orderDirection === 'desc' ? 'DESC' : 'ASC'
       );
+  }
+
+  orderTsQuery<Entity extends ObjectLiteral> (
+    repo: Repository<Entity>,
+    selectQueryBuilder: SelectQueryBuilder<Entity>,
+    tsOrderOptions: { tsRankBy?: string, tsRankValue?: string },
+    columnPrefix = '',
+    alias?: string
+  ): SelectQueryBuilder<Entity> {
+    if (!alias) {
+      alias = selectQueryBuilder.alias;
+    }
+
+    const { tsRankBy, tsRankValue } = tsOrderOptions;
+    assert(tsRankBy);
+
+    const columnMetadata = repo.metadata.findColumnWithPropertyName(tsRankBy);
+    assert(columnMetadata);
+
+    const tsOrderBy = `ts_rank("${alias}"."${columnPrefix}${columnMetadata.databaseName}", to_tsquery('${tsRankValue ?? ''}'))`;
+
+    return selectQueryBuilder.addOrderBy(
+      tsOrderBy,
+      'ASC'
+    );
   }
 
   async applyBlockHeightFilter<Entity> (

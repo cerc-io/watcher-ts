@@ -454,6 +454,10 @@ export class GraphDatabase {
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(repo, selectQueryBuilder, queryOptions);
+    }
+
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
