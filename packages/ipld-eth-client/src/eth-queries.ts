@@ -75,7 +75,7 @@ query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
 }
 `;
 
-// TODO: Get size from ipld-eth-server
+// TODO: Get block size from ipld-eth-server
 export const getFullBlocks = gql`
 query allEthHeaderCids($blockNumber: BigInt, $blockHash: String) {
   allEthHeaderCids(condition: { blockNumber: $blockNumber, blockHash: $blockHash }) {

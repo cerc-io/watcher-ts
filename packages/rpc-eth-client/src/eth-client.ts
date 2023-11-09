@@ -304,7 +304,6 @@ export class EthClient implements EthClientInterface {
       return acc;
     }, new Set<string>());
 
-    // TODO: Get tx receipt in job-runner when fetching blocks and txs
     const txReceipts = await Promise.all(Array.from(txHashesSet).map(txHash => this._provider.getTransactionReceipt(txHash)));
 
     const txReceiptMap = txReceipts.reduce((acc, txReceipt) => {

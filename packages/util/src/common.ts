@@ -101,7 +101,6 @@ export const fetchBlocksAtHeight = async (
   while (!blocks.length) {
     try {
       console.time('time:common#_fetchBlocks-eth-server');
-      // TODO: Get full block and set in blockEventsMap
       blocks = await indexer.getBlocks({ blockNumber });
 
       if (!blocks.length) {
