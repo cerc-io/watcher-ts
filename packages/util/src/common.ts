@@ -107,6 +107,20 @@ export const fetchBlocksAtHeight = async (
       if (!blocks.length) {
         log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
         await wait(jobQueueConfig.blockDelayInMilliSecs);
+      } else {
+        blocks.forEach(block => {
+          blockAndEventsMap.set(
+            block.blockHash,
+            {
+              // Block is set later in job-runner when saving to database
+              block: {} as BlockProgressInterface,
+              events: [],
+              ethFullBlock: block,
+              // Transactions are set later in job-runner when fetching events
+              ethFullTransactions: []
+            }
+          );
+        });
       }
     } catch (err: any) {
       // Handle null block error in case of Lotus EVM

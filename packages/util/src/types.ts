@@ -166,14 +166,18 @@ export interface IndexerInterface {
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
-  getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any>
+  getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<EthFullBlock[]>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
-  saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
+  saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[
+    BlockProgressInterface,
+    DeepPartial<EventInterface>[],
+    EthFullTransaction[]
+  ]>
   fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{
     blockProgress: BlockProgressInterface,
     events: DeepPartial<EventInterface>[],

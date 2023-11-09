@@ -33,6 +33,7 @@ export class EventWatcher {
   _indexer: IndexerInterface;
   _pubsub: PubSub;
   _jobQueue: JobQueue;
+  _realtimeProcessingStarted = false;
 
   _shutDown = false;
   _signalCount = 0;
@@ -134,6 +135,13 @@ export class EventWatcher {
   async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
     log(`Starting realtime block processing from block ${startBlockNumber}`);
     await processBlockByNumber(this._jobQueue, startBlockNumber);
+
+    // Check if realtime processing already started and avoid resubscribing to block progress event
+    if (this._realtimeProcessingStarted) {
+      return;
+    }
+
+    this._realtimeProcessingStarted = true;
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of

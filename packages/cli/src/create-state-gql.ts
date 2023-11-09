@@ -129,8 +129,10 @@ export class CreateStateFromGQLCmd {
     }
 
     const blockProgress: Partial<BlockProgressInterface> = {
-      ...block,
-      blockNumber: Number(block.blockNumber)
+      cid: block.cid,
+      blockTimestamp: Number(block.timestamp),
+      blockNumber: Number(block.blockNumber),
+      blockHash: block.blockHash
     };
 
     // Get watched contracts using subgraph dataSources

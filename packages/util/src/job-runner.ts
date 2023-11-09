@@ -20,7 +20,7 @@ import {
   QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface, EthFullBlock } from './types';
+import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
 import { wait } from './misc';
 import {
   createPruningJob,
@@ -502,6 +502,20 @@ export class JobRunner {
           throw new Error(message);
         }
 
+        blocks.forEach(block => {
+          this._blockAndEventsMap.set(
+            block.blockHash,
+            {
+              // block is set later in job when saving to database
+              block: {} as BlockProgressInterface,
+              events: [],
+              ethFullBlock: block,
+              // Transactions are set later in job when fetching events
+              ethFullTransactions: []
+            }
+          );
+        });
+
         const [{ cid: parentCid, blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
 
         await this.jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
@@ -549,7 +563,9 @@ export class JobRunner {
     if (!blockProgress) {
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
 
-      if (prefetchedBlock) {
+      // Check if prefetched block is set properly
+      // prefetchedBlock.block is an empty object when running in realtime processing
+      if (prefetchedBlock && prefetchedBlock.block.blockHash) {
         ({ block: blockProgress } = prefetchedBlock);
       } else {
         // Delay required to process block.
@@ -558,18 +574,19 @@ export class JobRunner {
 
         console.time('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
         log(`_indexBlock#saveBlockAndFetchEvents: fetching from upstream server ${blockHash}`);
-        [blockProgress] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
+        let ethFullTransactions;
+        [blockProgress,, ethFullTransactions] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
         log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
         console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
+        const data = this._blockAndEventsMap.get(blockHash);
+        assert(data);
 
         this._blockAndEventsMap.set(
           blockHash,
           {
+            ...data,
             block: blockProgress,
-            events: [],
-            // TODO: Get full block and transactions from blockEventsMap
-            ethFullBlock: {} as EthFullBlock,
-            ethFullTransactions: []
+            ethFullTransactions
           });
       }
     }

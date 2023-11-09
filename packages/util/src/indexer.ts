@@ -291,10 +291,9 @@ export class Indexer {
     return res;
   }
 
-  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<any> {
+  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<EthFullBlock[]> {
     assert(blockFilter.blockHash || blockFilter.blockNumber);
-    const result = await this._ethClient.getBlocks(blockFilter);
-    const { allEthHeaderCids: { nodes: blocks } } = result;
+    const blocks = await this._ethClient.getFullBlocks(blockFilter);
 
     if (!blocks.length) {
       try {
@@ -570,47 +569,55 @@ export class Indexer {
   }
 
   // Fetch events (to be saved to db) for a particular block
-  async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+  async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ events: DeepPartial<EventInterface>[], transactions: EthFullTransaction[]}> {
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
 
-    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+    const events = this.createDbEventsFromLogsAndTxs(
+      blockHash,
+      logs,
+      transactions.map(tx => tx.ethTransactionCidByTxHash),
+      parseEventNameAndArgs
+    );
+
+    return { events, transactions };
   }
 
   async fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[], eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
     const { topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
 
-    return this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+    return this.createDbEventsFromLogsAndTxs(
+      blockHash,
+      logs,
+      transactions.map(tx => tx.ethTransactionCidByTxHash),
+      parseEventNameAndArgs
+    );
   }
 
-  async _fetchLogsAndTransactions (blockHash: string, blockNumber: number, addresses?: string[], topics?: string[][]): Promise<{ logs: any[]; transactions: any[] }> {
-    const logsPromise = await this._ethClient.getLogs({
+  async _fetchLogsAndTransactions (blockHash: string, blockNumber: number, addresses?: string[], topics?: string[][]): Promise<{ logs: any[]; transactions: EthFullTransaction[] }> {
+    const { logs } = await this._ethClient.getLogs({
       blockHash,
       blockNumber: blockNumber.toString(),
       addresses,
       topics
     });
 
-    // TODO: Use txs from blockEventsMap
-    const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash, blockNumber });
-
-    const [
-      { logs },
-      {
-        allEthHeaderCids: {
-          nodes: [
-            {
-              ethTransactionCidsByHeaderId: {
-                nodes: transactions
-              }
-            }
-          ]
-        }
-      }
-    ] = await Promise.all([logsPromise, transactionsPromise]);
+    const transactions = await this._fetchTxsFromLogs(logs);
 
     return { logs, transactions };
+  }
+
+  async _fetchTxsFromLogs (logs: any[]): Promise<EthFullTransaction[]> {
+    const txHashes = Array.from([
+      ...new Set<string>(logs.map((log) => log.transaction.hash))
+    ]);
+
+    const ethFullTxPromises = txHashes.map(async txHash => {
+      return this._ethClient.getFullTransaction(txHash);
+    });
+
+    return Promise.all(ethFullTxPromises);
   }
 
   // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
