@@ -18,10 +18,10 @@ import { GQLCacheConfig, Config } from './config';
 import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph/graph-decimal';
 import * as EthDecoder from './eth';
-import { getCachedBlockSize } from './block-size-cache';
 import { ResultEvent } from './indexer';
-import { EventInterface, EthClient } from './types';
+import { EventInterface, EthFullBlock, EthFullTransaction } from './types';
 import { BlockHeight } from './database';
+import { Transaction } from './graph/utils';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
@@ -154,7 +154,7 @@ export const getResetYargs = (): yargs.Argv => {
 };
 
 export const getCustomProvider = (url?: utils.ConnectionInfo | string, network?: providers.Networkish): providers.JsonRpcProvider => {
-  const provider = new providers.JsonRpcProvider(url, network);
+  const provider = new providers.StaticJsonRpcProvider(url, network);
   provider.formatter = new CustomFormatter();
   return provider;
 };
@@ -182,52 +182,40 @@ class CustomFormatter extends providers.Formatter {
   }
 }
 
-export const getFullBlock = async (ethClient: EthClient, ethProvider: providers.BaseProvider, blockHash: string, blockNumber: number): Promise<any> => {
-  const {
-    allEthHeaderCids: {
-      nodes: [
-        fullBlock
-      ]
-    }
-  } = await ethClient.getFullBlocks({ blockHash, blockNumber });
-
-  assert(fullBlock.blockByMhKey);
-
+export const getFullBlock = (ethFullBlock: EthFullBlock): any => {
   // Decode the header data.
-  const header = EthDecoder.decodeHeader(EthDecoder.decodeData(fullBlock.blockByMhKey.data));
+  const header = EthDecoder.decodeHeader(EthDecoder.decodeData(ethFullBlock.blockByMhKey.data));
   assert(header);
 
-  // TODO: Calculate size from rlp encoded data.
-  // Get block info from JSON RPC API provided by ipld-eth-server.
-  const provider = ethProvider as providers.JsonRpcProvider;
-  const size = await getCachedBlockSize(provider, blockHash, Number(fullBlock.blockNumber));
-
   return {
-    headerId: fullBlock.id,
-    cid: fullBlock.cid,
-    blockNumber: fullBlock.blockNumber,
-    blockHash: fullBlock.blockHash,
-    parentHash: fullBlock.parentHash,
-    timestamp: fullBlock.timestamp,
-    stateRoot: fullBlock.stateRoot,
-    td: fullBlock.td,
-    txRoot: fullBlock.txRoot,
-    receiptRoot: fullBlock.receiptRoot,
-    uncleHash: fullBlock.uncleRoot,
+    headerId: ethFullBlock.id,
+    cid: ethFullBlock.cid,
+    blockNumber: ethFullBlock.blockNumber,
+    blockHash: ethFullBlock.blockHash,
+    parentHash: ethFullBlock.parentHash,
+    timestamp: ethFullBlock.timestamp,
+    stateRoot: ethFullBlock.stateRoot,
+    td: ethFullBlock.td,
+    txRoot: ethFullBlock.txRoot,
+    receiptRoot: ethFullBlock.receiptRoot,
+    uncleHash: ethFullBlock.uncleRoot,
     difficulty: header.Difficulty.toString(),
     gasLimit: header.GasLimit.toString(),
     gasUsed: header.GasUsed.toString(),
     author: header.Beneficiary,
-    size: BigInt(size).toString(),
+    size: ethFullBlock.size,
     baseFee: header.BaseFee?.toString()
   };
 };
 
-export const getFullTransaction = async (ethClient: EthClient, txHash: string, blockNumber: number): Promise<any> => {
+export const getFullTransaction = (txHash: string, ethFullTransactions: EthFullTransaction[]): Transaction => {
+  const ethFullTransaction = ethFullTransactions.find(ethFullTransaction => ethFullTransaction.ethTransactionCidByTxHash.txHash === txHash);
+  assert(ethFullTransaction);
+
   let {
     ethTransactionCidByTxHash: fullTx,
     data: txData
-  } = await ethClient.getFullTransaction(txHash, blockNumber);
+  } = ethFullTransaction;
 
   // Check if txData does not exist when using ipld-eth-client
   if (!txData) {

@@ -31,7 +31,9 @@ import {
   FILTER_CHANGE_BLOCK,
   Where,
   Filter,
-  OPERATOR_MAP
+  OPERATOR_MAP,
+  ExtraEventData,
+  EthFullTransaction
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
@@ -149,12 +151,12 @@ export class GraphWatcher {
     }
   }
 
-  async handleEvent (eventData: any) {
+  async handleEvent (eventData: any, extraData: ExtraEventData) {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
     // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
-      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash, block.number);
+      this._context.block = getFullBlock(extraData.ethFullBlock);
     }
 
     const blockData = this._context.block;
@@ -197,7 +199,7 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const tx = await this._getTransactionData(txHash, Number(blockData.blockNumber));
+    const tx = this._getTransactionData(txHash, extraData.ethFullTransactions);
 
     const data = {
       block: blockData,
@@ -208,9 +210,13 @@ export class GraphWatcher {
     };
 
     // Create ethereum event to be passed to the wasm event handler.
+    console.time(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
     const ethereumEvent = await createEvent(instanceExports, contract, data);
+    console.timeEnd(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
     try {
+      console.time(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
       await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
+      console.timeEnd(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
     } catch (error) {
       this._clearCachedEntities();
       throw error;
@@ -237,10 +243,11 @@ export class GraphWatcher {
         continue;
       }
 
-      // Check if block data is already fetched in handleEvent method for the same block.
-      if (!this._context.block || this._context.block.blockHash !== blockHash) {
-        this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
-      }
+      // TODO: Use extraData full block
+      // // Check if block data is already fetched in handleEvent method for the same block.
+      // if (!this._context.block || this._context.block.blockHash !== blockHash) {
+      //   this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
+      // }
 
       const blockData = this._context.block;
       assert(blockData);
@@ -445,15 +452,14 @@ export class GraphWatcher {
     }
   }
 
-  async _getTransactionData (txHash: string, blockNumber: number): Promise<Transaction> {
+  _getTransactionData (txHash: string, ethFullTransactions: EthFullTransaction[]): Transaction {
     let transaction = this._transactionsMap.get(txHash);
 
     if (transaction) {
       return transaction;
     }
 
-    transaction = await getFullTransaction(this._ethClient, txHash, blockNumber);
-    assert(transaction);
+    transaction = getFullTransaction(txHash, ethFullTransactions);
     this._transactionsMap.set(txHash, transaction);
 
     return transaction;

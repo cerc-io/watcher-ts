@@ -54,7 +54,10 @@ export const initClients = async (config: Config): Promise<{
     });
   }
 
-  const ethProvider = getCustomProvider(rpcProviderEndpoint);
+  const ethProvider = getCustomProvider({
+    url: rpcProviderEndpoint,
+    allowGzip: true
+  });
 
   return {
     ethClient,

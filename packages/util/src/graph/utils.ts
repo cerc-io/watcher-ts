@@ -34,7 +34,7 @@ export interface Transaction {
   hash: string;
   index: number;
   from: string;
-  to: string;
+  to?: string;
   value: string;
   gasLimit: string;
   gasPrice?: string;

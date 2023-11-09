@@ -502,6 +502,20 @@ export class JobRunner {
           throw new Error(message);
         }
 
+        blocks.forEach(block => {
+          this._blockAndEventsMap.set(
+            block.blockHash,
+            {
+              // block is set later in job when saving to database
+              block: {} as BlockProgressInterface,
+              events: [],
+              ethFullBlock: block,
+              // Transactions are set later in job when fetching events
+              ethFullTransactions: []
+            }
+          );
+        });
+
         const [{ cid: parentCid, blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
 
         await this.jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
@@ -549,7 +563,9 @@ export class JobRunner {
     if (!blockProgress) {
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
 
-      if (prefetchedBlock) {
+      // Check if prefetched block is set properly
+      // prefetchedBlock.block is an empty object when running in realtime processing
+      if (prefetchedBlock && prefetchedBlock.block.blockHash) {
         ({ block: blockProgress } = prefetchedBlock);
       } else {
         // Delay required to process block.
@@ -558,11 +574,20 @@ export class JobRunner {
 
         console.time('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
         log(`_indexBlock#saveBlockAndFetchEvents: fetching from upstream server ${blockHash}`);
-        [blockProgress] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
+        let ethFullTransactions;
+        [blockProgress,, ethFullTransactions] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
         log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
         console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
+        const data = this._blockAndEventsMap.get(blockHash);
+        assert(data);
 
-        this._blockAndEventsMap.set(blockHash, { block: blockProgress, events: [] });
+        this._blockAndEventsMap.set(
+          blockHash,
+          {
+            ...data,
+            block: blockProgress,
+            ethFullTransactions
+          });
       }
     }
 
@@ -588,26 +613,33 @@ export class JobRunner {
     const { blockHash, isRetryAttempt } = jobData;
 
     try {
-      if (!this._blockAndEventsMap.has(blockHash)) {
-        console.time('time:job-runner#_processEvents-get-block-progress');
-        const block = await this._indexer.getBlockProgress(blockHash);
-        console.timeEnd('time:job-runner#_processEvents-get-block-progress');
+      // NOTE: blockAndEventsMap should contain block as watcher is reset
+      // if (!this._blockAndEventsMap.has(blockHash)) {
+      //   console.time('time:job-runner#_processEvents-get-block-progress');
+      //   const block = await this._indexer.getBlockProgress(blockHash);
+      //   console.timeEnd('time:job-runner#_processEvents-get-block-progress');
 
-        assert(block);
-        this._blockAndEventsMap.set(blockHash, { block, events: [] });
-      }
+      //   assert(block);
+      //   this._blockAndEventsMap.set(blockHash, { block, events: [] });
+      // }
 
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
       assert(prefetchedBlock);
-      const { block } = prefetchedBlock;
+      const { block, ethFullBlock, ethFullTransactions } = prefetchedBlock;
       log(`Processing events for block ${block.blockNumber}`);
 
       console.time(`time:job-runner#_processEvents-events-${block.blockNumber}`);
       const isNewContractWatched = await processBatchEvents(
         this._indexer,
-        block,
-        this._jobQueueConfig.eventsInBatch,
-        this._jobQueueConfig.subgraphEventsOrder
+        {
+          block,
+          ethFullBlock,
+          ethFullTransactions
+        },
+        {
+          eventsInBatch: this._jobQueueConfig.eventsInBatch,
+          subgraphEventsOrder: this._jobQueueConfig.subgraphEventsOrder
+        }
       );
       console.timeEnd(`time:job-runner#_processEvents-events-${block.blockNumber}`);
 

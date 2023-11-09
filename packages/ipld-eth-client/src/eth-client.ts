@@ -5,7 +5,7 @@
 import assert from 'assert';
 
 import { Cache } from '@cerc-io/cache';
-import { EthClient as EthClientInterface, FullTransaction } from '@cerc-io/util';
+import { EthClient as EthClientInterface, EthFullTransaction } from '@cerc-io/util';
 
 import ethQueries from './eth-queries';
 import { padKey } from './utils';
@@ -93,7 +93,7 @@ export class EthClient implements EthClientInterface {
 
   async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
-    const result = await this._graphqlClient.query(
+    const { allEthHeaderCids } = await this._graphqlClient.query(
       ethQueries.getFullBlocks,
       {
         blockNumber: blockNumber?.toString(),
@@ -102,10 +102,10 @@ export class EthClient implements EthClientInterface {
     );
     console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    return result;
+    return allEthHeaderCids.nodes;
   }
 
-  async getFullTransaction (txHash: string, blockNumber?: number): Promise<FullTransaction> {
+  async getFullTransaction (txHash: string, blockNumber?: number): Promise<EthFullTransaction> {
     console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash, blockNumber })}`);
     const result = await this._graphqlClient.query(
       ethQueries.getFullTransaction,

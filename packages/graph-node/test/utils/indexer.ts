@@ -18,7 +18,9 @@ import {
   ResultEvent,
   StateKind,
   EthClient,
-  UpstreamConfig
+  UpstreamConfig,
+  EthFullTransaction,
+  EthFullBlock
 } from '@cerc-io/util';
 import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -117,7 +119,12 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  async fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+  async fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{
+    blockProgress: BlockProgressInterface;
+    events: DeepPartial<EventInterface>[];
+    ethFullBlock: EthFullBlock;
+    ethFullTransactions: EthFullTransaction[];
+  }[]> {
     assert(startBlock);
     assert(endBlock);
 
@@ -132,8 +139,12 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  async saveBlockAndFetchEvents (block: BlockProgressInterface): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]> {
-    return [block, []];
+  async saveBlockAndFetchEvents (block: BlockProgressInterface): Promise<[
+    BlockProgressInterface,
+    DeepPartial<EventInterface>[],
+    EthFullTransaction[]
+  ]> {
+    return [block, [], []];
   }
 
   async removeUnknownEvents (block: BlockProgressInterface): Promise<void> {
