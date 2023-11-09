@@ -32,7 +32,10 @@ export class EthClient implements EthClientInterface {
   constructor (config: Config) {
     const { rpcEndpoint, cache } = config;
     assert(rpcEndpoint, 'Missing RPC endpoint');
-    this._provider = new providers.JsonRpcProvider(rpcEndpoint);
+    this._provider = new providers.JsonRpcProvider({
+      url: rpcEndpoint,
+      allowGzip: true
+    });
 
     this._cache = cache;
   }
