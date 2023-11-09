@@ -454,6 +454,10 @@ export class GraphDatabase {
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(repo, selectQueryBuilder, queryOptions);
+    }
+
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
@@ -507,6 +511,10 @@ export class GraphDatabase {
       .select('"latestEntities".*')
       .from(`(${subQuery.getQuery()})`, 'latestEntities')
       .setParameters(subQuery.getParameters()) as SelectQueryBuilder<Entity>;
+
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(repo, selectQueryBuilder, queryOptions, 'subTable_');
+    }
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block, 'subTable_');
@@ -582,6 +590,10 @@ export class GraphDatabase {
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(repo, selectQueryBuilder, queryOptions);
+    }
+
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block);
     }
@@ -644,6 +656,10 @@ export class GraphDatabase {
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), {}, 'latest');
 
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(repo, selectQueryBuilder, queryOptions, '', 'latest');
+    }
+
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(repo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), {}, '', 'latest');
     }
@@ -699,6 +715,10 @@ export class GraphDatabase {
       ) as SelectQueryBuilder<Entity>;
 
     selectQueryBuilder = this._baseDatabase.buildQuery(latestEntityRepo, selectQueryBuilder, where, relationsMap.get(entityType), block, 'latest');
+
+    if (queryOptions.tsRankBy) {
+      selectQueryBuilder = this._baseDatabase.orderTsQuery(latestEntityRepo, selectQueryBuilder, queryOptions, '', 'latest');
+    }
 
     if (queryOptions.orderBy) {
       selectQueryBuilder = await this._baseDatabase.orderQuery(latestEntityRepo, selectQueryBuilder, queryOptions, relationsMap.get(entityType), block, '', 'latest');
