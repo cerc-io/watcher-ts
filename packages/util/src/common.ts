@@ -411,7 +411,9 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
 
     // Process known events in a loop
     for (const event of watchedContractEvents) {
+      console.time(`time:common#_processEventsInSubgraphOrder-block-${block.blockNumber}-processEvent-${event.eventName}`);
       await indexer.processEvent(event);
+      console.timeEnd(`time:common#_processEventsInSubgraphOrder-block-${block.blockNumber}-processEvent-${event.eventName}`);
 
       block.lastProcessedEventIndex = event.index;
       block.numProcessedEvents++;
@@ -430,7 +432,9 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
     if (indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
       // Fetch and parse events for newly watched contracts
       const newContracts = watchedContracts.filter(contract => !initiallyWatchedContracts.includes(contract));
+      console.time(`time:common#_processEventsInSubgraphOrder-fetchEventsForContracts-block-${block.blockNumber}-unwatched-contract`);
       const events = await indexer.fetchEventsForContracts(block.blockHash, block.blockNumber, newContracts);
+      console.timeEnd(`time:common#_processEventsInSubgraphOrder-fetchEventsForContracts-block-${block.blockNumber}-unwatched-contract`);
 
       events.forEach(event => {
         event.block = block;
@@ -457,7 +461,9 @@ const _processEventsInSubgraphOrder = async (indexer: IndexerInterface, block: B
   console.time('time:common#processEventsInSubgraphOrder-processing_initially_unwatched_events');
   // In the end process events of newly watched contracts
   for (const updatedDbEvent of updatedDbEvents) {
+    console.time(`time:common#processEventsInSubgraphOrder--block-${block.blockNumber}-updated-processEvent-${updatedDbEvent.eventName}`);
     await indexer.processEvent(updatedDbEvent);
+    console.timeEnd(`time:common#processEventsInSubgraphOrder-block-${block.blockNumber}-updated-processEvent-${updatedDbEvent.eventName}`);
 
     block.lastProcessedEventIndex = Math.max(block.lastProcessedEventIndex + 1, updatedDbEvent.index);
     block.numProcessedEvents++;

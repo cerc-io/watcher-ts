@@ -32,7 +32,7 @@ export class EthClient implements EthClientInterface {
   constructor (config: Config) {
     const { rpcEndpoint, cache } = config;
     assert(rpcEndpoint, 'Missing RPC endpoint');
-    this._provider = new providers.JsonRpcProvider({
+    this._provider = new providers.StaticJsonRpcProvider({
       url: rpcEndpoint,
       allowGzip: true
     });
@@ -200,8 +200,8 @@ export class EthClient implements EthClientInterface {
   async getFullTransaction (txHash: string): Promise<FullTransaction> {
     console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
     const tx = await this._provider.getTransaction(txHash);
-    console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
     const txReceipt = await tx.wait();
+    console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
 
     return {
       ethTransactionCidByTxHash: {

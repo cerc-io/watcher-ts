@@ -154,7 +154,9 @@ export class GraphWatcher {
 
     // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
+      console.time(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
       this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash, block.number);
+      console.timeEnd(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
     }
 
     const blockData = this._context.block;
@@ -208,9 +210,13 @@ export class GraphWatcher {
     };
 
     // Create ethereum event to be passed to the wasm event handler.
+    console.time(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
     const ethereumEvent = await createEvent(instanceExports, contract, data);
+    console.timeEnd(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
     try {
+      console.time(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
       await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
+      console.timeEnd(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
     } catch (error) {
       this._clearCachedEntities();
       throw error;
@@ -452,7 +458,9 @@ export class GraphWatcher {
       return transaction;
     }
 
+    console.time(`time:graph-watcher#_getTransactionData-getFullTransaction-block-${blockNumber}-tx-${txHash}`);
     transaction = await getFullTransaction(this._ethClient, txHash, blockNumber);
+    console.timeEnd(`time:graph-watcher#_getTransactionData-getFullTransaction-block-${blockNumber}-tx-${txHash}`);
     assert(transaction);
     this._transactionsMap.set(txHash, transaction);
 
