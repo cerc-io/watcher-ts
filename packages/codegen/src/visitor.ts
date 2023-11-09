@@ -180,8 +180,8 @@ export class Visitor {
     });
   }
 
-  visitSubgraph (subgraphPath: string, subgraphConfig: any): void {
-    if (!subgraphPath) {
+  visitSubgraph (subgraphPath?: string, subgraphConfig?: any): void {
+    if (!subgraphPath || !subgraphConfig) {
       return;
     }
 
