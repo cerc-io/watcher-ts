@@ -11,7 +11,6 @@ import { ServerConfig, UpstreamConfig } from './config';
 import { Where, QueryOptions, Database } from './database';
 import { ValueResult, StateStatus, ExtraEventData } from './indexer';
 import { JOB_KIND_CONTRACT, JOB_KIND_EVENTS } from './constants';
-import { EthFullBlock } from '.';
 
 export enum StateKind {
   Diff = 'diff',
@@ -85,6 +84,77 @@ export interface StateInterface {
   data: Buffer;
 }
 
+export interface EthFullTransaction {
+  ethTransactionCidByTxHash: {
+    txHash: string;
+    index: number;
+    src: string;
+    dst?: string;
+    blockByMhKey?: {
+      data: string;
+    }
+  },
+  data?: Transaction;
+}
+
+export interface EthFullBlock {
+  id?: string,
+  cid?: string;
+  blockNumber: string;
+  blockHash: string;
+  parentHash: string;
+  timestamp: string;
+  stateRoot: string;
+  td: string;
+  txRoot: string;
+  receiptRoot: string;
+  uncleRoot: string;
+  bloom: string;
+  size: string;
+  blockByMhKey: {
+    data: string;
+  }
+}
+
+export interface EthClient {
+  getStorageAt({ blockHash, contract, slot }: {
+    blockHash: string;
+    contract: string;
+    slot: string;
+  }): Promise<{
+    value: string;
+    proof: {
+        data: string;
+    };
+  }>;
+  getBlockWithTransactions({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<any>;
+  getBlocks({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<any>;
+  getFullBlocks({ blockNumber, blockHash }: {
+    blockNumber?: number;
+    blockHash?: string;
+  }): Promise<EthFullBlock[]>;
+  getFullTransaction(txHash: string, blockNumber?: number): Promise<EthFullTransaction>;
+  getBlockByHash(blockHash?: string): Promise<any>;
+  getLogs(vars: {
+    blockHash: string,
+    blockNumber: string,
+    addresses?: string[],
+    topics?: string[][]
+  }): Promise<any>;
+  getLogsForBlockRange?: (vars: {
+    fromBlock?: number,
+    toBlock?: number,
+    addresses?: string[],
+    topics?: string[][]
+  }) => Promise<any>;
+}
+
 export interface IndexerInterface {
   readonly serverConfig: ServerConfig
   readonly upstreamConfig: UpstreamConfig
@@ -104,7 +174,12 @@ export interface IndexerInterface {
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
-  fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[], ethFullBlock: EthFullBlock }[]>
+  fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{
+    blockProgress: BlockProgressInterface,
+    events: DeepPartial<EventInterface>[],
+    ethFullBlock: EthFullBlock,
+    ethFullTransactions: EthFullTransaction[]
+  }[]>
   fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[]): Promise<DeepPartial<EventInterface>[]>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
@@ -203,58 +278,6 @@ export interface GraphDatabaseInterface {
 export interface GraphWatcherInterface {
   init (): Promise<void>;
   setIndexer (indexer: IndexerInterface): void;
-}
-
-export interface FullTransaction {
-  ethTransactionCidByTxHash: {
-    txHash: string;
-    index: number;
-    src: string;
-    dst?: string;
-    blockByMhKey?: {
-      data: string;
-    }
-  },
-  data?: Transaction;
-}
-
-export interface EthClient {
-  getStorageAt({ blockHash, contract, slot }: {
-    blockHash: string;
-    contract: string;
-    slot: string;
-  }): Promise<{
-    value: string;
-    proof: {
-        data: string;
-    };
-  }>;
-  getBlockWithTransactions({ blockNumber, blockHash }: {
-    blockNumber?: number;
-    blockHash?: string;
-  }): Promise<any>;
-  getBlocks({ blockNumber, blockHash }: {
-    blockNumber?: number;
-    blockHash?: string;
-  }): Promise<any>;
-  getFullBlocks({ blockNumber, blockHash }: {
-    blockNumber?: number;
-    blockHash?: string;
-  }): Promise<any>;
-  getFullTransaction(txHash: string, blockNumber?: number): Promise<FullTransaction>;
-  getBlockByHash(blockHash?: string): Promise<any>;
-  getLogs(vars: {
-    blockHash: string,
-    blockNumber: string,
-    addresses?: string[],
-    topics?: string[][]
-  }): Promise<any>;
-  getLogsForBlockRange?: (vars: {
-    fromBlock?: number,
-    toBlock?: number,
-    addresses?: string[],
-    topics?: string[][]
-  }) => Promise<any>;
 }
 
 export type Clients = {

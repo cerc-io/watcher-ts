@@ -24,14 +24,15 @@ import {
   StateKind,
   EthClient,
   ContractJobData,
-  EventsQueueJobKind
+  EventsQueueJobKind,
+  EthFullBlock,
+  EthFullTransaction
 } from './types';
 import { UNKNOWN_EVENT_NAME, QUEUE_EVENT_PROCESSING, DIFF_MERGE_BATCH_SIZE } from './constants';
 import { JobQueue } from './job-queue';
 import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
-import { EthFullBlock } from './misc';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -102,7 +103,8 @@ export type ResultMeta = {
 };
 
 export type ExtraEventData = {
-  ethFullBlock: EthFullBlock
+  ethFullBlock: EthFullBlock;
+  ethFullTransactions: EthFullTransaction[];
 }
 
 export class Indexer {
@@ -469,7 +471,8 @@ export class Indexer {
   ): Promise<{
     blockProgress: BlockProgressInterface,
     events: DeepPartial<EventInterface>[],
-    ethFullBlock: EthFullBlock
+    ethFullBlock: EthFullBlock,
+    ethFullTransactions: EthFullTransaction[]
   }[]> {
     assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
 
@@ -491,13 +494,7 @@ export class Indexer {
     // Fetch blocks with transactions for the logs returned
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
     const blocksPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
-      const {
-        allEthHeaderCids: {
-          nodes: [
-            fullBlock
-          ]
-        }
-      } = await this._ethClient.getFullBlocks({ blockHash });
+      const [fullBlock] = await this._ethClient.getFullBlocks({ blockHash });
 
       const block = {
         ...fullBlock,
@@ -508,16 +505,18 @@ export class Indexer {
       return { block, fullBlock } as { block: DeepPartial<BlockProgressInterface>; fullBlock: EthFullBlock };
     });
 
-    const txPromises = txHashes.map(async txHash => {
-      const {
-        ethTransactionCidByTxHash: tx
-      } = await this._ethClient.getFullTransaction(txHash);
-
-      return tx;
+    const ethFullTxPromises = txHashes.map(async txHash => {
+      return this._ethClient.getFullTransaction(txHash);
     });
 
     const blocks = await Promise.all(blocksPromises);
-    const transactions = await Promise.all(txPromises);
+    const ethFullTxs = await Promise.all(ethFullTxPromises);
+
+    const ethFullTxsMap = ethFullTxs.reduce((acc: Map<string, EthFullTransaction>, ethFullTx) => {
+      acc.set(ethFullTx.ethTransactionCidByTxHash.txHash, ethFullTx);
+      return acc;
+    }, new Map());
+
     console.timeEnd(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
 
     // Map db ready events according to blockhash
@@ -527,10 +526,27 @@ export class Indexer {
       assert(blockHash);
       const logs = blockLogsMap.get(blockHash) || [];
 
-      const events = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
+      const txHashes = Array.from([
+        ...new Set<string>(logs.map((log: any) => log.transaction.hash))
+      ]);
+
+      const blockEthFullTxs = txHashes.map(txHash => ethFullTxsMap.get(txHash)) as EthFullTransaction[];
+
+      const events = this.createDbEventsFromLogsAndTxs(
+        blockHash,
+        logs,
+        blockEthFullTxs.map(ethFullTx => ethFullTx?.ethTransactionCidByTxHash),
+        parseEventNameAndArgs
+      );
       const [blockProgress] = await this.saveBlockWithEvents(block, events);
 
-      return { blockProgress, ethFullBlock: fullBlock, events: [] };
+      return {
+        blockProgress,
+        ethFullBlock: fullBlock,
+        ethFullTransactions: blockEthFullTxs,
+        block,
+        events: []
+      };
     });
 
     const blocksWithDbEvents = await Promise.all(blockWithDbEventsPromises);
@@ -576,6 +592,7 @@ export class Indexer {
       topics
     });
 
+    // TODO: Use txs from blockEventsMap
     const transactionsPromise = this._ethClient.getBlockWithTransactions({ blockHash, blockNumber });
 
     const [

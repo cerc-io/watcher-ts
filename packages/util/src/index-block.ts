@@ -51,8 +51,9 @@ export const indexBlock = async (
       indexer,
       {
         block: blockProgress,
-        // TODO: Set ethFullBlock
-        ethFullBlock: {} as EthFullBlock
+        // TODO: Set ethFullBlock and ethFullTransactions
+        ethFullBlock: {} as EthFullBlock,
+        ethFullTransactions: []
       },
       { eventsInBatch, subgraphEventsOrder });
   }

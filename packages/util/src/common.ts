@@ -14,8 +14,8 @@ import {
   NULL_BLOCK_ERROR
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, IndexerInterface, EventInterface } from './types';
-import { EthFullBlock, wait } from './misc';
+import { BlockProgressInterface, IndexerInterface, EventInterface, EthFullTransaction, EthFullBlock } from './types';
+import { wait } from './misc';
 import { OrderDirection } from './database';
 import { JobQueueConfig } from './config';
 
@@ -28,6 +28,7 @@ export interface PrefetchedBlock {
   block: BlockProgressInterface;
   events: DeepPartial<EventInterface>[];
   ethFullBlock: EthFullBlock;
+  ethFullTransactions: EthFullTransaction[];
 }
 
 /**
@@ -159,8 +160,8 @@ export const fetchAndSaveFilteredLogsAndBlocks = async (
   console.timeEnd('time:common#fetchAndSaveFilteredLogsAndBlocks-fetchAndSaveFilteredEventsAndBlocks');
 
   // Set blocks with events in blockAndEventsMap cache
-  blocksData.forEach(({ blockProgress, events, ethFullBlock }) => {
-    blockAndEventsMap.set(blockProgress.blockHash, { block: blockProgress, events, ethFullBlock });
+  blocksData.forEach(({ blockProgress, events, ethFullBlock, ethFullTransactions }) => {
+    blockAndEventsMap.set(blockProgress.blockHash, { block: blockProgress, events, ethFullBlock, ethFullTransactions });
   });
 
   return blocksData.map(({ blockProgress }) => blockProgress);
@@ -183,8 +184,15 @@ export const _prefetchBlocks = async (
   );
 
   blocksWithEvents.forEach(({ blockProgress, events }) => {
-    // TODO: Set ethFullBlock
-    blockAndEventsMap.set(blockProgress.blockHash, { block: blockProgress, events, ethFullBlock: {} as EthFullBlock });
+    blockAndEventsMap.set(
+      blockProgress.blockHash,
+      {
+        block: blockProgress,
+        events,
+        // TODO: Set ethFullBlock and ethFullTransactions
+        ethFullBlock: {} as EthFullBlock,
+        ethFullTransactions: []
+      });
   });
 };
 
@@ -289,6 +297,7 @@ export const processBatchEvents = async (
   data: {
     block: BlockProgressInterface;
     ethFullBlock: EthFullBlock;
+    ethFullTransactions: EthFullTransaction[];
   },
   { eventsInBatch, subgraphEventsOrder }: {
     eventsInBatch: number;
@@ -324,9 +333,10 @@ export const processBatchEvents = async (
 
 const _processEvents = async (
   indexer: IndexerInterface,
-  { block, ethFullBlock }: {
+  { block, ethFullBlock, ethFullTransactions }: {
     block: BlockProgressInterface;
     ethFullBlock: EthFullBlock;
+    ethFullTransactions: EthFullTransaction[];
   },
   eventsInBatch: number
 ): Promise<{ dbBlock: BlockProgressInterface, updatedDbEvents: EventInterface[] }> => {
@@ -371,7 +381,7 @@ const _processEvents = async (
           updatedDbEvents.push(event);
         }
 
-        await indexer.processEvent(event, { ethFullBlock });
+        await indexer.processEvent(event, { ethFullBlock, ethFullTransactions });
       }
 
       block.lastProcessedEventIndex = event.index;
@@ -388,9 +398,10 @@ const _processEvents = async (
 
 const _processEventsInSubgraphOrder = async (
   indexer: IndexerInterface,
-  { block, ethFullBlock }: {
+  { block, ethFullBlock, ethFullTransactions }: {
     block: BlockProgressInterface;
     ethFullBlock: EthFullBlock;
+    ethFullTransactions: EthFullTransaction[];
   },
   eventsInBatch: number
 ): Promise<{ dbBlock: BlockProgressInterface, updatedDbEvents: EventInterface[], isNewContractWatched: boolean }> => {
@@ -434,7 +445,7 @@ const _processEventsInSubgraphOrder = async (
     // Process known events in a loop
     for (const event of watchedContractEvents) {
       console.time(`time:common#_processEventsInSubgraphOrder-block-${block.blockNumber}-processEvent-${event.eventName}`);
-      await indexer.processEvent(event, { ethFullBlock });
+      await indexer.processEvent(event, { ethFullBlock, ethFullTransactions });
       console.timeEnd(`time:common#_processEventsInSubgraphOrder-block-${block.blockNumber}-processEvent-${event.eventName}`);
 
       block.lastProcessedEventIndex = event.index;
@@ -483,8 +494,8 @@ const _processEventsInSubgraphOrder = async (
   console.time('time:common#processEventsInSubgraphOrder-processing_initially_unwatched_events');
   // In the end process events of newly watched contracts
   for (const updatedDbEvent of updatedDbEvents) {
-    console.time(`time:common#processEventsInSubgraphOrder--block-${block.blockNumber}-updated-processEvent-${updatedDbEvent.eventName}`);
-    await indexer.processEvent(updatedDbEvent, { ethFullBlock });
+    console.time(`time:common#processEventsInSubgraphOrder-block-${block.blockNumber}-updated-processEvent-${updatedDbEvent.eventName}`);
+    await indexer.processEvent(updatedDbEvent, { ethFullBlock, ethFullTransactions });
     console.timeEnd(`time:common#processEventsInSubgraphOrder-block-${block.blockNumber}-updated-processEvent-${updatedDbEvent.eventName}`);
 
     block.lastProcessedEventIndex = Math.max(block.lastProcessedEventIndex + 1, updatedDbEvent.index);

@@ -32,7 +32,8 @@ import {
   Where,
   Filter,
   OPERATOR_MAP,
-  ExtraEventData
+  ExtraEventData,
+  EthFullTransaction
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
@@ -155,9 +156,7 @@ export class GraphWatcher {
 
     // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
-      console.time(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
       this._context.block = getFullBlock(extraData.ethFullBlock);
-      console.timeEnd(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
     }
 
     const blockData = this._context.block;
@@ -200,7 +199,7 @@ export class GraphWatcher {
 
     const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const tx = await this._getTransactionData(txHash, Number(blockData.blockNumber));
+    const tx = this._getTransactionData(txHash, extraData.ethFullTransactions);
 
     const data = {
       block: blockData,
@@ -453,17 +452,14 @@ export class GraphWatcher {
     }
   }
 
-  async _getTransactionData (txHash: string, blockNumber: number): Promise<Transaction> {
+  _getTransactionData (txHash: string, ethFullTransactions: EthFullTransaction[]): Transaction {
     let transaction = this._transactionsMap.get(txHash);
 
     if (transaction) {
       return transaction;
     }
 
-    console.time(`time:graph-watcher#_getTransactionData-getFullTransaction-block-${blockNumber}-tx-${txHash}`);
-    transaction = await getFullTransaction(this._ethClient, txHash, blockNumber);
-    console.timeEnd(`time:graph-watcher#_getTransactionData-getFullTransaction-block-${blockNumber}-tx-${txHash}`);
-    assert(transaction);
+    transaction = getFullTransaction(txHash, ethFullTransactions);
     this._transactionsMap.set(txHash, transaction);
 
     return transaction;

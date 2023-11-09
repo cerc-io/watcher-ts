@@ -19,8 +19,9 @@ import { JobQueue } from './job-queue';
 import { GraphDecimal } from './graph/graph-decimal';
 import * as EthDecoder from './eth';
 import { ResultEvent } from './indexer';
-import { EventInterface, EthClient } from './types';
+import { EventInterface, EthFullBlock, EthFullTransaction } from './types';
 import { BlockHeight } from './database';
+import { Transaction } from './graph/utils';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
@@ -181,25 +182,6 @@ class CustomFormatter extends providers.Formatter {
   }
 }
 
-export interface EthFullBlock {
-  id?: string,
-  cid?: string;
-  blockNumber: string;
-  blockHash: string;
-  parentHash: string;
-  timestamp: string;
-  stateRoot: string;
-  td: string;
-  txRoot: string;
-  receiptRoot: string;
-  uncleRoot: string;
-  bloom: string;
-  size: string;
-  blockByMhKey: {
-    data: string;
-  }
-}
-
 export const getFullBlock = (ethFullBlock: EthFullBlock): any => {
   // Decode the header data.
   const header = EthDecoder.decodeHeader(EthDecoder.decodeData(ethFullBlock.blockByMhKey.data));
@@ -226,11 +208,14 @@ export const getFullBlock = (ethFullBlock: EthFullBlock): any => {
   };
 };
 
-export const getFullTransaction = async (ethClient: EthClient, txHash: string, blockNumber: number): Promise<any> => {
+export const getFullTransaction = (txHash: string, ethFullTransactions: EthFullTransaction[]): Transaction => {
+  const ethFullTransaction = ethFullTransactions.find(ethFullTransaction => ethFullTransaction.ethTransactionCidByTxHash.txHash === txHash);
+  assert(ethFullTransaction);
+
   let {
     ethTransactionCidByTxHash: fullTx,
     data: txData
-  } = await ethClient.getFullTransaction(txHash, blockNumber);
+  } = ethFullTransaction;
 
   // Check if txData does not exist when using ipld-eth-client
   if (!txData) {

@@ -6,7 +6,7 @@ import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, EthClient as EthClientInterface, FullTransaction } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFullTransaction } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 export interface Config {
@@ -174,40 +174,33 @@ export class EthClient implements EthClientInterface {
 
     const rlpData = encodeHeader(header);
 
-    const allEthHeaderCids = {
-      nodes: [
-        {
-          blockNumber: this._provider.formatter.number(rawBlock.number).toString(),
-          blockHash: this._provider.formatter.hash(rawBlock.hash),
-          parentHash: this._provider.formatter.hash(rawBlock.parentHash),
-          timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
-          stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
-          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
-          txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
-          receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
-          uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
-          bloom: escapeHexString(this._provider.formatter.hex(rawBlock.logsBloom)),
-          size: this._provider.formatter.number(rawBlock.size).toString(),
-          blockByMhKey: {
-            data: escapeHexString(rlpData)
-          }
-        }
-      ]
-    };
-
-    return { allEthHeaderCids };
+    return [{
+      blockNumber: this._provider.formatter.number(rawBlock.number).toString(),
+      blockHash: this._provider.formatter.hash(rawBlock.hash),
+      parentHash: this._provider.formatter.hash(rawBlock.parentHash),
+      timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
+      stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
+      td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+      txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
+      receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
+      uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
+      bloom: escapeHexString(this._provider.formatter.hex(rawBlock.logsBloom)),
+      size: this._provider.formatter.number(rawBlock.size).toString(),
+      blockByMhKey: {
+        data: escapeHexString(rlpData)
+      }
+    }];
   }
 
-  async getFullTransaction (txHash: string): Promise<FullTransaction> {
+  async getFullTransaction (txHash: string): Promise<EthFullTransaction> {
     console.time(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
     const tx = await this._provider.getTransaction(txHash);
-    const txReceipt = await tx.wait();
     console.timeEnd(`time:eth-client#getFullTransaction-${JSON.stringify({ txHash })}`);
 
     return {
       ethTransactionCidByTxHash: {
         txHash: tx.hash,
-        index: txReceipt.transactionIndex,
+        index: (tx as any).transactionIndex,
         src: tx.from,
         dst: tx.to
       },

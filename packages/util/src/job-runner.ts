@@ -20,8 +20,8 @@ import {
   QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
-import { EthFullBlock, wait } from './misc';
+import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface, EthFullBlock } from './types';
+import { wait } from './misc';
 import {
   createPruningJob,
   createHooksJob,
@@ -562,8 +562,15 @@ export class JobRunner {
         log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
         console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
 
-        // TODO: Get full block from blockEventsMap
-        this._blockAndEventsMap.set(blockHash, { block: blockProgress, events: [], ethFullBlock: {} as EthFullBlock });
+        this._blockAndEventsMap.set(
+          blockHash,
+          {
+            block: blockProgress,
+            events: [],
+            // TODO: Get full block and transactions from blockEventsMap
+            ethFullBlock: {} as EthFullBlock,
+            ethFullTransactions: []
+          });
       }
     }
 
@@ -601,7 +608,7 @@ export class JobRunner {
 
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
       assert(prefetchedBlock);
-      const { block, ethFullBlock } = prefetchedBlock;
+      const { block, ethFullBlock, ethFullTransactions } = prefetchedBlock;
       log(`Processing events for block ${block.blockNumber}`);
 
       console.time(`time:job-runner#_processEvents-events-${block.blockNumber}`);
@@ -609,7 +616,8 @@ export class JobRunner {
         this._indexer,
         {
           block,
-          ethFullBlock
+          ethFullBlock,
+          ethFullTransactions
         },
         {
           eventsInBatch: this._jobQueueConfig.eventsInBatch,
