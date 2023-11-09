@@ -5,8 +5,8 @@ import yaml from 'js-yaml';
 
 import { loadFilesSync } from '@graphql-tools/load-files';
 
-export function parseSubgraphSchema (subgraphPath: string): any {
-  const subgraphSchemaPath = path.join(path.resolve(subgraphPath), '/schema.graphql');
+export function parseSubgraphSchema (subgraphPath: string, subgraphConfig: any): any {
+  const subgraphSchemaPath = path.join(path.resolve(subgraphPath), subgraphConfig.schema.file);
 
   assert(fs.existsSync(subgraphSchemaPath), `Schema file not found at ${subgraphSchemaPath}`);
   const typesArray = loadFilesSync(subgraphSchemaPath);

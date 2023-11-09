@@ -212,7 +212,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   // Register the handlebar helpers to be used in the templates.
   registerHandlebarHelpers(config);
 
-  visitor.visitSubgraph(config.subgraphPath);
+  visitor.visitSubgraph(config.subgraphPath, config.subgraphConfig);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
