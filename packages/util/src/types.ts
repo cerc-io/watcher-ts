@@ -9,8 +9,9 @@ import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { ServerConfig, UpstreamConfig } from './config';
 import { Where, QueryOptions, Database } from './database';
-import { ValueResult, StateStatus } from './indexer';
+import { ValueResult, StateStatus, ExtraEventData } from './indexer';
 import { JOB_KIND_CONTRACT, JOB_KIND_EVENTS } from './constants';
+import { EthFullBlock } from '.';
 
 export enum StateKind {
   Diff = 'diff',
@@ -103,7 +104,7 @@ export interface IndexerInterface {
   getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
   fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgressInterface>[]): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[BlockProgressInterface, DeepPartial<EventInterface>[]]>
-  fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]>
+  fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[], ethFullBlock: EthFullBlock }[]>
   fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[]): Promise<DeepPartial<EventInterface>[]>
   removeUnknownEvents (block: BlockProgressInterface): Promise<void>
   updateBlockProgress (block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>
@@ -117,7 +118,7 @@ export interface IndexerInterface {
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
   saveEvents (dbEvents: DeepPartial<EventInterface>[]): Promise<void>
-  processEvent (event: EventInterface): Promise<void>
+  processEvent (event: EventInterface, extraData: ExtraEventData): Promise<void>
   parseEventNameAndArgs?: (kind: string, logObj: any) => any
   isWatchedContract: (address: string) => ContractInterface | undefined;
   getWatchedContracts: () => ContractInterface[]

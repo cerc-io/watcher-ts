@@ -31,7 +31,8 @@ import {
   FILTER_CHANGE_BLOCK,
   Where,
   Filter,
-  OPERATOR_MAP
+  OPERATOR_MAP,
+  ExtraEventData
 } from '@cerc-io/util';
 
 import { Context, GraphData, instantiate } from './loader';
@@ -149,13 +150,13 @@ export class GraphWatcher {
     }
   }
 
-  async handleEvent (eventData: any) {
+  async handleEvent (eventData: any, extraData: ExtraEventData) {
     const { contract, event, eventSignature, block, tx: { hash: txHash }, eventIndex } = eventData;
 
     // Check if block data is already fetched by a previous event in the same block.
     if (!this._context.block || this._context.block.blockHash !== block.hash) {
       console.time(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
-      this._context.block = await getFullBlock(this._ethClient, this._ethProvider, block.hash, block.number);
+      this._context.block = getFullBlock(extraData.ethFullBlock);
       console.timeEnd(`time:graph-watcher#handleEvent-getFullBlock-block-${block.number}`);
     }
 
@@ -243,10 +244,11 @@ export class GraphWatcher {
         continue;
       }
 
-      // Check if block data is already fetched in handleEvent method for the same block.
-      if (!this._context.block || this._context.block.blockHash !== blockHash) {
-        this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
-      }
+      // TODO: Use extraData full block
+      // // Check if block data is already fetched in handleEvent method for the same block.
+      // if (!this._context.block || this._context.block.blockHash !== blockHash) {
+      //   this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
+      // }
 
       const blockData = this._context.block;
       assert(blockData);

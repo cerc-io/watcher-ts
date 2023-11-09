@@ -6,6 +6,7 @@ import assert from 'assert';
 
 import { BlockProgressInterface, IndexerInterface } from './types';
 import { processBatchEvents } from './common';
+import { EthFullBlock } from '.';
 
 export const indexBlock = async (
   indexer: IndexerInterface,
@@ -46,6 +47,13 @@ export const indexBlock = async (
     assert(indexer.processBlock);
     await indexer.processBlock(blockProgress);
 
-    await processBatchEvents(indexer, blockProgress, eventsInBatch, subgraphEventsOrder);
+    await processBatchEvents(
+      indexer,
+      {
+        block: blockProgress,
+        // TODO: Set ethFullBlock
+        ethFullBlock: {} as EthFullBlock
+      },
+      { eventsInBatch, subgraphEventsOrder });
   }
 };

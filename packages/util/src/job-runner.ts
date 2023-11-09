@@ -21,7 +21,7 @@ import {
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
-import { wait } from './misc';
+import { EthFullBlock, wait } from './misc';
 import {
   createPruningJob,
   createHooksJob,
@@ -562,7 +562,8 @@ export class JobRunner {
         log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
         console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
 
-        this._blockAndEventsMap.set(blockHash, { block: blockProgress, events: [] });
+        // TODO: Get full block from blockEventsMap
+        this._blockAndEventsMap.set(blockHash, { block: blockProgress, events: [], ethFullBlock: {} as EthFullBlock });
       }
     }
 
@@ -588,26 +589,32 @@ export class JobRunner {
     const { blockHash, isRetryAttempt } = jobData;
 
     try {
-      if (!this._blockAndEventsMap.has(blockHash)) {
-        console.time('time:job-runner#_processEvents-get-block-progress');
-        const block = await this._indexer.getBlockProgress(blockHash);
-        console.timeEnd('time:job-runner#_processEvents-get-block-progress');
+      // NOTE: blockAndEventsMap should contain block as watcher is reset
+      // if (!this._blockAndEventsMap.has(blockHash)) {
+      //   console.time('time:job-runner#_processEvents-get-block-progress');
+      //   const block = await this._indexer.getBlockProgress(blockHash);
+      //   console.timeEnd('time:job-runner#_processEvents-get-block-progress');
 
-        assert(block);
-        this._blockAndEventsMap.set(blockHash, { block, events: [] });
-      }
+      //   assert(block);
+      //   this._blockAndEventsMap.set(blockHash, { block, events: [] });
+      // }
 
       const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
       assert(prefetchedBlock);
-      const { block } = prefetchedBlock;
+      const { block, ethFullBlock } = prefetchedBlock;
       log(`Processing events for block ${block.blockNumber}`);
 
       console.time(`time:job-runner#_processEvents-events-${block.blockNumber}`);
       const isNewContractWatched = await processBatchEvents(
         this._indexer,
-        block,
-        this._jobQueueConfig.eventsInBatch,
-        this._jobQueueConfig.subgraphEventsOrder
+        {
+          block,
+          ethFullBlock
+        },
+        {
+          eventsInBatch: this._jobQueueConfig.eventsInBatch,
+          subgraphEventsOrder: this._jobQueueConfig.subgraphEventsOrder
+        }
       );
       console.timeEnd(`time:job-runner#_processEvents-events-${block.blockNumber}`);
 

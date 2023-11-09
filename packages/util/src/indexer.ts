@@ -31,6 +31,7 @@ import { JobQueue } from './job-queue';
 import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
+import { EthFullBlock } from './misc';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -99,6 +100,10 @@ export type ResultMeta = {
   deployment: string;
   hasIndexingErrors: boolean;
 };
+
+export type ExtraEventData = {
+  ethFullBlock: EthFullBlock
+}
 
 export class Indexer {
   _serverConfig: ServerConfig;
@@ -461,7 +466,11 @@ export class Indexer {
       kind: string,
       logObj: { topics: string[]; data: string }
     ) => { eventName: string; eventInfo: {[key: string]: any}; eventSignature: string }
-  ): Promise<{ blockProgress: BlockProgressInterface, events: DeepPartial<EventInterface>[] }[]> {
+  ): Promise<{
+    blockProgress: BlockProgressInterface,
+    events: DeepPartial<EventInterface>[],
+    ethFullBlock: EthFullBlock
+  }[]> {
     assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
 
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
@@ -474,37 +483,46 @@ export class Indexer {
     });
 
     const blockLogsMap = this._reduceLogsToBlockLogsMap(logs);
+    // Create unique list of tx required
+    const txHashes = Array.from([
+      ...new Set<string>(logs.map((log: any) => log.transaction.hash))
+    ]);
 
     // Fetch blocks with transactions for the logs returned
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
-    const blocksWithTxPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
-      const result = await this._ethClient.getBlockWithTransactions({ blockHash });
-
+    const blocksPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
       const {
         allEthHeaderCids: {
           nodes: [
-            {
-              ethTransactionCidsByHeaderId: {
-                nodes: transactions
-              },
-              ...block
-            }
+            fullBlock
           ]
         }
-      } = result;
+      } = await this._ethClient.getFullBlocks({ blockHash });
 
-      block.blockTimestamp = Number(block.timestamp);
-      block.blockNumber = Number(block.blockNumber);
+      const block = {
+        ...fullBlock,
+        blockTimestamp: Number(fullBlock.timestamp),
+        blockNumber: Number(fullBlock.blockNumber)
+      };
 
-      return { block, transactions } as { block: DeepPartial<BlockProgressInterface>; transactions: any[] };
+      return { block, fullBlock } as { block: DeepPartial<BlockProgressInterface>; fullBlock: EthFullBlock };
     });
 
-    const blockWithTxs = await Promise.all(blocksWithTxPromises);
+    const txPromises = txHashes.map(async txHash => {
+      const {
+        ethTransactionCidByTxHash: tx
+      } = await this._ethClient.getFullTransaction(txHash);
+
+      return tx;
+    });
+
+    const blocks = await Promise.all(blocksPromises);
+    const transactions = await Promise.all(txPromises);
     console.timeEnd(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
 
     // Map db ready events according to blockhash
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-db-save-blocks-events-${fromBlock}-${toBlock}`);
-    const blockWithDbEventsPromises = blockWithTxs.map(async ({ block, transactions }) => {
+    const blockWithDbEventsPromises = blocks.map(async ({ block, fullBlock }) => {
       const blockHash = block.blockHash;
       assert(blockHash);
       const logs = blockLogsMap.get(blockHash) || [];
@@ -512,7 +530,7 @@ export class Indexer {
       const events = this.createDbEventsFromLogsAndTxs(blockHash, logs, transactions, parseEventNameAndArgs);
       const [blockProgress] = await this.saveBlockWithEvents(block, events);
 
-      return { blockProgress, events: [] };
+      return { blockProgress, ethFullBlock: fullBlock, events: [] };
     });
 
     const blocksWithDbEvents = await Promise.all(blockWithDbEventsPromises);
