@@ -8,6 +8,7 @@ import { Writable } from 'stream';
 import Handlebars from 'handlebars';
 import assert from 'assert';
 import _ from 'lodash';
+import pluralize from 'pluralize';
 
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
@@ -63,12 +64,16 @@ export class Resolvers {
       const entityName = subgraphTypeDef.name.value;
       const queryName = `${entityName.charAt(0).toLowerCase()}${entityName.slice(1)}`;
 
+      let pluralQueryName = pluralize(queryName);
+      pluralQueryName = (pluralQueryName === queryName) ? `${pluralQueryName}s` : pluralQueryName;
+
+      // Add singular and plural query names
       const queryObject = {
         entityName,
-        queryName
+        queryName,
+        pluralQueryName
       };
 
-      // TODO: Generate plural query resolvers
       this._subgraphQueries.push(queryObject);
     }
   }

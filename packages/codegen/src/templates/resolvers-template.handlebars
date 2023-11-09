@@ -18,6 +18,7 @@ import {
   GraphQLBigDecimal,
   {{#if (subgraphPath)}}
   BlockHeight,
+  OrderDirection,
   jsonBigIntStringReplacer,
   {{/if}}
   EventWatcher,
@@ -111,6 +112,29 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
         return indexer.getSubgraphEntity({{this.entityName}}, id, block, info.fieldNodes[0].selectionSet.selections);
+      },
+
+      {{this.pluralQueryName}}: async (
+        _: any,
+        { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection },
+        __: any,
+        info: GraphQLResolveInfo
+      ) => {
+        log('{{this.pluralQueryName}}', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('{{this.pluralQueryName}}').inc(1);
+        assert(info.fieldNodes[0].selectionSet);
+
+        // Set cache-control hints
+        // setGQLCacheHints(info, block, gqlCacheConfig);
+
+        return indexer.getSubgraphEntities(
+          {{this.entityName}},
+          block,
+          where,
+          { limit: first, skip, orderBy, orderDirection },
+          info.fieldNodes[0].selectionSet.selections
+        );
       },
 
       {{/each}}
