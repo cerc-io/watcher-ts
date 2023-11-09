@@ -515,7 +515,15 @@ export class Database {
     `;
 
     // Fetching blockHash for previous entity in frothy region.
-    const [{ block_hash: blockHash, block_number: blockNumber, id }] = await queryRunner.query(heirerchicalQuery, [data.blockHash, data.id, MAX_REORG_DEPTH]);
+    const result = await queryRunner.query(heirerchicalQuery, [data.blockHash, data.id, MAX_REORG_DEPTH]);
+
+    // Check if empty array returned
+    // (occurs when block at given hash doesn't exist in the db)
+    if (!result?.length) {
+      throw new Error('no block with that hash found');
+    }
+
+    const [{ block_hash: blockHash, block_number: blockNumber, id }] = result;
 
     return { blockHash, blockNumber, id };
   }
