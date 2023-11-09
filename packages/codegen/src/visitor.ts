@@ -180,13 +180,13 @@ export class Visitor {
     });
   }
 
-  visitSubgraph (subgraphPath?: string): void {
-    if (!subgraphPath) {
+  visitSubgraph (subgraphPath?: string, subgraphConfig?: any): void {
+    if (!subgraphPath || !subgraphConfig) {
       return;
     }
 
     // Parse subgraph schema to get subgraphSchemaDocument.
-    const subgraphSchemaDocument = parseSubgraphSchema(subgraphPath);
+    const subgraphSchemaDocument = parseSubgraphSchema(subgraphPath, subgraphConfig);
 
     this._schema.addSubgraphSchema(subgraphSchemaDocument);
     this._types.addSubgraphTypes(subgraphSchemaDocument);
