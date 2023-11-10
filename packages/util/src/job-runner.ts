@@ -171,7 +171,9 @@ export class JobRunner {
     const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
 
     if (this._historicalProcessingCompletedUpto) {
+      // Check if historical processing start is for a previous block which happens incase of template create
       if (startBlock < this._historicalProcessingCompletedUpto) {
+        // Delete any pending historical processing jobs
         await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
 
         // Wait for events queue to be empty

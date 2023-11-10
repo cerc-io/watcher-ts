@@ -90,6 +90,16 @@ export class EventWatcher {
       this._indexer.getSyncStatus()
     ]);
 
+    // Wait for events job queue to be empty before starting historical or realtime processing
+    await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
+    const historicalProcessingQueueSize = await this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed');
+
+    // Stop if there are active or pending historical processing jobs
+    // Might be created on encountering template create in events processing
+    if (historicalProcessingQueueSize > 0) {
+      return;
+    }
+
     const latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
     let startBlockNumber = latestBlock.number;
 
@@ -116,9 +126,6 @@ export class EventWatcher {
   }
 
   async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
-    // Wait for events job queue to be empty so that historical processing does not move far ahead
-    await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
-
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
 
@@ -133,13 +140,13 @@ export class EventWatcher {
   }
 
   async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
-    log(`Starting realtime block processing from block ${startBlockNumber}`);
-    await processBlockByNumber(this._jobQueue, startBlockNumber);
-
     // Check if realtime processing already started and avoid resubscribing to block progress event
     if (this._realtimeProcessingStarted) {
       return;
     }
+
+    log(`Starting realtime block processing from block ${startBlockNumber}`);
+    await processBlockByNumber(this._jobQueue, startBlockNumber);
 
     this._realtimeProcessingStarted = true;
 
@@ -223,14 +230,8 @@ export class EventWatcher {
 
     // Check if historical processing end block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
-      const historicalProcessingQueueSize = await this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed');
-
-      // Check that there are no active or pending historical processing jobs
-      // Might be created on encountering template create in events processing
-      if (historicalProcessingQueueSize === 0) {
-        // Start next batch of historical processing or realtime processing
-        this.startBlockProcessing();
-      }
+      // Start next batch of historical processing or realtime processing
+      this.startBlockProcessing();
 
       return;
     }
