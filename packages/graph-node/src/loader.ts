@@ -158,8 +158,7 @@ export const instantiate = async (
         const functionParamsPtr = await smartContractCall.functionParams;
         let functionParams = __getArray(functionParamsPtr);
 
-        console.log('ethereum.call params');
-        console.log('functionSignature:', functionSignature);
+        console.log('ethereum.call functionSignature:', functionSignature);
 
         const abi = abis[contractName];
         const contractAddressStringPtr = await contractAddress.toHexString();
@@ -284,7 +283,7 @@ export const instantiate = async (
     conversion: {
       'typeConversion.stringToH160': async (s: number) => {
         const string = __getString(s);
-        const address = utils.getAddress(string);
+        const address = utils.getAddress(string.trim());
         const byteArray = utils.arrayify(address);
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
