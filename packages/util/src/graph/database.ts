@@ -222,18 +222,14 @@ export class GraphDatabase {
     block: CanonicalBlockHeight = {},
     selections: ReadonlyArray<SelectionNode> = []
   ): Promise<Entity | undefined> {
-    let { hash: blockHash, number: blockNumber } = block;
+    const { hash: blockHash, number: blockNumber } = block;
     const repo = queryRunner.manager.getRepository<Entity>(entityType);
     const whereOptions: any = { id };
 
-    if (blockNumber) {
-      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
-    }
-
     if (blockHash) {
       whereOptions.blockHash = blockHash;
-      const block = await this._baseDatabase.getBlockProgress(queryRunner.manager.getRepository('block_progress'), blockHash);
-      blockNumber = block?.blockNumber;
+    } else if (blockNumber) {
+      whereOptions.blockNumber = LessThanOrEqual(blockNumber);
     }
 
     const findOptions = {

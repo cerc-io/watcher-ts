@@ -193,7 +193,7 @@ export class Schema {
       const queryObject: { [key: string]: any; } = {};
       queryObject[queryName] = {
         // Get type composer object for return type from the schema composer.
-        type: this._composer.getAnyTC(subgraphType).NonNull,
+        type: this._composer.getAnyTC(subgraphType),
         args: {
           id: 'ID!',
           block: BlockHeight
