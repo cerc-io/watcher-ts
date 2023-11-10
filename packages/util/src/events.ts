@@ -223,8 +223,15 @@ export class EventWatcher {
 
     // Check if historical processing end block is reached
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
-      // Start realtime processing
-      this.startBlockProcessing();
+      const historicalProcessingQueueSize = await this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed');
+
+      // Check that there are no active or pending historical processing jobs
+      // Might be created on encountering template create in events processing
+      if (historicalProcessingQueueSize === 0) {
+        // Start next batch of historical processing or realtime processing
+        this.startBlockProcessing();
+      }
+
       return;
     }
 
