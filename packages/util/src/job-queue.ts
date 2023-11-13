@@ -14,7 +14,7 @@ interface Config {
   maxCompletionLag: number
 }
 
-type JobCallback = (job: PgBoss.JobWithDoneCallback<any, any>) => Promise<void>;
+type JobCallback = (job: PgBoss.JobWithDoneCallback<any, any> | PgBoss.JobWithMetadataDoneCallback<any, any>) => Promise<void>;
 
 // Default number of jobs fetched from DB per polling interval (newJobCheckInterval)
 const DEFAULT_JOBS_PER_INTERVAL = 5;
@@ -119,6 +119,7 @@ export class JobQueue {
       {
         teamSize: DEFAULT_JOBS_PER_INTERVAL,
         teamConcurrency: 1
+        // TODO: Accept options similar to subscribe method
       },
       async (job: PgBoss.JobWithDoneCallback<any, any>) => {
         try {

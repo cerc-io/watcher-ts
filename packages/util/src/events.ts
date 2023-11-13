@@ -262,6 +262,8 @@ export class EventWatcher {
 
     const { blockHash, publish }: EventsJobData = data;
 
+    // TODO: Check if job was retried and start historical processing
+
     // Check if publish is set to true
     // Events and blocks are not published in historical processing
     // GQL subscription events will not be triggered if publish is set to false

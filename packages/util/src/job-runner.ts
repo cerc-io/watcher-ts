@@ -35,9 +35,6 @@ import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber 
 
 const log = debug('vulcanize:job-runner');
 
-// Wait time for retrying events processing on error (in ms)
-const EVENTS_PROCESSING_RETRY_WAIT = 2000;
-
 const DEFAULT_HISTORICAL_LOGS_BLOCK_RANGE = 2000;
 
 export interface HistoricalJobData {
@@ -93,10 +90,11 @@ export class JobRunner {
     await this.jobQueue.subscribe(
       QUEUE_EVENT_PROCESSING,
       async (job) => {
-        await this.processEvent(job);
+        await this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>);
       },
       {
-        teamSize: 1
+        teamSize: 1,
+        includeMetadata: true
       }
     );
   }
@@ -221,6 +219,7 @@ export class JobRunner {
         batchEndBlockHash = blocks[blocksLength - 1].blockHash;
       } else {
         // Else fetch block hash from upstream for batch end block
+        // TODO: Handle null block
         const [block] = await this._indexer.getBlocks({ blockNumber: endBlock });
 
         if (block) {
@@ -254,7 +253,6 @@ export class JobRunner {
       const eventsProcessingJob: EventsJobData = {
         kind: EventsQueueJobKind.EVENTS,
         blockHash: block.blockHash,
-        isRetryAttempt: false,
         // Avoid publishing GQL subscription event in historical processing
         // Publishing when realtime processing is listening to events will cause problems
         publish: false
@@ -264,12 +262,12 @@ export class JobRunner {
     }
   }
 
-  async processEvent (job: PgBoss.JobWithDoneCallback<EventsJobData | ContractJobData, any>): Promise<EventInterface | void> {
-    const { data: jobData } = job;
+  async processEvent (job: PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>): Promise<EventInterface | void> {
+    const { data: jobData, retrycount: retryCount } = job;
 
     switch (jobData.kind) {
       case EventsQueueJobKind.EVENTS:
-        await this._processEvents(jobData);
+        await this._processEvents(jobData, retryCount);
         break;
 
       case EventsQueueJobKind.CONTRACT:
@@ -278,6 +276,13 @@ export class JobRunner {
     }
 
     await this.jobQueue.markComplete(job);
+
+    // Shutdown after job gets marked as complete
+    if (this._shutDown) {
+      log(`Graceful shutdown after ${QUEUE_EVENT_PROCESSING} queue ${jobData.kind} kind job ${job.id}`);
+      this.jobQueue.stop();
+      process.exit(0);
+    }
   }
 
   async processHooks (job: any): Promise<void> {
@@ -602,7 +607,6 @@ export class JobRunner {
     const eventsProcessingJob: EventsJobData = {
       kind: EventsQueueJobKind.EVENTS,
       blockHash: blockProgress.blockHash,
-      isRetryAttempt: false,
       publish: true
     };
     await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
@@ -611,23 +615,13 @@ export class JobRunner {
     log(`time:job-runner#_indexBlock: ${indexBlockDuration}ms`);
   }
 
-  async _processEvents (jobData: EventsJobData): Promise<void> {
-    const { blockHash, isRetryAttempt } = jobData;
+  async _processEvents (jobData: EventsJobData, retryCount: number): Promise<void> {
+    const { blockHash } = jobData;
+    const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
+    assert(prefetchedBlock);
+    const { block, ethFullBlock, ethFullTransactions } = prefetchedBlock;
 
     try {
-      // NOTE: blockAndEventsMap should contain block as watcher is reset
-      // if (!this._blockAndEventsMap.has(blockHash)) {
-      //   console.time('time:job-runner#_processEvents-get-block-progress');
-      //   const block = await this._indexer.getBlockProgress(blockHash);
-      //   console.timeEnd('time:job-runner#_processEvents-get-block-progress');
-
-      //   assert(block);
-      //   this._blockAndEventsMap.set(blockHash, { block, events: [] });
-      // }
-
-      const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
-      assert(prefetchedBlock);
-      const { block, ethFullBlock, ethFullTransactions } = prefetchedBlock;
       log(`Processing events for block ${block.blockNumber}`);
 
       console.time(`time:job-runner#_processEvents-events-${block.blockNumber}`);
@@ -684,37 +678,25 @@ export class JobRunner {
       await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
 
       // If this was a retry attempt, unset the indexing error flag in sync status
-      if (isRetryAttempt) {
+      if (retryCount > 0) {
         await this._indexer.updateSyncStatusIndexingError(false);
       }
-
-      // TODO: Shutdown after job gets marked as complete
-      if (this._shutDown) {
-        log(`Graceful shutdown after processing block ${block.blockNumber}`);
-        this.jobQueue.stop();
-        process.exit(0);
-      }
     } catch (error) {
-      log(`Error in processing events for block ${blockHash}`);
+      log(`Error in processing events for block ${block.blockNumber} hash ${block.blockHash}`);
       log(error);
 
-      // Set the indexing error flag in sync status
-      await this._indexer.updateSyncStatusIndexingError(true);
+      await Promise.all([
+        // Remove processed data for current block to avoid reprocessing of events
+        this._indexer.clearProcessedBlockData(block),
+        // Delete all pending event processing jobs
+        this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING),
+        // Delete all pending historical processing jobs
+        this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING),
+        // Set the indexing error flag in sync status
+        this._indexer.updateSyncStatusIndexingError(true)
+      ]);
 
-      // TODO: Remove processed entities for current block to avoid reprocessing of events
-
-      // Catch event processing error and push job again to job queue with higher priority
-      log(`Retrying event processing after ${EVENTS_PROCESSING_RETRY_WAIT} ms`);
-      const eventsProcessingRetryJob: EventsJobData = { ...jobData, isRetryAttempt: true };
-
-      await this.jobQueue.pushJob(
-        QUEUE_EVENT_PROCESSING,
-        eventsProcessingRetryJob,
-        { priority: 1 }
-      );
-
-      // Wait for some time before retrying job
-      await wait(EVENTS_PROCESSING_RETRY_WAIT);
+      throw error;
     }
   }
 

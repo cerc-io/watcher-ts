@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
+import { DeepPartial, EntityTarget, Equal, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
@@ -1386,6 +1386,25 @@ export class Indexer {
       }
 
       await this.updateSyncStatusChainHead(blockProgress.blockHash, blockProgress.blockNumber, true);
+
+      dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
+  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockNumber: number }>[]): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      for (const entity of entities) {
+        await this._db.deleteEntitiesByConditions(dbTx, entity, { blockHash: Equal(block.blockHash) });
+      }
+
+      await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: Equal(block.blockNumber) });
 
       dbTx.commitTransaction();
     } catch (error) {
