@@ -459,6 +459,25 @@ export const instantiate = async (
 
         return mulResultBigDecimal;
       },
+      'bigDecimal.pow': async (x: number, y: number) => {
+        // Create decimal x string.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
+
+        // Create decimal y string.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimalString = __getString(yStringPtr);
+
+        // Perform the decimal pow operation.
+        const powResult = xDecimal.pow(yDecimalString);
+        const ptr = await __newString(powResult.toString());
+        const powResultBigDecimal = await BigDecimal.fromString(ptr);
+
+        return powResultBigDecimal;
+      },
 
       'bigInt.fromString': async (s: number) => {
         const string = __getString(s);

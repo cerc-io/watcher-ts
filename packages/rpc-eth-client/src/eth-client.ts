@@ -6,8 +6,10 @@ import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFullTransaction } from '@cerc-io/util';
+import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFullBlock, EthFullTransaction } from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
+
+const FUTURE_BLOCK_ERROR = "requested a future epoch (beyond 'latest')";
 
 export interface Config {
   cache: Cache | undefined;
@@ -68,11 +70,12 @@ export class EthClient implements EthClientInterface {
     const blockHashOrBlockNumber = blockHash ?? blockNumber;
     assert(blockHashOrBlockNumber);
     console.time(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
-    const result = await this._provider.getBlockWithTransactions(blockHashOrBlockNumber);
-    console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+    let nodes: any[] = [];
 
-    const allEthHeaderCids = {
-      nodes: [
+    try {
+      const result = await this._provider.getBlockWithTransactions(blockHashOrBlockNumber);
+
+      nodes = [
         {
           blockNumber: result.number.toString(),
           blockHash: result.hash,
@@ -88,10 +91,21 @@ export class EthClient implements EthClientInterface {
             }))
           }
         }
-      ]
-    };
+      ];
+    } catch (err: any) {
+      // Check and ignore future block error
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
+        throw err;
+      }
+    } finally {
+      console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+    }
 
-    return { allEthHeaderCids };
+    return {
+      allEthHeaderCids: {
+        nodes
+      }
+    };
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
@@ -125,7 +139,7 @@ export class EthClient implements EthClientInterface {
       }
     } catch (err: any) {
       // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === "requested a future epoch (beyond 'latest')")) {
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
         throw err;
       }
     } finally {
@@ -139,57 +153,69 @@ export class EthClient implements EthClientInterface {
     };
   }
 
-  async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
+  async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<EthFullBlock[]> {
     const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
     const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
-
     console.time(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
-    const rawBlock = await this._provider.send(
-      blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
-      [blockHashOrBlockNumber, false]
-    );
-    console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    // Create block header
-    // https://github.com/cerc-io/go-ethereum/blob/v1.11.6-statediff-5.0.8/core/types/block.go#L64
-    const header = {
-      Parent: rawBlock.parentHash,
-      UnclesDigest: rawBlock.sha3Uncles,
-      Beneficiary: rawBlock.miner,
-      StateRoot: rawBlock.stateRoot,
-      TxRoot: rawBlock.transactionsRoot,
-      RctRoot: rawBlock.receiptsRoot,
-      Bloom: rawBlock.logsBloom,
-      Difficulty: BigInt(rawBlock.difficulty),
-      Number: BigInt(rawBlock.number),
-      GasLimit: BigInt(rawBlock.gasLimit),
-      GasUsed: BigInt(rawBlock.gasUsed),
-      Time: Number(rawBlock.timestamp),
-      Extra: rawBlock.extraData,
-      MixDigest: rawBlock.mixHash,
-      Nonce: BigInt(rawBlock.nonce),
-      BaseFee: rawBlock.baseFeePerGas && BigInt(rawBlock.baseFeePerGas)
-    };
+    try {
+      const rawBlock = await this._provider.send(
+        blockHash ? 'eth_getBlockByHash' : 'eth_getBlockByNumber',
+        [blockHashOrBlockNumber, false]
+      );
 
-    const rlpData = encodeHeader(header);
+      if (rawBlock) {
+        // Create block header
+        // https://github.com/cerc-io/go-ethereum/blob/v1.11.6-statediff-5.0.8/core/types/block.go#L64
+        const header = {
+          Parent: rawBlock.parentHash,
+          UnclesDigest: rawBlock.sha3Uncles,
+          Beneficiary: rawBlock.miner,
+          StateRoot: rawBlock.stateRoot,
+          TxRoot: rawBlock.transactionsRoot,
+          RctRoot: rawBlock.receiptsRoot,
+          Bloom: rawBlock.logsBloom,
+          Difficulty: BigInt(rawBlock.difficulty),
+          Number: BigInt(rawBlock.number),
+          GasLimit: BigInt(rawBlock.gasLimit),
+          GasUsed: BigInt(rawBlock.gasUsed),
+          Time: Number(rawBlock.timestamp),
+          Extra: rawBlock.extraData,
+          MixDigest: rawBlock.mixHash,
+          Nonce: BigInt(rawBlock.nonce),
+          BaseFee: rawBlock.baseFeePerGas && BigInt(rawBlock.baseFeePerGas)
+        };
 
-    return [{
-      blockNumber: this._provider.formatter.number(rawBlock.number).toString(),
-      blockHash: this._provider.formatter.hash(rawBlock.hash),
-      parentHash: this._provider.formatter.hash(rawBlock.parentHash),
-      timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
-      stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
-      td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
-      txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
-      receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
-      uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
-      bloom: escapeHexString(this._provider.formatter.hex(rawBlock.logsBloom)),
-      size: this._provider.formatter.number(rawBlock.size).toString(),
-      blockByMhKey: {
-        data: escapeHexString(rlpData)
+        const rlpData = encodeHeader(header);
+
+        return [{
+          blockNumber: this._provider.formatter.number(rawBlock.number).toString(),
+          blockHash: this._provider.formatter.hash(rawBlock.hash),
+          parentHash: this._provider.formatter.hash(rawBlock.parentHash),
+          timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
+          stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
+          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+          txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
+          receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
+          uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
+          bloom: escapeHexString(this._provider.formatter.hex(rawBlock.logsBloom)),
+          size: this._provider.formatter.number(rawBlock.size).toString(),
+          blockByMhKey: {
+            data: escapeHexString(rlpData)
+          }
+        }];
       }
-    }];
+    } catch (err: any) {
+      // Check and ignore future block error
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
+        throw err;
+      }
+    } finally {
+      console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
+    }
+
+    return [];
   }
 
   async getFullTransaction (txHash: string): Promise<EthFullTransaction> {
