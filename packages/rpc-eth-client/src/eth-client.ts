@@ -70,11 +70,12 @@ export class EthClient implements EthClientInterface {
     const blockHashOrBlockNumber = blockHash ?? blockNumber;
     assert(blockHashOrBlockNumber);
     console.time(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
-    const result = await this._provider.getBlockWithTransactions(blockHashOrBlockNumber);
-    console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+    let nodes: any[] = [];
 
-    const allEthHeaderCids = {
-      nodes: [
+    try {
+      const result = await this._provider.getBlockWithTransactions(blockHashOrBlockNumber);
+
+      nodes = [
         {
           blockNumber: result.number.toString(),
           blockHash: result.hash,
@@ -90,10 +91,21 @@ export class EthClient implements EthClientInterface {
             }))
           }
         }
-      ]
-    };
+      ];
+    } catch (err: any) {
+      // Check and ignore future block error
+      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
+        throw err;
+      }
+    } finally {
+      console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
+    }
 
-    return { allEthHeaderCids };
+    return {
+      allEthHeaderCids: {
+        nodes
+      }
+    };
   }
 
   async getBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<any> {
