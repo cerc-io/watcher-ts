@@ -1355,6 +1355,7 @@ export class Indexer {
       }
 
       await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: MoreThan(blockNumber) });
+      this._clearWatchedContracts((watchedContracts) => watchedContracts.startingBlock > blockNumber);
 
       await this._db.deleteEntitiesByConditions(dbTx, 'block_progress', { blockNumber: MoreThan(blockNumber) });
 
@@ -1405,6 +1406,7 @@ export class Indexer {
       }
 
       await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: Equal(block.blockNumber) });
+      this._clearWatchedContracts((watchedContracts) => watchedContracts.startingBlock === block.blockNumber);
 
       dbTx.commitTransaction();
     } catch (error) {
@@ -1413,6 +1415,16 @@ export class Indexer {
     } finally {
       await dbTx.release();
     }
+  }
+
+  _clearWatchedContracts (removFilter: (watchedContract: ContractInterface) => boolean): void {
+    this._watchedContracts = Object.values(this._watchedContracts)
+      .filter(watchedContract => !removFilter(watchedContract))
+      .reduce((acc: {[key: string]: ContractInterface}, watchedContract) => {
+        acc[watchedContract.address] = watchedContract;
+
+        return acc;
+      }, {});
   }
 
   updateStateStatusMap (address: string, stateStatus: StateStatus): void {
