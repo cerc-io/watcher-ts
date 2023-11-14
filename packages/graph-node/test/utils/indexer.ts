@@ -318,6 +318,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async clearProcessedBlockData (block: BlockProgressInterface): Promise<void> {
+    return undefined;
+  }
+
   cacheContract (contract: ContractInterface): void {
     return undefined;
   }

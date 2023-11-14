@@ -66,32 +66,36 @@ export class EventWatcher {
   }
 
   async initBlockProcessingOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_BLOCK_PROCESSING, async (job) => {
-      await this.blockProcessingCompleteHandler(job);
-    });
+    this._jobQueue.onComplete(
+      QUEUE_BLOCK_PROCESSING,
+      async (job) => this.blockProcessingCompleteHandler(job)
+    );
   }
 
   async initHistoricalProcessingOnCompleteHandler (): Promise<void> {
-    this._jobQueue.onComplete(QUEUE_HISTORICAL_PROCESSING, async (job) => {
-      await this.historicalProcessingCompleteHandler(job);
-    });
+    this._jobQueue.onComplete(
+      QUEUE_HISTORICAL_PROCESSING,
+      async (job) => this.historicalProcessingCompleteHandler(job)
+    );
   }
 
   async initEventProcessingOnCompleteHandler (): Promise<void> {
-    await this._jobQueue.onComplete(QUEUE_EVENT_PROCESSING, async (job) => {
-      await this.eventProcessingCompleteHandler(job);
-    });
+    await this._jobQueue.onComplete(
+      QUEUE_EVENT_PROCESSING,
+      async (job) => this.eventProcessingCompleteHandler(job as PgBoss.JobWithMetadata),
+      { includeMetadata: true }
+    );
   }
 
   async startBlockProcessing (): Promise<void> {
     // Get latest block in chain and sync status from DB.
     const [{ block: latestBlock }, syncStatus] = await Promise.all([
       this._ethClient.getBlockByHash(),
-      this._indexer.getSyncStatus()
+      this._indexer.getSyncStatus(),
+      // Wait for events job queue to be empty before starting historical or realtime processing
+      this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING)
     ]);
 
-    // Wait for events job queue to be empty before starting historical or realtime processing
-    await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
     const historicalProcessingQueueSize = await this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed');
 
     // Stop if there are active or pending historical processing jobs
@@ -110,14 +114,7 @@ export class EventWatcher {
     // Check if filter for logs is enabled
     // Check if starting block for watcher is before latest canonical block
     if (this._config.jobQueue.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
-      let endBlockNumber = latestCanonicalBlockNumber;
-      const historicalMaxFetchAhead = this._config.jobQueue.historicalMaxFetchAhead ?? DEFAULT_HISTORICAL_MAX_FETCH_AHEAD;
-
-      if (historicalMaxFetchAhead > 0) {
-        endBlockNumber = Math.min(startBlockNumber + historicalMaxFetchAhead, endBlockNumber);
-      }
-
-      await this.startHistoricalBlockProcessing(startBlockNumber, endBlockNumber);
+      await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;
     }
@@ -125,7 +122,19 @@ export class EventWatcher {
     await this.startRealtimeBlockProcessing(startBlockNumber);
   }
 
-  async startHistoricalBlockProcessing (startBlockNumber: number, endBlockNumber: number): Promise<void> {
+  async startHistoricalBlockProcessing (startBlockNumber: number, latestCanonicalBlockNumber: number): Promise<void> {
+    if (this._realtimeProcessingStarted) {
+      // Do not start historical processing if realtime processing has already started
+      return;
+    }
+
+    let endBlockNumber = latestCanonicalBlockNumber;
+    const historicalMaxFetchAhead = this._config.jobQueue.historicalMaxFetchAhead ?? DEFAULT_HISTORICAL_MAX_FETCH_AHEAD;
+
+    if (historicalMaxFetchAhead > 0) {
+      endBlockNumber = Math.min(startBlockNumber + historicalMaxFetchAhead, endBlockNumber);
+    }
+
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
 
@@ -140,7 +149,7 @@ export class EventWatcher {
   }
 
   async startRealtimeBlockProcessing (startBlockNumber: number): Promise<void> {
-    // Check if realtime processing already started and avoid resubscribing to block progress event
+    // Check if realtime processing already started
     if (this._realtimeProcessingStarted) {
       return;
     }
@@ -246,8 +255,8 @@ export class EventWatcher {
     );
   }
 
-  async eventProcessingCompleteHandler (job: PgBoss.Job<any>): Promise<void> {
-    const { id, data: { request: { data }, failed, state, createdOn } } = job;
+  async eventProcessingCompleteHandler (job: PgBoss.JobWithMetadata<any>): Promise<void> {
+    const { id, retrycount, data: { request: { data }, failed, state, createdOn } } = job;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_EVENT_PROCESSING} failed`);
@@ -261,14 +270,21 @@ export class EventWatcher {
     }
 
     const { blockHash, publish }: EventsJobData = data;
+    const blockProgress = await this._indexer.getBlockProgress(blockHash);
+    assert(blockProgress);
+
+    // Check if job was retried
+    if (retrycount > 0) {
+      // Reset watcher to remove any data after this block
+      await this._indexer.resetWatcherToBlock(blockProgress.blockNumber);
+      // Start block processing (Try restarting historical processing or continue realtime processing)
+      this.startBlockProcessing();
+    }
 
     // Check if publish is set to true
     // Events and blocks are not published in historical processing
     // GQL subscription events will not be triggered if publish is set to false
     if (publish) {
-      const blockProgress = await this._indexer.getBlockProgress(blockHash);
-      assert(blockProgress);
-
       await this.publishBlockProgressToSubscribers(blockProgress);
 
       const dbEvents = await this._indexer.getBlockEvents(

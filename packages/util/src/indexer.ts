@@ -3,7 +3,7 @@
 //
 
 import assert from 'assert';
-import { DeepPartial, EntityTarget, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
+import { DeepPartial, EntityTarget, Equal, FindConditions, FindManyOptions, MoreThan } from 'typeorm';
 import debug from 'debug';
 import JSONbig from 'json-bigint';
 import { ethers } from 'ethers';
@@ -1355,6 +1355,7 @@ export class Indexer {
       }
 
       await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: MoreThan(blockNumber) });
+      this._clearWatchedContracts((watchedContracts) => watchedContracts.startingBlock > blockNumber);
 
       await this._db.deleteEntitiesByConditions(dbTx, 'block_progress', { blockNumber: MoreThan(blockNumber) });
 
@@ -1394,6 +1395,36 @@ export class Indexer {
     } finally {
       await dbTx.release();
     }
+  }
+
+  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockNumber: number }>[]): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      for (const entity of entities) {
+        await this._db.deleteEntitiesByConditions(dbTx, entity, { blockHash: Equal(block.blockHash) });
+      }
+
+      await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: Equal(block.blockNumber) });
+      this._clearWatchedContracts((watchedContracts) => watchedContracts.startingBlock === block.blockNumber);
+
+      dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
+  _clearWatchedContracts (removFilter: (watchedContract: ContractInterface) => boolean): void {
+    this._watchedContracts = Object.values(this._watchedContracts)
+      .filter(watchedContract => !removFilter(watchedContract))
+      .reduce((acc: {[key: string]: ContractInterface}, watchedContract) => {
+        acc[watchedContract.address] = watchedContract;
+
+        return acc;
+      }, {});
   }
 
   updateStateStatusMap (address: string, stateStatus: StateStatus): void {

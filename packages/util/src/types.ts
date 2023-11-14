@@ -229,6 +229,7 @@ export interface IndexerInterface {
   saveOrUpdateState (state: StateInterface): Promise<StateInterface>
   removeStates (blockNumber: number, kind: StateKind): Promise<void>
   resetWatcherToBlock (blockNumber: number): Promise<void>
+  clearProcessedBlockData (block: BlockProgressInterface): Promise<void>
   getResultEvent (event: EventInterface): any
 }
 
@@ -297,7 +298,6 @@ export enum EventsQueueJobKind {
 export interface EventsJobData {
   kind: EventsQueueJobKind.EVENTS;
   blockHash: string;
-  isRetryAttempt: boolean;
   publish: boolean;
 }
 
