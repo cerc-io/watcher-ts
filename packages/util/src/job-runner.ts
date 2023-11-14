@@ -246,6 +246,17 @@ export class JobRunner {
 
     this._historicalProcessingCompletedUpto = endBlock;
 
+    if (endBlock < processingEndBlockNumber) {
+      // If endBlock is lesser than processingEndBlockNumber push new historical job
+      await this.jobQueue.pushJob(
+        QUEUE_HISTORICAL_PROCESSING,
+        {
+          blockNumber: endBlock + 1,
+          processingEndBlockNumber: processingEndBlockNumber
+        }
+      );
+    }
+
     await this.jobQueue.markComplete(
       job,
       { isComplete: true, endBlock }

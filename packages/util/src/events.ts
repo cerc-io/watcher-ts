@@ -243,18 +243,7 @@ export class EventWatcher {
     if (nextBatchStartBlockNumber > this._historicalProcessingEndBlockNumber) {
       // Start next batch of historical processing or realtime processing
       this.startBlockProcessing();
-
-      return;
     }
-
-    // Push job for next batch of blocks
-    await this._jobQueue.pushJob(
-      QUEUE_HISTORICAL_PROCESSING,
-      {
-        blockNumber: nextBatchStartBlockNumber,
-        processingEndBlockNumber: this._historicalProcessingEndBlockNumber
-      }
-    );
   }
 
   async eventProcessingCompleteHandler (job: PgBoss.JobWithMetadata<any>): Promise<void> {
