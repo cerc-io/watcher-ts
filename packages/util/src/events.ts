@@ -104,8 +104,7 @@ export class EventWatcher {
       return;
     }
 
-    // const latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
-    const latestCanonicalBlockNumber = 3373270;
+    const latestCanonicalBlockNumber = latestBlock.number - MAX_REORG_DEPTH;
     let startBlockNumber = latestBlock.number;
 
     if (syncStatus) {

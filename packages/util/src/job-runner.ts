@@ -206,7 +206,6 @@ export class JobRunner {
       endBlock
     );
 
-    let batchEndBlockHash = constants.AddressZero;
     const blocksLength = blocks.length;
 
     if (blocksLength) {
@@ -229,29 +228,15 @@ export class JobRunner {
       }
 
       // Push event processing job for each block
-      const pushEventProcessingJobsForBlocksPromise = this._pushEventProcessingJobsForBlocks(blocks);
-
-      if (blocks[blocksLength - 1].blockNumber === endBlock) {
-        // If in blocks returned end block is same as the batch end block, set batchEndBlockHash
-        batchEndBlockHash = blocks[blocksLength - 1].blockHash;
-      } else {
-        // Else fetch block hash from upstream for batch end block
-        // TODO: Handle null block
-        const [block] = await this._indexer.getBlocks({ blockNumber: endBlock });
-
-        if (block) {
-          batchEndBlockHash = block.blockHash;
-        }
-      }
-
-      await pushEventProcessingJobsForBlocksPromise;
+      await this._pushEventProcessingJobsForBlocks(blocks);
     }
 
     // Update sync status canonical, indexed and chain head block to end block
+    // Update with zero hash as they won't be used during historical processing
     await Promise.all([
-      this._indexer.updateSyncStatusCanonicalBlock(batchEndBlockHash, endBlock, true),
-      this._indexer.updateSyncStatusIndexedBlock(batchEndBlockHash, endBlock, true),
-      this._indexer.updateSyncStatusChainHead(batchEndBlockHash, endBlock, true)
+      this._indexer.updateSyncStatusCanonicalBlock(constants.HashZero, endBlock, true),
+      this._indexer.updateSyncStatusIndexedBlock(constants.HashZero, endBlock, true),
+      this._indexer.updateSyncStatusChainHead(constants.HashZero, endBlock, true)
     ]);
     log(`Sync status canonical, indexed and chain head block updated to ${endBlock}`);
 
