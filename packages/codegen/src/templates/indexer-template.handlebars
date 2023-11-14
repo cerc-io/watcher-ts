@@ -759,6 +759,19 @@ export class Indexer implements IndexerInterface {
     await this.resetLatestEntities(blockNumber);
     {{/if}}
   }
+
+  async clearProcessedBlockData (block: BlockProgress): Promise<void> {
+    {{#if (subgraphPath)}}
+    const entities = [...ENTITIES, FrothyEntity];
+    {{else}}
+    const entities = [...ENTITIES];
+    {{/if}}
+    await this._baseIndexer.clearProcessedBlockData(block, entities);
+    {{#if (subgraphPath)}}
+
+    await this.resetLatestEntities(block.blockNumber);
+    {{/if}}
+  }
   {{#if (subgraphPath)}}
 
   getEntityTypesMap (): Map<string, { [key: string]: string }> {
