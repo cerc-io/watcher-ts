@@ -12,7 +12,7 @@ import pluralize from 'pluralize';
 
 import { getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { getBaseType, isArrayType } from './utils/helpers';
+import { getBaseType, isArrayType, lowerCamelCase } from './utils/helpers';
 
 const OrderDirection = 'OrderDirection';
 const BlockHeight = 'Block_height';
@@ -188,7 +188,7 @@ export class Schema {
       const subgraphType = subgraphTypeDef.name.value;
 
       // Lowercase first letter for query name.
-      const queryName = `${subgraphType.charAt(0).toLowerCase()}${subgraphType.slice(1)}`;
+      const queryName = lowerCamelCase(subgraphType);
 
       const queryObject: { [key: string]: any; } = {};
       queryObject[queryName] = {
