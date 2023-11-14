@@ -20,7 +20,7 @@ import {
   QUEUE_HISTORICAL_PROCESSING
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, ContractJobData, EventInterface, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
+import { BlockProgressInterface, ContractJobData, EventsJobData, EventsQueueJobKind, IndexerInterface } from './types';
 import { wait } from './misc';
 import {
   createPruningJob,
@@ -69,17 +69,16 @@ export class JobRunner {
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_BLOCK_PROCESSING, async (job) => {
-      await this.processBlock(job);
-    });
+    await this.jobQueue.subscribe(
+      QUEUE_BLOCK_PROCESSING,
+      async (job) => this.processBlock(job)
+    );
   }
 
   async subscribeHistoricalProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_HISTORICAL_PROCESSING,
-      async (job) => {
-        await this.processHistoricalBlocks(job);
-      },
+      async (job) => this.processHistoricalBlocks(job),
       {
         teamSize: 1
       }
@@ -89,9 +88,7 @@ export class JobRunner {
   async subscribeEventProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_EVENT_PROCESSING,
-      async (job) => {
-        await this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>);
-      },
+      async (job) => this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>),
       {
         teamSize: 1,
         includeMetadata: true
@@ -100,15 +97,17 @@ export class JobRunner {
   }
 
   async subscribeHooksQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_HOOKS, async (job) => {
-      await this.processHooks(job);
-    });
+    await this.jobQueue.subscribe(
+      QUEUE_HOOKS,
+      async (job) => this.processHooks(job)
+    );
   }
 
   async subscribeBlockCheckpointQueue (): Promise<void> {
-    await this.jobQueue.subscribe(QUEUE_BLOCK_CHECKPOINT, async (job) => {
-      await this.processCheckpoint(job);
-    });
+    await this.jobQueue.subscribe(
+      QUEUE_BLOCK_CHECKPOINT,
+      async (job) => this.processCheckpoint(job)
+    );
   }
 
   async processBlock (job: any): Promise<void> {
@@ -211,6 +210,24 @@ export class JobRunner {
     const blocksLength = blocks.length;
 
     if (blocksLength) {
+      // TODO: Add pg-boss option to get queue size of jobs in a single state
+      const [pendingEventQueueSize, createdEventQueuSize] = await Promise.all([
+        this.jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING),
+        this.jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING, 'retry')
+      ]);
+
+      const retryEventQueueSize = pendingEventQueueSize - createdEventQueuSize;
+
+      if (retryEventQueueSize > 0) {
+        log(`${QUEUE_EVENT_PROCESSING} queue consists ${retryEventQueueSize} job(s) in retry state. Aborting pushing blocks to queue from historical processing`);
+        await this.jobQueue.markComplete(
+          job,
+          { isComplete: false, endBlock }
+        );
+
+        return;
+      }
+
       // Push event processing job for each block
       const pushEventProcessingJobsForBlocksPromise = this._pushEventProcessingJobsForBlocks(blocks);
 
@@ -262,7 +279,7 @@ export class JobRunner {
     }
   }
 
-  async processEvent (job: PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>): Promise<EventInterface | void> {
+  async processEvent (job: PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>): Promise<void> {
     const { data: jobData, retrycount: retryCount } = job;
 
     switch (jobData.kind) {
@@ -683,7 +700,6 @@ export class JobRunner {
       }
     } catch (error) {
       log(`Error in processing events for block ${block.blockNumber} hash ${block.blockHash}`);
-      log(error);
 
       await Promise.all([
         // Remove processed data for current block to avoid reprocessing of events
@@ -691,11 +707,12 @@ export class JobRunner {
         // Delete all pending event processing jobs
         this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING),
         // Delete all pending historical processing jobs
-        this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING),
+        this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING, 'active'),
         // Set the indexing error flag in sync status
         this._indexer.updateSyncStatusIndexingError(true)
       ]);
 
+      // Error logged in job-queue handler
       throw error;
     }
   }
