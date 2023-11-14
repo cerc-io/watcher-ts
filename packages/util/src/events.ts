@@ -88,15 +88,16 @@ export class EventWatcher {
   }
 
   async startBlockProcessing (): Promise<void> {
-    // Get latest block in chain and sync status from DB.
-    const [{ block: latestBlock }, syncStatus] = await Promise.all([
+    // Wait for events job queue to be empty before starting historical or realtime processing
+    await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
+
+    // Get latest block in chain and sync status from DB
+    // Also get historical-processing queu size
+    const [{ block: latestBlock }, syncStatus, historicalProcessingQueueSize] = await Promise.all([
       this._ethClient.getBlockByHash(),
       this._indexer.getSyncStatus(),
-      // Wait for events job queue to be empty before starting historical or realtime processing
-      this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING)
+      this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed')
     ]);
-
-    const historicalProcessingQueueSize = await this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed');
 
     // Stop if there are active or pending historical processing jobs
     // Might be created on encountering template create in events processing
@@ -144,7 +145,8 @@ export class EventWatcher {
       {
         blockNumber: startBlockNumber,
         processingEndBlockNumber: this._historicalProcessingEndBlockNumber
-      }
+      },
+      { priority: 1 }
     );
   }
 
@@ -256,7 +258,7 @@ export class EventWatcher {
   }
 
   async eventProcessingCompleteHandler (job: PgBoss.JobWithMetadata<any>): Promise<void> {
-    const { id, retrycount, data: { request: { data }, failed, state, createdOn } } = job;
+    const { id, data: { request: { data }, failed, state, createdOn, retryCount } } = job;
 
     if (failed) {
       log(`Job ${id} for queue ${QUEUE_EVENT_PROCESSING} failed`);
@@ -274,9 +276,7 @@ export class EventWatcher {
     assert(blockProgress);
 
     // Check if job was retried
-    if (retrycount > 0) {
-      // Reset watcher to remove any data after this block
-      await this._indexer.resetWatcherToBlock(blockProgress.blockNumber);
+    if (retryCount > 0) {
       // Start block processing (Try restarting historical processing or continue realtime processing)
       this.startBlockProcessing();
     }

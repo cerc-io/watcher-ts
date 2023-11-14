@@ -20,7 +20,7 @@ type JobCompleteCallback = (job: PgBoss.Job | PgBoss.JobWithMetadata) => Promise
 const DEFAULT_JOBS_PER_INTERVAL = 5;
 
 // Interval time to check for events queue to be empty
-const EMPTY_QUEUE_CHECK_INTERVAL = 5000;
+const EMPTY_QUEUE_CHECK_INTERVAL = 1000;
 
 const log = debug('vulcanize:job-queue');
 

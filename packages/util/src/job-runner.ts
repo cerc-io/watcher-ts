@@ -170,8 +170,12 @@ export class JobRunner {
     if (this._historicalProcessingCompletedUpto) {
       // Check if historical processing start is for a previous block which happens incase of template create
       if (startBlock < this._historicalProcessingCompletedUpto) {
-        // Delete any pending historical processing jobs
-        await this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING);
+        await Promise.all([
+          // Delete any pending historical processing jobs
+          this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING),
+          // Remove pending events queue jobs
+          this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING)
+        ]);
 
         // Wait for events queue to be empty
         log(`Waiting for events queue to be empty before resetting watcher to block ${startBlock - 1}`);
@@ -679,9 +683,15 @@ export class JobRunner {
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
       await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
 
-      // If this was a retry attempt, unset the indexing error flag in sync status
       if (retryCount > 0) {
-        await this._indexer.updateSyncStatusIndexingError(false);
+        await Promise.all([
+          // If this was a retry attempt, unset the indexing error flag in sync status
+          this._indexer.updateSyncStatusIndexingError(false),
+          // Reset watcher after succesfull retry so that block processing starts after this block
+          this._indexer.resetWatcherToBlock(block.blockNumber)
+        ]);
+
+        log(`Watcher reset to block ${block.blockNumber} after succesffully retrying events processing`);
       }
     } catch (error) {
       log(`Error in processing events for block ${block.blockNumber} hash ${block.blockHash}`);
@@ -691,8 +701,8 @@ export class JobRunner {
         this._indexer.clearProcessedBlockData(block),
         // Delete all pending event processing jobs
         this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING),
-        // Delete all pending historical processing jobs
-        this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING, 'active'),
+        // Delete all active and pending historical processing jobs
+        this.jobQueue.deleteJobs(QUEUE_HISTORICAL_PROCESSING, 'completed'),
         // Set the indexing error flag in sync status
         this._indexer.updateSyncStatusIndexingError(true)
       ]);
