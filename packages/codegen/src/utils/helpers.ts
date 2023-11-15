@@ -64,7 +64,7 @@ export function filterInheritedContractNodes (ast: SourceUnit, contractNodes: AS
  * @param value
  */
 export function lowerCamelCase (value: string): string {
-  const lowerCaseIndex = value.split('').findIndex(char => char.toLocaleLowerCase() === char);
+  const lowerCaseIndex = value.split('').findIndex(char => char.toLowerCase() === char);
 
-  return `${value.slice(0, lowerCaseIndex).toLowerCase()}${value.slice(1)}`;
+  return `${value.slice(0, lowerCaseIndex).toLowerCase()}${value.slice(lowerCaseIndex)}`;
 }
