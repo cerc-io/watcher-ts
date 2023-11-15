@@ -269,14 +269,15 @@ export class Schema {
             // Nested filter for relation field
             acc[`${fieldName}_`] = `${entityType}_filter`;
 
-            // TODO: Delete filters for only derived relations
-            // Remove filters if it is a related field
-            delete acc[`${fieldName}_contains`];
-            delete acc[`${fieldName}_contains_nocase`];
-            delete acc[`${fieldName}_not_contains`];
-            delete acc[`${fieldName}_not_contains_nocase`];
-            // delete acc[`${fieldName}`];
-            // delete acc[`${fieldName}_not`];
+            // Remove filters if it is a derived field
+            if (field.directives && field.directives.some(directive => directive.name === 'derivedFrom')) {
+              delete acc[`${fieldName}`];
+              delete acc[`${fieldName}_not`];
+              delete acc[`${fieldName}_contains`];
+              delete acc[`${fieldName}_contains_nocase`];
+              delete acc[`${fieldName}_not_contains`];
+              delete acc[`${fieldName}_not_contains_nocase`];
+            }
           }
 
           return acc;
