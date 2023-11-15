@@ -212,25 +212,34 @@ export class Schema {
 
       // Add plural query
 
+      const subgraphTypeComposer = this._composer.getOTC(subgraphType);
+      const subgraphTypeFields = subgraphTypeComposer.getFields();
+
       // Create the subgraphType_orderBy enum type
       const subgraphTypeOrderByEnum = new GraphQLEnumType({
         name: `${subgraphType}_orderBy`,
         values: (subgraphTypeDef.fields || []).reduce((acc: any, field) => {
           acc[field.name.value] = {};
+
+          const subgraphTypeField = subgraphTypeComposer.getField(field.name.value);
+          const { isArray, isRelation, entityType } = this._getDetailsForSubgraphField(subgraphTypeField.type);
+
+          if (!isArray && isRelation) {
+            assert(entityType);
+            this._fillOrderByWithNestedFields(acc, entityType, field.name.value);
+          }
+
           return acc;
         }, {})
       });
       this._composer.addSchemaMustHaveType(subgraphTypeOrderByEnum);
-
-      const subgraphTypeComposer = this._composer.getOTC(subgraphType);
-      const subgraphTypeFields = subgraphTypeComposer.getFields();
 
       // Create the subgraphType_filter input type
       const subgraphTypeFilterComposer = this._composer.createInputTC({
         name: `${subgraphType}_filter`,
         // Add fields to filter input based on entity properties
         fields: Object.entries(subgraphTypeFields).reduce((acc: {[key: string]: string}, [fieldName, field]) => {
-          const { type: fieldType, isArray, isRelation, entityType } = this._getTypeForFilterInputField(field.type);
+          const { type: fieldType, isArray, isRelation, entityType } = this._getDetailsForSubgraphField(field.type);
           acc[fieldName] = fieldType;
           acc[`${fieldName}_not`] = acc[fieldName];
 
@@ -311,7 +320,7 @@ export class Schema {
     }
   }
 
-  _getTypeForFilterInputField (fieldType: ComposeOutputType<any>): {
+  _getDetailsForSubgraphField (fieldType: ComposeOutputType<any>): {
     type: string;
     isArray: boolean;
     isRelation: boolean;
@@ -329,12 +338,12 @@ export class Schema {
         isArray = true;
       }
 
-      ({ type, isRelation, entityType } = this._getTypeForFilterInputField(unwrappedFieldType));
+      ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(unwrappedFieldType));
     }
 
     if (fieldType instanceof ListComposer) {
       const childFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
-      ({ type, isRelation, entityType } = this._getTypeForFilterInputField(childFieldType));
+      ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(childFieldType));
 
       isArray = true;
     }
@@ -350,6 +359,20 @@ export class Schema {
     }
 
     return { type, isArray, isRelation, entityType };
+  }
+
+  _fillOrderByWithNestedFields (orderByFields: {[key: string]: any}, entityName: string, fieldName: string): void {
+    const subgraphTypeComposer = this._composer.getOTC(entityName);
+    const subgraphTypeFields = subgraphTypeComposer.getFields();
+
+    Object.entries(subgraphTypeFields)
+      .filter(([, field]) => {
+        const { isRelation } = this._getDetailsForSubgraphField(field.type);
+        return !isRelation;
+      })
+      .forEach(([name]) => {
+        orderByFields[`${fieldName}__${name}`] = {};
+      });
   }
 
   /**
