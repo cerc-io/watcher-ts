@@ -12,6 +12,7 @@ import pluralize from 'pluralize';
 
 import { getGqlForSol, getTsForGql } from './utils/type-mappings';
 import { Param } from './utils/types';
+import { lowerCamelCase } from './utils/helpers';
 
 const TEMPLATE_FILE = './templates/resolvers-template.handlebars';
 
@@ -62,7 +63,7 @@ export class Resolvers {
       }
 
       const entityName = subgraphTypeDef.name.value;
-      const queryName = `${entityName.charAt(0).toLowerCase()}${entityName.slice(1)}`;
+      const queryName = lowerCamelCase(entityName);
 
       let pluralQueryName = pluralize(queryName);
       pluralQueryName = (pluralQueryName === queryName) ? `${pluralQueryName}s` : pluralQueryName;

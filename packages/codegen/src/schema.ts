@@ -12,10 +12,11 @@ import pluralize from 'pluralize';
 
 import { getGqlForSol } from './utils/type-mappings';
 import { Param } from './utils/types';
-import { getBaseType, isArrayType } from './utils/helpers';
+import { getBaseType, isArrayType, lowerCamelCase } from './utils/helpers';
 
-const OrderDirection = 'OrderDirection';
-const BlockHeight = 'Block_height';
+const ORDER_DIRECTION = 'OrderDirection';
+const BLOCK_HEIGHT = 'Block_height';
+const BLOCK_CHANGED_FILTER = 'BlockChangedFilter';
 
 export class Schema {
   _composer: SchemaComposer;
@@ -154,25 +155,34 @@ export class Schema {
     this._composer.addTypeDefs(subgraphTypeDefsString);
 
     // Create the Block_height input needed in subgraph queries.
-    let typeComposer: any = this._composer.createInputTC({
-      name: BlockHeight,
+    let inputTypeComposer = this._composer.createInputTC({
+      name: BLOCK_HEIGHT,
       fields: {
         hash: 'Bytes',
         number: 'Int'
       }
     });
-    this._composer.addSchemaMustHaveType(typeComposer);
+    this._composer.addSchemaMustHaveType(inputTypeComposer);
 
     // Add the OrderDirection enum needed in subgraph plural queries.
     const orderDirectionEnum = new GraphQLEnumType({
-      name: OrderDirection,
+      name: ORDER_DIRECTION,
       values: {
         asc: {},
         desc: {}
       }
     });
-    typeComposer = this._composer.createEnumTC(orderDirectionEnum);
-    this._composer.addSchemaMustHaveType(typeComposer);
+    const enumTypeComposer = this._composer.createEnumTC(orderDirectionEnum);
+    this._composer.addSchemaMustHaveType(enumTypeComposer);
+
+    // Add the BlockChangedFilter input needed in subgraph queries.
+    inputTypeComposer = this._composer.createInputTC({
+      name: BLOCK_CHANGED_FILTER,
+      fields: {
+        number_gte: 'Int!'
+      }
+    });
+    this._composer.addSchemaMustHaveType(inputTypeComposer);
 
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
@@ -188,7 +198,7 @@ export class Schema {
       const subgraphType = subgraphTypeDef.name.value;
 
       // Lowercase first letter for query name.
-      const queryName = `${subgraphType.charAt(0).toLowerCase()}${subgraphType.slice(1)}`;
+      const queryName = lowerCamelCase(subgraphType);
 
       const queryObject: { [key: string]: any; } = {};
       queryObject[queryName] = {
@@ -196,7 +206,7 @@ export class Schema {
         type: this._composer.getAnyTC(subgraphType),
         args: {
           id: 'ID!',
-          block: BlockHeight
+          block: BLOCK_HEIGHT
         }
       };
 
@@ -212,6 +222,15 @@ export class Schema {
       });
       this._composer.addSchemaMustHaveType(subgraphTypeOrderByEnum);
 
+      // Create the subgraphType_filter input type
+      const subgraphTypeFilterComposer = this._composer.createInputTC({
+        name: `${subgraphType}_filter`,
+        // TODO: Add fields to filter input based on entity properties
+        fields: {}
+      });
+      subgraphTypeFilterComposer.setField('_change_block', BLOCK_CHANGED_FILTER);
+      this._composer.addSchemaMustHaveType(subgraphTypeFilterComposer);
+
       // Create plural query name
       // Append suffix 's' if pluralized name is the same as singular name (eg. PoolDayData)
       let pluralQueryName = pluralize(queryName);
@@ -221,11 +240,10 @@ export class Schema {
         // Get type composer object for return type from the schema composer.
         type: this._composer.getAnyTC(subgraphType).NonNull.List.NonNull,
         args: {
-          block: BlockHeight,
-          // TODO: Create input type for where clause
-          // where: subgraphType_filter,
+          block: BLOCK_HEIGHT,
+          where: `${subgraphType}_filter`,
           orderBy: subgraphTypeOrderByEnum,
-          orderDirection: OrderDirection,
+          orderDirection: ORDER_DIRECTION,
           first: { type: GraphQLInt, defaultValue: 100 },
           skip: { type: GraphQLInt, defaultValue: 0 }
         }
@@ -487,7 +505,7 @@ export class Schema {
       _meta: {
         type: this._composer.getOTC('_Meta_'),
         args: {
-          block: BlockHeight
+          block: BLOCK_HEIGHT
         }
       }
     });

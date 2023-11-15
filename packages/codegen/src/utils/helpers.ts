@@ -58,3 +58,13 @@ export function filterInheritedContractNodes (ast: SourceUnit, contractNodes: AS
 
   return resultSet;
 }
+
+/**
+ * Convert initial uppercase letters of camel case to lowercase
+ * @param value
+ */
+export function lowerCamelCase (value: string): string {
+  const lowerCaseIndex = value.split('').findIndex(char => char.toLowerCase() === char);
+
+  return `${value.slice(0, lowerCaseIndex).toLowerCase()}${value.slice(lowerCaseIndex)}`;
+}
