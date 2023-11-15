@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLString, GraphQLNonNull } from 'graphql';
-import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer } from 'graphql-compose';
+import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer, ComposeOutputType } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
@@ -164,6 +164,15 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(inputTypeComposer);
 
+    // Add the BlockChangedFilter input needed in subgraph queries.
+    inputTypeComposer = this._composer.createInputTC({
+      name: BLOCK_CHANGED_FILTER,
+      fields: {
+        number_gte: 'Int!'
+      }
+    });
+    this._composer.addSchemaMustHaveType(inputTypeComposer);
+
     // Add the OrderDirection enum needed in subgraph plural queries.
     const orderDirectionEnum = new GraphQLEnumType({
       name: ORDER_DIRECTION,
@@ -174,15 +183,6 @@ export class Schema {
     });
     const enumTypeComposer = this._composer.createEnumTC(orderDirectionEnum);
     this._composer.addSchemaMustHaveType(enumTypeComposer);
-
-    // Add the BlockChangedFilter input needed in subgraph queries.
-    inputTypeComposer = this._composer.createInputTC({
-      name: BLOCK_CHANGED_FILTER,
-      fields: {
-        number_gte: 'Int!'
-      }
-    });
-    this._composer.addSchemaMustHaveType(inputTypeComposer);
 
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
@@ -230,26 +230,47 @@ export class Schema {
         name: `${subgraphType}_filter`,
         // Add fields to filter input based on entity properties
         fields: Object.entries(subgraphTypeFields).reduce((acc: {[key: string]: string}, [fieldName, field]) => {
-          let composeType = field.type;
+          const { type: fieldType, isArray, isRelation } = this._getTypeForFilterInputField(field.type);
+          acc[fieldName] = fieldType;
+          acc[`${fieldName}_not`] = acc[fieldName];
 
-          if (composeType instanceof NonNullComposer) {
-            composeType = composeType.getUnwrappedTC() as ObjectTypeComposer;
+          if (!isArray) {
+            acc[`${fieldName}_gt`] = acc[fieldName];
+            acc[`${fieldName}_lt`] = acc[fieldName];
+            acc[`${fieldName}_gte`] = acc[fieldName];
+            acc[`${fieldName}_lte`] = acc[fieldName];
+            acc[`${fieldName}_in`] = `[${acc[fieldName]}!]`;
+            acc[`${fieldName}_not_in`] = `[${acc[fieldName]}!]`;
+
+            if (acc[fieldName] === 'String') {
+              acc[`${fieldName}_starts_with`] = acc[fieldName];
+              acc[`${fieldName}_starts_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_not_starts_with`] = acc[fieldName];
+              acc[`${fieldName}_not_starts_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_ends_with`] = acc[fieldName];
+              acc[`${fieldName}_ends_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_not_ends_with`] = acc[fieldName];
+              acc[`${fieldName}_not_ends_with_nocase`] = acc[fieldName];
+            }
           }
 
-          let isArray = false;
-          if (composeType instanceof ListComposer) {
-            composeType = composeType.getUnwrappedTC() as ObjectTypeComposer;
-            isArray = true;
+          if (acc[fieldName].includes('String') || acc[fieldName].includes('Bytes')) {
+            acc[`${fieldName}_contains`] = acc[fieldName];
+            acc[`${fieldName}_not_contains`] = acc[fieldName];
           }
 
-          acc[fieldName] = composeType.getTypeName();
-
-          if (composeType instanceof ObjectTypeComposer) {
-            acc[fieldName] = 'String';
+          if (acc[fieldName].includes('String')) {
+            acc[`${fieldName}_contains_nocase`] = acc[fieldName];
+            acc[`${fieldName}_not_contains_nocase`] = acc[fieldName];
           }
 
-          if (isArray) {
-            acc[fieldName] = `[${acc[fieldName]}!]!`;
+          // TODO: Delete filters for only derived relations
+          if (isRelation) {
+            // Remove filters if it is a related field
+            delete acc[`${fieldName}_contains`];
+            delete acc[`${fieldName}_contains_nocase`];
+            delete acc[`${fieldName}_not_contains`];
+            delete acc[`${fieldName}_not_contains_nocase`];
           }
 
           return acc;
@@ -278,6 +299,40 @@ export class Schema {
 
       this._composer.Query.addFields(queryObject);
     }
+  }
+
+  _getTypeForFilterInputField (fieldType: ComposeOutputType<any>): { type: string; isArray: boolean; isRelation: boolean } {
+    let type = fieldType.getTypeName();
+    let isArray = false;
+    let isRelation = false;
+
+    if (fieldType instanceof NonNullComposer) {
+      const unwrappedFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
+
+      if (fieldType.ofType instanceof ListComposer) {
+        isArray = true;
+      }
+
+      ({ type, isRelation } = this._getTypeForFilterInputField(unwrappedFieldType));
+    }
+
+    if (fieldType instanceof ListComposer) {
+      const childFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
+      ({ type, isRelation } = this._getTypeForFilterInputField(childFieldType));
+
+      isArray = true;
+    }
+
+    if (fieldType instanceof ObjectTypeComposer) {
+      type = 'String';
+      isRelation = true;
+    }
+
+    if (isArray) {
+      type = `[${type}!]`;
+    }
+
+    return { type, isArray, isRelation };
   }
 
   /**
