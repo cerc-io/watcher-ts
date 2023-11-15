@@ -230,7 +230,7 @@ export class Schema {
         name: `${subgraphType}_filter`,
         // Add fields to filter input based on entity properties
         fields: Object.entries(subgraphTypeFields).reduce((acc: {[key: string]: string}, [fieldName, field]) => {
-          const { type: fieldType, isArray, isRelation } = this._getTypeForFilterInputField(field.type);
+          const { type: fieldType, isArray, isRelation, entityType } = this._getTypeForFilterInputField(field.type);
           acc[fieldName] = fieldType;
           acc[`${fieldName}_not`] = acc[fieldName];
 
@@ -264,19 +264,28 @@ export class Schema {
             acc[`${fieldName}_not_contains_nocase`] = acc[fieldName];
           }
 
-          // TODO: Delete filters for only derived relations
+          // Check if field is a relation type
           if (isRelation) {
+            // Nested filter for relation field
+            acc[`${fieldName}_`] = `${entityType}_filter`;
+
+            // TODO: Delete filters for only derived relations
             // Remove filters if it is a related field
             delete acc[`${fieldName}_contains`];
             delete acc[`${fieldName}_contains_nocase`];
             delete acc[`${fieldName}_not_contains`];
             delete acc[`${fieldName}_not_contains_nocase`];
+            // delete acc[`${fieldName}`];
+            // delete acc[`${fieldName}_not`];
           }
 
           return acc;
         }, {})
       });
       subgraphTypeFilterComposer.setField('_change_block', BLOCK_CHANGED_FILTER);
+      subgraphTypeFilterComposer.setField('and', `[${subgraphType}_filter]`);
+      subgraphTypeFilterComposer.setField('or', `[${subgraphType}_filter]`);
+
       this._composer.addSchemaMustHaveType(subgraphTypeFilterComposer);
 
       // Create plural query name
@@ -301,10 +310,16 @@ export class Schema {
     }
   }
 
-  _getTypeForFilterInputField (fieldType: ComposeOutputType<any>): { type: string; isArray: boolean; isRelation: boolean } {
+  _getTypeForFilterInputField (fieldType: ComposeOutputType<any>): {
+    type: string;
+    isArray: boolean;
+    isRelation: boolean;
+    entityType?: string;
+  } {
     let type = fieldType.getTypeName();
     let isArray = false;
     let isRelation = false;
+    let entityType: string | undefined;
 
     if (fieldType instanceof NonNullComposer) {
       const unwrappedFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
@@ -313,12 +328,12 @@ export class Schema {
         isArray = true;
       }
 
-      ({ type, isRelation } = this._getTypeForFilterInputField(unwrappedFieldType));
+      ({ type, isRelation, entityType } = this._getTypeForFilterInputField(unwrappedFieldType));
     }
 
     if (fieldType instanceof ListComposer) {
       const childFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
-      ({ type, isRelation } = this._getTypeForFilterInputField(childFieldType));
+      ({ type, isRelation, entityType } = this._getTypeForFilterInputField(childFieldType));
 
       isArray = true;
     }
@@ -326,13 +341,14 @@ export class Schema {
     if (fieldType instanceof ObjectTypeComposer) {
       type = 'String';
       isRelation = true;
+      entityType = fieldType.getTypeName();
     }
 
     if (isArray) {
       type = `[${type}!]`;
     }
 
-    return { type, isArray, isRelation };
+    return { type, isArray, isRelation, entityType };
   }
 
   /**
