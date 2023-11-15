@@ -102,7 +102,7 @@ export class Indexer implements IndexerInterface {
   _abiMap: Map<string, JsonFragment[]>;
   _storageLayoutMap: Map<string, StorageLayout>;
   _contractMap: Map<string, ethers.utils.Interface>;
-  _eventSignaturesMap: Map<string, string[]>;
+  eventSignaturesMap: Map<string, string[]>;
 
   {{#if (subgraphPath)}}
   _entityTypesMap: Map<string, { [key: string]: string }>;
@@ -141,7 +141,7 @@ export class Indexer implements IndexerInterface {
     this._abiMap = new Map();
     this._storageLayoutMap = new Map();
     this._contractMap = new Map();
-    this._eventSignaturesMap = new Map();
+    this.eventSignaturesMap = new Map();
     let contractInterface: ethers.utils.Interface;
     let eventSignatures: string[];
     {{#each contracts as | contract |}}
@@ -159,7 +159,7 @@ export class Indexer implements IndexerInterface {
     eventSignatures = Object.values(contractInterface.events).map(value => {
       return contractInterface.getEventTopic(value);
     });
-    this._eventSignaturesMap.set(KIND_{{capitalize contract.contractName}}, eventSignatures);
+    this.eventSignaturesMap.set(KIND_{{capitalize contract.contractName}}, eventSignatures);
     {{#if contract.contractStorageLayout}}
 
     assert({{contract.contractName}}StorageLayout);
@@ -689,7 +689,7 @@ export class Indexer implements IndexerInterface {
   }
 
   async fetchEventsAndSaveBlocks (blocks: DeepPartial<BlockProgress>[]): Promise<{ blockProgress: BlockProgress, events: DeepPartial<Event>[] }[]> {
-    return this._baseIndexer.fetchEventsAndSaveBlocks(blocks, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
+    return this._baseIndexer.fetchEventsAndSaveBlocks(blocks, this.eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
   }
 
   async fetchAndSaveFilteredEventsAndBlocks (startBlock: number, endBlock: number): Promise<{
@@ -698,11 +698,11 @@ export class Indexer implements IndexerInterface {
     ethFullBlock: EthFullBlock;
     ethFullTransactions: EthFullTransaction[];
   }[]> {
-    return this._baseIndexer.fetchAndSaveFilteredEventsAndBlocks(startBlock, endBlock, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
+    return this._baseIndexer.fetchAndSaveFilteredEventsAndBlocks(startBlock, endBlock, this.eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
   }
 
   async fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[]): Promise<DeepPartial<Event>[]> {
-    return this._baseIndexer.fetchEventsForContracts(blockHash, blockNumber, addresses, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
+    return this._baseIndexer.fetchEventsForContracts(blockHash, blockNumber, addresses, this.eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
   }
 
   async saveBlockAndFetchEvents (block: DeepPartial<BlockProgress>): Promise<[
@@ -843,7 +843,7 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(blockNumber);
 
-    const { events: dbEvents, transactions } = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this._eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
+    const { events: dbEvents, transactions } = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this.eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
 
     const dbTx = await this._db.createTransactionRunner();
     try {

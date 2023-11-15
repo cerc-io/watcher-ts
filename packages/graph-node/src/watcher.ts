@@ -133,14 +133,11 @@ export class GraphWatcher {
     this._dataSources.forEach(contract => {
       if (contract.kind === 'ethereum/contract' && contract.mapping.kind === 'ethereum/events') {
         const contractName = contract.name;
-        const topicHash = contract.mapping.eventHandlers.map((handler: any) => {
+        const topicHashes = contract.mapping.eventHandlers.map((handler: any) => {
           return this._dataSourceMap[contractName].contractInterface.getEventTopic(utils.EventFragment.from(handler.event).name);
         });
-
         assert(this._indexer);
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        this._indexer._eventSignaturesMap.set(contractName, topicHash);
+        this._indexer.eventSignaturesMap.set(contractName, topicHashes);
       }
     });
   }
