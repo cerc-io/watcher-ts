@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLString, GraphQLNonNull } from 'graphql';
-import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
+import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
@@ -222,11 +222,38 @@ export class Schema {
       });
       this._composer.addSchemaMustHaveType(subgraphTypeOrderByEnum);
 
+      const subgraphTypeComposer = this._composer.getOTC(subgraphType);
+      const subgraphTypeFields = subgraphTypeComposer.getFields();
+
       // Create the subgraphType_filter input type
       const subgraphTypeFilterComposer = this._composer.createInputTC({
         name: `${subgraphType}_filter`,
-        // TODO: Add fields to filter input based on entity properties
-        fields: {}
+        // Add fields to filter input based on entity properties
+        fields: Object.entries(subgraphTypeFields).reduce((acc: {[key: string]: string}, [fieldName, field]) => {
+          let composeType = field.type;
+
+          if (composeType instanceof NonNullComposer) {
+            composeType = composeType.getUnwrappedTC() as ObjectTypeComposer;
+          }
+
+          let isArray = false;
+          if (composeType instanceof ListComposer) {
+            composeType = composeType.getUnwrappedTC() as ObjectTypeComposer;
+            isArray = true;
+          }
+
+          acc[fieldName] = composeType.getTypeName();
+
+          if (composeType instanceof ObjectTypeComposer) {
+            acc[fieldName] = 'String';
+          }
+
+          if (isArray) {
+            acc[fieldName] = `[${acc[fieldName]}!]!`;
+          }
+
+          return acc;
+        }, {})
       });
       subgraphTypeFilterComposer.setField('_change_block', BLOCK_CHANGED_FILTER);
       this._composer.addSchemaMustHaveType(subgraphTypeFilterComposer);
