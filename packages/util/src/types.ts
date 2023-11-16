@@ -156,6 +156,7 @@ export interface EthClient {
 }
 
 export interface IndexerInterface {
+  eventSignaturesMap: Map<string, string[]>
   readonly serverConfig: ServerConfig
   readonly upstreamConfig: UpstreamConfig
   readonly storageLayoutMap: Map<string, StorageLayout>

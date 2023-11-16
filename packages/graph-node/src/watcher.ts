@@ -125,6 +125,21 @@ export class GraphWatcher {
 
       return acc;
     }, {});
+
+    this.fillEventSignatureMap();
+  }
+
+  fillEventSignatureMap () {
+    this._dataSources.forEach(contract => {
+      if (contract.kind === 'ethereum/contract' && contract.mapping.kind === 'ethereum/events') {
+        const contractName = contract.name;
+        const topicHashes = contract.mapping.eventHandlers.map((handler: any) => {
+          return this._dataSourceMap[contractName].contractInterface.getEventTopic(utils.EventFragment.from(handler.event).name);
+        });
+        assert(this._indexer);
+        this._indexer.eventSignaturesMap.set(contractName, topicHashes);
+      }
+    });
   }
 
   get dataSources (): any[] {

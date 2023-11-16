@@ -27,6 +27,7 @@ import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-
 export class Indexer implements IndexerInterface {
   _getStorageAt: GetStorageAt;
   _storageLayoutMap: Map<string, StorageLayout> = new Map();
+  eventSignaturesMap: Map<string, string[]> = new Map();
 
   constructor (ethClient: EthClient, storageLayoutMap?: Map<string, StorageLayout>) {
     this._getStorageAt = ethClient.getStorageAt.bind(ethClient);
