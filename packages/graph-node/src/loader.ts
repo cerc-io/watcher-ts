@@ -101,7 +101,7 @@ export const instantiate = async (
         const dbEntity = await database.saveEntity(entityName, dbData);
         database.cacheUpdatedEntityByName(entityName, dbEntity);
 
-        // Update the in-memory subgraph state enabled
+        // Update the in-memory subgraph state if enabled
         if (indexer.serverConfig.enableState) {
           // Prepare diff data for the entity update
           assert(indexer.getRelationsMap);
@@ -685,6 +685,10 @@ export const instantiate = async (
         // TODO: Implement use in data source templates.
         // https://thegraph.com/docs/en/developer/create-subgraph-hosted/#data-source-context
 
+        // TODO:
+        // use context contractAddress to load the dataSourceContext from the contracts table
+        // refer toGraphEntity to convert from json to graph entity
+
         return Entity.__new();
       },
       'dataSource.network': async () => {
@@ -699,6 +703,18 @@ export const instantiate = async (
         assert(indexer.watchContract);
         assert(context.block);
         await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber));
+      },
+      'dataSource.createWithContext': async (name: number, params: number, dataSourceContext: number) => {
+        const [addressStringPtr] = __getArray(params);
+        const addressString = __getString(addressStringPtr);
+        const contractKind = __getString(name);
+
+        const contextInstance = await Entity.wrap(dataSourceContext);
+        const dbData = await database.fromGraphContext(instanceExports, contextInstance);
+
+        assert(indexer.watchContract);
+        assert(context.block);
+        await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber), dbData);
       }
     },
     json: {

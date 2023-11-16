@@ -20,15 +20,18 @@ import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transfor
 import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
+import JSONbig from 'json-bigint';
 
 import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
-import { Block, fromEntityValue, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { Block, fromEntityValue, getLatestEntityFromEntity, parseEntityValue, resolveEntityFieldConflicts, toEntityValue } from './utils';
 import { fromStateEntityValues } from './state-utils';
 
 const log = debug('vulcanize:graph-database');
+
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export const FILTER_CHANGE_BLOCK = '_change_block';
 
@@ -953,7 +956,29 @@ export class GraphDatabase {
     return entityInstance;
   }
 
-  async fromGraphEntity (instanceExports: any, block: Block, entityName: string, entityInstance: any): Promise<{ [key: string]: any } > {
+  async fromGraphContext (instanceExports: any, contextInstance: any): Promise<{ [key: string]: any }> {
+    const contextValuePromises = contextInstance.entries.map(async (entry: any) => {
+      const contextValuePtr = entry.value;
+
+      const { Value } = instanceExports;
+      const value = Value.wrap(contextValuePtr);
+      const kind = await value.kind;
+
+      const parsedValue = parseEntityValue(instanceExports, contextValuePtr);
+      return { kind, value: parsedValue };
+    });
+
+    const contextValues = await Promise.all(contextValuePromises);
+
+    return contextInstance.entries.reduce((acc: { [key: string]: any }, entry: any, index: number) => {
+      const { key } = entry;
+      acc[key] = { data: JSONbigNative.stringify(contextValues[index].value), type: contextValues[index].kind };
+
+      return acc;
+    }, {});
+  }
+
+  async fromGraphEntity (instanceExports: any, block: Block, entityName: string, entityInstance: any): Promise<{ [key: string]: any }> {
     // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;

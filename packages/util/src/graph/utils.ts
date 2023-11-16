@@ -566,7 +566,7 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
   return parseEntityValue(instanceExports, entityValuePtr);
 };
 
-const parseEntityValue = async (instanceExports: any, valuePtr: number) => {
+export const parseEntityValue = async (instanceExports: any, valuePtr: number): Promise<any> => {
   const {
     __getString,
     __getArray,
