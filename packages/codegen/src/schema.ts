@@ -263,12 +263,12 @@ export class Schema {
             }
           }
 
-          if (acc[fieldName].includes('String') || acc[fieldName].includes('Bytes')) {
+          if (isArray || acc[fieldName].includes('String') || acc[fieldName].includes('Bytes')) {
             acc[`${fieldName}_contains`] = acc[fieldName];
             acc[`${fieldName}_not_contains`] = acc[fieldName];
           }
 
-          if (acc[fieldName].includes('String')) {
+          if (isArray || acc[fieldName].includes('String')) {
             acc[`${fieldName}_contains_nocase`] = acc[fieldName];
             acc[`${fieldName}_not_contains_nocase`] = acc[fieldName];
           }
@@ -367,8 +367,9 @@ export class Schema {
 
     Object.entries(subgraphTypeFields)
       .filter(([, field]) => {
-        const { isRelation } = this._getDetailsForSubgraphField(field.type);
-        return !isRelation;
+        // Avoid nested ordering on array / relational / derived type fields
+        const { isRelation, isArray } = this._getDetailsForSubgraphField(field.type);
+        return !isRelation && !isArray;
       })
       .forEach(([name]) => {
         orderByFields[`${fieldName}__${name}`] = {};
