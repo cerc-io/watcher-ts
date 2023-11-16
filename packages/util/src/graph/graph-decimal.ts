@@ -151,6 +151,13 @@ export class GraphDecimal {
     return this.value.cmp(param);
   }
 
+  equals (n: Decimal.Value | GraphDecimal): boolean {
+    this._checkOutOfRange(this);
+    const param = this._checkOutOfRange(n);
+
+    return this.value.equals(param);
+  }
+
   /**
    * Function to check and throw an error if a given value has exponent out of the specified range (MIN_EXP to MAX_EXP).
    * @param n A Decimal value to check the range for.
