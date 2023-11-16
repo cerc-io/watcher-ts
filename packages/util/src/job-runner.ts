@@ -423,7 +423,11 @@ export class JobRunner {
     log(`Processing chain pruning at ${pruneBlockHeight}`);
 
     // Assert we're at a depth where pruning is safe.
-    assert(syncStatus.latestIndexedBlockNumber >= (pruneBlockHeight + MAX_REORG_DEPTH));
+    if (!(syncStatus.latestIndexedBlockNumber >= (pruneBlockHeight + MAX_REORG_DEPTH))) {
+      const message = `Pruning is not safe at height ${pruneBlockHeight}, latest indexed block height ${syncStatus.latestIndexedBlockNumber}`;
+      log(message);
+      throw new Error(message);
+    }
 
     // Check that we haven't already pruned at this depth.
     if (syncStatus.latestCanonicalBlockNumber >= pruneBlockHeight) {
