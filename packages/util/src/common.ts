@@ -68,34 +68,13 @@ export const fetchBlocksAtHeight = async (
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
   let blocks = [];
 
-  // Check for blocks in cache if prefetchBlocksInMem flag set.
-  if (jobQueueConfig.prefetchBlocksInMem) {
-    // Get blocks prefetched in memory.
-    blocks = getPrefetchedBlocksAtHeight(blockAndEventsMap, blockNumber);
-    log('size:common#fetchBlocksAtHeight-prefetch-_blockAndEventsMap-size:', blockAndEventsMap.size);
-  }
+  // Try fetching blocks from the db.
+  const blockProgressEntities = await indexer.getBlocksAtHeight(blockNumber, false);
+  blocks = blockProgressEntities.map((block: any) => {
+    block.timestamp = block.blockTimestamp;
 
-  if (!blocks.length) {
-    // Try fetching blocks from the db.
-    const blockProgressEntities = await indexer.getBlocksAtHeight(blockNumber, false);
-    blocks = blockProgressEntities.map((block: any) => {
-      block.timestamp = block.blockTimestamp;
-
-      return block;
-    });
-  }
-
-  if (jobQueueConfig.prefetchBlocksInMem && !blocks.length) {
-    // If blocks not found in the db and cache, fetch next batch.
-    log(`common#cache-miss-${blockNumber}`);
-
-    // Wait for blocks to be prefetched.
-    console.time('time:common#fetchBlocks-_prefetchBlocks');
-    await _prefetchBlocks(blockNumber, indexer, jobQueueConfig, blockAndEventsMap);
-    console.timeEnd('time:common#fetchBlocks-_prefetchBlocks');
-
-    blocks = getPrefetchedBlocksAtHeight(blockAndEventsMap, blockNumber);
-  }
+    return block;
+  });
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
@@ -178,125 +157,6 @@ export const fetchAndSaveFilteredLogsAndBlocks = async (
   });
 
   return blocksData.map(({ blockProgress }) => blockProgress);
-};
-
-export const _prefetchBlocks = async (
-  blockNumber: number,
-  indexer: IndexerInterface,
-  jobQueueConfig: JobQueueConfig,
-  blockAndEventsMap: Map<string, PrefetchedBlock>
-): Promise<void> => {
-  // Clear cache of any remaining blocks.
-  blockAndEventsMap.clear();
-
-  const blocksWithEvents = await _fetchBatchBlocks(
-    indexer,
-    jobQueueConfig,
-    blockNumber,
-    blockNumber + jobQueueConfig.prefetchBlockCount
-  );
-
-  blocksWithEvents.forEach(({ blockProgress, events }) => {
-    blockAndEventsMap.set(
-      blockProgress.blockHash,
-      {
-        block: blockProgress,
-        events,
-        // TODO: Set ethFullBlock and ethFullTransactions
-        ethFullBlock: {} as EthFullBlock,
-        ethFullTransactions: []
-      });
-  });
-};
-
-/**
- * Method to fetch blocks (with events) in the given range.
- * @param indexer
- * @param jobQueueConfig
- * @param startBlock
- * @param endBlock
- */
-export const _fetchBatchBlocks = async (
-  indexer: IndexerInterface,
-  jobQueueConfig: JobQueueConfig,
-  startBlock: number,
-  endBlock: number
-): Promise<{
-  blockProgress: BlockProgressInterface,
-  events: DeepPartial<EventInterface>[]
-}[]> => {
-  let blockNumbers = [...Array(endBlock - startBlock).keys()].map(n => n + startBlock);
-  let blocks = [];
-
-  // Fetch blocks again if there are missing blocks.
-  while (true) {
-    console.time('time:common#fetchBatchBlocks-getBlocks');
-
-    const blockPromises = blockNumbers.map(async blockNumber => indexer.getBlocks({ blockNumber }));
-    const settledResults = await Promise.allSettled(blockPromises);
-
-    const res: any[] = [];
-    for (let index = 0; index < settledResults.length; index++) {
-      const result = settledResults[index];
-      // If fulfilled, return value
-      if (result.status === 'fulfilled') {
-        res.push(result.value);
-        continue;
-      }
-
-      // If rejected, check error
-      //  Handle null block error in case of Lotus EVM
-      //  Otherwise, rethrow error
-      const err = result.reason;
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
-        throw err;
-      }
-
-      log(`Block ${blockNumbers[index]} requested was null (FEVM), skipping`);
-
-      // Remove the corresponding block number from the blockNumbers to avoid retrying for the same
-      blockNumbers = blockNumbers.splice(index, 1);
-
-      // Stop the iteration at the first null block found
-      // To avoid saving blocks after the null block
-      // so that they don't conflict with blocks fetched when processBlockByNumber gets called for the null block
-      // TODO: Optimize
-      break;
-    }
-
-    console.timeEnd('time:common#fetchBatchBlocks-getBlocks');
-
-    const firstMissingBlockIndex = res.findIndex(blocks => blocks.length === 0);
-
-    if (firstMissingBlockIndex === -1) {
-      blocks = res;
-      break;
-    } else if (firstMissingBlockIndex > 0) {
-      blocks = res.slice(0, firstMissingBlockIndex);
-      break;
-    }
-
-    log(`No blocks fetched for block number ${blockNumbers[0]}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-    await wait(jobQueueConfig.blockDelayInMilliSecs);
-  }
-
-  // Flatten array as there can be multiple blocks at the same height
-  blocks = blocks.flat();
-
-  if (jobQueueConfig.jobDelayInMilliSecs) {
-    await wait(jobQueueConfig.jobDelayInMilliSecs);
-  }
-
-  blocks.forEach(block => {
-    block.blockTimestamp = Number(block.timestamp);
-    block.blockNumber = Number(block.blockNumber);
-  });
-
-  console.time('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
-  const blockAndEventsList = await indexer.fetchEventsAndSaveBlocks(blocks);
-  console.timeEnd('time:common#fetchBatchBlocks-fetchEventsAndSaveBlocks');
-
-  return blockAndEventsList;
 };
 
 /**
@@ -601,10 +461,4 @@ export const createCheckpointJob = async (jobQueue: JobQueue, blockHash: string,
       blockNumber
     }
   );
-};
-
-const getPrefetchedBlocksAtHeight = (blockAndEventsMap: Map<string, PrefetchedBlock>, blockNumber: number):any[] => {
-  return Array.from(blockAndEventsMap.values())
-    .filter(({ block }) => Number(block.blockNumber) === blockNumber)
-    .map(prefetchedBlock => prefetchedBlock.block);
 };

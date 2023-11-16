@@ -423,7 +423,11 @@ export class JobRunner {
     log(`Processing chain pruning at ${pruneBlockHeight}`);
 
     // Assert we're at a depth where pruning is safe.
-    assert(syncStatus.latestIndexedBlockNumber >= (pruneBlockHeight + MAX_REORG_DEPTH));
+    if (!(syncStatus.latestIndexedBlockNumber >= (pruneBlockHeight + MAX_REORG_DEPTH))) {
+      const message = `Pruning is not safe at height ${pruneBlockHeight}, latest indexed block height ${syncStatus.latestIndexedBlockNumber}`;
+      log(message);
+      throw new Error(message);
+    }
 
     // Check that we haven't already pruned at this depth.
     if (syncStatus.latestCanonicalBlockNumber >= pruneBlockHeight) {
@@ -585,34 +589,26 @@ export class JobRunner {
     }
 
     if (!blockProgress) {
-      const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
+      // Delay required to process block.
+      const { jobDelayInMilliSecs = 0 } = this._jobQueueConfig;
+      await wait(jobDelayInMilliSecs);
 
-      // Check if prefetched block is set properly
-      // prefetchedBlock.block is an empty object when running in realtime processing
-      if (prefetchedBlock && prefetchedBlock.block.blockHash) {
-        ({ block: blockProgress } = prefetchedBlock);
-      } else {
-        // Delay required to process block.
-        const { jobDelayInMilliSecs = 0 } = this._jobQueueConfig;
-        await wait(jobDelayInMilliSecs);
+      console.time('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
+      log(`_indexBlock#saveBlockAndFetchEvents: fetching from upstream server ${blockHash}`);
+      let ethFullTransactions;
+      [blockProgress, , ethFullTransactions] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
+      log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
+      console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
+      const data = this._blockAndEventsMap.get(blockHash);
+      assert(data);
 
-        console.time('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
-        log(`_indexBlock#saveBlockAndFetchEvents: fetching from upstream server ${blockHash}`);
-        let ethFullTransactions;
-        [blockProgress,, ethFullTransactions] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
-        log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
-        console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
-        const data = this._blockAndEventsMap.get(blockHash);
-        assert(data);
-
-        this._blockAndEventsMap.set(
-          blockHash,
-          {
-            ...data,
-            block: blockProgress,
-            ethFullTransactions
-          });
-      }
+      this._blockAndEventsMap.set(
+        blockHash,
+        {
+          ...data,
+          block: blockProgress,
+          ethFullTransactions
+        });
     }
 
     if (!blockProgress.isComplete) {
