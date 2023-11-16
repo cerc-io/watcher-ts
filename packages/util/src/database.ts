@@ -1104,11 +1104,16 @@ export class Database {
     // Nested sort key of form relationField__relationColumn
     const [orderBy, suffix] = orderByWithSuffix.split('__');
 
+    // Ordering by array / derived type fields not supported
+    const relation = relations[orderBy];
+    if (relation?.isArray || relation?.isDerived) {
+      throw new Error(`Ordering by \`${orderBy}\` is not supported for type \`${repo.metadata.name}\``);
+    }
+
     const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
     assert(columnMetadata);
 
     // Handle nested entity sort
-    const relation = relations[orderBy];
     if (suffix && relation) {
       return this.orderQueryNested(
         repo,
