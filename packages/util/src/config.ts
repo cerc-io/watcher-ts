@@ -22,8 +22,6 @@ export interface JobQueueConfig {
   lazyUpdateBlockProgress?: boolean;
   subgraphEventsOrder: boolean;
   blockDelayInMilliSecs: number;
-  prefetchBlocksInMem: boolean;
-  prefetchBlockCount: number;
   // Block range in which logs are fetched during historical blocks processing
   historicalLogsBlockRange?: number;
   // Max block range of historical processing after which it waits for completion of events processing
