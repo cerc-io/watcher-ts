@@ -926,8 +926,9 @@ export class Database {
           assert(operator);
           let whereClause = '';
 
-          // In case of array field having contains, NOT comes before the field name
-          // Disregards nocase
+          // In case of array field having contains:
+          //    NOT comes before the field name
+          //    Ignores nocase
           if (columnIsArray && operator.includes('contains')) {
             if (not) {
               whereClause += 'NOT ';
@@ -1105,10 +1106,14 @@ export class Database {
     const [orderBy, suffix] = orderByWithSuffix.split('__');
 
     const columnMetadata = repo.metadata.findColumnWithPropertyName(orderBy);
-    assert(columnMetadata);
+    const relation = relations[orderBy];
+
+    // Ordering by array / derived type fields not supported
+    if (columnMetadata?.isArray || relation?.isDerived) {
+      throw new Error(`Ordering by \`${orderBy}\` is not supported for type \`${repo.metadata.name}\``);
+    }
 
     // Handle nested entity sort
-    const relation = relations[orderBy];
     if (suffix && relation) {
       return this.orderQueryNested(
         repo,
@@ -1121,6 +1126,7 @@ export class Database {
       );
     }
 
+    assert(columnMetadata);
     return selectQueryBuilder.addOrderBy(
       `"${alias}"."${columnPrefix}${columnMetadata.databaseName}"`,
       orderDirection === 'desc' ? 'DESC' : 'ASC'

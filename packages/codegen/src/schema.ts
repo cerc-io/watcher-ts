@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLString, GraphQLNonNull } from 'graphql';
-import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer } from 'graphql-compose';
+import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer, ComposeOutputType } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
@@ -164,6 +164,15 @@ export class Schema {
     });
     this._composer.addSchemaMustHaveType(inputTypeComposer);
 
+    // Add the BlockChangedFilter input needed in subgraph queries.
+    inputTypeComposer = this._composer.createInputTC({
+      name: BLOCK_CHANGED_FILTER,
+      fields: {
+        number_gte: 'Int!'
+      }
+    });
+    this._composer.addSchemaMustHaveType(inputTypeComposer);
+
     // Add the OrderDirection enum needed in subgraph plural queries.
     const orderDirectionEnum = new GraphQLEnumType({
       name: ORDER_DIRECTION,
@@ -174,15 +183,6 @@ export class Schema {
     });
     const enumTypeComposer = this._composer.createEnumTC(orderDirectionEnum);
     this._composer.addSchemaMustHaveType(enumTypeComposer);
-
-    // Add the BlockChangedFilter input needed in subgraph queries.
-    inputTypeComposer = this._composer.createInputTC({
-      name: BLOCK_CHANGED_FILTER,
-      fields: {
-        number_gte: 'Int!'
-      }
-    });
-    this._composer.addSchemaMustHaveType(inputTypeComposer);
 
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
@@ -212,11 +212,23 @@ export class Schema {
 
       // Add plural query
 
+      const subgraphTypeComposer = this._composer.getOTC(subgraphType);
+      const subgraphTypeFields = subgraphTypeComposer.getFields();
+
       // Create the subgraphType_orderBy enum type
       const subgraphTypeOrderByEnum = new GraphQLEnumType({
         name: `${subgraphType}_orderBy`,
         values: (subgraphTypeDef.fields || []).reduce((acc: any, field) => {
           acc[field.name.value] = {};
+
+          const subgraphTypeField = subgraphTypeComposer.getField(field.name.value);
+          const { isArray, isRelation, entityType } = this._getDetailsForSubgraphField(subgraphTypeField.type);
+
+          if (!isArray && isRelation) {
+            assert(entityType);
+            this._fillOrderByWithNestedFields(acc, entityType, field.name.value);
+          }
+
           return acc;
         }, {})
       });
@@ -225,10 +237,65 @@ export class Schema {
       // Create the subgraphType_filter input type
       const subgraphTypeFilterComposer = this._composer.createInputTC({
         name: `${subgraphType}_filter`,
-        // TODO: Add fields to filter input based on entity properties
-        fields: {}
+        // Add fields to filter input based on entity properties
+        fields: Object.entries(subgraphTypeFields).reduce((acc: {[key: string]: string}, [fieldName, field]) => {
+          const { type: fieldType, isArray, isRelation, entityType } = this._getDetailsForSubgraphField(field.type);
+          acc[fieldName] = fieldType;
+          acc[`${fieldName}_not`] = acc[fieldName];
+
+          if (!isArray) {
+            acc[`${fieldName}_gt`] = acc[fieldName];
+            acc[`${fieldName}_lt`] = acc[fieldName];
+            acc[`${fieldName}_gte`] = acc[fieldName];
+            acc[`${fieldName}_lte`] = acc[fieldName];
+            acc[`${fieldName}_in`] = `[${acc[fieldName]}!]`;
+            acc[`${fieldName}_not_in`] = `[${acc[fieldName]}!]`;
+
+            if (acc[fieldName] === 'String') {
+              acc[`${fieldName}_starts_with`] = acc[fieldName];
+              acc[`${fieldName}_starts_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_not_starts_with`] = acc[fieldName];
+              acc[`${fieldName}_not_starts_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_ends_with`] = acc[fieldName];
+              acc[`${fieldName}_ends_with_nocase`] = acc[fieldName];
+              acc[`${fieldName}_not_ends_with`] = acc[fieldName];
+              acc[`${fieldName}_not_ends_with_nocase`] = acc[fieldName];
+            }
+          }
+
+          if (isArray || acc[fieldName].includes('String') || acc[fieldName].includes('Bytes')) {
+            acc[`${fieldName}_contains`] = acc[fieldName];
+            acc[`${fieldName}_not_contains`] = acc[fieldName];
+          }
+
+          if (isArray || acc[fieldName].includes('String')) {
+            acc[`${fieldName}_contains_nocase`] = acc[fieldName];
+            acc[`${fieldName}_not_contains_nocase`] = acc[fieldName];
+          }
+
+          // Check if field is a relation type
+          if (isRelation) {
+            // Nested filter for relation field
+            acc[`${fieldName}_`] = `${entityType}_filter`;
+
+            // Remove filters if it is a derived field
+            if (field.directives && field.directives.some(directive => directive.name === 'derivedFrom')) {
+              delete acc[`${fieldName}`];
+              delete acc[`${fieldName}_not`];
+              delete acc[`${fieldName}_contains`];
+              delete acc[`${fieldName}_contains_nocase`];
+              delete acc[`${fieldName}_not_contains`];
+              delete acc[`${fieldName}_not_contains_nocase`];
+            }
+          }
+
+          return acc;
+        }, {})
       });
       subgraphTypeFilterComposer.setField('_change_block', BLOCK_CHANGED_FILTER);
+      subgraphTypeFilterComposer.setField('and', `[${subgraphType}_filter]`);
+      subgraphTypeFilterComposer.setField('or', `[${subgraphType}_filter]`);
+
       this._composer.addSchemaMustHaveType(subgraphTypeFilterComposer);
 
       // Create plural query name
@@ -251,6 +318,62 @@ export class Schema {
 
       this._composer.Query.addFields(queryObject);
     }
+  }
+
+  _getDetailsForSubgraphField (fieldType: ComposeOutputType<any>): {
+    type: string;
+    isArray: boolean;
+    isRelation: boolean;
+    entityType?: string;
+  } {
+    let type = fieldType.getTypeName();
+    let isArray = false;
+    let isRelation = false;
+    let entityType: string | undefined;
+
+    if (fieldType instanceof NonNullComposer) {
+      const unwrappedFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
+
+      if (fieldType.ofType instanceof ListComposer) {
+        isArray = true;
+      }
+
+      ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(unwrappedFieldType));
+    }
+
+    if (fieldType instanceof ListComposer) {
+      const childFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
+      ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(childFieldType));
+
+      isArray = true;
+    }
+
+    if (fieldType instanceof ObjectTypeComposer) {
+      type = 'String';
+      isRelation = true;
+      entityType = fieldType.getTypeName();
+    }
+
+    if (isArray) {
+      type = `[${type}!]`;
+    }
+
+    return { type, isArray, isRelation, entityType };
+  }
+
+  _fillOrderByWithNestedFields (orderByFields: {[key: string]: any}, entityName: string, fieldName: string): void {
+    const subgraphTypeComposer = this._composer.getOTC(entityName);
+    const subgraphTypeFields = subgraphTypeComposer.getFields();
+
+    Object.entries(subgraphTypeFields)
+      .filter(([, field]) => {
+        // Avoid nested ordering on array / relational / derived type fields
+        const { isRelation, isArray } = this._getDetailsForSubgraphField(field.type);
+        return !isRelation && !isArray;
+      })
+      .forEach(([name]) => {
+        orderByFields[`${fieldName}__${name}`] = {};
+      });
   }
 
   /**
