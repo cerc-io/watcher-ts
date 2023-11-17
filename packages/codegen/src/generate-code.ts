@@ -35,7 +35,7 @@ import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
-import { getSubgraphConfig } from './utils/subgraph';
+import { buildSubgraph, getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
@@ -383,6 +383,8 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
       ? fs.createWriteStream(path.join(outputDir, 'src/entity/Subscriber.ts'))
       : process.stdout;
     exportSubscriber(outStream);
+
+    // TODO: Copy over subgraph build to repo
   }
 }
 
@@ -411,12 +413,21 @@ function getConfig (configFile: string): any {
     return contract;
   });
 
-  let subgraphPath: any;
+  let subgraphPath: string | undefined;
   let subgraphConfig;
 
-  if (inputConfig.subgraphPath) {
-    // Resolve path.
-    subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
+  if (inputConfig.subgraph) {
+    if (inputConfig.subgraph.directory) {
+      buildSubgraph(configFile, inputConfig.subgraph);
+      subgraphPath = path.resolve(inputConfig.subgraph.directory, 'build');
+    }
+
+    if (inputConfig.subgraph.buildPath) {
+      // Resolve path.
+      subgraphPath = inputConfig.subgraph.buildPath.replace(/^~/, os.homedir()) as string;
+    }
+
+    assert(subgraphPath, 'Config subgraph.directory or subgraph.buildPath must be specified');
     subgraphConfig = getSubgraphConfig(subgraphPath);
 
     // Add contracts missing for dataSources and templates in subgraph config.
@@ -425,6 +436,7 @@ function getConfig (configFile: string): any {
       .forEach((dataSource: any) => {
         if (!contracts.some((contract: any) => contract.kind === dataSource.name)) {
           const abi = dataSource.mapping.abis.find((abi: any) => abi.name === dataSource.source.abi);
+          assert(subgraphPath);
           const abiPath = path.resolve(subgraphPath, abi.file);
 
           contracts.push({

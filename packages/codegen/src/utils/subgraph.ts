@@ -2,6 +2,7 @@ import path from 'path';
 import assert from 'assert';
 import fs from 'fs';
 import yaml from 'js-yaml';
+import shell from 'shelljs';
 
 import { loadFilesSync } from '@graphql-tools/load-files';
 
@@ -50,6 +51,33 @@ export function getSubgraphConfig (subgraphPath: string): any {
 
   assert(fs.existsSync(subgraphConfigPath), `Subgraph config file not found at ${subgraphConfigPath}`);
   return yaml.load(fs.readFileSync(subgraphConfigPath, 'utf8')) as any;
+}
+
+export function buildSubgraph (
+  codegenConfigPath: string,
+  subgraphConfig: {
+    directory: string,
+    configFile: string,
+    networkFilePath?: string,
+    network?: string
+  }
+): void {
+  const subgraphDirectory = path.resolve(codegenConfigPath, subgraphConfig.directory);
+  const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
+  const codegenWorkingDir = process.cwd();
+  // Change directory to subgraph repo
+  shell.cd(subgraphDirectory);
+
+  // TODO: Replace graph-cli & graph-ts in package.json with cerc-io forks
+
+  // Run graph-cli codegen
+  const { code } = shell.exec(`yarn graph codegen ${subgraphConfigPath}`);
+  console.log('code', code);
+
+  // TODO: Run graph-cli build
+
+  // Change directory back to codegen
+  shell.cd(codegenWorkingDir);
 }
 
 function parseType (typeNode: any): any {

@@ -60,11 +60,25 @@ Steps:
   # Flatten the input contract file(s) [true | false] (default: true).
   flatten: true
 
-  # Path to the subgraph build (optional).
-  # Can set empty contracts array when using subgraphPath.
-  # Subgraph WASM files should be compiled using @cerc-io/graph-cli
-  # graph-cli and graph-ts dependencies in the target subgraph repo can be replaced with forked cerc-io packages
-  subgraphPath: ../graph-node/test/subgraph/example1/build
+  # Config for subgraph (optional)
+  # Can set empty contracts array if this config is set
+  subgraph:
+    # Path to subgraph repo directory containing package.json
+    directory: ../graph-node/test/subgraph/example1
+
+    # Path to subgraph manifest/config file
+    configFile: ../graph-node/test/subgraph/example1/subgraph.yaml
+
+    # Networks config file path used when building subgraph (optional)
+    # networkFilePath:
+
+    # Network configuration to use from the networks config file (optional)
+    # network:
+
+    # Path to the subgraph build (optional)
+    # Subgraph build WASM files should be compiled using @cerc-io/graph-cli
+    # If this is set codegen does not use the build generated from subgraph.directory and subgraph.configFile
+    # buildPath: ../graph-node/test/subgraph/example1/build
 
   # NOTE: When passed an *URL* as contract path, it is assumed that it points to an already flattened contract file.
   ```
