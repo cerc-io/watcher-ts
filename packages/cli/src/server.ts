@@ -29,7 +29,8 @@ import {
   PaymentsManager,
   Consensus,
   readParty,
-  UpstreamConfig
+  UpstreamConfig,
+  fillBlocks
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -269,7 +270,8 @@ export class ServerCmd {
   async exec (
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
     typeDefs: TypeSource,
-    paymentsManager?: PaymentsManager
+    paymentsManager?: PaymentsManager,
+    graphWatcher?: GraphWatcherInterface
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -283,6 +285,22 @@ export class ServerCmd {
     assert(jobQueue);
     assert(indexer);
     assert(eventWatcher);
+
+    if (graphWatcher) {
+      // @ts-expect-error Make dataSources public
+      const startBlock = this.findMinimumStartBlock(graphWatcher._dataSources);
+      const endBlock = startBlock + 1;
+      await fillBlocks(
+        jobQueue,
+        indexer,
+        eventWatcher,
+        config.jobQueue.blockDelayInMilliSecs,
+        {
+          startBlock,
+          endBlock
+        }
+      );
+    }
 
     if (config.server.kind === KIND_ACTIVE) {
       // Delete all active and pending (before completed) jobs to prevent creating jobs after completion of processing previous block
@@ -299,6 +317,25 @@ export class ServerCmd {
     await startGQLMetricsServer(config);
 
     return { app, server };
+  }
+
+  findMinimumStartBlock (dataSources: any[]): number {
+    const filteredContracts = dataSources.filter(contract => {
+      return (
+        contract.kind === 'ethereum/contract' &&
+        contract.source.startBlock !== undefined
+      );
+    });
+
+    if (filteredContracts.length === 0) {
+      return 0;
+    }
+
+    const minStartBlock = Math.min(
+      ...filteredContracts.map(contract => contract.source.startBlock)
+    );
+
+    return minStartBlock;
   }
 
   _getArgv (): any {
