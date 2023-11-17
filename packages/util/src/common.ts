@@ -76,8 +76,9 @@ export const fetchBlocksAtHeight = async (
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
-    console.time('time:common#_fetchBlocks-eth-server');
+    console.time(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
     const ethFullBlocks = await indexer.getBlocks({ blockNumber });
+    console.timeEnd(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
 
     // Check if all blocks are null and increment blockNumber to index next block number
     if (ethFullBlocks.every(block => block === null)) {
@@ -107,7 +108,6 @@ export const fetchBlocksAtHeight = async (
         );
       });
     }
-    console.timeEnd('time:common#_fetchBlocks-eth-server');
   }
 
   assert(blocks.length, 'Blocks not fetched');
