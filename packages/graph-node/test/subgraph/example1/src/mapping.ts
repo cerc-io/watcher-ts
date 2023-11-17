@@ -299,6 +299,15 @@ export function testBigDecimalTimes (value1: string, value2: string): string {
   return res.toString();
 }
 
+export function testBigDecimalEquals (value1: string, value2: string): boolean {
+  log.debug('In test bigDecimal.equals', []);
+
+  const bigDecimal1 = BigDecimal.fromString(value1);
+  const bigDecimal2 = BigDecimal.fromString(value2);
+
+  return bigDecimal1._equals(bigDecimal2);
+}
+
 export function testBigIntPlus (value1: string, value2: string): string {
   log.debug('In test bigInt.plus', []);
 

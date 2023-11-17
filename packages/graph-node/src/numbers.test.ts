@@ -638,4 +638,22 @@ describe('numbers wasm tests', () => {
       expect(__getString(ptr)).to.equal(expected);
     });
   });
+
+  describe('should execute bigDecimal equals API', () => {
+    let testBigDecimalEquals: any, __newString: any;
+
+    before(() => {
+      ({ testBigDecimalEquals, __newString } = exports);
+    });
+
+    it('should check given bigDecimals are equal', async () => {
+      const ptr = await testBigDecimalEquals(await __newString('231543212.2132354'), await __newString('231543212.2132354'));
+      expect(!!ptr).to.equal(true);
+    });
+
+    it('should check given bigDecimals are not equal', async () => {
+      const ptr = await testBigDecimalEquals(await __newString('231543212.2132354'), await __newString('54652.65645'));
+      expect(!!ptr).to.equal(false);
+    });
+  });
 });
