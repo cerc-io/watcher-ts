@@ -521,30 +521,28 @@ export class JobRunner {
       const newPriority = (priority || 0) + 1;
 
       if (!parentBlock || parentBlock.blockHash !== parentHash) {
-        const blocks = await this._indexer.getBlocks({ blockHash: parentHash });
+        const [block] = await this._indexer.getBlocks({ blockHash: parentHash });
 
-        if (!blocks.length) {
+        if (!block) {
           const message = `No blocks at parentHash ${parentHash}, aborting`;
           log(message);
 
           throw new Error(message);
         }
 
-        blocks.forEach(block => {
-          this._blockAndEventsMap.set(
-            block.blockHash,
-            {
-              // block is set later in job when saving to database
-              block: {} as BlockProgressInterface,
-              events: [],
-              ethFullBlock: block,
-              // Transactions are set later in job when fetching events
-              ethFullTransactions: []
-            }
-          );
-        });
+        this._blockAndEventsMap.set(
+          block.blockHash,
+          {
+            // block is set later in job when saving to database
+            block: {} as BlockProgressInterface,
+            events: [],
+            ethFullBlock: block,
+            // Transactions are set later in job when fetching events
+            ethFullTransactions: []
+          }
+        );
 
-        const [{ cid: parentCid, blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp }] = blocks;
+        const { cid: parentCid, blockNumber: parentBlockNumber, parentHash: grandparentHash, timestamp: parentTimestamp } = block;
 
         await this.jobQueue.pushJob(QUEUE_BLOCK_PROCESSING, {
           kind: JOB_KIND_INDEX,

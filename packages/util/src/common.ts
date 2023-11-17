@@ -1,7 +1,6 @@
 import debug from 'debug';
 import assert from 'assert';
 import { DeepPartial } from 'typeorm';
-import { errors } from 'ethers';
 import JSONbig from 'json-bigint';
 
 import {
@@ -10,8 +9,7 @@ import {
   QUEUE_BLOCK_CHECKPOINT,
   JOB_KIND_PRUNE,
   JOB_KIND_INDEX,
-  UNKNOWN_EVENT_NAME,
-  NULL_BLOCK_ERROR
+  UNKNOWN_EVENT_NAME
 } from './constants';
 import { JobQueue } from './job-queue';
 import { BlockProgressInterface, IndexerInterface, EventInterface, EthFullTransaction, EthFullBlock } from './types';
@@ -78,38 +76,37 @@ export const fetchBlocksAtHeight = async (
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
-    try {
-      console.time('time:common#_fetchBlocks-eth-server');
-      blocks = await indexer.getBlocks({ blockNumber });
+    console.time(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
+    const ethFullBlocks = await indexer.getBlocks({ blockNumber });
+    console.timeEnd(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
 
-      if (!blocks.length) {
-        log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-        await wait(jobQueueConfig.blockDelayInMilliSecs);
-      } else {
-        blocks.forEach(block => {
-          blockAndEventsMap.set(
-            block.blockHash,
-            {
-              // Block is set later in job-runner when saving to database
-              block: {} as BlockProgressInterface,
-              events: [],
-              ethFullBlock: block,
-              // Transactions are set later in job-runner when fetching events
-              ethFullTransactions: []
-            }
-          );
-        });
-      }
-    } catch (err: any) {
-      // Handle null block error in case of Lotus EVM
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === NULL_BLOCK_ERROR)) {
-        throw err;
-      }
-
-      log(`Block ${blockNumber} requested was null (FEVM); Fetching next block`);
+    // Check if all blocks are null and increment blockNumber to index next block number
+    if (ethFullBlocks.every(block => block === null)) {
       blockNumber++;
-    } finally {
-      console.timeEnd('time:common#_fetchBlocks-eth-server');
+      log(`Block ${blockNumber} requested was null (FEVM); Fetching next block`);
+      continue;
+    }
+
+    // Fitler null blocks
+    blocks = ethFullBlocks.filter(block => Boolean(block)) as EthFullBlock[];
+
+    if (!blocks.length) {
+      log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
+      await wait(jobQueueConfig.blockDelayInMilliSecs);
+    } else {
+      blocks.forEach(block => {
+        blockAndEventsMap.set(
+          block.blockHash,
+          {
+            // Block is set later in job-runner when saving to database
+            block: {} as BlockProgressInterface,
+            events: [],
+            ethFullBlock: block,
+            // Transactions are set later in job-runner when fetching events
+            ethFullTransactions: []
+          }
+        );
+      });
     }
   }
 
