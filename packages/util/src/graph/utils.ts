@@ -643,7 +643,7 @@ export const formatEntityValue = async (instanceExports: any, type: string, valu
   let typeName = type;
   if (isArray) {
     typeName = 'Array';
-    valueToFormat = value.map((el: any) => { return { type, data: el }; });
+    valueToFormat = value.map((el: any) => { return { type: TypeNameToValueKind[type] ?? ValueKind.STRING, data: el }; });
   }
 
   return formatValue(instanceExports, TypeNameToValueKind[typeName] ?? ValueKind.STRING, valueToFormat);
