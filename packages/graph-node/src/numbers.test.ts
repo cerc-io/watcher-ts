@@ -648,12 +648,12 @@ describe('numbers wasm tests', () => {
 
     it('should check given bigDecimals are equal', async () => {
       const ptr = await testBigDecimalEquals(await __newString('231543212.2132354'), await __newString('231543212.2132354'));
-      expect(!!ptr).to.equal(true);
+      expect(Boolean(ptr)).to.equal(true);
     });
 
     it('should check given bigDecimals are not equal', async () => {
       const ptr = await testBigDecimalEquals(await __newString('231543212.2132354'), await __newString('54652.65645'));
-      expect(!!ptr).to.equal(false);
+      expect(Boolean(ptr)).to.equal(false);
     });
   });
 });
