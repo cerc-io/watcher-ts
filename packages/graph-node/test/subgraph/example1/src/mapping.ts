@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { Address, log, BigInt, BigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto, json, JSONValueKind } from '@graphprotocol/graph-ts';
+import { Address, log, BigInt, BigDecimal, bigDecimal, ByteArray, dataSource, ethereum, Bytes, crypto, json, JSONValueKind } from '@graphprotocol/graph-ts';
 
 import {
   Example1,
@@ -297,6 +297,15 @@ export function testBigDecimalTimes (value1: string, value2: string): string {
   const res = bigDecimal1 * bigDecimal2;
 
   return res.toString();
+}
+
+export function testBigDecimalEquals (value1: string, value2: string): boolean {
+  log.debug('In test bigDecimal.equals', []);
+
+  const bigDecimal1 = bigDecimal.fromString(value1);
+  const bigDecimal2 = bigDecimal.fromString(value2);
+
+  return bigDecimal1.equals(bigDecimal2);
 }
 
 export function testBigIntPlus (value1: string, value2: string): string {

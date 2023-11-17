@@ -478,7 +478,23 @@ export const instantiate = async (
 
         return powResultBigDecimal;
       },
+      'bigDecimal.equals': async (x: number, y: number) => {
+        // Create decimal x string.
+        const xBigDecimal = await BigDecimal.wrap(x);
+        const xStringPtr = await xBigDecimal.toString();
+        const xDecimalString = __getString(xStringPtr);
+        const xDecimal = new GraphDecimal(xDecimalString);
 
+        // Create decimal y string.
+        const yBigDecimal = await BigDecimal.wrap(y);
+        const yStringPtr = await yBigDecimal.toString();
+        const yDecimalString = __getString(yStringPtr);
+
+        // Perform the decimal equal operation.
+        const isEqual = xDecimal.equals(yDecimalString);
+
+        return isEqual;
+      },
       'bigInt.fromString': async (s: number) => {
         const string = __getString(s);
 
