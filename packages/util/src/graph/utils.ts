@@ -563,7 +563,8 @@ export const fromEntityValue = async (instanceExports: any, entityInstance: any,
   const entityKey = await __newString(key);
   const entityValuePtr = await entityInstance.get(entityKey);
 
-  return parseEntityValue(instanceExports, entityValuePtr);
+  const { value } = await parseEntityValue(instanceExports, entityValuePtr);
+  return value;
 };
 
 export const parseEntityValue = async (instanceExports: any, valuePtr: number): Promise<any> => {
@@ -582,7 +583,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
   switch (kind) {
     case ValueKind.STRING: {
       const stringValue = await value.toString();
-      return __getString(stringValue);
+      return { kind: 'String', value: __getString(stringValue) };
     }
 
     case ValueKind.BYTES: {
@@ -590,17 +591,17 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bytes = await Bytes.wrap(bytesPtr);
       const bytesStringPtr = await bytes.toHexString();
 
-      return __getString(bytesStringPtr);
+      return { kind: 'Bytes', value: __getString(bytesStringPtr) };
     }
 
     case ValueKind.BOOL: {
       const bool = await value.toBoolean();
 
-      return Boolean(bool);
+      return { kind: 'Bool', value: Boolean(bool) };
     }
 
     case ValueKind.INT: {
-      return value.toI32();
+      return { kind: 'Int', value: value.toI32() };
     }
 
     case ValueKind.BIGINT: {
@@ -609,7 +610,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
 
-      return BigInt(bigIntString);
+      return { kind: 'BigInt', value: BigInt(bigIntString) };
     }
 
     case ValueKind.BIGDECIMAL: {
@@ -617,19 +618,22 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bigDecimal = BigDecimal.wrap(bigDecimalPtr);
       const bigDecimalStringPtr = await bigDecimal.toString();
 
-      return new GraphDecimal(__getString(bigDecimalStringPtr)).toFixed();
+      return { kind: 'BigDecimal', value: new GraphDecimal(__getString(bigDecimalStringPtr)).toFixed() };
     }
 
     case ValueKind.ARRAY: {
       const arrayPtr = await value.toArray();
       const arr = await __getArray(arrayPtr);
-      const arrDataPromises = arr.map((arrValuePtr: any) => parseEntityValue(instanceExports, arrValuePtr));
+      const arrDataPromises = arr.map(async (arrValuePtr: any) => {
+        const { value } = await parseEntityValue(instanceExports, arrValuePtr);
+        return value;
+      });
 
-      return Promise.all(arrDataPromises);
+      return { kind: 'Array', value: Promise.all(arrDataPromises) };
     }
 
     case ValueKind.NULL: {
-      return null;
+      return { kind: 'Null', value: null };
     }
 
     default:

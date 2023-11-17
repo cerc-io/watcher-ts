@@ -957,22 +957,25 @@ export class GraphDatabase {
   }
 
   async fromGraphContext (instanceExports: any, contextInstance: any): Promise<{ [key: string]: any }> {
-    const contextValuePromises = contextInstance.entries.map(async (entry: any) => {
-      const contextValuePtr = entry.value;
+    const { __getString, __getArray, ValueTypedMapEntry } = instanceExports;
 
-      const { Value } = instanceExports;
-      const value = Value.wrap(contextValuePtr);
-      const kind = await value.kind;
+    const contextInstanceEntries = __getArray(await contextInstance.entries);
+    const contextValuePromises = contextInstanceEntries.map(async (entryPtr: any) => {
+      const entry = await ValueTypedMapEntry.wrap(entryPtr);
+      const contextKeyPtr = await entry.key;
+      const contextValuePtr = await entry.value;
 
-      const parsedValue = parseEntityValue(instanceExports, contextValuePtr);
-      return { kind, value: parsedValue };
+      const key = await __getString(contextKeyPtr);
+      const parsedValue = await parseEntityValue(instanceExports, contextValuePtr);
+
+      return { key, ...parsedValue };
     });
 
     const contextValues = await Promise.all(contextValuePromises);
 
-    return contextInstance.entries.reduce((acc: { [key: string]: any }, entry: any, index: number) => {
-      const { key } = entry;
-      acc[key] = { data: JSONbigNative.stringify(contextValues[index].value), type: contextValues[index].kind };
+    return contextValues.reduce((acc: { [key: string]: any }, contextValue: any) => {
+      const { key, kind, value } = contextValue;
+      acc[key] = { data: JSONbigNative.stringify(value), type: kind };
 
       return acc;
     }, {});
