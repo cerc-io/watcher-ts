@@ -11,7 +11,7 @@ import _ from 'lodash';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
 import { GraphDecimal } from './graph-decimal';
-import { EthereumValueKind, TypeId, ValueKind } from './types';
+import { EthereumValueKind, TypeId, TypeNameToValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
 
@@ -539,12 +539,10 @@ export const getSubgraphConfig = async (subgraphPath: string): Promise<any> => {
 };
 
 export const toEntityValue = async (instanceExports: any, entityInstance: any, data: any, field: ColumnMetadata, type: string): Promise<any> => {
-  const { __newString, Value } = instanceExports;
+  const { __newString } = instanceExports;
   const { isArray, propertyName, isNullable } = field;
 
   const entityKey = await __newString(propertyName);
-  const entityValuePtr = await entityInstance.get(entityKey);
-  const subgraphValue = Value.wrap(entityValuePtr);
   const value = data[propertyName];
 
   // Check if the entity property is nullable.
@@ -553,21 +551,20 @@ export const toEntityValue = async (instanceExports: any, entityInstance: any, d
     return value;
   }
 
-  const entityValue = await formatEntityValue(instanceExports, subgraphValue, type, value, isArray);
+  const entityValue = await formatEntityValue(instanceExports, type, value, isArray);
 
   return entityInstance.set(entityKey, entityValue);
 };
 
-export const fromEntityValue = async (instanceExports: any, entityInstance: any, key: string): Promise<any> => {
+export const fromEntityValue = async (instanceExports: any, entityInstance: any, key: string): Promise<{ type: ValueKind, data: any }> => {
   const { __newString } = instanceExports;
   const entityKey = await __newString(key);
   const entityValuePtr = await entityInstance.get(entityKey);
 
-  const { value } = await parseEntityValue(instanceExports, entityValuePtr);
-  return value;
+  return parseEntityValue(instanceExports, entityValuePtr);
 };
 
-export const parseEntityValue = async (instanceExports: any, valuePtr: number): Promise<any> => {
+export const parseEntityValue = async (instanceExports: any, valuePtr: number): Promise<{ type: ValueKind, data: any }> => {
   const {
     __getString,
     __getArray,
@@ -583,7 +580,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
   switch (kind) {
     case ValueKind.STRING: {
       const stringValue = await value.toString();
-      return { kind: 'String', value: __getString(stringValue) };
+      return { type: kind, data: __getString(stringValue) };
     }
 
     case ValueKind.BYTES: {
@@ -591,17 +588,17 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bytes = await Bytes.wrap(bytesPtr);
       const bytesStringPtr = await bytes.toHexString();
 
-      return { kind: 'Bytes', value: __getString(bytesStringPtr) };
+      return { type: kind, data: __getString(bytesStringPtr) };
     }
 
     case ValueKind.BOOL: {
       const bool = await value.toBoolean();
 
-      return { kind: 'Boolean', value: Boolean(bool) };
+      return { type: kind, data: Boolean(bool) };
     }
 
     case ValueKind.INT: {
-      return { kind: 'Int', value: value.toI32() };
+      return { type: kind, data: value.toI32() };
     }
 
     case ValueKind.BIGINT: {
@@ -610,7 +607,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bigIntStringPtr = await bigInt.toString();
       const bigIntString = __getString(bigIntStringPtr);
 
-      return { kind: 'BigInt', value: BigInt(bigIntString) };
+      return { type: kind, data: BigInt(bigIntString) };
     }
 
     case ValueKind.BIGDECIMAL: {
@@ -618,22 +615,21 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const bigDecimal = BigDecimal.wrap(bigDecimalPtr);
       const bigDecimalStringPtr = await bigDecimal.toString();
 
-      return { kind: 'BigDecimal', value: new GraphDecimal(__getString(bigDecimalStringPtr)).toFixed() };
+      return { type: kind, data: new GraphDecimal(__getString(bigDecimalStringPtr)).toFixed() };
     }
 
     case ValueKind.ARRAY: {
       const arrayPtr = await value.toArray();
       const arr = await __getArray(arrayPtr);
       const arrDataPromises = arr.map(async (arrValuePtr: any) => {
-        const { value } = await parseEntityValue(instanceExports, arrValuePtr);
-        return value;
+        return parseEntityValue(instanceExports, arrValuePtr);
       });
 
-      return { kind: 'Array', value: Promise.all(arrDataPromises) };
+      return { type: kind, data: Promise.all(arrDataPromises) };
     }
 
     case ValueKind.NULL: {
-      return { kind: 'Null', value: null };
+      return { type: kind, data: null };
     }
 
     default:
@@ -641,49 +637,50 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
   }
 };
 
-export const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
-  const { __newString, __newArray, BigInt: ASBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
-
+export const formatEntityValue = async (instanceExports: any, type: string, value: any, isArray: boolean): Promise<any> => {
+  let valueToFormat = value;
+  let typeName = type;
   if (isArray) {
-    const dataArrayPromises = value.map((el: any) => formatEntityValue(instanceExports, subgraphValue, type, el, false));
-    const dataArray = await Promise.all(dataArrayPromises);
-    const arrayStoreValueId = await getIdOfType(TypeId.ArrayStoreValue);
-    const valueArray = await __newArray(arrayStoreValueId, dataArray);
-
-    return Value.fromArray(valueArray);
+    typeName = 'Array';
+    valueToFormat = value.map((el: any) => { return { type, data: el }; });
   }
 
-  switch (type) {
-    case 'ID':
-    case 'String': {
+  return formatValue(instanceExports, TypeNameToValueKind[typeName] ?? ValueKind.STRING, valueToFormat);
+};
+
+export const formatValue = async (instanceExports: any, kind: ValueKind, value: any): Promise<any> => {
+  const { __newString, __newArray, BigInt: ASBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
+
+  switch (kind) {
+    case ValueKind.STRING: {
       const entityValue = await __newString(value);
 
       return Value.fromString(entityValue);
     }
 
-    case 'Boolean': {
+    case ValueKind.BOOL: {
       return Value.fromBoolean(value ? 1 : 0);
     }
 
-    case 'Int': {
+    case ValueKind.INT: {
       return Value.fromI32(value);
     }
 
-    case 'BigInt': {
+    case ValueKind.BIGINT: {
       const valueStringPtr = await __newString(value.toString());
       const bigInt = await ASBigInt.fromString(valueStringPtr);
 
       return Value.fromBigInt(bigInt);
     }
 
-    case 'BigDecimal': {
+    case ValueKind.BIGDECIMAL: {
       const valueStringPtr = await __newString(value.toString());
       const bigDecimal = await BigDecimal.fromString(valueStringPtr);
 
       return Value.fromBigDecimal(bigDecimal);
     }
 
-    case 'Bytes': {
+    case ValueKind.BYTES: {
       const entityValue = await __newString(value);
       const byteArray = await ByteArray.fromHexString(entityValue);
       const bytes = await Bytes.fromByteArray(byteArray);
@@ -691,11 +688,17 @@ export const formatEntityValue = async (instanceExports: any, subgraphValue: any
       return Value.fromBytes(bytes);
     }
 
-    // Return default as string for enum or custom type.
-    default: {
-      const entityValue = await __newString(value);
+    case ValueKind.ARRAY: {
+      const dataArrayPromises = value.map((el: any) => formatValue(instanceExports, el.type, el.data));
+      const dataArray = await Promise.all(dataArrayPromises);
+      const arrayStoreValueId = await getIdOfType(TypeId.ArrayStoreValue);
+      const valueArray = await __newArray(arrayStoreValueId, dataArray);
 
-      return Value.fromString(entityValue);
+      return Value.fromArray(valueArray);
+    }
+
+    case ValueKind.NULL: {
+      return Value.fromNull();
     }
   }
 };

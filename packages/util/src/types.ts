@@ -73,7 +73,7 @@ export interface ContractInterface {
   startingBlock: number;
   kind: string;
   checkpoint: boolean;
-  context: Record<string, { data: any, type: string }>;
+  context: Record<string, { type: number, data: any }>;
 }
 
 export interface StateInterface {

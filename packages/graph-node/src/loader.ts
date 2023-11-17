@@ -682,12 +682,6 @@ export const instantiate = async (
         return Address.fromString(addressStringPtr);
       },
       'dataSource.context': async () => {
-        // TODO: Implement use in data source templates.
-        // https://thegraph.com/docs/en/developer/create-subgraph-hosted/#data-source-context
-
-        // TODO:
-        // use context contractAddress to load the dataSourceContext from the contracts table
-        // refer toGraphEntity to convert from json to graph entity
         assert(context.contractAddress);
         const contract = indexer.isWatchedContract(context.contractAddress);
 
