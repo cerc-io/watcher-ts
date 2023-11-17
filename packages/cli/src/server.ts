@@ -41,6 +41,7 @@ import type {
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 import { utils } from '@cerc-io/nitro-node';
+import { getStartBlock } from '@cerc-io/graph-node';
 // @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import type { Libp2p } from '@cerc-io/libp2p';
 
@@ -287,19 +288,23 @@ export class ServerCmd {
     assert(eventWatcher);
 
     if (graphWatcher) {
-      // @ts-expect-error Make dataSources public
-      const startBlock = this.findMinimumStartBlock(graphWatcher._dataSources);
-      const endBlock = startBlock + 1;
-      await fillBlocks(
-        jobQueue,
-        indexer,
-        eventWatcher,
-        config.jobQueue.blockDelayInMilliSecs,
-        {
-          startBlock,
-          endBlock
-        }
-      );
+      const syncStatus = await indexer.getSyncStatus();
+
+      if (!syncStatus) {
+        // @ts-expect-error Make dataSources public
+        const startBlock = getStartBlock(graphWatcher._dataSources);
+        const endBlock = startBlock + 1;
+        await fillBlocks(
+          jobQueue,
+          indexer,
+          eventWatcher,
+          config.jobQueue.blockDelayInMilliSecs,
+          {
+            startBlock,
+            endBlock
+          }
+        );
+      }
     }
 
     if (config.server.kind === KIND_ACTIVE) {
@@ -317,25 +322,6 @@ export class ServerCmd {
     await startGQLMetricsServer(config);
 
     return { app, server };
-  }
-
-  findMinimumStartBlock (dataSources: any[]): number {
-    const filteredContracts = dataSources.filter(contract => {
-      return (
-        contract.kind === 'ethereum/contract' &&
-        contract.source.startBlock !== undefined
-      );
-    });
-
-    if (filteredContracts.length === 0) {
-      return 0;
-    }
-
-    const minStartBlock = Math.min(
-      ...filteredContracts.map(contract => contract.source.startBlock)
-    );
-
-    return minStartBlock;
   }
 
   _getArgv (): any {
