@@ -593,12 +593,12 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
 
     case ValueKind.BOOL: {
       const bool = await value.toBoolean();
-
       return { type: kind, data: Boolean(bool) };
     }
 
     case ValueKind.INT: {
-      return { type: kind, data: value.toI32() };
+      const data = await value.toI32();
+      return { type: kind, data };
     }
 
     case ValueKind.BIGINT: {
@@ -624,8 +624,9 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
       const arrDataPromises = arr.map(async (arrValuePtr: any) => {
         return parseEntityValue(instanceExports, arrValuePtr);
       });
+      const data = await Promise.all(arrDataPromises);
 
-      return { type: kind, data: Promise.all(arrDataPromises) };
+      return { type: kind, data };
     }
 
     case ValueKind.NULL: {

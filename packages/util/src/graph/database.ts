@@ -994,8 +994,8 @@ export class GraphDatabase {
     const contextValues = await Promise.all(contextValuePromises);
 
     return contextValues.reduce((acc: { [key: string]: any }, contextValue: any) => {
-      const { key, kind, value } = contextValue;
-      acc[key] = { data: JSONbigNative.stringify(value), type: kind };
+      const { key, type, data } = contextValue;
+      acc[key] = { type, data: JSONbigNative.stringify(data) };
 
       return acc;
     }, {});
@@ -1029,7 +1029,8 @@ export class GraphDatabase {
 
       // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
-        return fromEntityValue(instanceExports, entityInstance, propertyName.slice(1));
+        const entityValue = await fromEntityValue(instanceExports, entityInstance, propertyName.slice(1));
+        return entityValue.data;
       }
 
       const entityValue = await fromEntityValue(instanceExports, entityInstance, propertyName);
