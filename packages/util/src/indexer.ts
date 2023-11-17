@@ -291,7 +291,7 @@ export class Indexer {
     return res;
   }
 
-  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<EthFullBlock[]> {
+  async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<Array<EthFullBlock | null>> {
     assert(blockFilter.blockHash || blockFilter.blockNumber);
     const blocks = await this._ethClient.getFullBlocks(blockFilter);
 
@@ -394,6 +394,7 @@ export class Indexer {
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
     const blocksPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
       const [fullBlock] = await this._ethClient.getFullBlocks({ blockHash });
+      assert(fullBlock);
 
       const block = {
         ...fullBlock,
@@ -401,7 +402,10 @@ export class Indexer {
         blockNumber: Number(fullBlock.blockNumber)
       };
 
-      return { block, fullBlock } as { block: DeepPartial<BlockProgressInterface>; fullBlock: EthFullBlock };
+      return {
+        block: block as DeepPartial<BlockProgressInterface>,
+        fullBlock
+      };
     });
 
     const ethFullTxPromises = txHashes.map(async txHash => {

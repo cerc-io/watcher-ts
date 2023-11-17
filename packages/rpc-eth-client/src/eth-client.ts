@@ -10,6 +10,7 @@ import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFull
 import { padKey } from '@cerc-io/ipld-eth-client';
 
 const FUTURE_BLOCK_ERROR = "requested a future epoch (beyond 'latest')";
+const NULL_BLOCK_ERROR = 'requested epoch was a null round';
 
 export interface Config {
   cache: Cache | undefined;
@@ -93,10 +94,7 @@ export class EthClient implements EthClientInterface {
         }
       ];
     } catch (err: any) {
-      // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
-        throw err;
-      }
+      return this._handleGetBlockErrors(err);
     } finally {
       console.timeEnd(`time:eth-client#getBlockWithTransactions-${JSON.stringify({ blockNumber, blockHash })}`);
     }
@@ -138,10 +136,7 @@ export class EthClient implements EthClientInterface {
         ];
       }
     } catch (err: any) {
-      // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
-        throw err;
-      }
+      return this._handleGetBlockErrors(err);
     } finally {
       console.timeEnd(`time:eth-client#getBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
     }
@@ -153,7 +148,7 @@ export class EthClient implements EthClientInterface {
     };
   }
 
-  async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<EthFullBlock[]> {
+  async getFullBlocks ({ blockNumber, blockHash }: { blockNumber?: number, blockHash?: string }): Promise<Array<EthFullBlock | null>> {
     const blockNumberHex = blockNumber ? utils.hexValue(blockNumber) : undefined;
     const blockHashOrBlockNumber = blockHash ?? blockNumberHex;
     assert(blockHashOrBlockNumber);
@@ -207,10 +202,7 @@ export class EthClient implements EthClientInterface {
         }];
       }
     } catch (err: any) {
-      // Check and ignore future block error
-      if (!(err.code === errors.SERVER_ERROR && err.error && err.error.message === FUTURE_BLOCK_ERROR)) {
-        throw err;
-      }
+      return this._handleGetBlockErrors(err);
     } finally {
       console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
     }
@@ -378,5 +370,21 @@ export class EthClient implements EthClientInterface {
     }
 
     return result;
+  }
+
+  _handleGetBlockErrors (err: any): Array<null> {
+    if (err.code === errors.SERVER_ERROR && err.error) {
+      // Check null block error and return null array
+      if (err.error.message === NULL_BLOCK_ERROR) {
+        return [null];
+      }
+
+      // Check and ignore future block error
+      if (err.error.message === FUTURE_BLOCK_ERROR) {
+        return [];
+      }
+    }
+
+    throw err;
   }
 }

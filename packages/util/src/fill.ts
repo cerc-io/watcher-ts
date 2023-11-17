@@ -5,7 +5,7 @@
 import debug from 'debug';
 
 import { JobQueue } from './job-queue';
-import { IndexerInterface } from './types';
+import { EthFullBlock, IndexerInterface } from './types';
 import { wait } from './misc';
 import { processBlockByNumber } from './common';
 import { DEFAULT_PREFETCH_BATCH_SIZE } from './constants';
@@ -107,7 +107,7 @@ const prefetchBlocks = async (
     let blockNumbers = [...Array(batchEndBlock - i).keys()].map(n => n + i);
     log('Fetching blockNumbers:', blockNumbers);
 
-    let blocks = [];
+    let blocks: EthFullBlock[] = [];
 
     // Fetch blocks again if there are missing blocks.
     while (true) {
@@ -117,7 +117,8 @@ const prefetchBlocks = async (
       const missingIndex = res.findIndex(blocks => blocks.length === 0);
 
       if (missingIndex < 0) {
-        blocks = res.flat();
+        // Filter null blocks
+        blocks = res.flat().filter(block => Boolean(block)) as EthFullBlock[];
         break;
       }
 

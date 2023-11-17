@@ -22,12 +22,14 @@ export const indexBlock = async (
     console.time('time:index-block#getBlocks-ipld-eth-server');
     const blocks = await indexer.getBlocks({ blockNumber: argv.block });
 
-    blockProgressEntities = blocks.map((block: any): Partial<BlockProgressInterface> => {
-      block.blockTimestamp = Number(block.timestamp);
-      block.blockNumber = Number(block.blockNumber);
+    // Filter null blocks and transform to BlockProgress type
+    blockProgressEntities = blocks.filter(block => Boolean(block))
+      .map((block: any): Partial<BlockProgressInterface> => {
+        block.blockTimestamp = Number(block.timestamp);
+        block.blockNumber = Number(block.blockNumber);
 
-      return block;
-    });
+        return block;
+      });
 
     console.timeEnd('time:index-block#getBlocks-ipld-eth-server');
   }

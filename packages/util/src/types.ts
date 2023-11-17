@@ -138,7 +138,7 @@ export interface EthClient {
   getFullBlocks({ blockNumber, blockHash }: {
     blockNumber?: number;
     blockHash?: string;
-  }): Promise<EthFullBlock[]>;
+  }): Promise<Array<EthFullBlock | null>>;
   getFullTransaction(txHash: string, blockNumber?: number): Promise<EthFullTransaction>;
   getBlockByHash(blockHash?: string): Promise<any>;
   getLogs(vars: {
@@ -167,7 +167,7 @@ export interface IndexerInterface {
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
-  getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<EthFullBlock[]>
+  getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<Array<EthFullBlock | null>>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
