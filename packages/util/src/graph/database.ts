@@ -26,7 +26,7 @@ import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } f
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
-import { Block, fromEntityValue, getLatestEntityFromEntity, parseEntityValue, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { Block, formatEntityValue, fromEntityValue, getLatestEntityFromEntity, parseEntityValue, resolveEntityFieldConflicts, toEntityValue } from './utils';
 import { fromStateEntityValues } from './state-utils';
 
 const log = debug('vulcanize:graph-database');
@@ -954,6 +954,28 @@ export class GraphDatabase {
     await Promise.all(entityValuePromises);
 
     return entityInstance;
+  }
+
+  async toGraphContext (instanceExports: any, contextData: any): Promise<any> {
+    const { Entity } = instanceExports;
+    const contextInstance = await Entity.__new();
+
+    const { __newString, Value } = instanceExports;
+    const contextValuePromises = Object.entries(contextData as Record<string, { data: any, type: string }>).map(async ([key, { data, type }]) => {
+      const contextKey = await __newString(key);
+      const contextValuePtr = await contextInstance.get(contextKey);
+      const subgraphValue = Value.wrap(contextValuePtr);
+
+      // TODO: Handle array values
+      const value = JSONbigNative.parse(data);
+      const contextValue = await formatEntityValue(instanceExports, subgraphValue, type, value, false);
+
+      return contextInstance.set(contextKey, contextValue);
+    });
+
+    await Promise.all(contextValuePromises);
+
+    return contextInstance;
   }
 
   async fromGraphContext (instanceExports: any, contextInstance: any): Promise<{ [key: string]: any }> {

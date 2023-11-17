@@ -688,8 +688,14 @@ export const instantiate = async (
         // TODO:
         // use context contractAddress to load the dataSourceContext from the contracts table
         // refer toGraphEntity to convert from json to graph entity
+        assert(context.contractAddress);
+        const contract = indexer.isWatchedContract(context.contractAddress);
 
-        return Entity.__new();
+        if (!contract) {
+          return null;
+        }
+
+        return database.toGraphContext(instanceExports, contract.context);
       },
       'dataSource.network': async () => {
         assert(dataSource);

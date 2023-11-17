@@ -597,7 +597,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
     case ValueKind.BOOL: {
       const bool = await value.toBoolean();
 
-      return { kind: 'Bool', value: Boolean(bool) };
+      return { kind: 'Boolean', value: Boolean(bool) };
     }
 
     case ValueKind.INT: {
@@ -641,7 +641,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
   }
 };
 
-const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
+export const formatEntityValue = async (instanceExports: any, subgraphValue: any, type: string, value: any, isArray: boolean): Promise<any> => {
   const { __newString, __newArray, BigInt: ASBigInt, Value, ByteArray, Bytes, BigDecimal, id_of_type: getIdOfType } = instanceExports;
 
   if (isArray) {
