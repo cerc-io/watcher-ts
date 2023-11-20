@@ -45,7 +45,7 @@ import { utils } from '@cerc-io/nitro-node';
 import type { Libp2p } from '@cerc-io/libp2p';
 
 import { BaseCmd } from './base';
-import { readPeerId } from './utils/index';
+import { readPeerId, getStartBlock } from './utils/index';
 
 const log = debug('vulcanize:server');
 
@@ -287,22 +287,20 @@ export class ServerCmd {
     assert(indexer);
     assert(eventWatcher);
 
-    if (this._graphWatcher) {
-      const syncStatus = await indexer.getSyncStatus();
-
-      if (!syncStatus) {
-        const startBlock = this._graphWatcher.getStartBlock();
-        await fillBlocks(
-          jobQueue,
-          indexer,
-          eventWatcher,
-          config.jobQueue.blockDelayInMilliSecs,
-          {
-            startBlock,
-            endBlock: startBlock
-          }
-        );
-      }
+    const syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      const contracts = await this.database.getContracts();
+      const startBlock = getStartBlock(contracts);
+      await fillBlocks(
+        jobQueue,
+        indexer,
+        eventWatcher,
+        config.jobQueue.blockDelayInMilliSecs,
+        {
+          startBlock,
+          endBlock: startBlock
+        }
+      );
     }
 
     if (config.server.kind === KIND_ACTIVE) {
