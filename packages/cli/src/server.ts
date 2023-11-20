@@ -59,6 +59,7 @@ export class ServerCmd {
   _peer?: Peer;
   _nitro?: utils.Nitro;
   _consensus?: Consensus;
+  _graphWatcher?: GraphWatcherInterface;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -127,6 +128,7 @@ export class ServerCmd {
   ): Promise<void> {
     await this._baseCmd.initIndexer(Indexer, graphWatcher);
     await this._baseCmd.initEventWatcher();
+    this._graphWatcher = graphWatcher;
   }
 
   async initP2P (): Promise<{ relayNode?: Libp2p, peer?: Peer }> {
@@ -270,8 +272,7 @@ export class ServerCmd {
   async exec (
     createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
     typeDefs: TypeSource,
-    paymentsManager?: PaymentsManager,
-    graphWatcher?: GraphWatcherInterface
+    paymentsManager?: PaymentsManager
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -286,11 +287,11 @@ export class ServerCmd {
     assert(indexer);
     assert(eventWatcher);
 
-    if (graphWatcher) {
+    if (this._graphWatcher) {
       const syncStatus = await indexer.getSyncStatus();
 
       if (!syncStatus) {
-        const startBlock = graphWatcher.getStartBlock();
+        const startBlock = this._graphWatcher.getStartBlock();
         await fillBlocks(
           jobQueue,
           indexer,
