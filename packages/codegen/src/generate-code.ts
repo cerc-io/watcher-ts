@@ -212,6 +212,11 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
 
   visitor.visitSubgraph(config.subgraphPath, config.subgraphConfig);
 
+  if (config.subgraphPath && outputDir) {
+    // Copy over the subgraph build to generated watcher
+    fs.cpSync(config.subgraphPath, path.join(outputDir, 'subgraph-build'), { recursive: true });
+  }
+
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
     : process.stdout;
