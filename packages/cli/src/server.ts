@@ -59,7 +59,6 @@ export class ServerCmd {
   _peer?: Peer;
   _nitro?: utils.Nitro;
   _consensus?: Consensus;
-  _graphWatcher?: GraphWatcherInterface;
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -128,7 +127,6 @@ export class ServerCmd {
   ): Promise<void> {
     await this._baseCmd.initIndexer(Indexer, graphWatcher);
     await this._baseCmd.initEventWatcher();
-    this._graphWatcher = graphWatcher;
   }
 
   async initP2P (): Promise<{ relayNode?: Libp2p, peer?: Peer }> {
