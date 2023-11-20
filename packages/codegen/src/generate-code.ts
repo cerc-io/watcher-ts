@@ -17,7 +17,7 @@ import { parse, visit } from '@solidity-parser/parser';
 import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 import { KIND_ACTIVE, KIND_LAZY } from '@cerc-io/util';
 
-import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
+import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT, ASSET_DIR } from './utils/constants';
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
@@ -35,13 +35,11 @@ import { exportCheckpoint } from './checkpoint';
 import { exportState } from './export-state';
 import { importState } from './import-state';
 import { exportInspectCID } from './inspect-cid';
-import { getSubgraphConfig } from './utils/subgraph';
+import { buildSubgraph, getSubgraphConfig } from './utils/subgraph';
 import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
 import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
-
-const ASSET_DIR = path.resolve(__dirname, 'assets');
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -67,7 +65,7 @@ const main = async (): Promise<void> => {
     })
     .argv;
 
-  const config = getConfig(path.resolve(argv['config-file']));
+  const config = await getConfig(path.resolve(argv['config-file']));
 
   // Create an array of flattened contract strings.
   const contracts: any[] = [];
@@ -213,6 +211,11 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   registerHandlebarHelpers(config);
 
   visitor.visitSubgraph(config.subgraphPath, config.subgraphConfig);
+
+  if (config.subgraphPath && outputDir) {
+    // Copy over the subgraph build to generated watcher
+    fs.cpSync(config.subgraphPath, path.join(outputDir, 'subgraph-build'), { recursive: true });
+  }
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'src/schema.gql'))
@@ -386,7 +389,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   }
 }
 
-function getConfig (configFile: string): any {
+async function getConfig (configFile: string): Promise<any> {
   assert(fs.existsSync(configFile), `Config file not found at ${configFile}`);
 
   // Read config.
@@ -411,12 +414,21 @@ function getConfig (configFile: string): any {
     return contract;
   });
 
-  let subgraphPath: any;
+  let subgraphPath: string | undefined;
   let subgraphConfig;
 
-  if (inputConfig.subgraphPath) {
-    // Resolve path.
-    subgraphPath = inputConfig.subgraphPath.replace(/^~/, os.homedir());
+  if (inputConfig.subgraph) {
+    if (inputConfig.subgraph.directory) {
+      await buildSubgraph(configFile, inputConfig.subgraph);
+      subgraphPath = path.resolve(inputConfig.subgraph.directory, 'build');
+    }
+
+    if (inputConfig.subgraph.buildPath) {
+      // Resolve path.
+      subgraphPath = inputConfig.subgraph.buildPath.replace(/^~/, os.homedir()) as string;
+    }
+
+    assert(subgraphPath, 'Config subgraph.directory or subgraph.buildPath must be specified');
     subgraphConfig = getSubgraphConfig(subgraphPath);
 
     // Add contracts missing for dataSources and templates in subgraph config.
@@ -425,6 +437,7 @@ function getConfig (configFile: string): any {
       .forEach((dataSource: any) => {
         if (!contracts.some((contract: any) => contract.kind === dataSource.name)) {
           const abi = dataSource.mapping.abis.find((abi: any) => abi.name === dataSource.source.abi);
+          assert(subgraphPath);
           const abiPath = path.resolve(subgraphPath, abi.file);
 
           contracts.push({
