@@ -16,10 +16,6 @@
 
 * For this demo, an [example subgraph](../graph-node/test/subgraph/example1) will be used
 
-  * In [package.json](../graph-node/test/subgraph/example1/package.json), the graph-ts and graph-cli dependencies are replaced by their respective cerc-io forked dependencies
-
-  * This needs to be done for running any subgraph project with watcher-ts
-
 * In watcher-ts [packages/graph-node](../graph-node/), deploy an `Example` contract:
 
   ```bash
@@ -32,13 +28,7 @@
   export EXAMPLE_ADDRESS=<EXAMPLE_ADDRESS>
   ```
 
-* In [packages/graph-node/test/subgraph/example1/subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml), set the source address for `Example1` datasource to the `EXAMPLE_ADDRESS`. Then in [packages/graph-node](../graph-node/) run:
-
-  ```bash
-  yarn build:example
-  ```
-
-  * This will run `yarn && yarn codegen && yarn build` script in the example subgraph directory
+* In [packages/graph-node/test/subgraph/example1/subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml), set the source address for `Example1` datasource to the `EXAMPLE_ADDRESS`
 
 * In [packages/codegen](./), create a `config.yaml` file:
 
@@ -63,10 +53,16 @@
   # Flatten the input contract file(s) [true | false] (default: true).
   flatten: true
 
-  # Path to the subgraph build (optional).
-  # Can set empty contracts array when using subgraphPath.
-  # Subgraph WASM files should be compiled using @cerc-io/graph-cli
-  subgraphPath: ../graph-node/test/subgraph/example1/build
+  # Config for subgraph
+  subgraph:
+    # Path to subgraph repo directory containing package.json
+    directory: ../graph-node/test/subgraph/example1
+
+    # Package manager that is used in subgraph repo for dependencies
+    packageManager: yarn
+
+    # Path to subgraph manifest/config file
+    configFile: ../graph-node/test/subgraph/example1/subgraph.yaml
   ```
 
 * Run codegen to generate watcher:
@@ -115,14 +111,6 @@
   # After setup
   yarn && yarn build
   ```
-
-* In `packages/test-watcher`, run fill for the subgraph start block:
-
-  ```bash
-  yarn fill --start-block 10 --end-block 10
-  ```
-
-  * Subgraph start block is the lowest `startBlock` in example [subgraph.yaml](../graph-node/test/subgraph/example1/subgraph.yaml)
 
 * Run the job-runner:
 
