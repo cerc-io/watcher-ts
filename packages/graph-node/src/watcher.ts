@@ -142,6 +142,25 @@ export class GraphWatcher {
     });
   }
 
+  getStartBlock (): number {
+    const filteredContracts = this.dataSources.filter(contract => {
+      return (
+        contract.kind === 'ethereum/contract' &&
+        contract.source.startBlock !== undefined
+      );
+    });
+
+    if (filteredContracts.length === 0) {
+      return 0;
+    }
+
+    const minStartBlock = Math.min(
+      ...filteredContracts.map(contract => contract.source.startBlock)
+    );
+
+    return minStartBlock;
+  }
+
   get dataSources (): any[] {
     return this._dataSources;
   }
@@ -568,23 +587,4 @@ export const getGraphDbAndWatcher = async (
     graphDb,
     graphWatcher
   };
-};
-
-export const getStartBlock = (dataSources: any[]): number => {
-  const filteredContracts = dataSources.filter(contract => {
-    return (
-      contract.kind === 'ethereum/contract' &&
-      contract.source.startBlock !== undefined
-    );
-  });
-
-  if (filteredContracts.length === 0) {
-    return 0;
-  }
-
-  const minStartBlock = Math.min(
-    ...filteredContracts.map(contract => contract.source.startBlock)
-  );
-
-  return minStartBlock;
 };

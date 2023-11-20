@@ -41,7 +41,6 @@ import type {
   // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 } from '@cerc-io/peer';
 import { utils } from '@cerc-io/nitro-node';
-import { getStartBlock } from '@cerc-io/graph-node';
 // @ts-expect-error TODO: Resolve (Not able to find the type declarations)
 import type { Libp2p } from '@cerc-io/libp2p';
 
@@ -291,9 +290,7 @@ export class ServerCmd {
       const syncStatus = await indexer.getSyncStatus();
 
       if (!syncStatus) {
-        // @ts-expect-error Make dataSources public
-        const startBlock = getStartBlock(graphWatcher._dataSources);
-        const endBlock = startBlock + 1;
+        const startBlock = graphWatcher.getStartBlock();
         await fillBlocks(
           jobQueue,
           indexer,
@@ -301,7 +298,7 @@ export class ServerCmd {
           config.jobQueue.blockDelayInMilliSecs,
           {
             startBlock,
-            endBlock
+            endBlock: startBlock
           }
         );
       }
