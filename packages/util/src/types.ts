@@ -283,7 +283,6 @@ export interface GraphDatabaseInterface {
 export interface GraphWatcherInterface {
   init (): Promise<void>;
   setIndexer (indexer: IndexerInterface): void;
-  getStartBlock(): number;
 }
 
 export type Clients = {
