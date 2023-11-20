@@ -37,7 +37,7 @@ export const main = async (): Promise<any> => {
 
   const typeDefs = fs.readFileSync(path.join(__dirname, 'schema.gql')).toString();
 
-  return serverCmd.exec(createResolvers, typeDefs);
+  return serverCmd.exec(createResolvers, typeDefs, undefined, graphWatcher);
 };
 
 main().then(() => {
