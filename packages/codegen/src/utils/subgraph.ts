@@ -63,6 +63,7 @@ export async function buildSubgraph (
   codegenConfigPath: string,
   subgraphConfig: {
     directory: string,
+    packageManager: string,
     configFile: string,
     networkFilePath?: string,
     network?: string
@@ -96,18 +97,19 @@ export async function buildSubgraph (
   // Create .npmrc for cerc-io packages
   fs.copyFileSync(path.join(ASSET_DIR, '.npmrc'), path.join(subgraphDirectory, '.npmrc'));
 
+  const packageManager = subgraphConfig.packageManager;
   // Install dependencies
-  const { code: installCode } = shell.exec('yarn install');
+  const { code: installCode } = shell.exec(`${packageManager} install --force`);
   assert(installCode === 0, 'Installing dependencies exited with error');
 
   const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
 
   // Run graph-cli codegen
-  const { code: codegenCode } = shell.exec(`yarn graph codegen ${subgraphConfigPath}`);
+  const { code: codegenCode } = shell.exec(`${packageManager === 'npm' ? 'npx' : packageManager} graph codegen ${subgraphConfigPath}`);
   assert(codegenCode === 0, 'Subgraph codegen command exited with error');
 
   // Run graph-cli build
-  let buildCommand = `yarn graph build ${subgraphConfigPath}`;
+  let buildCommand = `${packageManager === 'npm' ? 'npx' : packageManager} graph build ${subgraphConfigPath}`;
 
   if (subgraphConfig.networkFilePath) {
     const subgraphNetworkFilePath = path.resolve(codegenConfigPath, subgraphConfig.networkFilePath);

@@ -66,6 +66,9 @@ Steps:
     # Path to subgraph repo directory containing package.json
     directory: ../graph-node/test/subgraph/example1
 
+    # Package manager that is used in subgraph repo for dependencies
+    packageManager: yarn
+
     # Path to subgraph manifest/config file
     configFile: ../graph-node/test/subgraph/example1/subgraph.yaml
 
