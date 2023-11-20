@@ -143,7 +143,7 @@ export class GraphWatcher {
   }
 
   getStartBlock (): number {
-    const filteredContracts = this.dataSources.filter(contract => {
+    const filteredContracts = this._dataSources.filter(contract => {
       return (
         contract.kind === 'ethereum/contract' &&
         contract.source.startBlock !== undefined
