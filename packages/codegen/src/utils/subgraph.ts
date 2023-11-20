@@ -5,8 +5,12 @@ import yaml from 'js-yaml';
 import shell from 'shelljs';
 
 import PackageJson from '@npmcli/package-json';
-
 import { loadFilesSync } from '@graphql-tools/load-files';
+
+import { ASSET_DIR } from './constants';
+
+const GRAPH_TS_VERSION = '0.27.0-watcher-ts-0.1.2';
+const GRAPH_CLI_VERSION = '0.32.0-watcher-ts-0.1.3';
 
 export function parseSubgraphSchema (subgraphPath: string, subgraphConfig: any): any {
   const subgraphSchemaPath = path.join(path.resolve(subgraphPath), subgraphConfig.schema?.file ?? './schema.graphql');
@@ -65,7 +69,6 @@ export async function buildSubgraph (
   }
 ): Promise<void> {
   const subgraphDirectory = path.resolve(codegenConfigPath, subgraphConfig.directory);
-  const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
   const codegenWorkingDir = process.cwd();
   // Change directory to subgraph repo
   shell.cd(subgraphDirectory);
@@ -73,18 +76,48 @@ export async function buildSubgraph (
   // Replace graph-cli & graph-ts in package.json with cerc-io forks
   const pkgJson = await PackageJson.load(subgraphDirectory);
   const { content } = pkgJson;
-  assert(content.dependencies, "Package.json doesn't consist dependencies");
-  content.dependencies['@graphprotocol/graph-ts'] = 'npm:@cerc-io/graph-ts@0.27.0-watcher-ts-0.1.2';
-  delete content.dependencies['@graphprotocol/graph-cli'];
-  content.dependencies['@graphprotocol/graph-cli'] = '0.32.0-watcher-ts-0.1.3';
+
+  if (content.dependencies) {
+    // Remove graph tools from direct dependencies
+    delete content.dependencies['@graphprotocol/graph-ts'];
+    delete content.dependencies['@graphprotocol/graph-cli'];
+  }
+
+  if (!content.devDependencies) {
+    content.devDependencies = {};
+  }
+
+  content.devDependencies['@graphprotocol/graph-ts'] = `npm:@cerc-io/graph-ts@${GRAPH_TS_VERSION}`;
+  delete content.devDependencies['@graphprotocol/graph-cli'];
+  content.devDependencies['@cerc-io/graph-cli'] = GRAPH_CLI_VERSION;
   pkgJson.update(content);
   await pkgJson.save();
 
-  // Run graph-cli codegen
-  const { code } = shell.exec(`yarn graph codegen ${subgraphConfigPath}`);
-  console.log('code', code);
+  // Create .npmrc for cerc-io packages
+  fs.copyFileSync(path.join(ASSET_DIR, '.npmrc'), path.join(subgraphDirectory, '.npmrc'));
 
-  // TODO: Run graph-cli build
+  // Install dependencies
+  const { code: installCode } = shell.exec('yarn install');
+  assert(installCode === 0, 'Installing dependencies exited with error');
+
+  const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
+
+  // Run graph-cli codegen
+  const { code: codegenCode } = shell.exec(`yarn graph codegen ${subgraphConfigPath}`);
+  assert(codegenCode === 0, 'Subgraph codegen command exited with error');
+
+  // Run graph-cli build
+  let buildCommand = `yarn graph build ${subgraphConfigPath}`;
+
+  if (subgraphConfig.networkFilePath) {
+    const subgraphNetworkFilePath = path.resolve(codegenConfigPath, subgraphConfig.networkFilePath);
+    assert(subgraphConfig.network, 'Config subgraph.network should be set if using networkFilePath');
+    const subgraphNetwork = subgraphConfig.network;
+    buildCommand = `${buildCommand} --network-file ${subgraphNetworkFilePath} --network ${subgraphNetwork}`;
+  }
+
+  const { code: buildCode } = shell.exec(buildCommand);
+  assert(buildCode === 0, 'Subgraph build command exited with error');
 
   // Change directory back to codegen
   shell.cd(codegenWorkingDir);

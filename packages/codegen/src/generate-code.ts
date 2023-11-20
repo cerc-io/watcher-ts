@@ -17,7 +17,7 @@ import { parse, visit } from '@solidity-parser/parser';
 import { ASTNode } from '@solidity-parser/parser/dist/src/ast-types';
 import { KIND_ACTIVE, KIND_LAZY } from '@cerc-io/util';
 
-import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT } from './utils/constants';
+import { MODE_ETH_CALL, MODE_STORAGE, MODE_ALL, MODE_NONE, DEFAULT_PORT, ASSET_DIR } from './utils/constants';
 import { Visitor } from './visitor';
 import { exportServer } from './server';
 import { exportConfig } from './config';
@@ -40,8 +40,6 @@ import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
 import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
-
-const ASSET_DIR = path.resolve(__dirname, 'assets');
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
