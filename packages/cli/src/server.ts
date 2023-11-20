@@ -29,7 +29,8 @@ import {
   PaymentsManager,
   Consensus,
   readParty,
-  UpstreamConfig
+  UpstreamConfig,
+  fillBlocks
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -44,7 +45,7 @@ import { utils } from '@cerc-io/nitro-node';
 import type { Libp2p } from '@cerc-io/libp2p';
 
 import { BaseCmd } from './base';
-import { readPeerId } from './utils/index';
+import { readPeerId, getStartBlock } from './utils/index';
 
 const log = debug('vulcanize:server');
 
@@ -283,6 +284,22 @@ export class ServerCmd {
     assert(jobQueue);
     assert(indexer);
     assert(eventWatcher);
+
+    const syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      const contracts = await this.database.getContracts();
+      const startBlock = getStartBlock(contracts);
+      await fillBlocks(
+        jobQueue,
+        indexer,
+        eventWatcher,
+        config.jobQueue.blockDelayInMilliSecs,
+        {
+          startBlock,
+          endBlock: startBlock
+        }
+      );
+    }
 
     if (config.server.kind === KIND_ACTIVE) {
       // Delete all active and pending (before completed) jobs to prevent creating jobs after completion of processing previous block

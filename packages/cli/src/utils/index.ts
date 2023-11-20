@@ -64,3 +64,20 @@ export const initClients = async (config: Config): Promise<{
     ethProvider
   };
 };
+
+export const getStartBlock = (contracts: any[]): number => {
+  if (!contracts || contracts.length === 0) {
+    return 0;
+  }
+
+  let minStartingBlock = contracts[0].startingBlock;
+
+  for (let i = 1; i < contracts.length; i++) {
+    const currentStartingBlock = contracts[i].startingBlock;
+    if (currentStartingBlock < minStartingBlock) {
+      minStartingBlock = currentStartingBlock;
+    }
+  }
+
+  return minStartingBlock;
+};
