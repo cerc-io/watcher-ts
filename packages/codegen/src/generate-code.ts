@@ -67,7 +67,7 @@ const main = async (): Promise<void> => {
     })
     .argv;
 
-  const config = getConfig(path.resolve(argv['config-file']));
+  const config = await getConfig(path.resolve(argv['config-file']));
 
   // Create an array of flattened contract strings.
   const contracts: any[] = [];
@@ -388,7 +388,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   }
 }
 
-function getConfig (configFile: string): any {
+async function getConfig (configFile: string): Promise<any> {
   assert(fs.existsSync(configFile), `Config file not found at ${configFile}`);
 
   // Read config.
@@ -418,7 +418,7 @@ function getConfig (configFile: string): any {
 
   if (inputConfig.subgraph) {
     if (inputConfig.subgraph.directory) {
-      buildSubgraph(configFile, inputConfig.subgraph);
+      await buildSubgraph(configFile, inputConfig.subgraph);
       subgraphPath = path.resolve(inputConfig.subgraph.directory, 'build');
     }
 

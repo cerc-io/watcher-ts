@@ -4,6 +4,8 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import shell from 'shelljs';
 
+import PackageJson from '@npmcli/package-json';
+
 import { loadFilesSync } from '@graphql-tools/load-files';
 
 export function parseSubgraphSchema (subgraphPath: string, subgraphConfig: any): any {
@@ -53,7 +55,7 @@ export function getSubgraphConfig (subgraphPath: string): any {
   return yaml.load(fs.readFileSync(subgraphConfigPath, 'utf8')) as any;
 }
 
-export function buildSubgraph (
+export async function buildSubgraph (
   codegenConfigPath: string,
   subgraphConfig: {
     directory: string,
@@ -61,14 +63,22 @@ export function buildSubgraph (
     networkFilePath?: string,
     network?: string
   }
-): void {
+): Promise<void> {
   const subgraphDirectory = path.resolve(codegenConfigPath, subgraphConfig.directory);
   const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
   const codegenWorkingDir = process.cwd();
   // Change directory to subgraph repo
   shell.cd(subgraphDirectory);
 
-  // TODO: Replace graph-cli & graph-ts in package.json with cerc-io forks
+  // Replace graph-cli & graph-ts in package.json with cerc-io forks
+  const pkgJson = await PackageJson.load(subgraphDirectory);
+  const { content } = pkgJson;
+  assert(content.dependencies, "Package.json doesn't consist dependencies");
+  content.dependencies['@graphprotocol/graph-ts'] = 'npm:@cerc-io/graph-ts@0.27.0-watcher-ts-0.1.2';
+  delete content.dependencies['@graphprotocol/graph-cli'];
+  content.dependencies['@graphprotocol/graph-cli'] = '0.32.0-watcher-ts-0.1.3';
+  pkgJson.update(content);
+  await pkgJson.save();
 
   // Run graph-cli codegen
   const { code } = shell.exec(`yarn graph codegen ${subgraphConfigPath}`);
