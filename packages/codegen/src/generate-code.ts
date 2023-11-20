@@ -386,8 +386,6 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
       ? fs.createWriteStream(path.join(outputDir, 'src/entity/Subscriber.ts'))
       : process.stdout;
     exportSubscriber(outStream);
-
-    // TODO: Copy over subgraph build to repo
   }
 }
 
