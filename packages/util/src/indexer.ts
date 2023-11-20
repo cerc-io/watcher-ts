@@ -758,7 +758,7 @@ export class Indexer {
     return Object.values(this._watchedContracts);
   }
 
-  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number): Promise<void> {
+  async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any): Promise<void> {
     assert(this._db.saveContract);
 
     // Use the checksum address (https://docs.ethers.io/v5/api/utils/address/#utils-getAddress) if input to address is a contract address.
@@ -770,7 +770,7 @@ export class Indexer {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
-      const contract = await this._db.saveContract(dbTx, contractAddress, kind, checkpoint, startingBlock);
+      const contract = await this._db.saveContract(dbTx, contractAddress, kind, checkpoint, startingBlock, context);
       this.cacheContract(contract);
       await dbTx.commitTransaction();
 

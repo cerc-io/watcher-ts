@@ -26,6 +26,13 @@ columns:
     pgType: integer
     tsType: number
     columnType: Column
+  - name: context
+    pgType: jsonb
+    tsType: 'Record<string, { data: any, type: number }>'
+    columnType: Column
+    columnOptions:
+      - option: nullable
+        value: true
 imports:
   - toImport:
       - Entity

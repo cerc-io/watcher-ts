@@ -83,6 +83,17 @@ export enum ValueKind {
   BIGINT = 7,
 }
 
+export const TypeNameToValueKind: Record<string, ValueKind> = {
+  String: ValueKind.STRING,
+  Int: ValueKind.INT,
+  BigDecimal: ValueKind.BIGDECIMAL,
+  Boolean: ValueKind.BOOL,
+  Array: ValueKind.ARRAY,
+  Null: ValueKind.NULL,
+  Bytes: ValueKind.BYTES,
+  BigInt: ValueKind.BIGINT
+};
+
 export enum Level {
   CRITICAL = 0,
   ERROR = 1,

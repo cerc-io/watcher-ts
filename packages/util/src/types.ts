@@ -73,6 +73,7 @@ export interface ContractInterface {
   startingBlock: number;
   kind: string;
   checkpoint: boolean;
+  context: Record<string, { type: number, data: any }>;
 }
 
 export interface StateInterface {
@@ -204,7 +205,7 @@ export interface IndexerInterface {
   getContractsByKind?: (kind: string) => ContractInterface[]
   addContracts?: () => Promise<void>
   cacheContract: (contract: ContractInterface) => void;
-  watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<void>
+  watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any) => Promise<void>
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   getRelationsMap?: () => Map<any, { [key: string]: any }>
   processInitialState: (contractAddress: string, blockHash: string) => Promise<any>
@@ -263,7 +264,7 @@ export interface DatabaseInterface {
   removeEntities<Entity> (queryRunner: QueryRunner, entity: new () => Entity, findConditions?: FindManyOptions<Entity> | FindConditions<Entity>): Promise<void>;
   deleteEntitiesByConditions<Entity> (queryRunner: QueryRunner, entity: EntityTarget<Entity>, findConditions: FindConditions<Entity>): Promise<void>
   getContracts: () => Promise<ContractInterface[]>
-  saveContract: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number) => Promise<ContractInterface>
+  saveContract: (queryRunner: QueryRunner, contractAddress: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any) => Promise<ContractInterface>
   getLatestState (contractAddress: string, kind: StateKind | null, blockNumber?: number): Promise<StateInterface | undefined>
   getStates (where: FindConditions<StateInterface>): Promise<StateInterface[]>
   getDiffStatesInRange (contractAddress: string, startBlock: number, endBlock: number): Promise<StateInterface[]>

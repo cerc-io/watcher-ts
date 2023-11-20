@@ -20,15 +20,19 @@ import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transfor
 import { SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
+import JSONbig from 'json-bigint';
 
 import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
-import { Block, fromEntityValue, getLatestEntityFromEntity, resolveEntityFieldConflicts, toEntityValue } from './utils';
+import { Block, formatValue, fromEntityValue, getLatestEntityFromEntity, parseEntityValue, resolveEntityFieldConflicts, toEntityValue } from './utils';
 import { fromStateEntityValues } from './state-utils';
+import { ValueKind } from './types';
 
 const log = debug('vulcanize:graph-database');
+
+const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export const FILTER_CHANGE_BLOCK = '_change_block';
 
@@ -953,7 +957,51 @@ export class GraphDatabase {
     return entityInstance;
   }
 
-  async fromGraphEntity (instanceExports: any, block: Block, entityName: string, entityInstance: any): Promise<{ [key: string]: any } > {
+  async toGraphContext (instanceExports: any, contextData: any): Promise<any> {
+    const { Entity } = instanceExports;
+    const contextInstance = await Entity.__new();
+
+    const { __newString } = instanceExports;
+    const contextValuePromises = Object.entries(contextData as Record<string, { type: ValueKind, data: any }>).map(async ([key, { type, data }]) => {
+      const contextKey = await __newString(key);
+
+      const value = JSONbigNative.parse(data);
+      const contextValue = await formatValue(instanceExports, type, value);
+
+      return contextInstance.set(contextKey, contextValue);
+    });
+
+    await Promise.all(contextValuePromises);
+
+    return contextInstance;
+  }
+
+  async fromGraphContext (instanceExports: any, contextInstance: any): Promise<{ [key: string]: any }> {
+    const { __getString, __getArray, ValueTypedMapEntry } = instanceExports;
+
+    const contextInstanceEntries = __getArray(await contextInstance.entries);
+    const contextValuePromises = contextInstanceEntries.map(async (entryPtr: any) => {
+      const entry = await ValueTypedMapEntry.wrap(entryPtr);
+      const contextKeyPtr = await entry.key;
+      const contextValuePtr = await entry.value;
+
+      const key = await __getString(contextKeyPtr);
+      const parsedValue = await parseEntityValue(instanceExports, contextValuePtr);
+
+      return { key, ...parsedValue };
+    });
+
+    const contextValues = await Promise.all(contextValuePromises);
+
+    return contextValues.reduce((acc: { [key: string]: any }, contextValue: any) => {
+      const { key, type, data } = contextValue;
+      acc[key] = { type, data: JSONbigNative.stringify(data) };
+
+      return acc;
+    }, {});
+  }
+
+  async fromGraphEntity (instanceExports: any, block: Block, entityName: string, entityInstance: any): Promise<{ [key: string]: any }> {
     // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;
@@ -981,10 +1029,17 @@ export class GraphDatabase {
 
       // Get blockNumber as _blockNumber and blockHash as _blockHash from the entityInstance (wasm).
       if (['_blockNumber', '_blockHash'].includes(propertyName)) {
-        return fromEntityValue(instanceExports, entityInstance, propertyName.slice(1));
+        const entityValue = await fromEntityValue(instanceExports, entityInstance, propertyName.slice(1));
+        return entityValue.data;
       }
 
-      return fromEntityValue(instanceExports, entityInstance, propertyName);
+      const entityValue = await fromEntityValue(instanceExports, entityInstance, propertyName);
+
+      if (entityValue.type === ValueKind.ARRAY) {
+        return entityValue.data.map((el: any) => el.data);
+      }
+
+      return entityValue.data;
     }, {});
 
     const entityValues = await Promise.all(entityValuePromises);

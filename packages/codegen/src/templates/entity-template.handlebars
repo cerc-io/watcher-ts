@@ -32,7 +32,7 @@ export class {{className}} {{~#if implements}} implements {{implements}} {{~/if}
   {{~#unless @last}},{{/unless}}
   {{~/each}} }
   {{~/if}})
-    {{column.name}}!: {{column.tsType}};
+    {{column.name}}!: {{{column.tsType}}};
   {{~#unless @last}}
 
   {{/unless}}
