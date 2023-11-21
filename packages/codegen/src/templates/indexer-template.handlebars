@@ -32,6 +32,7 @@ import {
   {{/if}}
   {{#if (subgraphPath)}}
   BlockHeight,
+  ResultMeta,
   updateSubgraphState,
   dumpSubgraphState,
   GraphWatcherInterface,
@@ -44,7 +45,6 @@ import {
   Clients,
   EthClient,
   UpstreamConfig,
-  ResultMeta,
   EthFullBlock,
   EthFullTransaction,
   ExtraEventData
@@ -153,9 +153,11 @@ export class Indexer implements IndexerInterface {
     assert({{contract.contractName}}ABI);
     this._abiMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}ABI);
 
+    //  eslint-disable-next-line  prefer-const
     contractInterface = new ethers.utils.Interface({{contract.contractName}}ABI);
     this._contractMap.set(KIND_{{capitalize contract.contractName}}, contractInterface);
 
+    //  eslint-disable-next-line  prefer-const
     eventSignatures = Object.values(contractInterface.events).map(value => {
       return contractInterface.getEventTopic(value);
     });
@@ -207,7 +209,6 @@ export class Indexer implements IndexerInterface {
   }
 
   {{/if}}
-
   getResultEvent (event: Event): ResultEvent {
     return getResultEvent(event);
   }
@@ -470,6 +471,7 @@ export class Indexer implements IndexerInterface {
   }
 
   {{/if}}
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async triggerIndexingOnEvent (event: Event, extraData: ExtraEventData): Promise<void> {
     const resultEvent = this.getResultEvent(event);
 
