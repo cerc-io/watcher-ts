@@ -185,14 +185,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
 
         return state && state.block.isComplete ? getResultState(state) : undefined;
       },
-
-      getSyncStatus: async () => {
-        log('getSyncStatus');
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('getSyncStatus').inc(1);
-
-        return indexer.getSyncStatus();
-      },
+      {{#if (subgraphPath)}}
 
       _meta: async (
         _: any,
@@ -203,6 +196,15 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         gqlQueryCount.labels('_meta').inc(1);
 
         return indexer.getMetaData(block);
+      },
+      {{/if}}
+
+      getSyncStatus: async () => {
+        log('getSyncStatus');
+        gqlTotalQueryCount.inc(1);
+        gqlQueryCount.labels('getSyncStatus').inc(1);
+
+        return indexer.getSyncStatus();
       }
     }
   };
