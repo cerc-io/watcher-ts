@@ -211,7 +211,7 @@ export interface IndexerInterface {
   processInitialState: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint: (contractAddress: string, blockHash: string) => Promise<boolean>
   processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
-  processBlockAfterEvents?: (blockHash: string, blockNumber: number) => Promise<void>
+  processBlockAfterEvents?: (blockHash: string, blockNumber: number, data: ExtraEventData) => Promise<void>
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
