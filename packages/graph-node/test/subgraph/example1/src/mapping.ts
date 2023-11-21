@@ -581,9 +581,9 @@ export function testJsonFromBytes (): void {
   // const i64Value = numberValue.toI64();
   // assert(i64Value == 123, 'values are not equal');
 
-  // TODO: Debug json toBigInt failing test case.
-  // const bigIntValue = numberValue.toBigInt();
-  // assert(bigIntValue.toString() == '123', 'values are not equal');
+  const bigIntValue = numberValue.toBigInt();
+  const expectedBigInt = BigInt.fromString('123');
+  assert(bigIntValue.equals(expectedBigInt), 'BigInt values are not equal');
 }
 
 export function testJsonTryFromBytes (): void {

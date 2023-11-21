@@ -778,9 +778,9 @@ export const instantiate = async (
       'json.toF64': async (decimal: number) => {
         return BigInt(__getString(decimal));
       },
-      // TODO: Debug toBigInt not working.
       'json.toBigInt': async (decimal: number) => {
-        return ASBigInt.fromString(decimal);
+        const ptr = await __newString(__getString(decimal));
+        return ASBigInt.fromString(ptr);
       }
     }
   };
