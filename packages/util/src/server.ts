@@ -3,7 +3,10 @@ import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
-import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
+import {
+  ApolloServerPluginDrainHttpServer,
+  ApolloServerPluginLandingPageLocalDefault
+} from 'apollo-server-core';
 import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
@@ -18,6 +21,8 @@ import { PaymentsManager, paymentsPlugin } from './payments';
 
 const log = debug('vulcanize:server');
 
+const DEFAULT_GQL_PATH = '/graphql';
+
 export const createAndStartServer = async (
   app: Application,
   typeDefs: TypeSource,
@@ -25,7 +30,14 @@ export const createAndStartServer = async (
   serverConfig: ServerConfig,
   paymentsManager?: PaymentsManager
 ): Promise<ApolloServer> => {
-  const { host, port, gqlCache: gqlCacheConfig, maxSimultaneousRequests, maxRequestQueueLimit } = serverConfig;
+  const {
+    host,
+    port,
+    gqlCache: gqlCacheConfig,
+    maxSimultaneousRequests,
+    maxRequestQueueLimit,
+    gqlPath = DEFAULT_GQL_PATH
+  } = serverConfig;
 
   app.use(queue({ activeLimit: maxSimultaneousRequests || 1, queuedLimit: maxRequestQueueLimit || -1 }));
 
@@ -38,7 +50,7 @@ export const createAndStartServer = async (
   // Create our WebSocket server using the HTTP server we just set up.
   const wsServer = new WebSocketServer({
     server: httpServer,
-    path: '/graphql'
+    path: gqlPath
   });
   const serverCleanup = useServer({ schema }, wsServer);
 
@@ -73,8 +85,13 @@ export const createAndStartServer = async (
       ApolloServerPluginLandingPageLocalDefault({ embed: true })
     ]
   });
+
   await server.start();
-  server.applyMiddleware({ app });
+
+  server.applyMiddleware({
+    app,
+    path: gqlPath
+  });
 
   httpServer.listen(port, host, () => {
     log(`Server is listening on ${host}:${port}${server.graphqlPath}`);

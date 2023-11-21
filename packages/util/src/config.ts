@@ -200,6 +200,7 @@ export interface ServerConfig {
   host: string;
   port: number;
   mode: string;
+  gqlPath: string;
   kind: string;
   enableConfigValidation: boolean;
   checkpointing: boolean;
