@@ -157,9 +157,14 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         gqlTotalQueryCount.inc(1);
         gqlQueryCount.labels('eventsInRange').inc(1);
 
-        const { expected, actual } = await indexer.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
-        if (expected !== actual) {
-          throw new Error(`Range not available, expected ${expected}, got ${actual} blocks in range`);
+        const syncStatus = await indexer.getSyncStatus();
+
+        if (!syncStatus) {
+          throw new Error('No blocks processed yet');
+        }
+
+        if ((fromBlockNumber < syncStatus.initialIndexedBlockNumber) || (toBlockNumber > syncStatus.latestProcessedBlockNumber)) {
+          throw new Error(`Block range should be between ${syncStatus.initialIndexedBlockNumber} and ${syncStatus.latestProcessedBlockNumber}`);
         }
 
         const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
