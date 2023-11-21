@@ -587,7 +587,11 @@ export class Schema {
         latestIndexedBlockHash: 'String!',
         latestIndexedBlockNumber: 'Int!',
         latestCanonicalBlockHash: 'String!',
-        latestCanonicalBlockNumber: 'Int!'
+        latestCanonicalBlockNumber: 'Int!',
+        initialIndexedBlockHash: 'String!',
+        initialIndexedBlockNumber: 'Int!',
+        latestProcessedBlockHash: 'String!',
+        latestProcessedBlockNumber: 'Int!'
       }
     });
 
