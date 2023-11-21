@@ -81,7 +81,7 @@ export const fetchBlocksAtHeight = async (
     console.timeEnd(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
 
     // Check if all blocks are null and increment blockNumber to index next block number
-    if (ethFullBlocks.every(block => block === null)) {
+    if (ethFullBlocks.length > 0 && ethFullBlocks.every(block => block === null)) {
       blockNumber++;
       log(`Block ${blockNumber} requested was null (FEVM); Fetching next block`);
       continue;
