@@ -124,9 +124,6 @@ export class Schema {
   }
 
   addSubgraphSchema (subgraphSchemaDocument: any): void {
-    // Add type and query for meta data
-    this._addMeta();
-
     // Generating the current types.
     const schema = this._composer.buildSchema();
 
@@ -186,6 +183,9 @@ export class Schema {
 
     // Add subgraph-schema entity queries to the schema composer.
     this._addSubgraphSchemaQueries(subgraphTypeDefs);
+
+    // Add type and query for meta data
+    this._addMeta();
   }
 
   _addSubgraphSchemaQueries (subgraphTypeDefs: ReadonlyArray<DefinitionNode>): void {
