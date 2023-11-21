@@ -201,9 +201,12 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.fetchStateStatus();
   }
 
+  {{#if (subgraphPath)}}
   async getMetaData (block: BlockHeight): Promise<ResultMeta | null> {
     return this._baseIndexer.getMetaData(block);
   }
+
+  {{/if}}
 
   getResultEvent (event: Event): ResultEvent {
     return getResultEvent(event);

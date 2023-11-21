@@ -192,7 +192,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         gqlQueryCount.labels('getSyncStatus').inc(1);
 
         return indexer.getSyncStatus();
-      },
+      }{{#if (subgraphPath)}},
 
       _meta: async (
         _: any,
@@ -204,6 +204,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
 
         return indexer.getMetaData(block);
       }
+      {{/if}}
     }
   };
 };

@@ -106,9 +106,6 @@ export class Schema {
     // Add type and query for SyncStatus.
     this._addSyncStatus();
 
-    // Add type and query for meta data
-    this._addMeta();
-
     // Build the schema.
     return this._composer.buildSchema();
   }
@@ -127,6 +124,9 @@ export class Schema {
   }
 
   addSubgraphSchema (subgraphSchemaDocument: any): void {
+    // Add type and query for meta data
+    this._addMeta();
+
     // Generating the current types.
     const schema = this._composer.buildSchema();
 
