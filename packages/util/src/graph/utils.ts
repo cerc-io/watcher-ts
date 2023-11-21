@@ -638,7 +638,7 @@ export const parseEntityValue = async (instanceExports: any, valuePtr: number): 
   }
 };
 
-export const formatEntityValue = async (instanceExports: any, type: string, value: any, isArray: boolean): Promise<any> => {
+const formatEntityValue = async (instanceExports: any, type: string, value: any, isArray: boolean): Promise<any> => {
   let valueToFormat = value;
   let typeName = type;
   if (isArray) {

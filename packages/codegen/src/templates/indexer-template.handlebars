@@ -142,8 +142,6 @@ export class Indexer implements IndexerInterface {
     this._storageLayoutMap = new Map();
     this._contractMap = new Map();
     this.eventSignaturesMap = new Map();
-    let contractInterface: ethers.utils.Interface;
-    let eventSignatures: string[];
     {{#each contracts as | contract |}}
 
     const { abi: {{contract.contractName}}ABI{{#if contract.contractStorageLayout}}, storageLayout: {{contract.contractName}}StorageLayout{{/if}} } = {{contract.contractName}}Artifacts;
@@ -153,15 +151,13 @@ export class Indexer implements IndexerInterface {
     assert({{contract.contractName}}ABI);
     this._abiMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}ABI);
 
-    //  eslint-disable-next-line  prefer-const
-    contractInterface = new ethers.utils.Interface({{contract.contractName}}ABI);
-    this._contractMap.set(KIND_{{capitalize contract.contractName}}, contractInterface);
+    const {{contract.contractName}}ContractInterface = new ethers.utils.Interface({{contract.contractName}}ABI);
+    this._contractMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}ContractInterface);
 
-    //  eslint-disable-next-line  prefer-const
-    eventSignatures = Object.values(contractInterface.events).map(value => {
-      return contractInterface.getEventTopic(value);
+    const {{contract.contractName}}EventSignatures = Object.values({{contract.contractName}}ContractInterface.events).map(value => {
+      return {{contract.contractName}}ContractInterface.getEventTopic(value);
     });
-    this.eventSignaturesMap.set(KIND_{{capitalize contract.contractName}}, eventSignatures);
+    this.eventSignaturesMap.set(KIND_{{capitalize contract.contractName}}, {{contract.contractName}}EventSignatures);
     {{#if contract.contractStorageLayout}}
 
     assert({{contract.contractName}}StorageLayout);

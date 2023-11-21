@@ -935,8 +935,8 @@ export class GraphDatabase {
     const entityValuePromises = entityFields.filter(field => {
       const { propertyName } = field;
 
-      // Filter out blockHash and blockNumber from entity fields to fill the entityInstance (wasm).
-      if (propertyName === 'blockHash' || propertyName === 'blockNumber') {
+      // Filter out custom fields from entity to fill the entityInstance (wasm).
+      if (['isPruned', 'isRemoved', 'blockHash', 'blockNumber'].includes(propertyName)) {
         return false;
       }
 
@@ -1013,7 +1013,7 @@ export class GraphDatabase {
     const entityValuePromises = entityFields.map(async (field: any) => {
       const { propertyName } = field;
 
-      if (propertyName === 'isPruned') {
+      if (['isPruned', 'isRemoved'].includes(propertyName)) {
         return undefined;
       }
 
