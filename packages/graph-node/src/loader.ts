@@ -79,7 +79,7 @@ export const instantiate = async (
         assert(context.block);
         const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
 
-        if (!entityData) {
+        if (!entityData || entityData.isRemoved) {
           return null;
         }
 
@@ -111,6 +111,25 @@ export const instantiate = async (
           assert(context.contractAddress);
           indexer.updateSubgraphState(context.contractAddress, diffData);
         }
+      },
+      'store.remove': async (entity: number, id: number) => {
+        const entityName = __getString(entity);
+        const entityId = __getString(id);
+
+        assert(context.block);
+        const entityData = await database.getEntity(entityName, entityId, context.block.blockHash);
+
+        if (!entityData || entityData.isRemoved) {
+          return;
+        }
+
+        // Add an additional entry at block with isRemoved set to true
+        entityData.blockHash = context.block.blockHash;
+        entityData.blockNumber = context.block.blockNumber;
+        entityData.isRemoved = true;
+
+        const dbEntity = await database.saveEntity(entityName, entityData);
+        database.cacheUpdatedEntityByName(entityName, dbEntity);
       },
 
       'log.log': (level: number, msg: number) => {
