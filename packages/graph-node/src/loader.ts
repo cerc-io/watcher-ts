@@ -515,7 +515,10 @@ export const instantiate = async (
         return isEqual;
       },
       'bigInt.fromString': async (s: number) => {
+        console.log('before __getString');
         const string = __getString(s);
+        console.log('string', string);
+        console.log('after __getString');
 
         // The BN is being stored as a byte array in wasm memory in 2's compliment representation and interpreted as such in other APIs.
         // Create a BN in 2's compliment representation.
@@ -533,6 +536,7 @@ export const instantiate = async (
         const bytes = bigNumber.toArray(BN_ENDIANNESS, bnSize);
 
         const uint8ArrayId = await getIdOfType(TypeId.Uint8Array);
+        console.log('before __newArray');
         const ptr = await __newArray(uint8ArrayId, bytes);
         const bigInt = await ASBigInt.fromSignedBytes(ptr);
 
@@ -770,16 +774,37 @@ export const instantiate = async (
       // TODO: Number methods do not work as 64bit values are not supported in js.
       // Tried solution in https://github.com/AssemblyScript/assemblyscript/issues/117#issuecomment-531556954
       'json.toI64': async (decimal: number) => {
-        return BigInt(__getString(decimal));
+        console.log('decimal toI64', __getString(decimal));
+
+        const ptr = await __newString(__getString(decimal));
+        try {
+          const y = await ASBigInt.fromString(ptr);
+          console.log('y', y);
+        } catch (error) {
+          console.log('error', error);
+        }
+
+        return BigInt(__getString(ptr));
       },
       'json.toU64': async (decimal: number) => {
+        console.log('decimal toU64', __getString(decimal));
         return BigInt(__getString(decimal));
       },
       'json.toF64': async (decimal: number) => {
+        console.log('decimal toF64', __getString(decimal));
         return BigInt(__getString(decimal));
       },
       'json.toBigInt': async (decimal: number) => {
+        console.log('decimal toBigInt', __getString(decimal));
         const ptr = await __newString(__getString(decimal));
+
+        try {
+          const y = await ASBigInt.fromString(ptr);
+          console.log('y', y);
+        } catch (error) {
+          console.log('error', error);
+        }
+
         return ASBigInt.fromString(ptr);
       }
     }

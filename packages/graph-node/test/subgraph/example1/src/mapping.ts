@@ -565,6 +565,7 @@ export function testJsonFromBytes (): void {
   );
 
   const jsonData = json.fromBytes(data);
+  log.debug('jsonData.kind {}', [jsonData.kind.toString()]);
   assert(jsonData.kind === JSONValueKind.OBJECT, 'JSON value is not an object');
 
   const stringValue = jsonData.toObject().get('stringValue')!;
@@ -577,13 +578,16 @@ export function testJsonFromBytes (): void {
   const numberValue = jsonData.toObject().get('numberValue')!;
   assert(numberValue.kind === JSONValueKind.NUMBER, 'JSON value is not a number');
 
-  // TODO: Debug json toI64 failing test case.
-  // const i64Value = numberValue.toI64();
-  // assert(i64Value == 123, 'values are not equal');
-
+  log.debug('numberValue.kind {}', [numberValue.kind.toString()]);
   const bigIntValue = numberValue.toBigInt();
   const expectedBigInt = BigInt.fromString('123');
   assert(bigIntValue.equals(expectedBigInt), 'BigInt values are not equal');
+
+  // TODO: Debug json toI64 failing test case.
+  log.debug('numberValue.kind {}', [numberValue.kind.toString()]);
+  const i64Value = numberValue.toI64();
+  log.debug('i64Value: {}', [i64Value.toString()]);
+  assert(i64Value === 123, 'values are not equal');
 }
 
 export function testJsonTryFromBytes (): void {

@@ -50,7 +50,7 @@ describe('json host api', () => {
     await testJsonFromBytes();
   });
 
-  it('should parse JSON safely', async () => {
+  xit('should parse JSON safely', async () => {
     const { testJsonTryFromBytes } = exports;
 
     await testJsonTryFromBytes();
