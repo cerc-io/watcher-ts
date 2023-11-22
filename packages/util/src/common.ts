@@ -185,7 +185,7 @@ export const processBatchEvents = async (
 
   if (indexer.processBlockAfterEvents) {
     if (!dbBlock.isComplete) {
-      await indexer.processBlockAfterEvents(dbBlock.blockHash, dbBlock.blockNumber);
+      await indexer.processBlockAfterEvents(dbBlock.blockHash, dbBlock.blockNumber, data);
     }
   }
 

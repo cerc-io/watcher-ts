@@ -112,6 +112,8 @@
   yarn && yarn build
   ```
 
+* Configure the upstream GQL and RPC endpoints
+
 * Run the job-runner:
 
   ```bash
