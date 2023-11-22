@@ -962,7 +962,7 @@ export class GraphDatabase {
     const contextInstance = await Entity.__new();
 
     const { __newString } = instanceExports;
-    const contextValuePromises = Object.entries(contextData as Record<string, { type: ValueKind, data: any }>).map(async ([key, { type, data }]) => {
+    const contextValuePromises = Object.entries((contextData ?? {}) as Record<string, { type: ValueKind, data: any }>).map(async ([key, { type, data }]) => {
       const contextKey = await __newString(key);
 
       const value = JSONbigNative.parse(data);
