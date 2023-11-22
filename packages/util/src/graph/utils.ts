@@ -7,6 +7,7 @@ import { DeepPartial, EntityTarget, InsertEvent, ObjectLiteral, Repository, Upda
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import assert from 'assert';
 import _ from 'lodash';
+import JSONbig from 'json-bigint';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -14,6 +15,7 @@ import { GraphDecimal } from './graph-decimal';
 import { EthereumValueKind, TypeId, TypeNameToValueKind, ValueKind } from './types';
 
 const log = debug('vulcanize:utils');
+export const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export const INT256_MIN = '-57896044618658097711785492504343953926634992332820282019728792003956564819968';
 export const INT256_MAX = '57896044618658097711785492504343953926634992332820282019728792003956564819967';
@@ -762,7 +764,7 @@ export const toJSONValue = async (instanceExports: any, value: any): Promise<any
     return CustomJSONValue.fromString(stringPtr);
   }
 
-  if (typeof value === 'number') {
+  if (typeof value === 'number' || typeof value === 'bigint') {
     const stringPtr = await __newString(value.toString());
 
     return CustomJSONValue.fromNumber(stringPtr);
@@ -778,7 +780,7 @@ export const jsonFromBytes = async (instanceExports: any, bytesPtr: number): Pro
 
   const byteArray = await ByteArray.wrap(bytesPtr);
   const jsonStringPtr = await byteArray.toString();
-  const json = JSON.parse(__getString(jsonStringPtr));
+  const json = JSONbigNative.parse(__getString(jsonStringPtr));
   const jsonValue = await toJSONValue(instanceExports, json);
 
   return jsonValue;

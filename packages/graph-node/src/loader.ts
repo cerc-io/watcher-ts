@@ -767,20 +767,18 @@ export const instantiate = async (
           return JSONResult.__new(null);
         }
       },
-      // TODO: Number methods do not work as 64bit values are not supported in js.
-      // Tried solution in https://github.com/AssemblyScript/assemblyscript/issues/117#issuecomment-531556954
-      'json.toI64': async (decimal: number) => {
+      'json.toI64': (decimal: number) => {
         return BigInt(__getString(decimal));
       },
-      'json.toU64': async (decimal: number) => {
+      'json.toU64': (decimal: number) => {
         return BigInt(__getString(decimal));
       },
-      'json.toF64': async (decimal: number) => {
-        return BigInt(__getString(decimal));
+      'json.toF64': (decimal: number) => {
+        return Number(__getString(decimal));
       },
-      // TODO: Debug toBigInt not working.
       'json.toBigInt': async (decimal: number) => {
-        return ASBigInt.fromString(decimal);
+        const ptr = await __newString(__getString(decimal));
+        return ASBigInt.fromString(ptr);
       }
     }
   };
