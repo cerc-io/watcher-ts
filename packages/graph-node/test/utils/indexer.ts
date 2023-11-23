@@ -190,6 +190,12 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async updateSyncStatus (syncStatus: SyncStatusInterface): Promise<SyncStatusInterface> {
+    assert(syncStatus);
+
+    return {} as SyncStatusInterface;
+  }
+
   async markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void> {
     assert(blocks);
 

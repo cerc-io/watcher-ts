@@ -285,25 +285,26 @@ export class ServerCmd {
     assert(indexer);
     assert(eventWatcher);
 
-    const syncStatus = await indexer.getSyncStatus();
-    if (!syncStatus) {
-      const contracts = await this.database.getContracts();
-      const startBlock = getStartBlock(contracts);
-      await fillBlocks(
-        jobQueue,
-        indexer,
-        eventWatcher,
-        config.jobQueue.blockDelayInMilliSecs,
-        {
-          startBlock,
-          endBlock: startBlock
-        }
-      );
-    }
-
     if (config.server.kind === KIND_ACTIVE) {
       // Delete all active and pending (before completed) jobs to prevent creating jobs after completion of processing previous block
       await jobQueue.deleteAllJobs('completed');
+
+      const syncStatus = await indexer.getSyncStatus();
+      if (!syncStatus) {
+        const contracts = await this.database.getContracts();
+        const startBlock = getStartBlock(contracts);
+        await fillBlocks(
+          jobQueue,
+          indexer,
+          eventWatcher,
+          config.jobQueue.blockDelayInMilliSecs,
+          {
+            startBlock,
+            endBlock: startBlock
+          }
+        );
+      }
+
       await eventWatcher.start();
     }
 

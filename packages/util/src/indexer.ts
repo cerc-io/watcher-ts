@@ -291,6 +291,23 @@ export class Indexer {
     return res;
   }
 
+  async updateSyncStatus (syncStatus: DeepPartial<SyncStatusInterface>): Promise<SyncStatusInterface> {
+    const dbTx = await this._db.createTransactionRunner();
+    let res;
+
+    try {
+      res = await this._db.updateSyncStatus(dbTx, syncStatus);
+      await dbTx.commitTransaction();
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+
+    return res;
+  }
+
   async getBlocks (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<Array<EthFullBlock | null>> {
     assert(blockFilter.blockHash || blockFilter.blockNumber);
     const blocks = await this._ethClient.getFullBlocks(blockFilter);

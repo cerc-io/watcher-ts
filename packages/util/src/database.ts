@@ -211,6 +211,15 @@ export class Database {
     return repo.save(entity);
   }
 
+  async updateSyncStatus (repo: Repository<SyncStatusInterface>, syncStatus: DeepPartial<SyncStatusInterface>): Promise<SyncStatusInterface> {
+    const entity = await repo.findOne();
+
+    return await repo.save({
+      ...entity,
+      ...syncStatus
+    });
+  }
+
   async getBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string): Promise<BlockProgressInterface | undefined> {
     return repo.findOne({ where: { blockHash } });
   }

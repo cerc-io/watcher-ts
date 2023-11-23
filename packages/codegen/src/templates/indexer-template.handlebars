@@ -673,6 +673,10 @@ export class Indexer implements IndexerInterface {
     return this._baseIndexer.updateSyncStatusIndexingError(hasIndexingError);
   }
 
+  async updateSyncStatus (syncStatus: DeepPartial<SyncStatus>): Promise<SyncStatus> {
+    return this._baseIndexer.updateSyncStatus(syncStatus);
+  }
+
   async getEvent (id: string): Promise<Event | undefined> {
     return this._baseIndexer.getEvent(id);
   }
