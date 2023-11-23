@@ -237,11 +237,14 @@ export class JobRunner {
 
     // Update sync status canonical, indexed and chain head block to end block
     // Update with zero hash as they won't be used during historical processing
-    await Promise.all([
-      this._indexer.updateSyncStatusCanonicalBlock(constants.HashZero, endBlock, true),
-      this._indexer.updateSyncStatusIndexedBlock(constants.HashZero, endBlock, true),
-      this._indexer.updateSyncStatusChainHead(constants.HashZero, endBlock, true)
-    ]);
+    await this._indexer.updateSyncStatus({
+      latestCanonicalBlockHash: constants.HashZero,
+      latestIndexedBlockHash: constants.HashZero,
+      chainHeadBlockHash: constants.HashZero,
+      latestCanonicalBlockNumber: endBlock,
+      latestIndexedBlockNumber: endBlock,
+      chainHeadBlockNumber: endBlock
+    });
     log(`Sync status canonical, indexed and chain head block updated to ${endBlock}`);
 
     this._historicalProcessingCompletedUpto = endBlock;

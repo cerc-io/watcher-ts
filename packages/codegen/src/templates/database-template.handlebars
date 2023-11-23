@@ -265,6 +265,12 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.updateSyncStatusIndexingError(repo, hasIndexingError);
   }
 
+  async updateSyncStatus (queryRunner: QueryRunner, syncStatus: DeepPartial<SyncStatus>): Promise<SyncStatus> {
+    const repo = queryRunner.manager.getRepository(SyncStatus);
+
+    return this._baseDatabase.updateSyncStatus(repo, syncStatus);
+  }
+
   async getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatus | undefined> {
     const repo = queryRunner.manager.getRepository(SyncStatus);
 

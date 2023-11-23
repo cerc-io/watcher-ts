@@ -195,6 +195,7 @@ export interface IndexerInterface {
   updateSyncStatusProcessedBlock (blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>
   updateStateSyncStatusIndexedBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface | undefined>
   updateStateSyncStatusCheckpointBlock (blockNumber: number, force?: boolean): Promise<StateSyncStatusInterface>
+  updateSyncStatus (syncStatus: DeepPartial<SyncStatusInterface>): Promise<SyncStatusInterface>;
   markBlocksAsPruned (blocks: BlockProgressInterface[]): Promise<void>
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
   saveEvents (dbEvents: DeepPartial<EventInterface>[]): Promise<void>
@@ -258,6 +259,7 @@ export interface DatabaseInterface {
   updateSyncStatusCanonicalBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
   updateSyncStatusIndexingError (queryRunner: QueryRunner, hasIndexingError: boolean): Promise<SyncStatusInterface | undefined>;
   updateSyncStatusProcessedBlock (queryRunner: QueryRunner, blockHash: string, blockNumber: number, force?: boolean): Promise<SyncStatusInterface>;
+  updateSyncStatus (queryRunner: QueryRunner, syncStatus: DeepPartial<SyncStatusInterface>): Promise<SyncStatusInterface>;
   saveEvents (queryRunner: QueryRunner, events: DeepPartial<EventInterface>[]): Promise<void>;
   saveBlockWithEvents (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>, events: DeepPartial<EventInterface>[]): Promise<BlockProgressInterface>;
   saveEventEntity (queryRunner: QueryRunner, entity: EventInterface): Promise<EventInterface>;
