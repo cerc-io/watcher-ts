@@ -50,6 +50,7 @@ export function handleTest (event: Test): void {
   if (!category) {
     category = new Category(author.blogCount.toString());
     category.name = event.params.param1;
+    category.count = BigInt.zero();
   }
 
   category.count = category.count + BigInt.fromString('1');
@@ -59,13 +60,14 @@ export function handleTest (event: Test): void {
   blog.kind = 'long';
   blog.isActive = true;
 
-  const blogReviews = blog.reviews;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  const blogReviews: BigInt[] = new Array(0);
   blogReviews.push(BigInt.fromString('4'));
   blog.reviews = blogReviews;
 
   blog.author = author.id;
 
-  const categories = blog.categories;
+  const categories: string[] = new Array(0);
   categories.push(category.id);
   blog.categories = categories;
 
