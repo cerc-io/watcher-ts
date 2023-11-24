@@ -139,31 +139,50 @@ export class Database {
   }
 
   async updateSyncStatusIndexedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
-    const entity = await repo.findOne();
+    let entity = await repo.findOne();
     assert(entity);
 
     if (force || blockNumber >= entity.latestIndexedBlockNumber) {
-      entity.latestIndexedBlockHash = blockHash;
-      entity.latestIndexedBlockNumber = blockNumber;
+      const updateData = {
+        latestIndexedBlockHash: blockHash,
+        latestIndexedBlockNumber: blockNumber
+      };
+
+      await repo.update(entity.id, updateData);
+
+      entity = {
+        ...entity,
+        ...updateData
+      };
     }
 
-    return await repo.save(entity);
+    return entity;
   }
 
   async updateSyncStatusCanonicalBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
-    const entity = await repo.findOne();
+    let entity = await repo.findOne();
     assert(entity);
 
     if (force || blockNumber >= entity.latestCanonicalBlockNumber) {
-      entity.latestCanonicalBlockHash = blockHash;
-      entity.latestCanonicalBlockNumber = blockNumber;
+      const updateData = {
+        latestCanonicalBlockHash: blockHash,
+        latestCanonicalBlockNumber: blockNumber
+      };
+
+      await repo.update(entity.id, updateData);
+
+      entity = {
+        ...entity,
+        ...updateData
+      };
     }
 
-    return await repo.save(entity);
+    return entity;
   }
 
   async updateSyncStatusChainHead (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
     let entity = await repo.findOne();
+
     if (!entity) {
       entity = repo.create({
         chainHeadBlockHash: blockHash,
@@ -177,47 +196,81 @@ export class Database {
         initialIndexedBlockHash: blockHash,
         initialIndexedBlockNumber: blockNumber
       });
+
+      return repo.save(entity);
     }
 
     if (force || blockNumber >= entity.chainHeadBlockNumber) {
-      entity.chainHeadBlockHash = blockHash;
-      entity.chainHeadBlockNumber = blockNumber;
+      const updateData = {
+        chainHeadBlockHash: blockHash,
+        chainHeadBlockNumber: blockNumber
+      };
+
+      await repo.update(entity.id, updateData);
+
+      entity = {
+        ...entity,
+        ...updateData
+      };
     }
 
-    return await repo.save(entity);
+    return entity;
   }
 
   async updateSyncStatusProcessedBlock (repo: Repository<SyncStatusInterface>, blockHash: string, blockNumber: number, force = false): Promise<SyncStatusInterface> {
-    const entity = await repo.findOne();
+    let entity = await repo.findOne();
     assert(entity);
 
     if (force || blockNumber >= entity.latestProcessedBlockNumber) {
-      entity.latestProcessedBlockHash = blockHash;
-      entity.latestProcessedBlockNumber = blockNumber;
+      const updateData = {
+        latestProcessedBlockHash: blockHash,
+        latestProcessedBlockNumber: blockNumber
+      };
+
+      await repo.update(entity.id, updateData);
+
+      entity = {
+        ...entity,
+        ...updateData
+      };
     }
 
-    return await repo.save(entity);
+    return entity;
   }
 
   async updateSyncStatusIndexingError (repo: Repository<SyncStatusInterface>, hasIndexingError: boolean): Promise<SyncStatusInterface | undefined> {
-    const entity = await repo.findOne();
+    let entity = await repo.findOne();
 
     if (!entity) {
       return;
     }
 
-    entity.hasIndexingError = hasIndexingError;
+    const updateData = {
+      hasIndexingError: hasIndexingError
+    };
 
-    return repo.save(entity);
+    await repo.update(entity.id, updateData);
+
+    entity = {
+      ...entity,
+      ...updateData
+    };
+
+    return entity;
   }
 
   async updateSyncStatus (repo: Repository<SyncStatusInterface>, syncStatus: DeepPartial<SyncStatusInterface>): Promise<SyncStatusInterface> {
-    const entity = await repo.findOne();
+    let entity = await repo.findOne();
+    assert(entity);
 
-    return await repo.save({
+    await repo.update(entity.id, syncStatus);
+
+    entity = {
       ...entity,
       ...syncStatus
-    });
+    };
+
+    return entity;
   }
 
   async getBlockProgress (repo: Repository<BlockProgressInterface>, blockHash: string): Promise<BlockProgressInterface | undefined> {
