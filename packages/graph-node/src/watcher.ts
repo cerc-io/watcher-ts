@@ -238,7 +238,7 @@ export class GraphWatcher {
     }
   }
 
-  async handleBlock (blockHash: string, blockNumber: number) {
+  async handleBlock (blockHash: string, blockNumber: number, extraData: ExtraEventData) {
     // Clear transactions map on handling new block.
     this._transactionsMap.clear();
 
@@ -258,11 +258,10 @@ export class GraphWatcher {
         continue;
       }
 
-      // TODO: Use extraData full block
-      // // Check if block data is already fetched in handleEvent method for the same block.
-      // if (!this._context.block || this._context.block.blockHash !== blockHash) {
-      //   this._context.block = await getFullBlock(this._ethClient, this._ethProvider, blockHash, blockNumber);
-      // }
+      // Check if block data is already fetched in handleEvent method for the same block.
+      if (!this._context.block || this._context.block.blockHash !== blockHash) {
+        this._context.block = await getFullBlock(extraData.ethFullBlock);
+      }
 
       const blockData = this._context.block;
       assert(blockData);

@@ -69,7 +69,8 @@ export async function buildSubgraph (
     network?: string
   }
 ): Promise<void> {
-  const subgraphDirectory = path.resolve(codegenConfigPath, subgraphConfig.directory);
+  const codegenConfigDirName = path.dirname(codegenConfigPath);
+  const subgraphDirectory = path.resolve(codegenConfigDirName, subgraphConfig.directory);
   const codegenWorkingDir = process.cwd();
   // Change directory to subgraph repo
   shell.cd(subgraphDirectory);
@@ -102,7 +103,7 @@ export async function buildSubgraph (
   const { code: installCode } = shell.exec(`${packageManager} install --force`);
   assert(installCode === 0, 'Installing dependencies exited with error');
 
-  const subgraphConfigPath = path.resolve(codegenConfigPath, subgraphConfig.configFile);
+  const subgraphConfigPath = path.resolve(codegenConfigDirName, subgraphConfig.configFile);
 
   // Run graph-cli codegen
   const { code: codegenCode } = shell.exec(`${packageManager === 'npm' ? 'npx' : packageManager} graph codegen ${subgraphConfigPath}`);
@@ -112,7 +113,7 @@ export async function buildSubgraph (
   let buildCommand = `${packageManager === 'npm' ? 'npx' : packageManager} graph build ${subgraphConfigPath}`;
 
   if (subgraphConfig.networkFilePath) {
-    const subgraphNetworkFilePath = path.resolve(codegenConfigPath, subgraphConfig.networkFilePath);
+    const subgraphNetworkFilePath = path.resolve(codegenConfigDirName, subgraphConfig.networkFilePath);
     assert(subgraphConfig.network, 'Config subgraph.network should be set if using networkFilePath');
     const subgraphNetwork = subgraphConfig.network;
     buildCommand = `${buildCommand} --network-file ${subgraphNetworkFilePath} --network ${subgraphNetwork}`;
