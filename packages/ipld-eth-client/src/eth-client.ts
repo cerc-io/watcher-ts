@@ -102,7 +102,15 @@ export class EthClient implements EthClientInterface {
     );
     console.timeEnd(`time:eth-client#getFullBlocks-${JSON.stringify({ blockNumber, blockHash })}`);
 
-    return allEthHeaderCids.nodes;
+    return this.addBlockSize(allEthHeaderCids.nodes);
+  }
+
+  // TODO: Get block size from ipld-eth-server
+  private addBlockSize (nodes: any[]): any[] {
+    // Populate block size with 0 value
+    return nodes.map(obj => {
+      return { ...obj, size: '0' };
+    });
   }
 
   async getFullTransaction (txHash: string, blockNumber?: number): Promise<EthFullTransaction> {
