@@ -61,6 +61,7 @@ export class JobRunner {
 
   _shutDown = false;
   _signalCount = 0;
+  _errorInEventsProcessing = false;
 
   constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
     this._indexer = indexer;
@@ -213,16 +214,8 @@ export class JobRunner {
     const blocksLength = blocks.length;
 
     if (blocksLength) {
-      // TODO: Add pg-boss option to get queue size of jobs in a single state
-      const [pendingEventQueueSize, createdEventQueuSize] = await Promise.all([
-        this.jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING),
-        this.jobQueue.getQueueSize(QUEUE_EVENT_PROCESSING, 'retry')
-      ]);
-
-      const retryEventQueueSize = pendingEventQueueSize - createdEventQueuSize;
-
-      if (retryEventQueueSize > 0) {
-        log(`${QUEUE_EVENT_PROCESSING} queue consists ${retryEventQueueSize} job(s) in retry state. Aborting pushing blocks to queue from historical processing`);
+      if (this._errorInEventsProcessing) {
+        log('Events processing encountered error. Aborting pushing blocks to events queue from historical processing');
         await this.jobQueue.markComplete(
           job,
           { isComplete: false, endBlock }
@@ -701,8 +694,11 @@ export class JobRunner {
 
         log(`Watcher reset to block ${block.blockNumber} after succesffully retrying events processing`);
       }
+
+      this._errorInEventsProcessing = false;
     } catch (error) {
       log(`Error in processing events for block ${block.blockNumber} hash ${block.blockHash}`);
+      this._errorInEventsProcessing = true;
 
       await Promise.all([
         // Remove processed data for current block to avoid reprocessing of events
