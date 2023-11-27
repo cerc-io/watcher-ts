@@ -16,17 +16,23 @@ import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
 import { JobQueueConfig, ServerConfig } from './config';
 
 const EVENT = 'event';
+const BLOCK_PROGRESS_EVENT = 'block-progress-event';
+const REALTIME_BLOCK_COMPLETE_EVENT = 'realtime-block-complete-event';
 
 const DEFAULT_HISTORICAL_MAX_FETCH_AHEAD = 20_000;
 
 const log = debug('vulcanize:events');
 
-export const BlockProgressEvent = 'block-progress-event';
-
 interface Config {
   server: ServerConfig;
   jobQueue: JobQueueConfig;
 }
+
+interface RealtimeBlockCompleteEvent {
+  blockNumber: number;
+  isComplete: boolean;
+}
+
 export class EventWatcher {
   _config: Config;
   _ethClient: EthClient;
@@ -52,7 +58,11 @@ export class EventWatcher {
   }
 
   getBlockProgressEventIterator (): AsyncIterator<any> {
-    return this._pubsub.asyncIterator([BlockProgressEvent]);
+    return this._pubsub.asyncIterator([BLOCK_PROGRESS_EVENT]);
+  }
+
+  getRealtimeBlockCompleteEvent (): AsyncIterator<{ onRealtimeBlockCompleteEvent: RealtimeBlockCompleteEvent }> {
+    return this._pubsub.asyncIterator(REALTIME_BLOCK_COMPLETE_EVENT);
   }
 
   async start (): Promise<void> {
@@ -163,15 +173,15 @@ export class EventWatcher {
 
     // Creating an AsyncIterable from AsyncIterator to iterate over the values.
     // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
-    const blockProgressEventIterable = {
-      // getBlockProgressEventIterator returns an AsyncIterator which can be used to listen to BlockProgress events.
-      [Symbol.asyncIterator]: this.getBlockProgressEventIterator.bind(this)
+    const realtimeBlockCompleteEventIterable = {
+      // getRealtimeBlockCompleteEvent returns an AsyncIterator which can be used to listen to realtime processing block complete events.
+      [Symbol.asyncIterator]: this.getRealtimeBlockCompleteEvent.bind(this)
     };
 
     // Iterate over async iterable.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of
-    for await (const data of blockProgressEventIterable) {
-      const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
+    for await (const data of realtimeBlockCompleteEventIterable) {
+      const { onRealtimeBlockCompleteEvent: { blockNumber, isComplete } } = data;
 
       if (this._shutDown) {
         log(`Graceful shutdown after processing block ${blockNumber}`);
@@ -260,7 +270,7 @@ export class EventWatcher {
       return;
     }
 
-    const { blockHash, publish }: EventsJobData = data;
+    const { blockHash, publish, isRealtimeProcessing }: EventsJobData = data;
     const blockProgress = await this._indexer.getBlockProgress(blockHash);
     assert(blockProgress);
 
@@ -270,50 +280,64 @@ export class EventWatcher {
       this.startBlockProcessing();
     }
 
-    // Check if publish is set to true
-    // Events and blocks are not published in historical processing
-    // GQL subscription events will not be triggered if publish is set to false
-    if (publish) {
-      await this.publishBlockProgressToSubscribers(blockProgress);
+    if (isRealtimeProcessing) {
+      await this.publishRealtimeBlockCompleteToSubscribers(blockProgress);
+    }
 
-      const dbEvents = await this._indexer.getBlockEvents(
-        blockProgress.blockHash,
-        {
-          eventName: [
-            { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
-          ]
-        },
-        {
-          orderBy: 'index',
-          orderDirection: OrderDirection.asc
-        }
-      );
+    const dbEventsPromise = this._indexer.getBlockEvents(
+      blockProgress.blockHash,
+      {
+        eventName: [
+          { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
+        ]
+      },
+      {
+        orderBy: 'index',
+        orderDirection: OrderDirection.asc
+      }
+    );
 
-      const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
+    const [dbEvents] = await Promise.all([
+      dbEventsPromise,
+      this.publishBlockProgressToSubscribers(blockProgress)
+    ]);
 
-      // Cannot publish individual event as they are processed together in a single job.
-      // TODO: Use a different pubsub to publish event from job-runner.
-      // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-      for (const dbEvent of dbEvents) {
-        log(`Job onComplete event ${dbEvent.id} publish ${publish}`);
+    const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
 
-        if (!failed && state === 'completed') {
-          // Check for max acceptable lag time between request and sending results to live subscribers.
-          if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
-            await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
-          } else {
-            log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
-          }
+    // Cannot publish individual event as they are processed together in a single job.
+    // TODO: Use a different pubsub to publish event from job-runner.
+    // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+    for (const dbEvent of dbEvents) {
+      log(`Job onComplete event ${dbEvent.id} publish ${publish}`);
+
+      if (!failed && state === 'completed' && publish) {
+        // Check for max acceptable lag time between request and sending results to live subscribers.
+        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+        } else {
+          log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
         }
       }
     }
+  }
+
+  async publishRealtimeBlockCompleteToSubscribers (blockProgress: BlockProgressInterface): Promise<void> {
+    const { blockNumber, isComplete } = blockProgress;
+
+    // Publishing the event here will result in pushing the payload to realtime processing subscriber
+    await this._pubsub.publish(REALTIME_BLOCK_COMPLETE_EVENT, {
+      onRealtimeBlockCompleteEvent: {
+        blockNumber,
+        isComplete
+      }
+    });
   }
 
   async publishBlockProgressToSubscribers (blockProgress: BlockProgressInterface): Promise<void> {
     const { cid, blockHash, blockNumber, numEvents, numProcessedEvents, isComplete } = blockProgress;
 
     // Publishing the event here will result in pushing the payload to GQL subscribers for `onAddressEvent(address)`.
-    await this._pubsub.publish(BlockProgressEvent, {
+    await this._pubsub.publish(BLOCK_PROGRESS_EVENT, {
       onBlockProgressEvent: {
         cid,
         blockHash,

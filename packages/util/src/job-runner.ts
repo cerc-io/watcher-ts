@@ -225,7 +225,7 @@ export class JobRunner {
       }
 
       // Push event processing job for each block
-      await this._pushEventProcessingJobsForBlocks(blocks);
+      await this._pushEventProcessingJobsForBlocks(blocks, false);
     }
 
     // Update sync status canonical, indexed and chain head block to end block
@@ -259,16 +259,15 @@ export class JobRunner {
     );
   }
 
-  async _pushEventProcessingJobsForBlocks (blocks: BlockProgressInterface[]): Promise<void> {
+  async _pushEventProcessingJobsForBlocks (blocks: BlockProgressInterface[], isRealtimeProcessing: boolean): Promise<void> {
     // Push event processing job for each block
     // const pushJobForBlockPromises = blocks.map(async block => {
     for (const block of blocks) {
       const eventsProcessingJob: EventsJobData = {
         kind: EventsQueueJobKind.EVENTS,
         blockHash: block.blockHash,
-        // Avoid publishing GQL subscription event in historical processing
-        // Publishing when realtime processing is listening to events will cause problems
-        publish: false
+        publish: true,
+        isRealtimeProcessing
       };
 
       await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
@@ -611,12 +610,7 @@ export class JobRunner {
 
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
-    const eventsProcessingJob: EventsJobData = {
-      kind: EventsQueueJobKind.EVENTS,
-      blockHash: blockProgress.blockHash,
-      publish: true
-    };
-    await this.jobQueue.pushJob(QUEUE_EVENT_PROCESSING, eventsProcessingJob);
+    await this._pushEventProcessingJobsForBlocks([blockProgress], true);
 
     const indexBlockDuration = new Date().getTime() - indexBlockStartTime.getTime();
     log(`time:job-runner#_indexBlock: ${indexBlockDuration}ms`);
