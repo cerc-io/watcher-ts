@@ -1,0 +1,19 @@
+{
+  getSyncStatus {
+    initialIndexedBlockHash
+    initialIndexedBlockNumber
+    latestCanonicalBlockHash
+    latestIndexedBlockHash
+    latestCanonicalBlockNumber
+    latestIndexedBlockNumber
+    latestProcessedBlockHash
+    latestProcessedBlockNumber
+  }
+  _meta {
+    block {
+      hash
+      number
+      timestamp
+    }
+  }
+}

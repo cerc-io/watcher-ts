@@ -1,0 +1,11 @@
+# Is watcher a subgraph watcher
+isSubgraph: false
+
+# Watcher URL
+url: ""
+
+# Output file path
+gqlResultFilepath: "src/output.json"
+
+# Optional parameter to override default GQL query
+graphqlQuery: ""
