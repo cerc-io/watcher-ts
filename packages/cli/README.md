@@ -54,3 +54,29 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   * `enable-debug-info`: Whether to broadcast node's info over pubsub on request
 
 * The process starts reading from `stdin` and outputs messages from others peers over the `/chat/1.0.0` protocol to `stdout`.
+
+## compare-gql
+
+A basic CLI to to get and compare watcher response.
+
+* Create a `config.yaml` file in the following format in `packages/cli`:
+
+  ```yaml
+  # Is watcher a subgraph watcher
+  isSubgraph: false
+
+  # Watcher URL
+  url: ""
+
+  # Output file path
+  outputFilePath: "src/output.json"
+
+  # Optional parameter to override default GQL query
+  graphqlQuery: ""
+  ```
+
+* Run the following command to get and compare watcher response:
+
+  ```
+  yarn compare-gql --config config.yaml
+  ```
