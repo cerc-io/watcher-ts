@@ -63,17 +63,17 @@ export const fillBlocks = async (
 
   // Creating an AsyncIterable from AsyncIterator to iterate over the values.
   // https://www.codementor.io/@tiagolopesferreira/asynchronous-iterators-in-javascript-jl1yg8la1#for-wait-of
-  const blockProgressEventIterable = {
-    // getBlockProgressEventIterator returns an AsyncIterator which can be used to listen to BlockProgress events.
-    [Symbol.asyncIterator]: eventWatcher.getBlockProgressEventIterator.bind(eventWatcher)
+  const realtimeBlockCompleteEventIterable = {
+    // getRealtimeBlockCompleteEvent returns an AsyncIterator which can be used to listen to realtime processing block complete events.
+    [Symbol.asyncIterator]: eventWatcher.getRealtimeBlockCompleteEvent.bind(eventWatcher)
   };
 
   console.time('time:fill#fillBlocks-process_blocks');
 
   // Iterate over async iterable.
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of
-  for await (const data of blockProgressEventIterable) {
-    const { onBlockProgressEvent: { blockNumber, isComplete } } = data;
+  for await (const data of realtimeBlockCompleteEventIterable) {
+    const { onRealtimeBlockCompleteEvent: { blockNumber, isComplete } } = data;
 
     if (isComplete) {
       const blocksProcessed = blockNumber - startBlock + 1;
