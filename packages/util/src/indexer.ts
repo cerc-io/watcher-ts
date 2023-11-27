@@ -464,7 +464,6 @@ export class Indexer {
         blockProgress,
         ethFullBlock: fullBlock,
         ethFullTransactions: blockEthFullTxs,
-        block,
         events: []
       };
     });

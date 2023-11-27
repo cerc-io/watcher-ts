@@ -605,10 +605,6 @@ export class JobRunner {
         });
     }
 
-    if (!blockProgress.isComplete) {
-      await this._indexer.processBlock(blockProgress);
-    }
-
     // Push job to event processing queue.
     // Block with all events processed or no events will not be processed again due to check in _processEvents.
     const eventsProcessingJob: EventsJobData = {

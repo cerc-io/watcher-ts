@@ -487,11 +487,11 @@ export class Indexer implements IndexerInterface {
     await this.triggerIndexingOnEvent(event, extraData);
   }
 
-  async processBlock (blockProgress: BlockProgress): Promise<void> {
-    console.time('time:indexer#processBlock-init_state');
+  async preEventsBlockProcessing (blockProgress: BlockProgress): Promise<void> {
+    console.time('time:indexer#preEventsBlockProcessing-init_state');
     // Call a function to create initial state for contracts.
     await this._baseIndexer.createInit(this, blockProgress.blockHash, blockProgress.blockNumber);
-    console.timeEnd('time:indexer#processBlock-init_state');
+    console.timeEnd('time:indexer#preEventsBlockProcessing-init_state');
     {{#if (subgraphPath)}}
 
     this._graphWatcher.updateEntityCacheFrothyBlocks(blockProgress);
@@ -499,16 +499,16 @@ export class Indexer implements IndexerInterface {
   }
 
   {{#if (subgraphPath)}}
-  async processBlockAfterEvents (blockHash: string, blockNumber: number, extraData: ExtraEventData): Promise<void> {
-    console.time('time:indexer#processBlockAfterEvents-mapping_code');
+  async postEventsBlockProcessing (blockHash: string, blockNumber: number, extraData: ExtraEventData): Promise<void> {
+    console.time('time:indexer#postEventsBlockProcessing-mapping_code');
     // Call subgraph handler for block.
     await this._graphWatcher.handleBlock(blockHash, blockNumber, extraData);
-    console.timeEnd('time:indexer#processBlockAfterEvents-mapping_code');
+    console.timeEnd('time:indexer#postEventsBlockProcessing-mapping_code');
 
-    console.time('time:indexer#processBlockAfterEvents-dump_subgraph_state');
+    console.time('time:indexer#postEventsBlockProcessing-dump_subgraph_state');
     // Persist subgraph state to the DB.
     await this.dumpSubgraphState(blockHash);
-    console.timeEnd('time:indexer#processBlockAfterEvents-dump_subgraph_state');
+    console.timeEnd('time:indexer#postEventsBlockProcessing-dump_subgraph_state');
   }
 
   {{/if}}

@@ -211,8 +211,8 @@ export interface IndexerInterface {
   getRelationsMap?: () => Map<any, { [key: string]: any }>
   processInitialState: (contractAddress: string, blockHash: string) => Promise<any>
   processStateCheckpoint: (contractAddress: string, blockHash: string) => Promise<boolean>
-  processBlock: (blockProgres: BlockProgressInterface) => Promise<void>
-  processBlockAfterEvents?: (blockHash: string, blockNumber: number, data: ExtraEventData) => Promise<void>
+  preEventsBlockProcessing: (blockProgres: BlockProgressInterface) => Promise<void>
+  postEventsBlockProcessing?: (blockHash: string, blockNumber: number, data: ExtraEventData) => Promise<void>
   processCanonicalBlock (blockHash: string, blockNumber: number): Promise<void>
   processCheckpoint (blockHash: string): Promise<void>
   processCLICheckpoint (contractAddress: string, blockHash?: string): Promise<string | undefined>
