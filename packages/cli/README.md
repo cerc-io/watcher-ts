@@ -62,21 +62,35 @@ A basic CLI to to get and compare watcher response.
 * Create a `config.yaml` file in the following format in `packages/cli`:
 
   ```yaml
-  # Is watcher a subgraph watcher
-  isSubgraph: false
-
   # Watcher URL
   url: ""
 
-  # Output file path
-  outputFilePath: "src/output.json"
+  # Boolean to specify if it is a subgraph watcher
+  isSubgraph: false
+
+  # File path for saving GQL result
+  gqlResultFilepath: "./result.json"
 
   # Optional parameter to override default GQL query
   graphqlQuery: ""
   ```
 
-* Run the following command to get and compare watcher response:
+* Run the following command to fetch and save first GQL response:
 
   ```
   yarn compare-gql --config config.yaml
   ```
+
+  * On running CLI for the first time
+
+    ```
+      vulcanize:compare-gql Fetching response for the first time, re run CLI to compare with latest GQL response
+    ```
+
+* Re run CLI after some time (average time taken for new block in Ethereum: `~12 seconds`)
+
+  ```
+  yarn compare-gql --config config.yaml
+  ```
+
+* The diff for latest and previous GQL responses is shown

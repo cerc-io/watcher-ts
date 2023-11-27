@@ -11,16 +11,19 @@ const log = debug('vulcanize:compare-gql');
 const SUBGRAPH_QUERY_FILEPATH = 'graphql/subgraph-query.graphql';
 const NON_SUBGRAPH_QUERY_FILEPATH = 'graphql/non-subgraph-query.graphql';
 
-function readFromJSONFile (filename: string): any {
+function readFromJSONFile (filename: string): {[key: string]: any} | null {
   const fileContents = fs.readFileSync(filename, 'utf-8');
+
   if (fileContents !== '') {
     return JSON.parse(fileContents);
   }
+
+  return null;
 }
 
 function getQuery (isSubgraph: boolean, queryFilepath?: string): any {
   if (queryFilepath) {
-    return fs.readFileSync(path.resolve(queryFilepath), 'utf-8');
+    return fs.readFileSync(queryFilepath, 'utf-8');
   }
 
   if (isSubgraph) {
@@ -46,8 +49,9 @@ async function main (): Promise<void> {
 
   const isSubgraph = inputConfig.isSubgraph;
   const watcherUrl = inputConfig.url;
-  const gqlResultFilepath = path.resolve(inputConfig.gqlResultFilepath);
-  const graphqlQueryFilepath = inputConfig.graphqlQuery;
+  const configFileDirectory = path.dirname(configFilePath);
+  const gqlResultFilepath = path.resolve(configFileDirectory, inputConfig.gqlResultFilepath);
+  const graphqlQueryFilepath = inputConfig.graphqlQuery ? path.resolve(configFileDirectory, inputConfig.graphqlQuery) : undefined;
 
   if (!fs.existsSync(gqlResultFilepath)) {
     fs.writeFileSync(gqlResultFilepath, '', 'utf-8');
@@ -65,7 +69,7 @@ async function main (): Promise<void> {
 
   const readOutputData = readFromJSONFile(gqlResultFilepath);
 
-  if (readOutputData !== '') {
+  if (readOutputData !== null) {
     const diff = jsonDiff.diffString(readOutputData, gqlResponse);
 
     if (diff !== '') {
@@ -74,7 +78,7 @@ async function main (): Promise<void> {
       log('No diff detected, GQL response', gqlResponse);
     }
   } else {
-    log('No diff detected, GQL response', gqlResponse);
+    log('Fetching response for the first time, re run CLI to compare with latest GQL response');
   }
 
   fs.writeFileSync(gqlResultFilepath, JSON.stringify(gqlResponse, null, 2));
