@@ -272,7 +272,7 @@ export class EventWatcher {
       return;
     }
 
-    const { blockHash, publish }: EventsJobData = data;
+    const { blockHash, publish, isRealtimeProcessing }: EventsJobData = data;
     const blockProgress = await this._indexer.getBlockProgress(blockHash);
     assert(blockProgress);
 
@@ -282,43 +282,42 @@ export class EventWatcher {
       this.startBlockProcessing();
     }
 
-    // TODO: Check if event job is from realtime processing
+    if (isRealtimeProcessing) {
+      await this.publishRealtimeBlockCompleteToSubscribers(blockProgress);
+    }
 
-    // Check if publish is set to true
-    // Events and blocks are not published in historical processing
-    // GQL subscription events will not be triggered if publish is set to false
-    // TODO: Remove check and always publish
-    if (publish) {
-      await this.publishBlockProgressToSubscribers(blockProgress);
+    const dbEventsPromise = this._indexer.getBlockEvents(
+      blockProgress.blockHash,
+      {
+        eventName: [
+          { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
+        ]
+      },
+      {
+        orderBy: 'index',
+        orderDirection: OrderDirection.asc
+      }
+    );
 
-      const dbEvents = await this._indexer.getBlockEvents(
-        blockProgress.blockHash,
-        {
-          eventName: [
-            { value: UNKNOWN_EVENT_NAME, not: true, operator: 'equals' }
-          ]
-        },
-        {
-          orderBy: 'index',
-          orderDirection: OrderDirection.asc
-        }
-      );
+    const [dbEvents] = await Promise.all([
+      dbEventsPromise,
+      this.publishBlockProgressToSubscribers(blockProgress)
+    ]);
 
-      const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
+    const timeElapsedInSeconds = (Date.now() - Date.parse(createdOn)) / 1000;
 
-      // Cannot publish individual event as they are processed together in a single job.
-      // TODO: Use a different pubsub to publish event from job-runner.
-      // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
-      for (const dbEvent of dbEvents) {
-        log(`Job onComplete event ${dbEvent.id} publish ${publish}`);
+    // Cannot publish individual event as they are processed together in a single job.
+    // TODO: Use a different pubsub to publish event from job-runner.
+    // https://www.apollographql.com/docs/apollo-server/data/subscriptions/#production-pubsub-libraries
+    for (const dbEvent of dbEvents) {
+      log(`Job onComplete event ${dbEvent.id} publish ${publish}`);
 
-        if (!failed && state === 'completed') {
-          // Check for max acceptable lag time between request and sending results to live subscribers.
-          if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
-            await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
-          } else {
-            log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
-          }
+      if (!failed && state === 'completed' && publish) {
+        // Check for max acceptable lag time between request and sending results to live subscribers.
+        if (timeElapsedInSeconds <= this._jobQueue.maxCompletionLag) {
+          await this.publishEventToSubscribers(dbEvent, timeElapsedInSeconds);
+        } else {
+          log(`event ${dbEvent.id} is too old (${timeElapsedInSeconds}s), not broadcasting to live subscribers`);
         }
       }
     }

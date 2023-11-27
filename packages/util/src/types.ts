@@ -302,6 +302,7 @@ export interface EventsJobData {
   kind: EventsQueueJobKind.EVENTS;
   blockHash: string;
   publish: boolean;
+  isRealtimeProcessing: boolean;
 }
 
 export interface ContractJobData {
