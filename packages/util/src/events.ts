@@ -29,10 +29,8 @@ interface Config {
 }
 
 interface RealtimeBlockCompleteEvent {
-  onRealtimeBlockCompleteEvent: {
-    blockNumber: number;
-    isComplete: boolean;
-  }
+  blockNumber: number;
+  isComplete: boolean;
 }
 
 export class EventWatcher {
@@ -63,7 +61,7 @@ export class EventWatcher {
     return this._pubsub.asyncIterator([BLOCK_PROGRESS_EVENT]);
   }
 
-  getRealtimeBlockCompleteEvent (): AsyncIterator<RealtimeBlockCompleteEvent> {
+  getRealtimeBlockCompleteEvent (): AsyncIterator<{ onRealtimeBlockCompleteEvent: RealtimeBlockCompleteEvent }> {
     return this._pubsub.asyncIterator(REALTIME_BLOCK_COMPLETE_EVENT);
   }
 
