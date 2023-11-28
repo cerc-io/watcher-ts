@@ -57,7 +57,7 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
 
 ## compare-gql
 
-A basic CLI to to get and compare watcher response.
+A basic CLI to to fetch and compare watcher GQL response.
 
 * Create a `config.yaml` file in the following format in `packages/cli`:
 

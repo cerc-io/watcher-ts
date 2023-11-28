@@ -7,9 +7,10 @@ import path from 'path';
 import yaml from 'js-yaml';
 import debug from 'debug';
 
-const log = debug('vulcanize:compare-gql');
 const SUBGRAPH_QUERY_FILEPATH = 'graphql/subgraph-query.graphql';
 const NON_SUBGRAPH_QUERY_FILEPATH = 'graphql/non-subgraph-query.graphql';
+
+const log = debug('vulcanize:compare-gql');
 
 function readFromJSONFile (filename: string): {[key: string]: any} | null {
   const fileContents = fs.readFileSync(filename, 'utf-8');
@@ -45,7 +46,7 @@ async function main (): Promise<void> {
   const configFilePath = path.resolve(argv.config);
   const inputConfig = yaml.load(fs.readFileSync(configFilePath, 'utf8')) as any;
 
-  log('Config file:', inputConfig);
+  log('Config:', inputConfig);
 
   const isSubgraph = inputConfig.isSubgraph;
   const watcherUrl = inputConfig.url;
@@ -64,7 +65,7 @@ async function main (): Promise<void> {
   try {
     gqlResponse = await request(watcherUrl, query);
   } catch (err) {
-    throw new Error('Error making GraphQL request:' + (err as Error).message);
+    throw new Error('Error in GQL request: ' + (err as Error).message);
   }
 
   const readOutputData = readFromJSONFile(gqlResultFilepath);
@@ -73,7 +74,7 @@ async function main (): Promise<void> {
     const diff = jsonDiff.diffString(readOutputData, gqlResponse);
 
     if (diff !== '') {
-      log('Showing diff', diff);
+      log('Diff detected', diff);
     } else {
       log('No diff detected, GQL response', gqlResponse);
     }
