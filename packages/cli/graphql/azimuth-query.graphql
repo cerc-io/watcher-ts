@@ -1,0 +1,34 @@
+{
+  azimuthGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  claimsGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  censuresGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  conditionalStarReleaseGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  delegatedSendingGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  eclipticGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  linearStarReleaseGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+  pollsGetSyncStatus {
+    latestProcessedBlockNumber
+    latestIndexedBlockNumber
+  }
+}

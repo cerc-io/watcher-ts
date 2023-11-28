@@ -54,3 +54,43 @@ A basic CLI to pass messages between peers using `stdin`/`stdout`
   * `enable-debug-info`: Whether to broadcast node's info over pubsub on request
 
 * The process starts reading from `stdin` and outputs messages from others peers over the `/chat/1.0.0` protocol to `stdout`.
+
+## compare-gql
+
+A basic CLI to to fetch and compare watcher GQL response.
+
+* Create a `config.yaml` file in the following format in `packages/cli`:
+
+  ```yaml
+  # Watcher URL
+  url: ""
+
+  # Boolean to specify if it is a subgraph watcher
+  isSubgraph: false
+
+  # File path for saving GQL result
+  gqlResultFilepath: "./result.json"
+
+  # Optional parameter to override default GQL query
+  graphqlQuery: ""
+  ```
+
+* Run the following command to fetch and save first GQL response:
+
+  ```
+  yarn compare-gql --config config.yaml
+  ```
+
+  * On running CLI for the first time
+
+    ```
+      vulcanize:compare-gql Fetching response for the first time, re run CLI to compare with latest GQL response
+    ```
+
+* Re run CLI after some time (average time taken for new block in Ethereum: `~12 seconds`)
+
+  ```
+  yarn compare-gql --config config.yaml
+  ```
+
+* The diff for latest and previous GQL responses is shown
