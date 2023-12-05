@@ -94,3 +94,25 @@ A basic CLI to to fetch and compare watcher GQL response.
   ```
 
 * The diff for latest and previous GQL responses is shown
+
+## proxy
+
+Runs a proxy server pointed to the given upstream endpoint
+
+* Install dependencies and build:
+
+  ```bash
+  # In repo root
+  yarn
+
+  # In packages/cli
+  yarn build
+  ```
+
+* Run the proxy server:
+
+  ```bash
+  yarn proxy --upstream <UPSTREAM_ENDPOINT> --origin-header [ORIGN_HEADER] --port [PROXY_SERVER_PORT]
+
+  # For details, run: yarn proxy --help
+  ```
