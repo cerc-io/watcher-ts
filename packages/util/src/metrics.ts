@@ -89,6 +89,12 @@ export const eventProcessingEthCallDuration = new client.Histogram({
   help: 'Duration of eth_calls made in event processing'
 });
 
+export const isSyncingHistoricalBlocks = new client.Gauge({
+  name: 'is_syncing_historical_blocks',
+  help: 'Whether the watcher is syncing in historical mode'
+});
+isSyncingHistoricalBlocks.set(Number(undefined));
+
 // Export metrics on a server
 const app: Application = express();
 
@@ -189,7 +195,7 @@ const registerUpstreamChainHeadMetrics = async ({ upstream }: Config): Promise<v
 
 const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Config): Promise<void> => {
   const watcherConfigMetric = new client.Gauge({
-    name: 'watcher_config',
+    name: 'watcher_config_info',
     help: 'Watcher configuration info (static)',
     labelNames: ['category', 'field']
   });
@@ -208,7 +214,7 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_filter_logs_by_addresses' }, Number(upstream.ethServer.filterLogsByAddresses));
   watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_filter_logs_by_topics' }, Number(upstream.ethServer.filterLogsByTopics));
 
-  watcherConfigMetric.set({ category: 'jobqueue', field: 'eventsInBatch' }, Number(jobQueue.eventsInBatch));
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'events_in_batch' }, Number(jobQueue.eventsInBatch));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'block_delay_in_milli_secs' }, Number(jobQueue.blockDelayInMilliSecs));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));

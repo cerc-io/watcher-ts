@@ -31,7 +31,7 @@ import {
   fetchBlocksAtHeight,
   fetchAndSaveFilteredLogsAndBlocks
 } from './common';
-import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
+import { isSyncingHistoricalBlocks, lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
 
@@ -116,6 +116,9 @@ export class JobRunner {
 
     switch (kind) {
       case JOB_KIND_INDEX: {
+        // Update metrics
+        isSyncingHistoricalBlocks.set(0);
+
         const { data: { cid, blockHash, blockNumber, parentHash, timestamp } } = job;
 
         // Check if blockHash present in job.
@@ -166,6 +169,9 @@ export class JobRunner {
   }
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobResponseData>): Promise<void> {
+    // Update metrics
+    isSyncingHistoricalBlocks.set(1);
+
     const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
 
     if (this._historicalProcessingCompletedUpto) {
