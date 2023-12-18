@@ -8,6 +8,8 @@ import debug from 'debug';
 import { ethers } from 'ethers';
 import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
+import { fetchLatestBlockNumber } from '@cerc-io/util';
+
 const log = debug('laconic:chain-head-exporter');
 
 // Env overrides:
@@ -21,17 +23,9 @@ const DEFAULT_ETH_RPC_ENDPOINT = 'https://mainnet.infura.io/v3';
 const DEFAULT_FIL_RPC_ENDPOINT = 'https://api.node.glif.io/rpc/v1';
 const DEFAULT_PORT = 5000;
 
-async function fetchLatestBlockNumber (provider: JsonRpcProvider): Promise<number> {
-  try {
-    return await provider.getBlockNumber();
-  } catch (err) {
-    log('Error fetching latest block number', err);
-    return -1;
-  }
-}
-
 async function main (): Promise<void> {
   const app = express();
+  const metricsRegister = new promClient.Registry();
 
   const ethRpcApiKey = process.env.ETH_RPC_API_KEY;
   if (!ethRpcApiKey) {
@@ -60,6 +54,7 @@ async function main (): Promise<void> {
   new promClient.Gauge({
     name: 'latest_block_number',
     help: 'Latest block number / height from various block chains',
+    registers: [metricsRegister],
     labelNames: ['chain'] as const,
     async collect () {
       const [
@@ -76,8 +71,8 @@ async function main (): Promise<void> {
   });
 
   app.get('/metrics', async (req, res) => {
-    res.set('Content-Type', promClient.register.contentType);
-    const metrics = await promClient.register.metrics();
+    res.set('Content-Type', metricsRegister.contentType);
+    const metrics = await metricsRegister.metrics();
     res.send(metrics);
   });
 

@@ -7,6 +7,8 @@ import express, { Application } from 'express';
 import { createConnection } from 'typeorm';
 import debug from 'debug';
 import assert from 'assert';
+import { ethers } from 'ethers';
+import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
 import { Config } from './config';
 import { IndexerInterface } from './types';
@@ -14,6 +16,15 @@ import { IndexerInterface } from './types';
 const DB_SIZE_QUERY = 'SELECT pg_database_size(current_database())';
 
 const log = debug('vulcanize:metrics');
+
+export async function fetchLatestBlockNumber (provider: JsonRpcProvider): Promise<number> {
+  try {
+    return await provider.getBlockNumber();
+  } catch (err) {
+    log('Error fetching latest block number', err);
+    return -1;
+  }
+}
 
 // Create custom metrics
 export const jobCount = new client.Gauge({
@@ -109,6 +120,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   await registerDBSizeMetrics(config);
 
+  await registerUpstreamChainHeadMetrics(config);
+
   // Collect default metrics
   client.collectDefaultMetrics();
 
@@ -154,6 +167,20 @@ const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<vo
 
       this.set({ type: 'watcher' }, Number(watcherDBSize));
       this.set({ type: 'job-queue' }, Number(jobQueueDBSize));
+    }
+  });
+};
+
+const registerUpstreamChainHeadMetrics = async ({ upstream }: Config): Promise<void> => {
+  const ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoint);
+
+  // eslint-disable-next-line no-new
+  new client.Gauge({
+    name: 'latest_upstream_block_number',
+    help: 'Latest upstream block number',
+    async collect () {
+      const latestBlockNumber = await fetchLatestBlockNumber(ethRpcProvider);
+      this.set(latestBlockNumber);
     }
   });
 };
