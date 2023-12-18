@@ -9,31 +9,28 @@ import debug from 'debug';
 
 const log = debug('laconic:chain-head-exporter');
 
-async function fetchLatestEthereumBlockNumber (apiKey?: string): Promise<number> {
-  if (!apiKey) {
-    return -1;
-  }
+// Env overrides:
+// ETH_RPC_ENDPOINT - Ethereum RPC API endpoint
+// ETH_RPC_API_KEY  - Ethereum RPC API endpoint key
+// FIL_RPC_ENDPOINT - Filecoin RPC API endpoint
+// PORT             - Metrics server listening port
 
-  try {
-    const response = await axios.get(`https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${apiKey}`);
-    return parseInt(response.data.result, 16);
-  } catch (err) {
-    log('Error fetching latest block number from Etherscan:', err);
-    return -1;
-  }
-}
+// Defaults
+const DEFAULT_ETH_RPC_ENDPOINT = 'https://mainnet.infura.io/v3';
+const DEFAULT_FIL_RPC_ENDPOINT = 'https://api.node.glif.io/rpc/v1';
+const DEFAULT_PORT = 5000;
 
-async function fetchLatestFilecoinBlockNumber (): Promise<number> {
+async function fetchLatestBlockNumber (jsonRpcUrl: string): Promise<number> {
   try {
-    const response = await axios.post('https://api.node.glif.io/rpc/v1', {
+    const response = await axios.post(jsonRpcUrl, {
       jsonrpc: '2.0',
-      method: 'Filecoin.ChainHead',
-      params: null,
+      method: 'eth_blockNumber',
+      params: [],
       id: 1
     });
-    return Number(response.data.result.Height);
+    return parseInt(response.data.result, 16);
   } catch (err) {
-    log('Error fetching latest block number from Filecoin Glif Node:', err);
+    log(`Error fetching latest block number from URL ${jsonRpcUrl}:`, err);
     return -1;
   }
 }
@@ -41,10 +38,11 @@ async function fetchLatestFilecoinBlockNumber (): Promise<number> {
 async function main (): Promise<void> {
   const app = express();
 
-  const etherscanAPIKey = process.env.ETHERSCAN_API_KEY;
-  if (!etherscanAPIKey) {
-    log('WARNING: ETHERSCAN_API_KEY not set');
+  const ethRpcApiKey = process.env.ETH_RPC_API_KEY;
+  if (!ethRpcApiKey) {
+    log('WARNING: ETH_RPC_API_KEY not set');
   }
+  const ethUrlSuffix = ethRpcApiKey ? `/${ethRpcApiKey}` : '';
 
   // eslint-disable-next-line no-new
   new promClient.Gauge({
@@ -56,8 +54,8 @@ async function main (): Promise<void> {
         latestEthBlockNumber,
         latestFilBlockNumber
       ] = await Promise.all([
-        fetchLatestEthereumBlockNumber(etherscanAPIKey),
-        fetchLatestFilecoinBlockNumber()
+        fetchLatestBlockNumber(`${process.env.ETH_RPC_ENDPOINT ?? DEFAULT_ETH_RPC_ENDPOINT}${ethUrlSuffix}`),
+        fetchLatestBlockNumber(process.env.FILECOIN_RPC_ENDPOINT ?? DEFAULT_FIL_RPC_ENDPOINT)
       ]);
 
       this.set({ chain: 'ethereum' }, latestEthBlockNumber);
@@ -71,9 +69,9 @@ async function main (): Promise<void> {
     res.send(metrics);
   });
 
-  const PORT = 5000;
-  app.listen(PORT, () => {
-    log(`Server running on port ${PORT}`);
+  const port = process.env.PORT ?? DEFAULT_PORT;
+  app.listen(port, () => {
+    log(`Server running on port ${port}`);
   });
 }
 
