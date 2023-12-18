@@ -640,10 +640,6 @@ export class JobRunner {
       );
       console.timeEnd(`time:job-runner#_processEvents-events-${block.blockNumber}`);
 
-      // Update metrics
-      lastProcessedBlockNumber.set(block.blockNumber);
-      lastBlockNumEvents.set(block.numEvents);
-
       this._blockAndEventsMap.delete(block.blockHash);
 
       // Check if new contract was added and filterLogsByAddresses is set to true
@@ -671,9 +667,12 @@ export class JobRunner {
         await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
       }
 
+      // Update metrics
       if (this._endBlockProcessTimer) {
         this._endBlockProcessTimer();
       }
+      lastProcessedBlockNumber.set(block.blockNumber);
+      lastBlockNumEvents.set(block.numEvents);
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
       await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
