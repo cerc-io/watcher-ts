@@ -118,6 +118,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
     }
   });
 
+  await registerWatcherConfigMetrics(config);
+
   await registerDBSizeMetrics(config);
 
   await registerUpstreamChainHeadMetrics(config);
@@ -183,4 +185,32 @@ const registerUpstreamChainHeadMetrics = async ({ upstream }: Config): Promise<v
       this.set(latestBlockNumber);
     }
   });
+};
+
+const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Config): Promise<void> => {
+  const watcherConfigMetric = new client.Gauge({
+    name: 'watcher_config',
+    help: 'Watcher configuration info (static)',
+    labelNames: ['category', 'field']
+  });
+
+  watcherConfigMetric.set({ category: 'server', field: 'is_active' }, Number(server.kind === 'active'));
+  watcherConfigMetric.set({ category: 'server', field: 'is_subgraph_watcher' }, Number(server.subgraphPath?.length > 0));
+  watcherConfigMetric.set({ category: 'server', field: 'max_events_block_range' }, Number(server.maxEventsBlockRange));
+  watcherConfigMetric.set({ category: 'server', field: 'clear_entities_cache_interval' }, Number(server.clearEntitiesCacheInterval));
+  watcherConfigMetric.set({ category: 'server', field: 'max_simultaneous_requests' }, Number(server.maxSimultaneousRequests));
+  watcherConfigMetric.set({ category: 'server', field: 'max_request_queue_limit' }, Number(server.maxRequestQueueLimit));
+  watcherConfigMetric.set({ category: 'server', field: 'rpc_supports_block_hash_param' }, Number(server.rpcSupportsBlockHashParam));
+
+  watcherConfigMetric.set({ category: 'upstream', field: 'cache_enabled' }, Number(upstream.cache.enabled));
+  watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_rpc_client' }, Number(upstream.ethServer.rpcClient));
+  watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_is_fevm' }, Number(upstream.ethServer.isFEVM));
+  watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_filter_logs_by_addresses' }, Number(upstream.ethServer.filterLogsByAddresses));
+  watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_filter_logs_by_topics' }, Number(upstream.ethServer.filterLogsByTopics));
+
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'eventsInBatch' }, Number(jobQueue.eventsInBatch));
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'block_delay_in_milli_secs' }, Number(jobQueue.blockDelayInMilliSecs));
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_max_fetch_ahead' }, Number(jobQueue.historicalMaxFetchAhead));
 };
