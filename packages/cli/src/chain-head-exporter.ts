@@ -3,9 +3,10 @@
 //
 
 import express from 'express';
-import axios from 'axios';
 import * as promClient from 'prom-client';
 import debug from 'debug';
+import { ethers } from 'ethers';
+import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
 const log = debug('laconic:chain-head-exporter');
 
@@ -20,17 +21,11 @@ const DEFAULT_ETH_RPC_ENDPOINT = 'https://mainnet.infura.io/v3';
 const DEFAULT_FIL_RPC_ENDPOINT = 'https://api.node.glif.io/rpc/v1';
 const DEFAULT_PORT = 5000;
 
-async function fetchLatestBlockNumber (jsonRpcUrl: string): Promise<number> {
+async function fetchLatestBlockNumber (provider: JsonRpcProvider): Promise<number> {
   try {
-    const response = await axios.post(jsonRpcUrl, {
-      jsonrpc: '2.0',
-      method: 'eth_blockNumber',
-      params: [],
-      id: 1
-    });
-    return parseInt(response.data.result, 16);
+    return await provider.getBlockNumber();
   } catch (err) {
-    log(`Error fetching latest block number from URL ${jsonRpcUrl}:`, err);
+    log('Error fetching latest block number', err);
     return -1;
   }
 }
@@ -42,7 +37,24 @@ async function main (): Promise<void> {
   if (!ethRpcApiKey) {
     log('WARNING: ETH_RPC_API_KEY not set');
   }
+
+  const ethRpcBaseUrl = process.env.ETH_RPC_ENDPOINT ?? DEFAULT_ETH_RPC_ENDPOINT;
   const ethUrlSuffix = ethRpcApiKey ? `/${ethRpcApiKey}` : '';
+  const ethRpcUrl = `${ethRpcBaseUrl}${ethUrlSuffix}`;
+  let ethProvider: JsonRpcProvider;
+  try {
+    ethProvider = new JsonRpcProvider(ethRpcUrl);
+  } catch (err) {
+    log(`Error creating ETH RPC provider from URL ${ethRpcBaseUrl}`, err);
+  }
+
+  const filRpcUrl = process.env.FILECOIN_RPC_ENDPOINT ?? DEFAULT_FIL_RPC_ENDPOINT;
+  let filProvider: JsonRpcProvider;
+  try {
+    filProvider = new JsonRpcProvider(filRpcUrl);
+  } catch (err) {
+    log(`Error creating FIL RPC provider from URL ${filRpcUrl}`, err);
+  }
 
   // eslint-disable-next-line no-new
   new promClient.Gauge({
@@ -54,8 +66,8 @@ async function main (): Promise<void> {
         latestEthBlockNumber,
         latestFilBlockNumber
       ] = await Promise.all([
-        fetchLatestBlockNumber(`${process.env.ETH_RPC_ENDPOINT ?? DEFAULT_ETH_RPC_ENDPOINT}${ethUrlSuffix}`),
-        fetchLatestBlockNumber(process.env.FILECOIN_RPC_ENDPOINT ?? DEFAULT_FIL_RPC_ENDPOINT)
+        fetchLatestBlockNumber(ethProvider),
+        fetchLatestBlockNumber(filProvider)
       ]);
 
       this.set({ chain: 'ethereum' }, latestEthBlockNumber);
