@@ -32,7 +32,7 @@ async function main (): Promise<void> {
     log('WARNING: ETH_RPC_API_KEY not set');
   }
 
-  const ethRpcBaseUrl = process.env.ETH_RPC_ENDPOINT ?? DEFAULT_ETH_RPC_ENDPOINT;
+  const ethRpcBaseUrl = process.env.ETH_RPC_ENDPOINT || DEFAULT_ETH_RPC_ENDPOINT;
   const ethUrlSuffix = ethRpcApiKey ? `/${ethRpcApiKey}` : '';
   const ethRpcUrl = `${ethRpcBaseUrl}${ethUrlSuffix}`;
   let ethProvider: JsonRpcProvider;
@@ -42,7 +42,7 @@ async function main (): Promise<void> {
     log(`Error creating ETH RPC provider from URL ${ethRpcBaseUrl}`, err);
   }
 
-  const filRpcUrl = process.env.FILECOIN_RPC_ENDPOINT ?? DEFAULT_FIL_RPC_ENDPOINT;
+  const filRpcUrl = process.env.FILECOIN_RPC_ENDPOINT || DEFAULT_FIL_RPC_ENDPOINT;
   let filProvider: JsonRpcProvider;
   try {
     filProvider = new JsonRpcProvider(filRpcUrl);
@@ -76,7 +76,7 @@ async function main (): Promise<void> {
     res.send(metrics);
   });
 
-  const port = process.env.PORT ?? DEFAULT_PORT;
+  const port = Number(process.env.PORT) || DEFAULT_PORT;
   app.listen(port, () => {
     log(`Server running on port ${port}`);
   });
