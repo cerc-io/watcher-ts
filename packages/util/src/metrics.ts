@@ -208,7 +208,6 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'server', field: 'max_request_queue_limit' }, Number(server.maxRequestQueueLimit));
   watcherConfigMetric.set({ category: 'server', field: 'rpc_supports_block_hash_param' }, Number(server.rpcSupportsBlockHashParam));
 
-  watcherConfigMetric.set({ category: 'upstream', field: 'cache_enabled' }, Number(upstream.cache.enabled));
   watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_rpc_client' }, Number(upstream.ethServer.rpcClient));
   watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_is_fevm' }, Number(upstream.ethServer.isFEVM));
   watcherConfigMetric.set({ category: 'upstream', field: 'eth_server_filter_logs_by_addresses' }, Number(upstream.ethServer.filterLogsByAddresses));
