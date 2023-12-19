@@ -102,7 +102,7 @@ export class EventWatcher {
     await this._jobQueue.waitForEmptyQueue(QUEUE_EVENT_PROCESSING);
 
     // Get latest block in chain and sync status from DB
-    // Also get historical-processing queu size
+    // Also get historical-processing queue size
     const [{ block: latestBlock }, syncStatus, historicalProcessingQueueSize] = await Promise.all([
       this._ethClient.getBlockByHash(),
       this._indexer.getSyncStatus(),

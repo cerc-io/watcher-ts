@@ -17,4 +17,3 @@ export * from './fill';
 export * from './create-state-gql';
 export * from './peer';
 export * from './utils';
-export * from './proxy';

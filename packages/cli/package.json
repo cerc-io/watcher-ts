@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cli",
-  "version": "0.2.78",
+  "version": "0.2.79",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "scripts": {
@@ -10,17 +10,18 @@
     "copy-assets": "copyfiles -u 1 src/**/*.gql dist/",
     "chat": "DEBUG='vulcanize:*, laconic:*' node dist/chat.js",
     "compare-gql": "DEBUG='vulcanize:*' node dist/compare-gql.js",
-    "proxy": "DEBUG='laconic:*' node dist/proxy.js"
+    "proxy": "DEBUG='laconic:*' node dist/proxy.js",
+    "export-metrics:chain-heads": "DEBUG='laconic:*' node dist/chain-head-exporter.js"
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
-    "@cerc-io/cache": "^0.2.78",
-    "@cerc-io/ipld-eth-client": "^0.2.78",
+    "@cerc-io/cache": "^0.2.79",
+    "@cerc-io/ipld-eth-client": "^0.2.79",
     "@cerc-io/libp2p": "^0.42.2-laconic-0.1.4",
     "@cerc-io/nitro-node": "^0.1.15",
-    "@cerc-io/peer": "^0.2.78",
-    "@cerc-io/rpc-eth-client": "^0.2.78",
-    "@cerc-io/util": "^0.2.78",
+    "@cerc-io/peer": "^0.2.79",
+    "@cerc-io/rpc-eth-client": "^0.2.79",
+    "@cerc-io/util": "^0.2.79",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
     "@ipld/dag-cbor": "^8.0.0",

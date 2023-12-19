@@ -31,7 +31,7 @@ import {
   fetchBlocksAtHeight,
   fetchAndSaveFilteredLogsAndBlocks
 } from './common';
-import { lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
+import { isSyncingHistoricalBlocks, lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
 
@@ -116,6 +116,9 @@ export class JobRunner {
 
     switch (kind) {
       case JOB_KIND_INDEX: {
+        // Update metrics
+        isSyncingHistoricalBlocks.set(0);
+
         const { data: { cid, blockHash, blockNumber, parentHash, timestamp } } = job;
 
         // Check if blockHash present in job.
@@ -166,6 +169,9 @@ export class JobRunner {
   }
 
   async processHistoricalBlocks (job: PgBoss.JobWithDoneCallback<HistoricalJobData, HistoricalJobResponseData>): Promise<void> {
+    // Update metrics
+    isSyncingHistoricalBlocks.set(1);
+
     const { data: { blockNumber: startBlock, processingEndBlockNumber } } = job;
 
     if (this._historicalProcessingCompletedUpto) {
@@ -640,10 +646,6 @@ export class JobRunner {
       );
       console.timeEnd(`time:job-runner#_processEvents-events-${block.blockNumber}`);
 
-      // Update metrics
-      lastProcessedBlockNumber.set(block.blockNumber);
-      lastBlockNumEvents.set(block.numEvents);
-
       this._blockAndEventsMap.delete(block.blockHash);
 
       // Check if new contract was added and filterLogsByAddresses is set to true
@@ -671,9 +673,12 @@ export class JobRunner {
         await this.jobQueue.deleteJobs(QUEUE_EVENT_PROCESSING);
       }
 
+      // Update metrics
       if (this._endBlockProcessTimer) {
         this._endBlockProcessTimer();
       }
+      lastProcessedBlockNumber.set(block.blockNumber);
+      lastBlockNumEvents.set(block.numEvents);
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
       await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
