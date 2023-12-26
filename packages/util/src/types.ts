@@ -233,7 +233,7 @@ export interface IndexerInterface {
   resetWatcherToBlock (blockNumber: number): Promise<void>
   clearProcessedBlockData (block: BlockProgressInterface): Promise<void>
   getResultEvent (event: EventInterface): any
-  getFullTransactions (txHashList: string[]): EthFullTransaction[]
+  getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]>
 }
 
 export interface DatabaseInterface {
