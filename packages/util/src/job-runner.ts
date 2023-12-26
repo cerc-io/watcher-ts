@@ -587,6 +587,9 @@ export class JobRunner {
       }
     }
 
+    const data = this._blockAndEventsMap.get(blockHash);
+    assert(data);
+
     if (!blockProgress) {
       // Delay required to process block.
       const { jobDelayInMilliSecs = 0 } = this._jobQueueConfig;
@@ -598,9 +601,24 @@ export class JobRunner {
       [blockProgress, , ethFullTransactions] = await this._indexer.saveBlockAndFetchEvents({ cid, blockHash, blockNumber, parentHash, blockTimestamp });
       log(`_indexBlock#saveBlockAndFetchEvents: fetched for block: ${blockProgress.blockHash} num events: ${blockProgress.numEvents}`);
       console.timeEnd('time:job-runner#_indexBlock-saveBlockAndFetchEvents');
-      const data = this._blockAndEventsMap.get(blockHash);
-      assert(data);
 
+      this._blockAndEventsMap.set(
+        blockHash,
+        {
+          ...data,
+          block: blockProgress,
+          ethFullTransactions
+        });
+    } else {
+      const events = await this._indexer.getBlockEvents(blockHash, {}, {});
+
+      const txHashList = Array.from([
+        ...new Set<string>(events.map((event) => event.txHash))
+      ]);
+
+      const ethFullTransactions = await this._indexer.getFullTransactions(txHashList);
+
+      // const ethFullTransactions =
       this._blockAndEventsMap.set(
         blockHash,
         {
@@ -627,6 +645,7 @@ export class JobRunner {
     const prefetchedBlock = this._blockAndEventsMap.get(blockHash);
     assert(prefetchedBlock);
     const { block, ethFullBlock, ethFullTransactions } = prefetchedBlock;
+    assert(block, 'BlockProgress not set in blockAndEvents map');
 
     try {
       log(`Processing events for block ${block.blockNumber}`);

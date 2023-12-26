@@ -23,7 +23,7 @@ const log = debug('vulcanize:common');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
 export interface PrefetchedBlock {
-  block: BlockProgressInterface;
+  block?: BlockProgressInterface;
   events: DeepPartial<EventInterface>[];
   ethFullBlock: EthFullBlock;
   ethFullTransactions: EthFullTransaction[];
@@ -64,15 +64,7 @@ export const fetchBlocksAtHeight = async (
   jobQueueConfig: JobQueueConfig,
   blockAndEventsMap: Map<string, PrefetchedBlock>
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
-  let blocks = [];
-
-  // Try fetching blocks from the db.
-  const blockProgressEntities = await indexer.getBlocksAtHeight(blockNumber, false);
-  blocks = blockProgressEntities.map((block: any) => {
-    block.timestamp = block.blockTimestamp;
-
-    return block;
-  });
+  let blocks: EthFullBlock[] = [];
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
@@ -82,8 +74,8 @@ export const fetchBlocksAtHeight = async (
 
     // Check if all blocks are null and increment blockNumber to index next block number
     if (ethFullBlocks.length > 0 && ethFullBlocks.every(block => block === null)) {
-      blockNumber++;
       log(`Block ${blockNumber} requested was null (FEVM); Fetching next block`);
+      blockNumber++;
       continue;
     }
 
@@ -125,7 +117,7 @@ export const fetchBlocksAtHeight = async (
     });
   }
 
-  await indexer.updateSyncStatusChainHead(blocks[0].blockHash, blocks[0].blockNumber);
+  await indexer.updateSyncStatusChainHead(blocks[0].blockHash, Number(blocks[0].blockNumber));
 
   return blocksToBeIndexed;
 };

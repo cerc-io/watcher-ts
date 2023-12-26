@@ -869,4 +869,8 @@ export class Indexer implements IndexerInterface {
       await dbTx.release();
     }
   }
+
+  async getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]> {
+    return this._baseIndexer.getFullTransactions(txHashList)
+  }
 }
