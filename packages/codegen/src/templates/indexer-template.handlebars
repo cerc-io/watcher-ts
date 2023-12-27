@@ -871,6 +871,6 @@ export class Indexer implements IndexerInterface {
   }
 
   async getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]> {
-    return this._baseIndexer.getFullTransactions(txHashList)
+    return this._baseIndexer.getFullTransactions(txHashList);
   }
 }
