@@ -107,9 +107,9 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+  async getAncestorAtHeight (blockHash: string, height: number): Promise<string> {
     assert(blockHash);
-    assert(depth);
+    assert(height);
 
     return '';
   }

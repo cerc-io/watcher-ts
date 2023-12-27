@@ -709,8 +709,8 @@ export class Indexer {
     }
   }
 
-  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
-    return this._db.getAncestorAtDepth(blockHash, depth);
+  async getAncestorAtHeight (blockHash: string, height: number): Promise<string> {
+    return this._db.getAncestorAtHeight(blockHash, height);
   }
 
   async saveEventEntity (dbEvent: EventInterface): Promise<EventInterface> {

@@ -457,15 +457,14 @@ export class Database {
     await repo.delete(findConditions);
   }
 
-  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
+  async getAncestorAtHeight (blockHash: string, height: number): Promise<string> {
     const heirerchicalQuery = `
       WITH RECURSIVE cte_query AS
       (
         SELECT
           block_hash,
           block_number,
-          parent_hash,
-          0 as depth
+          parent_hash
         FROM
           block_progress
         WHERE
@@ -474,14 +473,13 @@ export class Database {
           SELECT
             b.block_hash,
             b.block_number,
-            b.parent_hash,
-            c.depth + 1
+            b.parent_hash
           FROM
             block_progress b
           INNER JOIN
             cte_query c ON c.parent_hash = b.block_hash
           WHERE
-            c.depth < $2
+            b.block_number >= $2
       )
       SELECT
         block_hash, block_number
@@ -492,7 +490,7 @@ export class Database {
     `;
 
     // Get ancestor block hash using heirarchical query.
-    const [{ block_hash: ancestorBlockHash }] = await this._conn.query(heirerchicalQuery, [blockHash, depth]);
+    const [{ block_hash: ancestorBlockHash }] = await this._conn.query(heirerchicalQuery, [blockHash, height]);
 
     return ancestorBlockHash;
   }
