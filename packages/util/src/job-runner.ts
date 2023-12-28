@@ -445,10 +445,18 @@ export class JobRunner {
         // We have more than one node at this height, so prune all nodes not reachable from indexed block at max reorg depth from prune height.
         // This will lead to orphaned nodes, which will get pruned at the next height.
         if (blocksAtHeight.length > 1) {
-          const [indexedBlock] = await this._indexer.getBlocksAtHeight(pruneBlockHeight + MAX_REORG_DEPTH, false);
+          let indexedBlock: BlockProgressInterface | undefined;
+          let indexedBlockHeight = pruneBlockHeight + MAX_REORG_DEPTH;
+
+          // Loop to find latest indexed block incase null block is encountered
+          while (!indexedBlock) {
+            [indexedBlock] = await this._indexer.getBlocksAtHeight(indexedBlockHeight, false);
+            --indexedBlockHeight;
+            assert(indexedBlockHeight > pruneBlockHeight, `No blocks found above pruneBlockHeight ${pruneBlockHeight}`);
+          }
 
           // Get ancestor blockHash from indexed block at prune height.
-          const ancestorBlockHash = await this._indexer.getAncestorAtDepth(indexedBlock.blockHash, MAX_REORG_DEPTH);
+          const ancestorBlockHash = await this._indexer.getAncestorAtHeight(indexedBlock.blockHash, pruneBlockHeight);
           newCanonicalBlockHash = ancestorBlockHash;
 
           const blocksToBePruned = blocksAtHeight.filter(block => ancestorBlockHash !== block.blockHash);

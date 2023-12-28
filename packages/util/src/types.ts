@@ -173,7 +173,7 @@ export interface IndexerInterface {
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
   getBlockEvents (blockHash: string, where: Where, queryOptions: QueryOptions): Promise<Array<EventInterface>>
-  getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
+  getAncestorAtHeight (blockHash: string, height: number): Promise<string>
   saveBlockAndFetchEvents (block: DeepPartial<BlockProgressInterface>): Promise<[
     BlockProgressInterface,
     DeepPartial<EventInterface>[],
@@ -249,7 +249,7 @@ export interface DatabaseInterface {
   getBlockEvents (blockHash: string, where?: Where, queryOptions?: QueryOptions): Promise<EventInterface[]>;
   getEvent (id: string): Promise<EventInterface | undefined>
   getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatusInterface | undefined>
-  getAncestorAtDepth (blockHash: string, depth: number): Promise<string>
+  getAncestorAtHeight (blockHash: string, height: number): Promise<string>
   getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }>;
   getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>>;
   markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgressInterface[]): Promise<void>;

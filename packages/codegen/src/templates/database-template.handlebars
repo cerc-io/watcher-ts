@@ -324,8 +324,8 @@ export class Database implements DatabaseInterface {
     await this._baseDatabase.deleteEntitiesByConditions(queryRunner, entity, findConditions);
   }
 
-  async getAncestorAtDepth (blockHash: string, depth: number): Promise<string> {
-    return this._baseDatabase.getAncestorAtDepth(blockHash, depth);
+  async getAncestorAtHeight (blockHash: string, height: number): Promise<string> {
+    return this._baseDatabase.getAncestorAtHeight(blockHash, height);
   }
 
   _getPropertyColumnMapForEntity (entityName: string): Map<string, string> {
