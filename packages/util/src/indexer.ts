@@ -530,11 +530,15 @@ export class Indexer {
   }
 
   async _fetchTxsFromLogs (logs: any[]): Promise<EthFullTransaction[]> {
-    const txHashes = Array.from([
+    const txHashList = Array.from([
       ...new Set<string>(logs.map((log) => log.transaction.hash))
     ]);
 
-    const ethFullTxPromises = txHashes.map(async txHash => {
+    return this.getFullTransactions(txHashList);
+  }
+
+  async getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]> {
+    const ethFullTxPromises = txHashList.map(async txHash => {
       return this._ethClient.getFullTransaction(txHash);
     });
 

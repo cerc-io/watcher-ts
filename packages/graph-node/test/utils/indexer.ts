@@ -334,4 +334,8 @@ export class Indexer implements IndexerInterface {
   async processStateCheckpoint (contractAddress: string, blockHash: string): Promise<boolean> {
     return false;
   }
+
+  async getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]> {
+    return [];
+  }
 }
