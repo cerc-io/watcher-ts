@@ -13,14 +13,16 @@ Go [here](https://github.com/cerc-io/stack-orchestrator/tree/main/app/data/stack
 
 - `laconic-so` [Install](https://github.com/cerc-io/stack-orchestrator#setup)
 
-The Laconic Stack Orchestrator provides all the tools to quickly get started with watchers.
+The Laconic Stack Orchestrator provides all the tools to quickly get started using existing watchers.
 
 ### Developer Mode
 
 - `yarn` [Install](https://yarnpkg.com/getting-started/install)
 - `postgres` [Install](https://www.postgresql.org/download/)
 
-You'll need the above if you plan on digging into this repo, writing your own watchers, or experimenting with watchers not currently supported by Stack Orchestrator. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
+You'll need the above if you plan on digging into this repo, writing your own watchers, or experimenting with watchers not currently supported by Stack Orchestrator.
+
+**Note:** On ARM architecture, use python version ≤ 3.10, otherwise you'll run into [this error](https://github.com/cerc-io/stack-orchestrator/issues/561)
 
 ## Services
 
