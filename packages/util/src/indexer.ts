@@ -547,12 +547,25 @@ export class Indexer {
 
   // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
   createDbEventsFromLogsAndTxs (blockHash: string, logs: any, transactions: any, parseEventNameAndArgs: (kind: string, logObj: any) => any): DeepPartial<EventInterface>[] {
-    const transactionMap = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
+    const transactionMap: {[key: string]: any} = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
       return acc;
     }, {});
 
     const dbEvents: Array<DeepPartial<EventInterface>> = [];
+
+    // Check if upstream is FEVM and sort logs by tx and log index
+    if (this._upstreamConfig.ethServer.isFEVM) {
+      // Sort the logs array first by tx index
+      // If two objects have the same tx index, it will then sort them by log index
+      logs = logs.sort((a: any, b: any) => {
+        if (a.transaction.hash !== b.transaction.hash) {
+          return transactionMap[a.transaction.hash].index - transactionMap[b.transaction.hash].index;
+        } else {
+          return a.index - b.index;
+        }
+      });
+    }
 
     for (let li = 0; li < logs.length; li++) {
       const logObj = logs[li];
