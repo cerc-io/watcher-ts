@@ -447,7 +447,8 @@ export class GraphDatabase {
         'latestEntities',
         `${tableName}.id = "latestEntities"."id" AND ${tableName}.block_number = "latestEntities"."block_number"`
       )
-      .setParameters(subQuery.getParameters());
+      .setParameters(subQuery.getParameters())
+      .where(`${tableName}.is_pruned = :isPruned`, { isPruned: false });
 
     selectQueryBuilder = this._baseDatabase.buildQuery(repo, selectQueryBuilder, where, relationsMap.get(entityType), block);
 
