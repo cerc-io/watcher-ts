@@ -878,7 +878,10 @@ export class GraphDatabase {
     // Avoid loading relation if selections only has id field.
     if (childSelections.length === 1 && childSelections[0].kind === 'Field' && childSelections[0].name.value === 'id') {
       entities.forEach((entity: any) => {
-        entity[field] = { id: entity[field] };
+        // Set only if field value is not null
+        if (entity[field]) {
+          entity[field] = { id: entity[field] };
+        }
       });
 
       return;
