@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import { GraphQLSchema, parse, printSchema, print, GraphQLDirective, GraphQLInt, GraphQLBoolean, GraphQLEnumType, DefinitionNode, GraphQLString, GraphQLNonNull } from 'graphql';
-import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer, ComposeOutputType } from 'graphql-compose';
+import { ObjectTypeComposer, NonNullComposer, ObjectTypeComposerDefinition, ObjectTypeComposerFieldConfigMapDefinition, SchemaComposer, ListComposer, ComposeOutputType, ThunkComposer } from 'graphql-compose';
 import { Writable } from 'stream';
 import { utils } from 'ethers';
 import { VariableDeclaration } from '@solidity-parser/parser/dist/src/ast-types';
@@ -346,6 +346,11 @@ export class Schema {
       ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(childFieldType));
 
       isArray = true;
+    }
+
+    if (fieldType instanceof ThunkComposer) {
+      const unwrappedFieldType = fieldType.getUnwrappedTC() as ObjectTypeComposer;
+      ({ type, isRelation, entityType } = this._getDetailsForSubgraphField(unwrappedFieldType));
     }
 
     if (fieldType instanceof ObjectTypeComposer) {
