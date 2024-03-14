@@ -878,7 +878,10 @@ export class GraphDatabase {
     // Avoid loading relation if selections only has id field.
     if (childSelections.length === 1 && childSelections[0].kind === 'Field' && childSelections[0].name.value === 'id') {
       entities.forEach((entity: any) => {
-        entity[field] = { id: entity[field] };
+        // Set only if field value is not null
+        if (entity[field]) {
+          entity[field] = { id: entity[field] };
+        }
       });
 
       return;
@@ -922,7 +925,11 @@ export class GraphDatabase {
     return repo.save(dbEntity);
   }
 
-  async toGraphEntity (instanceExports: any, entityName: string, data: any, entityTypes: { [key: string]: string }): Promise<any> {
+  async toGraphEntity (instanceExports: any, entityName: string, data: any, entityTypesMap: Map<string, {[key: string]: string; }>): Promise<any> {
+    // Get field types for this entity
+    const entityTypes = entityTypesMap.get(entityName);
+    assert(entityTypes);
+
     // TODO: Cache schema/columns.
     const repo = this._conn.getRepository(entityName);
     const entityFields = repo.metadata.columns;
@@ -945,7 +952,16 @@ export class GraphDatabase {
         field.propertyName = field.propertyName.slice(1);
       }
 
-      const gqlType = entityTypes[field.propertyName];
+      let gqlType = entityTypes[field.propertyName];
+
+      // If the mapped type is present in entityTypesMap, it's a relational field
+      // Get the type for id field in that case
+      if (entityTypesMap.has(gqlType)) {
+        const relatedEntityTypes = entityTypesMap.get(gqlType);
+        assert(relatedEntityTypes);
+
+        gqlType = relatedEntityTypes.id;
+      }
 
       return toEntityValue(instanceExports, entityInstance, data, field, gqlType);
     }, {});
