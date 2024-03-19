@@ -383,7 +383,7 @@ export class Indexer {
     parseEventNameAndArgs: (
       kind: string,
       logObj: { topics: string[]; data: string }
-    ) => { eventName: string; eventInfo: {[key: string]: any}; eventSignature: string }
+    ) => { eventParsed: boolean, eventDetails: any }
   ): Promise<{
     blockProgress: BlockProgressInterface,
     events: DeepPartial<EventInterface>[],
@@ -490,7 +490,11 @@ export class Indexer {
   }
 
   // Fetch events (to be saved to db) for a particular block
-  async fetchEvents (blockHash: string, blockNumber: number, eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<{ events: DeepPartial<EventInterface>[], transactions: EthFullTransaction[]}> {
+  async fetchEvents (
+    blockHash: string, blockNumber: number,
+    eventSignaturesMap: Map<string, string[]>,
+    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+  ): Promise<{ events: DeepPartial<EventInterface>[], transactions: EthFullTransaction[]}> {
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
 
@@ -504,7 +508,12 @@ export class Indexer {
     return { events, transactions };
   }
 
-  async fetchEventsForContracts (blockHash: string, blockNumber: number, addresses: string[], eventSignaturesMap: Map<string, string[]>, parseEventNameAndArgs: (kind: string, logObj: any) => any): Promise<DeepPartial<EventInterface>[]> {
+  async fetchEventsForContracts (
+    blockHash: string, blockNumber: number,
+    addresses: string[],
+    eventSignaturesMap: Map<string, string[]>,
+    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+  ): Promise<DeepPartial<EventInterface>[]> {
     const { topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
 
@@ -546,7 +555,11 @@ export class Indexer {
   }
 
   // Create events to be saved to db for a block given blockHash, logs, transactions and a parser function
-  createDbEventsFromLogsAndTxs (blockHash: string, logs: any, transactions: any, parseEventNameAndArgs: (kind: string, logObj: any) => any): DeepPartial<EventInterface>[] {
+  createDbEventsFromLogsAndTxs (
+    blockHash: string,
+    logs: any, transactions: any,
+    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+  ): DeepPartial<EventInterface>[] {
     const transactionMap: {[key: string]: any} = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
       return acc;
@@ -595,7 +608,12 @@ export class Indexer {
         const watchedContract = this.isWatchedContract(contract);
 
         if (watchedContract) {
-          const eventDetails = parseEventNameAndArgs(watchedContract.kind, logObj);
+          const { eventParsed, eventDetails } = parseEventNameAndArgs(watchedContract.kind, logObj);
+          if (!eventParsed) {
+            // Skip unparsable events
+            continue;
+          }
+
           eventName = eventDetails.eventName;
           eventInfo = eventDetails.eventInfo;
           extraInfo.eventSignature = eventDetails.eventSignature;

@@ -512,20 +512,34 @@ export class Indexer implements IndexerInterface {
   }
 
   {{/if}}
-  parseEventNameAndArgs (kind: string, logObj: any): any {
+  parseEventNameAndArgs (kind: string, logObj: any): { eventParsed: boolean, eventDetails: any } {
     const { topics, data } = logObj;
 
     const contract = this._contractMap.get(kind);
     assert(contract);
 
-    const logDescription = contract.parseLog({ data, topics });
+    let logDescription: ethers.utils.LogDescription;
+    try {
+      logDescription = contract.parseLog({ data, topics });
+    } catch (err) {
+      // Return if no matching event found
+      if ((err as Error).message.includes('no matching event')) {
+        log(`WARNING: Skipping event for contract ${kind} as no matching event found in the ABI`);
+        return { eventParsed: false, eventDetails: {} };
+      }
+
+      throw err;
+    }
 
     const { eventName, eventInfo, eventSignature } = this._baseIndexer.parseEvent(logDescription);
 
     return {
-      eventName,
-      eventInfo,
-      eventSignature
+      eventParsed: true,
+      eventDetails: {
+        eventName,
+        eventInfo,
+        eventSignature
+      }
     };
   }
 

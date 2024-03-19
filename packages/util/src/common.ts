@@ -225,7 +225,7 @@ const _processEvents = async (
     console.time('time:common#processEvents-processing_events_batch');
 
     // Process events in loop
-    for (let event of events) {
+    for (const event of events) {
       // Skipping check for order of events processing since logIndex in FEVM is not index of log in block
       // Check was introduced to avoid reprocessing block events incase of restarts. But currently on restarts, unprocessed block is removed and reprocessed from first event log
       // if (event.index <= block.lastProcessedEventIndex) {
@@ -239,8 +239,11 @@ const _processEvents = async (
         // as a result of a previous event in the same block.
         if (event.eventName === UNKNOWN_EVENT_NAME) {
           // Parse the unknown event and save updated event to the db
-          event = _parseUnknownEvent(indexer, event, watchedContract.kind);
-          updatedDbEvents.push(event);
+          const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContract.kind);
+
+          if (eventParsed) {
+            updatedDbEvents.push(parsedEvent);
+          }
         }
 
         await indexer.processEvent(event, { ethFullBlock, ethFullTransactions });
@@ -339,7 +342,7 @@ const _processEventsInSubgraphOrder = async (
   }
 
   // Parse events of initially unwatched contracts
-  for (let event of unwatchedContractEvents) {
+  for (const event of unwatchedContractEvents) {
     const watchedContract = indexer.isWatchedContract(event.contract);
 
     if (watchedContract) {
@@ -347,8 +350,11 @@ const _processEventsInSubgraphOrder = async (
       // as a result of a previous event in the same block.
       if (event.eventName === UNKNOWN_EVENT_NAME) {
         // Parse the unknown event and save updated event to the db
-        event = _parseUnknownEvent(indexer, event, watchedContract.kind);
-        updatedDbEvents.push(event);
+        const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContract.kind);
+
+        if (eventParsed) {
+          updatedDbEvents.push(parsedEvent);
+        }
       }
     }
   }
@@ -381,11 +387,14 @@ const _getEventsBatch = async (indexer: IndexerInterface, blockHash: string, eve
   );
 };
 
-const _parseUnknownEvent = (indexer: IndexerInterface, event: EventInterface, contractKind: string): EventInterface => {
+const _parseUnknownEvent = (indexer: IndexerInterface, event: EventInterface, contractKind: string): { eventParsed: boolean, event: EventInterface } => {
   const logObj = JSONbigNative.parse(event.extraInfo);
 
   assert(indexer.parseEventNameAndArgs);
-  const { eventName, eventInfo, eventSignature } = indexer.parseEventNameAndArgs(contractKind, logObj);
+  const { eventParsed, eventDetails: { eventName, eventInfo, eventSignature } } = indexer.parseEventNameAndArgs(contractKind, logObj);
+  if (!eventParsed) {
+    return { eventParsed: false, event };
+  }
 
   event.eventName = eventName;
   event.eventInfo = JSONbigNative.stringify(eventInfo);
@@ -394,7 +403,7 @@ const _parseUnknownEvent = (indexer: IndexerInterface, event: EventInterface, co
     eventSignature
   });
 
-  return event;
+  return { eventParsed: true, event };
 };
 
 /**
