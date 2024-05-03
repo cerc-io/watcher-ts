@@ -4,7 +4,6 @@
 
 import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
-import fetch from 'node-fetch';
 
 import { Cache } from '@cerc-io/cache';
 import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFullBlock, EthFullTransaction } from '@cerc-io/util';
@@ -295,23 +294,16 @@ export class EthClient implements EthClientInterface {
       'getLogs',
       vars,
       async () => {
-        const response = await fetch(this._provider.connection.url, {
-          method: 'POST',
-          body: JSON.stringify({
-            method: 'eth_getLogs',
-            params: [{
-              addresses: addresses.map(address => address.toLowerCase()),
-              fromBlock: fromBlock && utils.hexValue(fromBlock),
-              toBlock: toBlock && utils.hexValue(toBlock),
-              blockHash,
-              topics
-            }],
-            id: 1,
-            jsonrpc: '2.0'
-          })
-        });
-
-        const { result: ethLogs } = await response.json();
+        const ethLogs = await this._provider.send(
+          'eth_getLogs',
+          [{
+            address: addresses.map(address => address.toLowerCase()),
+            fromBlock: fromBlock && utils.hexValue(fromBlock),
+            toBlock: toBlock && utils.hexValue(toBlock),
+            blockHash,
+            topics
+          }]
+        );
 
         // Format raw eth_getLogs response
         const logs: providers.Log[] = providers.Formatter.arrayOf(
