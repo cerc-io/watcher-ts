@@ -79,6 +79,8 @@ export const fetchBlocksAtHeight = async (
       continue;
     }
 
+    // TODO: Configure max retries for new block
+
     // Fitler null blocks
     blocks = ethFullBlocks.filter(block => Boolean(block)) as EthFullBlock[];
 

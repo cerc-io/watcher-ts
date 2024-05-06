@@ -3,7 +3,7 @@
 //
 
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
-import { Transaction } from 'ethers';
+import { Transaction, providers } from 'ethers';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -161,6 +161,8 @@ export interface IndexerInterface {
   readonly serverConfig: ServerConfig
   readonly upstreamConfig: UpstreamConfig
   readonly storageLayoutMap: Map<string, StorageLayout>
+  // eslint-disable-next-line no-use-before-define
+  readonly graphWatcher?: GraphWatcherInterface
   init (): Promise<void>
   getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined>
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
@@ -234,6 +236,7 @@ export interface IndexerInterface {
   clearProcessedBlockData (block: BlockProgressInterface): Promise<void>
   getResultEvent (event: EventInterface): any
   getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]>
+  doFailOverEndpoints (clients: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void
 }
 
 export interface DatabaseInterface {

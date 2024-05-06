@@ -254,7 +254,7 @@ export interface UpstreamConfig {
   cache: CacheConfig;
   ethServer: {
     gqlApiEndpoint: string;
-    rpcProviderEndpoint: string;
+    rpcProviderEndpoints: string[];
     rpcProviderMutationEndpoint: string;
     // Boolean flag to specify if rpc-eth-client should be used for RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
     rpcClient: boolean;

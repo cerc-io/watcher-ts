@@ -7,6 +7,7 @@ import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
+import { errors } from 'ethers';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
+import { initClients } from './utils/index';
 
 interface Arguments {
   configFile: string;
@@ -32,6 +34,10 @@ interface Arguments {
 export class JobRunnerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
+
+  _failOverEndpointIndexes = {
+    rpcProviderEndpoint: 0
+  };
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -110,7 +116,24 @@ export class JobRunnerCmd {
       await indexer.addContracts();
     }
 
-    const jobRunner = new JobRunner(config.jobQueue, indexer, jobQueue);
+    const jobRunner = new JobRunner(
+      config.jobQueue,
+      indexer,
+      jobQueue,
+      async (error: any) => {
+        // Check if it is a server error from ethers.js
+        // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
+        if (error.code === errors.SERVER_ERROR) {
+          ++this._failOverEndpointIndexes.rpcProviderEndpoint;
+
+          if (this._failOverEndpointIndexes.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
+            this._failOverEndpointIndexes.rpcProviderEndpoint = 0;
+          }
+
+          const { ethClient, ethProvider } = await initClients(config, this._failOverEndpointIndexes);
+          indexer.doFailOverEndpoints({ ethClient, ethProvider });
+        }
+      });
 
     // Delete all active and pending (before completed) jobs to start job-runner without old queued jobs
     await jobRunner.jobQueue.deleteAllJobs('completed');
@@ -121,7 +144,7 @@ export class JobRunnerCmd {
     await startJobRunner(jobRunner);
     jobRunner.handleShutdown();
 
-    await startMetricsServer(config, indexer);
+    await startMetricsServer(config, indexer, this._failOverEndpointIndexes);
   }
 
   _getArgv (): any {

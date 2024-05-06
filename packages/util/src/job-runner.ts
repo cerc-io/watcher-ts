@@ -63,23 +63,46 @@ export class JobRunner {
   _signalCount = 0;
   _errorInEventsProcessing = false;
 
-  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
+  _jobErrorHandler: (error: Error) => Promise<void>;
+
+  constructor (
+    jobQueueConfig: JobQueueConfig,
+    indexer: IndexerInterface,
+    jobQueue: JobQueue,
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    jobErrorHandler: (error: Error) => Promise<void> = async () => {}
+  ) {
     this._indexer = indexer;
     this.jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
+    this._jobErrorHandler = jobErrorHandler;
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_BLOCK_PROCESSING,
-      async (job) => this.processBlock(job)
+      async (job) => {
+        try {
+          await this.processBlock(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
   async subscribeHistoricalProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_HISTORICAL_PROCESSING,
-      async (job) => this.processHistoricalBlocks(job),
+      async (job) => {
+        try {
+          await this.processHistoricalBlocks(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      },
       {
         teamSize: 1
       }
@@ -89,7 +112,14 @@ export class JobRunner {
   async subscribeEventProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_EVENT_PROCESSING,
-      async (job) => this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>),
+      async (job) => {
+        try {
+          await this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      },
       {
         teamSize: 1,
         includeMetadata: true
@@ -100,14 +130,28 @@ export class JobRunner {
   async subscribeHooksQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_HOOKS,
-      async (job) => this.processHooks(job)
+      async (job) => {
+        try {
+          await this.processHooks(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
   async subscribeBlockCheckpointQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_BLOCK_CHECKPOINT,
-      async (job) => this.processCheckpoint(job)
+      async (job) => {
+        try {
+          this.processCheckpoint(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
