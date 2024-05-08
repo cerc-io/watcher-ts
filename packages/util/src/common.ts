@@ -22,6 +22,8 @@ const DEFAULT_EVENTS_IN_BATCH = 50;
 const log = debug('vulcanize:common');
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
+export const NEW_BLOCK_MAX_RETRIES_ERROR = 'Reached max retries for fetching new block';
+
 export interface PrefetchedBlock {
   block?: BlockProgressInterface;
   events: DeepPartial<EventInterface>[];
@@ -65,6 +67,7 @@ export const fetchBlocksAtHeight = async (
   blockAndEventsMap: Map<string, PrefetchedBlock>
 ): Promise<DeepPartial<BlockProgressInterface>[]> => {
   let blocks: EthFullBlock[] = [];
+  let newBlockRetries = 0;
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
@@ -79,13 +82,18 @@ export const fetchBlocksAtHeight = async (
       continue;
     }
 
-    // TODO: Configure max retries for new block
-
     // Fitler null blocks
     blocks = ethFullBlocks.filter(block => Boolean(block)) as EthFullBlock[];
 
     if (!blocks.length) {
       log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
+
+      // Check number of retries for fetching new block
+      if (jobQueueConfig.maxNewBlockRetries && newBlockRetries > jobQueueConfig.maxNewBlockRetries) {
+        throw new Error(NEW_BLOCK_MAX_RETRIES_ERROR);
+      }
+
+      newBlockRetries++;
       await wait(jobQueueConfig.blockDelayInMilliSecs);
     } else {
       blocks.forEach(block => {

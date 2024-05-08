@@ -31,6 +31,9 @@ export interface JobQueueConfig {
   // Setting to true will fetch filtered events and required blocks in a range of blocks and then process them
   // Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head)
   useBlockRanges: boolean;
+  // Max number of retries to fetch new block after which watcher will failover to other RPC endpoints
+  // Infinitely retry if not set
+  maxNewBlockRetries?: number;
 }
 
 export interface GQLCacheConfig {

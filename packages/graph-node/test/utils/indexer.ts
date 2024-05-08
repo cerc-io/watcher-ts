@@ -2,6 +2,7 @@
 
 import assert from 'assert';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
+import { providers } from 'ethers';
 
 import {
   IndexerInterface,
@@ -337,5 +338,9 @@ export class Indexer implements IndexerInterface {
 
   async getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]> {
     return [];
+  }
+
+  doFailOverEndpoints ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void {
+    return undefined;
   }
 }

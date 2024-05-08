@@ -8,6 +8,7 @@ import 'reflect-metadata';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 import { errors } from 'ethers';
+import debug from 'debug';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -21,11 +22,14 @@ import {
   GraphWatcherInterface,
   startMetricsServer,
   Config,
-  UpstreamConfig
+  UpstreamConfig,
+  NEW_BLOCK_MAX_RETRIES_ERROR
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
 import { initClients } from './utils/index';
+
+const log = debug('vulcanize:job-runner');
 
 interface Arguments {
   configFile: string;
@@ -121,9 +125,10 @@ export class JobRunnerCmd {
       indexer,
       jobQueue,
       async (error: any) => {
-        // Check if it is a server error from ethers.js
+        // Check if it is a server error or timeout from ethers.js
         // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
-        if (error.code === errors.SERVER_ERROR) {
+        // https://docs.ethers.org/v5/api/utils/logger/#errors--timeout
+        if (error.code === errors.SERVER_ERROR || error.code === errors.TIMEOUT || error.message === NEW_BLOCK_MAX_RETRIES_ERROR) {
           ++this._failOverEndpointIndexes.rpcProviderEndpoint;
 
           if (this._failOverEndpointIndexes.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
@@ -132,6 +137,7 @@ export class JobRunnerCmd {
 
           const { ethClient, ethProvider } = await initClients(config, this._failOverEndpointIndexes);
           indexer.doFailOverEndpoints({ ethClient, ethProvider });
+          log(`Switched to failover RPC endpoint ${ethProvider.connection.url}`);
         }
       });
 
