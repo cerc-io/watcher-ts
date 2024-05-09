@@ -631,11 +631,6 @@ export class JobRunner {
 
         // Do not throw error and complete the job as block will be processed after parent block processing.
         return;
-      } else {
-        // Remove the unknown events of the parent block if it is marked complete.
-        console.time('time:job-runner#_indexBlock-remove-unknown-events');
-        await this._indexer.removeUnknownEvents(parentBlock);
-        console.timeEnd('time:job-runner#_indexBlock-remove-unknown-events');
       }
     }
 
@@ -752,7 +747,15 @@ export class JobRunner {
       lastBlockNumEvents.set(block.numEvents);
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
-      await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
+
+      console.time('time:job-runner#_processEvents-update-status-and-remove-unknown-events');
+      await Promise.all([
+        // Update latest processed block in SyncStatus
+        this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber),
+        // Remove the unknown events from processed block
+        this._indexer.removeUnknownEvents(block)
+      ]);
+      console.timeEnd('time:job-runner#_processEvents-update-status-and-remove-unknown-events');
 
       if (retryCount > 0) {
         await Promise.all([
