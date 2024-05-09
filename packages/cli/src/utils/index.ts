@@ -22,7 +22,7 @@ export function readPeerId (filePath: string): PeerIdObj {
   return JSON.parse(peerIdJson);
 }
 
-export const initClients = async (config: Config): Promise<{
+export const initClients = async (config: Config, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<{
   ethClient: EthClient,
   ethProvider: providers.JsonRpcProvider
 }> => {
@@ -32,9 +32,10 @@ export const initClients = async (config: Config): Promise<{
   assert(dbConfig, 'Missing database config');
   assert(upstreamConfig, 'Missing upstream config');
 
-  const { ethServer: { gqlApiEndpoint, rpcProviderEndpoint, rpcClient = false }, cache: cacheConfig } = upstreamConfig;
+  const { ethServer: { gqlApiEndpoint, rpcProviderEndpoints, rpcClient = false }, cache: cacheConfig } = upstreamConfig;
 
-  assert(rpcProviderEndpoint, 'Missing upstream ethServer.rpcProviderEndpoint');
+  assert(rpcProviderEndpoints, 'Missing upstream ethServer.rpcProviderEndpoints');
+  assert(rpcProviderEndpoints.length, 'No endpoints configured in ethServer.rpcProviderEndpoints');
 
   const cache = await getCache(cacheConfig);
 
@@ -42,12 +43,13 @@ export const initClients = async (config: Config): Promise<{
 
   if (rpcClient) {
     ethClient = new RpcEthClient({
-      rpcEndpoint: rpcProviderEndpoint,
+      rpcEndpoint: rpcProviderEndpoints[endpointIndexes.rpcProviderEndpoint],
       cache
     });
   } else {
     assert(gqlApiEndpoint, 'Missing upstream ethServer.gqlApiEndpoint');
 
+    // TODO: Implement failover for GQL endpoint
     ethClient = new GqlEthClient({
       gqlEndpoint: gqlApiEndpoint,
       cache
@@ -55,7 +57,7 @@ export const initClients = async (config: Config): Promise<{
   }
 
   const ethProvider = getCustomProvider({
-    url: rpcProviderEndpoint,
+    url: rpcProviderEndpoints[endpointIndexes.rpcProviderEndpoint],
     allowGzip: true
   });
 

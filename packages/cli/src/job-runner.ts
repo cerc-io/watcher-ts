@@ -7,6 +7,8 @@ import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
+import { errors } from 'ethers';
+import debug from 'debug';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -20,10 +22,14 @@ import {
   GraphWatcherInterface,
   startMetricsServer,
   Config,
-  UpstreamConfig
+  UpstreamConfig,
+  NEW_BLOCK_MAX_RETRIES_ERROR
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
+import { initClients } from './utils/index';
+
+const log = debug('vulcanize:job-runner');
 
 interface Arguments {
   configFile: string;
@@ -32,6 +38,10 @@ interface Arguments {
 export class JobRunnerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
+
+  _currentEndpointIndex = {
+    rpcProviderEndpoint: 0
+  };
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -110,7 +120,27 @@ export class JobRunnerCmd {
       await indexer.addContracts();
     }
 
-    const jobRunner = new JobRunner(config.jobQueue, indexer, jobQueue);
+    const jobRunner = new JobRunner(
+      config.jobQueue,
+      indexer,
+      jobQueue,
+      async (error: any) => {
+        // Check if it is a server error or timeout from ethers.js
+        // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
+        // https://docs.ethers.org/v5/api/utils/logger/#errors--timeout
+        if (error.code === errors.SERVER_ERROR || error.code === errors.TIMEOUT || error.message === NEW_BLOCK_MAX_RETRIES_ERROR) {
+          const oldRpcEndpoint = config.upstream.ethServer.rpcProviderEndpoints[this._currentEndpointIndex.rpcProviderEndpoint];
+          ++this._currentEndpointIndex.rpcProviderEndpoint;
+
+          if (this._currentEndpointIndex.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
+            this._currentEndpointIndex.rpcProviderEndpoint = 0;
+          }
+
+          const { ethClient, ethProvider } = await initClients(config, this._currentEndpointIndex);
+          indexer.switchClients({ ethClient, ethProvider });
+          log(`RPC endpoint ${oldRpcEndpoint} is not working; failing over to new RPC endpoint ${ethProvider.connection.url}`);
+        }
+      });
 
     // Delete all active and pending (before completed) jobs to start job-runner without old queued jobs
     await jobRunner.jobQueue.deleteAllJobs('completed');
@@ -121,7 +151,7 @@ export class JobRunnerCmd {
     await startJobRunner(jobRunner);
     jobRunner.handleShutdown();
 
-    await startMetricsServer(config, indexer);
+    await startMetricsServer(config, indexer, this._currentEndpointIndex);
   }
 
   _getArgv (): any {

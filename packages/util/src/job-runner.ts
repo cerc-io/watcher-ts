@@ -63,23 +63,46 @@ export class JobRunner {
   _signalCount = 0;
   _errorInEventsProcessing = false;
 
-  constructor (jobQueueConfig: JobQueueConfig, indexer: IndexerInterface, jobQueue: JobQueue) {
+  _jobErrorHandler: (error: Error) => Promise<void>;
+
+  constructor (
+    jobQueueConfig: JobQueueConfig,
+    indexer: IndexerInterface,
+    jobQueue: JobQueue,
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    jobErrorHandler: (error: Error) => Promise<void> = async () => {}
+  ) {
     this._indexer = indexer;
     this.jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
+    this._jobErrorHandler = jobErrorHandler;
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_BLOCK_PROCESSING,
-      async (job) => this.processBlock(job)
+      async (job) => {
+        try {
+          await this.processBlock(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
   async subscribeHistoricalProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_HISTORICAL_PROCESSING,
-      async (job) => this.processHistoricalBlocks(job),
+      async (job) => {
+        try {
+          await this.processHistoricalBlocks(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      },
       {
         teamSize: 1
       }
@@ -89,7 +112,14 @@ export class JobRunner {
   async subscribeEventProcessingQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_EVENT_PROCESSING,
-      async (job) => this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>),
+      async (job) => {
+        try {
+          await this.processEvent(job as PgBoss.JobWithMetadataDoneCallback<EventsJobData | ContractJobData, object>);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      },
       {
         teamSize: 1,
         includeMetadata: true
@@ -100,14 +130,28 @@ export class JobRunner {
   async subscribeHooksQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_HOOKS,
-      async (job) => this.processHooks(job)
+      async (job) => {
+        try {
+          await this.processHooks(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
   async subscribeBlockCheckpointQueue (): Promise<void> {
     await this.jobQueue.subscribe(
       QUEUE_BLOCK_CHECKPOINT,
-      async (job) => this.processCheckpoint(job)
+      async (job) => {
+        try {
+          this.processCheckpoint(job);
+        } catch (error) {
+          this._jobErrorHandler(error as Error);
+          throw error;
+        }
+      }
     );
   }
 
@@ -587,11 +631,6 @@ export class JobRunner {
 
         // Do not throw error and complete the job as block will be processed after parent block processing.
         return;
-      } else {
-        // Remove the unknown events of the parent block if it is marked complete.
-        console.time('time:job-runner#_indexBlock-remove-unknown-events');
-        await this._indexer.removeUnknownEvents(parentBlock);
-        console.timeEnd('time:job-runner#_indexBlock-remove-unknown-events');
       }
     }
 
@@ -708,7 +747,15 @@ export class JobRunner {
       lastBlockNumEvents.set(block.numEvents);
 
       this._endBlockProcessTimer = lastBlockProcessDuration.startTimer();
-      await this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber);
+
+      console.time('time:job-runner#_processEvents-update-status-and-remove-unknown-events');
+      await Promise.all([
+        // Update latest processed block in SyncStatus
+        this._indexer.updateSyncStatusProcessedBlock(block.blockHash, block.blockNumber),
+        // Remove the unknown events from processed block
+        this._indexer.removeUnknownEvents(block)
+      ]);
+      console.timeEnd('time:job-runner#_processEvents-update-status-and-remove-unknown-events');
 
       if (retryCount > 0) {
         await Promise.all([

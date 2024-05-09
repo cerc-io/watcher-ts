@@ -98,7 +98,7 @@ isSyncingHistoricalBlocks.set(Number(undefined));
 // Export metrics on a server
 const app: Application = express();
 
-export const startMetricsServer = async (config: Config, indexer: IndexerInterface): Promise<void> => {
+export const startMetricsServer = async (config: Config, indexer: IndexerInterface, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<void> => {
   if (!config.metrics) {
     log('Metrics is disabled. To enable add metrics host and port.');
     return;
@@ -128,7 +128,7 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   await registerDBSizeMetrics(config);
 
-  await registerUpstreamChainHeadMetrics(config);
+  await registerUpstreamChainHeadMetrics(config, endpointIndexes.rpcProviderEndpoint);
 
   // Collect default metrics
   client.collectDefaultMetrics();
@@ -179,8 +179,8 @@ const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<vo
   });
 };
 
-const registerUpstreamChainHeadMetrics = async ({ upstream }: Config): Promise<void> => {
-  const ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoint);
+const registerUpstreamChainHeadMetrics = async ({ upstream }: Config, rpcProviderEndpointIndex: number): Promise<void> => {
+  const ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[rpcProviderEndpointIndex]);
 
   // eslint-disable-next-line no-new
   new client.Gauge({

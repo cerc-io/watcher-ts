@@ -129,6 +129,11 @@ export class GraphWatcher {
     this.fillEventSignatureMap();
   }
 
+  async switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }) {
+    this._ethClient = ethClient;
+    this._ethProvider = ethProvider;
+  }
+
   fillEventSignatureMap () {
     this._dataSources.forEach(contract => {
       if (contract.kind === 'ethereum/contract' && contract.mapping.kind === 'ethereum/events') {
