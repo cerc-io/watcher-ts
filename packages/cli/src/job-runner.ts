@@ -39,7 +39,7 @@ export class JobRunnerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
 
-  _failOverEndpointIndexes = {
+  _currentEndpointIndex = {
     rpcProviderEndpoint: 0
   };
 
@@ -129,15 +129,16 @@ export class JobRunnerCmd {
         // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
         // https://docs.ethers.org/v5/api/utils/logger/#errors--timeout
         if (error.code === errors.SERVER_ERROR || error.code === errors.TIMEOUT || error.message === NEW_BLOCK_MAX_RETRIES_ERROR) {
-          ++this._failOverEndpointIndexes.rpcProviderEndpoint;
+          const oldRpcEndpoint = config.upstream.ethServer.rpcProviderEndpoints[this._currentEndpointIndex.rpcProviderEndpoint];
+          ++this._currentEndpointIndex.rpcProviderEndpoint;
 
-          if (this._failOverEndpointIndexes.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
-            this._failOverEndpointIndexes.rpcProviderEndpoint = 0;
+          if (this._currentEndpointIndex.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
+            this._currentEndpointIndex.rpcProviderEndpoint = 0;
           }
 
-          const { ethClient, ethProvider } = await initClients(config, this._failOverEndpointIndexes);
-          indexer.doFailOverEndpoints({ ethClient, ethProvider });
-          log(`Switched to failover RPC endpoint ${ethProvider.connection.url}`);
+          const { ethClient, ethProvider } = await initClients(config, this._currentEndpointIndex);
+          indexer.switchClients({ ethClient, ethProvider });
+          log(`RPC endpoint ${oldRpcEndpoint} is not working; failing over to new RPC endpoint ${ethProvider.connection.url}`);
         }
       });
 
@@ -150,7 +151,7 @@ export class JobRunnerCmd {
     await startJobRunner(jobRunner);
     jobRunner.handleShutdown();
 
-    await startMetricsServer(config, indexer, this._failOverEndpointIndexes);
+    await startMetricsServer(config, indexer, this._currentEndpointIndex);
   }
 
   _getArgv (): any {

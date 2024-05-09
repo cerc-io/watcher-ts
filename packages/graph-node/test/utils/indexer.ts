@@ -340,7 +340,7 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  doFailOverEndpoints ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void {
+  switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void {
     return undefined;
   }
 }

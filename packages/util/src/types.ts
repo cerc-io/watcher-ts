@@ -236,7 +236,7 @@ export interface IndexerInterface {
   clearProcessedBlockData (block: BlockProgressInterface): Promise<void>
   getResultEvent (event: EventInterface): any
   getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]>
-  doFailOverEndpoints (clients: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void
+  switchClients (clients: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void
 }
 
 export interface DatabaseInterface {

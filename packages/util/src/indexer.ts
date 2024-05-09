@@ -138,7 +138,7 @@ export class Indexer {
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
   }
 
-  doFailOverEndpoints ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: ethers.providers.BaseProvider }): void {
+  switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: ethers.providers.BaseProvider }): void {
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
   }

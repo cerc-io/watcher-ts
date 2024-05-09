@@ -22,15 +22,19 @@ export interface JobQueueConfig {
   lazyUpdateBlockProgress?: boolean;
   subgraphEventsOrder: boolean;
   blockDelayInMilliSecs: number;
+
   // Block range in which logs are fetched during historical blocks processing
   historicalLogsBlockRange?: number;
+
   // Max block range of historical processing after which it waits for completion of events processing
   // If set to -1 historical processing does not wait for events processing and completes till latest canonical block
   historicalMaxFetchAhead?: number;
+
   // Boolean to switch between modes of processing events when starting the server
   // Setting to true will fetch filtered events and required blocks in a range of blocks and then process them
   // Setting to false will fetch blocks consecutively with its events and then process them (Behaviour is followed in realtime processing near head)
   useBlockRanges: boolean;
+
   // Max number of retries to fetch new block after which watcher will failover to other RPC endpoints
   // Infinitely retry if not set
   maxNewBlockRetries?: number;
@@ -259,14 +263,19 @@ export interface UpstreamConfig {
     gqlApiEndpoint: string;
     rpcProviderEndpoints: string[];
     rpcProviderMutationEndpoint: string;
+
     // Boolean flag to specify if rpc-eth-client should be used for RPC endpoint instead of ipld-eth-client (ipld-eth-server GQL client)
     rpcClient: boolean;
+
     // Boolean flag to specify if rpcProviderEndpoint is an FEVM RPC endpoint
     isFEVM: boolean;
+
     // Boolean flag to filter event logs by contracts
     filterLogsByAddresses: boolean;
+
     // Boolean flag to filter event logs by topics
     filterLogsByTopics: boolean;
+
     payments: EthServerPaymentsConfig;
   }
   traceProviderEndpoint: string;

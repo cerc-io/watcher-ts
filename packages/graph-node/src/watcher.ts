@@ -129,7 +129,7 @@ export class GraphWatcher {
     this.fillEventSignatureMap();
   }
 
-  async doFailOverEndpoints ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }) {
+  async switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }) {
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
   }
