@@ -6,7 +6,7 @@ import assert from 'assert';
 import { ValueTransformer } from 'typeorm';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { utils, providers } from 'ethers';
+import { utils, providers, errors as ethersErrors } from 'ethers';
 import JSONbig from 'json-bigint';
 import Decimal from 'decimal.js';
 import ApolloBigInt from 'apollo-type-bigint';
@@ -367,13 +367,17 @@ export class MonitoredStaticJsonRpcProvider extends providers.StaticJsonRpcProvi
       return result;
     } catch (err: any) {
       // Ignore errors on fetching future blocks and if block is null (in case of filecoin)
-      if (!(err.error.message === FUTURE_BLOCK_ERROR || err.error.message === NULL_BLOCK_ERROR)) {
-        // Register the error in metrics
-        ethRpcErrors.inc({ method, provider: this.connection.url }, 1);
-
-        // Rethrow the error
-        throw err;
+      if (err.code === ethersErrors.SERVER_ERROR && err.error) {
+        if (err.error.message === FUTURE_BLOCK_ERROR || err.error.message === NULL_BLOCK_ERROR) {
+          return;
+        }
       }
+
+      // Register the error in metrics
+      ethRpcErrors.inc({ method, provider: this.connection.url }, 1);
+
+      // Rethrow the error
+      throw err;
     } finally {
       endTimer();
     }
