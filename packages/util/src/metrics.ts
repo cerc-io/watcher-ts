@@ -139,6 +139,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   await registerWatcherConfigMetrics(config);
 
+  setActiveUpstreamEndpointMetric(config, endpointIndexes.rpcProviderEndpoint);
+
   await registerDBSizeMetrics(config);
 
   await registerUpstreamChainHeadMetrics(config, endpointIndexes.rpcProviderEndpoint);
@@ -225,10 +227,24 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'server', field: 'rpc_supports_block_hash' }, Number(server.rpcSupportsBlockHashParam));
   watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_addresses' }, Number(upstream.ethServer.filterLogsByAddresses));
   watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_topics' }, Number(upstream.ethServer.filterLogsByTopics));
+  watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_topics' }, Number(upstream.ethServer.rpcProviderEndpoints));
 
   watcherConfigMetric.set({ category: 'jobqueue', field: 'num_events_in_batch' }, Number(jobQueue.eventsInBatch));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'block_delay_seconds' }, (Number(jobQueue.blockDelayInMilliSecs) || 0) / 1000);
   watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_max_fetch_ahead' }, Number(jobQueue.historicalMaxFetchAhead));
+};
+
+const upstreamEndpointsMetric = new client.Gauge({
+  name: 'watcher_config_upstream_endpoints',
+  help: 'Configured upstream ETH RPC endpoints',
+  labelNames: ['provider']
+});
+
+export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
+  const endpoints = upstream.ethServer.rpcProviderEndpoints;
+  endpoints.forEach((endpoint, index) => {
+    upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
+  });
 };
