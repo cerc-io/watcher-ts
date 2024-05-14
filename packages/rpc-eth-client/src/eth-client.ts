@@ -6,11 +6,12 @@ import assert from 'assert';
 import { errors, providers, utils } from 'ethers';
 
 import { Cache } from '@cerc-io/cache';
-import { encodeHeader, escapeHexString, EthClient as EthClientInterface, EthFullBlock, EthFullTransaction } from '@cerc-io/util';
+import {
+  encodeHeader, escapeHexString,
+  EthClient as EthClientInterface, EthFullBlock, EthFullTransaction,
+  MonitoredStaticJsonRpcProvider, FUTURE_BLOCK_ERROR, NULL_BLOCK_ERROR
+} from '@cerc-io/util';
 import { padKey } from '@cerc-io/ipld-eth-client';
-
-const FUTURE_BLOCK_ERROR = "requested a future epoch (beyond 'latest')";
-const NULL_BLOCK_ERROR = 'requested epoch was a null round';
 
 export interface Config {
   cache: Cache | undefined;
@@ -35,7 +36,7 @@ export class EthClient implements EthClientInterface {
   constructor (config: Config) {
     const { rpcEndpoint, cache } = config;
     assert(rpcEndpoint, 'Missing RPC endpoint');
-    this._provider = new providers.StaticJsonRpcProvider({
+    this._provider = new MonitoredStaticJsonRpcProvider({
       url: rpcEndpoint,
       allowGzip: true
     });

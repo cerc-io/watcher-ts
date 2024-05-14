@@ -95,6 +95,19 @@ export const isSyncingHistoricalBlocks = new client.Gauge({
 });
 isSyncingHistoricalBlocks.set(Number(undefined));
 
+export const ethRpcErrors = new client.Counter({
+  name: 'eth_rpc_errors',
+  help: 'Number of ETH RPC request errors',
+  labelNames: ['method', 'provider']
+});
+ethRpcErrors.reset();
+
+export const ethRpcRequestDuration = new client.Histogram({
+  name: 'eth_rpc_request_duration',
+  help: 'ETH RPC request duration (in seconds)',
+  labelNames: ['method', 'provider']
+});
+
 // Export metrics on a server
 const app: Application = express();
 

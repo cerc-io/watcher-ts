@@ -22,8 +22,12 @@ import { ResultEvent } from './indexer';
 import { EventInterface, EthFullBlock, EthFullTransaction } from './types';
 import { BlockHeight } from './database';
 import { Transaction } from './graph/utils';
+import { ethRpcErrors, ethRpcRequestDuration } from './metrics';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
+
+export const FUTURE_BLOCK_ERROR = "requested a future epoch (beyond 'latest')";
+export const NULL_BLOCK_ERROR = 'requested epoch was a null round';
 
 /**
  * Method to wait for specified time.
@@ -154,7 +158,7 @@ export const getResetYargs = (): yargs.Argv => {
 };
 
 export const getCustomProvider = (url?: utils.ConnectionInfo | string, network?: providers.Networkish): providers.JsonRpcProvider => {
-  const provider = new providers.StaticJsonRpcProvider(url, network);
+  const provider = new MonitoredStaticJsonRpcProvider(url, network);
   provider.formatter = new CustomFormatter();
   return provider;
 };
@@ -351,3 +355,27 @@ export const GraphQLBigDecimal = new GraphQLScalarType({
     return value.toFixed();
   }
 });
+
+export class MonitoredStaticJsonRpcProvider extends providers.StaticJsonRpcProvider {
+  // Override the send method
+  async send (method: string, params: Array<any>): Promise<any> {
+    // Register time taken for this request in the metrics
+    const endTimer = ethRpcRequestDuration.startTimer({ method, provider: this.connection.url });
+
+    try {
+      const result = await super.send(method, params);
+      return result;
+    } catch (err: any) {
+      // Ignore errors on fetching future blocks and if block is null (in case of filecoin)
+      if (!(err.error.message === FUTURE_BLOCK_ERROR || err.error.message === NULL_BLOCK_ERROR)) {
+        // Register the error in metrics
+        ethRpcErrors.inc({ method, provider: this.connection.url }, 1);
+
+        // Rethrow the error
+        throw err;
+      }
+    } finally {
+      endTimer();
+    }
+  }
+}
