@@ -95,6 +95,24 @@ export const isSyncingHistoricalBlocks = new client.Gauge({
 });
 isSyncingHistoricalBlocks.set(Number(undefined));
 
+export const ethRpcErrors = new client.Counter({
+  name: 'watcher_eth_rpc_errors',
+  help: 'Number of ETH RPC request errors',
+  labelNames: ['method', 'provider']
+});
+
+export const ethRpcRequestDuration = new client.Gauge({
+  name: 'watcher_eth_rpc_request_duration',
+  help: 'ETH RPC request duration (in seconds)',
+  labelNames: ['method', 'provider']
+});
+
+const upstreamEndpointsMetric = new client.Gauge({
+  name: 'watcher_config_upstream_endpoints',
+  help: 'Configured upstream ETH RPC endpoints',
+  labelNames: ['provider']
+});
+
 // Export metrics on a server
 const app: Application = express();
 
@@ -126,6 +144,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   await registerWatcherConfigMetrics(config);
 
+  setActiveUpstreamEndpointMetric(config, endpointIndexes.rpcProviderEndpoint);
+
   await registerDBSizeMetrics(config);
 
   await registerUpstreamChainHeadMetrics(config, endpointIndexes.rpcProviderEndpoint);
@@ -141,6 +161,13 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   app.listen(config.metrics.port, config.metrics.host, () => {
     log(`Metrics exposed at http://${config.metrics.host}:${config.metrics.port}/metrics`);
+  });
+};
+
+export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
+  const endpoints = upstream.ethServer.rpcProviderEndpoints;
+  endpoints.forEach((endpoint, index) => {
+    upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
   });
 };
 

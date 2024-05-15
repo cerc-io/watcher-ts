@@ -18,7 +18,8 @@ import {
   QueryRunner,
   Repository,
   SelectQueryBuilder,
-  WhereExpressionBuilder
+  WhereExpressionBuilder,
+  Not
 } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import _ from 'lodash';
@@ -1318,7 +1319,7 @@ export class Database {
 
   async _fetchEventCount (): Promise<void> {
     const res = await this._conn.getRepository('event')
-      .count();
+      .count({ where: { eventName: Not(UNKNOWN_EVENT_NAME) } });
 
     eventCount.set(res);
   }

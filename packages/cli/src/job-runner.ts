@@ -23,7 +23,8 @@ import {
   startMetricsServer,
   Config,
   UpstreamConfig,
-  NEW_BLOCK_MAX_RETRIES_ERROR
+  NEW_BLOCK_MAX_RETRIES_ERROR,
+  setActiveUpstreamEndpointMetric
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
@@ -138,6 +139,8 @@ export class JobRunnerCmd {
 
           const { ethClient, ethProvider } = await initClients(config, this._currentEndpointIndex);
           indexer.switchClients({ ethClient, ethProvider });
+          setActiveUpstreamEndpointMetric(config, this._currentEndpointIndex.rpcProviderEndpoint);
+
           log(`RPC endpoint ${oldRpcEndpoint} is not working; failing over to new RPC endpoint ${ethProvider.connection.url}`);
         }
       });
