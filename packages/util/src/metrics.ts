@@ -96,14 +96,14 @@ export const isSyncingHistoricalBlocks = new client.Gauge({
 isSyncingHistoricalBlocks.set(Number(undefined));
 
 export const ethRpcErrors = new client.Counter({
-  name: 'eth_rpc_errors',
+  name: 'watcher_eth_rpc_errors',
   help: 'Number of ETH RPC request errors',
   labelNames: ['method', 'provider']
 });
 ethRpcErrors.reset();
 
-export const ethRpcRequestDuration = new client.Histogram({
-  name: 'eth_rpc_request_duration',
+export const ethRpcRequestDuration = new client.Gauge({
+  name: 'watcher_eth_rpc_request_duration',
   help: 'ETH RPC request duration (in seconds)',
   labelNames: ['method', 'provider']
 });
@@ -227,7 +227,6 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'server', field: 'rpc_supports_block_hash' }, Number(server.rpcSupportsBlockHashParam));
   watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_addresses' }, Number(upstream.ethServer.filterLogsByAddresses));
   watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_topics' }, Number(upstream.ethServer.filterLogsByTopics));
-  watcherConfigMetric.set({ category: 'upstream', field: 'filter_logs_by_topics' }, Number(upstream.ethServer.rpcProviderEndpoints));
 
   watcherConfigMetric.set({ category: 'jobqueue', field: 'num_events_in_batch' }, Number(jobQueue.eventsInBatch));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'block_delay_seconds' }, (Number(jobQueue.blockDelayInMilliSecs) || 0) / 1000);
