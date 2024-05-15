@@ -100,12 +100,17 @@ export const ethRpcErrors = new client.Counter({
   help: 'Number of ETH RPC request errors',
   labelNames: ['method', 'provider']
 });
-ethRpcErrors.reset();
 
 export const ethRpcRequestDuration = new client.Gauge({
   name: 'watcher_eth_rpc_request_duration',
   help: 'ETH RPC request duration (in seconds)',
   labelNames: ['method', 'provider']
+});
+
+const upstreamEndpointsMetric = new client.Gauge({
+  name: 'watcher_config_upstream_endpoints',
+  help: 'Configured upstream ETH RPC endpoints',
+  labelNames: ['provider']
 });
 
 // Export metrics on a server
@@ -156,6 +161,13 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
 
   app.listen(config.metrics.port, config.metrics.host, () => {
     log(`Metrics exposed at http://${config.metrics.host}:${config.metrics.port}/metrics`);
+  });
+};
+
+export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
+  const endpoints = upstream.ethServer.rpcProviderEndpoints;
+  endpoints.forEach((endpoint, index) => {
+    upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
   });
 };
 
@@ -233,17 +245,4 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_max_fetch_ahead' }, Number(jobQueue.historicalMaxFetchAhead));
-};
-
-const upstreamEndpointsMetric = new client.Gauge({
-  name: 'watcher_config_upstream_endpoints',
-  help: 'Configured upstream ETH RPC endpoints',
-  labelNames: ['provider']
-});
-
-export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
-  const endpoints = upstream.ethServer.rpcProviderEndpoints;
-  endpoints.forEach((endpoint, index) => {
-    upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
-  });
 };
