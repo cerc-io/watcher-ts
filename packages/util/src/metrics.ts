@@ -12,6 +12,7 @@ import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
 import { Config } from './config';
 import { IndexerInterface } from './types';
+import { JobQueue } from './job-queue';
 
 const DB_SIZE_QUERY = 'SELECT pg_database_size(current_database())';
 
@@ -27,11 +28,6 @@ export async function fetchLatestBlockNumber (provider: JsonRpcProvider): Promis
 }
 
 // Create custom metrics
-export const jobCount = new client.Gauge({
-  name: 'pgboss_jobs_total',
-  help: 'Total entries in job table',
-  labelNames: ['state', 'name'] as const
-});
 
 export const lastJobCompletedOn = new client.Gauge({
   name: 'pgboss_last_job_completed_timestamp_seconds',
@@ -116,7 +112,7 @@ const upstreamEndpointsMetric = new client.Gauge({
 // Export metrics on a server
 const app: Application = express();
 
-export const startMetricsServer = async (config: Config, indexer: IndexerInterface, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<void> => {
+export const startMetricsServer = async (config: Config, jobQueue: JobQueue, indexer: IndexerInterface, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<void> => {
   if (!config.metrics) {
     log('Metrics is disabled. To enable add metrics host and port.');
     return;
@@ -141,6 +137,8 @@ export const startMetricsServer = async (config: Config, indexer: IndexerInterfa
       }
     }
   });
+
+  await registerJobQueueMetrics(jobQueue);
 
   await registerWatcherConfigMetrics(config);
 
@@ -245,4 +243,36 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
   watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_max_fetch_ahead' }, Number(jobQueue.historicalMaxFetchAhead));
+};
+
+const registerJobQueueMetrics = async (jobQueue: JobQueue): Promise<void> => {
+  // eslint-disable-next-line no-new
+  new client.Gauge({
+    name: 'pgboss_jobs_total',
+    help: 'Total entries in job table',
+    labelNames: ['state', 'name'] as const,
+    async collect () {
+      const jobCounts = await jobQueue.getJobCounts();
+
+      this.set({ state: 'all' }, jobCounts.all);
+      this.set({ state: 'created' }, jobCounts.created);
+      this.set({ state: 'retry' }, jobCounts.retry);
+      this.set({ state: 'active' }, jobCounts.active);
+      this.set({ state: 'completed' }, jobCounts.completed);
+      this.set({ state: 'expired' }, jobCounts.expired);
+      this.set({ state: 'cancelled' }, jobCounts.cancelled);
+      this.set({ state: 'failed' }, jobCounts.failed);
+
+      Object.entries(jobCounts.queues as Array<any>).forEach(([name, counts]) => {
+        this.set({ state: 'all', name }, counts.all);
+        this.set({ state: 'created', name }, counts.created);
+        this.set({ state: 'retry', name }, counts.retry);
+        this.set({ state: 'active', name }, counts.active);
+        this.set({ state: 'completed', name }, counts.completed);
+        this.set({ state: 'expired', name }, counts.expired);
+        this.set({ state: 'cancelled', name }, counts.cancelled);
+        this.set({ state: 'failed', name }, counts.failed);
+      });
+    }
+  });
 };

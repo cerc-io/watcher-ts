@@ -154,7 +154,7 @@ export class JobRunnerCmd {
     await startJobRunner(jobRunner);
     jobRunner.handleShutdown();
 
-    await startMetricsServer(config, indexer, this._currentEndpointIndex);
+    await startMetricsServer(config, jobQueue, indexer, this._currentEndpointIndex);
   }
 
   _getArgv (): any {
