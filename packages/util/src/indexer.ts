@@ -1421,7 +1421,7 @@ export class Indexer {
       });
     }
 
-    if (this._upstreamConfig.ethServer.filterLogsByTopics && !this._upstreamConfig.ethServer.isFEVM) {
+    if (this._upstreamConfig.ethServer.filterLogsByTopics) {
       const eventSignaturesSet = new Set<string>();
       eventSignaturesMap.forEach(sigs => sigs.forEach(sig => {
         eventSignaturesSet.add(sig);
