@@ -347,18 +347,6 @@ export class GraphDatabase {
     return entityData;
   }
 
-  _defragmentGQLQuerySelections (selections: ReadonlyArray<SelectionNode>, queryInfo: GraphQLResolveInfo): SelectionNode[] {
-    return selections.reduce((acc: SelectionNode[], selection) => {
-      if (selection.kind === 'FragmentSpread') {
-        const fragmentSelections = queryInfo.fragments[selection.name.value].selectionSet.selections;
-
-        return [...acc, ...fragmentSelections];
-      }
-
-      return [...acc, selection];
-    }, []);
-  }
-
   async getEntities<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
@@ -1345,5 +1333,17 @@ export class GraphDatabase {
 
     log(`Total entities in cachedEntities.latestPrunedEntities map: ${totalEntities}`);
     cachePrunedEntitiesCount.set(totalEntities);
+  }
+
+  _defragmentGQLQuerySelections (selections: ReadonlyArray<SelectionNode>, queryInfo: GraphQLResolveInfo): SelectionNode[] {
+    return selections.reduce((acc: SelectionNode[], selection) => {
+      if (selection.kind === 'FragmentSpread') {
+        const fragmentSelections = queryInfo.fragments[selection.name.value].selectionSet.selections;
+
+        return [...acc, ...fragmentSelections];
+      }
+
+      return [...acc, selection];
+    }, []);
   }
 }
