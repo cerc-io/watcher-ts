@@ -17,7 +17,7 @@ import {
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
-import { SelectionNode } from 'graphql';
+import { GraphQLResolveInfo, SelectionNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
@@ -221,7 +221,8 @@ export class GraphDatabase {
     id: string,
     relationsMap: Map<any, { [key: string]: any }>,
     block: CanonicalBlockHeight = {},
-    selections: ReadonlyArray<SelectionNode> = []
+    selections: ReadonlyArray<SelectionNode> = [],
+    queryInfo: GraphQLResolveInfo
   ): Promise<Entity | undefined> {
     const { hash: blockHash, number: blockNumber } = block;
     const repo = queryRunner.manager.getRepository<Entity>(entityType);
@@ -248,7 +249,7 @@ export class GraphDatabase {
 
     // Get relational fields
     if (entityData) {
-      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entityType, entityData, selections);
+      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entityType, entityData, selections, queryInfo);
     }
 
     return entityData;
@@ -259,7 +260,8 @@ export class GraphDatabase {
     block: CanonicalBlockHeight,
     relationsMap: Map<any, { [key: string]: any }>,
     entityType: new () => Entity, entityData: any,
-    selections: ReadonlyArray<SelectionNode> = []
+    selections: ReadonlyArray<SelectionNode> = [],
+    queryInfo: GraphQLResolveInfo
   ): Promise<Entity> {
     const relations = relationsMap.get(entityType);
     if (relations === undefined) {
@@ -292,7 +294,8 @@ export class GraphDatabase {
             block,
             where,
             { limit: DEFAULT_LIMIT },
-            childSelections
+            childSelections,
+            queryInfo
           );
 
           entityData[field] = relatedEntities;
@@ -316,7 +319,8 @@ export class GraphDatabase {
             block,
             where,
             { limit: DEFAULT_LIMIT },
-            childSelections
+            childSelections,
+            queryInfo
           );
 
           entityData[field] = relatedEntities;
@@ -331,7 +335,8 @@ export class GraphDatabase {
           entityData[field],
           relationsMap,
           block,
-          childSelections
+          childSelections,
+          queryInfo
         );
 
         entityData[field] = relatedEntity;
@@ -342,6 +347,18 @@ export class GraphDatabase {
     return entityData;
   }
 
+  _defragmentGQLQuerySelections (selections: ReadonlyArray<SelectionNode>, queryInfo: GraphQLResolveInfo): SelectionNode[] {
+    return selections.reduce((acc: SelectionNode[], selection) => {
+      if (selection.kind === 'FragmentSpread') {
+        const fragmentSelections = queryInfo.fragments[selection.name.value].selectionSet.selections;
+
+        return [...acc, ...fragmentSelections];
+      }
+
+      return [...acc, selection];
+    }, []);
+  }
+
   async getEntities<Entity extends ObjectLiteral> (
     queryRunner: QueryRunner,
     entityType: new () => Entity,
@@ -349,10 +366,13 @@ export class GraphDatabase {
     block: CanonicalBlockHeight = {},
     where: Where = {},
     queryOptions: QueryOptions = {},
-    selections: ReadonlyArray<SelectionNode> = []
+    selections: ReadonlyArray<SelectionNode> = [],
+    queryInfo: GraphQLResolveInfo
   ): Promise<Entity[]> {
     let entities: Entity[] = [];
     const latestEntityType = this._entityToLatestEntityMap.get(entityType);
+
+    const defragmentedSelections = this._defragmentGQLQuerySelections(selections, queryInfo);
 
     if (latestEntityType) {
       if (Object.keys(block).length) {
@@ -375,7 +395,7 @@ export class GraphDatabase {
           relationsMap,
           where,
           queryOptions,
-          selections
+          defragmentedSelections
         );
       }
     } else {
@@ -405,7 +425,7 @@ export class GraphDatabase {
       return [];
     }
 
-    entities = await this.loadEntitiesRelations(queryRunner, block, relationsMap, entityType, entities, selections);
+    entities = await this.loadEntitiesRelations(queryRunner, block, relationsMap, entityType, entities, defragmentedSelections, queryInfo);
     // Resolve any field name conflicts in the entity result.
     entities = entities.map(entity => resolveEntityFieldConflicts(entity));
 
@@ -744,7 +764,8 @@ export class GraphDatabase {
     relationsMap: Map<any, { [key: string]: any }>,
     entity: new () => Entity,
     entities: Entity[],
-    selections: ReadonlyArray<SelectionNode> = []
+    selections: ReadonlyArray<SelectionNode> = [],
+    queryInfo: GraphQLResolveInfo
   ): Promise<Entity[]> {
     const relations = relationsMap.get(entity);
     if (relations === undefined) {
@@ -755,11 +776,11 @@ export class GraphDatabase {
 
     if (this._serverConfig.loadRelationsSequential) {
       for (const selection of relationSelections) {
-        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection);
+        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection, queryInfo);
       }
     } else {
       const loadRelationPromises = relationSelections.map(async selection => {
-        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection);
+        await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection, queryInfo);
       });
 
       await Promise.all(loadRelationPromises);
@@ -774,7 +795,8 @@ export class GraphDatabase {
     relationsMap: Map<any, { [key: string]: any }>,
     relations: { [key: string]: any },
     entities: Entity[],
-    selection: SelectionNode
+    selection: SelectionNode,
+    queryInfo: GraphQLResolveInfo
   ): Promise<void> {
     assert(selection.kind === 'Field');
     const field = selection.name.value;
@@ -800,7 +822,8 @@ export class GraphDatabase {
         block,
         where,
         {},
-        childSelections
+        childSelections,
+        queryInfo
       );
 
       const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any[]}, entity: any) => {
@@ -851,7 +874,8 @@ export class GraphDatabase {
         block,
         where,
         {},
-        childSelections
+        childSelections,
+        queryInfo
       );
 
       entities.forEach((entity: any) => {
@@ -902,7 +926,8 @@ export class GraphDatabase {
       block,
       where,
       {},
-      childSelections
+      childSelections,
+      queryInfo
     );
 
     const relatedEntitiesMap = relatedEntities.reduce((acc: {[key:string]: any}, entity: any) => {
