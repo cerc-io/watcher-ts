@@ -18,15 +18,6 @@ const DB_SIZE_QUERY = 'SELECT pg_database_size(current_database())';
 
 const log = debug('vulcanize:metrics');
 
-export async function fetchLatestBlockNumber (provider: JsonRpcProvider): Promise<number> {
-  try {
-    return await provider.getBlockNumber();
-  } catch (err) {
-    log('Error fetching latest block number', err);
-    return -1;
-  }
-}
-
 // Create custom metrics
 
 export const lastJobCompletedOn = new client.Gauge({
@@ -212,8 +203,12 @@ const registerUpstreamChainHeadMetrics = async ({ upstream }: Config, rpcProvide
     name: 'latest_upstream_block_number',
     help: 'Latest upstream block number',
     async collect () {
-      const latestBlockNumber = await fetchLatestBlockNumber(ethRpcProvider);
-      this.set(latestBlockNumber);
+      try {
+        const blockNumber = await ethRpcProvider.getBlockNumber();
+        this.set(blockNumber);
+      } catch (err) {
+        log('Error fetching latest block number', err);
+      }
     }
   });
 };
