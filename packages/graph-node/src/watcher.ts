@@ -8,7 +8,7 @@ import debug from 'debug';
 import path from 'path';
 import fs from 'fs';
 import { ContractInterface, utils, providers } from 'ethers';
-import { SelectionNode } from 'graphql';
+import { GraphQLResolveInfo, SelectionNode } from 'graphql';
 
 import { ResultObject } from '@cerc-io/assemblyscript/lib/loader';
 import {
@@ -321,13 +321,15 @@ export class GraphWatcher {
     id: string,
     relationsMap: Map<any, { [key: string]: any }>,
     block: BlockHeight,
-    selections: ReadonlyArray<SelectionNode> = []
+    queryInfo: GraphQLResolveInfo
   ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
+      const selections = this._getSelectionsFromGQLInfo(queryInfo);
+
       // Get entity from the database.
-      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block, selections);
+      const result = await this._database.getEntityWithRelations(dbTx, entity, id, relationsMap, block, selections, queryInfo);
       await dbTx.commitTransaction();
 
       // Resolve any field name conflicts in the entity result.
@@ -346,7 +348,7 @@ export class GraphWatcher {
     block: BlockHeight,
     where: { [key: string]: any } = {},
     queryOptions: QueryOptions,
-    selections: ReadonlyArray<SelectionNode> = []
+    queryInfo: GraphQLResolveInfo
   ): Promise<any> {
     const dbTx = await this._database.createTransactionRunner();
 
@@ -357,8 +359,10 @@ export class GraphWatcher {
         queryOptions.limit = DEFAULT_LIMIT;
       }
 
+      const selections = this._getSelectionsFromGQLInfo(queryInfo);
+
       // Get entities from the database.
-      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions, selections);
+      const entities = await this._database.getEntities(dbTx, entity, relationsMap, block, where, queryOptions, selections, queryInfo);
       await dbTx.commitTransaction();
 
       return entities;
@@ -552,6 +556,14 @@ export class GraphWatcher {
 
       return acc;
     }, {});
+  }
+
+  _getSelectionsFromGQLInfo (queryInfo: GraphQLResolveInfo): readonly SelectionNode[] {
+    const [fieldNode] = queryInfo.fieldNodes;
+    const selectionSet = fieldNode.selectionSet;
+    assert(selectionSet, `selectionSet not present in GQL fieldNode ${fieldNode.name}`);
+
+    return selectionSet.selections;
   }
 }
 

@@ -8,8 +8,6 @@ import debug from 'debug';
 import { ethers } from 'ethers';
 import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
-import { fetchLatestBlockNumber } from '@cerc-io/util';
-
 const log = debug('laconic:chain-head-exporter');
 
 // Env overrides:
@@ -57,16 +55,20 @@ async function main (): Promise<void> {
     registers: [metricsRegister],
     labelNames: ['chain'] as const,
     async collect () {
-      const [
-        latestEthBlockNumber,
-        latestFilBlockNumber
-      ] = await Promise.all([
-        fetchLatestBlockNumber(ethProvider),
-        fetchLatestBlockNumber(filProvider)
-      ]);
+      try {
+        const [
+          latestEthBlockNumber,
+          latestFilBlockNumber
+        ] = await Promise.all([
+          ethProvider.getBlockNumber(),
+          filProvider.getBlockNumber()
+        ]);
 
-      this.set({ chain: 'ethereum' }, latestEthBlockNumber);
-      this.set({ chain: 'filecoin' }, latestFilBlockNumber);
+        this.set({ chain: 'ethereum' }, latestEthBlockNumber);
+        this.set({ chain: 'filecoin' }, latestFilBlockNumber);
+      } catch (err) {
+        log('Error fetching latest block number', err);
+      }
     }
   });
 
