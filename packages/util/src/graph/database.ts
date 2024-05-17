@@ -241,7 +241,7 @@ export class GraphDatabase {
       }
     };
 
-    let entityData: any = await repo.findOne(findOptions as FindOneOptions<Entity>);
+    let entityData = await repo.findOne(findOptions as FindOneOptions<Entity>);
 
     if (!entityData && findOptions.where.blockHash) {
       entityData = await this._baseDatabase.getPrevEntityVersion(queryRunner, repo, findOptions);
@@ -249,7 +249,8 @@ export class GraphDatabase {
 
     // Get relational fields
     if (entityData) {
-      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entityType, entityData, selections, queryInfo);
+      const defragmentedSelections = this._defragmentGQLQuerySelections(selections, queryInfo);
+      entityData = await this.loadEntityRelations(queryRunner, block, relationsMap, entityType, entityData, defragmentedSelections, queryInfo);
     }
 
     return entityData;
