@@ -153,11 +153,17 @@ export const startMetricsServer = async (config: Config, jobQueue: JobQueue, ind
   });
 };
 
+// ETH RPC provider used for upstream chain head metrics
+let ethRpcProvider: JsonRpcProvider | undefined;
+
 export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
   const endpoints = upstream.ethServer.rpcProviderEndpoints;
+
   endpoints.forEach((endpoint, index) => {
     upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
   });
+
+  ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[currentEndpointIndex]);
 };
 
 const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<void> => {
@@ -196,7 +202,7 @@ const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<vo
 };
 
 const registerUpstreamChainHeadMetrics = async ({ upstream }: Config, rpcProviderEndpointIndex: number): Promise<void> => {
-  const ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[rpcProviderEndpointIndex]);
+  ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[rpcProviderEndpointIndex]);
 
   // eslint-disable-next-line no-new
   new client.Gauge({
@@ -204,6 +210,7 @@ const registerUpstreamChainHeadMetrics = async ({ upstream }: Config, rpcProvide
     help: 'Latest upstream block number',
     async collect () {
       try {
+        assert(ethRpcProvider, 'ethRpcProvider is not set');
         const blockNumber = await ethRpcProvider.getBlockNumber();
         this.set(blockNumber);
       } catch (err) {
