@@ -139,6 +139,8 @@ export const startMetricsServer = async (config: Config, jobQueue: JobQueue, ind
 
   await registerUpstreamChainHeadMetrics(config, endpointIndexes.rpcProviderEndpoint);
 
+  await registerWatcherInfoMetrics();
+
   // Collect default metrics
   client.collectDefaultMetrics();
 
@@ -277,4 +279,14 @@ const registerJobQueueMetrics = async (jobQueue: JobQueue): Promise<void> => {
       });
     }
   });
+};
+
+const registerWatcherInfoMetrics = async (): Promise<void> => {
+  const watcherInfoMetric = new client.Gauge({
+    name: 'watcher_info',
+    help: 'Watcher info (static)',
+    labelNames: ['version', 'commitHash']
+  });
+
+  watcherInfoMetric.set({ version: process.env.npm_package_version, commitHash: process.env.npm_package_commitHash }, 1);
 };
