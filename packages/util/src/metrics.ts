@@ -282,11 +282,14 @@ const registerJobQueueMetrics = async (jobQueue: JobQueue): Promise<void> => {
 };
 
 const registerWatcherInfoMetrics = async (): Promise<void> => {
+  const { readPackage } = await import('read-pkg');
+  const pkgJson = await readPackage();
+
   const watcherInfoMetric = new client.Gauge({
     name: 'watcher_info',
     help: 'Watcher info (static)',
     labelNames: ['version', 'commitHash']
   });
 
-  watcherInfoMetric.set({ version: process.env.npm_package_version, commitHash: process.env.npm_package_commitHash }, 1);
+  watcherInfoMetric.set({ version: pkgJson.version, commitHash: pkgJson.commitHash }, 1);
 };
