@@ -265,7 +265,7 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'README.md'))
     : process.stdout;
-  exportReadme(path.basename(outputDir), config.port, outStream);
+  exportReadme(path.basename(outputDir), config, outStream);
 
   outStream = outputDir
     ? fs.createWriteStream(path.join(outputDir, 'LICENSE'))
