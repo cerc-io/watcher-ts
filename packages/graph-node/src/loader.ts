@@ -340,7 +340,7 @@ export const instantiate = async (
       },
       'typeConversion.bytesToString': async (bytes: number) => {
         const byteArray = __getArray(bytes);
-        const string = utils.toUtf8String(byteArray);
+        const string = utils.toUtf8String(byteArray, utils.Utf8ErrorFuncs.replace);
         const ptr = await __newString(string);
 
         return ptr;
