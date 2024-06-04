@@ -12,6 +12,7 @@ import {
   {{/if}}
   gqlTotalQueryCount,
   gqlQueryCount,
+  gqlQueryDuration,
   getResultState,
   IndexerInterface,
   GraphQLBigInt,
@@ -35,6 +36,16 @@ import { {{query.entityName}} } from './entity/{{query.entityName}}';
 {{/if}}
 
 const log = debug('vulcanize:resolver');
+
+const recordGQLMetrics = async (gqlLabel: string, operation: () => Promise<any>) => {
+  gqlTotalQueryCount.inc(1);
+  gqlQueryCount.labels(gqlLabel).inc(1);
+
+  const endTimer = gqlQueryDuration.labels(gqlLabel).startTimer();
+  const result = await operation();
+  endTimer();
+  return result;
+};
 
 export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
   const indexer = indexerArg as Indexer;
@@ -84,14 +95,15 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('{{this.name}}').inc(1);
-
+        
         // Set cache-control hints
         // setGQLCacheHints(info, {}, gqlCacheConfig);
 
-        return indexer.{{this.name}}(blockHash, contractAddress
-        {{~#each this.params}}, {{this.name~}} {{/each}});
+        return recordGQLMetrics(
+          '{{this.name}}',
+          async () => indexer.{{this.name}}(blockHash, contractAddress
+        {{~#each this.params}}, {{this.name~}} {{/each}})
+        );
       },
 
       {{/each}}
@@ -104,13 +116,14 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         info: GraphQLResolveInfo
       ) => {
         log('{{this.queryName}}', id, JSON.stringify(block, jsonBigIntStringReplacer));
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('{{this.queryName}}').inc(1);
 
         // Set cache-control hints
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
-        return indexer.getSubgraphEntity({{this.entityName}}, id, block, info);
+        return recordGQLMetrics(
+          '{{this.queryName}}',
+          async () => indexer.getSubgraphEntity({{this.entityName}}, id, block, info)
+        );
       },
 
       {{this.pluralQueryName}}: async (
@@ -120,73 +133,86 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         info: GraphQLResolveInfo
       ) => {
         log('{{this.pluralQueryName}}', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('{{this.pluralQueryName}}').inc(1);
 
         // Set cache-control hints
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
-        return indexer.getSubgraphEntities(
-          {{this.entityName}},
-          block,
-          where,
-          { limit: first, skip, orderBy, orderDirection },
-          info
+        return recordGQLMetrics(
+          '{{this.pluralQueryName}}',
+          async () => indexer.getSubgraphEntities(
+            {{this.entityName}},
+            block,
+            where,
+            { limit: first, skip, orderBy, orderDirection },
+            info
+          )
         );
       },
 
       {{/each}}
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
         log('events', blockHash, contractAddress, name);
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('events').inc(1);
 
-        const block = await indexer.getBlockProgress(blockHash);
-        if (!block || !block.isComplete) {
-          throw new Error(`Block hash ${blockHash} number ${block?.blockNumber} not processed yet`);
-        }
+        return recordGQLMetrics(
+          'events',
+          async () => {
+            const block = await indexer.getBlockProgress(blockHash);
+            if (!block || !block.isComplete) {
+              throw new Error(`Block hash ${blockHash} number ${block?.blockNumber} not processed yet`);
+            }
 
-        const events = await indexer.getEventsByFilter(blockHash, contractAddress, name);
-        return events.map(event => indexer.getResultEvent(event));
+            const events = await indexer.getEventsByFilter(blockHash, contractAddress, name);
+            return events.map(event => indexer.getResultEvent(event));
+          }
+        );
       },
 
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('eventsInRange').inc(1);
 
-        const syncStatus = await indexer.getSyncStatus();
+        return recordGQLMetrics(
+          'eventsInRange',
+          async () => {
+            const syncStatus = await indexer.getSyncStatus();
 
-        if (!syncStatus) {
-          throw new Error('No blocks processed yet');
-        }
+            if (!syncStatus) {
+              throw new Error('No blocks processed yet');
+            }
 
-        if ((fromBlockNumber < syncStatus.initialIndexedBlockNumber) || (toBlockNumber > syncStatus.latestProcessedBlockNumber)) {
-          throw new Error(`Block range should be between ${syncStatus.initialIndexedBlockNumber} and ${syncStatus.latestProcessedBlockNumber}`);
-        }
+            if ((fromBlockNumber < syncStatus.initialIndexedBlockNumber) || (toBlockNumber > syncStatus.latestProcessedBlockNumber)) {
+              throw new Error(`Block range should be between ${syncStatus.initialIndexedBlockNumber} and ${syncStatus.latestProcessedBlockNumber}`);
+            }
 
-        const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
-        return events.map(event => indexer.getResultEvent(event));
+            const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
+            return events.map(event => indexer.getResultEvent(event));
+          }
+        );
       },
 
       getStateByCID: async (_: any, { cid }: { cid: string }) => {
         log('getStateByCID', cid);
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('getStateByCID').inc(1);
 
-        const state = await indexer.getStateByCID(cid);
+        return recordGQLMetrics(
+          'getStateByCID',
+          async () => {
+            const state = await indexer.getStateByCID(cid);
 
-        return state && state.block.isComplete ? getResultState(state) : undefined;
+            return state && state.block.isComplete ? getResultState(state) : undefined;
+          }
+        );
       },
 
       getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('getState').inc(1);
 
-        const state = await indexer.getPrevState(blockHash, contractAddress, kind);
+        return recordGQLMetrics(
+          'getState',
+          async () => {
+            const state = await indexer.getPrevState(blockHash, contractAddress, kind);
 
-        return state && state.block.isComplete ? getResultState(state) : undefined;
+            return state && state.block.isComplete ? getResultState(state) : undefined;
+          }
+        );
       },
       {{#if (subgraphPath)}}
 
@@ -195,19 +221,21 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         { block = {} }: { block: BlockHeight }
       ) => {
         log('_meta');
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('_meta').inc(1);
 
-        return indexer.getMetaData(block);
+        return recordGQLMetrics(
+          '_meta',
+          async () => indexer.getMetaData(block)
+        );
       },
       {{/if}}
 
       getSyncStatus: async () => {
         log('getSyncStatus');
-        gqlTotalQueryCount.inc(1);
-        gqlQueryCount.labels('getSyncStatus').inc(1);
 
-        return indexer.getSyncStatus();
+        return recordGQLMetrics(
+          'getSyncStatus',
+          async () => indexer.getSyncStatus()
+        );
       }
     }
   };
