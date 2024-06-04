@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/cli",
-  "version": "0.2.92",
+  "version": "0.2.93",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "scripts": {
@@ -15,13 +15,13 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
-    "@cerc-io/cache": "^0.2.92",
-    "@cerc-io/ipld-eth-client": "^0.2.92",
+    "@cerc-io/cache": "^0.2.93",
+    "@cerc-io/ipld-eth-client": "^0.2.93",
     "@cerc-io/libp2p": "^0.42.2-laconic-0.1.4",
     "@cerc-io/nitro-node": "^0.1.15",
-    "@cerc-io/peer": "^0.2.92",
-    "@cerc-io/rpc-eth-client": "^0.2.92",
-    "@cerc-io/util": "^0.2.92",
+    "@cerc-io/peer": "^0.2.93",
+    "@cerc-io/rpc-eth-client": "^0.2.93",
+    "@cerc-io/util": "^0.2.93",
     "@ethersproject/providers": "^5.4.4",
     "@graphql-tools/utils": "^9.1.1",
     "@ipld/dag-cbor": "^8.0.0",
