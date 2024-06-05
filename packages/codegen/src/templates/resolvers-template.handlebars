@@ -37,14 +37,18 @@ import { {{query.entityName}} } from './entity/{{query.entityName}}';
 
 const log = debug('vulcanize:resolver');
 
-const recordGQLMetrics = async (gqlLabel: string, operation: () => Promise<any>) => {
+const executeAndRecordMetrics = async (gqlLabel: string, operation: () => Promise<any>) => {
   gqlTotalQueryCount.inc(1);
   gqlQueryCount.labels(gqlLabel).inc(1);
-
   const endTimer = gqlQueryDuration.labels(gqlLabel).startTimer();
-  const result = await operation();
-  endTimer();
-  return result;
+
+  try {
+    const result = await operation();
+
+    return result;
+  } finally {
+    endTimer();
+  }
 };
 
 export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
@@ -99,7 +103,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // Set cache-control hints
         // setGQLCacheHints(info, {}, gqlCacheConfig);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           '{{this.name}}',
           async () => indexer.{{this.name}}(blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}})
@@ -120,7 +124,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // Set cache-control hints
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           '{{this.queryName}}',
           async () => indexer.getSubgraphEntity({{this.entityName}}, id, block, info)
         );
@@ -137,7 +141,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // Set cache-control hints
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           '{{this.pluralQueryName}}',
           async () => indexer.getSubgraphEntities(
             {{this.entityName}},
@@ -153,7 +157,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
         log('events', blockHash, contractAddress, name);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           'events',
           async () => {
             const block = await indexer.getBlockProgress(blockHash);
@@ -170,7 +174,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           'eventsInRange',
           async () => {
             const syncStatus = await indexer.getSyncStatus();
@@ -192,7 +196,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       getStateByCID: async (_: any, { cid }: { cid: string }) => {
         log('getStateByCID', cid);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           'getStateByCID',
           async () => {
             const state = await indexer.getStateByCID(cid);
@@ -205,7 +209,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
         log('getState', blockHash, contractAddress, kind);
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           'getState',
           async () => {
             const state = await indexer.getPrevState(blockHash, contractAddress, kind);
@@ -222,7 +226,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       ) => {
         log('_meta');
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           '_meta',
           async () => indexer.getMetaData(block)
         );
@@ -232,7 +236,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       getSyncStatus: async () => {
         log('getSyncStatus');
 
-        return recordGQLMetrics(
+        return executeAndRecordMetrics(
           'getSyncStatus',
           async () => indexer.getSyncStatus()
         );
