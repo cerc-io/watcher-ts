@@ -63,7 +63,7 @@
 
 To enable GQL requests caching:
 
-* Update the `server.gqlCache` config with required settings.
+* Update the `server.gql.cache` config with required settings.
 
 * In the GQL [schema file](./src/schema.gql), use the `cacheControl` directive to apply cache hints at schema level.
 

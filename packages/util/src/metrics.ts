@@ -231,10 +231,10 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
 
   watcherConfigMetric.set({ category: 'server', field: 'is_active' }, Number(server.kind === 'active'));
   watcherConfigMetric.set({ category: 'server', field: 'is_subgraph_watcher' }, Number(server.subgraphPath?.length > 0));
-  watcherConfigMetric.set({ category: 'server', field: 'max_events_block_range' }, Number(server.maxEventsBlockRange));
+  watcherConfigMetric.set({ category: 'server', field: 'max_events_block_range' }, Number(server.gql.maxEventsBlockRange));
   watcherConfigMetric.set({ category: 'server', field: 'clear_entities_cache_interval' }, Number(server.clearEntitiesCacheInterval));
-  watcherConfigMetric.set({ category: 'server', field: 'max_simultaneous_requests' }, Number(server.maxSimultaneousRequests));
-  watcherConfigMetric.set({ category: 'server', field: 'max_request_queue_limit' }, Number(server.maxRequestQueueLimit));
+  watcherConfigMetric.set({ category: 'server', field: 'max_simultaneous_requests' }, Number(server.gql.maxSimultaneousRequests));
+  watcherConfigMetric.set({ category: 'server', field: 'max_request_queue_limit' }, Number(server.gql.maxRequestQueueLimit));
 
   watcherConfigMetric.set({ category: 'upstream', field: 'is_using_rpc_client' }, Number(upstream.ethServer.rpcClient));
   watcherConfigMetric.set({ category: 'upstream', field: 'is_fevm' }, Number(upstream.ethServer.isFEVM));
