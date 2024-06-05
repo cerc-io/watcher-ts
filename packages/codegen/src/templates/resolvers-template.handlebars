@@ -5,6 +5,8 @@
 import assert from 'assert';
 import debug from 'debug';
 import { GraphQLResolveInfo } from 'graphql';
+import { ExpressContext } from 'apollo-server-express';
+import winston from 'winston';
 
 import {
   {{#if queries}}
@@ -37,25 +39,57 @@ import { {{query.entityName}} } from './entity/{{query.entityName}}';
 
 const log = debug('vulcanize:resolver');
 
-const executeAndRecordMetrics = async (gqlLabel: string, operation: () => Promise<any>) => {
+const executeAndRecordMetrics = async (
+  indexer: Indexer,
+  gqlLogger: winston.Logger,
+  opName: string,
+  expressContext: ExpressContext,
+  operation: () => Promise<any>
+) => {
   gqlTotalQueryCount.inc(1);
-  gqlQueryCount.labels(gqlLabel).inc(1);
-  const endTimer = gqlQueryDuration.labels(gqlLabel).startTimer();
+  gqlQueryCount.labels(opName).inc(1);
+  const endTimer = gqlQueryDuration.labels(opName).startTimer();
 
   try {
-    const result = await operation();
+    const [result, syncStatus] = await Promise.all([
+      operation(),
+      indexer.getSyncStatus()
+    ]);
 
+    gqlLogger.info({
+      opName,
+      query: expressContext.req.body.query,
+      variables: expressContext.req.body.variables,
+      latestIndexedBlockNumber: syncStatus?.latestIndexedBlockNumber,
+      urlPath: expressContext.req.path,
+      apiKey: expressContext.req.header('x-api-key'),
+      origin: expressContext.req.headers.origin
+    });
     return result;
+  } catch (error) {
+    gqlLogger.error({
+      opName,
+      error,
+      query: expressContext.req.body.query,
+      variables: expressContext.req.body.variables,
+      urlPath: expressContext.req.path,
+      apiKey: expressContext.req.header('x-api-key'),
+      origin: expressContext.req.headers.origin
+    });
   } finally {
     endTimer();
   }
 };
 
-export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher: EventWatcher): Promise<any> => {
+export const createResolvers = async (
+  indexerArg: IndexerInterface,
+  eventWatcher: EventWatcher
+  gqlLogger: winston.Logger
+): Promise<any> => {
   const indexer = indexerArg as Indexer;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const gqlCacheConfig = indexer.serverConfig.gqlCache;
+  const gqlCacheConfig = indexer.serverConfig.gql.cache;
 
   return {
     BigInt: GraphQLBigInt,
@@ -93,7 +127,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         {{~#each this.params}}, {{this.name~}} {{/each}} }: { blockHash: string, contractAddress: string
         {{~#each this.params}}, {{this.name}}: {{this.type~}} {{/each}} },
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        __: any,
+        expressContext: ExpressContext,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         info: GraphQLResolveInfo
       ): Promise<ValueResult> => {
@@ -104,7 +138,10 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // setGQLCacheHints(info, {}, gqlCacheConfig);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           '{{this.name}}',
+          expressContext,
           async () => indexer.{{this.name}}(blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}})
         );
@@ -116,7 +153,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       {{this.queryName}}: async (
         _: any,
         { id, block = {} }: { id: string, block: BlockHeight },
-        __: any,
+        expressContext: ExpressContext,
         info: GraphQLResolveInfo
       ) => {
         log('{{this.queryName}}', id, JSON.stringify(block, jsonBigIntStringReplacer));
@@ -125,7 +162,10 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           '{{this.queryName}}',
+          expressContext,
           async () => indexer.getSubgraphEntity({{this.entityName}}, id, block, info)
         );
       },
@@ -133,7 +173,7 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       {{this.pluralQueryName}}: async (
         _: any,
         { block = {}, where, first, skip, orderBy, orderDirection }: { block: BlockHeight, where: { [key: string]: any }, first: number, skip: number, orderBy: string, orderDirection: OrderDirection },
-        __: any,
+        expressContext: ExpressContext,
         info: GraphQLResolveInfo
       ) => {
         log('{{this.pluralQueryName}}', JSON.stringify(block, jsonBigIntStringReplacer), JSON.stringify(where, jsonBigIntStringReplacer), first, skip, orderBy, orderDirection);
@@ -142,7 +182,10 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         // setGQLCacheHints(info, block, gqlCacheConfig);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           '{{this.pluralQueryName}}',
+          expressContext,
           async () => indexer.getSubgraphEntities(
             {{this.entityName}},
             block,
@@ -154,11 +197,18 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
       },
 
       {{/each}}
-      events: async (_: any, { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string }) => {
+      events: async (
+        _: any,
+        { blockHash, contractAddress, name }: { blockHash: string, contractAddress: string, name?: string },
+        expressContext: ExpressContext
+      ) => {
         log('events', blockHash, contractAddress, name);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           'events',
+          expressContext,
           async () => {
             const block = await indexer.getBlockProgress(blockHash);
             if (!block || !block.isComplete) {
@@ -171,11 +221,18 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         );
       },
 
-      eventsInRange: async (_: any, { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number }) => {
+      eventsInRange: async (
+        _: any,
+        { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number },
+        expressContext: ExpressContext
+      ) => {
         log('eventsInRange', fromBlockNumber, toBlockNumber);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           'eventsInRange',
+          expressContext,
           async () => {
             const syncStatus = await indexer.getSyncStatus();
 
@@ -193,11 +250,18 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         );
       },
 
-      getStateByCID: async (_: any, { cid }: { cid: string }) => {
+      getStateByCID: async (
+        _: any,
+        { cid }: { cid: string },
+        expressContext: ExpressContext
+      ) => {
         log('getStateByCID', cid);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           'getStateByCID',
+          expressContext,
           async () => {
             const state = await indexer.getStateByCID(cid);
 
@@ -206,11 +270,18 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
         );
       },
 
-      getState: async (_: any, { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string }) => {
+      getState: async (
+        _: any,
+        { blockHash, contractAddress, kind }: { blockHash: string, contractAddress: string, kind: string },
+        expressContext: ExpressContext
+      ) => {
         log('getState', blockHash, contractAddress, kind);
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           'getState',
+          expressContext,
           async () => {
             const state = await indexer.getPrevState(blockHash, contractAddress, kind);
 
@@ -222,22 +293,33 @@ export const createResolvers = async (indexerArg: IndexerInterface, eventWatcher
 
       _meta: async (
         _: any,
-        { block = {} }: { block: BlockHeight }
+        { block = {} }: { block: BlockHeight },
+        expressContext: ExpressContext
       ) => {
         log('_meta');
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           '_meta',
+          expressContext,
           async () => indexer.getMetaData(block)
         );
       },
       {{/if}}
 
-      getSyncStatus: async () => {
+      getSyncStatus: async (
+        _: any,
+        __: Record<string, never>,
+        expressContext: ExpressContext
+      ) => {
         log('getSyncStatus');
 
         return executeAndRecordMetrics(
+          indexer,
+          gqlLogger,
           'getSyncStatus',
+          expressContext,
           async () => indexer.getSyncStatus()
         );
       }
