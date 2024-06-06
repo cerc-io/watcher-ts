@@ -291,5 +291,9 @@ const registerWatcherInfoMetrics = async (): Promise<void> => {
     labelNames: ['repo', 'version', 'commitHash']
   });
 
-  watcherInfoMetric.set({ repo: pkgJson.repository?.url, version: pkgJson.version, commitHash: pkgJson.commitHash }, 1);
+  watcherInfoMetric.set({
+    repo: pkgJson.repository && pkgJson.repository.url.replace(/^git\+/, ''),
+    version: pkgJson.version,
+    commitHash: pkgJson.commitHash
+  }, 1);
 };
