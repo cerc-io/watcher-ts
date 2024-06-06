@@ -27,3 +27,4 @@ export * from './payments';
 export * from './eth';
 export * from './consensus';
 export * from './validate-config';
+export * from './logger';

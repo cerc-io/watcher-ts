@@ -1,5 +1,5 @@
 import { Application } from 'express';
-import { ApolloServer } from 'apollo-server-express';
+import { ApolloServer, ExpressContext } from 'apollo-server-express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
@@ -33,10 +33,12 @@ export const createAndStartServer = async (
   const {
     host,
     port,
-    gqlCache: gqlCacheConfig,
-    maxSimultaneousRequests,
-    maxRequestQueueLimit,
-    gqlPath = DEFAULT_GQL_PATH
+    gql: {
+      cache: gqlCacheConfig,
+      maxSimultaneousRequests,
+      maxRequestQueueLimit,
+      path: gqlPath = DEFAULT_GQL_PATH
+    }
   } = serverConfig;
 
   app.use(queue({ activeLimit: maxSimultaneousRequests || 1, queuedLimit: maxRequestQueueLimit || -1 }));
@@ -62,6 +64,9 @@ export const createAndStartServer = async (
   }
 
   const server = new ApolloServer({
+    context: (expressContext: ExpressContext) => {
+      return expressContext;
+    },
     schema,
     csrfPrevention: true,
     cache: gqlCache,

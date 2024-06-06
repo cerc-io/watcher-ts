@@ -203,23 +203,16 @@ export interface P2PConfig {
   consensus: ConsensusConfig;
 }
 
-export interface ServerConfig {
-  host: string;
-  port: number;
-  mode: string;
-  gqlPath: string;
-  kind: string;
-  enableConfigValidation: boolean;
-  checkpointing: boolean;
-  checkpointInterval: number;
-  subgraphPath: string;
-  enableState: boolean;
-  wasmRestartBlocksInterval: number;
+// GQL config
+export interface GQLConfig {
+  path: string;
   maxEventsBlockRange: number;
-  clearEntitiesCacheInterval: number;
 
-  // Boolean to skip updating entity fields required in state creation and not required in the frontend
-  skipStateFieldsUpdate: boolean;
+  // GQL cache-control max-age settings (in seconds)
+  cache: GQLCacheConfig;
+
+  // Boolean to load GQL query nested entity relations sequentially
+  loadRelationsSequential: boolean;
 
   // Max GQL API requests to process simultaneously (defaults to 1)
   maxSimultaneousRequests?: number;
@@ -227,11 +220,28 @@ export interface ServerConfig {
   // Max GQL API requests in queue until reject (defaults to -1, means do not reject)
   maxRequestQueueLimit?: number;
 
-  // Boolean to load GQL query nested entity relations sequentially
-  loadRelationsSequential: boolean;
+  // Log directory for GQL requests
+  logDir?: string;
+}
 
-  // GQL cache-control max-age settings (in seconds)
-  gqlCache: GQLCacheConfig;
+export interface ServerConfig {
+  host: string;
+  port: number;
+  mode: string;
+  kind: string;
+  enableConfigValidation: boolean;
+  checkpointing: boolean;
+  checkpointInterval: number;
+  subgraphPath: string;
+  enableState: boolean;
+  wasmRestartBlocksInterval: number;
+  clearEntitiesCacheInterval: number;
+
+  // Boolean to skip updating entity fields required in state creation and not required in the frontend
+  skipStateFieldsUpdate: boolean;
+
+  // GQL config for server
+  gql: GQLConfig
 
   p2p: P2PConfig;
 

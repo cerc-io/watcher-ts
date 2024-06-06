@@ -763,7 +763,7 @@ export class GraphDatabase {
 
     const relationSelections = selections.filter((selection) => selection.kind === 'Field' && Boolean(relations[selection.name.value]));
 
-    if (this._serverConfig.loadRelationsSequential) {
+    if (this._serverConfig.gql.loadRelationsSequential) {
       for (const selection of relationSelections) {
         await this.loadRelation(queryRunner, block, relationsMap, relations, entities, selection, queryInfo);
       }

@@ -11,6 +11,7 @@ import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
 import express, { Application } from 'express';
 import { ApolloServer } from 'apollo-server-express';
+import winston from 'winston';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -30,7 +31,8 @@ import {
   Consensus,
   readParty,
   UpstreamConfig,
-  fillBlocks
+  fillBlocks,
+  createGQLLogger
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -268,7 +270,11 @@ export class ServerCmd {
   }
 
   async exec (
-    createResolvers: (indexer: IndexerInterface, eventWatcher: EventWatcher) => Promise<any>,
+    createResolvers: (
+      indexer: IndexerInterface,
+      eventWatcher: EventWatcher,
+      gqlLogger: winston.Logger
+    ) => Promise<any>,
     typeDefs: TypeSource,
     paymentsManager?: PaymentsManager
   ): Promise<{
@@ -308,7 +314,8 @@ export class ServerCmd {
       await eventWatcher.start();
     }
 
-    const resolvers = await createResolvers(indexer, eventWatcher);
+    const gqlLogger = createGQLLogger(config.server.gql.logDir);
+    const resolvers = await createResolvers(indexer, eventWatcher, gqlLogger);
 
     // Create an Express app
     const app: Application = express();
