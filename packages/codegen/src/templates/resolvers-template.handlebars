@@ -83,7 +83,7 @@ const executeAndRecordMetrics = async (
 
 export const createResolvers = async (
   indexerArg: IndexerInterface,
-  eventWatcher: EventWatcher
+  eventWatcher: EventWatcher,
   gqlLogger: winston.Logger
 ): Promise<any> => {
   const indexer = indexerArg as Indexer;

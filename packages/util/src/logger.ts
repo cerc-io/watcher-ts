@@ -9,9 +9,9 @@ export const createGQLLogger = (logsDir = ''): winston.Logger => {
       winston.format.json()
     ),
     transports: [
-      // Write all logs with importance level of `error` or less to `error.log`
+      // Write all logs with importance level of `error` or less to `watcher-gql-error.log`
       new winston.transports.File({ filename: path.resolve(logsDir, 'watcher-gql-error.log'), level: 'error' }),
-      // Write all logs with importance level of `info` or less to `combined.log`
+      // Write all logs with importance level of `info` or less to `watcher-gql.log`
       new winston.transports.File({ filename: path.resolve(logsDir, 'watcher-gql.log') })
     ]
   });
