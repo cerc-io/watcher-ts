@@ -288,8 +288,8 @@ const registerWatcherInfoMetrics = async (): Promise<void> => {
   const watcherInfoMetric = new client.Gauge({
     name: 'watcher_info',
     help: 'Watcher info (static)',
-    labelNames: ['version', 'commitHash']
+    labelNames: ['repo', 'version', 'commitHash']
   });
 
-  watcherInfoMetric.set({ version: pkgJson.version, commitHash: pkgJson.commitHash }, 1);
+  watcherInfoMetric.set({ repo: pkgJson.repository?.url, version: pkgJson.version, commitHash: pkgJson.commitHash }, 1);
 };
