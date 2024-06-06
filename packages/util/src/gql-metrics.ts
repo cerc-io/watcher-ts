@@ -27,6 +27,13 @@ export const gqlQueryCount = new client.Counter({
   registers: [gqlRegistry]
 });
 
+export const gqlQueryDuration = new client.Gauge({
+  name: 'gql_query_duration_seconds',
+  help: 'Duration of GQL queries',
+  labelNames: ['name'] as const,
+  registers: [gqlRegistry]
+});
+
 // Export metrics on a server
 const app: Application = express();
 
