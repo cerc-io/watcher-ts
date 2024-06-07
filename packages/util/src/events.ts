@@ -14,6 +14,7 @@ import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
 import { JobQueueConfig, ServerConfig } from './config';
+import { wait } from './misc';
 
 const EVENT = 'event';
 const BLOCK_PROGRESS_EVENT = 'block-progress-event';
@@ -189,7 +190,18 @@ export class EventWatcher {
       }
 
       if (isComplete) {
-        await processBlockByNumber(this._jobQueue, blockNumber + 1);
+        while (true) {
+          const { block: latestBlock } = await this._ethClient.getBlockByHash();
+
+          // Process block if it is MAX_REORG_DEPTH behind latest block
+          if (latestBlock.number >= blockNumber + MAX_REORG_DEPTH) {
+            await processBlockByNumber(this._jobQueue, blockNumber + 1);
+            break;
+          }
+
+          log(`Latest block: ${latestBlock.number}; retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
+          await wait(this._config.jobQueue.blockDelayInMilliSecs);
+        }
       }
     }
   }

@@ -125,6 +125,7 @@ export const startMetricsServer = async (config: Config, jobQueue: JobQueue, ind
         this.set({ kind: 'latest_canonical' }, syncStatus.latestCanonicalBlockNumber);
         this.set({ kind: 'chain_head' }, syncStatus.chainHeadBlockNumber);
         this.set({ kind: 'intial_indexed' }, syncStatus.initialIndexedBlockNumber);
+        this.set({ kind: 'latest_processed' }, syncStatus.latestProcessedBlockNumber);
       }
     }
   });
