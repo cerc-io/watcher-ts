@@ -255,7 +255,7 @@ export const jsonBigIntStringReplacer = (_: string, value: any): any => {
 export const getResultEvent = (event: EventInterface): ResultEvent => {
   const block = event.block;
   const eventFields = JSONbigNative.parse(event.eventInfo);
-  const { tx, eventSignature } = JSONbigNative.parse(event.extraInfo);
+  const { tx, eventSignature, logIndex } = JSONbigNative.parse(event.extraInfo);
 
   return {
     block: {
@@ -275,7 +275,7 @@ export const getResultEvent = (event: EventInterface): ResultEvent => {
 
     contract: event.contract,
 
-    eventIndex: event.index,
+    eventIndex: logIndex ?? event.index,
     eventSignature,
     event: {
       __typename: `${event.eventName}Event`,

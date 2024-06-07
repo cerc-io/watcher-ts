@@ -623,7 +623,7 @@ export class Indexer {
         let eventName = UNKNOWN_EVENT_NAME;
         let eventInfo = {};
         const tx = transactionMap[txHash];
-        const extraInfo: { [key: string]: any } = { topics, data, tx };
+        const extraInfo: { [key: string]: any } = { topics, data, tx, logIndex };
 
         const contract = ethers.utils.getAddress(address);
         const watchedContract = this.isWatchedContract(contract);
@@ -641,7 +641,8 @@ export class Indexer {
         }
 
         dbEvents.push({
-          index: logIndex,
+          // Use loop index incase of FEVM as logIndex is not actual index of log in block
+          index: this._upstreamConfig.ethServer.isFEVM ? li : logIndex,
           txHash,
           contract,
           eventName,

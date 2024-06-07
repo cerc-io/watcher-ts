@@ -76,6 +76,8 @@ const executeAndRecordMetrics = async (
       apiKey: expressContext.req.header('x-api-key'),
       origin: expressContext.req.headers.origin
     });
+
+    throw error;
   } finally {
     endTimer();
   }
@@ -133,7 +135,7 @@ export const createResolvers = async (
       ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
-        
+
         // Set cache-control hints
         // setGQLCacheHints(info, {}, gqlCacheConfig);
 
