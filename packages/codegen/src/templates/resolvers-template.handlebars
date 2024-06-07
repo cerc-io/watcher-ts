@@ -133,7 +133,7 @@ export const createResolvers = async (
       ): Promise<ValueResult> => {
         log('{{this.name}}', blockHash, contractAddress
         {{~#each this.params}}, {{this.name~}} {{/each}});
-        
+
         // Set cache-control hints
         // setGQLCacheHints(info, {}, gqlCacheConfig);
 
