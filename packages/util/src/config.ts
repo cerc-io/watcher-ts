@@ -23,6 +23,9 @@ export interface JobQueueConfig {
   subgraphEventsOrder: boolean;
   blockDelayInMilliSecs: number;
 
+  // Number of blocks by which block processing lags behind head (default: 0)
+  blockProcessingOffset?: number;
+
   // Block range in which logs are fetched during historical blocks processing
   historicalLogsBlockRange?: number;
 
