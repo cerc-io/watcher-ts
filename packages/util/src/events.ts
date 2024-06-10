@@ -193,8 +193,8 @@ export class EventWatcher {
         while (true) {
           const { block: latestBlock } = await this._ethClient.getBlockByHash();
 
-          // Process block if it is MAX_REORG_DEPTH behind latest block
-          if (latestBlock.number >= blockNumber + MAX_REORG_DEPTH) {
+          // Process block if it is blockProcessingOffset blocks behind latest block
+          if (latestBlock.number >= blockNumber + (this._config.jobQueue.blockProcessingOffset ?? 0)) {
             await processBlockByNumber(this._jobQueue, blockNumber + 1);
             break;
           }
