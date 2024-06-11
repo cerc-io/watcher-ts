@@ -531,28 +531,12 @@ export class Indexer {
   }
 
   async _fetchLogsAndTransactions (blockHash: string, blockNumber: number, addresses?: string[], topics?: string[][]): Promise<{ logs: any[]; transactions: EthFullTransaction[] }> {
-    let logs: any[] = [];
-
-    // Get logs by block number filter in case of FEVM as block hash filter takes a long time
-    if (this._upstreamConfig.ethServer.isFEVM) {
-      assert(this._ethClient.getLogsForBlockRange, 'getLogsForBlockRange() not implemented in ethClient');
-
-      ({ logs } = await this._ethClient.getLogsForBlockRange({
-        fromBlock: blockNumber,
-        toBlock: blockNumber,
-        addresses,
-        topics
-      }));
-
-      logs = logs.filter(log => log.blockHash === blockHash);
-    } else {
-      ({ logs } = await this._ethClient.getLogs({
-        blockHash,
-        blockNumber: blockNumber.toString(),
-        addresses,
-        topics
-      }));
-    }
+    const { logs } = await this._ethClient.getLogs({
+      blockHash,
+      blockNumber: blockNumber.toString(),
+      addresses,
+      topics
+    });
 
     const transactions = await this._fetchTxsFromLogs(logs);
 
