@@ -114,6 +114,10 @@ Steps:
 
   This will create a folder containing the generated code at the path provided in config. Follow the steps in [Run Generated Watcher](#run-generated-watcher) to setup and run the generated watcher.
 
+* Update generated watcher's `package.json` with desired `version`, `description`, `repository` URL, etc.
+
+* Update generated watcher's config (`environments/local.toml`) as required
+
 ## Development
 
 * `lint`

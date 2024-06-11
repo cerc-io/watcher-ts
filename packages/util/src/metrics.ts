@@ -245,6 +245,7 @@ const registerWatcherConfigMetrics = async ({ server, upstream, jobQueue }: Conf
 
   watcherConfigMetric.set({ category: 'jobqueue', field: 'num_events_in_batch' }, Number(jobQueue.eventsInBatch));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'block_delay_seconds' }, (Number(jobQueue.blockDelayInMilliSecs) || 0) / 1000);
+  watcherConfigMetric.set({ category: 'jobqueue', field: 'block_processing_offset' }, Number(jobQueue.blockProcessingOffset) ?? 0);
   watcherConfigMetric.set({ category: 'jobqueue', field: 'use_block_ranges' }, Number(jobQueue.useBlockRanges));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_logs_block_range' }, Number(jobQueue.historicalLogsBlockRange));
   watcherConfigMetric.set({ category: 'jobqueue', field: 'historical_max_fetch_ahead' }, Number(jobQueue.historicalMaxFetchAhead));

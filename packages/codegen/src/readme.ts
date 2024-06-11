@@ -15,12 +15,25 @@ const TEMPLATE_FILE = './templates/readme-template.handlebars';
  * @param port Watcher server port.
  * @param outStream A writable output stream to write the README.md file to.
  */
-export function exportReadme (folderName: string, port: number, outStream: Writable): void {
+export function exportReadme (
+  folderName: string,
+  config: { port: number, subgraphPath?: string },
+  outStream: Writable
+): void {
+  const { port, subgraphPath } = config;
   const templateString = fs.readFileSync(path.resolve(__dirname, TEMPLATE_FILE)).toString();
   const template = Handlebars.compile(templateString);
+  let subgraphRepoName;
+
+  if (subgraphPath) {
+    const subgraphRepoDir = path.dirname(subgraphPath);
+    subgraphRepoName = path.basename(subgraphRepoDir);
+  }
+
   const readmeString = template({
     folderName,
-    port
+    port,
+    subgraphRepoName
   });
   outStream.write(readmeString);
 }
