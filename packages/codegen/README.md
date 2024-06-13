@@ -160,6 +160,12 @@ Steps:
   yarn
   ```
 
+* Run build:
+
+  ```bash
+  yarn build
+  ```
+
 * In the config file (`environments/local.toml`):
 
   * Update the state checkpoint settings.
