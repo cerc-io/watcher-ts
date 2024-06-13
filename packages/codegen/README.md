@@ -118,6 +118,8 @@ Steps:
 
 * Update generated watcher's config (`environments/local.toml`) as required
 
+* Update generated codegen config (`codegen-config.yml`) to remove / replace your system's absolute paths
+
 ## Development
 
 * `lint`
@@ -156,6 +158,12 @@ Steps:
 
   ```bash
   yarn
+  ```
+
+* Run build:
+
+  ```bash
+  yarn build
   ```
 
 * In the config file (`environments/local.toml`):
