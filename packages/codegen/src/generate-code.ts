@@ -65,7 +65,8 @@ const main = async (): Promise<void> => {
     })
     .argv;
 
-  const config = await getConfig(path.resolve(argv['config-file']));
+  const configFile = path.resolve(argv['config-file']);
+  const config = await getConfig(configFile);
 
   // Create an array of flattened contract strings.
   const contracts: any[] = [];
@@ -120,7 +121,7 @@ const main = async (): Promise<void> => {
 
   parseAndVisit(visitor, contracts, config.mode);
 
-  generateWatcher(visitor, contracts, config, overwriteExisting);
+  generateWatcher(visitor, contracts, configFile, config, overwriteExisting);
 };
 
 function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
@@ -162,7 +163,7 @@ function parseAndVisit (visitor: Visitor, contracts: any[], mode: string) {
   }
 }
 
-function generateWatcher (visitor: Visitor, contracts: any[], config: any, overWriteExisting = false) {
+function generateWatcher (visitor: Visitor, contracts: any[], configFile: string, config: any, overWriteExisting = false) {
   // Prepare directory structure for the watcher.
   let outputDir = '';
 
@@ -197,6 +198,13 @@ function generateWatcher (visitor: Visitor, contracts: any[], config: any, overW
   }
 
   let outStream: Writable;
+
+  // Export the codegen config file
+  const configFileContent = fs.readFileSync(configFile, 'utf8');
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'codegen-config.yml'))
+    : process.stdout;
+  outStream.write(configFileContent);
 
   // Export artifacts for the contracts.
   contracts.forEach((contract: any) => {
