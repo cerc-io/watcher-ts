@@ -340,7 +340,11 @@ export const instantiate = async (
       },
       'typeConversion.bytesToString': async (bytes: number) => {
         const byteArray = __getArray(bytes);
-        const string = utils.toUtf8String(byteArray, utils.Utf8ErrorFuncs.replace);
+        let string = utils.toUtf8String(byteArray, utils.Utf8ErrorFuncs.replace);
+
+        // Replace \x00 with empty string as Postgres DB text data type does not support it
+        string = string.replaceAll('\x00', '');
+
         const ptr = await __newString(string);
 
         return ptr;
