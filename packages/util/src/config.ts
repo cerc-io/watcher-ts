@@ -23,6 +23,9 @@ export interface JobQueueConfig {
   subgraphEventsOrder: boolean;
   blockDelayInMilliSecs: number;
 
+  // Switch clients if eth_getLogs call takes more than threshold (in secs)
+  getLogsClientSwitchThresholdInSecs?: number;
+
   // Number of blocks by which block processing lags behind head (default: 0)
   blockProcessingOffset?: number;
 

@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { constants, ethers } from 'ethers';
+import { constants, ethers, errors as ethersErrors } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
 import PgBoss from 'pg-boss';
 
@@ -29,9 +29,10 @@ import {
   processBatchEvents,
   PrefetchedBlock,
   fetchBlocksAtHeight,
-  fetchAndSaveFilteredLogsAndBlocks
+  fetchAndSaveFilteredLogsAndBlocks,
+  NEW_BLOCK_MAX_RETRIES_ERROR
 } from './common';
-import { isSyncingHistoricalBlocks, lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
+import { ethRpcRequestDuration, isSyncingHistoricalBlocks, lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
 const log = debug('vulcanize:job-runner');
 
@@ -63,19 +64,22 @@ export class JobRunner {
   _signalCount = 0;
   _errorInEventsProcessing = false;
 
-  _jobErrorHandler: (error: Error) => Promise<void>;
+  _currentRpcProviderEndpoint: string;
+  _switchClients: () => Promise<string>;
 
   constructor (
     jobQueueConfig: JobQueueConfig,
     indexer: IndexerInterface,
     jobQueue: JobQueue,
+    currentRpcProviderEndpoint: string,
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    jobErrorHandler: (error: Error) => Promise<void> = async () => {}
+    switchClients: () => Promise<string> = async () => ''
   ) {
     this._indexer = indexer;
     this.jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
-    this._jobErrorHandler = jobErrorHandler;
+    this._currentRpcProviderEndpoint = currentRpcProviderEndpoint;
+    this._switchClients = switchClients;
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
@@ -187,6 +191,9 @@ export class JobRunner {
           await Promise.all(indexBlockPromises);
         }
 
+        // Switch clients if getLogs requests are too slow
+        await this._switchClientOnSlowGetLogsRequests();
+
         break;
       }
 
@@ -291,6 +298,9 @@ export class JobRunner {
     log(`Sync status canonical, indexed and chain head block updated to ${endBlock}`);
 
     this._historicalProcessingCompletedUpto = endBlock;
+
+    // Switch clients if getLogs requests are too slow
+    await this._switchClientOnSlowGetLogsRequests();
 
     if (endBlock < processingEndBlockNumber) {
       // If endBlock is lesser than processingEndBlockNumber push new historical job
@@ -786,6 +796,33 @@ export class JobRunner {
 
       // Error logged in job-queue handler
       throw error;
+    }
+  }
+
+  async _jobErrorHandler (error: any): Promise<void> {
+    // Check if it is a server error or timeout from ethers.js
+    // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
+    // https://docs.ethers.org/v5/api/utils/logger/#errors--timeout
+    if (error.code === ethersErrors.SERVER_ERROR || error.code === ethersErrors.TIMEOUT || error.message === NEW_BLOCK_MAX_RETRIES_ERROR) {
+      log('RPC endpoint is not working; failing over to another one');
+      this._currentRpcProviderEndpoint = await this._switchClients();
+    }
+  }
+
+  async _switchClientOnSlowGetLogsRequests (): Promise<void> {
+    const threshold = this._jobQueueConfig.getLogsClientSwitchThresholdInSecs;
+    if (threshold) {
+      const getLogsLabels = {
+        method: 'eth_getLogs',
+        provider: this._currentRpcProviderEndpoint
+      };
+
+      const ethRpcRequestDurationMetrics = await ethRpcRequestDuration.get();
+      const currentProviderDuration = ethRpcRequestDurationMetrics.values.find(val => val.labels.method === getLogsLabels.method && val.labels.provider === getLogsLabels.provider);
+      if (currentProviderDuration && currentProviderDuration.value > threshold) {
+        log(`eth_getLogs call with current RPC endpoint took too long (${currentProviderDuration.value} sec); switching over to another one`);
+        this._currentRpcProviderEndpoint = await this._switchClients();
+      }
     }
   }
 

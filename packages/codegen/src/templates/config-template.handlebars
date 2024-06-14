@@ -96,6 +96,10 @@
   subgraphEventsOrder = true
   blockDelayInMilliSecs = 2000
 
+  // Switch clients if eth_getLogs call takes more than threshold (in secs)
+  // (set to 0 to disable switching)
+  getLogsClientSwitchThresholdInSecs = 0
+
   # Number of blocks by which block processing lags behind head
   blockProcessingOffset = 0
 
