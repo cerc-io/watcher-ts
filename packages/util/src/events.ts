@@ -123,9 +123,15 @@ export class EventWatcher {
       startBlockNumber = syncStatus.chainHeadBlockNumber + 1;
     }
 
-    // Check if filter for logs is enabled
-    // Check if starting block for watcher is before latest canonical block
-    if (this._config.jobQueue.useBlockRanges && startBlockNumber < latestCanonicalBlockNumber) {
+    // Perform checks before starting historical block processing
+    if (
+      // Check if useBlockRanges is enabled for historical blocks processing
+      this._config.jobQueue.useBlockRanges &&
+      // Check if starting block for watcher is before latest canonical block
+      startBlockNumber < latestCanonicalBlockNumber &&
+      // Check if any block handler exists in subgraph config
+      !this._indexer.graphWatcher?.blockHandlerExists
+    ) {
       await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
       return;

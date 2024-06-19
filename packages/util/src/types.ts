@@ -288,6 +288,7 @@ export interface GraphDatabaseInterface {
 }
 
 export interface GraphWatcherInterface {
+  readonly blockHandlerExists: boolean;
   init (): Promise<void>;
   setIndexer (indexer: IndexerInterface): void;
 }
