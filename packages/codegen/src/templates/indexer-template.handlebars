@@ -829,6 +829,7 @@ export class Indexer implements IndexerInterface {
   {{/each}}
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   _populateRelationsMap (): void {
   {{#each subgraphEntities as | subgraphEntity |}}
     {{#if subgraphEntity.relations}}
@@ -867,7 +868,27 @@ export class Indexer implements IndexerInterface {
     assert(blockHash);
     assert(blockNumber);
 
-    const { events: dbEvents, transactions } = await this._baseIndexer.fetchEvents(blockHash, blockNumber, this.eventSignaturesMap, this.parseEventNameAndArgs.bind(this));
+    {{#if (subgraphPath)}}
+    let dbEvents: DeepPartial<Event>[] = [];
+    let transactions: EthFullTransaction[] = [];
+
+    // Fetch events and txs only if subgraph config has any event handlers
+    if (this._graphWatcher.eventHandlerExists) {
+      ({ events: dbEvents, transactions } = await this._baseIndexer.fetchEvents(
+        blockHash,
+        blockNumber,
+        this.eventSignaturesMap,
+        this.parseEventNameAndArgs.bind(this)
+      ));
+    }
+    {{else~}}
+    const { events: dbEvents, transactions } = await this._baseIndexer.fetchEvents(
+      blockHash,
+      blockNumber,
+      this.eventSignaturesMap,
+      this.parseEventNameAndArgs.bind(this)
+    );
+    {{/if}}
 
     const dbTx = await this._db.createTransactionRunner();
     try {
