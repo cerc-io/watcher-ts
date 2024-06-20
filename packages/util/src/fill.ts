@@ -80,12 +80,12 @@ export const fillBlocks = async (
       const completePercentage = Math.round(blocksProcessed / numberOfBlocks * 100);
       log(`Processed ${blocksProcessed} of ${numberOfBlocks} blocks (${completePercentage}%)`);
 
-      await processBlockByNumber(jobQueue, blockNumber + 1);
-
-      if (blockNumber + 1 >= endBlock) {
-        // Break the async loop when blockProgress event is for the endBlock and processing is complete.
+      if (blockNumber + 1 > endBlock) {
+        // Break the async loop when next block to be processed is more than endBlock.
         break;
       }
+
+      await processBlockByNumber(jobQueue, blockNumber + 1);
     }
   }
 

@@ -60,6 +60,9 @@ export class GraphWatcher {
 
   _context: Context;
 
+  _blockHandlerExists = false;
+  _eventHandlerExists = false;
+
   constructor (database: GraphDatabase, ethClient: EthClient, ethProvider: providers.BaseProvider, serverConfig: ServerConfig) {
     this._database = database;
     this._ethClient = ethClient;
@@ -110,6 +113,10 @@ export class GraphWatcher {
       };
     }, {});
 
+    // Check if handlers exist for deciding watcher behaviour
+    this._blockHandlerExists = this._dataSources.some(dataSource => Boolean(dataSource.mapping.blockHandlers));
+    this._eventHandlerExists = this._dataSources.some(dataSource => Boolean(dataSource.mapping.eventHandlers));
+
     const data = await Promise.all(dataPromises);
 
     // Create a map from dataSource contract address to instance and contract interface.
@@ -149,6 +156,14 @@ export class GraphWatcher {
 
   get dataSources (): any[] {
     return this._dataSources;
+  }
+
+  get blockHandlerExists (): boolean {
+    return this._blockHandlerExists;
+  }
+
+  get eventHandlerExists (): boolean {
+    return this._eventHandlerExists;
   }
 
   async addContracts () {
