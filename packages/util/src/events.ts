@@ -125,12 +125,12 @@ export class EventWatcher {
 
     // Perform checks before starting historical block processing
     if (
+      // Check if any block handler exists in subgraph config
+      !this._indexer.graphWatcher?.blockHandlerExists &&
       // Check if useBlockRanges is enabled for historical blocks processing
       this._config.jobQueue.useBlockRanges &&
       // Check if starting block for watcher is before latest canonical block
-      startBlockNumber < latestCanonicalBlockNumber &&
-      // Check if any block handler exists in subgraph config
-      !this._indexer.graphWatcher?.blockHandlerExists
+      startBlockNumber < latestCanonicalBlockNumber
     ) {
       await this.startHistoricalBlockProcessing(startBlockNumber, latestCanonicalBlockNumber);
 
