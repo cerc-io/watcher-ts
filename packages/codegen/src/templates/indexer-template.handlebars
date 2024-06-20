@@ -8,13 +8,12 @@ import debug from 'debug';
 {{#if queries}}
 import JSONbig from 'json-bigint';
 {{/if}}
-import { ethers, constants } from 'ethers';
+import { ethers, constants, providers } from 'ethers';
 {{#if (subgraphPath)}}
 import { GraphQLResolveInfo } from 'graphql';
 {{/if}}
 
 import { JsonFragment } from '@ethersproject/abi';
-import { BaseProvider } from '@ethersproject/providers';
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 import {
   Indexer as BaseIndexer,
@@ -49,6 +48,7 @@ import {
   EthFullTransaction,
   ExtraEventData
 } from '@cerc-io/util';
+import { initClients } from '@cerc-io/cli';
 {{#if (subgraphPath)}}
 import { GraphWatcher } from '@cerc-io/graph-node';
 {{/if}}
@@ -91,7 +91,7 @@ const {{capitalize event}}_EVENT = '{{event}}';
 export class Indexer implements IndexerInterface {
   _db: Database;
   _ethClient: EthClient;
-  _ethProvider: BaseProvider;
+  _ethProvider: providers.JsonRpcProvider;
   _baseIndexer: BaseIndexer;
   _serverConfig: ServerConfig;
   _upstreamConfig: UpstreamConfig;
@@ -118,7 +118,7 @@ export class Indexer implements IndexerInterface {
     },
     db: DatabaseInterface,
     clients: Clients,
-    ethProvider: BaseProvider,
+    ethProvider: providers.JsonRpcProvider,
     jobQueue: JobQueue{{#if (subgraphPath)}},{{/if}}
     {{#if (subgraphPath)}}
     graphWatcher?: GraphWatcherInterface
@@ -199,13 +199,17 @@ export class Indexer implements IndexerInterface {
     await this._baseIndexer.fetchStateStatus();
   }
 
-  switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: BaseProvider }): void {
+  async switchClients (): Promise<void> {
+    const { ethClient, ethProvider } = await this._baseIndexer.switchClients(initClients);
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
-    this._baseIndexer.switchClients({ ethClient, ethProvider });
     {{#if (subgraphPath)}}
     this._graphWatcher.switchClients({ ethClient, ethProvider });
     {{/if}}
+  }
+
+  async isGetLogsRequestsSlow (): Promise<boolean> {
+    return this._baseIndexer.isGetLogsRequestsSlow();
   }
 
   {{#if (subgraphPath)}}
