@@ -83,6 +83,10 @@
     # Boolean flag to filter event logs by topics
     filterLogsByTopics = true
 
+    # Switch clients if eth_getLogs call takes more than threshold (in secs)
+    # Set to 0 for disabling switching
+    getLogsClientSwitchThresholdInSecs = 0
+
   [upstream.cache]
     name = "requests"
     enabled = false
@@ -95,10 +99,6 @@
   eventsInBatch = 50
   subgraphEventsOrder = true
   blockDelayInMilliSecs = 2000
-
-  // Switch clients if eth_getLogs call takes more than threshold (in secs)
-  // (set to 0 to disable switching)
-  getLogsClientSwitchThresholdInSecs = 0
 
   # Number of blocks by which block processing lags behind head
   blockProcessingOffset = 0

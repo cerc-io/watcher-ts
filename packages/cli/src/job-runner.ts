@@ -7,7 +7,6 @@ import { hideBin } from 'yargs/helpers';
 import 'reflect-metadata';
 import assert from 'assert';
 import { ConnectionOptions } from 'typeorm';
-import debug from 'debug';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -21,14 +20,10 @@ import {
   GraphWatcherInterface,
   startMetricsServer,
   Config,
-  UpstreamConfig,
-  setActiveUpstreamEndpointMetric
+  UpstreamConfig
 } from '@cerc-io/util';
 
 import { BaseCmd } from './base';
-import { initClients } from './utils/index';
-
-const log = debug('vulcanize:job-runner');
 
 interface Arguments {
   configFile: string;
@@ -37,10 +32,6 @@ interface Arguments {
 export class JobRunnerCmd {
   _argv?: Arguments;
   _baseCmd: BaseCmd;
-
-  _currentEndpointIndex = {
-    rpcProviderEndpoint: 0
-  };
 
   constructor () {
     this._baseCmd = new BaseCmd();
@@ -122,25 +113,8 @@ export class JobRunnerCmd {
     const jobRunner = new JobRunner(
       config.jobQueue,
       indexer,
-      jobQueue,
-      config.upstream.ethServer.rpcProviderEndpoints[this._currentEndpointIndex.rpcProviderEndpoint],
-      async (): Promise<string> => {
-        const oldRpcEndpoint = config.upstream.ethServer.rpcProviderEndpoints[this._currentEndpointIndex.rpcProviderEndpoint];
-        ++this._currentEndpointIndex.rpcProviderEndpoint;
-
-        if (this._currentEndpointIndex.rpcProviderEndpoint === config.upstream.ethServer.rpcProviderEndpoints.length) {
-          this._currentEndpointIndex.rpcProviderEndpoint = 0;
-        }
-
-        const { ethClient, ethProvider } = await initClients(config, this._currentEndpointIndex);
-        indexer.switchClients({ ethClient, ethProvider });
-        setActiveUpstreamEndpointMetric(config, this._currentEndpointIndex.rpcProviderEndpoint);
-
-        const newRpcEndpoint = ethProvider.connection.url;
-        log(`Switching RPC endpoint from ${oldRpcEndpoint} to endpoint ${newRpcEndpoint}`);
-
-        return newRpcEndpoint;
-      });
+      jobQueue
+    );
 
     // Delete all active and pending (before completed) jobs to start job-runner without old queued jobs
     await jobRunner.jobQueue.deleteAllJobs('completed');
@@ -151,7 +125,7 @@ export class JobRunnerCmd {
     await startJobRunner(jobRunner);
     jobRunner.handleShutdown();
 
-    await startMetricsServer(config, jobQueue, indexer, this._currentEndpointIndex);
+    await startMetricsServer(config, jobQueue, indexer);
   }
 
   _getArgv (): any {

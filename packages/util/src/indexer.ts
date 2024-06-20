@@ -33,6 +33,7 @@ import { JobQueue } from './job-queue';
 import { Where, QueryOptions, BlockHeight } from './database';
 import { ServerConfig, UpstreamConfig } from './config';
 import { createOrUpdateStateData, StateDataMeta } from './state-helper';
+import { ethRpcRequestDuration, setActiveUpstreamEndpointMetric } from './metrics';
 
 const DEFAULT_MAX_EVENTS_BLOCK_RANGE = 1000;
 
@@ -113,11 +114,15 @@ export class Indexer {
   _db: DatabaseInterface;
   _ethClient: EthClient;
   _getStorageAt: GetStorageAt;
-  _ethProvider: ethers.providers.BaseProvider;
+  _ethProvider: ethers.providers.JsonRpcProvider;
   _jobQueue: JobQueue;
 
   _watchedContracts: { [key: string]: ContractInterface } = {};
   _stateStatusMap: { [key: string]: StateStatus } = {};
+
+  _currentEndpointIndex = {
+    rpcProviderEndpoint: 0
+  };
 
   constructor (
     config: {
@@ -126,7 +131,7 @@ export class Indexer {
     },
     db: DatabaseInterface,
     ethClient: EthClient,
-    ethProvider: ethers.providers.BaseProvider,
+    ethProvider: ethers.providers.JsonRpcProvider,
     jobQueue: JobQueue
   ) {
     this._serverConfig = config.server;
@@ -136,11 +141,61 @@ export class Indexer {
     this._ethProvider = ethProvider;
     this._jobQueue = jobQueue;
     this._getStorageAt = this._ethClient.getStorageAt.bind(this._ethClient);
+
+    setActiveUpstreamEndpointMetric(
+      this._upstreamConfig,
+      this._currentEndpointIndex.rpcProviderEndpoint
+    );
   }
 
-  switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: ethers.providers.BaseProvider }): void {
+  async switchClients (
+    initClients: (upstreamConfig: UpstreamConfig, endpointIndexes: typeof this._currentEndpointIndex) => Promise<{
+      ethClient: EthClient,
+      ethProvider: ethers.providers.JsonRpcProvider
+    }>
+  ): Promise<{ ethClient: EthClient, ethProvider: ethers.providers.JsonRpcProvider }> {
+    const oldRpcEndpoint = this._upstreamConfig.ethServer.rpcProviderEndpoints[this._currentEndpointIndex.rpcProviderEndpoint];
+    ++this._currentEndpointIndex.rpcProviderEndpoint;
+
+    if (this._currentEndpointIndex.rpcProviderEndpoint === this._upstreamConfig.ethServer.rpcProviderEndpoints.length) {
+      this._currentEndpointIndex.rpcProviderEndpoint = 0;
+    }
+
+    const { ethClient, ethProvider } = await initClients(this._upstreamConfig, this._currentEndpointIndex);
+    setActiveUpstreamEndpointMetric(
+      this._upstreamConfig,
+      this._currentEndpointIndex.rpcProviderEndpoint
+    );
+
+    const newRpcEndpoint = ethProvider.connection.url;
+    log(`Switching RPC endpoint from ${oldRpcEndpoint} to endpoint ${newRpcEndpoint}`);
+
     this._ethClient = ethClient;
     this._ethProvider = ethProvider;
+    return { ethClient, ethProvider };
+  }
+
+  async isGetLogsRequestsSlow (): Promise<boolean> {
+    const threshold = this._upstreamConfig.ethServer.getLogsClientSwitchThresholdInSecs;
+
+    if (threshold) {
+      const getLogsLabels = {
+        method: 'eth_getLogs',
+        provider: this._ethProvider.connection.url
+      };
+
+      const ethRpcRequestDurationMetrics = await ethRpcRequestDuration.get();
+
+      const currentProviderDuration = ethRpcRequestDurationMetrics.values.find(
+        val => val.labels.method === getLogsLabels.method && val.labels.provider === getLogsLabels.provider
+      );
+
+      if (currentProviderDuration) {
+        return currentProviderDuration.value > threshold;
+      }
+    }
+
+    return false;
   }
 
   async fetchContracts (): Promise<void> {

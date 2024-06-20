@@ -3,7 +3,7 @@
 //
 
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
-import { Transaction, providers } from 'ethers';
+import { Transaction } from 'ethers';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -236,7 +236,8 @@ export interface IndexerInterface {
   clearProcessedBlockData (block: BlockProgressInterface): Promise<void>
   getResultEvent (event: EventInterface): any
   getFullTransactions (txHashList: string[]): Promise<EthFullTransaction[]>
-  switchClients (clients: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void
+  isGetLogsRequestsSlow(): Promise<boolean>
+  switchClients(): Promise<void>
 }
 
 export interface DatabaseInterface {

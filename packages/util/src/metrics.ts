@@ -10,7 +10,7 @@ import assert from 'assert';
 import { ethers } from 'ethers';
 import JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
-import { Config } from './config';
+import { Config, UpstreamConfig } from './config';
 import { IndexerInterface } from './types';
 import { JobQueue } from './job-queue';
 
@@ -103,7 +103,7 @@ const upstreamEndpointsMetric = new client.Gauge({
 // Export metrics on a server
 const app: Application = express();
 
-export const startMetricsServer = async (config: Config, jobQueue: JobQueue, indexer: IndexerInterface, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<void> => {
+export const startMetricsServer = async (config: Config, jobQueue: JobQueue, indexer: IndexerInterface): Promise<void> => {
   if (!config.metrics) {
     log('Metrics is disabled. To enable add metrics host and port.');
     return;
@@ -134,11 +134,9 @@ export const startMetricsServer = async (config: Config, jobQueue: JobQueue, ind
 
   await registerWatcherConfigMetrics(config);
 
-  setActiveUpstreamEndpointMetric(config, endpointIndexes.rpcProviderEndpoint);
-
   await registerDBSizeMetrics(config);
 
-  await registerUpstreamChainHeadMetrics(config, endpointIndexes.rpcProviderEndpoint);
+  await registerUpstreamChainHeadMetrics();
 
   await registerWatcherInfoMetrics();
 
@@ -159,14 +157,14 @@ export const startMetricsServer = async (config: Config, jobQueue: JobQueue, ind
 // ETH RPC provider used for upstream chain head metrics
 let ethRpcProvider: JsonRpcProvider | undefined;
 
-export const setActiveUpstreamEndpointMetric = ({ upstream }: Config, currentEndpointIndex: number): void => {
-  const endpoints = upstream.ethServer.rpcProviderEndpoints;
+export const setActiveUpstreamEndpointMetric = (upstreamConfig: UpstreamConfig, currentEndpointIndex: number): void => {
+  const endpoints = upstreamConfig.ethServer.rpcProviderEndpoints;
 
   endpoints.forEach((endpoint, index) => {
     upstreamEndpointsMetric.set({ provider: endpoint }, Number(index === currentEndpointIndex));
   });
 
-  ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[currentEndpointIndex]);
+  ethRpcProvider = new JsonRpcProvider(upstreamConfig.ethServer.rpcProviderEndpoints[currentEndpointIndex]);
 };
 
 const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<void> => {
@@ -204,9 +202,7 @@ const registerDBSizeMetrics = async ({ database, jobQueue }: Config): Promise<vo
   });
 };
 
-const registerUpstreamChainHeadMetrics = async ({ upstream }: Config, rpcProviderEndpointIndex: number): Promise<void> => {
-  ethRpcProvider = new JsonRpcProvider(upstream.ethServer.rpcProviderEndpoints[rpcProviderEndpointIndex]);
-
+const registerUpstreamChainHeadMetrics = async (): Promise<void> => {
   // eslint-disable-next-line no-new
   new client.Gauge({
     name: 'latest_upstream_block_number',
