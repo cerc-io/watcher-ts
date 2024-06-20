@@ -340,7 +340,11 @@ export class Indexer implements IndexerInterface {
     return [];
   }
 
-  switchClients ({ ethClient, ethProvider }: { ethClient: EthClient, ethProvider: providers.BaseProvider }): void {
+  async switchClients (): Promise<void> {
     return undefined;
+  }
+
+  async isGetLogsRequestsSlow (): Promise<boolean> {
+    return false;
   }
 }

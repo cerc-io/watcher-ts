@@ -289,6 +289,9 @@ export interface UpstreamConfig {
     // Boolean flag to filter event logs by topics
     filterLogsByTopics: boolean;
 
+    // Switch clients if eth_getLogs call takes more than threshold (in secs)
+    getLogsClientSwitchThresholdInSecs?: number;
+
     payments: EthServerPaymentsConfig;
   }
   traceProviderEndpoint: string;

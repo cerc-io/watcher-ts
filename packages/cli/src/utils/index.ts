@@ -9,7 +9,7 @@ import { providers } from 'ethers';
 
 // @ts-expect-error https://github.com/microsoft/TypeScript/issues/49721#issuecomment-1319854183
 import { PeerIdObj } from '@cerc-io/peer';
-import { Config, EthClient, getCustomProvider } from '@cerc-io/util';
+import { EthClient, UpstreamConfig, getCustomProvider } from '@cerc-io/util';
 import { getCache } from '@cerc-io/cache';
 import { EthClient as GqlEthClient } from '@cerc-io/ipld-eth-client';
 import { EthClient as RpcEthClient } from '@cerc-io/rpc-eth-client';
@@ -22,16 +22,10 @@ export function readPeerId (filePath: string): PeerIdObj {
   return JSON.parse(peerIdJson);
 }
 
-export const initClients = async (config: Config, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<{
+export const initClients = async (upstreamConfig: UpstreamConfig, endpointIndexes = { rpcProviderEndpoint: 0 }): Promise<{
   ethClient: EthClient,
   ethProvider: providers.JsonRpcProvider
 }> => {
-  const { database: dbConfig, upstream: upstreamConfig, server: serverConfig } = config;
-
-  assert(serverConfig, 'Missing server config');
-  assert(dbConfig, 'Missing database config');
-  assert(upstreamConfig, 'Missing upstream config');
-
   const { ethServer: { gqlApiEndpoint, rpcProviderEndpoints, rpcClient = false }, cache: cacheConfig } = upstreamConfig;
 
   assert(rpcProviderEndpoints, 'Missing upstream ethServer.rpcProviderEndpoints');

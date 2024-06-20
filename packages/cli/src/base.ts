@@ -96,7 +96,7 @@ export class BaseCmd {
     this._jobQueue = new JobQueue({ dbConnectionString, maxCompletionLag: maxCompletionLagInSecs });
     await this._jobQueue.start();
 
-    const { ethClient, ethProvider } = await initClients(this._config);
+    const { ethClient, ethProvider } = await initClients(this._config.upstream);
     this._ethProvider = ethProvider;
     this._clients = { ethClient, ...clients };
   }

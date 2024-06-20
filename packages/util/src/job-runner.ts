@@ -4,7 +4,7 @@
 
 import assert from 'assert';
 import debug from 'debug';
-import { constants, ethers } from 'ethers';
+import { constants, ethers, errors as ethersErrors } from 'ethers';
 import { DeepPartial, In } from 'typeorm';
 import PgBoss from 'pg-boss';
 
@@ -29,7 +29,8 @@ import {
   processBatchEvents,
   PrefetchedBlock,
   fetchBlocksAtHeight,
-  fetchAndSaveFilteredLogsAndBlocks
+  fetchAndSaveFilteredLogsAndBlocks,
+  NEW_BLOCK_MAX_RETRIES_ERROR
 } from './common';
 import { isSyncingHistoricalBlocks, lastBlockNumEvents, lastBlockProcessDuration, lastProcessedBlockNumber } from './metrics';
 
@@ -63,19 +64,14 @@ export class JobRunner {
   _signalCount = 0;
   _errorInEventsProcessing = false;
 
-  _jobErrorHandler: (error: Error) => Promise<void>;
-
   constructor (
     jobQueueConfig: JobQueueConfig,
     indexer: IndexerInterface,
-    jobQueue: JobQueue,
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    jobErrorHandler: (error: Error) => Promise<void> = async () => {}
+    jobQueue: JobQueue
   ) {
     this._indexer = indexer;
     this.jobQueue = jobQueue;
     this._jobQueueConfig = jobQueueConfig;
-    this._jobErrorHandler = jobErrorHandler;
   }
 
   async subscribeBlockProcessingQueue (): Promise<void> {
@@ -187,6 +183,11 @@ export class JobRunner {
           await Promise.all(indexBlockPromises);
         }
 
+        // Switch clients if getLogs requests are too slow
+        if (await this._indexer.isGetLogsRequestsSlow()) {
+          await this._indexer.switchClients();
+        }
+
         break;
       }
 
@@ -291,6 +292,11 @@ export class JobRunner {
     log(`Sync status canonical, indexed and chain head block updated to ${endBlock}`);
 
     this._historicalProcessingCompletedUpto = endBlock;
+
+    // Switch clients if getLogs requests are too slow
+    if (await this._indexer.isGetLogsRequestsSlow()) {
+      await this._indexer.switchClients();
+    }
 
     if (endBlock < processingEndBlockNumber) {
       // If endBlock is lesser than processingEndBlockNumber push new historical job
@@ -786,6 +792,22 @@ export class JobRunner {
 
       // Error logged in job-queue handler
       throw error;
+    }
+  }
+
+  async _jobErrorHandler (error: any): Promise<void> {
+    if (
+      // Switch client if it is a server error from ethers.js
+      // https://docs.ethers.org/v5/api/utils/logger/#errors--server-error
+      error.code === ethersErrors.SERVER_ERROR ||
+      // Switch client if it is a timeout error from ethers.js
+      // https://docs.ethers.org/v5/api/utils/logger/#errors--timeout
+      error.code === ethersErrors.TIMEOUT ||
+      // Switch client if error is for max retries to get new block at head
+      error.message === NEW_BLOCK_MAX_RETRIES_ERROR
+    ) {
+      log('RPC endpoint is not working; failing over to another one');
+      await this._indexer.switchClients();
     }
   }
 
