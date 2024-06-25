@@ -202,8 +202,8 @@ export interface IndexerInterface {
   saveEventEntity (dbEvent: EventInterface): Promise<EventInterface>
   saveEvents (dbEvents: DeepPartial<EventInterface>[]): Promise<void>
   processEvent (event: EventInterface, extraData: ExtraEventData): Promise<void>
-  parseEventNameAndArgs?: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
-  isWatchedContract: (address: string) => ContractInterface | undefined;
+  parseEventNameAndArgs?: (watchedContracts: ContractInterface[], logObj: any) => { eventParsed: boolean, eventDetails: any }
+  isContractAddressWatched: (address: string) => ContractInterface[] | undefined;
   getWatchedContracts: () => ContractInterface[]
   getContractsByKind?: (kind: string) => ContractInterface[]
   addContracts?: () => Promise<void>

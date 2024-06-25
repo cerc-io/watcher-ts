@@ -169,7 +169,6 @@ export class GraphWatcher {
   async addContracts () {
     assert(this._indexer);
     assert(this._indexer.watchContract);
-    assert(this._indexer.isWatchedContract);
 
     // Watching the contract(s) if not watched already.
     for (const dataSource of this._dataSources) {
@@ -177,7 +176,7 @@ export class GraphWatcher {
 
       // Skip for templates as they are added dynamically.
       if (address) {
-        const watchedContract = await this._indexer.isWatchedContract(address);
+        const watchedContract = this._indexer.isContractAddressWatched(address);
 
         if (!watchedContract) {
           await this._indexer.watchContract(address, name, true, startBlock);
@@ -197,64 +196,68 @@ export class GraphWatcher {
     const blockData = this._context.block;
     assert(blockData);
 
-    assert(this._indexer && this._indexer.isWatchedContract);
-    const watchedContract = this._indexer.isWatchedContract(contract);
-    assert(watchedContract);
+    assert(this._indexer);
+    const watchedContracts = this._indexer.isContractAddressWatched(contract);
+    assert(watchedContracts);
 
-    // Get dataSource in subgraph yaml based on contract address.
-    const dataSource = this._dataSources.find(dataSource => dataSource.name === watchedContract.kind);
+    // Get dataSources in subgraph yaml based on contract kind (same as dataSource.name)
+    const dataSources = this._dataSources
+      .filter(dataSource => watchedContracts.some(contract => contract.kind === dataSource.name));
 
-    if (!dataSource) {
+    if (!dataSources.length) {
       log(`Subgraph doesn't have configuration for contract ${contract}`);
       return;
     }
 
-    this._context.contractAddress = contract;
+    for (const dataSource of dataSources) {
+      this._context.contractAddress = contract;
+      this._context.dataSourceName = dataSource.name;
 
-    const { instance, contractInterface } = this._dataSourceMap[watchedContract.kind];
-    assert(instance);
-    const { exports: instanceExports } = instance;
+      const { instance, contractInterface } = this._dataSourceMap[dataSource.name];
+      assert(instance);
+      const { exports: instanceExports } = instance;
 
-    // Get event handler based on event topic (from event signature).
-    const eventTopic = contractInterface.getEventTopic(eventSignature);
-    const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => {
-      // The event signature we get from logDescription is different than that given in the subgraph yaml file.
-      // For eg. event in subgraph.yaml: Stake(indexed address,uint256); from logDescription: Stake(address,uint256)
-      // ethers.js doesn't recognize the subgraph event signature with indexed keyword before param type.
-      // Match event topics from cleaned subgraph event signature (Stake(indexed address,uint256) -> Stake(address,uint256)).
-      const subgraphEventTopic = contractInterface.getEventTopic(eventHandler.event.replace(/indexed /g, ''));
+      // Get event handler based on event topic (from event signature).
+      const eventTopic = contractInterface.getEventTopic(eventSignature);
+      const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => {
+        // The event signature we get from logDescription is different than that given in the subgraph yaml file.
+        // For eg. event in subgraph.yaml: Stake(indexed address,uint256); from logDescription: Stake(address,uint256)
+        // ethers.js doesn't recognize the subgraph event signature with indexed keyword before param type.
+        // Match event topics from cleaned subgraph event signature (Stake(indexed address,uint256) -> Stake(address,uint256)).
+        const subgraphEventTopic = contractInterface.getEventTopic(eventHandler.event.replace(/indexed /g, ''));
 
-      return subgraphEventTopic === eventTopic;
-    });
+        return subgraphEventTopic === eventTopic;
+      });
 
-    if (!eventHandler) {
-      log(`No handler configured in subgraph for event ${eventSignature}`);
-      return;
-    }
+      if (!eventHandler) {
+        log(`No handler configured in subgraph for event ${eventSignature}`);
+        return;
+      }
 
-    const eventFragment = contractInterface.getEvent(eventSignature);
+      const eventFragment = contractInterface.getEvent(eventSignature);
 
-    const tx = this._getTransactionData(txHash, extraData.ethFullTransactions);
+      const tx = this._getTransactionData(txHash, extraData.ethFullTransactions);
 
-    const data = {
-      block: blockData,
-      inputs: eventFragment.inputs,
-      event,
-      tx,
-      eventIndex
-    };
+      const data = {
+        block: blockData,
+        inputs: eventFragment.inputs,
+        event,
+        tx,
+        eventIndex
+      };
 
-    // Create ethereum event to be passed to the wasm event handler.
-    console.time(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
-    const ethereumEvent = await createEvent(instanceExports, contract, data);
-    console.timeEnd(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
-    try {
-      console.time(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
-      await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
-      console.timeEnd(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
-    } catch (error) {
-      this._clearCachedEntities();
-      throw error;
+      // Create ethereum event to be passed to the wasm event handler.
+      console.time(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
+      const ethereumEvent = await createEvent(instanceExports, contract, data);
+      console.timeEnd(`time:graph-watcher#handleEvent-createEvent-block-${block.number}-event-${eventSignature}`);
+      try {
+        console.time(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
+        await this._handleMemoryError(instanceExports[eventHandler.handler](ethereumEvent), dataSource.name);
+        console.timeEnd(`time:graph-watcher#handleEvent-exec-${dataSource.name}-event-handler-${eventSignature}`);
+      } catch (error) {
+        this._clearCachedEntities();
+        throw error;
+      }
     }
   }
 
@@ -311,6 +314,7 @@ export class GraphWatcher {
 
       for (const contractAddress of contractAddressList) {
         this._context.contractAddress = contractAddress;
+        this._context.dataSourceName = dataSource.name;
 
         // Call all the block handlers one after another for a contract.
         const blockHandlerPromises = dataSource.mapping.blockHandlers.map(async (blockHandler: any): Promise<void> => {

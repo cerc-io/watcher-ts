@@ -117,7 +117,7 @@ export class Indexer {
   _ethProvider: ethers.providers.JsonRpcProvider;
   _jobQueue: JobQueue;
 
-  _watchedContracts: { [key: string]: ContractInterface } = {};
+  _watchedContractsByAddressMap: { [key: string]: ContractInterface[] } = {};
   _stateStatusMap: { [key: string]: StateStatus } = {};
 
   _currentEndpointIndex = {
@@ -203,8 +203,12 @@ export class Indexer {
 
     const contracts = await this._db.getContracts();
 
-    this._watchedContracts = contracts.reduce((acc: { [key: string]: ContractInterface }, contract) => {
-      acc[contract.address] = contract;
+    this._watchedContractsByAddressMap = contracts.reduce((acc: { [key: string]: ContractInterface[] }, contract) => {
+      if (!acc[contract.address]) {
+        acc[contract.address] = [];
+      }
+
+      acc[contract.address].push(contract);
 
       return acc;
     }, {});
@@ -441,7 +445,7 @@ export class Indexer {
     toBlock: number,
     eventSignaturesMap: Map<string, string[]>,
     parseEventNameAndArgs: (
-      kind: string,
+      watchedContracts: ContractInterface[],
       logObj: { topics: string[]; data: string }
     ) => { eventParsed: boolean, eventDetails: any }
   ): Promise<{
@@ -553,7 +557,7 @@ export class Indexer {
   async fetchEvents (
     blockHash: string, blockNumber: number,
     eventSignaturesMap: Map<string, string[]>,
-    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+    parseEventNameAndArgs: (watchedContracts: ContractInterface[], logObj: any) => { eventParsed: boolean, eventDetails: any }
   ): Promise<{ events: DeepPartial<EventInterface>[], transactions: EthFullTransaction[]}> {
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
@@ -572,7 +576,7 @@ export class Indexer {
     blockHash: string, blockNumber: number,
     addresses: string[],
     eventSignaturesMap: Map<string, string[]>,
-    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+    parseEventNameAndArgs: (watchedContracts: ContractInterface[], logObj: any) => { eventParsed: boolean, eventDetails: any }
   ): Promise<DeepPartial<EventInterface>[]> {
     const { topics } = this._createLogsFilters(eventSignaturesMap);
     const { logs, transactions } = await this._fetchLogsAndTransactions(blockHash, blockNumber, addresses, topics);
@@ -618,7 +622,7 @@ export class Indexer {
   createDbEventsFromLogsAndTxs (
     blockHash: string,
     logs: any, transactions: any,
-    parseEventNameAndArgs: (kind: string, logObj: any) => { eventParsed: boolean, eventDetails: any }
+    parseEventNameAndArgs: (watchedContracts: ContractInterface[], logObj: any) => { eventParsed: boolean, eventDetails: any }
   ): DeepPartial<EventInterface>[] {
     const transactionMap: {[key: string]: any} = transactions.reduce((acc: {[key: string]: any}, transaction: {[key: string]: any}) => {
       acc[transaction.txHash] = transaction;
@@ -665,12 +669,13 @@ export class Indexer {
         const extraInfo: { [key: string]: any } = { topics, data, tx, logIndex };
 
         const contract = ethers.utils.getAddress(address);
-        const watchedContract = this.isWatchedContract(contract);
+        const watchedContracts = this.isContractAddressWatched(contract);
 
-        if (watchedContract) {
-          const { eventParsed, eventDetails } = parseEventNameAndArgs(watchedContract.kind, logObj);
+        if (watchedContracts) {
+          const { eventParsed, eventDetails } = parseEventNameAndArgs(watchedContracts, logObj);
           if (!eventParsed) {
             // Skip unparsable events
+            log(`WARNING: Skipping event for contract ${contract} as no matching event found in ABI`);
             continue;
           }
 
@@ -856,19 +861,22 @@ export class Indexer {
     return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
   }
 
-  isWatchedContract (address : string): ContractInterface | undefined {
-    return this._watchedContracts[address];
+  isContractAddressWatched (address : string): ContractInterface[] | undefined {
+    return this._watchedContractsByAddressMap[address];
   }
 
   getContractsByKind (kind: string): ContractInterface[] {
-    const watchedContracts = Object.values(this._watchedContracts)
-      .filter(contract => contract.kind === kind);
+    const watchedContracts = Object.values(this._watchedContractsByAddressMap)
+      .reduce(
+        (acc, contracts) => acc.concat(contracts.filter(contract => contract.kind === kind)),
+        []
+      );
 
     return watchedContracts;
   }
 
   getWatchedContracts (): ContractInterface[] {
-    return Object.values(this._watchedContracts);
+    return Object.values(this._watchedContractsByAddressMap).flat();
   }
 
   async watchContract (address: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any): Promise<void> {
@@ -902,7 +910,19 @@ export class Indexer {
   }
 
   cacheContract (contract: ContractInterface): void {
-    this._watchedContracts[contract.address] = contract;
+    if (!this._watchedContractsByAddressMap[contract.address]) {
+      this._watchedContractsByAddressMap[contract.address] = [];
+    }
+
+    // Check if contract with kind is already cached and skip
+    const isAlreadyCached = this._watchedContractsByAddressMap[contract.address]
+      .some(watchedContract => contract.id === watchedContract.id);
+
+    if (isAlreadyCached) {
+      return;
+    }
+
+    this._watchedContractsByAddressMap[contract.address].push(contract);
   }
 
   async getStorageValue (storageLayout: StorageLayout, blockHash: string, token: string, variable: string, ...mappingKeys: any[]): Promise<ValueResult> {
@@ -940,7 +960,7 @@ export class Indexer {
     }
 
     // Get all the contracts.
-    const contracts = Object.values(this._watchedContracts);
+    const [contracts] = Object.values(this._watchedContractsByAddressMap);
 
     // Getting the block for checkpoint.
     const block = await this.getBlockProgress(blockHash);
@@ -994,10 +1014,11 @@ export class Indexer {
     }
 
     // Get the contract.
-    const contract = this._watchedContracts[contractAddress];
-    assert(contract, `Contract ${contractAddress} not watched`);
+    const watchedContracts = this._watchedContractsByAddressMap[contractAddress];
+    assert(watchedContracts, `Contract ${contractAddress} not watched`);
+    const [firstWatchedContract] = watchedContracts.sort((a, b) => a.startingBlock - b.startingBlock);
 
-    if (block.blockNumber < contract.startingBlock) {
+    if (block.blockNumber < firstWatchedContract.startingBlock) {
       return;
     }
 
@@ -1016,10 +1037,13 @@ export class Indexer {
     }
 
     // Get all the contracts.
-    const contracts = Object.values(this._watchedContracts);
+    const watchedContractsByAddress = Object.values(this._watchedContractsByAddressMap);
 
     // Create an initial state for each contract.
-    for (const contract of contracts) {
+    for (const watchedContracts of watchedContractsByAddress) {
+      // Get the first watched contract
+      const [contract] = watchedContracts.sort((a, b) => a.startingBlock - b.startingBlock);
+
       // Check if contract has checkpointing on.
       if (contract.checkpoint) {
         // Check if starting block not reached yet.
@@ -1064,8 +1088,9 @@ export class Indexer {
     assert(block);
 
     // Get the contract.
-    const contract = this._watchedContracts[contractAddress];
-    assert(contract, `Contract ${contractAddress} not watched`);
+    const watchedContracts = this._watchedContractsByAddressMap[contractAddress];
+    assert(watchedContracts, `Contract ${contractAddress} not watched`);
+    const [contract] = watchedContracts.sort((a, b) => a.startingBlock - b.startingBlock);
 
     if (block.blockNumber < contract.startingBlock) {
       return;
@@ -1100,8 +1125,9 @@ export class Indexer {
     }
 
     // Get the contract.
-    const contract = this._watchedContracts[contractAddress];
-    assert(contract, `Contract ${contractAddress} not watched`);
+    const watchedContracts = this._watchedContractsByAddressMap[contractAddress];
+    assert(watchedContracts, `Contract ${contractAddress} not watched`);
+    const [contract] = watchedContracts.sort((a, b) => a.startingBlock - b.startingBlock);
 
     if (block.blockNumber < contract.startingBlock) {
       return;
@@ -1138,8 +1164,9 @@ export class Indexer {
     }
 
     // Get the contract.
-    const contract = this._watchedContracts[contractAddress];
-    assert(contract, `Contract ${contractAddress} not watched`);
+    const watchedContracts = this._watchedContractsByAddressMap[contractAddress];
+    assert(watchedContracts, `Contract ${contractAddress} not watched`);
+    const [contract] = watchedContracts.sort((a, b) => a.startingBlock - b.startingBlock);
 
     if (currentBlock.blockNumber < contract.startingBlock) {
       return;
@@ -1341,16 +1368,16 @@ export class Indexer {
       return;
     }
 
-    const contracts = Object.values(this._watchedContracts);
+    const contractAddresses = Object.keys(this._watchedContractsByAddressMap);
 
     // TODO: Fire a single query for all contracts.
-    for (const contract of contracts) {
-      const initState = await this._db.getLatestState(contract.address, StateKind.Init);
-      const diffState = await this._db.getLatestState(contract.address, StateKind.Diff);
-      const diffStagedState = await this._db.getLatestState(contract.address, StateKind.DiffStaged);
-      const checkpointState = await this._db.getLatestState(contract.address, StateKind.Checkpoint);
+    for (const contractAddress of contractAddresses) {
+      const initState = await this._db.getLatestState(contractAddress, StateKind.Init);
+      const diffState = await this._db.getLatestState(contractAddress, StateKind.Diff);
+      const diffStagedState = await this._db.getLatestState(contractAddress, StateKind.DiffStaged);
+      const checkpointState = await this._db.getLatestState(contractAddress, StateKind.Checkpoint);
 
-      this._stateStatusMap[contract.address] = {
+      this._stateStatusMap[contractAddress] = {
         init: initState?.block.blockNumber,
         diff: diffState?.block.blockNumber,
         diff_staged: diffStagedState?.block.blockNumber,
@@ -1372,7 +1399,7 @@ export class Indexer {
       }
 
       await this._db.deleteEntitiesByConditions(dbTx, 'contract', { startingBlock: MoreThan(blockNumber) });
-      this._clearWatchedContracts((watchedContracts) => watchedContracts.startingBlock > blockNumber);
+      this._clearWatchedContracts((watchedContract) => watchedContract.startingBlock > blockNumber);
 
       await this._db.deleteEntitiesByConditions(dbTx, 'block_progress', { blockNumber: MoreThan(blockNumber) });
 
@@ -1414,7 +1441,7 @@ export class Indexer {
     }
   }
 
-  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockNumber: number }>[]): Promise<void> {
+  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockHash: string }>[]): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
@@ -1434,11 +1461,15 @@ export class Indexer {
     }
   }
 
-  _clearWatchedContracts (removFilter: (watchedContract: ContractInterface) => boolean): void {
-    this._watchedContracts = Object.values(this._watchedContracts)
-      .filter(watchedContract => !removFilter(watchedContract))
-      .reduce((acc: {[key: string]: ContractInterface}, watchedContract) => {
-        acc[watchedContract.address] = watchedContract;
+  _clearWatchedContracts (removeFilter: (watchedContract: ContractInterface) => boolean): void {
+    this._watchedContractsByAddressMap = Object.entries(this._watchedContractsByAddressMap)
+      .map(([address, watchedContracts]): [string, ContractInterface[]] => [
+        address,
+        watchedContracts.filter(watchedContract => !removeFilter(watchedContract))
+      ])
+      .filter(([, watchedContracts]) => watchedContracts.length)
+      .reduce((acc: {[key: string]: ContractInterface[]}, [address, watchedContracts]) => {
+        acc[address] = watchedContracts;
 
         return acc;
       }, {});

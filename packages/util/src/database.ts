@@ -665,7 +665,7 @@ export class Database {
   async saveContract (repo: Repository<ContractInterface>, address: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any): Promise<ContractInterface> {
     const contract = await repo
       .createQueryBuilder()
-      .where('address = :address', { address })
+      .where('address = :address AND kind = :kind', { address, kind })
       .getOne();
 
     const entity = repo.create({ address, kind, checkpoint, startingBlock, context });

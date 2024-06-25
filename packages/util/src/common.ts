@@ -12,7 +12,7 @@ import {
   UNKNOWN_EVENT_NAME
 } from './constants';
 import { JobQueue } from './job-queue';
-import { BlockProgressInterface, IndexerInterface, EventInterface, EthFullTransaction, EthFullBlock } from './types';
+import { BlockProgressInterface, IndexerInterface, EventInterface, EthFullTransaction, EthFullBlock, ContractInterface } from './types';
 import { wait } from './misc';
 import { OrderDirection } from './database';
 import { JobQueueConfig } from './config';
@@ -242,14 +242,14 @@ const _processEvents = async (
       //   throw new Error(`Events received out of order for block number ${block.blockNumber} hash ${block.blockHash}, got event index ${eventIndex} and lastProcessedEventIndex ${block.lastProcessedEventIndex}, aborting`);
       // }
 
-      const watchedContract = indexer.isWatchedContract(event.contract);
+      const watchedContracts = indexer.isContractAddressWatched(event.contract);
 
-      if (watchedContract) {
+      if (watchedContracts) {
         // We might not have parsed this event yet. This can happen if the contract was added
         // as a result of a previous event in the same block.
         if (event.eventName === UNKNOWN_EVENT_NAME) {
           // Parse the unknown event and save updated event to the db
-          const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContract.kind);
+          const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContracts);
 
           if (eventParsed) {
             updatedDbEvents.push(parsedEvent);
@@ -353,14 +353,14 @@ const _processEventsInSubgraphOrder = async (
 
   // Parse events of initially unwatched contracts
   for (const event of unwatchedContractEvents) {
-    const watchedContract = indexer.isWatchedContract(event.contract);
+    const watchedContracts = indexer.isContractAddressWatched(event.contract);
 
-    if (watchedContract) {
+    if (watchedContracts) {
       // We might not have parsed this event yet. This can happen if the contract was added
       // as a result of a previous event in the same block.
       if (event.eventName === UNKNOWN_EVENT_NAME) {
         // Parse the unknown event and save updated event to the db
-        const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContract.kind);
+        const { eventParsed, event: parsedEvent } = _parseUnknownEvent(indexer, event, watchedContracts);
 
         if (eventParsed) {
           updatedDbEvents.push(parsedEvent);
@@ -397,12 +397,14 @@ const _getEventsBatch = async (indexer: IndexerInterface, blockHash: string, eve
   );
 };
 
-const _parseUnknownEvent = (indexer: IndexerInterface, event: EventInterface, contractKind: string): { eventParsed: boolean, event: EventInterface } => {
+const _parseUnknownEvent = (indexer: IndexerInterface, event: EventInterface, watchedContracts: ContractInterface[]): { eventParsed: boolean, event: EventInterface } => {
   const logObj = JSONbigNative.parse(event.extraInfo);
 
   assert(indexer.parseEventNameAndArgs);
-  const { eventParsed, eventDetails: { eventName, eventInfo, eventSignature } } = indexer.parseEventNameAndArgs(contractKind, logObj);
+  const { eventParsed, eventDetails: { eventName, eventInfo, eventSignature } } = indexer.parseEventNameAndArgs(watchedContracts, logObj);
   if (!eventParsed) {
+    // Skip unparsable events
+    log(`WARNING: Skipping event for contract ${event.contract} as no matching event found in the ABI`);
     return { eventParsed: false, event };
   }
 

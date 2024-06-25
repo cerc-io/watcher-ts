@@ -50,6 +50,7 @@ export interface Context {
   rpcSupportsBlockHashParam: boolean;
   block?: Block;
   contractAddress?: string;
+  dataSourceName?: string;
 }
 
 const log = debug('vulcanize:graph-node');
@@ -719,13 +720,14 @@ export const instantiate = async (
       },
       'dataSource.context': async () => {
         assert(context.contractAddress);
-        const contract = indexer.isWatchedContract(context.contractAddress);
+        const watchedContracts = indexer.isContractAddressWatched(context.contractAddress);
+        const dataSourceContract = watchedContracts?.find(contract => contract.kind === context.dataSourceName);
 
-        if (!contract) {
+        if (!dataSourceContract) {
           return null;
         }
 
-        return database.toGraphContext(instanceExports, contract.context);
+        return database.toGraphContext(instanceExports, dataSourceContract.context);
       },
       'dataSource.network': async () => {
         assert(dataSource);
