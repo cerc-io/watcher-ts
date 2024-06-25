@@ -216,9 +216,20 @@ export class GraphWatcher {
       const { instance, contractInterface } = this._dataSourceMap[dataSource.name];
       assert(instance);
       const { exports: instanceExports } = instance;
+      let eventTopic: string;
+
+      try {
+        eventTopic = contractInterface.getEventTopic(eventSignature);
+      } catch (err) {
+        // Continue loop only if no matching event found
+        if (!((err as Error).message.includes('no matching event'))) {
+          throw err;
+        }
+
+        continue;
+      }
 
       // Get event handler based on event topic (from event signature).
-      const eventTopic = contractInterface.getEventTopic(eventSignature);
       const eventHandler = dataSource.mapping.eventHandlers.find((eventHandler: any) => {
         // The event signature we get from logDescription is different than that given in the subgraph yaml file.
         // For eg. event in subgraph.yaml: Stake(indexed address,uint256); from logDescription: Stake(address,uint256)
