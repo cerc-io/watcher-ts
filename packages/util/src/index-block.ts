@@ -46,9 +46,6 @@ export const indexBlock = async (
       blockProgress = partialblockProgress as BlockProgressInterface;
     }
 
-    assert(indexer.processBlock);
-    await indexer.processBlock(blockProgress);
-
     await processBatchEvents(
       indexer,
       {

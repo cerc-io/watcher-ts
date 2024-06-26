@@ -260,7 +260,7 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  async processBlock (blockProgress: BlockProgressInterface): Promise<void> {
+  async preEventsBlockProcessing (blockProgress: BlockProgressInterface): Promise<void> {
     return undefined;
   }
 

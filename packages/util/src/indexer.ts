@@ -394,6 +394,22 @@ export class Indexer {
     return blocks;
   }
 
+  async getBlockWithFullBlock (blockFilter: { blockNumber?: number, blockHash?: string }): Promise<{ block: DeepPartial<BlockProgressInterface>, fullBlock: EthFullBlock }> {
+    const [fullBlock] = await this.getBlocks(blockFilter);
+    assert(fullBlock);
+
+    const block = {
+      ...fullBlock,
+      blockTimestamp: Number(fullBlock.timestamp),
+      blockNumber: Number(fullBlock.blockNumber)
+    };
+
+    return {
+      block: block as DeepPartial<BlockProgressInterface>,
+      fullBlock
+    };
+  }
+
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {
     return this._db.getBlockProgress(blockHash);
   }
@@ -458,6 +474,17 @@ export class Indexer {
 
     const { addresses, topics } = this._createLogsFilters(eventSignaturesMap);
 
+    // Create a set of starting blocks of watched contracts in range [fromBlock, toBlock]
+    // TODO: Optimize (avoid template contracts)
+    const watchedBlockNumbers = Object.keys(this._watchedContracts).reduce((acc: Set<number>, address: string) => {
+      const startBlock = this._watchedContracts[address].startingBlock;
+      if (startBlock >= fromBlock && startBlock <= toBlock) {
+        acc.add(startBlock);
+      }
+
+      return acc;
+    }, new Set());
+
     const { logs } = await this._ethClient.getLogsForBlockRange({
       fromBlock,
       toBlock,
@@ -474,19 +501,13 @@ export class Indexer {
     // Fetch blocks with transactions for the logs returned
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-fetch-blocks-txs-${fromBlock}-${toBlock}`);
     const blocksPromises = Array.from(blockLogsMap.keys()).map(async (blockHash) => {
-      const [fullBlock] = await this._ethClient.getFullBlocks({ blockHash });
-      assert(fullBlock);
+      const { block, fullBlock } = await this.getBlockWithFullBlock({ blockHash });
 
-      const block = {
-        ...fullBlock,
-        blockTimestamp: Number(fullBlock.timestamp),
-        blockNumber: Number(fullBlock.blockNumber)
-      };
+      // Remove this block from watchedBlockNumbers set as it's already fetched
+      assert(block.blockNumber);
+      watchedBlockNumbers.delete(block.blockNumber);
 
-      return {
-        block: block as DeepPartial<BlockProgressInterface>,
-        fullBlock
-      };
+      return { block, fullBlock };
     });
 
     const ethFullTxPromises = txHashes.map(async txHash => {
@@ -495,6 +516,19 @@ export class Indexer {
 
     const blocks = await Promise.all(blocksPromises);
     const ethFullTxs = await Promise.all(ethFullTxPromises);
+
+    // Fetch starting blocks for watched contracts
+    const watchedBlocks = await Promise.all(
+      Array.from(watchedBlockNumbers).map(async (blockNumber) => this.getBlockWithFullBlock({ blockNumber }))
+    );
+
+    // Merge and sort the two block lists
+    const sortedBlocks = [...blocks, ...watchedBlocks].sort((b1, b2) => {
+      assert(b1.block.blockNumber);
+      assert(b2.block.blockNumber);
+
+      return b1.block.blockNumber - b2.block.blockNumber;
+    });
 
     const ethFullTxsMap = ethFullTxs.reduce((acc: Map<string, EthFullTransaction>, ethFullTx) => {
       acc.set(ethFullTx.ethTransactionCidByTxHash.txHash, ethFullTx);
@@ -505,7 +539,7 @@ export class Indexer {
 
     // Map db ready events according to blockhash
     console.time(`time:indexer#fetchAndSaveFilteredEventsAndBlocks-db-save-blocks-events-${fromBlock}-${toBlock}`);
-    const blockWithDbEventsPromises = blocks.map(async ({ block, fullBlock }) => {
+    const blockWithDbEventsPromises = sortedBlocks.map(async ({ block, fullBlock }) => {
       const blockHash = block.blockHash;
       assert(blockHash);
       const logs = blockLogsMap.get(blockHash) || [];
@@ -528,7 +562,6 @@ export class Indexer {
         blockProgress,
         ethFullBlock: fullBlock,
         ethFullTransactions: blockEthFullTxs,
-        block,
         events: []
       };
     });

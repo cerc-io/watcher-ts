@@ -176,8 +176,15 @@ export const processBatchEvents = async (
     subgraphEventsOrder: boolean;
   }
 ): Promise<boolean> => {
-  let dbBlock: BlockProgressInterface, updatedDbEvents: EventInterface[];
+  let updatedDbEvents: EventInterface[];
   let isNewContractWatched = false;
+  let { block: dbBlock } = data;
+
+  // Perform any operations before processing events for this block
+  // (if this block hasn't already been processed)
+  if (!dbBlock.isComplete) {
+    await indexer.preEventsBlockProcessing(data.block);
+  }
 
   if (subgraphEventsOrder) {
     ({ dbBlock, updatedDbEvents, isNewContractWatched } = await _processEventsInSubgraphOrder(indexer, data, eventsInBatch || DEFAULT_EVENTS_IN_BATCH));
@@ -185,10 +192,9 @@ export const processBatchEvents = async (
     ({ dbBlock, updatedDbEvents } = await _processEvents(indexer, data, eventsInBatch || DEFAULT_EVENTS_IN_BATCH));
   }
 
-  if (indexer.processBlockAfterEvents) {
-    if (!dbBlock.isComplete) {
-      await indexer.processBlockAfterEvents(dbBlock.blockHash, dbBlock.blockNumber, data);
-    }
+  // Perform any operations after processing events for this block
+  if (indexer.postEventsBlockProcessing && !dbBlock.isComplete) {
+    await indexer.postEventsBlockProcessing(dbBlock.blockHash, dbBlock.blockNumber, data);
   }
 
   dbBlock.isComplete = true;
@@ -367,6 +373,13 @@ const _processEventsInSubgraphOrder = async (
         }
       }
     }
+  }
+
+  if (isNewContractWatched) {
+    // Create init states for newly watched contracts
+    // (needs to be done before we start processsing their events)
+    assert(indexer.createInit);
+    await indexer.createInit(block.blockHash, block.blockNumber);
   }
 
   console.time('time:common#processEventsInSubgraphOrder-processing_initially_unwatched_events');
