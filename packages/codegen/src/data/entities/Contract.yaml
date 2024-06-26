@@ -2,6 +2,7 @@ className: Contract
 indexOn:
   - columns:
       - address
+      - kind
     unique: true
 columns:
   - name: id
