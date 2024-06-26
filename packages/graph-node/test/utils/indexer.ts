@@ -248,7 +248,7 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
-  isWatchedContract (address : string): ContractInterface | undefined {
+  isContractAddressWatched (address : string): ContractInterface[] | undefined {
     return undefined;
   }
 
