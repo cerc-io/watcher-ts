@@ -152,6 +152,12 @@ export class EventWatcher {
       endBlockNumber = Math.min(startBlockNumber + historicalMaxFetchAhead, endBlockNumber);
     }
 
+    if (this._config.jobQueue.historicalLogsBlockRangeEndFactor) {
+      // Set endBlockNumber to a multiple lower than computed endBlockNumber (or canonical block)
+      // For using aligned block ranges
+      endBlockNumber = Math.floor(endBlockNumber / this._config.jobQueue.historicalLogsBlockRangeEndFactor) * this._config.jobQueue.historicalLogsBlockRangeEndFactor;
+    }
+
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
 
