@@ -252,7 +252,15 @@ export class JobRunner {
 
     this._lastHistoricalProcessingEndBlockNumber = processingEndBlockNumber;
     const logsBlockRange = this._jobQueueConfig.historicalLogsBlockRange ?? DEFAULT_HISTORICAL_LOGS_BLOCK_RANGE;
-    const endBlock = Math.min(startBlock + logsBlockRange, processingEndBlockNumber);
+    let rangeEndBlock = startBlock + logsBlockRange;
+
+    if (this._jobQueueConfig.historicalLogsBlockRangeEndFactor) {
+      // Set rangeEndBlock to the next multiple of historicalLogsBlockRangeEndFactor after startBlock number
+      // For using aligned block ranges
+      rangeEndBlock = Math.ceil(startBlock / this._jobQueueConfig.historicalLogsBlockRangeEndFactor) * this._jobQueueConfig.historicalLogsBlockRangeEndFactor;
+    }
+
+    const endBlock = Math.min(rangeEndBlock, processingEndBlockNumber);
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
 
     const blocks = await fetchAndSaveFilteredLogsAndBlocks(

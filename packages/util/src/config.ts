@@ -29,6 +29,11 @@ export interface JobQueueConfig {
   // Block range in which logs are fetched during historical blocks processing
   historicalLogsBlockRange?: number;
 
+  // Factor to find the next multiple endBlock number when deciding eth_getLogs block range
+  // Used to fetch logs in aligned block ranges (paired with caching proxy server)
+  // If set to 0, historicalLogsBlockRange will be used to instead to decide block ranges
+  historicalLogsBlockRangeEndFactor?: number
+
   // Max block range of historical processing after which it waits for completion of events processing
   // If set to -1 historical processing does not wait for events processing and completes till latest canonical block
   historicalMaxFetchAhead?: number;
