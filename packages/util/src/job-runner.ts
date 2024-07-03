@@ -728,9 +728,9 @@ export class JobRunner {
 
       this._blockAndEventsMap.delete(block.blockHash);
 
-      // Check if new contract was added and filterLogsByAddresses is set to true
-      if (isNewContractWatched && this._indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
-        // Check if historical processing is running and that current block is being processed was trigerred by historical processing
+      // Check if new contract was added
+      if (isNewContractWatched) {
+        // Check if historical processing is running and that current block being processed was trigerred by historical processing
         if (this._historicalProcessingCompletedUpto && this._historicalProcessingCompletedUpto > block.blockNumber) {
           const nextBlockNumberToProcess = block.blockNumber + 1;
 
