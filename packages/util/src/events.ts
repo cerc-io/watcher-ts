@@ -158,6 +158,12 @@ export class EventWatcher {
       endBlockNumber = Math.floor(endBlockNumber / this._config.jobQueue.historicalLogsBlockRangeEndFactor) * this._config.jobQueue.historicalLogsBlockRangeEndFactor;
     }
 
+    if (endBlockNumber < startBlockNumber) {
+      await this.startRealtimeBlockProcessing(startBlockNumber);
+
+      return;
+    }
+
     this._historicalProcessingEndBlockNumber = endBlockNumber;
     log(`Starting historical block processing in batches from ${startBlockNumber} up to block ${this._historicalProcessingEndBlockNumber}`);
 
