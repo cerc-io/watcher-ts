@@ -71,6 +71,22 @@ export const fetchBlocksAtHeight = async (
 
   // Try fetching blocks from eth-server until found.
   while (!blocks.length) {
+    const { block: latestBlock } = await indexer.getBlockByHash();
+    const blockProcessingOffset = jobQueueConfig.blockProcessingOffset ?? 0;
+
+    // Process block if it is blockProcessingOffset blocks behind latest block
+    if (latestBlock.number < blockNumber + blockProcessingOffset) {
+      // Check number of retries for fetching new block
+      if (jobQueueConfig.maxNewBlockRetries && newBlockRetries > jobQueueConfig.maxNewBlockRetries) {
+        throw new Error(NEW_BLOCK_MAX_RETRIES_ERROR);
+      }
+
+      newBlockRetries++;
+      log(`Latest block: ${latestBlock.number}, blockProcessingOffset: ${blockProcessingOffset}; retry block to process: ${blockNumber} after ${jobQueueConfig.blockDelayInMilliSecs}ms`);
+      await wait(jobQueueConfig.blockDelayInMilliSecs);
+      continue;
+    }
+
     console.time(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
     const ethFullBlocks = await indexer.getBlocks({ blockNumber });
     console.timeEnd(`time:common#_fetchBlocks-eth-server-${blockNumber}`);
@@ -84,32 +100,21 @@ export const fetchBlocksAtHeight = async (
 
     // Fitler null blocks
     blocks = ethFullBlocks.filter(block => Boolean(block)) as EthFullBlock[];
+    assert(blocks.length, `Blocks at ${blockNumber} should exist as latest block is ${latestBlock}`);
 
-    if (!blocks.length) {
-      log(`No blocks fetched for block number ${blockNumber}, retrying after ${jobQueueConfig.blockDelayInMilliSecs} ms delay.`);
-
-      // Check number of retries for fetching new block
-      if (jobQueueConfig.maxNewBlockRetries && newBlockRetries > jobQueueConfig.maxNewBlockRetries) {
-        throw new Error(NEW_BLOCK_MAX_RETRIES_ERROR);
-      }
-
-      newBlockRetries++;
-      await wait(jobQueueConfig.blockDelayInMilliSecs);
-    } else {
-      blocks.forEach(block => {
-        blockAndEventsMap.set(
-          block.blockHash,
-          {
-            // Block is set later in job-runner when saving to database
-            block: {} as BlockProgressInterface,
-            events: [],
-            ethFullBlock: block,
-            // Transactions are set later in job-runner when fetching events
-            ethFullTransactions: []
-          }
-        );
-      });
-    }
+    blocks.forEach(block => {
+      blockAndEventsMap.set(
+        block.blockHash,
+        {
+          // Block is set later in job-runner when saving to database
+          block: {} as BlockProgressInterface,
+          events: [],
+          ethFullBlock: block,
+          // Transactions are set later in job-runner when fetching events
+          ethFullTransactions: []
+        }
+      );
+    });
   }
 
   assert(blocks.length, 'Blocks not fetched');

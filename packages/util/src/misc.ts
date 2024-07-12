@@ -22,7 +22,7 @@ import { ResultEvent } from './indexer';
 import { EventInterface, EthFullBlock, EthFullTransaction } from './types';
 import { BlockHeight } from './database';
 import { Transaction } from './graph/utils';
-import { ethRpcErrors, ethRpcRequestDuration } from './metrics';
+import { ethRpcCount, ethRpcErrors, ethRpcRequestDuration } from './metrics';
 
 const JSONbigNative = JSONbig({ useNativeBigInt: true });
 
@@ -379,6 +379,7 @@ export class MonitoredStaticJsonRpcProvider extends providers.StaticJsonRpcProvi
       // Rethrow the error
       throw err;
     } finally {
+      ethRpcCount.inc({ method, provider: this.connection.url }, 1);
       endTimer();
     }
   }

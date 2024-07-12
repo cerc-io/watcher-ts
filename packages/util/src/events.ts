@@ -14,7 +14,6 @@ import { createPruningJob, processBlockByNumber } from './common';
 import { OrderDirection } from './database';
 import { HistoricalJobData, HistoricalJobResponseData } from './job-runner';
 import { JobQueueConfig, ServerConfig } from './config';
-import { wait } from './misc';
 
 const EVENT = 'event';
 const BLOCK_PROGRESS_EVENT = 'block-progress-event';
@@ -105,7 +104,7 @@ export class EventWatcher {
     // Get latest block in chain and sync status from DB
     // Also get historical-processing queue size
     const [{ block: latestBlock }, syncStatus, historicalProcessingQueueSize] = await Promise.all([
-      this._ethClient.getBlockByHash(),
+      this._indexer.getBlockByHash(),
       this._indexer.getSyncStatus(),
       this._jobQueue.getQueueSize(QUEUE_HISTORICAL_PROCESSING, 'completed')
     ]);
@@ -196,18 +195,7 @@ export class EventWatcher {
       }
 
       if (isComplete) {
-        while (true) {
-          const { block: latestBlock } = await this._ethClient.getBlockByHash();
-
-          // Process block if it is blockProcessingOffset blocks behind latest block
-          if (latestBlock.number >= blockNumber + (this._config.jobQueue.blockProcessingOffset ?? 0)) {
-            await processBlockByNumber(this._jobQueue, blockNumber + 1);
-            break;
-          }
-
-          log(`Latest block: ${latestBlock.number}; retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
-          await wait(this._config.jobQueue.blockDelayInMilliSecs);
-        }
+        await processBlockByNumber(this._jobQueue, blockNumber + 1);
       }
     }
   }

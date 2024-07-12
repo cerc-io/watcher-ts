@@ -394,6 +394,10 @@ export class Indexer {
     return blocks;
   }
 
+  async getBlockByHash (blockHash?: string): Promise<{ block: any }> {
+    return this._ethClient.getBlockByHash(blockHash);
+  }
+
   async getBlockProgress (blockHash: string): Promise<BlockProgressInterface | undefined> {
     return this._db.getBlockProgress(blockHash);
   }

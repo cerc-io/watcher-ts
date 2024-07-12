@@ -249,7 +249,7 @@ export class Indexer implements IndexerInterface {
       };
     }
 
-    const { block: { number } } = await this._ethClient.getBlockByHash(blockHash);
+    const { block: { number } } = await this.getBlockByHash(blockHash);
     const blockNumber = ethers.BigNumber.from(number).toNumber();
 
     log('{{query.name}}: db miss, fetching from upstream server');
@@ -677,6 +677,10 @@ export class Indexer implements IndexerInterface {
 
   async getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<any> {
     return this._baseIndexer.getBlocks(blockFilter);
+  }
+
+  async getBlockByHash (blockHash?: string): Promise<{ block: any }> {
+    return this._baseIndexer.getBlockByHash(blockHash);
   }
 
   async updateSyncStatusIndexedBlock (blockHash: string, blockNumber: number, force = false): Promise<SyncStatus> {

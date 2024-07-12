@@ -82,6 +82,12 @@ export const isSyncingHistoricalBlocks = new client.Gauge({
 });
 isSyncingHistoricalBlocks.set(Number(undefined));
 
+export const ethRpcCount = new client.Counter({
+  name: 'watcher_eth_rpc_total',
+  help: 'Total number of ETH RPC requests',
+  labelNames: ['method', 'provider']
+});
+
 export const ethRpcErrors = new client.Counter({
   name: 'watcher_eth_rpc_errors',
   help: 'Number of ETH RPC request errors',
