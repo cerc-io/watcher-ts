@@ -95,6 +95,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async getBlockByHash (blockHash?: string): Promise<{ block: any }> {
+    return { block: undefined };
+  }
+
   async getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]> {
     assert(height);
     assert(isPruned);

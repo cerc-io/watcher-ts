@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/rpc-eth-client",
-  "version": "0.2.102",
+  "version": "0.2.103",
   "description": "RPC ETH Client",
   "main": "dist/index.js",
   "scripts": {
@@ -19,9 +19,9 @@
   },
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
-    "@cerc-io/cache": "^0.2.102",
-    "@cerc-io/ipld-eth-client": "^0.2.102",
-    "@cerc-io/util": "^0.2.102",
+    "@cerc-io/cache": "^0.2.103",
+    "@cerc-io/ipld-eth-client": "^0.2.103",
+    "@cerc-io/util": "^0.2.103",
     "chai": "^4.3.4",
     "ethers": "^5.4.4",
     "left-pad": "^1.3.0",
