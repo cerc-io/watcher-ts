@@ -171,6 +171,7 @@ export interface IndexerInterface {
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<Array<EthFullBlock | null>>
+  getBlockByHash (blockHash?: string): Promise<{ block: any }>
   getBlocksAtHeight (height: number, isPruned: boolean): Promise<BlockProgressInterface[]>
   getLatestCanonicalBlock (): Promise<BlockProgressInterface | undefined>
   getLatestStateIndexedBlock (): Promise<BlockProgressInterface>
