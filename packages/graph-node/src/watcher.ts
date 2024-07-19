@@ -176,11 +176,7 @@ export class GraphWatcher {
 
       // Skip for templates as they are added dynamically.
       if (address) {
-        const watchedContract = this._indexer.isContractAddressWatched(address);
-
-        if (!watchedContract) {
-          await this._indexer.watchContract(address, name, true, startBlock);
-        }
+        await this._indexer.watchContract(address, name, true, startBlock);
       }
     }
   }
