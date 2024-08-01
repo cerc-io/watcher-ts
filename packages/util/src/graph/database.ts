@@ -17,11 +17,11 @@ import {
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
-import { GraphQLResolveInfo, SelectionNode } from 'graphql';
+import { ArgumentNode, FieldNode, GraphQLResolveInfo, SelectionNode, IntValueNode, EnumValueNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
-import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight } from '../database';
+import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight, OrderDirection } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
@@ -272,6 +272,7 @@ export class GraphDatabase {
     const relationPromises = selections.filter((selection) => selection.kind === 'Field' && Boolean(relations[selection.name.value]))
       .map(async (selection) => {
         assert(selection.kind === 'Field');
+
         const field = selection.name.value;
         const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
         let childSelections = selection.selectionSet?.selections || [];
@@ -279,7 +280,16 @@ export class GraphDatabase {
         // Filter out __typename field in GQL for loading relations.
         childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
+        // Parse arguments on a plural selection field
+        let relationWhere: Where = {};
+        let relationQueryOptions: QueryOptions = {};
+        if (isDerived || isArray) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          ({ where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection));
+        }
+
         if (isDerived) {
+          // TODO: Merge with relationWhere
           const where: Where = {
             [foreignKey]: [{
               value: entityData.id,
@@ -294,7 +304,7 @@ export class GraphDatabase {
             relationsMap,
             block,
             where,
-            { limit: DEFAULT_LIMIT },
+            relationQueryOptions,
             childSelections,
             queryInfo
           );
@@ -305,6 +315,7 @@ export class GraphDatabase {
         }
 
         if (isArray) {
+          // TODO: Merge with relationWhere
           const where: Where = {
             id: [{
               value: entityData[field],
@@ -319,7 +330,7 @@ export class GraphDatabase {
             relationsMap,
             block,
             where,
-            { limit: DEFAULT_LIMIT },
+            relationQueryOptions,
             childSelections,
             queryInfo
           );
@@ -1346,5 +1357,42 @@ export class GraphDatabase {
 
       return [...acc, selection];
     }, []);
+  }
+
+  _getSelectionFieldArguments (fieldNode: FieldNode): { where: Where, queryOptions: QueryOptions } {
+    const where: Where = {};
+    const queryOptions: QueryOptions = {};
+
+    fieldNode.arguments?.forEach((arg: ArgumentNode) => {
+      switch (arg.name.value) {
+        case 'where':
+          // TODO: Parse ArgumentNode to build where filter
+          // where = this.buildFilter(arg.value);
+          break;
+
+        case 'first':
+          queryOptions.limit = Number((arg.value as IntValueNode).value);
+          break;
+
+        case 'skip':
+          queryOptions.skip = Number((arg.value as IntValueNode).value);
+          break;
+
+        case 'orderBy':
+          queryOptions.orderBy = (arg.value as EnumValueNode).value;
+          break;
+
+        case 'orderDirection':
+          queryOptions.orderDirection = (arg.value as EnumValueNode).value as OrderDirection;
+          break;
+
+        default:
+          throw new Error('Unrecognized query argument');
+      }
+    });
+
+    queryOptions.limit = queryOptions.limit || DEFAULT_LIMIT;
+
+    return { where, queryOptions };
   }
 }
