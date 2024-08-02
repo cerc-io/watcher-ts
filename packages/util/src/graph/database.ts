@@ -280,15 +280,10 @@ export class GraphDatabase {
         // Filter out __typename field in GQL for loading relations.
         childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
-        // Parse arguments on a plural selection field
-        let relationWhere: Where = {};
-        let relationQueryOptions: QueryOptions = {};
-        if (isDerived || isArray) {
-          ({ where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo));
-        }
+        // Parse selection's arguments
+        let { where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo);
 
         if (isDerived) {
-          // TODO: Merge with relationWhere
           const where: Where = {
             [foreignKey]: [{
               value: entityData.id,
@@ -320,7 +315,6 @@ export class GraphDatabase {
         }
 
         if (isArray) {
-          // TODO: Merge with relationWhere
           const where: Where = {
             id: [{
               value: entityData[field],
@@ -810,12 +804,16 @@ export class GraphDatabase {
     queryInfo: GraphQLResolveInfo
   ): Promise<void> {
     assert(selection.kind === 'Field');
+
     const field = selection.name.value;
     const { entity: relationEntity, isArray, isDerived, field: foreignKey } = relations[field];
     let childSelections = selection.selectionSet?.selections || [];
 
     // Filter out __typename field in GQL for loading relations.
     childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
+
+    // Parse selection's arguments
+    let { where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo);
 
     if (isDerived) {
       const where: Where = {
@@ -825,14 +823,20 @@ export class GraphDatabase {
           operator: 'in'
         }]
       };
+      relationWhere = _.mergeWith(relationWhere, where, (objValue: any, srcValue: any) => {
+        if (Array.isArray(objValue)) {
+          // Overwrite the array in the target object with the source array
+          return srcValue;
+        }
+      });
 
       const relatedEntities = await this.getEntities(
         queryRunner,
         relationEntity,
         relationsMap,
         block,
-        where,
-        {},
+        relationWhere,
+        relationQueryOptions,
         childSelections,
         queryInfo
       );
@@ -877,14 +881,20 @@ export class GraphDatabase {
           operator: 'in'
         }]
       };
+      relationWhere = _.mergeWith(relationWhere, where, (objValue: any, srcValue: any) => {
+        if (Array.isArray(objValue)) {
+          // Overwrite the array in the target object with the source array
+          return srcValue;
+        }
+      });
 
       const relatedEntities = await this.getEntities(
         queryRunner,
         relationEntity,
         relationsMap,
         block,
-        where,
-        {},
+        relationWhere,
+        relationQueryOptions,
         childSelections,
         queryInfo
       );
@@ -929,14 +939,20 @@ export class GraphDatabase {
         operator: 'in'
       }]
     };
+    relationWhere = _.mergeWith(relationWhere, where, (objValue: any, srcValue: any) => {
+      if (Array.isArray(objValue)) {
+        // Overwrite the array in the target object with the source array
+        return srcValue;
+      }
+    });
 
     const relatedEntities = await this.getEntities(
       queryRunner,
       relationEntity,
       relationsMap,
       block,
-      where,
-      {},
+      relationWhere,
+      relationQueryOptions,
       childSelections,
       queryInfo
     );
@@ -1445,32 +1461,34 @@ export class GraphDatabase {
     const queryOptions: QueryOptions = {};
 
     fieldNode.arguments?.forEach((arg: ArgumentNode) => {
-      let argValue: any;
-
       switch (arg.name.value) {
         case 'where':
           where = this.buildFilter(this._buildWhereFromArgumentNode(arg, queryInfo));
           break;
 
-        case 'first':
-          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
+        case 'first': {
+          const argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
           queryOptions.limit = Number(argValue);
           break;
+        }
 
-        case 'skip':
-          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
+        case 'skip': {
+          const argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
           queryOptions.skip = Number(argValue);
           break;
+        }
 
-        case 'orderBy':
-          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
+        case 'orderBy': {
+          const argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
           queryOptions.orderBy = String(argValue);
           break;
+        }
 
-        case 'orderDirection':
-          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
+        case 'orderDirection': {
+          const argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
           queryOptions.orderDirection = argValue as OrderDirection;
           break;
+        }
 
         default:
           throw new Error('Unrecognized query argument');
