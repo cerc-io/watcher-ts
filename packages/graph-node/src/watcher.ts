@@ -28,10 +28,6 @@ import {
   Transaction,
   EthClient,
   DEFAULT_LIMIT,
-  FILTER_CHANGE_BLOCK,
-  Where,
-  Filter,
-  OPERATOR_MAP,
   ExtraEventData,
   EthFullTransaction
 } from '@cerc-io/util';
@@ -379,7 +375,7 @@ export class GraphWatcher {
     const dbTx = await this._database.createTransactionRunner();
 
     try {
-      where = this._buildFilter(where);
+      where = this._database.buildFilter(where);
 
       if (!queryOptions.limit) {
         queryOptions.limit = DEFAULT_LIMIT;
@@ -512,76 +508,6 @@ export class GraphWatcher {
     this._transactionsMap.set(txHash, transaction);
 
     return transaction;
-  }
-
-  _buildFilter (where: { [key: string]: any } = {}): Where {
-    return Object.entries(where).reduce((acc: Where, [fieldWithSuffix, value]) => {
-      if (fieldWithSuffix === FILTER_CHANGE_BLOCK) {
-        assert(value.number_gte && typeof value.number_gte === 'number');
-
-        acc[FILTER_CHANGE_BLOCK] = [{
-          value: value.number_gte,
-          not: false
-        }];
-
-        return acc;
-      }
-
-      if (['and', 'or'].includes(fieldWithSuffix)) {
-        assert(Array.isArray(value));
-
-        // Parse all the comibations given in the array
-        acc[fieldWithSuffix] = value.map(w => {
-          return this._buildFilter(w);
-        });
-
-        return acc;
-      }
-
-      const [field, ...suffix] = fieldWithSuffix.split('_');
-
-      if (!acc[field]) {
-        acc[field] = [];
-      }
-
-      let op = suffix.shift();
-
-      // If op is "" (different from undefined), it means it's a nested filter on a relation field
-      if (op === '') {
-        (acc[field] as Filter[]).push({
-          // Parse nested filter value
-          value: this._buildFilter(value),
-          not: false,
-          operator: 'nested'
-        });
-
-        return acc;
-      }
-
-      const filter: Filter = {
-        value,
-        not: false,
-        operator: 'equals'
-      };
-
-      if (op === 'not') {
-        filter.not = true;
-        op = suffix.shift();
-      }
-
-      if (op) {
-        filter.operator = op as keyof typeof OPERATOR_MAP;
-      }
-
-      // If filter field ends with "nocase", use case insensitive version of the operator
-      if (suffix[suffix.length - 1] === 'nocase') {
-        filter.operator = `${op}_nocase` as keyof typeof OPERATOR_MAP;
-      }
-
-      (acc[field] as Filter[]).push(filter);
-
-      return acc;
-    }, {});
   }
 
   _getSelectionsFromGQLInfo (queryInfo: GraphQLResolveInfo): readonly SelectionNode[] {

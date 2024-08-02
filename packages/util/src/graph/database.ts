@@ -17,11 +17,11 @@ import {
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
-import { ArgumentNode, FieldNode, GraphQLResolveInfo, SelectionNode, IntValueNode, EnumValueNode } from 'graphql';
+import { ArgumentNode, FieldNode, GraphQLResolveInfo, SelectionNode, IntValueNode, EnumValueNode, ObjectValueNode, ObjectFieldNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
-import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight, OrderDirection } from '../database';
+import { Database as BaseDatabase, QueryOptions, Where, CanonicalBlockHeight, Filter, OPERATOR_MAP, OrderDirection } from '../database';
 import { BlockProgressInterface } from '../types';
 import { cachePrunedEntitiesCount, eventProcessingLoadEntityCacheHitCount, eventProcessingLoadEntityCount, eventProcessingLoadEntityDBQueryDuration } from '../metrics';
 import { ServerConfig } from '../config';
@@ -284,7 +284,6 @@ export class GraphDatabase {
         let relationWhere: Where = {};
         let relationQueryOptions: QueryOptions = {};
         if (isDerived || isArray) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ({ where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection));
         }
 
@@ -297,13 +296,19 @@ export class GraphDatabase {
               operator: 'equals'
             }]
           };
+          relationWhere = _.mergeWith(relationWhere, where, (objValue: any, srcValue: any) => {
+            if (Array.isArray(objValue)) {
+              // Overwrite the array in the target object with the source array
+              return srcValue;
+            }
+          });
 
           const relatedEntities = await this.getEntities(
             queryRunner,
             relationEntity,
             relationsMap,
             block,
-            where,
+            relationWhere,
             relationQueryOptions,
             childSelections,
             queryInfo
@@ -323,13 +328,19 @@ export class GraphDatabase {
               operator: 'in'
             }]
           };
+          relationWhere = _.mergeWith(relationWhere, where, (objValue: any, srcValue: any) => {
+            if (Array.isArray(objValue)) {
+              // Overwrite the array in the target object with the source array
+              return srcValue;
+            }
+          });
 
           const relatedEntities = await this.getEntities(
             queryRunner,
             relationEntity,
             relationsMap,
             block,
-            where,
+            relationWhere,
             relationQueryOptions,
             childSelections,
             queryInfo
@@ -1339,6 +1350,76 @@ export class GraphDatabase {
     );
   }
 
+  buildFilter (where: { [key: string]: any } = {}): Where {
+    return Object.entries(where).reduce((acc: Where, [fieldWithSuffix, value]) => {
+      if (fieldWithSuffix === FILTER_CHANGE_BLOCK) {
+        assert(value.number_gte && typeof value.number_gte === 'number');
+
+        acc[FILTER_CHANGE_BLOCK] = [{
+          value: value.number_gte,
+          not: false
+        }];
+
+        return acc;
+      }
+
+      if (['and', 'or'].includes(fieldWithSuffix)) {
+        assert(Array.isArray(value));
+
+        // Parse all the comibations given in the array
+        acc[fieldWithSuffix] = value.map(w => {
+          return this.buildFilter(w);
+        });
+
+        return acc;
+      }
+
+      const [field, ...suffix] = fieldWithSuffix.split('_');
+
+      if (!acc[field]) {
+        acc[field] = [];
+      }
+
+      let op = suffix.shift();
+
+      // If op is "" (different from undefined), it means it's a nested filter on a relation field
+      if (op === '') {
+        (acc[field] as Filter[]).push({
+          // Parse nested filter value
+          value: this.buildFilter(value),
+          not: false,
+          operator: 'nested'
+        });
+
+        return acc;
+      }
+
+      const filter: Filter = {
+        value,
+        not: false,
+        operator: 'equals'
+      };
+
+      if (op === 'not') {
+        filter.not = true;
+        op = suffix.shift();
+      }
+
+      if (op) {
+        filter.operator = op as keyof typeof OPERATOR_MAP;
+      }
+
+      // If filter field ends with "nocase", use case insensitive version of the operator
+      if (suffix[suffix.length - 1] === 'nocase') {
+        filter.operator = `${op}_nocase` as keyof typeof OPERATOR_MAP;
+      }
+
+      (acc[field] as Filter[]).push(filter);
+
+      return acc;
+    }, {});
+  }
+
   _measureCachedPrunedEntities (): void {
     const totalEntities = Array.from(this.cachedEntities.latestPrunedEntities.values())
       .reduce((acc, idEntitiesMap) => acc + idEntitiesMap.size, 0);
@@ -1360,14 +1441,13 @@ export class GraphDatabase {
   }
 
   _getSelectionFieldArguments (fieldNode: FieldNode): { where: Where, queryOptions: QueryOptions } {
-    const where: Where = {};
+    let where: Where = {};
     const queryOptions: QueryOptions = {};
 
     fieldNode.arguments?.forEach((arg: ArgumentNode) => {
       switch (arg.name.value) {
         case 'where':
-          // TODO: Parse ArgumentNode to build where filter
-          // where = this.buildFilter(arg.value);
+          where = this.buildFilter(this._buildWhereFromArgumentNode(arg));
           break;
 
         case 'first':
@@ -1394,5 +1474,32 @@ export class GraphDatabase {
     queryOptions.limit = queryOptions.limit || DEFAULT_LIMIT;
 
     return { where, queryOptions };
+  }
+
+  _buildWhereFromArgumentNode (arg: ArgumentNode): { [key: string]: any } {
+    // TODO: Handle all types of filters on nested fields
+
+    return (arg.value as ObjectValueNode).fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
+      switch (fieldNode.value.kind) {
+        case 'BooleanValue' :
+        case 'EnumValue' :
+        case 'FloatValue' :
+        case 'IntValue' :
+        case 'StringValue' :
+          acc[fieldNode.name.value] = fieldNode.value.value;
+          break;
+
+        case 'NullValue':
+          acc[fieldNode.name.value] = null;
+          break;
+
+        case 'Variable':
+        case 'ListValue':
+        case 'ObjectValue':
+          throw new Error(`Nested filter type ${fieldNode.value.kind} not supported`);
+      }
+
+      return acc;
+    }, {});
   }
 }
