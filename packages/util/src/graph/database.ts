@@ -284,7 +284,7 @@ export class GraphDatabase {
         let relationWhere: Where = {};
         let relationQueryOptions: QueryOptions = {};
         if (isDerived || isArray) {
-          ({ where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection));
+          ({ where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo));
         }
 
         if (isDerived) {
@@ -1440,30 +1440,36 @@ export class GraphDatabase {
     }, []);
   }
 
-  _getSelectionFieldArguments (fieldNode: FieldNode): { where: Where, queryOptions: QueryOptions } {
+  _getSelectionFieldArguments (fieldNode: FieldNode, queryInfo: GraphQLResolveInfo): { where: Where, queryOptions: QueryOptions } {
     let where: Where = {};
     const queryOptions: QueryOptions = {};
 
     fieldNode.arguments?.forEach((arg: ArgumentNode) => {
+      let argValue: any;
+
       switch (arg.name.value) {
         case 'where':
-          where = this.buildFilter(this._buildWhereFromArgumentNode(arg));
+          where = this.buildFilter(this._buildWhereFromArgumentNode(arg, queryInfo));
           break;
 
         case 'first':
-          queryOptions.limit = Number((arg.value as IntValueNode).value);
+          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
+          queryOptions.limit = Number(argValue);
           break;
 
         case 'skip':
-          queryOptions.skip = Number((arg.value as IntValueNode).value);
+          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as IntValueNode).value;
+          queryOptions.skip = Number(argValue);
           break;
 
         case 'orderBy':
-          queryOptions.orderBy = (arg.value as EnumValueNode).value;
+          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
+          queryOptions.orderBy = String(argValue);
           break;
 
         case 'orderDirection':
-          queryOptions.orderDirection = (arg.value as EnumValueNode).value as OrderDirection;
+          argValue = (arg.value.kind === 'Variable') ? queryInfo.variableValues[arg.value.name.value] : (arg.value as EnumValueNode).value;
+          queryOptions.orderDirection = argValue as OrderDirection;
           break;
 
         default:
@@ -1476,7 +1482,7 @@ export class GraphDatabase {
     return { where, queryOptions };
   }
 
-  _buildWhereFromArgumentNode (arg: ArgumentNode): { [key: string]: any } {
+  _buildWhereFromArgumentNode (arg: ArgumentNode, queryInfo: GraphQLResolveInfo): { [key: string]: any } {
     // TODO: Handle all types of filters on nested fields
 
     return (arg.value as ObjectValueNode).fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
@@ -1494,6 +1500,9 @@ export class GraphDatabase {
           break;
 
         case 'Variable':
+          acc[fieldNode.name.value] = queryInfo.variableValues[fieldNode.value.name.value];
+          break;
+
         case 'ListValue':
         case 'ObjectValue':
           throw new Error(`Nested filter type ${fieldNode.value.kind} not supported`);
