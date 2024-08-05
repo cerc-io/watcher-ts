@@ -734,25 +734,13 @@ export const instantiate = async (
         return __newString(dataSource.network);
       },
       'dataSource.create': async (name: number, params: number) => {
-        const [addressStringPtr] = __getArray(params);
-        const addressString = __getString(addressStringPtr);
-        const contractKind = __getString(name);
-
-        assert(indexer.watchContract);
-        assert(context.block);
-        await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber));
+        await handleDataSourceCreate(name, params);
       },
       'dataSource.createWithContext': async (name: number, params: number, dataSourceContext: number) => {
-        const [addressStringPtr] = __getArray(params);
-        const addressString = __getString(addressStringPtr);
-        const contractKind = __getString(name);
-
         const contextInstance = await Entity.wrap(dataSourceContext);
         const dbData = await database.fromGraphContext(instanceExports, contextInstance);
 
-        assert(indexer.watchContract);
-        assert(context.block);
-        await indexer.watchContract(utils.getAddress(addressString), contractKind, true, Number(context.block.blockNumber), dbData);
+        await handleDataSourceCreate(name, params, dbData);
       }
     },
     json: {
@@ -784,6 +772,34 @@ export const instantiate = async (
         return ASBigInt.fromString(ptr);
       }
     }
+  };
+
+  const handleDataSourceCreate = async (name: number, params: number, dbData?: {[key: string]: any}) => {
+    const [addressStringPtr] = __getArray(params);
+    const addressString = __getString(addressStringPtr);
+    const contractKind = __getString(name);
+
+    assert(context.block);
+    const contractAddress = utils.getAddress(addressString);
+    const watchedContracts = indexer.isContractAddressWatched(contractAddress);
+
+    // If template contract is already watched (incase of reorgs)
+    // Remove from watched contracts and throw error to reprocess block with correct order of template contract events
+    if (
+      watchedContracts &&
+      watchedContracts.some(watchedContract => watchedContract.kind === contractKind)
+    ) {
+      await indexer.removeContract(contractAddress, contractKind);
+      throw new Error(`Template contract ${contractAddress} of kind ${contractKind} already exists; removed from watched contracts`);
+    }
+
+    await indexer.watchContract(
+      contractAddress,
+      contractKind,
+      true,
+      Number(context.block.blockNumber),
+      dbData
+    );
   };
 
   const instance = await loader.instantiate(source, imports);
