@@ -1463,7 +1463,7 @@ export class GraphDatabase {
     fieldNode.arguments?.forEach((arg: ArgumentNode) => {
       switch (arg.name.value) {
         case 'where':
-          where = this.buildFilter(this._buildWhereFromArgumentNode(arg, queryInfo));
+          where = this.buildFilter(this._buildWhereFromObjectValueNode((arg.value as ObjectValueNode), queryInfo));
           break;
 
         case 'first': {
@@ -1500,10 +1500,8 @@ export class GraphDatabase {
     return { where, queryOptions };
   }
 
-  _buildWhereFromArgumentNode (arg: ArgumentNode, queryInfo: GraphQLResolveInfo): { [key: string]: any } {
-    // TODO: Handle all types of filters on nested fields
-
-    return (arg.value as ObjectValueNode).fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
+  _buildWhereFromObjectValueNode (whereObjValue: ObjectValueNode, queryInfo: GraphQLResolveInfo): { [key: string]: any } {
+    return whereObjValue.fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
       switch (fieldNode.value.kind) {
         case 'BooleanValue' :
         case 'EnumValue' :
@@ -1522,8 +1520,10 @@ export class GraphDatabase {
           break;
 
         case 'ListValue':
-        case 'ObjectValue':
           throw new Error(`Nested filter type ${fieldNode.value.kind} not supported`);
+        case 'ObjectValue':
+          acc[fieldNode.name.value] = this._buildWhereFromObjectValueNode(fieldNode.value, queryInfo);
+          break;
       }
 
       return acc;
