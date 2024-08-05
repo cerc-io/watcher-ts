@@ -264,6 +264,10 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async removeContract (address: string, kind: string): Promise<void> {
+    return undefined;
+  }
+
   async processBlock (blockProgress: BlockProgressInterface): Promise<void> {
     return undefined;
   }
