@@ -17,7 +17,7 @@ import {
 } from 'typeorm';
 import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer';
-import { ArgumentNode, FieldNode, GraphQLResolveInfo, SelectionNode, IntValueNode, EnumValueNode, ObjectValueNode, ObjectFieldNode } from 'graphql';
+import { ArgumentNode, FieldNode, GraphQLResolveInfo, SelectionNode, IntValueNode, EnumValueNode, ObjectValueNode, ObjectFieldNode, ValueNode } from 'graphql';
 import _ from 'lodash';
 import debug from 'debug';
 
@@ -281,7 +281,7 @@ export class GraphDatabase {
         childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
         // Parse selection's arguments
-        let { where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo);
+        let { where: relationWhere, queryOptions: relationQueryOptions } = this._getGQLSelectionFieldArguments(selection, queryInfo);
 
         if (isDerived) {
           const where: Where = {
@@ -813,7 +813,7 @@ export class GraphDatabase {
     childSelections = childSelections.filter(selection => !(selection.kind === 'Field' && selection.name.value === '__typename'));
 
     // Parse selection's arguments
-    let { where: relationWhere, queryOptions: relationQueryOptions } = this._getSelectionFieldArguments(selection, queryInfo);
+    let { where: relationWhere, queryOptions: relationQueryOptions } = this._getGQLSelectionFieldArguments(selection, queryInfo);
 
     if (isDerived) {
       const where: Where = {
@@ -1456,14 +1456,14 @@ export class GraphDatabase {
     }, []);
   }
 
-  _getSelectionFieldArguments (fieldNode: FieldNode, queryInfo: GraphQLResolveInfo): { where: Where, queryOptions: QueryOptions } {
+  _getGQLSelectionFieldArguments (fieldNode: FieldNode, queryInfo: GraphQLResolveInfo): { where: Where, queryOptions: QueryOptions } {
     let where: Where = {};
     const queryOptions: QueryOptions = {};
 
     fieldNode.arguments?.forEach((arg: ArgumentNode) => {
       switch (arg.name.value) {
         case 'where':
-          where = this.buildFilter(this._buildWhereFromArgumentNode(arg, queryInfo));
+          where = this.buildFilter(this._buildWhereFromGQLArgValue((arg.value as ObjectValueNode), queryInfo));
           break;
 
         case 'first': {
@@ -1500,33 +1500,33 @@ export class GraphDatabase {
     return { where, queryOptions };
   }
 
-  _buildWhereFromArgumentNode (arg: ArgumentNode, queryInfo: GraphQLResolveInfo): { [key: string]: any } {
-    // TODO: Handle all types of filters on nested fields
-
-    return (arg.value as ObjectValueNode).fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
-      switch (fieldNode.value.kind) {
-        case 'BooleanValue' :
-        case 'EnumValue' :
-        case 'FloatValue' :
-        case 'IntValue' :
-        case 'StringValue' :
-          acc[fieldNode.name.value] = fieldNode.value.value;
-          break;
-
-        case 'NullValue':
-          acc[fieldNode.name.value] = null;
-          break;
-
-        case 'Variable':
-          acc[fieldNode.name.value] = queryInfo.variableValues[fieldNode.value.name.value];
-          break;
-
-        case 'ListValue':
-        case 'ObjectValue':
-          throw new Error(`Nested filter type ${fieldNode.value.kind} not supported`);
-      }
-
+  _buildWhereFromGQLArgValue (whereArgValue: ObjectValueNode, queryInfo: GraphQLResolveInfo): { [key: string]: any } {
+    return whereArgValue.fields.reduce((acc: { [key: string]: any }, fieldNode: ObjectFieldNode) => {
+      acc[fieldNode.name.value] = this._parseGQLFieldValue(fieldNode.value, queryInfo);
       return acc;
     }, {});
+  }
+
+  _parseGQLFieldValue (value: ValueNode, queryInfo: GraphQLResolveInfo): any {
+    switch (value.kind) {
+      case 'BooleanValue':
+      case 'EnumValue':
+      case 'FloatValue':
+      case 'IntValue':
+      case 'StringValue':
+        return value.value;
+
+      case 'NullValue':
+        return null;
+
+      case 'Variable':
+        return queryInfo.variableValues[value.name.value];
+
+      case 'ListValue':
+        return value.values.map((valueNode) => this._parseGQLFieldValue(valueNode, queryInfo));
+
+      case 'ObjectValue':
+        return this._buildWhereFromGQLArgValue(value, queryInfo);
+    }
   }
 }
