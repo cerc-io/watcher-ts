@@ -189,6 +189,8 @@ export class Schema {
   }
 
   _addSubgraphSchemaQueries (subgraphTypeDefs: ReadonlyArray<DefinitionNode>): void {
+    const subgraphTypeArgsMap = new Map<string, { [key: string]: any }>();
+
     for (const subgraphTypeDef of subgraphTypeDefs) {
       // Filtering out enums.
       if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
@@ -303,21 +305,30 @@ export class Schema {
       let pluralQueryName = pluralize(queryName);
       pluralQueryName = (pluralQueryName === queryName) ? `${pluralQueryName}s` : pluralQueryName;
 
+      const queryArgs = {
+        where: `${subgraphType}_filter`,
+        orderBy: subgraphTypeOrderByEnum,
+        orderDirection: ORDER_DIRECTION,
+        first: { type: GraphQLInt, defaultValue: 100 },
+        skip: { type: GraphQLInt, defaultValue: 0 }
+      };
+
       queryObject[pluralQueryName] = {
         // Get type composer object for return type from the schema composer.
         type: this._composer.getAnyTC(subgraphType).NonNull.List.NonNull,
         args: {
           block: BLOCK_HEIGHT,
-          where: `${subgraphType}_filter`,
-          orderBy: subgraphTypeOrderByEnum,
-          orderDirection: ORDER_DIRECTION,
-          first: { type: GraphQLInt, defaultValue: 100 },
-          skip: { type: GraphQLInt, defaultValue: 0 }
+          ...queryArgs
         }
       };
-
       this._composer.Query.addFields(queryObject);
+
+      // Save the args for this type in a map (type -> args) for further usage.
+      subgraphTypeArgsMap.set(subgraphType, queryArgs);
     }
+
+    // Add args on plural fields for subgraph types.
+    this._addSubgraphPluralFieldArgs(subgraphTypeDefs, subgraphTypeArgsMap);
   }
 
   _getDetailsForSubgraphField (fieldType: ComposeOutputType<any>): {
@@ -379,6 +390,28 @@ export class Schema {
       .forEach(([name]) => {
         orderByFields[`${fieldName}__${name}`] = {};
       });
+  }
+
+  _addSubgraphPluralFieldArgs (subgraphTypeDefs: ReadonlyArray<DefinitionNode>, subgraphTypeArgsMap: Map<string, { [key: string]: any }>): void {
+    for (const subgraphTypeDef of subgraphTypeDefs) {
+      // Filtering out enums.
+      if (subgraphTypeDef.kind !== 'ObjectTypeDefinition') {
+        continue;
+      }
+
+      const subgraphType = subgraphTypeDef.name.value;
+      const subgraphTypeComposer = this._composer.getOTC(subgraphType);
+
+      // Process each field on the type.
+      Object.entries(subgraphTypeComposer.getFields()).forEach(([fieldName, field]) => {
+        const { isArray, entityType } = this._getDetailsForSubgraphField(field.type);
+
+        // Set args if it's a plural field of some entity type.
+        if (entityType && isArray) {
+          subgraphTypeComposer.setFieldArgs(fieldName, subgraphTypeArgsMap.get(entityType) || {});
+        }
+      });
+    }
   }
 
   /**
