@@ -252,7 +252,15 @@ export class JobRunner {
 
     this._lastHistoricalProcessingEndBlockNumber = processingEndBlockNumber;
     const logsBlockRange = this._jobQueueConfig.historicalLogsBlockRange ?? DEFAULT_HISTORICAL_LOGS_BLOCK_RANGE;
-    const endBlock = Math.min(startBlock + logsBlockRange, processingEndBlockNumber);
+    let rangeEndBlock = startBlock + logsBlockRange;
+
+    if (this._jobQueueConfig.historicalLogsBlockRangeEndFactor) {
+      // Set rangeEndBlock to the next multiple of historicalLogsBlockRangeEndFactor after startBlock number
+      // For using aligned block ranges
+      rangeEndBlock = Math.ceil(startBlock / this._jobQueueConfig.historicalLogsBlockRangeEndFactor) * this._jobQueueConfig.historicalLogsBlockRangeEndFactor;
+    }
+
+    const endBlock = Math.min(rangeEndBlock, processingEndBlockNumber);
     log(`Processing historical blocks from ${startBlock} to ${endBlock}`);
 
     const blocks = await fetchAndSaveFilteredLogsAndBlocks(
@@ -720,9 +728,9 @@ export class JobRunner {
 
       this._blockAndEventsMap.delete(block.blockHash);
 
-      // Check if new contract was added and filterLogsByAddresses is set to true
-      if (isNewContractWatched && this._indexer.upstreamConfig.ethServer.filterLogsByAddresses) {
-        // Check if historical processing is running and that current block is being processed was trigerred by historical processing
+      // Check if new contract was added
+      if (isNewContractWatched) {
+        // Check if historical processing is running and that current block being processed was trigerred by historical processing
         if (this._historicalProcessingCompletedUpto && this._historicalProcessingCompletedUpto > block.blockNumber) {
           const nextBlockNumberToProcess = block.blockNumber + 1;
 
