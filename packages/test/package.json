@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "build": "tsc",
     "eth-call": "DEBUG=vulcanize:* ts-node src/eth-call.ts",
+    "eth-get-logs": "DEBUG=vulcanize:* ts-node src/eth-get-logs.ts",
     "get-storage-at": "DEBUG=vulcanize:* ts-node src/get-storage-at.ts",
     "test:snapshot": "DEBUG=vulcanize:* mocha src/snapshot.test.ts"
   },
