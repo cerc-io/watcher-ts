@@ -80,5 +80,5 @@
 * Run:
 
   ```bash
-  yarn eth-get-logs  -i <input-requests-json-file> -o <output-results-json-file> -c <output-curl-requests-file> -e http://127.0.0.1:1234/rpc/v1
+  yarn eth-get-logs  -i <input-requests-json-file> -o <output-results-json-file> -c <output-curl-requests-file> -e http://127.0.0.1:1234/rpc/v1 --parallel <true | false>
   ```
