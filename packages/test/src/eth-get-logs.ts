@@ -52,45 +52,15 @@ async function generateCurlCommand(rpcEndpoint: string, params: LogParams): Prom
 
 async function getLogs(provider: providers.JsonRpcProvider, logParams: LogParams[], outputFilePath: string, curlRequestsOutputFilePath: string) {
   for (const params of logParams) {
-    // Result object
-    let result: any = {};
+    const { filter, result, blockNumber } = await buildFilter(provider, params);
+    const latestBlockNumber = await provider.getBlockNumber();
+    result.blocksBehindHead = latestBlockNumber - blockNumber
+
+    // Generate the curl command and write it to a file
+    const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
+    fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
 
     try {
-      // Build the filter object
-      const filter: any = {
-        address: params.address.map(address => address.toLowerCase()),
-        topics: params.topics,
-      };
-
-      result = {
-        ...filter,
-        address: params.address
-      };
-
-      let blockNumber: number;
-      if (params.blockHash) {
-        filter.blockHash = params.blockHash;
-        result.blockHash = params.blockHash;
-
-        const block = await provider.getBlock(params.blockHash);
-        blockNumber = block.number;
-        result.blockNumber = blockNumber;
-      } else {
-        assert(params.toBlock && params.fromBlock, 'fromBlock or toBlock not found');
-
-        filter.fromBlock = params.fromBlock;
-        filter.toBlock = params.toBlock;
-
-        result.fromBlock = params.fromBlock;
-        result.toBlock = params.toBlock;
-
-        blockNumber = parseInt(params.toBlock, 16);
-        result.blocksRange = parseInt(params.toBlock, 16) - parseInt(params.fromBlock, 16);
-      }
-
-      const latestBlockNumber = await provider.getBlockNumber();
-      result.blocksBehindHead = latestBlockNumber - blockNumber
-
       // Record the start time
       const startTime = Date.now();
 
@@ -115,23 +85,7 @@ async function getLogs(provider: providers.JsonRpcProvider, logParams: LogParams
     } catch (error) {
       console.error(`Error fetching logs for params ${JSON.stringify(params)}:`, error);
     } finally {
-      let existingData = [];
-
-      // Read existing outputfile
-      if (fs.existsSync(outputFilePath)) {
-        const data = fs.readFileSync(outputFilePath, 'utf-8');
-        existingData = JSON.parse(data || '[]');
-      }
-
-      // Append new result to existing data
-      existingData.push(result);
-
-      // Write the updated data back to the JSON file
-      fs.writeFileSync(outputFilePath, JSON.stringify(existingData, null, 2));
-
-      // Generate the curl command and write it to a file
-      const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
-      fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
+      exportResult(outputFilePath, [result]);
     }
   }
 }
@@ -143,38 +97,7 @@ async function getLogsParallel(provider: providers.JsonRpcProvider, logParams: L
   const latestBlockNumber = await provider.getBlockNumber();
 
   for (const params of logParams) {
-    // Build the filter object
-    const filter: any = {
-      address: params.address.map(address => address.toLowerCase()),
-      topics: params.topics,
-    };
-
-    const result: any = {
-      ...filter,
-      address: params.address
-    };
-
-    let blockNumber: number;
-    if (params.blockHash) {
-      filter.blockHash = params.blockHash;
-      result.blockHash = params.blockHash;
-
-      const block = await provider.getBlock(params.blockHash);
-      blockNumber = block.number;
-      result.blockNumber = blockNumber;
-    } else {
-      assert(params.toBlock && params.fromBlock, 'fromBlock or toBlock not found');
-
-      filter.fromBlock = params.fromBlock;
-      filter.toBlock = params.toBlock;
-
-      result.fromBlock = params.fromBlock;
-      result.toBlock = params.toBlock;
-
-      blockNumber = parseInt(params.toBlock, 16);
-      result.blocksRange = parseInt(params.toBlock, 16) - parseInt(params.fromBlock, 16);
-    }
-
+    const { filter, result, blockNumber } = await buildFilter(provider, params);
     result.blocksBehindHead = latestBlockNumber - blockNumber
 
     filters.push(filter);
@@ -213,20 +136,60 @@ async function getLogsParallel(provider: providers.JsonRpcProvider, logParams: L
   } catch (error) {
     console.error(`Error fetching logs:`, error);
   } finally {
-    let existingData = [];
-
-    // Read existing outputfile
-    if (fs.existsSync(outputFilePath)) {
-      const data = fs.readFileSync(outputFilePath, 'utf-8');
-      existingData = JSON.parse(data || '[]');
-    }
-
-    // Append new result to existing data
-    existingData.push(...results);
-
-    // Write the updated data back to the JSON file
-    fs.writeFileSync(outputFilePath, JSON.stringify(existingData, null, 2));
+    exportResult(outputFilePath, results);
   }
+}
+
+async function buildFilter (provider: providers.JsonRpcProvider, params: LogParams): Promise<{ filter: any, result: any, blockNumber: number }> {
+  // Build the filter object
+  const filter: any = {
+    address: params.address.map(address => address.toLowerCase()),
+    topics: params.topics,
+  };
+
+  const result = {
+    ...filter,
+    address: params.address
+  };
+
+  let blockNumber: number;
+  if (params.blockHash) {
+    filter.blockHash = params.blockHash;
+    result.blockHash = params.blockHash;
+
+    const block = await provider.getBlock(params.blockHash);
+    blockNumber = block.number;
+    result.blockNumber = blockNumber;
+  } else {
+    assert(params.toBlock && params.fromBlock, 'fromBlock or toBlock not found');
+
+    filter.fromBlock = params.fromBlock;
+    filter.toBlock = params.toBlock;
+
+    result.fromBlock = params.fromBlock;
+    result.toBlock = params.toBlock;
+
+    blockNumber = parseInt(params.toBlock, 16);
+    result.blocksRange = parseInt(params.toBlock, 16) - parseInt(params.fromBlock, 16);
+  }
+
+  return { filter, result, blockNumber };
+}
+
+function exportResult (outputFilePath: string, results: any[]): void {
+  let existingData = [];
+
+  // Read existing outputfile
+  if (fs.existsSync(outputFilePath)) {
+    const data = fs.readFileSync(outputFilePath, 'utf-8');
+    existingData = JSON.parse(data || '[]');
+  }
+
+  // Append new result to existing data
+  existingData.push(...results);
+
+  // Write the updated data back to the JSON file
+  fs.writeFileSync(outputFilePath, JSON.stringify(existingData, null, 2));
 }
 
 async function main() {
