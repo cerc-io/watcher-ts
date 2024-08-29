@@ -74,3 +74,11 @@
       ```bash
       yarn get-storage-at -e http://127.0.0.1:8545 -c 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f -s 0x1 -b 0xB5FFFF
       ```
+
+## Get Logs Requests
+
+* Run:
+
+  ```bash
+  yarn eth-get-logs  -i <input-requests-json-file> -o <output-results-json-file> -c <output-curl-requests-file> -e http://127.0.0.1:1234/rpc/v1 --parallel <true | false>
+  ```
