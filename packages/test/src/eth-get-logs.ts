@@ -19,11 +19,15 @@ interface LogParams {
   blockHash?: string;
 }
 
+const blockHashToNumberCache: any = {};
+
 // Format time in milliseconds into minutes and seconds
 function formatTime(ms: number): string {
   const minutes = Math.floor(ms / 60000);
-  const seconds = ((ms % 60000) / 1000).toFixed(0);
-  return `${minutes}m${seconds}s`;
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const milliseconds = ms % 1000;
+
+  return `${minutes}m${seconds}s${milliseconds}ms`;
 }
 
 async function generateCurlCommand(rpcEndpoint: string, params: LogParams): Promise<string> {
@@ -50,15 +54,17 @@ async function generateCurlCommand(rpcEndpoint: string, params: LogParams): Prom
   return curlCommand;
 }
 
-async function getLogs(provider: providers.JsonRpcProvider, logParams: LogParams[], outputFilePath: string, curlRequestsOutputFilePath: string) {
+async function getLogs(provider: providers.JsonRpcProvider, logParams: LogParams[], outputFilePath: string, curlRequestsOutputFilePath?: string) {
   for (const params of logParams) {
     const { filter, result, blockNumber } = await buildFilter(provider, params);
     const latestBlockNumber = await provider.getBlockNumber();
     result.blocksBehindHead = latestBlockNumber - blockNumber
 
     // Generate the curl command and write it to a file
-    const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
-    fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
+    if (curlRequestsOutputFilePath) {
+      const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
+      fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
+    }
 
     try {
       // Record the start time
@@ -90,7 +96,7 @@ async function getLogs(provider: providers.JsonRpcProvider, logParams: LogParams
   }
 }
 
-async function getLogsParallel(provider: providers.JsonRpcProvider, logParams: LogParams[], outputFilePath: string, curlRequestsOutputFilePath: string) {
+async function getLogsParallel(provider: providers.JsonRpcProvider, logParams: LogParams[], outputFilePath: string, curlRequestsOutputFilePath?: string) {
   const filters: any[] = [];
   const results: any[] = [];
 
@@ -104,8 +110,10 @@ async function getLogsParallel(provider: providers.JsonRpcProvider, logParams: L
     results.push(result);
 
     // Generate the curl command and write it to a file
-    const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
-    fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
+    if (curlRequestsOutputFilePath) {
+      const curlCommand = await generateCurlCommand('http://localhost:1234/rpc/v1', params);
+      fs.appendFileSync(curlRequestsOutputFilePath, curlCommand + '\n\n');
+    }
   }
 
   try {
@@ -157,8 +165,14 @@ async function buildFilter (provider: providers.JsonRpcProvider, params: LogPara
     filter.blockHash = params.blockHash;
     result.blockHash = params.blockHash;
 
-    const block = await provider.getBlock(params.blockHash);
-    blockNumber = block.number;
+    if (blockHashToNumberCache[params.blockHash]) {
+      blockNumber = blockHashToNumberCache[params.blockHash];
+    } else {
+      const block = await provider.getBlock(params.blockHash);
+      blockNumber = block.number;
+      blockHashToNumberCache[params.blockHash] = blockNumber;
+    }
+
     result.blockNumber = blockNumber;
   } else {
     assert(params.toBlock && params.fromBlock, 'fromBlock or toBlock not found');
@@ -216,7 +230,6 @@ async function main() {
     },
     curlRequestsOutput: {
       alias: 'c',
-      demandOption: true,
       describe: 'Output file path for curl requests',
       type: 'string'
     },
@@ -229,7 +242,7 @@ async function main() {
   }).argv;
 
   const outputFilePath = path.resolve(argv.output);
-  const curlRequestsOutputFilePath = path.resolve(argv.curlRequestsOutput);
+  const curlRequestsOutputFilePath: string | undefined = argv.curlRequestsOutput ? path.resolve(argv.curlRequestsOutput) : undefined;
 
   // Read the input json file
   const logParams: LogParams[] = JSON.parse(fs.readFileSync(path.resolve(argv.input), 'utf-8'));
