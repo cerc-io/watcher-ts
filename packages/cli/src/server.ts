@@ -276,7 +276,8 @@ export class ServerCmd {
       gqlLogger: winston.Logger
     ) => Promise<any>,
     typeDefs: TypeSource,
-    paymentsManager?: PaymentsManager
+    paymentsManager?: PaymentsManager,
+    createEthRPCHandlers?: (indexer: IndexerInterface) => Promise<any>
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -317,9 +318,11 @@ export class ServerCmd {
     const gqlLogger = createGQLLogger(config.server.gql.logDir);
     const resolvers = await createResolvers(indexer, eventWatcher, gqlLogger);
 
+    const ethRPCHandlers = createEthRPCHandlers ? await createEthRPCHandlers(indexer) : {};
+
     // Create an Express app
     const app: Application = express();
-    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, paymentsManager);
+    const server = await createAndStartServer(app, typeDefs, resolvers, ethRPCHandlers, config.server, paymentsManager);
 
     await startGQLMetricsServer(config);
 

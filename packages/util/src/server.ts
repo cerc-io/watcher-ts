@@ -11,6 +11,8 @@ import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
 import queue from 'express-queue';
+import jayson from 'jayson';
+import { json as jsonParser } from 'body-parser';
 
 import { TypeSource } from '@graphql-tools/utils';
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -27,6 +29,7 @@ export const createAndStartServer = async (
   app: Application,
   typeDefs: TypeSource,
   resolvers: any,
+  ethRPCHandlers: any,
   serverConfig: ServerConfig,
   paymentsManager?: PaymentsManager
 ): Promise<ApolloServer> => {
@@ -97,6 +100,17 @@ export const createAndStartServer = async (
     app,
     path: gqlPath
   });
+
+  // Create a JSON-RPC server to handle ETH RPC calls at /rpc
+  const rpcServer = jayson.Server(ethRPCHandlers);
+
+  // Mount the JSON-RPC server to /rpc path
+  app.use(
+    '/rpc',
+    jsonParser(),
+    // TODO: Handle GET requests as well to match Geth's behaviour
+    rpcServer.middleware()
+  );
 
   httpServer.listen(port, host, () => {
     log(`Server is listening on ${host}:${port}${server.graphqlPath}`);
