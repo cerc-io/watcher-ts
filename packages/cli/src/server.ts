@@ -277,7 +277,7 @@ export class ServerCmd {
     ) => Promise<any>,
     typeDefs: TypeSource,
     paymentsManager?: PaymentsManager,
-    createEthRPCHandlers?: (indexer: IndexerInterface) => Promise<any>
+    createEthRPCHandlers?: (indexer: IndexerInterface, ethProvider: JsonRpcProvider) => Promise<any>
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -286,6 +286,7 @@ export class ServerCmd {
     const jobQueue = this._baseCmd.jobQueue;
     const indexer = this._baseCmd.indexer;
     const eventWatcher = this._baseCmd.eventWatcher;
+    const ethProvider = this._baseCmd.ethProvider;
 
     assert(config);
     assert(jobQueue);
@@ -318,7 +319,7 @@ export class ServerCmd {
     const gqlLogger = createGQLLogger(config.server.gql.logDir);
     const resolvers = await createResolvers(indexer, eventWatcher, gqlLogger);
 
-    const ethRPCHandlers = createEthRPCHandlers ? await createEthRPCHandlers(indexer) : {};
+    const ethRPCHandlers = createEthRPCHandlers ? await createEthRPCHandlers(indexer, ethProvider) : {};
 
     // Create an Express app
     const app: Application = express();

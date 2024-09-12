@@ -1,4 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { utils } from 'ethers';
+
+import { JsonRpcProvider } from '@ethersproject/providers';
+
 import { IndexerInterface } from './types';
 
 const CODE_INVALID_PARAMS = -32602;
@@ -11,6 +15,7 @@ const ERROR_CONTRACT_INSUFFICIENT_PARAMS = 'Insufficient params';
 const ERROR_CONTRACT_NOT_RECOGNIZED = 'Contract not recognized';
 const ERROR_CONTRACT_METHOD_NOT_FOUND = 'Contract method not found';
 const ERROR_METHOD_NOT_IMPLEMENTED = 'Method not implemented';
+const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
 
 class ErrorWithCode extends Error {
   code: number;
@@ -21,7 +26,8 @@ class ErrorWithCode extends Error {
 }
 
 export const createEthRPCHandlers = async (
-  indexer: IndexerInterface
+  indexer: IndexerInterface,
+  ethProvider: JsonRpcProvider
 ): Promise<any> => {
   return {
     eth_blockNumber: async (args: any, callback: any) => {
@@ -32,22 +38,18 @@ export const createEthRPCHandlers = async (
     },
 
     eth_call: async (args: any, callback: any) => {
-      // TODO: Parse blockTag
-
       try {
+        if (!indexer.contractMap) {
+          throw new ErrorWithCode(CODE_INTERNAL_ERROR, ERROR_CONTRACT_MAP_NOT_SET);
+        }
+
         if (args.length === 0) {
           throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_CONTRACT_INSUFFICIENT_PARAMS);
         }
 
         const { to, data, blockTag } = args[0];
 
-        if (!indexer.contractMap) {
-          throw new ErrorWithCode(CODE_INTERNAL_ERROR, ERROR_CONTRACT_MAP_NOT_SET);
-        }
-
-        // For values other than blockHash, resolve value from block_progress table
-        const latestBlock = await indexer.getLatestCanonicalBlock();
-        const blockHash = latestBlock?.blockHash;
+        const blockHash = await parseBlockTag(indexer, ethProvider, blockTag);
 
         const watchedContract = indexer.getWatchedContracts().find(contract => contract.address === to);
         if (!watchedContract) {
@@ -78,7 +80,7 @@ export const createEthRPCHandlers = async (
         }
 
         const result = await indexerMethod(blockHash, to, ...decodedData);
-        const encodedResult = contractInterface.encodeFunctionResult(functionFragment, [result.value]);
+        const encodedResult = contractInterface.encodeFunctionResult(functionFragment, Array.isArray(result.value) ? result.value : [result.value]);
 
         callback(null, encodedResult);
       } catch (error: any) {
@@ -97,4 +99,33 @@ export const createEthRPCHandlers = async (
       // TODO: Implement
     }
   };
+};
+
+const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: any): Promise<string> => {
+  if (utils.isHexString(blockTag)) {
+    // Return value if hex string is of block hash length
+    if (utils.hexDataLength(blockTag) === 32) {
+      return blockTag;
+    }
+
+    // Treat hex value as a block number
+    const block = await ethProvider.getBlock(blockTag);
+    return block.hash;
+  }
+
+  // TODO: Handle pending, safe and finalized
+  if (['earliest', 'latest', 'pending', 'safe', 'finalized', null, undefined].includes(blockTag)) {
+    const syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      throw new ErrorWithCode(CODE_INTERNAL_ERROR, 'SyncStatus not found');
+    }
+
+    if (blockTag === 'earliest') {
+      return syncStatus.initialIndexedBlockHash;
+    }
+
+    return syncStatus.latestIndexedBlockHash;
+  }
+
+  throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
 };
