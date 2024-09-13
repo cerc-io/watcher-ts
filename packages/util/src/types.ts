@@ -3,7 +3,7 @@
 //
 
 import { Connection, DeepPartial, EntityTarget, FindConditions, FindManyOptions, ObjectLiteral, QueryRunner } from 'typeorm';
-import { Transaction } from 'ethers';
+import { ethers, Transaction } from 'ethers';
 
 import { MappingKey, StorageLayout } from '@cerc-io/solidity-mapper';
 
@@ -161,6 +161,7 @@ export interface IndexerInterface {
   readonly serverConfig: ServerConfig
   readonly upstreamConfig: UpstreamConfig
   readonly storageLayoutMap: Map<string, StorageLayout>
+  readonly contractMap: Map<string, ethers.utils.Interface>
   // eslint-disable-next-line no-use-before-define
   readonly graphWatcher?: GraphWatcherInterface
   init (): Promise<void>

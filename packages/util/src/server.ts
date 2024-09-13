@@ -11,6 +11,8 @@ import debug from 'debug';
 import responseCachePlugin from 'apollo-server-plugin-response-cache';
 import { InMemoryLRUCache } from '@apollo/utils.keyvaluecache';
 import queue from 'express-queue';
+import jayson from 'jayson';
+import { json as jsonParser } from 'body-parser';
 
 import { TypeSource } from '@graphql-tools/utils';
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -22,11 +24,13 @@ import { PaymentsManager, paymentsPlugin } from './payments';
 const log = debug('vulcanize:server');
 
 const DEFAULT_GQL_PATH = '/graphql';
+const ETH_RPC_PATH = '/rpc';
 
 export const createAndStartServer = async (
   app: Application,
   typeDefs: TypeSource,
   resolvers: any,
+  ethRPCHandlers: any,
   serverConfig: ServerConfig,
   paymentsManager?: PaymentsManager
 ): Promise<ApolloServer> => {
@@ -98,8 +102,25 @@ export const createAndStartServer = async (
     path: gqlPath
   });
 
+  if (serverConfig.enableEthRPCServer) {
+    // Create a JSON-RPC server to handle ETH RPC calls
+    const rpcServer = jayson.Server(ethRPCHandlers);
+
+    // Mount the JSON-RPC server to ETH_RPC_PATH
+    app.use(
+      ETH_RPC_PATH,
+      jsonParser(),
+      // TODO: Handle GET requests as well to match Geth's behaviour
+      rpcServer.middleware()
+    );
+  }
+
   httpServer.listen(port, host, () => {
-    log(`Server is listening on ${host}:${port}${server.graphqlPath}`);
+    log(`GQL server is listening on http://${host}:${port}${server.graphqlPath}`);
+
+    if (serverConfig.enableEthRPCServer) {
+      log(`ETH JSON RPC server is listening on http://${host}:${port}${ETH_RPC_PATH}`);
+    }
   });
 
   return server;

@@ -2,7 +2,7 @@
 
 import assert from 'assert';
 import { DeepPartial, FindConditions, FindManyOptions } from 'typeorm';
-import { providers } from 'ethers';
+import { ethers } from 'ethers';
 
 import {
   IndexerInterface,
@@ -28,6 +28,8 @@ import { GetStorageAt, getStorageValue, MappingKey, StorageLayout } from '@cerc-
 export class Indexer implements IndexerInterface {
   _getStorageAt: GetStorageAt;
   _storageLayoutMap: Map<string, StorageLayout> = new Map();
+  _contractMap: Map<string, ethers.utils.Interface> = new Map();
+
   eventSignaturesMap: Map<string, string[]> = new Map();
 
   constructor (ethClient: EthClient, storageLayoutMap?: Map<string, StorageLayout>) {
@@ -48,6 +50,10 @@ export class Indexer implements IndexerInterface {
 
   get storageLayoutMap (): Map<string, StorageLayout> {
     return this._storageLayoutMap;
+  }
+
+  get contractMap (): Map<string, ethers.utils.Interface> {
+    return this._contractMap;
   }
 
   async init (): Promise<void> {

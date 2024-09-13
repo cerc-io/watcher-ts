@@ -32,7 +32,8 @@ import {
   readParty,
   UpstreamConfig,
   fillBlocks,
-  createGQLLogger
+  createGQLLogger,
+  createEthRPCHandlers
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -285,6 +286,7 @@ export class ServerCmd {
     const jobQueue = this._baseCmd.jobQueue;
     const indexer = this._baseCmd.indexer;
     const eventWatcher = this._baseCmd.eventWatcher;
+    const ethProvider = this._baseCmd.ethProvider;
 
     assert(config);
     assert(jobQueue);
@@ -317,9 +319,11 @@ export class ServerCmd {
     const gqlLogger = createGQLLogger(config.server.gql.logDir);
     const resolvers = await createResolvers(indexer, eventWatcher, gqlLogger);
 
+    const ethRPCHandlers = await createEthRPCHandlers(indexer, ethProvider);
+
     // Create an Express app
     const app: Application = express();
-    const server = await createAndStartServer(app, typeDefs, resolvers, config.server, paymentsManager);
+    const server = await createAndStartServer(app, typeDefs, resolvers, ethRPCHandlers, config.server, paymentsManager);
 
     await startGQLMetricsServer(config);
 
