@@ -32,7 +32,8 @@ import {
   readParty,
   UpstreamConfig,
   fillBlocks,
-  createGQLLogger
+  createGQLLogger,
+  createEthRPCHandlers
 } from '@cerc-io/util';
 import { TypeSource } from '@graphql-tools/utils';
 import type {
@@ -276,8 +277,7 @@ export class ServerCmd {
       gqlLogger: winston.Logger
     ) => Promise<any>,
     typeDefs: TypeSource,
-    paymentsManager?: PaymentsManager,
-    createEthRPCHandlers?: (indexer: IndexerInterface, ethProvider: JsonRpcProvider) => Promise<any>
+    paymentsManager?: PaymentsManager
   ): Promise<{
     app: Application,
     server: ApolloServer
@@ -319,7 +319,7 @@ export class ServerCmd {
     const gqlLogger = createGQLLogger(config.server.gql.logDir);
     const resolvers = await createResolvers(indexer, eventWatcher, gqlLogger);
 
-    const ethRPCHandlers = createEthRPCHandlers ? await createEthRPCHandlers(indexer, ethProvider) : {};
+    const ethRPCHandlers = await createEthRPCHandlers(indexer, ethProvider);
 
     // Create an Express app
     const app: Application = express();

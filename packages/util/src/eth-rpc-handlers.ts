@@ -16,6 +16,9 @@ const ERROR_CONTRACT_NOT_RECOGNIZED = 'Contract not recognized';
 const ERROR_CONTRACT_METHOD_NOT_FOUND = 'Contract method not found';
 const ERROR_METHOD_NOT_IMPLEMENTED = 'Method not implemented';
 const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
+const ERROR_BLOCK_NOT_FOUND = 'Block not found';
+
+const DEFAULT_BLOCK_TAG = 'latest';
 
 class ErrorWithCode extends Error {
   code: number;
@@ -47,7 +50,8 @@ export const createEthRPCHandlers = async (
           throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_CONTRACT_INSUFFICIENT_PARAMS);
         }
 
-        const { to, data, blockTag } = args[0];
+        const { to, data } = args[0];
+        const blockTag = args.length > 1 ? args[1] : DEFAULT_BLOCK_TAG;
 
         const blockHash = await parseBlockTag(indexer, ethProvider, blockTag);
 
@@ -101,7 +105,7 @@ export const createEthRPCHandlers = async (
   };
 };
 
-const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: any): Promise<string> => {
+const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: string): Promise<string> => {
   if (utils.isHexString(blockTag)) {
     // Return value if hex string is of block hash length
     if (utils.hexDataLength(blockTag) === 32) {
@@ -110,21 +114,20 @@ const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProv
 
     // Treat hex value as a block number
     const block = await ethProvider.getBlock(blockTag);
+    if (block === null) {
+      throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_BLOCK_NOT_FOUND);
+    }
+
     return block.hash;
   }
 
-  // TODO: Handle pending, safe and finalized
-  if (['earliest', 'latest', 'pending', 'safe', 'finalized', null, undefined].includes(blockTag)) {
+  if (blockTag === DEFAULT_BLOCK_TAG) {
     const syncStatus = await indexer.getSyncStatus();
     if (!syncStatus) {
       throw new ErrorWithCode(CODE_INTERNAL_ERROR, 'SyncStatus not found');
     }
 
-    if (blockTag === 'earliest') {
-      return syncStatus.initialIndexedBlockHash;
-    }
-
-    return syncStatus.latestIndexedBlockHash;
+    return syncStatus.latestProcessedBlockHash;
   }
 
   throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
