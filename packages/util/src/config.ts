@@ -252,6 +252,9 @@ export interface ServerConfig {
   // Flag to specify whether RPC endpoint supports block hash as block tag parameter
   // https://ethereum.org/en/developers/docs/apis/json-rpc/#default-block
   rpcSupportsBlockHashParam: boolean;
+
+  // Enable ETH JSON RPC server at /rpc
+  enableEthRPCServer: boolean;
 }
 
 export interface FundingAmountsConfig {

@@ -24,6 +24,7 @@ import { PaymentsManager, paymentsPlugin } from './payments';
 const log = debug('vulcanize:server');
 
 const DEFAULT_GQL_PATH = '/graphql';
+const ETH_RPC_PATH = '/rpc';
 
 export const createAndStartServer = async (
   app: Application,
@@ -101,19 +102,25 @@ export const createAndStartServer = async (
     path: gqlPath
   });
 
-  // Create a JSON-RPC server to handle ETH RPC calls at /rpc
-  const rpcServer = jayson.Server(ethRPCHandlers);
+  if (serverConfig.enableEthRPCServer) {
+    // Create a JSON-RPC server to handle ETH RPC calls
+    const rpcServer = jayson.Server(ethRPCHandlers);
 
-  // Mount the JSON-RPC server to /rpc path
-  app.use(
-    '/rpc',
-    jsonParser(),
-    // TODO: Handle GET requests as well to match Geth's behaviour
-    rpcServer.middleware()
-  );
+    // Mount the JSON-RPC server to ETH_RPC_PATH
+    app.use(
+      ETH_RPC_PATH,
+      jsonParser(),
+      // TODO: Handle GET requests as well to match Geth's behaviour
+      rpcServer.middleware()
+    );
+  }
 
   httpServer.listen(port, host, () => {
-    log(`Server is listening on ${host}:${port}${server.graphqlPath}`);
+    log(`GQL server is listening on http://${host}:${port}${server.graphqlPath}`);
+
+    if (serverConfig.enableEthRPCServer) {
+      log(`ETH JSON RPC server is listening on http://${host}:${port}${ETH_RPC_PATH}`);
+    }
   });
 
   return server;
