@@ -323,7 +323,14 @@ export class ServerCmd {
 
     // Create an Express app
     const app: Application = express();
-    const server = await createAndStartServer(app, typeDefs, resolvers, ethRPCHandlers, config.server, paymentsManager);
+    const server = await createAndStartServer(
+      app,
+      typeDefs,
+      resolvers,
+      ethRPCHandlers,
+      config.server,
+      paymentsManager
+    );
 
     await startGQLMetricsServer(config);
 

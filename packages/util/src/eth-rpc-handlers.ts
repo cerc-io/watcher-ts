@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { utils } from 'ethers';
+import { Between, Equal, FindConditions, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 
-import { IndexerInterface } from './types';
+import { EventInterface, IndexerInterface } from './types';
 
 const CODE_INVALID_PARAMS = -32602;
 const CODE_INTERNAL_ERROR = -32603;
@@ -53,7 +54,7 @@ export const createEthRPCHandlers = async (
         const { to, data } = args[0];
         const blockTag = args.length > 1 ? args[1] : DEFAULT_BLOCK_TAG;
 
-        const blockHash = await parseBlockTag(indexer, ethProvider, blockTag);
+        const blockHash = await parseEthCallBlockTag(indexer, ethProvider, blockTag);
 
         const watchedContract = indexer.getWatchedContracts().find(contract => contract.address === to);
         if (!watchedContract) {
@@ -101,11 +102,77 @@ export const createEthRPCHandlers = async (
 
     eth_getLogs: async (args: any, callback: any) => {
       // TODO: Implement
+      try {
+        if (args.length === 0) {
+          throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_CONTRACT_INSUFFICIENT_PARAMS);
+        }
+
+        const params = args[0];
+
+        // Parse arg params in to where options
+        const where: FindConditions<EventInterface> = {};
+
+        if (params.address) {
+          if (Array.isArray(params.address)) {
+            where.contract = In(params.address);
+          } else {
+            where.contract = Equal(params.address);
+          }
+        }
+
+        let blockFilter = false;
+        if (params.blockHash) {
+          // TODO: validate blockHash?
+          blockFilter = true;
+          where.block = {
+            blockHash: params.blockHash
+          };
+        } else if (params.fromBlock || params.toBlock) {
+          blockFilter = true;
+
+          if (!params.fromBlock) {
+            const toBlockNumber = await parseEthGetLogsBlockTag(indexer, params.toBlock);
+            where.block = {
+              blockNumber: LessThanOrEqual(toBlockNumber)
+            };
+          } else if (!params.toBlock) {
+            const fromBlockNumber = await parseEthGetLogsBlockTag(indexer, params.fromBlock);
+            where.block = {
+              blockNumber: MoreThanOrEqual(fromBlockNumber)
+            };
+          } else {
+            const fromBlockNumber = await parseEthGetLogsBlockTag(indexer, params.fromBlock);
+            const toBlockNumber = await parseEthGetLogsBlockTag(indexer, params.toBlock);
+            where.block = {
+              blockNumber: Between(fromBlockNumber, toBlockNumber)
+            };
+          }
+        }
+
+        // TODO: Construct topics filter
+
+        // Fetch events from the db
+        const events = await indexer.getEvents({ where, relations: blockFilter ? ['block'] : undefined });
+
+        // Transform events into result logs
+        const result = await transformEventsToLogs(events);
+
+        callback(null, result);
+      } catch (error: any) {
+        let callBackError;
+        if (error instanceof ErrorWithCode) {
+          callBackError = { code: error.code, message: error.message };
+        } else {
+          callBackError = { code: CODE_SERVER_ERROR, message: error.message };
+        }
+
+        callback(callBackError);
+      }
     }
   };
 };
 
-const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: string): Promise<string> => {
+const parseEthCallBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: string): Promise<string> => {
   if (utils.isHexString(blockTag)) {
     // Return value if hex string is of block hash length
     if (utils.hexDataLength(blockTag) === 32) {
@@ -131,4 +198,26 @@ const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProv
   }
 
   throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
+};
+
+const parseEthGetLogsBlockTag = async (indexer: IndexerInterface, blockTag: string): Promise<number> => {
+  if (utils.isHexString(blockTag)) {
+    return Number(blockTag);
+  }
+
+  if (blockTag === DEFAULT_BLOCK_TAG) {
+    const syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      throw new ErrorWithCode(CODE_INTERNAL_ERROR, 'SyncStatus not found');
+    }
+
+    return syncStatus.latestProcessedBlockNumber;
+  }
+
+  throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
+};
+
+const transformEventsToLogs = async (events: Array<EventInterface>): Promise<any[]> => {
+  // TODO: Implement
+  return events;
 };

@@ -523,6 +523,13 @@ export class Database {
     return events;
   }
 
+  async getEvents (repo: Repository<EventInterface>, options: FindManyOptions<EventInterface>): Promise<Array<EventInterface>> {
+    // TODO: Filter out pruned blocks
+    const events = repo.find(options);
+
+    return events;
+  }
+
   async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
     const event = await repo.save(entity);
     eventCount.inc(1);
