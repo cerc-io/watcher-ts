@@ -17,7 +17,9 @@ const ERROR_CONTRACT_NOT_RECOGNIZED = 'Contract not recognized';
 const ERROR_CONTRACT_METHOD_NOT_FOUND = 'Contract method not found';
 const ERROR_METHOD_NOT_IMPLEMENTED = 'Method not implemented';
 const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
+const ERROR_INVALID_BLOCK_HASH = 'Invalid block hash';
 const ERROR_BLOCK_NOT_FOUND = 'Block not found';
+const ERROR_TOPICS_FILTER_NOT_SUPPORTED = 'Topics filter not supported';
 
 const DEFAULT_BLOCK_TAG = 'latest';
 
@@ -101,7 +103,6 @@ export const createEthRPCHandlers = async (
     },
 
     eth_getLogs: async (args: any, callback: any) => {
-      // TODO: Implement
       try {
         if (args.length === 0) {
           throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_CONTRACT_INSUFFICIENT_PARAMS);
@@ -109,9 +110,15 @@ export const createEthRPCHandlers = async (
 
         const params = args[0];
 
-        // Parse arg params in to where options
+        // Parse arg params into where options
         const where: FindConditions<EventInterface> = {};
 
+        // TODO: Support topics filter
+        if (params.topics) {
+          throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_TOPICS_FILTER_NOT_SUPPORTED);
+        }
+
+        // Address filter, address or a list of addresses
         if (params.address) {
           if (Array.isArray(params.address)) {
             where.contract = In(params.address);
@@ -120,39 +127,35 @@ export const createEthRPCHandlers = async (
           }
         }
 
-        let blockFilter = false;
+        // Block hash takes precedence over fromBlock / toBlock if provided
         if (params.blockHash) {
-          // TODO: validate blockHash?
-          blockFilter = true;
+          // Validate input block hash
+          if (!utils.isHexString(params.blockHash, 32)) {
+            throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_HASH);
+          }
+
           where.block = {
             blockHash: params.blockHash
           };
         } else if (params.fromBlock || params.toBlock) {
-          blockFilter = true;
+          const fromBlockNumber = params.fromBlock ? await parseEthGetLogsBlockTag(indexer, params.fromBlock) : null;
+          const toBlockNumber = params.toBlock ? await parseEthGetLogsBlockTag(indexer, params.toBlock) : null;
 
-          if (!params.fromBlock) {
-            const toBlockNumber = await parseEthGetLogsBlockTag(indexer, params.toBlock);
-            where.block = {
-              blockNumber: LessThanOrEqual(toBlockNumber)
-            };
-          } else if (!params.toBlock) {
-            const fromBlockNumber = await parseEthGetLogsBlockTag(indexer, params.fromBlock);
-            where.block = {
-              blockNumber: MoreThanOrEqual(fromBlockNumber)
-            };
-          } else {
-            const fromBlockNumber = await parseEthGetLogsBlockTag(indexer, params.fromBlock);
-            const toBlockNumber = await parseEthGetLogsBlockTag(indexer, params.toBlock);
-            where.block = {
-              blockNumber: Between(fromBlockNumber, toBlockNumber)
-            };
+          if (fromBlockNumber && toBlockNumber) {
+            // Both fromBlock and toBlock set
+            where.block = { blockNumber: Between(fromBlockNumber, toBlockNumber) };
+          } else if (fromBlockNumber) {
+            // Only fromBlock set
+            where.block = { blockNumber: MoreThanOrEqual(fromBlockNumber) };
+          } else if (toBlockNumber) {
+            // Only toBlock set
+            where.block = { blockNumber: LessThanOrEqual(toBlockNumber) };
           }
         }
 
-        // TODO: Construct topics filter
-
         // Fetch events from the db
-        const events = await indexer.getEvents({ where, relations: blockFilter ? ['block'] : undefined });
+        // Load block relation
+        const events = await indexer.getEvents({ where, relations: ['block'] });
 
         // Transform events into result logs
         const result = await transformEventsToLogs(events);
@@ -218,6 +221,19 @@ const parseEthGetLogsBlockTag = async (indexer: IndexerInterface, blockTag: stri
 };
 
 const transformEventsToLogs = async (events: Array<EventInterface>): Promise<any[]> => {
-  // TODO: Implement
-  return events;
+  return events.map(event => {
+    const parsedExtraInfo = JSON.parse(event.extraInfo);
+
+    return {
+      address: event.contract.toLowerCase(),
+      blockHash: event.block.blockHash,
+      blockNumber: `0x${event.block.blockNumber.toString(16)}`,
+      transactionHash: event.txHash,
+      transactionIndex: `0x${parsedExtraInfo.tx.index.toString(16)}`,
+      logIndex: `0x${parsedExtraInfo.logIndex.toString(16)}`,
+      data: parsedExtraInfo.data,
+      topics: parsedExtraInfo.topics,
+      removed: event.block.isPruned
+    };
+  });
 };
