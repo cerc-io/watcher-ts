@@ -524,7 +524,6 @@ export class Database {
   }
 
   async getEvents (repo: Repository<EventInterface>, options: FindManyOptions<EventInterface>): Promise<Array<EventInterface>> {
-    // TODO: Filter out pruned blocks
     const events = repo.find(options);
 
     return events;
