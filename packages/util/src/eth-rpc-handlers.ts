@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { utils } from 'ethers';
 import { Between, Equal, FindConditions, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 
 import { EventInterface, IndexerInterface } from './types';
+import { DEFAULT_ETH_GET_LOGS_RESULT_LIMIT } from './constants';
 
 const CODE_INVALID_PARAMS = -32602;
 const CODE_INTERNAL_ERROR = -32603;
@@ -20,6 +20,7 @@ const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
 const ERROR_INVALID_BLOCK_HASH = 'Invalid block hash';
 const ERROR_BLOCK_NOT_FOUND = 'Block not found';
 const ERROR_TOPICS_FILTER_NOT_SUPPORTED = 'Topics filter not supported';
+const ERROR_LIMIT_EXCEEDED = 'Query results exceeds limit';
 
 const DEFAULT_BLOCK_TAG = 'latest';
 
@@ -121,7 +122,9 @@ export const createEthRPCHandlers = async (
         // Address filter, address or a list of addresses
         if (params.address) {
           if (Array.isArray(params.address)) {
-            where.contract = In(params.address);
+            if (params.address.length > 0) {
+              where.contract = In(params.address);
+            }
           } else {
             where.contract = Equal(params.address);
           }
@@ -155,7 +158,13 @@ export const createEthRPCHandlers = async (
 
         // Fetch events from the db
         // Load block relation
-        const events = await indexer.getEvents({ where, relations: ['block'] });
+        const resultLimit = indexer.serverConfig.ethGetLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
+        const events = await indexer.getEvents({ where, relations: ['block'], take: resultLimit + 1 });
+
+        // Limit number of results can be returned by a single query
+        if (events.length > resultLimit) {
+          throw new ErrorWithCode(CODE_SERVER_ERROR, `${ERROR_LIMIT_EXCEEDED}: ${resultLimit}`);
+        }
 
         // Transform events into result logs
         const result = await transformEventsToLogs(events);
