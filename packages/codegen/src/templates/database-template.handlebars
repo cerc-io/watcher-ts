@@ -199,6 +199,12 @@ export class Database implements DatabaseInterface {
     return this._baseDatabase.getEventsInRange(repo, fromBlockNumber, toBlockNumber);
   }
 
+  async getEvents (options: FindManyOptions<Event>): Promise<Array<Event>> {
+    const repo = this._conn.getRepository(Event);
+
+    return this._baseDatabase.getEvents(repo, options);
+  }
+
   async saveEventEntity (queryRunner: QueryRunner, entity: Event): Promise<Event> {
     const repo = queryRunner.manager.getRepository(Event);
     return this._baseDatabase.saveEventEntity(repo, entity);
