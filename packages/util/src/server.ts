@@ -110,7 +110,13 @@ export const createAndStartServer = async (
     app.use(
       ETH_RPC_PATH,
       jsonParser(),
-      // TODO: Handle GET requests as well to match Geth's behaviour
+      (req: any, res: any, next: () => void) => {
+        // Convert all GET requests to POST to avoid getting rejected from jayson server middleware
+        if (jayson.Utils.isMethod(req, 'GET')) {
+          req.method = 'POST';
+        }
+        next();
+      },
       rpcServer.middleware()
     );
   }

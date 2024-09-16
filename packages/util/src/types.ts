@@ -169,6 +169,7 @@ export interface IndexerInterface {
   getBlockProgressEntities (where: FindConditions<BlockProgressInterface>, options: FindManyOptions<BlockProgressInterface>): Promise<BlockProgressInterface[]>
   getEntitiesForBlock (blockHash: string, tableName: string): Promise<any[]>
   getEvent (id: string): Promise<EventInterface | undefined>
+  getEvents (options: FindManyOptions<EventInterface>): Promise<Array<EventInterface>>
   getSyncStatus (): Promise<SyncStatusInterface | undefined>
   getStateSyncStatus (): Promise<StateSyncStatusInterface | undefined>
   getBlocks (blockFilter: { blockHash?: string, blockNumber?: number }): Promise<Array<EthFullBlock | null>>

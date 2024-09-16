@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { utils } from 'ethers';
+import { Between, Equal, FindConditions, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 
-import { IndexerInterface } from './types';
+import { EventInterface, IndexerInterface } from './types';
+import { DEFAULT_ETH_GET_LOGS_RESULT_LIMIT } from './constants';
 
 const CODE_INVALID_PARAMS = -32602;
 const CODE_INTERNAL_ERROR = -32603;
@@ -16,7 +17,10 @@ const ERROR_CONTRACT_NOT_RECOGNIZED = 'Contract not recognized';
 const ERROR_CONTRACT_METHOD_NOT_FOUND = 'Contract method not found';
 const ERROR_METHOD_NOT_IMPLEMENTED = 'Method not implemented';
 const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
+const ERROR_INVALID_BLOCK_HASH = 'Invalid block hash';
 const ERROR_BLOCK_NOT_FOUND = 'Block not found';
+const ERROR_TOPICS_FILTER_NOT_SUPPORTED = 'Topics filter not supported';
+const ERROR_LIMIT_EXCEEDED = 'Query results exceeds limit';
 
 const DEFAULT_BLOCK_TAG = 'latest';
 
@@ -53,7 +57,7 @@ export const createEthRPCHandlers = async (
         const { to, data } = args[0];
         const blockTag = args.length > 1 ? args[1] : DEFAULT_BLOCK_TAG;
 
-        const blockHash = await parseBlockTag(indexer, ethProvider, blockTag);
+        const blockHash = await parseEthCallBlockTag(indexer, ethProvider, blockTag);
 
         const watchedContract = indexer.getWatchedContracts().find(contract => contract.address === to);
         if (!watchedContract) {
@@ -100,12 +104,87 @@ export const createEthRPCHandlers = async (
     },
 
     eth_getLogs: async (args: any, callback: any) => {
-      // TODO: Implement
+      try {
+        if (args.length === 0) {
+          throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_CONTRACT_INSUFFICIENT_PARAMS);
+        }
+
+        const params = args[0];
+
+        // Parse arg params into where options
+        const where: FindConditions<EventInterface> = {};
+
+        // TODO: Support topics filter
+        if (params.topics) {
+          throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_TOPICS_FILTER_NOT_SUPPORTED);
+        }
+
+        // Address filter, address or a list of addresses
+        if (params.address) {
+          if (Array.isArray(params.address)) {
+            if (params.address.length > 0) {
+              where.contract = In(params.address);
+            }
+          } else {
+            where.contract = Equal(params.address);
+          }
+        }
+
+        // Block hash takes precedence over fromBlock / toBlock if provided
+        if (params.blockHash) {
+          // Validate input block hash
+          if (!utils.isHexString(params.blockHash, 32)) {
+            throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_HASH);
+          }
+
+          where.block = {
+            blockHash: params.blockHash
+          };
+        } else if (params.fromBlock || params.toBlock) {
+          const fromBlockNumber = params.fromBlock ? await parseEthGetLogsBlockTag(indexer, params.fromBlock) : null;
+          const toBlockNumber = params.toBlock ? await parseEthGetLogsBlockTag(indexer, params.toBlock) : null;
+
+          if (fromBlockNumber && toBlockNumber) {
+            // Both fromBlock and toBlock set
+            where.block = { blockNumber: Between(fromBlockNumber, toBlockNumber) };
+          } else if (fromBlockNumber) {
+            // Only fromBlock set
+            where.block = { blockNumber: MoreThanOrEqual(fromBlockNumber) };
+          } else if (toBlockNumber) {
+            // Only toBlock set
+            where.block = { blockNumber: LessThanOrEqual(toBlockNumber) };
+          }
+        }
+
+        // Fetch events from the db
+        // Load block relation
+        const resultLimit = indexer.serverConfig.ethGetLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
+        const events = await indexer.getEvents({ where, relations: ['block'], take: resultLimit + 1 });
+
+        // Limit number of results can be returned by a single query
+        if (events.length > resultLimit) {
+          throw new ErrorWithCode(CODE_SERVER_ERROR, `${ERROR_LIMIT_EXCEEDED}: ${resultLimit}`);
+        }
+
+        // Transform events into result logs
+        const result = await transformEventsToLogs(events);
+
+        callback(null, result);
+      } catch (error: any) {
+        let callBackError;
+        if (error instanceof ErrorWithCode) {
+          callBackError = { code: error.code, message: error.message };
+        } else {
+          callBackError = { code: CODE_SERVER_ERROR, message: error.message };
+        }
+
+        callback(callBackError);
+      }
     }
   };
 };
 
-const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: string): Promise<string> => {
+const parseEthCallBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProvider, blockTag: string): Promise<string> => {
   if (utils.isHexString(blockTag)) {
     // Return value if hex string is of block hash length
     if (utils.hexDataLength(blockTag) === 32) {
@@ -131,4 +210,39 @@ const parseBlockTag = async (indexer: IndexerInterface, ethProvider: JsonRpcProv
   }
 
   throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
+};
+
+const parseEthGetLogsBlockTag = async (indexer: IndexerInterface, blockTag: string): Promise<number> => {
+  if (utils.isHexString(blockTag)) {
+    return Number(blockTag);
+  }
+
+  if (blockTag === DEFAULT_BLOCK_TAG) {
+    const syncStatus = await indexer.getSyncStatus();
+    if (!syncStatus) {
+      throw new ErrorWithCode(CODE_INTERNAL_ERROR, 'SyncStatus not found');
+    }
+
+    return syncStatus.latestProcessedBlockNumber;
+  }
+
+  throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
+};
+
+const transformEventsToLogs = async (events: Array<EventInterface>): Promise<any[]> => {
+  return events.map(event => {
+    const parsedExtraInfo = JSON.parse(event.extraInfo);
+
+    return {
+      address: event.contract.toLowerCase(),
+      blockHash: event.block.blockHash,
+      blockNumber: `0x${event.block.blockNumber.toString(16)}`,
+      transactionHash: event.txHash,
+      transactionIndex: `0x${parsedExtraInfo.tx.index.toString(16)}`,
+      logIndex: `0x${parsedExtraInfo.logIndex.toString(16)}`,
+      data: parsedExtraInfo.data,
+      topics: parsedExtraInfo.topics,
+      removed: event.block.isPruned
+    };
+  });
 };

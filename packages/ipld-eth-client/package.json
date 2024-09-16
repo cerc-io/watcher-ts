@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/ipld-eth-client",
-  "version": "0.2.106",
+  "version": "0.2.107",
   "description": "IPLD ETH Client",
   "main": "dist/index.js",
   "scripts": {
@@ -20,8 +20,8 @@
   "homepage": "https://github.com/cerc-io/watcher-ts#readme",
   "dependencies": {
     "@apollo/client": "^3.7.1",
-    "@cerc-io/cache": "^0.2.106",
-    "@cerc-io/util": "^0.2.106",
+    "@cerc-io/cache": "^0.2.107",
+    "@cerc-io/util": "^0.2.107",
     "cross-fetch": "^3.1.4",
     "debug": "^4.3.1",
     "ethers": "^5.4.4",

@@ -255,6 +255,9 @@ export interface ServerConfig {
 
   // Enable ETH JSON RPC server at /rpc
   enableEthRPCServer: boolean;
+
+  // Max number of logs that can be returned in a single getLogs request
+  ethGetLogsResultLimit?: number;
 }
 
 export interface FundingAmountsConfig {

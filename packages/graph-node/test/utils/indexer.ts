@@ -91,6 +91,12 @@ export class Indexer implements IndexerInterface {
     return undefined;
   }
 
+  async getEvents (options: FindManyOptions<EventInterface>): Promise<Array<EventInterface>> {
+    assert(options);
+
+    return [];
+  }
+
   async getSyncStatus (): Promise<SyncStatusInterface | undefined> {
     return undefined;
   }
