@@ -61,6 +61,10 @@ export interface EventInterface {
   txHash: string;
   index: number;
   contract: string;
+  topic0: string;
+  topic1: string | null;
+  topic2: string | null;
+  topic3: string | null;
   eventName: string;
   eventInfo: string;
   extraInfo: string;

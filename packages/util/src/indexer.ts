@@ -672,6 +672,8 @@ export class Indexer {
         const tx = transactionMap[txHash];
         const extraInfo: { [key: string]: any } = { topics, data, tx, logIndex };
 
+        const [topic0, topic1, topic2, topic3] = topics as string[];
+
         const contract = ethers.utils.getAddress(address);
         const watchedContracts = this.isContractAddressWatched(contract);
 
@@ -693,6 +695,10 @@ export class Indexer {
           index: this._upstreamConfig.ethServer.isFEVM ? li : logIndex,
           txHash,
           contract,
+          topic0,
+          topic1,
+          topic2,
+          topic3,
           eventName,
           eventInfo: JSONbigNative.stringify(eventInfo),
           extraInfo: JSONbigNative.stringify(extraInfo),
