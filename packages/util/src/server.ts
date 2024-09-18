@@ -103,6 +103,7 @@ export const createAndStartServer = async (
   });
 
   const rpcPath = serverConfig.ethRPC?.path ?? DEFAULT_ETH_RPC_PATH;
+
   if (serverConfig.ethRPC?.enabled) {
     // Create a JSON-RPC server to handle ETH RPC calls
     const rpcServer = jayson.Server(ethRPCHandlers);

@@ -154,7 +154,13 @@ export const createEthRPCHandlers = async (
         // Fetch events from the db
         // Load block relation
         const resultLimit = indexer.serverConfig.ethRPC.getLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
-        const events = await indexer.getEvents({ where, relations: ['block'], take: resultLimit + 1 });
+        const events = await indexer.getEvents({
+          where,
+          relations: ['block'],
+          // TODO: Use querybuilder to order by block number
+          order: { block: 'ASC', index: 'ASC' },
+          take: resultLimit + 1
+        });
 
         // Limit number of results can be returned by a single query
         if (events.length > resultLimit) {
@@ -229,7 +235,7 @@ const buildAddressFilter = (address: any, where: FindConditions<EventInterface>)
     // Validate input addresses
     address.forEach((add: string) => {
       if (!utils.isHexString(add, 20)) {
-        throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_CONTRACT_ADDRESS);
+        throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_CONTRACT_ADDRESS}: expected hex string of size 20`);
       }
     });
 
@@ -239,12 +245,14 @@ const buildAddressFilter = (address: any, where: FindConditions<EventInterface>)
   } else {
     // Validate input address
     if (!utils.isHexString(address, 20)) {
-      throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_CONTRACT_ADDRESS);
+      throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_CONTRACT_ADDRESS}: expected hex string of size 20`);
     }
 
     where.contract = Equal(address);
   }
 };
+
+type TopicColumn = 'topic0' | 'topic1' | 'topic2' | 'topic3';
 
 const buildTopicsFilter = (topics: any, where: FindConditions<EventInterface>): void => {
   // Check that topics is an array of size <= 4
@@ -256,28 +264,14 @@ const buildTopicsFilter = (topics: any, where: FindConditions<EventInterface>): 
     throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_TOPICS}: exceeds max topics`);
   }
 
-  const topicsFilterLength = topics.length;
-
-  if (topicsFilterLength > 0) {
-    addTopicCondition(topics[0], 'topic0', where);
-  }
-
-  if (topicsFilterLength > 1) {
-    addTopicCondition(topics[1], 'topic1', where);
-  }
-
-  if (topicsFilterLength > 2) {
-    addTopicCondition(topics[2], 'topic2', where);
-  }
-
-  if (topicsFilterLength > 3) {
-    addTopicCondition(topics[3], 'topic3', where);
+  for (let i = 0; i < topics.length; i++) {
+    addTopicCondition(topics[i], `topic${i}` as TopicColumn, where);
   }
 };
 
 const addTopicCondition = (
   topicFilter: string[] | string,
-  topicIndex: 'topic0' | 'topic1' | 'topic2' | 'topic3',
+  topicIndex: TopicColumn,
   where: FindConditions<EventInterface>
 ): any => {
   if (Array.isArray(topicFilter)) {
