@@ -37,6 +37,13 @@ columns:
     columnOptions:
       - option: length
         value: 42
+  - name: eventName
+    pgType: varchar
+    tsType: string
+    columnType: Column
+    columnOptions:
+      - option: length
+        value: 256
   - name: topic0
     pgType: varchar
     tsType: string
@@ -71,13 +78,10 @@ columns:
         value: 66
       - option: nullable
         value: true
-  - name: eventName
+  - name: data
     pgType: varchar
     tsType: string
     columnType: Column
-    columnOptions:
-      - option: length
-        value: 256
   - name: eventInfo
     pgType: text
     tsType: string

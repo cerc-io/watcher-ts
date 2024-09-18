@@ -670,7 +670,7 @@ export class Indexer {
         let eventName = UNKNOWN_EVENT_NAME;
         let eventInfo = {};
         const tx = transactionMap[txHash];
-        const extraInfo: { [key: string]: any } = { topics, data, tx, logIndex };
+        const extraInfo: { [key: string]: any } = { tx, logIndex };
 
         const [topic0, topic1, topic2, topic3] = topics as string[];
 
@@ -695,11 +695,12 @@ export class Indexer {
           index: this._upstreamConfig.ethServer.isFEVM ? li : logIndex,
           txHash,
           contract,
+          eventName,
           topic0,
           topic1,
           topic2,
           topic3,
-          eventName,
+          data,
           eventInfo: JSONbigNative.stringify(eventInfo),
           extraInfo: JSONbigNative.stringify(extraInfo),
           proof: JSONbigNative.stringify({
