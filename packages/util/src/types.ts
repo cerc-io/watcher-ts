@@ -217,6 +217,7 @@ export interface IndexerInterface {
   addContracts?: () => Promise<void>
   cacheContract: (contract: ContractInterface) => void;
   watchContract: (address: string, kind: string, checkpoint: boolean, startingBlock: number, context?: any) => Promise<void>
+  removeContract: (address: string, kind: string) => Promise<void>;
   getEntityTypesMap?: () => Map<string, { [key: string]: string }>
   getRelationsMap?: () => Map<any, { [key: string]: any }>
   processInitialState: (contractAddress: string, blockHash: string) => Promise<any>

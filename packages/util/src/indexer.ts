@@ -920,6 +920,22 @@ export class Indexer {
     }
   }
 
+  async removeContract (address: string, kind: string): Promise<void> {
+    const dbTx = await this._db.createTransactionRunner();
+
+    try {
+      await this._db.deleteEntitiesByConditions(dbTx, 'contract', { kind, address });
+      this._clearWatchedContracts(
+        watchedContract => watchedContract.kind === kind && watchedContract.address === address
+      );
+    } catch (error) {
+      await dbTx.rollbackTransaction();
+      throw error;
+    } finally {
+      await dbTx.release();
+    }
+  }
+
   cacheContract (contract: ContractInterface): void {
     if (!this._watchedContractsByAddressMap[contract.address]) {
       this._watchedContractsByAddressMap[contract.address] = [];
