@@ -153,7 +153,7 @@ export const createEthRPCHandlers = async (
 
         // Fetch events from the db
         // Load block relation
-        const resultLimit = indexer.serverConfig.ethGetLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
+        const resultLimit = indexer.serverConfig.ethRPC.getLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
         const events = await indexer.getEvents({ where, relations: ['block'], take: resultLimit + 1 });
 
         // Limit number of results can be returned by a single query
