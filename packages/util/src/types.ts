@@ -62,6 +62,11 @@ export interface EventInterface {
   index: number;
   contract: string;
   eventName: string;
+  topic0: string;
+  topic1: string | null;
+  topic2: string | null;
+  topic3: string | null;
+  data: string;
   eventInfo: string;
   extraInfo: string;
   proof: string;

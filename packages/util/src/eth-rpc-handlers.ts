@@ -18,8 +18,9 @@ const ERROR_CONTRACT_METHOD_NOT_FOUND = 'Contract method not found';
 const ERROR_METHOD_NOT_IMPLEMENTED = 'Method not implemented';
 const ERROR_INVALID_BLOCK_TAG = 'Invalid block tag';
 const ERROR_INVALID_BLOCK_HASH = 'Invalid block hash';
+const ERROR_INVALID_CONTRACT_ADDRESS = 'Invalid contract address';
+const ERROR_INVALID_TOPICS = 'Invalid topics';
 const ERROR_BLOCK_NOT_FOUND = 'Block not found';
-const ERROR_TOPICS_FILTER_NOT_SUPPORTED = 'Topics filter not supported';
 const ERROR_LIMIT_EXCEEDED = 'Query results exceeds limit';
 
 const DEFAULT_BLOCK_TAG = 'latest';
@@ -114,20 +115,14 @@ export const createEthRPCHandlers = async (
         // Parse arg params into where options
         const where: FindConditions<EventInterface> = {};
 
-        // TODO: Support topics filter
-        if (params.topics) {
-          throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_TOPICS_FILTER_NOT_SUPPORTED);
-        }
-
         // Address filter, address or a list of addresses
         if (params.address) {
-          if (Array.isArray(params.address)) {
-            if (params.address.length > 0) {
-              where.contract = In(params.address);
-            }
-          } else {
-            where.contract = Equal(params.address);
-          }
+          buildAddressFilter(params.address, where);
+        }
+
+        // Topics filter
+        if (params.topics) {
+          buildTopicsFilter(params.topics, where);
         }
 
         // Block hash takes precedence over fromBlock / toBlock if provided
@@ -158,8 +153,14 @@ export const createEthRPCHandlers = async (
 
         // Fetch events from the db
         // Load block relation
-        const resultLimit = indexer.serverConfig.ethGetLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
-        const events = await indexer.getEvents({ where, relations: ['block'], take: resultLimit + 1 });
+        const resultLimit = indexer.serverConfig.ethRPC.getLogsResultLimit || DEFAULT_ETH_GET_LOGS_RESULT_LIMIT;
+        const events = await indexer.getEvents({
+          where,
+          relations: ['block'],
+          // TODO: Use querybuilder to order by block number
+          order: { block: 'ASC', index: 'ASC' },
+          take: resultLimit + 1
+        });
 
         // Limit number of results can be returned by a single query
         if (events.length > resultLimit) {
@@ -229,9 +230,81 @@ const parseEthGetLogsBlockTag = async (indexer: IndexerInterface, blockTag: stri
   throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_BLOCK_TAG);
 };
 
+const buildAddressFilter = (address: any, where: FindConditions<EventInterface>): void => {
+  if (Array.isArray(address)) {
+    // Validate input addresses
+    address.forEach((add: string) => {
+      if (!utils.isHexString(add, 20)) {
+        throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_CONTRACT_ADDRESS}: expected hex string of size 20`);
+      }
+    });
+
+    if (address.length > 0) {
+      where.contract = In(address);
+    }
+  } else {
+    // Validate input address
+    if (!utils.isHexString(address, 20)) {
+      throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_CONTRACT_ADDRESS}: expected hex string of size 20`);
+    }
+
+    where.contract = Equal(address);
+  }
+};
+
+type TopicColumn = 'topic0' | 'topic1' | 'topic2' | 'topic3';
+
+const buildTopicsFilter = (topics: any, where: FindConditions<EventInterface>): void => {
+  // Check that topics is an array of size <= 4
+  if (!Array.isArray(topics)) {
+    throw new ErrorWithCode(CODE_INVALID_PARAMS, ERROR_INVALID_TOPICS);
+  }
+
+  if (topics.length > 4) {
+    throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_TOPICS}: exceeds max topics`);
+  }
+
+  for (let i = 0; i < topics.length; i++) {
+    addTopicCondition(topics[i], `topic${i}` as TopicColumn, where);
+  }
+};
+
+const addTopicCondition = (
+  topicFilter: string[] | string,
+  topicIndex: TopicColumn,
+  where: FindConditions<EventInterface>
+): any => {
+  if (Array.isArray(topicFilter)) {
+    // Validate input topics
+    topicFilter.forEach((topic: string) => {
+      if (!utils.isHexString(topic, 32)) {
+        throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_TOPICS}: expected hex string of size 32 for ${topicIndex}`);
+      }
+    });
+
+    if (topicFilter.length > 0) {
+      where[topicIndex] = In(topicFilter);
+    }
+  } else {
+    // Validate input address
+    if (!utils.isHexString(topicFilter, 32)) {
+      throw new ErrorWithCode(CODE_INVALID_PARAMS, `${ERROR_INVALID_TOPICS}: expected hex string of size 32 for ${topicIndex}`);
+    }
+
+    where[topicIndex] = Equal(topicFilter);
+  }
+};
+
 const transformEventsToLogs = async (events: Array<EventInterface>): Promise<any[]> => {
   return events.map(event => {
     const parsedExtraInfo = JSON.parse(event.extraInfo);
+
+    const topics: string[] = [];
+    [event.topic0, event.topic1, event.topic2, event.topic3].forEach(topic => {
+      if (topic) {
+        topics.push(topic);
+      }
+    });
 
     return {
       address: event.contract.toLowerCase(),
@@ -240,8 +313,8 @@ const transformEventsToLogs = async (events: Array<EventInterface>): Promise<any
       transactionHash: event.txHash,
       transactionIndex: `0x${parsedExtraInfo.tx.index.toString(16)}`,
       logIndex: `0x${parsedExtraInfo.logIndex.toString(16)}`,
-      data: parsedExtraInfo.data,
-      topics: parsedExtraInfo.topics,
+      data: event.data,
+      topics,
       removed: event.block.isPruned
     };
   });

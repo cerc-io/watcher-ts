@@ -227,6 +227,18 @@ export interface GQLConfig {
   logDir?: string;
 }
 
+// ETH RPC server config
+export interface EthRPCConfig {
+  // Enable ETH JSON RPC server
+  enabled: boolean;
+
+  // Path to expose the RPC server at
+  path?: string;
+
+  // Max number of logs that can be returned in a single getLogs request
+  getLogsResultLimit?: number;
+}
+
 export interface ServerConfig {
   host: string;
   port: number;
@@ -253,11 +265,8 @@ export interface ServerConfig {
   // https://ethereum.org/en/developers/docs/apis/json-rpc/#default-block
   rpcSupportsBlockHashParam: boolean;
 
-  // Enable ETH JSON RPC server at /rpc
-  enableEthRPCServer: boolean;
-
-  // Max number of logs that can be returned in a single getLogs request
-  ethGetLogsResultLimit?: number;
+  // ETH JSON RPC server config
+  ethRPC: EthRPCConfig;
 }
 
 export interface FundingAmountsConfig {
