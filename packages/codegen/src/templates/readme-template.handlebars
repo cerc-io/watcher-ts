@@ -32,11 +32,11 @@
 
   Create database for the job queue and enable the `pgcrypto` extension on them (https://github.com/timgit/pg-boss/blob/master/docs/usage.md#intro):
 
-  ```
+  ```bash
   createdb {{folderName}}-job-queue
   ```
 
-  ```
+  ```bash
   postgres@tesla:~$ psql -U postgres -h localhost {{folderName}}-job-queue
   Password for user postgres:
   psql (12.7 (Ubuntu 12.7-1.pgdg18.04+1))
@@ -54,7 +54,13 @@
 
   * Update the `upstream` config and provide the `ipld-eth-server` GQL API endpoint.
 
-  * Update the `server` config with state checkpoint settings.
+  * Update the `server` config:
+
+    * Update the state checkpoint settings if state is enabled.
+
+    * Update the GQL server settings.
+
+    * Update the ETH RPC server settings.
 
 ## Customize
 
@@ -94,7 +100,7 @@ To enable GQL requests caching:
     yarn server
     ```
 
-    GQL console: http://localhost:{{port}}/graphql
+    GQL console: <http://localhost:{{port}}/graphql>
 
 * If the watcher is an `active` watcher:
 
@@ -110,7 +116,7 @@ To enable GQL requests caching:
     yarn server
     ```
 
-    GQL console: http://localhost:{{port}}/graphql
+    GQL console: <http://localhost:{{port}}/graphql>
 
   * To watch a contract:
 
@@ -225,3 +231,54 @@ To enable GQL requests caching:
     ```
 
     * `cid`: CID to be inspected.
+
+* ETH RPC API:
+
+  * Watcher server exposes a JSON ETH RPC API at the configured endpoint (<http://localhost:{{port}}/rpc>)
+
+  * The supported methods are:
+
+    * `eth_blockNumber`
+    * `eth_call`
+    * `eth_getLogs`
+
+  * Example requests:
+
+    ```bash
+    # eth_call
+    ✗ curl -X POST -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_call",
+      "params": [
+        {
+          "to": "<contract-address>",
+          "data": "<eth-call-data>"
+        },
+        "<block-tag>"
+      ],
+      "id":1
+    }' \
+    http://localhost:{{port}}/rpc | jq
+    ```
+
+    ```bash
+    # eth_blockNumber
+    ✗ curl -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+    http://localhost:{{port}}/rpc | jq
+    ```
+
+    ```bash
+    # eth_getLogs
+    curl -X POST -H "Content-Type: application/json" \
+    -d '{"jsonrpc": "2.0","method": "eth_getLogs",
+      "params": [
+        {
+          "address": ["<contract-address>"],
+          "fromBlock": "0x61bc00",
+          "toBlock": "0x61bc09"
+        }
+      ],
+      "id": 1
+    }' \
+    http://localhost:{{port}}/rpc | jq
+    ```
