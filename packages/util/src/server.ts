@@ -102,7 +102,6 @@ export const createAndStartServer = async (
 
   // Apply GraphQL middleware
   const applyGraphQLMiddleware = () => {
-    console.log('applyGraphQLMiddleware');
     server.applyMiddleware({
       app,
       path: gqlPath
@@ -111,7 +110,6 @@ export const createAndStartServer = async (
 
   // Apply RPC middleware
   const applyRPCMiddleware = () => {
-    console.log('applyRPCMiddleware');
     if (!rpcEnabled) {
       return;
     }
