@@ -97,23 +97,32 @@ export const createAndStartServer = async (
 
   await server.start();
 
-  server.applyMiddleware({
-    app,
-    path: gqlPath
-  });
-
   const rpcPath = serverConfig.ethRPC?.path ?? DEFAULT_ETH_RPC_PATH;
+  const rpcEnabled = serverConfig.ethRPC?.enabled;
 
-  if (serverConfig.ethRPC?.enabled) {
+  // Apply GraphQL middleware
+  const applyGraphQLMiddleware = () => {
+    server.applyMiddleware({
+      app,
+      path: gqlPath
+    });
+  };
+
+  // Apply RPC middleware
+  const applyRPCMiddleware = () => {
+    if (!rpcEnabled) {
+      return;
+    }
+
     // Create a JSON-RPC server to handle ETH RPC calls
     const rpcServer = jayson.Server(ethRPCHandlers);
 
-    // Mount the JSON-RPC server to ETH_RPC_PATH
+    // Mount the JSON-RPC server to rpcPath
     app.use(
       rpcPath,
       jsonParser(),
       (req: any, res: any, next: () => void) => {
-        // Convert all GET requests to POST to avoid getting rejected from jayson server middleware
+        // Convert all GET requests to POST to avoid getting rejected by jayson server middleware
         if (jayson.Utils.isMethod(req, 'GET')) {
           req.method = 'POST';
         }
@@ -121,15 +130,32 @@ export const createAndStartServer = async (
       },
       rpcServer.middleware()
     );
+  };
+
+  // Apply middlewares based on path specificity
+  if (isPathMoreSpecific(rpcPath, gqlPath)) {
+    applyRPCMiddleware();
+    applyGraphQLMiddleware();
+  } else {
+    applyGraphQLMiddleware();
+    applyRPCMiddleware();
   }
 
   httpServer.listen(port, host, () => {
-    log(`GQL server is listening on http://${host}:${port}${server.graphqlPath}`);
+    log(`GQL server is listening on http://${host}:${port}${gqlPath}`);
 
-    if (serverConfig.ethRPC?.enabled) {
+    if (rpcEnabled) {
       log(`ETH JSON RPC server is listening on http://${host}:${port}${rpcPath}`);
     }
   });
 
   return server;
 };
+
+// Determine which path is more specific (more segments)
+function isPathMoreSpecific (path1: string, path2: string) {
+  const path1Segments = path1.split('/').filter(segment => segment !== '');
+  const path2Segments = path2.split('/').filter(segment => segment !== '');
+
+  return path1Segments.length > path2Segments.length;
+}
