@@ -40,6 +40,7 @@ import { exportIndexBlock } from './index-block';
 import { exportSubscriber } from './subscriber';
 import { exportReset } from './reset';
 import { filterInheritedContractNodes, writeFileToStream } from './utils/helpers';
+import { exportBackfillEventsData } from './backfill-events-data';
 
 const main = async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
@@ -388,6 +389,11 @@ function generateWatcher (visitor: Visitor, contracts: any[], configFile: string
     ? fs.createWriteStream(path.join(outputDir, 'src/cli/index-block.ts'))
     : process.stdout;
   exportIndexBlock(outStream);
+
+  outStream = outputDir
+    ? fs.createWriteStream(path.join(outputDir, 'src/cli/backfill-events-data.ts'))
+    : process.stdout;
+  exportBackfillEventsData(outStream);
 
   if (config.subgraphPath) {
     outStream = outputDir

@@ -9,6 +9,7 @@ import { ConnectionOptions, Repository } from 'typeorm';
 import debug from 'debug';
 
 import { DEFAULT_CONFIG_PATH, JSONbigNative, DatabaseInterface, Config, EventInterface } from '@cerc-io/util';
+
 import { BaseCmd } from './base';
 
 const log = debug('vulcanize:backfill-events-data');
