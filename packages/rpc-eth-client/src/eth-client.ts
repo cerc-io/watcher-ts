@@ -130,7 +130,7 @@ export class EthClient implements EthClientInterface {
             parentHash: block.parentHash,
             timestamp: block.timestamp.toString(),
             stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
-            td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+            td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty ?? 0).toString(),
             txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
             receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot)
           }
@@ -191,7 +191,7 @@ export class EthClient implements EthClientInterface {
           parentHash: this._provider.formatter.hash(rawBlock.parentHash),
           timestamp: this._provider.formatter.number(rawBlock.timestamp).toString(),
           stateRoot: this._provider.formatter.hash(rawBlock.stateRoot),
-          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty).toString(),
+          td: this._provider.formatter.bigNumber(rawBlock.totalDifficulty ?? 0).toString(),
           txRoot: this._provider.formatter.hash(rawBlock.transactionsRoot),
           receiptRoot: this._provider.formatter.hash(rawBlock.receiptsRoot),
           uncleRoot: this._provider.formatter.hash(rawBlock.sha3Uncles),
