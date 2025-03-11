@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/peer",
-  "version": "0.2.98",
+  "version": "0.2.98-patch.1",
   "description": "libp2p module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
