@@ -579,7 +579,8 @@ export class Schema {
         type: this._composer.getOTC('ResultEvent').NonNull.List,
         args: {
           fromBlockNumber: 'Int!',
-          toBlockNumber: 'Int!'
+          toBlockNumber: 'Int!',
+          name: 'String'
         }
       }
     });

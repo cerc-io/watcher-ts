@@ -225,10 +225,10 @@ export const createResolvers = async (
 
       eventsInRange: async (
         _: any,
-        { fromBlockNumber, toBlockNumber }: { fromBlockNumber: number, toBlockNumber: number },
+        { fromBlockNumber, toBlockNumber, name }: { fromBlockNumber: number, toBlockNumber: number, name?: string },
         expressContext: ExpressContext
       ) => {
-        log('eventsInRange', fromBlockNumber, toBlockNumber);
+        log('eventsInRange', fromBlockNumber, toBlockNumber, name);
 
         return executeAndRecordMetrics(
           indexer,
@@ -246,7 +246,7 @@ export const createResolvers = async (
               throw new Error(`Block range should be between ${syncStatus.initialIndexedBlockNumber} and ${syncStatus.latestProcessedBlockNumber}`);
             }
 
-            const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber);
+            const events = await indexer.getEventsInRange(fromBlockNumber, toBlockNumber, name);
             return events.map(event => indexer.getResultEvent(event));
           }
         );

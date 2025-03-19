@@ -789,7 +789,7 @@ export class Indexer {
     return this._db.getProcessedBlockCountForRange(fromBlockNumber, toBlockNumber);
   }
 
-  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number, maxBlockRange: number = DEFAULT_MAX_EVENTS_BLOCK_RANGE): Promise<Array<EventInterface>> {
+  async getEventsInRange (fromBlockNumber: number, toBlockNumber: number, maxBlockRange: number = DEFAULT_MAX_EVENTS_BLOCK_RANGE, name?: string): Promise<Array<EventInterface>> {
     if (toBlockNumber <= fromBlockNumber) {
       throw new Error('toBlockNumber should be greater than fromBlockNumber');
     }
@@ -798,7 +798,7 @@ export class Indexer {
       throw new Error(`Max range (${maxBlockRange}) exceeded`);
     }
 
-    return this._db.getEventsInRange(fromBlockNumber, toBlockNumber);
+    return this._db.getEventsInRange(fromBlockNumber, toBlockNumber, name);
   }
 
   isWatchedContract (address : string): ContractInterface | undefined {
@@ -1359,7 +1359,7 @@ export class Indexer {
     }
   }
 
-  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockNumber: number }>[]): Promise<void> {
+  async clearProcessedBlockData (block: BlockProgressInterface, entities: EntityTarget<{ blockNumber: number, blockHash: string }>[]): Promise<void> {
     const dbTx = await this._db.createTransactionRunner();
 
     try {
