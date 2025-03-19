@@ -368,7 +368,7 @@ export class MonitoredStaticJsonRpcProvider extends providers.StaticJsonRpcProvi
     } catch (err: any) {
       // Ignore errors on fetching future blocks and if block is null (in case of filecoin)
       if (err.code === ethersErrors.SERVER_ERROR && err.error) {
-        if (err.error.message === FUTURE_BLOCK_ERROR || err.error.message === NULL_BLOCK_ERROR) {
+        if (err.error.message === FUTURE_BLOCK_ERROR || err.error.message.startsWith(NULL_BLOCK_ERROR)) {
           throw err;
         }
       }

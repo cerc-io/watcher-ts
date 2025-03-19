@@ -376,7 +376,7 @@ export class EthClient implements EthClientInterface {
   _handleGetBlockErrors (err: any): Array<null> {
     if (err.code === errors.SERVER_ERROR && err.error) {
       // Check null block error and return null array
-      if (err.error.message === NULL_BLOCK_ERROR) {
+      if (err.error.message.startsWith(NULL_BLOCK_ERROR)) {
         return [null];
       }
 
