@@ -1,13 +1,13 @@
 {
   "name": "@cerc-io/util",
-  "version": "0.2.98-patch.1",
+  "version": "0.2.98-patch.2",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/utils.keyvaluecache": "^1.0.1",
     "@cerc-io/nitro-node": "^0.1.15",
     "@cerc-io/peer": "0.2.98",
-    "@cerc-io/solidity-mapper": "^0.2.98-patch.1",
+    "@cerc-io/solidity-mapper": "^0.2.98-patch.2",
     "@cerc-io/ts-channel": "1.0.3-ts-nitro-0.1.1",
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.4.4",

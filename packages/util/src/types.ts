@@ -254,7 +254,7 @@ export interface DatabaseInterface {
   getSyncStatus (queryRunner: QueryRunner): Promise<SyncStatusInterface | undefined>
   getAncestorAtHeight (blockHash: string, height: number): Promise<string>
   getProcessedBlockCountForRange (fromBlockNumber: number, toBlockNumber: number): Promise<{ expected: number, actual: number }>;
-  getEventsInRange (fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>>;
+  getEventsInRange (fromBlockNumber: number, toBlockNumber: number, name?: string): Promise<Array<EventInterface>>;
   markBlocksAsPruned (queryRunner: QueryRunner, blocks: BlockProgressInterface[]): Promise<void>;
   saveBlockProgress (queryRunner: QueryRunner, block: DeepPartial<BlockProgressInterface>): Promise<BlockProgressInterface>;
   updateBlockProgress (queryRunner: QueryRunner, block: BlockProgressInterface, lastProcessedEventIndex: number): Promise<BlockProgressInterface>

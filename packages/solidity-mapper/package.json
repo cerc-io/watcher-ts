@@ -1,6 +1,6 @@
 {
   "name": "@cerc-io/solidity-mapper",
-  "version": "0.2.98-patch.1",
+  "version": "0.2.98-patch.2",
   "main": "dist/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

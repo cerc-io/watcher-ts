@@ -509,18 +509,22 @@ export class Database {
     return { expected, actual: parseInt(actual) };
   }
 
-  async getEventsInRange (repo: Repository<EventInterface>, fromBlockNumber: number, toBlockNumber: number): Promise<Array<EventInterface>> {
-    const events = repo.createQueryBuilder('event')
+  async getEventsInRange (repo: Repository<EventInterface>, fromBlockNumber: number, toBlockNumber: number, name?: string): Promise<Array<EventInterface>> {
+    const queryBuilder = repo.createQueryBuilder('event')
       .innerJoinAndSelect('event.block', 'block')
       .where('block_number >= :fromBlockNumber AND block_number <= :toBlockNumber AND event_name <> :eventName AND is_pruned = false', {
         fromBlockNumber,
         toBlockNumber,
         eventName: UNKNOWN_EVENT_NAME
-      })
+      });
+
+    if (name) {
+      queryBuilder.andWhere('event.event_name = :name', { name });
+    }
+
+    return queryBuilder
       .addOrderBy('event.id', 'ASC')
       .getMany();
-
-    return events;
   }
 
   async saveEventEntity (repo: Repository<EventInterface>, entity: EventInterface): Promise<EventInterface> {
