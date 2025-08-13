@@ -65,26 +65,34 @@ export class Visitor {
     const name = node.name;
     assert(name);
 
-    const params = node.parameters.map((item: any) => {
-      return { name: item.name, type: item.typeName.name };
+    const params = node.parameters.map((item: any, index: number) => {
+      const itemName = item.name ?? `arg${index}`;
+      return { name: itemName, type: item.typeName.name };
     });
+
+    let errorMessage = '';
 
     // Check for unhandled return type params
     node.returnParameters.forEach(returnParameter => {
       assert(returnParameter.typeName);
+
       const isTypeHandled = ['ElementaryTypeName', 'ArrayTypeName'].includes(returnParameter.typeName.type);
 
       if (!isTypeHandled) {
-        const errorMessage = `No support in codegen for type ${returnParameter.typeName.type} from method "${node.name}"`;
+        errorMessage = `No support in codegen for type ${returnParameter.typeName.type} from method "${node.name}"`;
 
         if (this._continueOnError) {
-          console.log(errorMessage);
           return;
         }
 
         throw new Error(errorMessage);
       }
     });
+
+    if (this._continueOnError && errorMessage !== '') {
+      console.log(errorMessage);
+      return;
+    }
 
     this._schema.addQuery(name, params, node.returnParameters);
     this._resolvers.addQuery(name, params);
@@ -125,10 +133,22 @@ export class Visitor {
         // If the variable type is mapping, extract key as a param:
         // Eg. mapping(address => mapping(address => uint256)) private _allowances;
         while (typeName.type === 'Mapping') {
-          assert(typeName.keyType.type === 'ElementaryTypeName', 'UserDefinedTypeName map keys like enum type not handled');
+          if (typeName.keyType.type === 'UserDefinedTypeName') {
+            errorMessage = 'No support in codegen for user defined type map keys';
+            break;
+          }
+
           params.push({ name: `key${numParams.toString()}`, type: typeName.keyType.name });
           typeName = typeName.valueType;
           numParams++;
+        }
+
+        if (typeName.type === 'UserDefinedTypeName') {
+          errorMessage = 'No support in codegen for user defined type map values';
+        }
+
+        if (errorMessage !== '') {
+          break;
         }
 
         // falls through

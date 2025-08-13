@@ -10,7 +10,7 @@ import { loadFilesSync } from '@graphql-tools/load-files';
 import { ASSET_DIR } from './constants';
 
 const GRAPH_TS_VERSION = '0.27.0-watcher-ts-0.1.3';
-const GRAPH_CLI_VERSION = '0.32.0-watcher-ts-0.1.3';
+const GRAPH_CLI_VERSION = '0.32.0-watcher-ts-0.1.4';
 
 export function parseSubgraphSchema (subgraphPath: string, subgraphConfig: any): any {
   const subgraphSchemaPath = path.join(path.resolve(subgraphPath), subgraphConfig.schema?.file ?? './schema.graphql');
