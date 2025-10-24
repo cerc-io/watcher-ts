@@ -790,7 +790,7 @@ export class Indexer {
   }
 
   async getEventsInRange (fromBlockNumber: number, toBlockNumber: number, maxBlockRange: number = DEFAULT_MAX_EVENTS_BLOCK_RANGE, name?: string): Promise<Array<EventInterface>> {
-    if (toBlockNumber <= fromBlockNumber) {
+    if (toBlockNumber < fromBlockNumber) {
       throw new Error('toBlockNumber should be greater than fromBlockNumber');
     }
 
