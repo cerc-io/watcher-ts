@@ -469,10 +469,27 @@ export class Indexer {
       topics
     });
 
-    const blockLogsMap = this._reduceLogsToBlockLogsMap(logs);
-    // Create unique list of tx required
+    let blockLogsMap = this._reduceLogsToBlockLogsMap(logs);
+
+    // Filter blocks which have no events from watched contracts
+    blockLogsMap = Array.from(blockLogsMap.entries())
+      .filter(([, logs]) => {
+        return logs.some(log => {
+          const contractAddress = ethers.utils.getAddress(log.account.address);
+          return this.isContractAddressWatched(contractAddress)?.length;
+        });
+      })
+      .reduce((acc, [blockHash, logs]) => {
+        acc.set(blockHash, logs);
+        return acc;
+      }, new Map());
+
+    // Create unique list of txs required
     const txHashes = Array.from([
-      ...new Set<string>(logs.map((log: any) => log.transaction.hash))
+      ...new Set<string>(
+        Array.from(blockLogsMap.values())
+          .flat()
+          .map((log: any) => log.transaction.hash))
     ]);
 
     // Fetch blocks with transactions for the logs returned
@@ -543,7 +560,7 @@ export class Indexer {
     return blocksWithDbEvents;
   }
 
-  _reduceLogsToBlockLogsMap (logs: any[]): Map<string, any> {
+  _reduceLogsToBlockLogsMap (logs: any[]): Map<string, any[]> {
     return logs.reduce((acc: Map<string, any>, log: any) => {
       const { blockHash: logBlockHash } = log;
       assert(typeof logBlockHash === 'string');
