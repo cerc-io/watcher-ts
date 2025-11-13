@@ -191,16 +191,23 @@ export class EventWatcher {
 
       if (isComplete) {
         while (true) {
-          const { block: latestBlock } = await this._ethClient.getBlockByHash();
+          try {
+            const { block: latestBlock } = await this._ethClient.getBlockByHash();
 
-          // Process block if it is blockProcessingOffset blocks behind latest block
-          if (latestBlock.number >= blockNumber + (this._config.jobQueue.blockProcessingOffset ?? 0)) {
-            await processBlockByNumber(this._jobQueue, blockNumber + 1);
-            break;
+            // Process block if it is blockProcessingOffset blocks behind latest block
+            if (latestBlock.number >= blockNumber + (this._config.jobQueue.blockProcessingOffset ?? 0)) {
+              await processBlockByNumber(this._jobQueue, blockNumber + 1);
+              break;
+            }
+
+            log(`Latest block number fetched: ${latestBlock.number}`);
+          } catch (err: unknown) {
+            log(`Error while triggering processing for next block: ${blockNumber + 1}`);
+            log(err);
+          } finally {
+            log(`Retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
+            await wait(this._config.jobQueue.blockDelayInMilliSecs);
           }
-
-          log(`Latest block: ${latestBlock.number}; retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
-          await wait(this._config.jobQueue.blockDelayInMilliSecs);
         }
       }
     }
