@@ -204,10 +204,10 @@ export class EventWatcher {
           } catch (err: unknown) {
             log(`Error while triggering processing for next block: ${blockNumber + 1}`);
             log(err);
-          } finally {
-            log(`Retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
-            await wait(this._config.jobQueue.blockDelayInMilliSecs);
           }
+
+          log(`Retry next block to process: ${blockNumber + 1} after ${this._config.jobQueue.blockDelayInMilliSecs}ms`);
+          await wait(this._config.jobQueue.blockDelayInMilliSecs);
         }
       }
     }
